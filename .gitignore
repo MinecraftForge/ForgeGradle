@@ -1,6 +1,20 @@
-*.class
+# gradle
+.gradle
+build
+gradle-app.setting
 
-# Package Files #
-*.jar
-*.war
-*.ear
+# GMCP plugin
+/minecraft
+
+# eclipse
+.settings
+.metadata
+.classpath
+.project
+bin
+
+# intellij
+out
+*.idea
+*.iml
+
