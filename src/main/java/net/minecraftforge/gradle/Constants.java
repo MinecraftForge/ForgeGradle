@@ -58,7 +58,8 @@ public class Constants
     public static final String DEOBF_DATA       = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/deobfuscation_data-{MC_VERSION}.lzma";
     public static final String FERNFLOWER       = "{CACHE_DIR}/minecraft/fernflower.jar";
     public static final String EXCEPTOR         = "{CACHE_DIR}/minecraft/exceptor.jar";
-    public static final String INSTALLER        = "{BUILD_DIR}/baseInstaller.jar";
+    public static final String INSTALLER_BASE   = "{BUILD_DIR}/tmp/installer_base.{INSTALLER_VERSION}.jar";
+    public static final String INSTALL_PROFILE  = "{BUILD_DIR}/tmp/install_profile.json";
 
     // eclipse folders
     public static final String WORKSPACE = "eclipse";

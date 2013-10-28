@@ -95,7 +95,7 @@ public class FmlPlugin extends BasePlugin
         super.createObtainingTasks();
         DownloadTask task = makeTask("downloadBaseInstaller", DownloadTask.class);
         {
-            task.setOutput(delayedFile(INSTALLER));
+            task.setOutput(delayedFile(INSTALLER_BASE));
             task.setUrl(delayedString(INSTALLER_URL));
         }
     }
@@ -399,7 +399,7 @@ public class FmlPlugin extends BasePlugin
         FileFilterTask task = makeTask("generateInstallJson", FileFilterTask.class);
         {
             task.setInputFile(delayedFile(JSON_REL));
-            task.setOutputFile(delayedFile("{BUILD_DIR}/tmp/install_profile.json"));
+            task.setOutputFile(delayedFile(INSTALL_PROFILE));
             task.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
             task.addReplacement("@version@",           delayedString("{VERSION}"));
             task.addReplacement("@universal_jar@", new Closure<String>(project)
@@ -427,9 +427,9 @@ public class FmlPlugin extends BasePlugin
                     return uni.getArchivePath();
                 }
             });
-            inst.from(delayedFile("{BUILD_DIR}/tmp/install_profile.json"));
+            inst.from(delayedFile(INSTALL_PROFILE));
             inst.from(delayedFile("{FML_DIR}/jsons/big_logo.png"));
-            inst.from(delayedZipTree(Constants.INSTALLER),  new Closure<Object>(project) {
+            inst.from(delayedZipTree(INSTALLER_BASE),  new Closure<Object>(project) {
                 @Override
                 public Object call()
                 {
