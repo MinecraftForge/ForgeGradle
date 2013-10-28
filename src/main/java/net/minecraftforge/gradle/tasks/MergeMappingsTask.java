@@ -2,6 +2,7 @@ package net.minecraftforge.gradle.tasks;
 
 import au.com.bytecode.opencsv.CSVParser;
 import au.com.bytecode.opencsv.CSVReader;
+
 import com.google.code.regexp.Matcher;
 import com.google.code.regexp.Pattern;
 import com.google.common.base.Joiner;
@@ -9,8 +10,10 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
+
 import net.minecraftforge.gradle.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
+
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
