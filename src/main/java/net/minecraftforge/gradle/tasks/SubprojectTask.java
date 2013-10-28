@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Set;
 
-import net.minecraftforge.gradle.FmlPlugin;
+import net.minecraftforge.gradle.FmlDevPlugin;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 
 import org.gradle.api.DefaultTask;
@@ -21,7 +21,7 @@ public class SubprojectTask extends DefaultTask
     @TaskAction
     public void doTask() throws IOException
     {
-        Project childProj = FmlPlugin.getProject(getBuildFile(), getProject());
+        Project childProj = FmlDevPlugin.getProject(getBuildFile(), getProject());
 
         for (String task : tasks.split(" "))
         {

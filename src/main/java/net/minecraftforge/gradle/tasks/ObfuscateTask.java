@@ -15,7 +15,7 @@ import net.md_5.specialsource.JarRemapper;
 import net.md_5.specialsource.provider.ClassLoaderProvider;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
-import net.minecraftforge.gradle.FmlPlugin;
+import net.minecraftforge.gradle.FmlDevPlugin;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 
 import org.gradle.api.DefaultTask;
@@ -37,7 +37,7 @@ public class ObfuscateTask extends DefaultTask
     public void doTask() throws IOException
     {
         getLogger().debug("Building child project model...");
-        Project childProj = FmlPlugin.getProject(getBuildFile(), getProject());
+        Project childProj = FmlDevPlugin.getProject(getBuildFile(), getProject());
         AbstractTask compileTask = (AbstractTask) childProj.getTasks().getByName("compileJava");
         AbstractTask jarTask = (AbstractTask) childProj.getTasks().getByName("jar");
 

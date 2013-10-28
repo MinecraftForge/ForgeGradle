@@ -45,7 +45,7 @@ import argo.jdom.JsonNode;
 
 import com.google.common.io.Files;
 
-public class FmlPlugin extends BasePlugin
+public class FmlDevPlugin extends BasePlugin
 {
 
     private static final String[] JAVA_FILES = new String[]{"**.java", "*.java", "**/*.java"};
@@ -386,7 +386,7 @@ public class FmlPlugin extends BasePlugin
                 {
                     Manifest mani = (Manifest)getDelegate();
                     mani.getAttributes().put("Main-Class", delayedString("{MAIN_CLASS}").call());
-                    mani.getAttributes().put("Class-Path", FmlPlugin.this.getServerClassPath(FmlPlugin.this.delayedFile(JSON_REL).call()));
+                    mani.getAttributes().put("Class-Path", FmlDevPlugin.this.getServerClassPath(FmlDevPlugin.this.delayedFile(JSON_REL).call()));
                     return null;
                 }
             });
@@ -503,7 +503,7 @@ public class FmlPlugin extends BasePlugin
         }
 
         StringBuilder out = new StringBuilder();
-        out.append(DelayedString.resolve(Constants.MC_VERSION, project, new IDelayedResolver[]{new FmlPlugin()})).append('-'); // Somehow configure this?
+        out.append(DelayedString.resolve(Constants.MC_VERSION, project, new IDelayedResolver[]{new FmlDevPlugin()})).append('-'); // Somehow configure this?
         out.append(major).append('.').append(minor).append('.').append(revision).append('.').append(build);
         if (branch != null)
         {
