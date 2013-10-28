@@ -19,6 +19,7 @@ import java.util.Map.Entry;
 import javax.xml.bind.DatatypeConverter;
 
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.delayed.DelayedString;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
@@ -33,16 +34,16 @@ import com.google.gson.GsonBuilder;
 public class ChangelogTask extends DefaultTask
 {
     @Input
-    String serverRoot;
+    DelayedString serverRoot;
     
     @Input
-    String jobName;
+    DelayedString jobName;
     
     @Input
-    String authName;
+    DelayedString authName;
     
     @Input
-    String authPassword;
+    DelayedString authPassword;
 
     @Input
     Closure<String> targetBuild;
@@ -261,40 +262,40 @@ public class ChangelogTask extends DefaultTask
     
     public String getServerRoot()
     {
-        return serverRoot;
+        return serverRoot.call();
     }
 
-    public void setServerRoot(String serverRoot)
+    public void setServerRoot(DelayedString serverRoot)
     {
         this.serverRoot = serverRoot;
     }
 
     public String getJobName()
     {
-        return jobName;
+        return jobName.call();
     }
 
-    public void setJobName(String jobName)
+    public void setJobName(DelayedString jobName)
     {
         this.jobName = jobName;
     }
 
     public String getAuthName()
     {
-        return authName;
+        return authName.call();
     }
 
-    public void setAuthName(String authName)
+    public void setAuthName(DelayedString authName)
     {
         this.authName = authName;
     }
 
     public String getAuthPassword()
     {
-        return authPassword;
+        return authPassword.call();
     }
 
-    public void setAuthPassword(String authPassword)
+    public void setAuthPassword(DelayedString authPassword)
     {
         this.authPassword = authPassword;
     }

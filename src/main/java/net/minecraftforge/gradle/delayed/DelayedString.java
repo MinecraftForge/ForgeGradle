@@ -1,7 +1,8 @@
 package net.minecraftforge.gradle.delayed;
 
-import net.minecraftforge.gradle.Constants;
+import static net.minecraftforge.gradle.Constants.*;
 import net.minecraftforge.gradle.ExtensionObject;
+import net.minecraftforge.gradle.JenkinsExtensionObject;
 
 import org.gradle.api.Project;
 
@@ -36,7 +37,8 @@ public class DelayedString extends Closure<String>
     public static String resolve(String patern, Project project, IDelayedResolver[] resolvers)
     {
         project.getLogger().info("Resolving: " + patern);
-        ExtensionObject exten = (ExtensionObject)project.getExtensions().getByName(Constants.EXT_NAME);
+        ExtensionObject exten = (ExtensionObject)project.getExtensions().getByName(EXT_NAME_MC);
+        JenkinsExtensionObject jenk = (JenkinsExtensionObject)project.getExtensions().getByName(EXT_NAME_JENKINS);
         
         String build = "0";
         if (System.getenv().containsKey("BUILD_NUMBER"))
@@ -60,6 +62,11 @@ public class DelayedString extends Closure<String>
         patern = patern.replace("{VERSION}", version);
         patern = patern.replace("{BUILD_NUM}", build);
         patern = patern.replace("{PROJECT}", project.getName());
+
+        patern = patern.replace("{JENKINS_SERVER}",        jenk.getServer());
+        patern = patern.replace("{JENKINS_JOB}",           jenk.getJob());
+        patern = patern.replace("{JENKINS_AUTH_NAME}",     jenk.getAuthName());
+        patern = patern.replace("{JENKINS_AUTH_PASSWORD}", jenk.getAuthPassword());
         
         for (IDelayedResolver r : resolvers)
         {

@@ -34,7 +34,8 @@ public class BasePlugin implements Plugin<Project>, IDelayedResolver
     public void apply(Project project)
     {
         this.project = project;
-        project.getExtensions().create(Constants.EXT_NAME, getExtension(), project);
+        project.getExtensions().create(EXT_NAME_MC, getExtension(), project);
+        project.getExtensions().create(EXT_NAME_JENKINS, JenkinsExtensionObject.class, project);
 
         createObtainingTasks();
     }

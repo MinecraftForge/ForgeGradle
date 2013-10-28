@@ -326,7 +326,7 @@ public class FmlPlugin extends BasePlugin
         {
             obf.setSrg(delayedFile(PACKAGED_SRG));
             obf.setReverse(true);
-            obf.setOutJar(delayedFile("{BUILD_DIR}/recompObfed.jar"));
+            obf.setOutJar(delayedFile(REOBF_TMP));
             obf.setBuildFile(delayedFile(ECLIPSE_FML + "/build.gradle"));
             obf.dependsOn("generateProjects", "extractFmlSources", "fixMappings");
         }
@@ -336,9 +336,9 @@ public class FmlPlugin extends BasePlugin
             task3.setCleanClient(delayedFile(JAR_CLIENT_FRESH));
             task3.setCleanServer(delayedFile(JAR_SERVER_FRESH));
             task3.setCleanMerged(delayedFile(JAR_MERGED));
-            task3.setDirtyJar(delayedFile("{BUILD_DIR}/recompObfed.jar"));
+            task3.setDirtyJar(delayedFile(REOBF_TMP));
             task3.setDeobfDataLzma(delayedFile(DEOBF_DATA));
-            task3.setOutJar(delayedFile("{BUILD_DIR}/binPatches.jar"));
+            task3.setOutJar(delayedFile(BINPATCH_TMP));
             task3.setSrg(delayedFile(PACKAGED_SRG));
             task3.setPatchList(delayedFileTree(FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData", "fixMappings");
@@ -351,10 +351,10 @@ public class FmlPlugin extends BasePlugin
         ChangelogTask log = makeTask("createChangelog", ChangelogTask.class);
         {
             log.getOutputs().upToDateWhen(CALL_FALSE);
-            log.setServerRoot("http://ci.jenkins.minecraftforge.net/");
-            log.setJobName("fml");
-            log.setAuthName("console_script");
-            log.setAuthPassword("dc6d48ca20a474beeac280a9a16a926e");
+            log.setServerRoot  (delayedString("{JENKINS_SERVER}"));
+            log.setJobName     (delayedString("{JENKINS_JOB}"));
+            log.setAuthName    (delayedString("{JENKINS_AUTH_NAME}"));
+            log.setAuthPassword(delayedString("{JENKINS_AUTH_PASSWORD}"));
             log.setTargetBuild(delayedString("{BUILD_NUM}"));
             log.setOutput(delayedFile(CHANGELOG));
         }
@@ -370,10 +370,11 @@ public class FmlPlugin extends BasePlugin
             uni.setAppendix("universal");
             uni.getInputs().file(delayedFile(JSON_REL));
             uni.getOutputs().upToDateWhen(CALL_FALSE);
-            uni.from(delayedZipTree("{BUILD_DIR}/binPatches.jar"));
+            uni.from(delayedZipTree(BINPATCH_TMP));
             uni.from(delayedFileTree(FML_CLIENT));
             uni.from(delayedFileTree(FML_COMMON));
             uni.from(delayedFile(FML_VERSIONF));
+            uni.from(delayedFile(FML_LICENSE));
             uni.from(delayedFile(DEOBF_DATA));
             uni.from(delayedFile(CHANGELOG));
             uni.exclude(JAVA_FILES);
@@ -426,7 +427,8 @@ public class FmlPlugin extends BasePlugin
             });
             inst.from(delayedFile(INSTALL_PROFILE));
             inst.from(delayedFile(CHANGELOG));
-            inst.from(delayedFile("{FML_DIR}/jsons/big_logo.png"));
+            inst.from(delayedFile(FML_LICENSE));
+            inst.from(delayedFile(FML_LOGO));
             inst.from(delayedZipTree(INSTALLER_BASE),  new Closure<Object>(project) {
                 @Override
                 public Object call()

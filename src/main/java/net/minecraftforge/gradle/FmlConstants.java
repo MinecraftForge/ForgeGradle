@@ -23,6 +23,8 @@ public abstract class FmlConstants
     public static final String FML_COMMON    = "{FML_DIR}/common";
     public static final String FML_CLIENT    = "{FML_DIR}/client";
     public static final String FML_VERSIONF  = "{BUILD_DIR}/tmp/fmlversion.properties";
+    public static final String FML_LICENSE   = "{FML_DIR}/LICENSE-fml.txt";
+    public static final String FML_LOGO      = "{FML_DIR}/jsons/big_logo.png";
 
     // various useful files
     public static final String MCP_PATCH      = "{MAPPINGS_DIR}/patches/minecraft_ff.patch";
