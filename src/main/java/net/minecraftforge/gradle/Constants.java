@@ -1,8 +1,12 @@
 package net.minecraftforge.gradle;
 
 import argo.jdom.JdomParser;
+
 import com.google.common.base.Joiner;
+
 import org.gradle.api.Project;
+
+import groovy.lang.Closure;
 
 import java.io.*;
 import java.net.URL;
@@ -16,7 +20,12 @@ public class Constants
     // OS
     public static enum OperatingSystem
     {
-        WINDOWS, OSX, LINUX
+        WINDOWS, OSX, LINUX;
+        
+        public String toString()
+        {
+            return name().toLowerCase();
+        }
     }
 
     public static final OperatingSystem OPERATING_SYSTEM = getOs();
@@ -26,12 +35,14 @@ public class Constants
 
     // json parser
     public static final JdomParser PARSER = new JdomParser();
+    @SuppressWarnings("serial")
+    public static final Closure<Boolean> CALL_FALSE = new Closure<Boolean>(null){ public Boolean call(Object o){ return false; }};
 
     // urls
     public static final String MC_VERSION       = "{MC_VERSION}";
     public static final String MC_JAR_URL       = "http://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/{MC_VERSION}.jar";
     public static final String MC_SERVER_URL    = "http://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/minecraft_server.{MC_VERSION}.jar";
-    public static final String MCP_URL          = "https://github.com/AbrarSyed/FML/raw/working/mcplibs/mcinjector.jar";
+    public static final String MCP_URL          = "http://mcp.ocean-labs.de/files/archive/mcp804.zip";
     public static final String INSTALLER_URL    = "http://files.minecraftforge.net/installer/forge-installer-{INSTALLER_VERSION}-shrunk.jar";
 
     // things in the cache dir.
@@ -54,10 +65,9 @@ public class Constants
     public static final String ECLIPSE_CLEAN = WORKSPACE + "/Clean";
     public static final String ECLIPSE_FML = WORKSPACE + "/FML";
     public static final String ECLIPSE_RUN = WORKSPACE + "/run";
+    public static final String ECLIPSE_NATIVES = ECLIPSE_RUN + "/bin/natives";
 
     // src dirs
-    //public static final String COMMON_SRC = "common";
-    //public static final String CLIENT_SRC = "client";
     public static final String BUKKIT_SRC = "bukkit";
     public static final String PATCH_DIR = "patches/minecraft";
 
