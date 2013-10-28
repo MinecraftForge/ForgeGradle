@@ -56,13 +56,13 @@ public class FmlDevPlugin extends BasePlugin
         super.apply(project);
         
         //configureLaunch4J();
-        mappingFixTask();
+        creatMappingFixTask();
         createJarProcessTasks();
         createProjectTasks();
         createEclipseTasks();
         createMiscTasks();
-        sourceCopyTasks();
-        packageTasks();
+        createSourceCopyTasks();
+        createPackageTasks();
 
         // the master setup task.
         Task task = makeTask("setupFML", DefaultTask.class);
@@ -135,7 +135,7 @@ public class FmlDevPlugin extends BasePlugin
     /**
      * Fixes the SRG, EXC and MCP patch files to use the package refractor.
      */
-    private void mappingFixTask()
+    private void creatMappingFixTask()
     {
         MergeMappingsTask task = makeTask("fixMappings", MergeMappingsTask.class);
         {
@@ -190,7 +190,7 @@ public class FmlDevPlugin extends BasePlugin
         }
     }
 
-    private void sourceCopyTasks()
+    private void createSourceCopyTasks()
     {   
         ExtractTask task = makeTask("extractWorkspace", ExtractTask.class);
         {
@@ -346,7 +346,7 @@ public class FmlDevPlugin extends BasePlugin
     }
 
     @SuppressWarnings("serial")
-    private void packageTasks()
+    private void createPackageTasks()
     {
         ChangelogTask log = makeTask("createChangelog", ChangelogTask.class);
         {
