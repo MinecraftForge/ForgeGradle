@@ -363,7 +363,6 @@ public class FmlPlugin extends BasePlugin
         {
             prop.getOutputs().upToDateWhen(CALL_FALSE);
             prop.setOutputFile(delayedFile(FML_VERSIONF));
-            prop.dependsOn("compressDeobfData");
         }
 
         final DelayedJar uni = makeTask("packageUniversal", DelayedJar.class);
@@ -375,6 +374,7 @@ public class FmlPlugin extends BasePlugin
             uni.from(delayedFileTree(FML_CLIENT));
             uni.from(delayedFileTree(FML_COMMON));
             uni.from(delayedFile(FML_VERSIONF));
+            uni.from(delayedFile(DEOBF_DATA));
             uni.exclude(JAVA_FILES);
             uni.exclude("devbinpatches.pack.lzma");
             uni.setIncludeEmptyDirs(false);
