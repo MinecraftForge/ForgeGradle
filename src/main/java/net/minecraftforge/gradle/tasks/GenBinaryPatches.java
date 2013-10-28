@@ -193,7 +193,7 @@ public class GenBinaryPatches extends DefaultTask
         JarOutputStream jar = new JarOutputStream(out);
         for (Map.Entry<String, byte[]> entry : patches.entrySet())
         {
-            jar.putNextEntry(new JarEntry(entry.getKey()));
+            jar.putNextEntry(new JarEntry("binpatch/" + entry.getKey()));
             jar.write(entry.getValue());
         }
         jar.close();
