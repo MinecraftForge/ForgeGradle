@@ -375,6 +375,7 @@ public class FmlPlugin extends BasePlugin
             uni.from(delayedFileTree(FML_COMMON));
             uni.from(delayedFile(FML_VERSIONF));
             uni.from(delayedFile(DEOBF_DATA));
+            uni.from(delayedFile(CHANGELOG));
             uni.exclude(JAVA_FILES);
             uni.exclude("devbinpatches.pack.lzma");
             uni.setIncludeEmptyDirs(false);
@@ -424,6 +425,7 @@ public class FmlPlugin extends BasePlugin
                 }
             });
             inst.from(delayedFile(INSTALL_PROFILE));
+            inst.from(delayedFile(CHANGELOG));
             inst.from(delayedFile("{FML_DIR}/jsons/big_logo.png"));
             inst.from(delayedZipTree(INSTALLER_BASE),  new Closure<Object>(project) {
                 @Override
