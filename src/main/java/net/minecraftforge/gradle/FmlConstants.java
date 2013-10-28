@@ -22,6 +22,7 @@ public abstract class FmlConstants
     public static final String JSON_BASE     = "{FML_DIR}/jsons/{MC_VERSION}.json";
     public static final String FML_COMMON    = "{FML_DIR}/common";
     public static final String FML_CLIENT    = "{FML_DIR}/client";
+    public static final String FML_VERSIONF  = "{BUILD_DIR}/tmp/fmlversion.properties";
 
     // various useful files
     public static final String MCP_PATCH      = "{MAPPINGS_DIR}/patches/minecraft_ff.patch";

@@ -1,20 +1,7 @@
 package net.minecraftforge.gradle;
 
 import static net.minecraftforge.gradle.Constants.*;
-import static net.minecraftforge.gradle.FmlConstants.ASTYLE_CFG;
-import static net.minecraftforge.gradle.FmlConstants.CHANGELOG;
-import static net.minecraftforge.gradle.FmlConstants.FML_CLIENT;
-import static net.minecraftforge.gradle.FmlConstants.FML_COMMON;
-import static net.minecraftforge.gradle.FmlConstants.FML_ECLIPSE_WS;
-import static net.minecraftforge.gradle.FmlConstants.FML_PATCH_DIR;
-import static net.minecraftforge.gradle.FmlConstants.JOINED_EXC;
-import static net.minecraftforge.gradle.FmlConstants.JOINED_SRG;
-import static net.minecraftforge.gradle.FmlConstants.JSON_DEV;
-import static net.minecraftforge.gradle.FmlConstants.JSON_REL;
-import static net.minecraftforge.gradle.FmlConstants.MCP_PATCH;
-import static net.minecraftforge.gradle.FmlConstants.MERGE_CFG;
-import static net.minecraftforge.gradle.FmlConstants.PACKAGED_PATCH;
-import static net.minecraftforge.gradle.FmlConstants.PACK_CSV;
+import static net.minecraftforge.gradle.FmlConstants.*;
 //import edu.sc.seis.launch4j.Launch4jPluginExtension;
 import groovy.lang.Closure;
 
@@ -32,6 +19,7 @@ import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.DelayedJar;
 import net.minecraftforge.gradle.tasks.DownloadTask;
 import net.minecraftforge.gradle.tasks.ExtractTask;
+import net.minecraftforge.gradle.tasks.FMLVersionPropTask;
 import net.minecraftforge.gradle.tasks.FileFilterTask;
 import net.minecraftforge.gradle.tasks.GenBinaryPatches;
 import net.minecraftforge.gradle.tasks.GeneratePatches;
@@ -371,6 +359,13 @@ public class FmlPlugin extends BasePlugin
             log.setOutput(delayedFile(CHANGELOG));
         }
 
+        FMLVersionPropTask prop = makeTask("createVersionProperties", FMLVersionPropTask.class);
+        {
+            prop.getOutputs().upToDateWhen(CALL_FALSE);
+            prop.setOutputFile(delayedFile(FML_VERSIONF));
+            prop.dependsOn("compressDeobfData");
+        }
+
         final DelayedJar uni = makeTask("packageUniversal", DelayedJar.class);
         {
             uni.setAppendix("universal");
@@ -379,6 +374,7 @@ public class FmlPlugin extends BasePlugin
             uni.from(delayedZipTree("{BUILD_DIR}/binPatches.jar"));
             uni.from(delayedFileTree(FML_CLIENT));
             uni.from(delayedFileTree(FML_COMMON));
+            uni.from(delayedFile(FML_VERSIONF));
             uni.exclude(JAVA_FILES);
             uni.exclude("devbinpatches.pack.lzma");
             uni.setIncludeEmptyDirs(false);
@@ -392,7 +388,7 @@ public class FmlPlugin extends BasePlugin
                     return null;
                 }
             });
-            uni.dependsOn("genBinPatches", "createChangelog");
+            uni.dependsOn("genBinPatches", "createChangelog", "createVersionProperties");
         }
         project.getArtifacts().add("archives", uni);
         
