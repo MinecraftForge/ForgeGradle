@@ -1,18 +1,54 @@
-package net.minecraftforge.gradle;
+package net.minecraftforge.gradle.dev;
 
-import static net.minecraftforge.gradle.Constants.*;
-import static net.minecraftforge.gradle.FmlConstants.*;
+import static net.minecraftforge.gradle.FmlConstants.ASTYLE_CFG;
+import static net.minecraftforge.gradle.FmlConstants.CHANGELOG;
+import static net.minecraftforge.gradle.FmlConstants.FML_CLIENT;
+import static net.minecraftforge.gradle.FmlConstants.FML_COMMON;
+import static net.minecraftforge.gradle.FmlConstants.FML_ECLIPSE_WS;
+import static net.minecraftforge.gradle.FmlConstants.FML_LICENSE;
+import static net.minecraftforge.gradle.FmlConstants.FML_LOGO;
+import static net.minecraftforge.gradle.FmlConstants.FML_PATCH_DIR;
+import static net.minecraftforge.gradle.FmlConstants.FML_VERSIONF;
+import static net.minecraftforge.gradle.FmlConstants.JOINED_EXC;
+import static net.minecraftforge.gradle.FmlConstants.JOINED_SRG;
+import static net.minecraftforge.gradle.FmlConstants.JSON_DEV;
+import static net.minecraftforge.gradle.FmlConstants.JSON_REL;
+import static net.minecraftforge.gradle.FmlConstants.MCP_PATCH;
+import static net.minecraftforge.gradle.FmlConstants.MERGE_CFG;
+import static net.minecraftforge.gradle.FmlConstants.PACKAGED_PATCH;
+import static net.minecraftforge.gradle.FmlConstants.PACK_CSV;
+import static net.minecraftforge.gradle.common.Constants.BINPATCH_TMP;
+import static net.minecraftforge.gradle.common.Constants.CALL_FALSE;
+import static net.minecraftforge.gradle.common.Constants.DEOBF_DATA;
+import static net.minecraftforge.gradle.common.Constants.ECLIPSE_CLEAN;
+import static net.minecraftforge.gradle.common.Constants.ECLIPSE_FML;
+import static net.minecraftforge.gradle.common.Constants.EXCEPTOR;
+import static net.minecraftforge.gradle.common.Constants.FERNFLOWER;
+import static net.minecraftforge.gradle.common.Constants.INSTALLER_BASE;
+import static net.minecraftforge.gradle.common.Constants.INSTALLER_URL;
+import static net.minecraftforge.gradle.common.Constants.INSTALL_PROFILE;
+import static net.minecraftforge.gradle.common.Constants.JAR_CLIENT_FRESH;
+import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
+import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_FRESH;
+import static net.minecraftforge.gradle.common.Constants.JAR_SRG;
+import static net.minecraftforge.gradle.common.Constants.PACKAGED_EXC;
+import static net.minecraftforge.gradle.common.Constants.PACKAGED_SRG;
+import static net.minecraftforge.gradle.common.Constants.PATCH_DIR;
+import static net.minecraftforge.gradle.common.Constants.REOBF_TMP;
+import static net.minecraftforge.gradle.common.Constants.WORKSPACE;
+import static net.minecraftforge.gradle.common.Constants.ZIP_DECOMP;
+import static net.minecraftforge.gradle.common.Constants.ZIP_FML;
 //import edu.sc.seis.launch4j.Launch4jPluginExtension;
 import groovy.lang.Closure;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedString;
-import net.minecraftforge.gradle.delayed.DelayedString.IDelayedResolver;
 import net.minecraftforge.gradle.tasks.ChangelogTask;
 import net.minecraftforge.gradle.tasks.CompressLZMA;
 import net.minecraftforge.gradle.tasks.DecompileTask;
@@ -39,22 +75,22 @@ import org.gradle.api.java.archives.Manifest;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.bundling.Zip;
-import org.gradle.process.ExecSpec;
 
 import argo.jdom.JsonNode;
 
 import com.google.common.io.Files;
 
-public class FmlDevPlugin extends BasePlugin
+public class FmlDevPlugin extends DevBasePlugin
 {
 
-    private static final String[] JAVA_FILES = new String[]{"**.java", "*.java", "**/*.java"};
+    private static final String[] JAVA_FILES = new String[] { "**.java", "*.java", "**/*.java" };
 
     @Override
-    public void apply(Project project)
+    public void applyPlugin()
     {
         super.apply(project);
-        
+
+        createDownloadTasks();
         //configureLaunch4J();
         creatMappingFixTask();
         createJarProcessTasks();
@@ -68,70 +104,68 @@ public class FmlDevPlugin extends BasePlugin
         Task task = makeTask("setupFML", DefaultTask.class);
         task.dependsOn("extractFmlSources", "generateProjects", "eclipse");
         task.setGroup("FML");
-        
+
         // the master task.
         task = makeTask("buildPackages");
         task.dependsOn("launch4j", "packageUniversal", "createChangelog", "packageInstaller");
         task.setGroup("FML");
     }
 
-    @Override protected String getDevJson(){ return JSON_DEV; }
-    
     @Override
-    protected void createObtainingTasks()
+    protected String getDevJson()
     {
-        super.createObtainingTasks();
+        return JSON_DEV;
+    }
+
+    private void createDownloadTasks()
+    {
         DownloadTask task = makeTask("downloadBaseInstaller", DownloadTask.class);
         {
             task.setOutput(delayedFile(INSTALLER_BASE));
             task.setUrl(delayedString(INSTALLER_URL));
         }
     }
-/*    
-    private void configureLaunch4J()
-    {
-        
-        Task task = project.getTasks().getByName("generateXmlConfig");
-        task.dependsOn("packageInstaller");
-        task.getInputs().file(delayedFile(Constants.INSTALLER));
-        task.doFirst(new Closure(project, this) {
-            @Override
-            public Object call()
-            {
-                // get teh extension object
-                Launch4jPluginExtension ext = (Launch4jPluginExtension) project.getExtensions().getByName("launch4j");
-                //ext.setJar(((Zip)project.getTasks().getByName("packageInstaller")).getArchivePath().getAbsolutePath());
-                //ext.setOutfile(((Zip)project.getTasks().getByName("packageInstaller")).getArchiveName().replace(".zip", ".exe"));
-                
-                try
-                {
-                    // set jar stuff
-                    JarFile file = new JarFile(delayedFile(Constants.INSTALLER).call());
-                    java.util.jar.Manifest man = file.getManifest();
-                    ext.setMainClassName(man.getMainAttributes().getValue("Main-Class"));
-                }
-                catch (IOException e)
-                {
-                    Throwables.propagate(e); // -_-
-                }
-                
-                return null;
-            }
-            
-            @Override
-            public Object call(Object obj)
-            {
-                return call();
-            }
-            
-            @Override
-            public Object call(Object... obj)
-            {
-                return call();
-            }
-        });
-    }
-*/
+
+    /*
+     * private void configureLaunch4J()
+     * {
+     * Task task = project.getTasks().getByName("generateXmlConfig");
+     * task.dependsOn("packageInstaller");
+     * task.getInputs().file(delayedFile(Constants.INSTALLER));
+     * task.doFirst(new Closure(project, this) {
+     * @Override
+     * public Object call()
+     * {
+     * // get teh extension object
+     * Launch4jPluginExtension ext = (Launch4jPluginExtension) project.getExtensions().getByName("launch4j");
+     * //ext.setJar(((Zip)project.getTasks().getByName("packageInstaller")).getArchivePath().getAbsolutePath());
+     * //ext.setOutfile(((Zip)project.getTasks().getByName("packageInstaller")).getArchiveName().replace(".zip", ".exe"));
+     * try
+     * {
+     * // set jar stuff
+     * JarFile file = new JarFile(delayedFile(Constants.INSTALLER).call());
+     * java.util.jar.Manifest man = file.getManifest();
+     * ext.setMainClassName(man.getMainAttributes().getValue("Main-Class"));
+     * }
+     * catch (IOException e)
+     * {
+     * Throwables.propagate(e); // -_-
+     * }
+     * return null;
+     * }
+     * @Override
+     * public Object call(Object obj)
+     * {
+     * return call();
+     * }
+     * @Override
+     * public Object call(Object... obj)
+     * {
+     * return call();
+     * }
+     * });
+     * }
+     */
     /**
      * Fixes the SRG, EXC and MCP patch files to use the package refractor.
      */
@@ -180,7 +214,7 @@ public class FmlDevPlugin extends BasePlugin
             task3.setAstyleConfig(delayedFile(ASTYLE_CFG));
             task3.dependsOn("downloadMcpTools", "deobfuscateJar", "fixMappings");
         }
-        
+
         PatchJarTask task4 = makeTask("fmlPatchJar", PatchJarTask.class);
         {
             task4.setInJar(delayedFile(ZIP_DECOMP));
@@ -191,7 +225,7 @@ public class FmlDevPlugin extends BasePlugin
     }
 
     private void createSourceCopyTasks()
-    {   
+    {
         ExtractTask task = makeTask("extractWorkspace", ExtractTask.class);
         {
             task.from(delayedFile(FML_ECLIPSE_WS));
@@ -263,7 +297,7 @@ public class FmlDevPlugin extends BasePlugin
         {
             task.setJson(delayedFile(JSON_DEV));
             task.setTargetDir(delayedFile(ECLIPSE_FML));
-            
+
             task.addSource(delayedFile(ECLIPSE_FML + "/src/minecraft")); // Minecraft's base files
             task.addSource(delayedFile(FML_CLIENT)); // Eventually merge this into a single 'fml_source' in the repository
             task.addSource(delayedFile(FML_COMMON));
@@ -271,7 +305,7 @@ public class FmlDevPlugin extends BasePlugin
             task.addResource(delayedFile(ECLIPSE_FML + "/src/resources"));
             task.addResource(delayedFile(FML_CLIENT)); // Eventually change to 'fml_resources' in the repo
             task.addResource(delayedFile(FML_COMMON));
-            
+
             task.dependsOn("extractNatives");
         }
 
@@ -351,9 +385,9 @@ public class FmlDevPlugin extends BasePlugin
         ChangelogTask log = makeTask("createChangelog", ChangelogTask.class);
         {
             log.getOutputs().upToDateWhen(CALL_FALSE);
-            log.setServerRoot  (delayedString("{JENKINS_SERVER}"));
-            log.setJobName     (delayedString("{JENKINS_JOB}"));
-            log.setAuthName    (delayedString("{JENKINS_AUTH_NAME}"));
+            log.setServerRoot(delayedString("{JENKINS_SERVER}"));
+            log.setJobName(delayedString("{JENKINS_JOB}"));
+            log.setAuthName(delayedString("{JENKINS_AUTH_NAME}"));
             log.setAuthPassword(delayedString("{JENKINS_AUTH_PASSWORD}"));
             log.setTargetBuild(delayedString("{BUILD_NUM}"));
             log.setOutput(delayedFile(CHANGELOG));
@@ -384,7 +418,7 @@ public class FmlDevPlugin extends BasePlugin
             {
                 public Object call()
                 {
-                    Manifest mani = (Manifest)getDelegate();
+                    Manifest mani = (Manifest) getDelegate();
                     mani.getAttributes().put("Main-Class", delayedString("{MAIN_CLASS}").call());
                     mani.getAttributes().put("Class-Path", FmlDevPlugin.this.getServerClassPath(FmlDevPlugin.this.delayedFile(JSON_REL).call()));
                     return null;
@@ -393,13 +427,13 @@ public class FmlDevPlugin extends BasePlugin
             uni.dependsOn("genBinPatches", "createChangelog", "createVersionProperties");
         }
         project.getArtifacts().add("archives", uni);
-        
+
         FileFilterTask task = makeTask("generateInstallJson", FileFilterTask.class);
         {
             task.setInputFile(delayedFile(JSON_REL));
             task.setOutputFile(delayedFile(INSTALL_PROFILE));
             task.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
-            task.addReplacement("@version@",           delayedString("{VERSION}"));
+            task.addReplacement("@version@", delayedString("{VERSION}"));
             task.addReplacement("@universal_jar@", new Closure<String>(project)
             {
                 public String call()
@@ -415,7 +449,7 @@ public class FmlDevPlugin extends BasePlugin
                 }
             });
         }
-        
+
         Zip inst = makeTask("packageInstaller", Zip.class);
         {
             inst.setAppendix("installer");
@@ -429,30 +463,34 @@ public class FmlDevPlugin extends BasePlugin
             inst.from(delayedFile(CHANGELOG));
             inst.from(delayedFile(FML_LICENSE));
             inst.from(delayedFile(FML_LOGO));
-            inst.from(delayedZipTree(INSTALLER_BASE),  new Closure<Object>(project) {
+            inst.from(delayedZipTree(INSTALLER_BASE), new Closure<Object>(project) {
                 @Override
                 public Object call()
                 {
-                    ((CopySpec)getDelegate()).exclude("*.json", "*.png");
+                    ((CopySpec) getDelegate()).exclude("*.json", "*.png");
                     return null;
                 }
-                
-                @Override public Object call(Object obj){ return call(); }
+
+                @Override
+                public Object call(Object obj)
+                {
+                    return call();
+                }
             });
             inst.dependsOn("packageUniversal", "downloadBaseInstaller", "generateInstallJson");
             inst.setExtension("jar");
         }
         project.getArtifacts().add("archives", inst);
     }
-    
+
     private String getServerClassPath(File json)
     {
         try
         {
             JsonNode node = Constants.PARSER.parse(Files.newReader(json, Charset.defaultCharset()));
-    
+
             StringBuilder buf = new StringBuilder();
-    
+
             for (JsonNode lib : node.getArrayNode("versionInfo", "libraries"))
             {
                 if (lib.isNode("serverreq") && lib.getBooleanValue("serverreq"))
@@ -464,7 +502,7 @@ public class FmlDevPlugin extends BasePlugin
             buf.append(delayedString("minecraft_server.{MC_VERSION}").call());
             return buf.toString();
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             throw new RuntimeException(e);
         }
@@ -503,7 +541,7 @@ public class FmlDevPlugin extends BasePlugin
         }
 
         StringBuilder out = new StringBuilder();
-        out.append(DelayedString.resolve(Constants.MC_VERSION, project, new IDelayedResolver[]{new FmlDevPlugin()})).append('-'); // Somehow configure this?
+        out.append(DelayedString.resolve(Constants.MC_VERSION, project, new IDelayedResolver[] { new FmlDevPlugin() })).append('-'); // Somehow configure this?
         out.append(major).append('.').append(minor).append('.').append(revision).append('.').append(build);
         if (branch != null)
         {
@@ -511,36 +549,5 @@ public class FmlDevPlugin extends BasePlugin
         }
 
         return out.toString();
-    }
-
-    private static String runGit(final Project project, final String... args)
-    {
-        final ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-        project.exec(new Closure<ExecSpec>(project, project)
-        {
-            private static final long serialVersionUID = -8561907087962634978L;
-
-            @Override
-            public ExecSpec call()
-            {
-                ExecSpec exec = (ExecSpec) getDelegate();
-                exec.setExecutable("git");
-                exec.args((Object[]) args);
-                exec.setStandardOutput(out);
-                exec.setWorkingDir(project.getProjectDir());
-                return exec;
-            }
-        });
-
-        return out.toString().trim();
-    }
-
-    @Override
-    public String resolve(String patern, Project project, ExtensionObject extension)
-    {
-        patern = patern.replace("{MAPPINGS_DIR}", extension.getFmlDir() + "/conf");
-        patern = patern.replace("{FML_DIR}", extension.getFmlDir());
-        return super.resolve(patern, project, extension);
     }
 }

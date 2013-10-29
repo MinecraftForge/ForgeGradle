@@ -2,26 +2,19 @@ package net.minecraftforge.gradle.delayed;
 
 import java.io.File;
 
-import net.minecraftforge.gradle.delayed.DelayedString.IDelayedResolver;
-
 import org.gradle.api.Project;
 
-import groovy.lang.Closure;
-
 @SuppressWarnings("serial")
-public class DelayedFile extends Closure<File>
+public class DelayedFile extends DelayedBase<File>
 {
-    private Project project;
-    private File resolved;
-    private String pattern;
-    private IDelayedResolver[] resolvers;
+    public DelayedFile(Project owner, String pattern)
+    {
+        super(owner, pattern);
+    }
 
     public DelayedFile(Project owner, String pattern, IDelayedResolver... resolvers)
     {
-        super(owner);
-        this.project = owner;
-        this.pattern = pattern;
-        this.resolvers = resolvers;
+        super(owner, pattern, resolvers);
     }
 
     @Override

@@ -1,19 +1,18 @@
-package net.minecraftforge.gradle;
+package net.minecraftforge.gradle.dev;
+
+import net.minecraftforge.gradle.common.BaseExtension;
 
 import org.gradle.api.Project;
 
-public class ExtensionObject
+public class DevExtension extends BaseExtension
 {
-    private Project project;
-    
     private String fmlDir;
-    private String version = "null";
     private String mainClass;
     private String installerVersion = "null";
 
-    public ExtensionObject(Project project)
+    public DevExtension(Project project)
     {
-        this.project = project;
+        super(project);
     }
 
     public String getFmlDir()
@@ -24,16 +23,6 @@ public class ExtensionObject
     public void setFmlDir(String fmlDir)
     {
         this.fmlDir = fmlDir;
-    }
-
-    public String getVersion()
-    {
-        return version;
-    }
-
-    public void setVersion(String version)
-    {
-        this.version = version;
     }
 
     public String getMainClass()

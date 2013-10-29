@@ -1,36 +1,35 @@
 package net.minecraftforge.gradle.delayed;
 
-import groovy.lang.Closure;
 import net.minecraftforge.gradle.ZipFileTree;
-import net.minecraftforge.gradle.delayed.DelayedString.IDelayedResolver;
 
 import org.gradle.api.Project;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.internal.file.collections.FileTreeAdapter;
 
 @SuppressWarnings("serial")
-public class DelayedFileTree extends Closure<FileTree>
+public class DelayedFileTree extends DelayedBase<FileTree>
 {
-    private Project            project;
-    private FileTree           resolved;
-    private String             pattern;
-    private boolean            zipTree = false;
-    private IDelayedResolver[] resolvers;
+    private boolean zipTree = false;
+
+    public DelayedFileTree(Project owner, String pattern)
+    {
+        super(owner, pattern);
+    }
+
+    public DelayedFileTree(Project owner, String pattern, boolean zipTree)
+    {
+        super(owner, pattern);
+        this.zipTree = zipTree;
+    }
 
     public DelayedFileTree(Project owner, String pattern, IDelayedResolver... resolvers)
     {
-        super(owner);
-        this.project = owner;
-        this.pattern = pattern;
-        this.resolvers = resolvers;
+        super(owner, pattern, resolvers);
     }
 
     public DelayedFileTree(Project owner, String pattern, boolean zipTree, IDelayedResolver... resolvers)
     {
-        super(owner);
-        this.project = owner;
-        this.pattern = pattern;
-        this.resolvers = resolvers;
+        super(owner, pattern, resolvers);
         this.zipTree = zipTree;
     }
 

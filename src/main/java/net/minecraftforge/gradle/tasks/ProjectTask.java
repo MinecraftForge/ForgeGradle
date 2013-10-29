@@ -6,9 +6,9 @@ import argo.saj.InvalidSyntaxException;
 import com.google.common.io.Files;
 
 import groovy.lang.Closure;
-import net.minecraftforge.gradle.Constants;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
-import static net.minecraftforge.gradle.Constants.NEWLINE;
+import static net.minecraftforge.gradle.common.Constants.NEWLINE;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;

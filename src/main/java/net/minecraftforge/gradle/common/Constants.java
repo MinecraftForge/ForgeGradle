@@ -1,19 +1,25 @@
-package net.minecraftforge.gradle;
-
-import argo.jdom.JdomParser;
-
-import com.google.common.base.Joiner;
-
-import org.gradle.api.Project;
+package net.minecraftforge.gradle.common;
 
 import groovy.lang.Closure;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
+
+import net.minecraftforge.gradle.dev.DevExtension;
+
+import org.gradle.api.Project;
+
+import argo.jdom.JdomParser;
+
+import com.google.common.base.Joiner;
 
 public class Constants
 {
@@ -21,7 +27,7 @@ public class Constants
     public static enum OperatingSystem
     {
         WINDOWS, OSX, LINUX;
-        
+
         public String toString()
         {
             return name().toLowerCase();
@@ -102,7 +108,7 @@ public class Constants
 
     public static List<String> getClassPath()
     {
-        URL[] urls = ((URLClassLoader) ExtensionObject.class.getClassLoader()).getURLs();
+        URL[] urls = ((URLClassLoader) DevExtension.class.getClassLoader()).getURLs();
 
         ArrayList<String> list = new ArrayList<String>();
         for (URL url : urls)

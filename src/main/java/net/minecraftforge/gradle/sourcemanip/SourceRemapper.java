@@ -2,10 +2,12 @@ package net.minecraftforge.gradle.sourcemanip;
 
 import au.com.bytecode.opencsv.CSVParser;
 import au.com.bytecode.opencsv.CSVReader;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
-import net.minecraftforge.gradle.Constants;
+
+import net.minecraftforge.gradle.common.Constants;
 
 import java.io.File;
 import java.io.IOException;

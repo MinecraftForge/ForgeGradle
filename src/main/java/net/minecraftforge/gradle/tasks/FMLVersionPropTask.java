@@ -3,7 +3,7 @@ package net.minecraftforge.gradle.tasks;
 import java.io.File;
 import java.io.IOException;
 
-import net.minecraftforge.gradle.Constants;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedString;
 

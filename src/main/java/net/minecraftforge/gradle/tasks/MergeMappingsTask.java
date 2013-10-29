@@ -9,7 +9,7 @@ import com.google.common.collect.ObjectArrays;
 import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
 
-import net.minecraftforge.gradle.Constants;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 
 import org.gradle.api.tasks.InputFile;

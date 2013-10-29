@@ -4,8 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Set;
 
-import net.minecraftforge.gradle.FmlDevPlugin;
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.dev.FmlDevPlugin;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;

@@ -1,8 +1,8 @@
-package net.minecraftforge.gradle;
+package net.minecraftforge.gradle.common;
 
 import org.gradle.api.Project;
 
-public class JenkinsExtensionObject
+public class JenkinsExtension
 {
     @SuppressWarnings("unused")
     private Project project;
@@ -12,7 +12,7 @@ public class JenkinsExtensionObject
     private String authName = "console_script";
     private String authPassword = "dc6d48ca20a474beeac280a9a16a926e";
 
-    public JenkinsExtensionObject(Project project)
+    public JenkinsExtension(Project project)
     {
         this.project = project;
     }

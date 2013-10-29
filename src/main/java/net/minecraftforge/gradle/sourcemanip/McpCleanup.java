@@ -1,6 +1,6 @@
 package net.minecraftforge.gradle.sourcemanip;
 
-import net.minecraftforge.gradle.Constants;
+import net.minecraftforge.gradle.common.Constants;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

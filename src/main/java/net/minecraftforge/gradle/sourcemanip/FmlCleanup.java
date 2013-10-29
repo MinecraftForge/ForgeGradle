@@ -2,7 +2,8 @@ package net.minecraftforge.gradle.sourcemanip;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
-import net.minecraftforge.gradle.Constants;
+
+import net.minecraftforge.gradle.common.Constants;
 
 import java.util.*;
 import java.util.regex.Matcher;

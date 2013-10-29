@@ -4,7 +4,7 @@ import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 
 import groovy.lang.Closure;
-import net.minecraftforge.gradle.Constants;
+import net.minecraftforge.gradle.common.Constants;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;

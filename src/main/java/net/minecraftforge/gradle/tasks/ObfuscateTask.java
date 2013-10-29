@@ -15,8 +15,8 @@ import net.md_5.specialsource.JarRemapper;
 import net.md_5.specialsource.provider.ClassLoaderProvider;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
-import net.minecraftforge.gradle.FmlDevPlugin;
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.dev.FmlDevPlugin;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;

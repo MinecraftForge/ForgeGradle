@@ -23,7 +23,7 @@ import java.util.zip.Adler32;
 import java.util.zip.ZipEntry;
 
 import lzma.streams.LzmaOutputStream;
-import net.minecraftforge.gradle.Constants;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
 
