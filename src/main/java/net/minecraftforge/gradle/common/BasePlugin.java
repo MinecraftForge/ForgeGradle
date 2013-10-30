@@ -48,16 +48,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         project.getExtensions().create(EXT_NAME_MC, getExtensionClass(), project);
         project.getExtensions().create(EXT_NAME_JENKINS, JenkinsExtension.class, project);
         
-        project.getLogger().lifecycle("TEST!!!!!!!!!!!!!!!!!!");
-        
         project.afterEvaluate(new Closure(project, this){
             @Override
             public Object call()
             {   
-                project.getLogger().lifecycle("TEST555555!!!!!!!!!!!!!!!!!!");
                 nativeTasks();
                 afterEvaluate();
-                project.getLogger().lifecycle("TEST666666!!!!!!!!!!!!!!!!!!");
                 return null;
             }
             
@@ -66,8 +62,20 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             @Override public Object call(Object... obj){ return call(); }
         });
         
-        project.getLogger().lifecycle("TEST222222!!!!!!!!!!!!!!!!!!");
+        makeObtainTasks();
         
+        // at last....
+        applyPlugin();
+    }
+    
+    public abstract void applyPlugin();
+    
+    protected abstract String getDevJson();
+    
+    public void afterEvaluate() {}
+    
+    private void makeObtainTasks()
+    {
         // download tasks
         DownloadTask task;
 
@@ -89,20 +97,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             mcpTask.setFfJar(delayedFile(FERNFLOWER));
             mcpTask.setInjectorJar(delayedFile(EXCEPTOR));
         }
-        
-        project.getLogger().lifecycle("TEST3333333!!!!!!!!!!!!!!!!!!");
-        
-        // at last....
-        applyPlugin();
-        
-        project.getLogger().lifecycle("TEST4444444!!!!!!!!!!!!!!!!!!");
     }
-    
-    public abstract void applyPlugin();
-    
-    protected abstract String getDevJson();
-    
-    public void afterEvaluate() {}
     
     public final void nativeTasks()
     {

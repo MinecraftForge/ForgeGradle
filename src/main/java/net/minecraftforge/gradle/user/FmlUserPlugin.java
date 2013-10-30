@@ -1,6 +1,7 @@
 package net.minecraftforge.gradle.user;
 
-public class FmlUserPlugin extends UserBasePlugin
+
+public class FmlUserPlugin extends UserBasePlugin<FmlUserExtension>
 {
     @Override
     public void applyPlugin()
@@ -9,4 +10,6 @@ public class FmlUserPlugin extends UserBasePlugin
         
         // TODO tasks....
     }
+    
+    protected Class<FmlUserExtension> getExtensionClass(){ return FmlUserExtension.class; }
 }
