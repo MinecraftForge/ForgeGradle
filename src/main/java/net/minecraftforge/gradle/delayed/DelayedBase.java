@@ -49,6 +49,11 @@ public abstract class DelayedBase<V> extends Closure<V>
         public String resolve(String pattern, Project project, DevExtension extension);
     }
     
+    public static String resolve(String patern, Project project, IDelayedResolver resolver)
+    {
+        return resolve(patern, project, new IDelayedResolver[] {resolver});
+    }
+    
     public static String resolve(String patern, Project project, IDelayedResolver[] resolvers)
     {
         project.getLogger().info("Resolving: " + patern);

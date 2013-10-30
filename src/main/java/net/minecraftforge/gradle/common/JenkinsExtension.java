@@ -4,7 +4,6 @@ import org.gradle.api.Project;
 
 public class JenkinsExtension
 {
-    @SuppressWarnings("unused")
     private Project project;
 
     private String server = "http://ci.jenkins.minecraftforge.net/";
@@ -15,6 +14,7 @@ public class JenkinsExtension
     public JenkinsExtension(Project project)
     {
         this.project = project;
+        job = System.getenv("JOB_NAME") == null ? project.getName() : System.getenv("JOB_NAME");
     }
 
     public String getServer()

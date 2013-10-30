@@ -46,9 +46,13 @@ import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import net.minecraftforge.gradle.FmlConstants;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
+import net.minecraftforge.gradle.delayed.DelayedBase;
+import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.delayed.DelayedString;
+import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.tasks.ChangelogTask;
 import net.minecraftforge.gradle.tasks.CompressLZMA;
 import net.minecraftforge.gradle.tasks.DecompileTask;
@@ -88,8 +92,9 @@ public class FmlDevPlugin extends DevBasePlugin
     @Override
     public void applyPlugin()
     {
-        super.apply(project);
-
+        // set fmlDir
+        getExtension().setFmlDir(".");
+        
         createDownloadTasks();
         //configureLaunch4J();
         creatMappingFixTask();
@@ -114,7 +119,7 @@ public class FmlDevPlugin extends DevBasePlugin
     @Override
     protected String getDevJson()
     {
-        return JSON_DEV;
+        return DelayedBase.resolve(FmlConstants.JSON_DEV, project, this);
     }
 
     private void createDownloadTasks()
@@ -541,7 +546,7 @@ public class FmlDevPlugin extends DevBasePlugin
         }
 
         StringBuilder out = new StringBuilder();
-        out.append(DelayedString.resolve(Constants.MC_VERSION, project, new IDelayedResolver[] { new FmlDevPlugin() })).append('-'); // Somehow configure this?
+        out.append(DelayedBase.resolve(Constants.MC_VERSION, project, (IDelayedResolver) project.getPlugins().findPlugin("fmldev"))).append('-'); // Somehow configure this?
         out.append(major).append('.').append(minor).append('.').append(revision).append('.').append(build);
         if (branch != null)
         {
@@ -550,4 +555,9 @@ public class FmlDevPlugin extends DevBasePlugin
 
         return out.toString();
     }
+    
+    protected DelayedString   delayedString  (String path){ return new DelayedString  (project, path, this); }
+    protected DelayedFile     delayedFile    (String path){ return new DelayedFile    (project, path, this); }
+    protected DelayedFileTree delayedFileTree(String path){ return new DelayedFileTree(project, path, this); }
+    protected DelayedFileTree delayedZipTree (String path){ return new DelayedFileTree(project, path, true, this); }
 }
