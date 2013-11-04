@@ -486,6 +486,45 @@ public class FmlDevPlugin extends DevBasePlugin
             inst.setExtension("jar");
         }
         project.getArtifacts().add("archives", inst);
+        
+        Zip userDev = makeTask("packageUserDev", Zip.class);
+        {
+            userDev.setAppendix("userdev");
+            userDev.from(delayedFile(getDevJson()));
+            userDev.from(delayedFile(BINPATCH_TMP));
+            userDev.from(delayedFileTree("{FML_DIR}"), new Closure<Object>(project) {
+                @Override
+                public Object call()
+                {
+                    CopySpec spec = (CopySpec) getDelegate();
+                    spec.include("patches", "common", "client", "conf");
+                    return null;
+                }
+
+                @Override
+                public Object call(Object obj)
+                {
+                    return call();
+                }
+            });
+            userDev.from(delayedFileTree(FmlConstants.MERGE_CFG), new Closure<Object>(project) {
+                @Override
+                public Object call()
+                {
+                    ((CopySpec) getDelegate()).into("conf");
+                    return null;
+                }
+
+                @Override
+                public Object call(Object obj)
+                {
+                    return call();
+                }
+            });
+            userDev.from("");
+            userDev.rename(".+?\\.json", "fml.json");
+            userDev.dependsOn("packageUniversal");
+        }
     }
 
     private String getServerClassPath(File json)
