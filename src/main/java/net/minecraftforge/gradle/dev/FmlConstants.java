@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle;
+package net.minecraftforge.gradle.dev;
 
 public abstract class FmlConstants
 {

@@ -1,7 +1,5 @@
 package net.minecraftforge.gradle.user;
 
-import static net.minecraftforge.gradle.FmlConstants.FML_COMMON;
-import static net.minecraftforge.gradle.FmlConstants.MERGE_CFG;
 import static net.minecraftforge.gradle.common.Constants.EXCEPTOR;
 import static net.minecraftforge.gradle.common.Constants.JAR_CLIENT_FRESH;
 import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
@@ -33,13 +31,12 @@ public abstract class UserBasePlugin<K extends UserExtension> extends BasePlugin
     
     private void makeJarTasks()
     {
-        // TODO: FMLConstants class still gonna be used here?
         MergeJarsTask task = makeTask("mergeJars", MergeJarsTask.class);
         {
             task.setClient(delayedFile(JAR_CLIENT_FRESH));
             task.setServer(delayedFile(JAR_SERVER_FRESH));
             task.setOutJar(delayedFile(JAR_MERGED));
-            task.setMergeCfg(delayedFile(MERGE_CFG));
+            task.setMergeCfg(delayedFile(UserConstants.MERGE_CFG));
             task.dependsOn("downloadClient", "downloadServer");
         }
 
@@ -51,7 +48,7 @@ public abstract class UserBasePlugin<K extends UserExtension> extends BasePlugin
             task2.setOutJar(delayedFile(JAR_SRG));
             task2.setSrg(delayedFile(PACKAGED_SRG));
             task2.setExceptorCfg(delayedFile(PACKAGED_EXC));
-            task2.addTransformer(delayedFile(FML_COMMON + "/fml_at.cfg"));
+            //task2.addTransformer(delayedFile(FML_COMMON + "/fml_at.cfg"));  need the AT
             task2.dependsOn("downloadMcpTools", "fixMappings", "mergeJars");
         }
     }

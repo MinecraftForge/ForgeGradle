@@ -70,14 +70,14 @@ public class Constants
     public static final String REOBF_TMP        = "{BUILD_DIR}/tmp/recomp_obfed.jar";
     public static final String BINPATCH_TMP     = "{BUILD_DIR}/tmp/bin_patches.jar";
 
-    // eclipse folders
+    // eclipse folders      More stuff only for the Dev plugins
     public static final String WORKSPACE = "eclipse";
     public static final String ECLIPSE_CLEAN = WORKSPACE + "/Clean";
     public static final String ECLIPSE_FML = WORKSPACE + "/FML";
     public static final String ECLIPSE_RUN = WORKSPACE + "/run";
     public static final String ECLIPSE_NATIVES = ECLIPSE_RUN + "/bin/natives";
 
-    // src dirs
+    // src dirs   for only the DEV plugins
     public static final String BUKKIT_SRC = "bukkit";
     public static final String PATCH_DIR = "patches/minecraft";
 
