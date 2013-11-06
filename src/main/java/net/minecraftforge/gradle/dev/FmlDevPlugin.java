@@ -46,6 +46,7 @@ import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import net.minecraftforge.gradle.CopyInto;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedBase;
 import net.minecraftforge.gradle.delayed.DelayedFile;
@@ -467,20 +468,7 @@ public class FmlDevPlugin extends DevBasePlugin
             inst.from(delayedFile(CHANGELOG));
             inst.from(delayedFile(FML_LICENSE));
             inst.from(delayedFile(FML_LOGO));
-            inst.from(delayedZipTree(INSTALLER_BASE), new Closure<Object>(project) {
-                @Override
-                public Object call()
-                {
-                    ((CopySpec) getDelegate()).exclude("*.json", "*.png");
-                    return null;
-                }
-
-                @Override
-                public Object call(Object obj)
-                {
-                    return call();
-                }
-            });
+            inst.from(delayedZipTree(INSTALLER_BASE), new CopyInto(".", "!*.json", "!.png"));
             inst.dependsOn("packageUniversal", "downloadBaseInstaller", "generateInstallJson");
             inst.setExtension("jar");
         }
@@ -489,41 +477,21 @@ public class FmlDevPlugin extends DevBasePlugin
         Zip userDev = makeTask("packageUserDev", Zip.class);
         {
             userDev.setAppendix("userdev");
-            userDev.from(delayedFile(getDevJson()));
-            userDev.from(delayedFile(BINPATCH_TMP));
-            userDev.from(delayedFileTree("{FML_DIR}"), new Closure<Object>(project) {
-                @Override
-                public Object call()
-                {
-                    CopySpec spec = (CopySpec) getDelegate();
-                    spec.include("patches", "common", "client", "conf");
-                    return null;
-                }
-
-                @Override
-                public Object call(Object obj)
-                {
-                    return call();
-                }
-            });
-            userDev.from(delayedFileTree(FmlConstants.MERGE_CFG), new Closure<Object>(project) {
-                @Override
-                public Object call()
-                {
-                    ((CopySpec) getDelegate()).into("conf");
-                    return null;
-                }
-
-                @Override
-                public Object call(Object obj)
-                {
-                    return call();
-                }
-            });
-            userDev.from("");
-            userDev.rename(".+?\\.json", "fml.json");
+            userDev.from(delayedFile(JSON_DEV));
+            userDev.from(delayedZipTree(BINPATCH_TMP), new CopyInto("", "devbinpatches.pack.lzma"));
+            userDev.from(delayedZipTree(BINPATCH_TMP), new CopyInto("bin", "**/*.class"));
+            userDev.from(delayedFileTree("{FML_DIR}/common"), new CopyInto("src", "**/*.java"));
+            userDev.from(delayedFileTree("{FML_DIR}/client"), new CopyInto("src", "**/*.java"));
+            userDev.from(delayedFileTree("{FML_DIR}/common"), new CopyInto("resources", "!**/*.java"));
+            userDev.from(delayedFileTree("{FML_DIR}/client"), new CopyInto("resources", "!**/*.java"));
+            userDev.from(delayedFileTree(MERGE_CFG), new CopyInto("conf", "**"));
+            userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "!**/*.csv", "!.gitignore"));
+            userDev.rename(".+?\\.json", "dev.json");
+            userDev.setIncludeEmptyDirs(false);
             userDev.dependsOn("packageUniversal");
+            userDev.setExtension("jar");
         }
+        project.getArtifacts().add("archives", userDev);
     }
 
     private String getServerClassPath(File json)
