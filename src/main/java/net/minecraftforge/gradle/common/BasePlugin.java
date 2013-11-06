@@ -48,7 +48,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         project.getExtensions().create(EXT_NAME_MC, getExtensionClass(), project);
         project.getExtensions().create(EXT_NAME_JENKINS, JenkinsExtension.class, project);
         
-        project.afterEvaluate(new Closure(project, this){
+        project.afterEvaluate(new Closure<Object>(project, this){
             @Override
             public Object call()
             {   

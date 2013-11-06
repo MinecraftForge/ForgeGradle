@@ -22,7 +22,7 @@ public class DelayedFile extends DelayedBase<File>
     {
         if (resolved == null)
         {
-            resolved = project.file(DelayedString.resolve(pattern, project, resolvers));
+            resolved = project.file(DelayedBase.resolve(pattern, project, resolvers));
         }
         return resolved;
     }

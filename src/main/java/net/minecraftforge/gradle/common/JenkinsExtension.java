@@ -4,8 +4,6 @@ import org.gradle.api.Project;
 
 public class JenkinsExtension
 {
-    private Project project;
-
     private String server = "http://ci.jenkins.minecraftforge.net/";
     private String job;
     private String authName = "console_script";
@@ -13,7 +11,6 @@ public class JenkinsExtension
 
     public JenkinsExtension(Project project)
     {
-        this.project = project;
         job = System.getenv("JOB_NAME") == null ? project.getName() : System.getenv("JOB_NAME");
     }
 

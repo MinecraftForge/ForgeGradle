@@ -20,7 +20,7 @@ public class DelayedString extends DelayedBase<String>
     {
         if (resolved == null)
         {
-            resolved = resolve(pattern, project, resolvers);
+            resolved = DelayedBase.resolve(pattern, project, resolvers);
         }
         return resolved;
     }
