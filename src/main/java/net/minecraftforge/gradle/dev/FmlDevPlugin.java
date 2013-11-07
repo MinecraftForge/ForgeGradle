@@ -477,7 +477,7 @@ public class FmlDevPlugin extends DevBasePlugin
         final Zip patchZip = makeTask("zipPatches", Zip.class);
         {
             patchZip.from(delayedFile(FmlConstants.FML_PATCH_DIR));
-            patchZip.setArchiveName("patches.zip");
+            patchZip.setArchiveName("fmlpatches.zip");
         }
         
         final SubprojectTask javadocJar = makeTask("genJavadocs", SubprojectTask.class);
@@ -502,7 +502,7 @@ public class FmlDevPlugin extends DevBasePlugin
             userDev.setClassifier("userdev");
             userDev.from(delayedFile(JSON_DEV));
             userDev.from(delayedFile(Constants.JAVADOC_TMP));
-            inst.from(new Closure<File>(project) {
+            userDev.from(new Closure<File>(project) {
                 public File call()
                 {
                     return patchZip.getArchivePath();
