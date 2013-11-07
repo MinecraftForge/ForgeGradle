@@ -441,6 +441,12 @@ public class FmlDevPlugin extends DevBasePlugin
             patchZip.from(delayedFile(FmlDevConstants.FML_PATCH_DIR));
             patchZip.setArchiveName("fmlpatches.zip");
         }
+        
+        final Zip classZip = makeTask("zipPatches", Zip.class);
+        {
+            classZip.from(delayedZipTree(DevConstants.BINPATCH_TMP), new CopyInto("", "**/*.class"));
+            patchZip.setArchiveName("binaries.jar");
+        }
 
         final SubprojectTask javadocJar = makeTask("genJavadocs", SubprojectTask.class);
         {
@@ -470,8 +476,13 @@ public class FmlDevPlugin extends DevBasePlugin
                     return patchZip.getArchivePath();
                 }
             });
+            userDev.from(new Closure<File>(project) {
+                public File call()
+                {
+                    return classZip.getArchivePath();
+                }
+            });
             userDev.from(delayedZipTree(DevConstants.BINPATCH_TMP), new CopyInto("", "devbinpatches.pack.lzma"));
-            userDev.from(delayedZipTree(DevConstants.BINPATCH_TMP), new CopyInto("bin", "**/*.class"));
             userDev.from(delayedFileTree("{FML_DIR}/common"), new CopyInto("src"));
             userDev.from(delayedFileTree("{FML_DIR}/client"), new CopyInto("src"));
             userDev.from(delayedFileTree(FmlDevConstants.MERGE_CFG), new CopyInto("conf"));

@@ -39,6 +39,7 @@ public final class UserConstants
     public static final String FML_PATCHES_ZIP = PACK_DIR+"/patches.zip";
     
     public static final String BINPATCHES = PACK_DIR+"/devbinpatches.pack.lzma";
+    public static final String BINARIES_JAR= PACK_DIR+"/binaries.jar";
     public static final String JAVADOC_JAR = PACK_DIR+"/javadoc.jar";
     
     public static final String JSON = PACK_DIR+"/dev.json";

@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
 import java.util.zip.Adler32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import lzma.sdk.lzma.Decoder;
@@ -39,6 +40,9 @@ public class ApplyBinPatchesTask extends CachedTask
 {
     @InputFile
     DelayedFile inJar;
+    
+    @InputFile
+    DelayedFile classesJar;
 
     @OutputFile
     @Cached
@@ -61,10 +65,12 @@ public class ApplyBinPatchesTask extends CachedTask
         }
 
         ZipFile in = new ZipFile(getInJar());
+        ZipInputStream classesIn = new ZipInputStream(new FileInputStream(getClassesJar()));
         ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(getOutJar())));
         
         try
         {
+            // DO PATCHES
             log("Patching Class:");
             for (ZipEntry e : Collections.list(in.entries()))
             {
@@ -98,9 +104,25 @@ public class ApplyBinPatchesTask extends CachedTask
                     out.write(data);
                 }
             }
+            
+            // COPY DATA
+            ZipEntry entry = null;
+            while ((entry = classesIn.getNextEntry()) != null)
+            {
+                // no META or dirs. wel take care of dirs later.
+                if (entry.getName().contains("META-INF"))
+                {
+                    continue;
+                }
+                
+                out.putNextEntry(entry);
+                out.write(ByteStreams.toByteArray(classesIn));
+            }
+            
         }
         finally
         {
+            classesIn.close();
             in.close();
             out.close();
         }
@@ -215,6 +237,16 @@ public class ApplyBinPatchesTask extends CachedTask
     public void setPatches(DelayedFile patchesJar)
     {
         this.patches = patchesJar;
+    }
+    
+    public File getClassesJar()
+    {
+        return classesJar.call();
+    }
+
+    public void setClassesJar(DelayedFile extraJar)
+    {
+        this.classesJar = extraJar;
     }
 
     public static class ClassPatch
