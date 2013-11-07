@@ -44,6 +44,8 @@ public class Constants
     public static final JdomParser PARSER = new JdomParser();
     @SuppressWarnings("serial")
     public static final Closure<Boolean> CALL_FALSE = new Closure<Boolean>(null){ public Boolean call(Object o){ return false; }};
+    
+    public static final JdomParser JDOM_PARSER = new JdomParser();
 
     // urls
     public static final String MC_VERSION       = "{MC_VERSION}";

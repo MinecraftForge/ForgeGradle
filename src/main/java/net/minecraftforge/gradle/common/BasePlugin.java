@@ -50,7 +50,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         
         addMavenRepo("forge2", "http://files.minecraftforge.net/maven2");
         addMavenRepo("forge", "http://files.minecraftforge.net/maven");
-        project.getRepositories().add(project.getRepositories().mavenCentral());
+        project.getRepositories().mavenCentral();
         
         project.afterEvaluate(new Closure<Object>(project, this){
             @Override

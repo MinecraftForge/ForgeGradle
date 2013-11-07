@@ -11,12 +11,16 @@ import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 
+import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 
+import argo.jdom.JsonRootNode;
+
 public abstract class UserBasePlugin extends BasePlugin<UserExtension> implements IDelayedResolver<UserExtension>
 {
+    private UserJson json = new UserJson(delayedFile(UserConstants.JSON).call());
 
     @Override
     public void applyPlugin()
@@ -26,7 +30,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
 
         configureDeps();
 
-        makeJarTasks();
+        tasks();
 
         configureCIWorkspace();
 
@@ -59,7 +63,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         return DelayedBase.resolve(UserConstants.JSON, project);
     }
 
-    private void makeJarTasks()
+    private void tasks()
     {
         MergeJarsTask task = makeTask("mergeJars", MergeJarsTask.class);
         {
@@ -78,7 +82,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             task2.setSrg(delayedFile(Constants.PACKAGED_SRG));
             addATs(task2);
             task2.setExceptorCfg(delayedFile(Constants.PACKAGED_EXC));
-            task2.dependsOn("downloadMcpTools", "mergeJars");
+            task2.dependsOn("downloadMcpTools", "mergeJars", "applyBinPatches");
         }
     }
     
@@ -88,18 +92,30 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     {
         // create configs
         project.getConfigurations().create(UserConstants.CONFIG_USERDEV);
+        project.getConfigurations().create(UserConstants.CONFIG_NATIVES);
         project.getConfigurations().create(UserConstants.CONFIG);
-        project.getConfigurations().getByName(UserConstants.CONFIG);
         
         // special userDev stuff
         final ExtractTask extracter = makeTask("extractUserDev", ExtractTask.class);
         extracter.into(delayedFile(UserConstants.PACK_DIR));
+        extracter.doLast(new Action<Task>() {
+            @Override
+            public void execute(Task arg0)
+            {
+                json.apply(project, UserConstants.CONFIG, UserConstants.CONFIG_NATIVES);
+            }
+        });
     }
     
     @Override
     public void afterEvaluate()
     {
         super.afterEvaluate();
+        
+        if (delayedFile(UserConstants.JSON).call().exists())
+        {
+            json.apply(project, UserConstants.CONFIG, UserConstants.CONFIG_NATIVES);
+        }
         
         project.getDependencies().add(UserConstants.CONFIG_USERDEV, getExtension().getNotation() + ":userdev");
         ((ExtractTask) project.getTasks().findByName("extractUserDev")).from(delayedFile(project.getConfigurations().getByName(UserConstants.CONFIG_USERDEV).getSingleFile().getAbsolutePath()));

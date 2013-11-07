@@ -8,6 +8,7 @@ public final class UserConstants
     }
     
     public static final String CONFIG_USERDEV = "userDevPackageDepConfig";
+    public static final String CONFIG_NATIVES = "minecraftNatives";
     public static final String CONFIG = "minecraft";
     
     public static final String PACK_DIR = "{BUILD_DIR}/unpacked";
