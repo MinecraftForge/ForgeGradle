@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-class SourceRemapper
+public class SourceRemapper
 {
     Map<String, Map<String, String>> methods = new HashMap<String, Map<String, String>>();
     Map<String, Map<String, String>> fields = new HashMap<String, Map<String, String>>();
@@ -57,7 +57,7 @@ class SourceRemapper
         }
     }
 
-    private CSVReader getReader(File file) throws IOException
+    public static CSVReader getReader(File file) throws IOException
     {
         return new CSVReader(Files.newReader(file, Charset.defaultCharset()), CSVParser.DEFAULT_SEPARATOR, CSVParser.DEFAULT_QUOTE_CHARACTER, CSVParser.DEFAULT_ESCAPE_CHARACTER, 1, false);
     }

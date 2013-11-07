@@ -18,6 +18,8 @@ public final class UserConstants
     public static final String ASTYLE_CFG = CONF_DIR + "/astyle.cfg";
     public static final String PACKAGED_SRG = CONF_DIR+"/packaged.srg";
     public static final String PACKAGED_EXC = CONF_DIR+"/packaged.exc";
+    public static final String DEOBF_SRG = CONF_DIR+"/notch-mcp.srg";
+    public static final String REOBF_SRG = CONF_DIR+"/mcp-srg.srg";
 
     public static final String MAPPINGS_DIR = PACK_DIR + "/mappings";
     public static final String METHOD_CSV = MAPPINGS_DIR+"/methods.csv";

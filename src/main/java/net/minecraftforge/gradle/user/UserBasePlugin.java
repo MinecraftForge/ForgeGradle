@@ -10,21 +10,21 @@ import net.minecraftforge.gradle.delayed.DelayedString;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
+import net.minecraftforge.gradle.tasks.user.GenSrgTask;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 
-import argo.jdom.JsonRootNode;
-
 public abstract class UserBasePlugin extends BasePlugin<UserExtension> implements IDelayedResolver<UserExtension>
 {
-    private UserJson json = new UserJson(delayedFile(UserConstants.JSON).call());
+    private UserJson json;
 
     @Override
     public void applyPlugin()
     {
+        
         this.applyExternalPlugin("java");
         this.applyExternalPlugin("maven");
 
@@ -73,19 +73,29 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             task.setMergeCfg(delayedFile(UserConstants.MERGE_CFG));
             task.dependsOn("downloadClient", "downloadServer", "extractUserDev");
         }
-
-        final ProcessJarTask task2 = makeTask("deobfuscateJar", ProcessJarTask.class);
+        
+        GenSrgTask task2 = makeTask("genSrgs", GenSrgTask.class);
         {
-            task2.setInJar(delayedFile(Constants.JAR_MERGED));
-            task2.setExceptorJar(delayedFile(Constants.EXCEPTOR));
-            task2.setOutCleanJar(delayedFile(Constants.JAR_SRG));
-            task2.setSrg(delayedFile(Constants.PACKAGED_SRG));
-            addATs(task2);
-            task2.setExceptorCfg(delayedFile(Constants.PACKAGED_EXC));
-            task2.dependsOn("downloadMcpTools", "mergeJars", "applyBinPatches");
+            task2.setInSrg(delayedFile(UserConstants.PACKAGED_SRG));
+            task2.setDeobfSrg(delayedFile(UserConstants.DEOBF_SRG));
+            task2.setReobfSrg(delayedFile(UserConstants.REOBF_SRG));
+            task2.setMethodsCsv(delayedFile(UserConstants.METHOD_CSV));
+            task2.setFieldsCsv(delayedFile(UserConstants.FIELD_CSV));
+            task2.dependsOn("extractUserDev");
+        }
+
+        ProcessJarTask task3 = makeTask("deobfuscateJar", ProcessJarTask.class);
+        {
+            task3.setInJar(delayedFile(Constants.JAR_MERGED));
+            task3.setExceptorJar(delayedFile(Constants.EXCEPTOR));
+            task3.setOutCleanJar(delayedFile(Constants.JAR_SRG));
+            task3.setSrg(delayedFile(UserConstants.PACKAGED_SRG));
+            addATs(task3);
+            task3.setExceptorCfg(delayedFile(UserConstants.PACKAGED_EXC));
+            task3.dependsOn("downloadMcpTools", "mergeJars", "applyBinPatches", "genSrgs");
         }
     }
-    
+
     protected abstract void addATs(ProcessJarTask task);
 
     private void configureDeps()
@@ -94,7 +104,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         project.getConfigurations().create(UserConstants.CONFIG_USERDEV);
         project.getConfigurations().create(UserConstants.CONFIG_NATIVES);
         project.getConfigurations().create(UserConstants.CONFIG);
-        
+
         // special userDev stuff
         final ExtractTask extracter = makeTask("extractUserDev", ExtractTask.class);
         extracter.into(delayedFile(UserConstants.PACK_DIR));
@@ -106,20 +116,21 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             }
         });
     }
-    
+
     @Override
     public void afterEvaluate()
     {
         super.afterEvaluate();
-        
+
+        json = new UserJson(delayedFile(UserConstants.JSON).call());
         if (delayedFile(UserConstants.JSON).call().exists())
         {
             json.apply(project, UserConstants.CONFIG, UserConstants.CONFIG_NATIVES);
         }
-        
+
         project.getDependencies().add(UserConstants.CONFIG_USERDEV, getExtension().getNotation() + ":userdev");
         ((ExtractTask) project.getTasks().findByName("extractUserDev")).from(delayedFile(project.getConfigurations().getByName(UserConstants.CONFIG_USERDEV).getSingleFile().getAbsolutePath()));
-        
+
         //FileCollection files = project.files(delayedString(UserConstants.JAVADOC_JAR).call(), delayedString(UserConstants.ASTYLE_CFG).call());
         //project.getDependencies().add(UserConstants.CONFIG, files);
         //project.getDependencies().add(paramString, paramObject)
@@ -129,16 +140,31 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     {
         // TODO
     }
-    
+
     @Override
     public String resolve(String pattern, Project project, UserExtension exten)
     {
         pattern = pattern.replace("{API_VERSION}", exten.getApiVersion());
         return pattern;
     }
-    
-    protected DelayedString   delayedString  (String path){ return new DelayedString  (project, path, this); }
-    protected DelayedFile     delayedFile    (String path){ return new DelayedFile    (project, path, this); }
-    protected DelayedFileTree delayedFileTree(String path){ return new DelayedFileTree(project, path, this); }
-    protected DelayedFileTree delayedZipTree (String path){ return new DelayedFileTree(project, path, true, this); }
+
+    protected DelayedString delayedString(String path)
+    {
+        return new DelayedString(project, path, this);
+    }
+
+    protected DelayedFile delayedFile(String path)
+    {
+        return new DelayedFile(project, path, this);
+    }
+
+    protected DelayedFileTree delayedFileTree(String path)
+    {
+        return new DelayedFileTree(project, path, this);
+    }
+
+    protected DelayedFileTree delayedZipTree(String path)
+    {
+        return new DelayedFileTree(project, path, true, this);
+    }
 }
