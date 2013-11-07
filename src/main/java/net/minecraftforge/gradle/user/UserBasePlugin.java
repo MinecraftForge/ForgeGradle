@@ -3,6 +3,9 @@ package net.minecraftforge.gradle.user;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedBase;
+import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.delayed.DelayedFileTree;
+import net.minecraftforge.gradle.delayed.DelayedString;
 import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
@@ -11,6 +14,7 @@ import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.file.FileCollection;
 
 public abstract class UserBasePlugin extends BasePlugin<UserExtension> implements IDelayedResolver<UserExtension>
 {
@@ -98,10 +102,12 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     {
         super.afterEvaluate();
         
-        project.getDependencies().add(UserConstants.CONFIG_USERDEV, getExtension().getNotation());
+        project.getDependencies().add(UserConstants.CONFIG_USERDEV, getExtension().getNotation().replaceAll(":(\\w+):", ":$1-userdev:"));
         ((ExtractTask) project.getTasks().findByName("extractUserDev")).from(delayedFile(project.getConfigurations().getByName(UserConstants.CONFIG_USERDEV).getSingleFile().getAbsolutePath()));
         
-        project.getDependencies().add(UserConstants.CONFIG, delayedFile(UserConstants.JAVADOC_JAR).call());
+        //FileCollection files = project.files(delayedString(UserConstants.JAVADOC_JAR).call(), delayedString(UserConstants.ASTYLE_CFG).call());
+        //project.getDependencies().add(UserConstants.CONFIG, files);
+        //project.getDependencies().add(paramString, paramObject)
     }
 
     private void configureCIWorkspace()
@@ -115,4 +121,9 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         pattern = pattern.replace("{API_VERSION}", exten.getApiVersion());
         return pattern;
     }
+    
+    protected DelayedString   delayedString  (String path){ return new DelayedString  (project, path, this); }
+    protected DelayedFile     delayedFile    (String path){ return new DelayedFile    (project, path, this); }
+    protected DelayedFileTree delayedFileTree(String path){ return new DelayedFileTree(project, path, this); }
+    protected DelayedFileTree delayedZipTree (String path){ return new DelayedFileTree(project, path, true, this); }
 }

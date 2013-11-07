@@ -48,8 +48,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         project.getExtensions().create(EXT_NAME_JENKINS, JenkinsExtension.class, project);
         
         
-        addMavenRepo("forge2", "files.minecraftforge.net/maven2");
-        addMavenRepo("forge", "files.minecraftforge.net/maven");
+        addMavenRepo("forge2", "http://files.minecraftforge.net/maven2");
+        addMavenRepo("forge", "http://files.minecraftforge.net/maven");
         project.getRepositories().add(project.getRepositories().mavenCentral());
         
         project.afterEvaluate(new Closure<Object>(project, this){

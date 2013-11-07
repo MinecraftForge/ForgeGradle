@@ -13,8 +13,12 @@ public class ApplyBinPatchesTask extends CachedTask
 {
     @InputFile
     DelayedFile inJar;
+    
+    @InputFile
+    DelayedFile srg;
 
     @OutputFile
+    @Cached
     DelayedFile outJar;
 
     @InputFile
@@ -54,6 +58,16 @@ public class ApplyBinPatchesTask extends CachedTask
     public void setPatches(DelayedFile patchesJar)
     {
         this.patches = patchesJar;
+    }
+
+    public File getSrg()
+    {
+        return srg.call();
+    }
+
+    public void setSrg(DelayedFile srg)
+    {
+        this.srg = srg;
     }
     
     

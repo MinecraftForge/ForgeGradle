@@ -66,6 +66,9 @@ public abstract class CachedTask extends DefaultTask
             @Override
             public Boolean call()
             {
+                if (cachedList.isEmpty())
+                    return true;
+                
                 for (Annotated field : cachedList)
                 {
 

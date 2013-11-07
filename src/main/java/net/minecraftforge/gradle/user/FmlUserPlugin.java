@@ -58,8 +58,8 @@ public class FmlUserPlugin extends UserBasePlugin
     public void afterEvaluate()
     {
         super.afterEvaluate();
-        project.getDependencies().add(UserConstants.CONFIG, delayedFile(UserConstants.FML_BINPATCHED).call());
-        project.getDependencies().add(UserConstants.CONFIG, delayedFile(UserConstants.FML_DEOBF_SRG).call());
+//        project.getDependencies().add(UserConstants.CONFIG, delayedFile(UserConstants.FML_BINPATCHED).call());
+//        project.getDependencies().add(UserConstants.CONFIG, delayedFile(UserConstants.FML_DEOBF_SRG).call());
     }
     
 
