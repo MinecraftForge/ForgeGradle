@@ -442,10 +442,10 @@ public class FmlDevPlugin extends DevBasePlugin
             patchZip.setArchiveName("fmlpatches.zip");
         }
         
-        final Zip classZip = makeTask("zipPatches", Zip.class);
+        final Zip classZip = makeTask("jarClasses", Zip.class);
         {
             classZip.from(delayedZipTree(DevConstants.BINPATCH_TMP), new CopyInto("", "**/*.class"));
-            patchZip.setArchiveName("binaries.jar");
+            classZip.setArchiveName("binaries.jar");
         }
 
         final SubprojectTask javadocJar = makeTask("genJavadocs", SubprojectTask.class);
@@ -496,7 +496,7 @@ public class FmlDevPlugin extends DevBasePlugin
             userDev.rename(".+?\\.exc", "packaged.exc");
             userDev.rename(".+?\\.patch", "packaged.patch");
             userDev.setIncludeEmptyDirs(false);
-            userDev.dependsOn("packageUniversal", "zipPatches");
+            userDev.dependsOn("packageUniversal", "zipPatches", "jarClasses");
             userDev.setExtension("jar");
         }
         project.getArtifacts().add("archives", userDev);

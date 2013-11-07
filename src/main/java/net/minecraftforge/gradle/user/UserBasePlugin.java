@@ -27,6 +27,9 @@ import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
+import org.gradle.plugins.ide.eclipse.model.EclipseModel;
+import org.gradle.plugins.ide.idea.IdeaPlugin;
+import org.gradle.plugins.ide.idea.model.IdeaModel;
 
 import argo.jdom.JsonNode;
 import argo.jdom.JsonRootNode;
@@ -43,9 +46,13 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     {
         this.applyExternalPlugin("java");
         this.applyExternalPlugin("maven");
+        this.applyExternalPlugin("eclipse");
+        this.applyExternalPlugin("idea");
 
         configureDeps();
         configureCompilation();
+        configureEclipse();
+        configureIntellij();
 
         tasks();
 
@@ -118,20 +125,55 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         });
     }
     
-    private void configureCompilation()
+    protected void configureCompilation()
     {
         Configuration config = project.getConfigurations().getByName(UserConstants.CONFIG);
         
         Javadoc javadoc = (Javadoc) project.getTasks().getByName("javadoc");
         javadoc.getClasspath().add(config);
         
-        JavaPluginConvention conv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+        // get conventions
+        JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+        IdeaModel ideaConv = (IdeaModel) project.getExtensions().getByName("idea");
+        EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse");
         
-        SourceSet api = conv.getSourceSets().getByName("main");
-        SourceSet main = conv.getSourceSets().create("api");
+        SourceSet api = javaConv.getSourceSets().getByName("main");
+        SourceSet main = javaConv.getSourceSets().create("api");
         
+        // set the Source
+        javaConv.setTargetCompatibility("1.6");
+        
+        // add to SourceSet compile paths
         api.setCompileClasspath(api.getCompileClasspath().plus(config));
         main.setCompileClasspath(main.getCompileClasspath().plus(config).plus(api.getOutput()));
+        
+        // add to eclipse and idea
+        ideaConv.getModule().getScopes().get("COMPILE").get("plus").add(config);
+        eclipseConv.getClasspath().getPlusConfigurations().add(config);
+        
+        // add sourceDirs to Intellij
+        ideaConv.getModule().getSourceDirs().addAll(main.getAllSource().getFiles());
+        ideaConv.getModule().getSourceDirs().addAll(api.getAllSource().getFiles());
+    }
+    
+    protected void configureEclipse()
+    {
+        EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse");
+        
+        eclipseConv.getClasspath().setDownloadJavadoc(true);
+        eclipseConv.getClasspath().setDownloadSources(true);
+        
+        // TODO:
+        // native hackery.
+    }
+    
+    protected void configureIntellij()
+    {
+        IdeaModel ideaConv = (IdeaModel) project.getExtensions().getByName("idea");
+        
+        ideaConv.getModule().getExcludeDirs().addAll(project.files(".gradle", "build").getFiles());
+        ideaConv.getModule().setDownloadJavadoc(true);
+        ideaConv.getModule().setDownloadSources(true);
     }
 
     @Override
@@ -147,7 +189,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         project.getDependencies().add(UserConstants.CONFIG_USERDEV, getExtension().getNotation() + ":userdev");
         ((ExtractTask) project.getTasks().findByName("extractUserDev")).from(delayedFile(project.getConfigurations().getByName(UserConstants.CONFIG_USERDEV).getSingleFile().getAbsolutePath()));
 
-        FileCollection files = project.files(delayedString(UserConstants.JAVADOC_JAR).call(), delayedString(UserConstants.ASTYLE_CFG).call());
+        FileCollection files = project.files(delayedString(UserConstants.JAVADOC_JAR).call());
         project.getDependencies().add(UserConstants.CONFIG, files);
     }
 

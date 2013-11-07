@@ -110,7 +110,7 @@ public class ApplyBinPatchesTask extends CachedTask
             while ((entry = classesIn.getNextEntry()) != null)
             {
                 // no META or dirs. wel take care of dirs later.
-                if (entry.getName().contains("META-INF"))
+                if (entry.getName().contains("META-INF") || entry.getName().equals("cpw/mods/fml/relauncher/Side.class") || entry.getName().equals("cpw/mods/fml/relauncher/SideOnly.class"))
                 {
                     continue;
                 }
