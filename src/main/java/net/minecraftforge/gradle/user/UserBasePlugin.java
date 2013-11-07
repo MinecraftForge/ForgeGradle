@@ -15,6 +15,9 @@ import org.gradle.api.tasks.Delete;
 
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.delayed.DelayedBase;
+import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.delayed.DelayedFileTree;
+import net.minecraftforge.gradle.delayed.DelayedString;
 import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
@@ -102,5 +105,9 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         pattern = pattern.replace("{PACK_DIR}", exten.getBaseDir()+"/unpacked");
         return pattern;
     }
-
+    
+    protected DelayedString   delayedString  (String path){ return new DelayedString  (project, path, this); }
+    protected DelayedFile     delayedFile    (String path){ return new DelayedFile    (project, path, this); }
+    protected DelayedFileTree delayedFileTree(String path){ return new DelayedFileTree(project, path, this); }
+    protected DelayedFileTree delayedZipTree (String path){ return new DelayedFileTree(project, path, true, this); }
 }
