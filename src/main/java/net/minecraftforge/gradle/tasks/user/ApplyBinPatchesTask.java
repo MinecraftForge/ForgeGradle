@@ -7,20 +7,16 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Pack200;
-import java.util.logging.Level;
 import java.util.regex.Pattern;
 import java.util.zip.Adler32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import lzma.sdk.lzma.Decoder;
@@ -34,9 +30,7 @@ import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Maps;
-import com.google.common.hash.Hashing;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteStreams;
 import com.nothome.delta.GDiffPatcher;
@@ -189,7 +183,7 @@ public class ApplyBinPatchesTask extends CachedTask
 
     private void log(String format, Object... args)
     {
-        getLogger().lifecycle(String.format(format, args));
+        getLogger().debug(String.format(format, args));
     }
     
 
