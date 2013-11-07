@@ -9,7 +9,6 @@ import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_FRESH;
 import static net.minecraftforge.gradle.common.Constants.MCP_URL;
 import static net.minecraftforge.gradle.common.Constants.MC_JAR_URL;
 import static net.minecraftforge.gradle.common.Constants.MC_SERVER_URL;
-import groovy.lang.Closure;
 
 import java.io.File;
 import java.util.HashMap;
@@ -33,7 +32,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     protected Project project;
 
     @Override
-    @SuppressWarnings("serial")
     public final void apply(Project arg)
     {
         project = arg;
@@ -52,17 +50,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         addMavenRepo("forge", "http://files.minecraftforge.net/maven");
         project.getRepositories().mavenCentral();
         
-        project.afterEvaluate(new Closure<Object>(project, this){
+        project.afterEvaluate(new Action<Project>(){
             @Override
-            public Object call()
+            public void execute(Project project)
             {   
                 afterEvaluate();
-                return null;
             }
-            
-            @Override public Object call(Object obj) { return call(); }
-            
-            @Override public Object call(Object... obj){ return call(); }
         });
         
         makeObtainTasks();

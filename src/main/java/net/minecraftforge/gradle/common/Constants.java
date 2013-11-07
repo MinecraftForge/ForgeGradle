@@ -42,17 +42,15 @@ public class Constants
 
     // json parser
     public static final JdomParser PARSER = new JdomParser();
+    
     @SuppressWarnings("serial")
     public static final Closure<Boolean> CALL_FALSE = new Closure<Boolean>(null){ public Boolean call(Object o){ return false; }};
-    
-    public static final JdomParser JDOM_PARSER = new JdomParser();
 
     // urls
     public static final String MC_VERSION       = "{MC_VERSION}";
     public static final String MC_JAR_URL       = "http://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/{MC_VERSION}.jar";
     public static final String MC_SERVER_URL    = "http://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/minecraft_server.{MC_VERSION}.jar";
     public static final String MCP_URL          = "http://mcp.ocean-labs.de/files/archive/mcp804.zip";
-    public static final String INSTALLER_URL    = "http://files.minecraftforge.net/installer/forge-installer-{INSTALLER_VERSION}-shrunk.jar";
 
     // things in the cache dir.
     public static final String CACHE_DIR        = "{CACHE_DIR}/minecraft";
@@ -62,27 +60,8 @@ public class Constants
     public static final String JAR_SRG          = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/minecraft_srg-{MC_VERSION}.jar";
     public static final String ZIP_DECOMP       = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_decomp-{MC_VERSION}.zip";
     public static final String ZIP_FML          = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_fml-{MC_VERSION}.zip";
-    public static final String PACKAGED_SRG     = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/packaged-{MC_VERSION}.srg";
-    public static final String PACKAGED_EXC     = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/packaged-{MC_VERSIOn}.exc";
-    public static final String DEOBF_DATA       = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/deobfuscation_data-{MC_VERSION}.lzma";
     public static final String FERNFLOWER       = "{CACHE_DIR}/minecraft/fernflower.jar";
     public static final String EXCEPTOR         = "{CACHE_DIR}/minecraft/exceptor.jar";
-    public static final String INSTALLER_BASE   = "{BUILD_DIR}/tmp/installer_base.{INSTALLER_VERSION}.jar";
-    public static final String INSTALL_PROFILE  = "{BUILD_DIR}/tmp/install_profile.json";
-    public static final String REOBF_TMP        = "{BUILD_DIR}/tmp/recomp_obfed.jar";
-    public static final String JAVADOC_TMP      = "{BUILD_DIR}/tmp/javadoc.jar";
-    public static final String BINPATCH_TMP     = "{BUILD_DIR}/tmp/bin_patches.jar";
-
-    // eclipse folders      More stuff only for the Dev plugins
-    public static final String WORKSPACE = "eclipse";
-    public static final String ECLIPSE_CLEAN = WORKSPACE + "/Clean";
-    public static final String ECLIPSE_FML = WORKSPACE + "/FML";
-    public static final String ECLIPSE_RUN = WORKSPACE + "/run";
-    public static final String ECLIPSE_NATIVES = ECLIPSE_RUN + "/bin/natives";
-
-    // src dirs   for only the DEV plugins
-    public static final String BUKKIT_SRC = "bukkit";
-    public static final String PATCH_DIR = "patches/minecraft";
 
     // util
     public static final String NEWLINE = System.getProperty("line.separator");

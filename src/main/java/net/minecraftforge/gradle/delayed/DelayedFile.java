@@ -12,6 +12,7 @@ public class DelayedFile extends DelayedBase<File>
         super(owner, pattern);
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public DelayedFile(Project owner, String pattern, IDelayedResolver... resolvers)
     {
         super(owner, pattern, resolvers);

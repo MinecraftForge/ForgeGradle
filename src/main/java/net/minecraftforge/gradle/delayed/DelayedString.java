@@ -10,6 +10,7 @@ public class DelayedString extends DelayedBase<String>
         super(owner, pattern);
     }
     
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public DelayedString(Project owner, String pattern, IDelayedResolver... resolvers)
     {
         super(owner, pattern, resolvers);

@@ -22,11 +22,13 @@ public class DelayedFileTree extends DelayedBase<FileTree>
         this.zipTree = zipTree;
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public DelayedFileTree(Project owner, String pattern, IDelayedResolver... resolvers)
     {
         super(owner, pattern, resolvers);
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public DelayedFileTree(Project owner, String pattern, boolean zipTree, IDelayedResolver... resolvers)
     {
         super(owner, pattern, resolvers);

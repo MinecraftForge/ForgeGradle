@@ -1,5 +1,9 @@
 package net.minecraftforge.gradle.user;
 
+import java.io.File;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedBase;
@@ -16,10 +20,17 @@ import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.artifacts.dsl.DependencyHandler;
+
+import argo.jdom.JsonNode;
+import argo.jdom.JsonRootNode;
+
+import com.google.common.base.Throwables;
+import com.google.common.io.Files;
 
 public abstract class UserBasePlugin extends BasePlugin<UserExtension> implements IDelayedResolver<UserExtension>
 {
-    private UserJson json;
+    private boolean hasApplied = false;
 
     @Override
     public void applyPlugin()
@@ -112,7 +123,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             @Override
             public void execute(Task arg0)
             {
-                json.apply(project, UserConstants.CONFIG, UserConstants.CONFIG_NATIVES);
+                readAndApplyJson(delayedFile(UserConstants.JSON).call(), UserConstants.CONFIG, UserConstants.CONFIG_NATIVES);
             }
         });
     }
@@ -122,10 +133,9 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     {
         super.afterEvaluate();
 
-        json = new UserJson(delayedFile(UserConstants.JSON).call());
         if (delayedFile(UserConstants.JSON).call().exists())
         {
-            json.apply(project, UserConstants.CONFIG, UserConstants.CONFIG_NATIVES);
+            readAndApplyJson(delayedFile(UserConstants.JSON).call(), UserConstants.CONFIG, UserConstants.CONFIG_NATIVES);
         }
 
         project.getDependencies().add(UserConstants.CONFIG_USERDEV, getExtension().getNotation() + ":userdev");
@@ -134,6 +144,53 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         //FileCollection files = project.files(delayedString(UserConstants.JAVADOC_JAR).call(), delayedString(UserConstants.ASTYLE_CFG).call());
         //project.getDependencies().add(UserConstants.CONFIG, files);
         //project.getDependencies().add(paramString, paramObject)
+    }
+    
+    private void readAndApplyJson(File file, String depConfig, String nativeConfig)
+    {
+        if (hasApplied)
+            return;
+        
+        ArrayList<String> libs = new ArrayList<String>();
+        ArrayList<String> natives = new ArrayList<String>();
+
+        try
+        {
+            JsonRootNode root = Constants.PARSER.parse(Files.newReader(file, Charset.defaultCharset()));
+
+            for (JsonNode node : root.getArrayNode("libraries"))
+            {
+                String dep = node.getStringValue("name");
+
+                // its  maven central one
+                if (dep.contains("_fixed"))
+                {
+                    // nope. we dont like fixed things.
+                    continue;
+                }
+                else if (node.isNode("extract"))
+                {
+                    natives.add(dep);
+                }
+                else
+                {
+                    libs.add(dep);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Throwables.propagate(e);
+        }
+
+        // apply the dep info.
+        DependencyHandler handler = project.getDependencies();
+
+        for (String dep : libs)
+            handler.add(depConfig, dep);
+
+        for (String dep : natives)
+            handler.add(nativeConfig, dep);
     }
 
     private void configureCIWorkspace()

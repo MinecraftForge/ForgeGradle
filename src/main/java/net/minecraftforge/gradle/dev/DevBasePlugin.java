@@ -43,7 +43,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
 
         return out.toString().trim();
     }
-    
+
     @Override
     public void afterEvaluate()
     {
@@ -52,7 +52,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
             Copy copyTask = makeTask("extractNatives", Copy.class);
             {
                 copyTask.exclude("META-INF", "META-INF/**", "META-INF/*");
-                copyTask.into(delayedString(Constants.ECLIPSE_NATIVES).call());
+                copyTask.into(delayedString(DevConstants.ECLIPSE_NATIVES).call());
                 copyTask.dependsOn("extractWorkspace");
             }
 
@@ -62,7 +62,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
                 project.getLogger().info("Dev json not set, could not create native downloads tasks");
                 return;
             }
-            
+
             JsonNode node = null;
             File jsonFile = delayedFile(devJson).call().getAbsoluteFile(); // ToDo: Support files in zips, for Modder dev workspace.
             node = Constants.PARSER.parse(Files.newReader(jsonFile, Charset.defaultCharset()));
@@ -75,9 +75,8 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
                     String[] s = notation.split(":");
                     String path = String.format("%s/%s/%s/%s-%s-natives-%s.jar",
                             s[0].replace('.', '/'), s[1], s[2], s[1], s[2], Constants.OPERATING_SYSTEM
-                    );
+                            );
 
-                    
                     DownloadTask task = makeTask("downloadNatives-" + s[1], DownloadTask.class);
                     {
                         task.setOutput(delayedFile("{CACHE_DIR}/" + path));
@@ -95,9 +94,12 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
             Throwables.propagate(e);
         }
     }
-    
-    protected Class<DevExtension> getExtensionClass(){ return DevExtension.class; }
-    
+
+    protected Class<DevExtension> getExtensionClass()
+    {
+        return DevExtension.class;
+    }
+
     @Override
     public String resolve(String pattern, Project project, DevExtension exten)
     {

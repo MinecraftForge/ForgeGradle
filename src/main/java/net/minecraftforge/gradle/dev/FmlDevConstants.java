@@ -1,9 +1,9 @@
 package net.minecraftforge.gradle.dev;
 
-public abstract class FmlConstants
+public final class FmlDevConstants
 {
     // no touch :P
-    private FmlConstants()
+    private FmlDevConstants()
     {
     }
 
