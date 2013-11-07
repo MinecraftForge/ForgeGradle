@@ -1,15 +1,5 @@
 package net.minecraftforge.gradle.common;
 
-import static net.minecraftforge.gradle.common.Constants.EXCEPTOR;
-import static net.minecraftforge.gradle.common.Constants.EXT_NAME_JENKINS;
-import static net.minecraftforge.gradle.common.Constants.EXT_NAME_MC;
-import static net.minecraftforge.gradle.common.Constants.FERNFLOWER;
-import static net.minecraftforge.gradle.common.Constants.JAR_CLIENT_FRESH;
-import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_FRESH;
-import static net.minecraftforge.gradle.common.Constants.MCP_URL;
-import static net.minecraftforge.gradle.common.Constants.MC_JAR_URL;
-import static net.minecraftforge.gradle.common.Constants.MC_SERVER_URL;
-
 import java.io.File;
 import java.util.HashMap;
 
@@ -36,19 +26,25 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     {
         project = arg;
         
-        project.getLogger().lifecycle("**********************************");
-        project.getLogger().lifecycle("**MMMMMMM*POWERED BY MCP**********");
-        project.getLogger().lifecycle("**M**M**M*POWERED BY MCP**********");
-        project.getLogger().lifecycle("  M     M POWERED BY MCP**********");
-        project.getLogger().lifecycle("*********************************");
+        project.getLogger().lifecycle("**************************");
+        project.getLogger().lifecycle("  MMMMMMM  CCCCC  PPPPP  ");
+        project.getLogger().lifecycle("  M  M  M  CC     P   P  ");
+        project.getLogger().lifecycle("  M  M  M  C      PPPPP  ");
+        project.getLogger().lifecycle("  M     M  CC     P      ");
+        project.getLogger().lifecycle("  M     M  CCCCC  P      ");
+        project.getLogger().lifecycle("**************************");
+        project.getLogger().lifecycle(" http://mcp.ocean-labs.de/ ");
+        project.getLogger().lifecycle(" Searge, ProfMobius, Fesh0r, R4wk");
+        project.getLogger().lifecycle("**************************");
         
-        project.getExtensions().create(EXT_NAME_MC, getExtensionClass(), project);
-        project.getExtensions().create(EXT_NAME_JENKINS, JenkinsExtension.class, project);
+        project.getExtensions().create(Constants.EXT_NAME_MC, getExtensionClass(), project);
+        project.getExtensions().create(Constants.EXT_NAME_JENKINS, JenkinsExtension.class, project);
         
         
         addMavenRepo("forge2", "http://files.minecraftforge.net/maven2");
         addMavenRepo("forge", "http://files.minecraftforge.net/maven");
         project.getRepositories().mavenCentral();
+        addMavenRepo("minecraft", "http://s3.amazonaws.com/Minecraft.Download/libraries");
         
         project.afterEvaluate(new Action<Project>(){
             @Override
@@ -77,21 +73,21 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         task = makeTask("downloadClient", DownloadTask.class);
         {
-            task.setOutput(delayedFile(JAR_CLIENT_FRESH));
-            task.setUrl(delayedString(MC_JAR_URL));
+            task.setOutput(delayedFile(Constants.JAR_CLIENT_FRESH));
+            task.setUrl(delayedString(Constants.MC_JAR_URL));
         }
 
         task = makeTask("downloadServer", DownloadTask.class);
         {
-            task.setOutput(delayedFile(JAR_SERVER_FRESH));
-            task.setUrl(delayedString(MC_SERVER_URL));
+            task.setOutput(delayedFile(Constants.JAR_SERVER_FRESH));
+            task.setUrl(delayedString(Constants.MC_SERVER_URL));
         }
         
         ObtainMcpStuffTask mcpTask = makeTask("downloadMcpTools", ObtainMcpStuffTask.class);
         {
-            mcpTask.setMcpUrl(delayedString(MCP_URL));
-            mcpTask.setFfJar(delayedFile(FERNFLOWER));
-            mcpTask.setInjectorJar(delayedFile(EXCEPTOR));
+            mcpTask.setMcpUrl(delayedString(Constants.MCP_URL));
+            mcpTask.setFfJar(delayedFile(Constants.FERNFLOWER));
+            mcpTask.setInjectorJar(delayedFile(Constants.EXCEPTOR));
         }
     }
     

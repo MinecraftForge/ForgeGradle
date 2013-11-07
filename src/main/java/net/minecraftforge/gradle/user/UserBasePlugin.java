@@ -20,7 +20,13 @@ import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.api.tasks.javadoc.Javadoc;
 
 import argo.jdom.JsonNode;
 import argo.jdom.JsonRootNode;
@@ -35,33 +41,19 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     @Override
     public void applyPlugin()
     {
-        
         this.applyExternalPlugin("java");
         this.applyExternalPlugin("maven");
 
         configureDeps();
+        configureCompilation();
 
         tasks();
 
-        configureCIWorkspace();
-
         // lifecycle tasks
-
-        Task task = makeTask("setupCIWorkspace", DefaultTask.class);
-        addSetupCiTaskDeps(task);
-
-        task = makeTask("setupDevWorkspace", DefaultTask.class);
-        addSetupDevTaskDeps(task);
-
-        task = makeTask("setupDecompWorkspace", DefaultTask.class);
-        addSetupDecompTaskDeps(task);
+        makeTask("setupCIWorkspace", DefaultTask.class);
+        makeTask("setupDevWorkspace", DefaultTask.class);
+        makeTask("setupDecompWorkspace", DefaultTask.class);
     }
-
-    protected abstract void addSetupCiTaskDeps(Task task);
-
-    protected abstract void addSetupDevTaskDeps(Task task);
-
-    protected abstract void addSetupDecompTaskDeps(Task task);
 
     protected Class<UserExtension> getExtensionClass()
     {
@@ -84,7 +76,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             task.setMergeCfg(delayedFile(UserConstants.MERGE_CFG));
             task.dependsOn("downloadClient", "downloadServer", "extractUserDev");
         }
-        
+
         GenSrgTask task2 = makeTask("genSrgs", GenSrgTask.class);
         {
             task2.setInSrg(delayedFile(UserConstants.PACKAGED_SRG));
@@ -97,13 +89,11 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
 
         ProcessJarTask task3 = makeTask("deobfuscateJar", ProcessJarTask.class);
         {
-            task3.setInJar(delayedFile(Constants.JAR_MERGED));
             task3.setExceptorJar(delayedFile(Constants.EXCEPTOR));
-            task3.setOutCleanJar(delayedFile(Constants.JAR_SRG));
             task3.setSrg(delayedFile(UserConstants.PACKAGED_SRG));
             addATs(task3);
             task3.setExceptorCfg(delayedFile(UserConstants.PACKAGED_EXC));
-            task3.dependsOn("downloadMcpTools", "mergeJars", "applyBinPatches", "genSrgs");
+            task3.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
         }
     }
 
@@ -127,6 +117,22 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             }
         });
     }
+    
+    private void configureCompilation()
+    {
+        Configuration config = project.getConfigurations().getByName(UserConstants.CONFIG);
+        
+        Javadoc javadoc = (Javadoc) project.getTasks().getByName("javadoc");
+        javadoc.getClasspath().add(config);
+        
+        JavaPluginConvention conv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+        
+        SourceSet api = conv.getSourceSets().getByName("main");
+        SourceSet main = conv.getSourceSets().create("api");
+        
+        api.setCompileClasspath(api.getCompileClasspath().plus(config));
+        main.setCompileClasspath(main.getCompileClasspath().plus(config).plus(api.getOutput()));
+    }
 
     @Override
     public void afterEvaluate()
@@ -141,16 +147,15 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         project.getDependencies().add(UserConstants.CONFIG_USERDEV, getExtension().getNotation() + ":userdev");
         ((ExtractTask) project.getTasks().findByName("extractUserDev")).from(delayedFile(project.getConfigurations().getByName(UserConstants.CONFIG_USERDEV).getSingleFile().getAbsolutePath()));
 
-        //FileCollection files = project.files(delayedString(UserConstants.JAVADOC_JAR).call(), delayedString(UserConstants.ASTYLE_CFG).call());
-        //project.getDependencies().add(UserConstants.CONFIG, files);
-        //project.getDependencies().add(paramString, paramObject)
+        FileCollection files = project.files(delayedString(UserConstants.JAVADOC_JAR).call(), delayedString(UserConstants.ASTYLE_CFG).call());
+        project.getDependencies().add(UserConstants.CONFIG, files);
     }
-    
+
     private void readAndApplyJson(File file, String depConfig, String nativeConfig)
     {
         if (hasApplied)
             return;
-        
+
         ArrayList<String> libs = new ArrayList<String>();
         ArrayList<String> natives = new ArrayList<String>();
 
@@ -191,11 +196,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
 
         for (String dep : natives)
             handler.add(nativeConfig, dep);
-    }
-
-    private void configureCIWorkspace()
-    {
-        // TODO
     }
 
     @Override
