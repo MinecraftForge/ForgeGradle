@@ -102,7 +102,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     {
         super.afterEvaluate();
         
-        project.getDependencies().add(UserConstants.CONFIG_USERDEV, getExtension().getNotation().replaceAll(":(\\w+):", ":$1-userdev:"));
+        project.getDependencies().add(UserConstants.CONFIG_USERDEV, getExtension().getNotation() + ":userdev");
         ((ExtractTask) project.getTasks().findByName("extractUserDev")).from(delayedFile(project.getConfigurations().getByName(UserConstants.CONFIG_USERDEV).getSingleFile().getAbsolutePath()));
         
         //FileCollection files = project.files(delayedString(UserConstants.JAVADOC_JAR).call(), delayedString(UserConstants.ASTYLE_CFG).call());

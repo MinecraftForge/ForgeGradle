@@ -408,7 +408,7 @@ public class FmlDevPlugin extends DevBasePlugin
 
         final DelayedJar uni = makeTask("packageUniversal", DelayedJar.class);
         {
-            uni.setAppendix("universal");
+            uni.setClassifier("universal");
             uni.getInputs().file(delayedFile(JSON_REL));
             uni.getOutputs().upToDateWhen(CALL_FALSE);
             uni.from(delayedZipTree(BINPATCH_TMP));
@@ -459,7 +459,7 @@ public class FmlDevPlugin extends DevBasePlugin
 
         Zip inst = makeTask("packageInstaller", Zip.class);
         {
-            inst.setAppendix("installer");
+            inst.setClassifier("installer");
             inst.from(new Closure<File>(project) {
                 public File call()
                 {
@@ -501,7 +501,7 @@ public class FmlDevPlugin extends DevBasePlugin
         
         Zip userDev = makeTask("packageUserDev", Zip.class);
         {
-            userDev.setAppendix("userdev");
+            userDev.setClassifier("userdev");
             userDev.from(delayedFile(JSON_DEV));
             userDev.from(delayedFile(Constants.JAVADOC_TMP));
             inst.from(new Closure<File>(project) {

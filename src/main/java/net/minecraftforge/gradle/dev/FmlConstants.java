@@ -30,5 +30,5 @@ public abstract class FmlConstants
     public static final String PACKAGED_PATCH = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/packaged-{MC_VERSION}.patch";
     public static final String MERGE_CFG      = "mcp_merge.cfg";
     public static final String FML_ECLIPSE_WS = "{FML_DIR}/eclipse-workspace-dev.zip";
-    public static final String CHANGELOG      = "{BUILD_DIR}/libs/{PROJECT}-changelog-{MC_VERSION}-{VERSION}.txt";
+    public static final String CHANGELOG      = "{BUILD_DIR}/libs/{PROJECT}-{MC_VERSION}-{VERSION}-changelog.txt";
 }
