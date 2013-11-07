@@ -56,7 +56,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             @Override
             public Object call()
             {   
-                //nativeTasks();
                 afterEvaluate();
                 return null;
             }
@@ -102,59 +101,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             mcpTask.setInjectorJar(delayedFile(EXCEPTOR));
         }
     }
-    
-    /*
-    public final void nativeTasks()
-    {
-        try
-        {
-            Copy copyTask = makeTask("extractNatives", Copy.class);
-            {
-                copyTask.exclude("META-INF", "META-INF/**", "META-INF/*");
-                copyTask.into(delayedString(ECLIPSE_NATIVES).call());
-                copyTask.dependsOn("extractWorkspace");
-            }
-
-            String devJson = getDevJson();
-            if (devJson == null)
-            {
-                project.getLogger().info("Dev json not set, could not create native downloads tasks");
-                return;
-            }
-            
-            JsonNode node = null;
-            File jsonFile = delayedFile(devJson).call().getAbsoluteFile(); // ToDo: Support files in zips, for Modder dev workspace.
-            node = Constants.PARSER.parse(Files.newReader(jsonFile, Charset.defaultCharset()));
-
-            for (JsonNode lib : node.getArrayNode("libraries"))
-            {
-                if (lib.isNode("natives") && lib.isNode("extract"))
-                {
-                    String notation = lib.getStringValue("name");
-                    String[] s = notation.split(":");
-                    String path = String.format("%s/%s/%s/%s-%s-natives-%s.jar",
-                            s[0].replace('.', '/'), s[1], s[2], s[1], s[2], OPERATING_SYSTEM
-                    );
-
-                    
-                    DownloadTask task = makeTask("downloadNatives-" + s[1], DownloadTask.class);
-                    {
-                        task.setOutput(delayedFile("{CACHE_DIR}/" + path));
-                        task.setUrl(delayedString("http://repo1.maven.org/maven2/" + path));
-                    }
-
-                    copyTask.from(delayedZipTree("{CACHE_DIR}/" + path));
-                    copyTask.dependsOn("downloadNatives-" + s[1]);
-                }
-            }
-
-        }
-        catch (Exception e)
-        {
-            Throwables.propagate(e);
-        }
-    }
-    */
     
     /**
      * This extension object will have the name "minecraft"
