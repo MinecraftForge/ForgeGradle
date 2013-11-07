@@ -53,30 +53,33 @@ import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.delayed.DelayedString;
-import net.minecraftforge.gradle.tasks.ChangelogTask;
-import net.minecraftforge.gradle.tasks.CompressLZMA;
 import net.minecraftforge.gradle.tasks.DecompileTask;
-import net.minecraftforge.gradle.tasks.DelayedJar;
 import net.minecraftforge.gradle.tasks.DownloadTask;
-import net.minecraftforge.gradle.tasks.ExtractTask;
-import net.minecraftforge.gradle.tasks.FMLVersionPropTask;
-import net.minecraftforge.gradle.tasks.FileFilterTask;
-import net.minecraftforge.gradle.tasks.GenBinaryPatches;
-import net.minecraftforge.gradle.tasks.GeneratePatches;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
-import net.minecraftforge.gradle.tasks.MergeMappingsTask;
-import net.minecraftforge.gradle.tasks.ObfuscateTask;
 import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
-import net.minecraftforge.gradle.tasks.ProjectTask;
-import net.minecraftforge.gradle.tasks.SubprojectTask;
+import net.minecraftforge.gradle.tasks.abstractutil.DelayedJar;
+import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
+import net.minecraftforge.gradle.tasks.abstractutil.FileFilterTask;
+import net.minecraftforge.gradle.tasks.dev.ChangelogTask;
+import net.minecraftforge.gradle.tasks.dev.CompressLZMA;
+import net.minecraftforge.gradle.tasks.dev.FMLVersionPropTask;
+import net.minecraftforge.gradle.tasks.dev.GenBinaryPatches;
+import net.minecraftforge.gradle.tasks.dev.GenDevProjectsTask;
+import net.minecraftforge.gradle.tasks.dev.GeneratePatches;
+import net.minecraftforge.gradle.tasks.dev.MergeMappingsTask;
+import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
+import net.minecraftforge.gradle.tasks.dev.SubprojectTask;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.internal.AbstractTask;
 import org.gradle.api.java.archives.Manifest;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.Delete;
+import org.gradle.api.tasks.bundling.AbstractArchiveTask;
+import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
 
 import argo.jdom.JsonNode;
@@ -85,7 +88,6 @@ import com.google.common.io.Files;
 
 public class FmlDevPlugin extends DevBasePlugin
 {
-
     private static final String[] JAVA_FILES = new String[] { "**.java", "*.java", "**/*.java" };
 
     @Override
@@ -111,7 +113,8 @@ public class FmlDevPlugin extends DevBasePlugin
 
         // the master task.
         task = makeTask("buildPackages");
-        task.dependsOn("launch4j", "packageUniversal", "createChangelog", "packageInstaller");
+        //task.dependsOn("launch4j", "packageUniversal", "createChangelog", "packageInstaller");
+        task.dependsOn("createChangelog", "packageUniversal", "packageInstaller", "packageInstaller");
         task.setGroup("FML");
     }
 
@@ -290,14 +293,14 @@ public class FmlDevPlugin extends DevBasePlugin
 
     private void createProjectTasks()
     {
-        ProjectTask task = makeTask("generateProjectClean", ProjectTask.class);
+        GenDevProjectsTask task = makeTask("generateProjectClean", GenDevProjectsTask.class);
         {
             task.setTargetDir(delayedFile(ECLIPSE_CLEAN));
             task.setJson(delayedFile(JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
             task.dependsOn("extractNatives");
         }
 
-        task = makeTask("generateProjectFML", ProjectTask.class);
+        task = makeTask("generateProjectFML", GenDevProjectsTask.class);
         {
             task.setJson(delayedFile(JSON_DEV));
             task.setTargetDir(delayedFile(ECLIPSE_FML));
@@ -473,21 +476,56 @@ public class FmlDevPlugin extends DevBasePlugin
         }
         project.getArtifacts().add("archives", inst);
         
+        final Zip patchZip = makeTask("zipPatches", Zip.class);
+        {
+            patchZip.from(delayedFile(FmlConstants.FML_PATCH_DIR));
+            patchZip.setArchiveName("patches.zip");
+        }
+        
+        final SubprojectTask javadocJar = makeTask("genJavadocs", SubprojectTask.class);
+        {
+            javadocJar.setBuildFile(delayedFile(ECLIPSE_FML + "/build.gradle"));
+            javadocJar.setTasks("jar");
+            javadocJar.setConfigureTask(new Closure<Object>(this, null) {
+                public Object call(Object obj)
+                {
+                    Jar task = (Jar) obj;
+                    File file = delayedFile(Constants.JAVADOC_TMP).call();
+                    task.setDestinationDir(file.getParentFile());
+                    task.setArchiveName(file.getName());
+                    
+                    return null;
+                }
+            });
+        }
+        
         Zip userDev = makeTask("packageUserDev", Zip.class);
         {
             userDev.setAppendix("userdev");
             userDev.from(delayedFile(JSON_DEV));
+            userDev.from(delayedFile(Constants.JAVADOC_TMP));
+            inst.from(new Closure<File>(project) {
+                public File call()
+                {
+                    return patchZip.getArchivePath();
+                }
+            });
             userDev.from(delayedZipTree(BINPATCH_TMP), new CopyInto("", "devbinpatches.pack.lzma"));
             userDev.from(delayedZipTree(BINPATCH_TMP), new CopyInto("bin", "**/*.class"));
-            userDev.from(delayedFileTree("{FML_DIR}/common"), new CopyInto("src", "**/*.java"));
-            userDev.from(delayedFileTree("{FML_DIR}/client"), new CopyInto("src", "**/*.java"));
-            userDev.from(delayedFileTree("{FML_DIR}/common"), new CopyInto("resources", "!**/*.java"));
-            userDev.from(delayedFileTree("{FML_DIR}/client"), new CopyInto("resources", "!**/*.java"));
-            userDev.from(delayedFileTree(MERGE_CFG), new CopyInto("conf", "**"));
-            userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "!**/*.csv", "!.gitignore"));
+            userDev.from(delayedFileTree("{FML_DIR}/common"), new CopyInto("src"));
+            userDev.from(delayedFileTree("{FML_DIR}/client"), new CopyInto("src"));
+            userDev.from(delayedFileTree(MERGE_CFG), new CopyInto("conf"));
+            userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "astyle.cfg"));
+            userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("mappings", "*.csv", "!packages.csv"));
+            userDev.from(delayedFile(Constants.PACKAGED_SRG), new CopyInto("conf"));
+            userDev.from(delayedFile(Constants.PACKAGED_EXC), new CopyInto("conf"));
+            userDev.from(delayedFile(FmlConstants.PACKAGED_PATCH), new CopyInto("conf"));
             userDev.rename(".+?\\.json", "dev.json");
+            userDev.rename(".+?\\.srg", "packaged.srg");
+            userDev.rename(".+?\\.exc", "packaged.exc");
+            userDev.rename(".+?\\.patch", "packaged.patch");
             userDev.setIncludeEmptyDirs(false);
-            userDev.dependsOn("packageUniversal");
+            userDev.dependsOn("packageUniversal", "zipPatches");
             userDev.setExtension("jar");
         }
         project.getArtifacts().add("archives", userDev);

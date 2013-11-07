@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.tasks;
+package net.minecraftforge.gradle.tasks.dev;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -47,8 +47,6 @@ public class ObfuscateTask extends DefaultTask
 
         getLogger().debug("Obfuscating jar...");
         obfuscate((File)jarTask.property("archivePath"), (FileCollection)compileTask.property("classpath"));
-        
-        System.gc();
     }
     
     private void executeTask(AbstractTask task)

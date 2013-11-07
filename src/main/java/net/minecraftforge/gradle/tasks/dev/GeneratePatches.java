@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.tasks;
+package net.minecraftforge.gradle.tasks.dev;
 
 import com.cloudbees.diff.Diff;
 import com.cloudbees.diff.Hunk;

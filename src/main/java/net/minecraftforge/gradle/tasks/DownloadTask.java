@@ -2,6 +2,7 @@ package net.minecraftforge.gradle.tasks;
 
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedString;
+import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;

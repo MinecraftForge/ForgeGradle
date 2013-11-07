@@ -28,7 +28,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     @Override
     public void applyPlugin()
     {
-        // TODO tasks....
         makeJarTasks();
         
         configureCIWorkspace();
@@ -100,9 +99,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     @Override
     public String resolve(String pattern, Project project, UserExtension exten)
     {
-        pattern = pattern.replace("{SRC_DIR}", exten.getSrcDir());
         pattern = pattern.replace("{BASE_DIR}", exten.getBaseDir());
-        pattern = pattern.replace("{PACK_DIR}", exten.getBaseDir()+"/unpacked");
         return pattern;
     }
     

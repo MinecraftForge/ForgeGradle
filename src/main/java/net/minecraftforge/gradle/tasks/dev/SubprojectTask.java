@@ -1,4 +1,6 @@
-package net.minecraftforge.gradle.tasks;
+package net.minecraftforge.gradle.tasks.dev;
+
+import groovy.lang.Closure;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,6 +19,7 @@ public class SubprojectTask extends DefaultTask
 {
     private DelayedFile buildFile;
     private String      tasks;
+    private Closure<Object> configureTask;
     
     @TaskAction
     public void doTask() throws IOException
@@ -28,6 +31,7 @@ public class SubprojectTask extends DefaultTask
             Set<Task> list = childProj.getTasksByName(task, false);
             for (Task t : list)
             {
+                configureTask.call(t);
                 executeTask((AbstractTask)t);
             }
         }
@@ -67,5 +71,15 @@ public class SubprojectTask extends DefaultTask
     public void setTasks(String tasks)
     {
         this.tasks = tasks;
+    }
+
+    public Closure<Object> getConfigureTask()
+    {
+        return configureTask;
+    }
+
+    public void setConfigureTask(Closure<Object> configureTask)
+    {
+        this.configureTask = configureTask;
     }
 }

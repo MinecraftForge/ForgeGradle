@@ -9,6 +9,13 @@ public class CopyInto extends Closure<Object>
 {
     private String dir;
     String[] filters;
+    
+    public CopyInto(String dir)
+    {
+        super(null);
+        this.dir = dir;
+        this.filters = new String[] {};
+    }
 
     public CopyInto(String dir, String... filters)
     {

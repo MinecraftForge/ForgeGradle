@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.tasks;
+package net.minecraftforge.gradle.tasks.dev;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

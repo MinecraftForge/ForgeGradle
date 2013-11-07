@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.tasks;
+package net.minecraftforge.gradle.tasks.abstractutil;
 
 import java.io.File;
 import java.io.FileOutputStream;

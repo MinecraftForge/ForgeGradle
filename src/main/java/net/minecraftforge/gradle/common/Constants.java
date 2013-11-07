@@ -68,6 +68,7 @@ public class Constants
     public static final String INSTALLER_BASE   = "{BUILD_DIR}/tmp/installer_base.{INSTALLER_VERSION}.jar";
     public static final String INSTALL_PROFILE  = "{BUILD_DIR}/tmp/install_profile.json";
     public static final String REOBF_TMP        = "{BUILD_DIR}/tmp/recomp_obfed.jar";
+    public static final String JAVADOC_TMP      = "{BUILD_DIR}/tmp/javadoc.jar";
     public static final String BINPATCH_TMP     = "{BUILD_DIR}/tmp/bin_patches.jar";
 
     // eclipse folders      More stuff only for the Dev plugins

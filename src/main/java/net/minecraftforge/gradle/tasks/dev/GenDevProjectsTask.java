@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.tasks;
+package net.minecraftforge.gradle.tasks.dev;
 
 import argo.jdom.JsonNode;
 import argo.saj.InvalidSyntaxException;
@@ -21,7 +21,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ProjectTask extends DefaultTask
+public class GenDevProjectsTask extends DefaultTask
 {
     protected DelayedFile targetDir;
 
@@ -33,7 +33,7 @@ public class ProjectTask extends DefaultTask
 
     private final ArrayList<String> deps = new ArrayList<String>();
 
-    public ProjectTask()
+    public GenDevProjectsTask()
     {
         this.getOutputs().file(getTargetFile());
     }
@@ -182,13 +182,13 @@ public class ProjectTask extends DefaultTask
         this.targetDir = targetDir;
     }
 
-    public ProjectTask addSource(DelayedFile source)
+    public GenDevProjectsTask addSource(DelayedFile source)
     {
         sources.add(source);
         return this;
     }
 
-    public ProjectTask addResource(DelayedFile resource)
+    public GenDevProjectsTask addResource(DelayedFile resource)
     {
         resources.add(resource);
         return this;

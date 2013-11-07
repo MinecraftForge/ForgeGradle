@@ -11,7 +11,7 @@ public class FmlUserPlugin extends UserBasePlugin
         super.applyPlugin();
     /*
         setupDevWorkspace
-          Downloads:
+          Downloads:  CHECK
             notch->srg Srg File
             Exceptor info
             merge config

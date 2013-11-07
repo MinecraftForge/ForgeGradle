@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.tasks;
+package net.minecraftforge.gradle.tasks.abstractutil;
 
 import com.google.common.base.Joiner;
 import com.google.common.io.Files;

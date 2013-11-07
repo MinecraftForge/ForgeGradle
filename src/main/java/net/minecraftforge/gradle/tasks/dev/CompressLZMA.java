@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.tasks;
+package net.minecraftforge.gradle.tasks.dev;
 
 import lzma.streams.LzmaOutputStream;
 import net.minecraftforge.gradle.delayed.DelayedFile;

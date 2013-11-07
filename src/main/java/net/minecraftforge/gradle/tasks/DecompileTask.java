@@ -16,6 +16,7 @@ import net.minecraftforge.gradle.sourcemanip.FFPatcher;
 import net.minecraftforge.gradle.sourcemanip.FmlCleanup;
 import net.minecraftforge.gradle.sourcemanip.GLConstantFixer;
 import net.minecraftforge.gradle.sourcemanip.McpCleanup;
+import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.InputFile;

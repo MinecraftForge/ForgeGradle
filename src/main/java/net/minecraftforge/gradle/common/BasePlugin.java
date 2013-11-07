@@ -45,6 +45,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     {
         project = arg;
         
+        project.getLogger().lifecycle("**********************************");
+        project.getLogger().lifecycle("**MMMMMMM*POWERED BY MCP**********");
+        project.getLogger().lifecycle("**M**M**M*POWERED BY MCP**********");
+        project.getLogger().lifecycle("  M     M POWERED BY MCP**********");
+        project.getLogger().lifecycle("*********************************");
+        
         project.getExtensions().create(EXT_NAME_MC, getExtensionClass(), project);
         project.getExtensions().create(EXT_NAME_JENKINS, JenkinsExtension.class, project);
         

@@ -10,6 +10,7 @@ import java.util.Map;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.patching.ContextualPatch;
+import net.minecraftforge.gradle.tasks.abstractutil.EditJarTask;
 
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.InputDirectory;

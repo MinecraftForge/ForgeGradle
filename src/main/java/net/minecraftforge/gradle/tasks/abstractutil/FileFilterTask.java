@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.tasks;
+package net.minecraftforge.gradle.tasks.abstractutil;
 
 import groovy.lang.Closure;
 import groovy.util.MapEntry;
