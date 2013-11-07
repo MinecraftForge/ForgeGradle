@@ -205,7 +205,7 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             task2.setInJar(delayedFile(JAR_MERGED));
             task2.setExceptorJar(delayedFile(EXCEPTOR));
-            task2.setOutJar(delayedFile(JAR_SRG));
+            task2.setOutCleanJar(delayedFile(JAR_SRG));
             task2.setSrg(delayedFile(PACKAGED_SRG));
             task2.setExceptorCfg(delayedFile(PACKAGED_EXC));
             task2.addTransformer(delayedFile(FML_COMMON + "/fml_at.cfg"));

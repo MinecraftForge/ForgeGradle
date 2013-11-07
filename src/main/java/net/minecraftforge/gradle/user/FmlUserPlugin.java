@@ -1,5 +1,9 @@
 package net.minecraftforge.gradle.user;
 
+import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.tasks.ProcessJarTask;
+import net.minecraftforge.gradle.tasks.user.ApplyBinPatchesTask;
+
 import org.gradle.api.Task;
 
 
@@ -9,6 +13,14 @@ public class FmlUserPlugin extends UserBasePlugin
     public void applyPlugin()
     {
         super.applyPlugin();
+        
+        ApplyBinPatchesTask binTask = makeTask("applyBinPatches", ApplyBinPatchesTask.class);
+        {
+            binTask.setInJar(delayedFile(Constants.JAR_MERGED));
+            binTask.setOutJar(delayedFile(UserConstants.FML_BINPATCHED));
+            binTask.setPatches(delayedFile(UserConstants.PATCHES_ZIP));
+            binTask.dependsOn("mergeJars");
+        }
     /*
         setupDevWorkspace
           Downloads:  CHECK
@@ -40,6 +52,21 @@ public class FmlUserPlugin extends UserBasePlugin
                  should result in: minecraft.jar {recompiled version fo the fully mapped source with commends and the like} 
                  minecraft-source.jar a jar of the decompiled code, the source shoukd bnever be linked in the final workspace
      */
+    }
+    
+    @Override
+    public void afterEvaluate()
+    {
+        super.afterEvaluate();
+        project.getDependencies().add(UserConstants.CONFIG, delayedFile(UserConstants.FML_BINPATCHED).call());
+        project.getDependencies().add(UserConstants.CONFIG, delayedFile(UserConstants.FML_DEOBF_SRG).call());
+    }
+    
+
+    @Override
+    protected void addATs(ProcessJarTask task)
+    {
+        task.addTransformer(delayedFile(UserConstants.FML_AT));
     }
 
     @Override

@@ -1,26 +1,16 @@
 package net.minecraftforge.gradle.user;
 
-import static net.minecraftforge.gradle.common.Constants.EXCEPTOR;
-import static net.minecraftforge.gradle.common.Constants.JAR_CLIENT_FRESH;
-import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
-import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_FRESH;
-import static net.minecraftforge.gradle.common.Constants.JAR_SRG;
-import static net.minecraftforge.gradle.common.Constants.PACKAGED_EXC;
-import static net.minecraftforge.gradle.common.Constants.PACKAGED_SRG;
+import net.minecraftforge.gradle.common.BasePlugin;
+import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.delayed.DelayedBase;
+import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
+import net.minecraftforge.gradle.tasks.MergeJarsTask;
+import net.minecraftforge.gradle.tasks.ProcessJarTask;
+import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.tasks.Delete;
-
-import net.minecraftforge.gradle.common.BasePlugin;
-import net.minecraftforge.gradle.delayed.DelayedBase;
-import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.delayed.DelayedFileTree;
-import net.minecraftforge.gradle.delayed.DelayedString;
-import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
-import net.minecraftforge.gradle.tasks.MergeJarsTask;
-import net.minecraftforge.gradle.tasks.ProcessJarTask;
 
 public abstract class UserBasePlugin extends BasePlugin<UserExtension> implements IDelayedResolver<UserExtension>
 {
@@ -28,34 +18,33 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     @Override
     public void applyPlugin()
     {
+        this.applyExternalPlugin("java");
+        this.applyExternalPlugin("maven");
+
+        configureDeps();
+
         makeJarTasks();
-        
+
         configureCIWorkspace();
-        
+
         // lifecycle tasks
-        
+
         Task task = makeTask("setupCIWorkspace", DefaultTask.class);
         addSetupCiTaskDeps(task);
-        
+
         task = makeTask("setupDevWorkspace", DefaultTask.class);
         addSetupDevTaskDeps(task);
-        
+
         task = makeTask("setupDecompWorkspace", DefaultTask.class);
         addSetupDecompTaskDeps(task);
-        
-        // deleteTask
-        Delete del = makeTask("cleanMc", Delete.class);
-        {
-            del.delete(delayedFile("{BASE_DIR}"));
-        }
     }
-    
+
     protected abstract void addSetupCiTaskDeps(Task task);
-    
+
     protected abstract void addSetupDevTaskDeps(Task task);
-    
+
     protected abstract void addSetupDecompTaskDeps(Task task);
-    
+
     protected Class<UserExtension> getExtensionClass()
     {
         return UserExtension.class;
@@ -64,33 +53,57 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     @Override
     protected String getDevJson()
     {
-        return DelayedBase.resolve(UserConstants.JSON, project, this);
+        return DelayedBase.resolve(UserConstants.JSON, project);
     }
-    
+
     private void makeJarTasks()
     {
         MergeJarsTask task = makeTask("mergeJars", MergeJarsTask.class);
         {
-            task.setClient(delayedFile(JAR_CLIENT_FRESH));
-            task.setServer(delayedFile(JAR_SERVER_FRESH));
-            task.setOutJar(delayedFile(JAR_MERGED));
+            task.setClient(delayedFile(Constants.JAR_CLIENT_FRESH));
+            task.setServer(delayedFile(Constants.JAR_SERVER_FRESH));
+            task.setOutJar(delayedFile(Constants.JAR_MERGED));
             task.setMergeCfg(delayedFile(UserConstants.MERGE_CFG));
-            task.dependsOn("downloadClient", "downloadServer");
+            task.dependsOn("downloadClient", "downloadServer", "extractUserDev");
         }
 
-        ProcessJarTask task2 = makeTask("deobfuscateJar", ProcessJarTask.class);
+        final ProcessJarTask task2 = makeTask("deobfuscateJar", ProcessJarTask.class);
         {
-            task2.setInJar(delayedFile(JAR_MERGED));
-            task2.setExceptorJar(delayedFile(EXCEPTOR));
-            task2.setOutJar(delayedFile(JAR_SRG));
-            task2.setSrg(delayedFile(PACKAGED_SRG));
-            task2.setExceptorCfg(delayedFile(PACKAGED_EXC));
-            //task2.addTransformer(delayedFile(FML_COMMON + "/fml_at.cfg"));
-            // TODO closure that aggregates all the stuff.
-            task2.dependsOn("downloadMcpTools", "fixMappings", "mergeJars");
+            task2.setInJar(delayedFile(Constants.JAR_MERGED));
+            task2.setExceptorJar(delayedFile(Constants.EXCEPTOR));
+            task2.setOutCleanJar(delayedFile(Constants.JAR_SRG));
+            task2.setSrg(delayedFile(Constants.PACKAGED_SRG));
+            addATs(task2);
+            task2.setExceptorCfg(delayedFile(Constants.PACKAGED_EXC));
+            task2.dependsOn("downloadMcpTools", "mergeJars");
         }
     }
     
+    protected abstract void addATs(ProcessJarTask task);
+
+    private void configureDeps()
+    {
+        // create configs
+        project.getConfigurations().create(UserConstants.CONFIG_USERDEV);
+        project.getConfigurations().create(UserConstants.CONFIG);
+        project.getConfigurations().getByName(UserConstants.CONFIG);
+        
+        // special userDev stuff
+        final ExtractTask extracter = makeTask("extractUserDev", ExtractTask.class);
+        extracter.into(delayedFile(UserConstants.PACK_DIR));
+    }
+    
+    @Override
+    public void afterEvaluate()
+    {
+        super.afterEvaluate();
+        
+        project.getDependencies().add(UserConstants.CONFIG_USERDEV, getExtension().getNotation());
+        ((ExtractTask) project.getTasks().findByName("extractUserDev")).from(delayedFile(project.getConfigurations().getByName(UserConstants.CONFIG_USERDEV).getSingleFile().getAbsolutePath()));
+        
+        project.getDependencies().add(UserConstants.CONFIG, delayedFile(UserConstants.JAVADOC_JAR).call());
+    }
+
     private void configureCIWorkspace()
     {
         // TODO
@@ -99,12 +112,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     @Override
     public String resolve(String pattern, Project project, UserExtension exten)
     {
-        pattern = pattern.replace("{BASE_DIR}", exten.getBaseDir());
+        pattern = pattern.replace("{API_VERSION}", exten.getApiVersion());
         return pattern;
     }
-    
-    protected DelayedString   delayedString  (String path){ return new DelayedString  (project, path, this); }
-    protected DelayedFile     delayedFile    (String path){ return new DelayedFile    (project, path, this); }
-    protected DelayedFileTree delayedFileTree(String path){ return new DelayedFileTree(project, path, this); }
-    protected DelayedFileTree delayedZipTree (String path){ return new DelayedFileTree(project, path, true, this); }
 }

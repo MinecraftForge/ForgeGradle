@@ -29,10 +29,10 @@ public abstract class CachedTask extends DefaultTask
 {
     private final ArrayList<Annotated> cachedList = new ArrayList<Annotated>();
 
-    private final ArrayList<Annotated> inputList = new ArrayList<Annotated>();
+    private final ArrayList<Annotated> inputList  = new ArrayList<Annotated>();
 
     @SuppressWarnings("unchecked")
-	public CachedTask()
+    public CachedTask()
     {
         super();
 
@@ -78,7 +78,7 @@ public abstract class CachedTask extends DefaultTask
                         {
                             return true;
                         }
-                        
+
                         File hashFile = getHashFile(file);
                         if (!hashFile.exists())
                         {
@@ -141,8 +141,12 @@ public abstract class CachedTask extends DefaultTask
             {
                 try
                 {
-                    File hashFile = getHashFile(getProject().file(annot.getValue(getDelegate())));
-                    Files.write(getHashes(annot, inputList, getDelegate()), hashFile, Charset.defaultCharset());
+                    File outFile = getProject().file(annot.getValue(getDelegate()));
+                    if (outFile.exists())
+                    {
+                        File hashFile = getHashFile(outFile);
+                        Files.write(getHashes(annot, inputList, getDelegate()), hashFile, Charset.defaultCharset());
+                    }
                 }
                 // error? spit it and do the task.
                 catch (Exception e)
@@ -186,9 +190,9 @@ public abstract class CachedTask extends DefaultTask
                 Object obj = input.getValue(instance);
 
                 if (obj instanceof Closure)
-                    obj = ((Closure)obj).call();
+                    obj = ((Closure) obj).call();
 
-                hashes.add(Constants.hash((String)obj));
+                hashes.add(Constants.hash((String) obj));
             }
         }
 
@@ -204,7 +208,7 @@ public abstract class CachedTask extends DefaultTask
     private class Annotated
     {
         private final Class<? extends Task> taskClass;
-        private final String fieldName;
+        private final String                fieldName;
 
         private Annotated(Class<? extends Task> taskClass, String fieldName)
         {

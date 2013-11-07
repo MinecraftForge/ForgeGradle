@@ -1,6 +1,5 @@
 package net.minecraftforge.gradle.common;
 
-import static net.minecraftforge.gradle.common.Constants.ECLIPSE_NATIVES;
 import static net.minecraftforge.gradle.common.Constants.EXCEPTOR;
 import static net.minecraftforge.gradle.common.Constants.EXT_NAME_JENKINS;
 import static net.minecraftforge.gradle.common.Constants.EXT_NAME_MC;
@@ -10,11 +9,9 @@ import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_FRESH;
 import static net.minecraftforge.gradle.common.Constants.MCP_URL;
 import static net.minecraftforge.gradle.common.Constants.MC_JAR_URL;
 import static net.minecraftforge.gradle.common.Constants.MC_SERVER_URL;
-import static net.minecraftforge.gradle.common.Constants.OPERATING_SYSTEM;
 import groovy.lang.Closure;
 
 import java.io.File;
-import java.nio.charset.Charset;
 import java.util.HashMap;
 
 import net.minecraftforge.gradle.delayed.DelayedFile;
@@ -23,17 +20,13 @@ import net.minecraftforge.gradle.delayed.DelayedString;
 import net.minecraftforge.gradle.tasks.DownloadTask;
 import net.minecraftforge.gradle.tasks.ObtainMcpStuffTask;
 
+import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.tasks.Copy;
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.testfixtures.ProjectBuilder;
-
-import argo.jdom.JsonNode;
-
-import com.google.common.base.Throwables;
-import com.google.common.io.Files;
 
 public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Project>
 {
@@ -54,11 +47,16 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         project.getExtensions().create(EXT_NAME_MC, getExtensionClass(), project);
         project.getExtensions().create(EXT_NAME_JENKINS, JenkinsExtension.class, project);
         
+        
+        addMavenRepo("forge2", "files.minecraftforge.net/maven2");
+        addMavenRepo("forge", "files.minecraftforge.net/maven");
+        project.getRepositories().add(project.getRepositories().mavenCentral());
+        
         project.afterEvaluate(new Closure<Object>(project, this){
             @Override
             public Object call()
             {   
-                nativeTasks();
+                //nativeTasks();
                 afterEvaluate();
                 return null;
             }
@@ -105,6 +103,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         }
     }
     
+    /*
     public final void nativeTasks()
     {
         try
@@ -155,6 +154,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             Throwables.propagate(e);
         }
     }
+    */
     
     /**
      * This extension object will have the name "minecraft"
@@ -206,6 +206,25 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         project.apply(map);
 
         return project;
+    }
+    
+    public void applyExternalPlugin(String plugin)
+    {
+        HashMap<String, Object> map = new HashMap<String, Object>();
+        map.put("plugin", plugin);
+        project.apply(map);
+    }
+    
+    public void addMavenRepo(final String name, final String url)
+    {
+        project.getRepositories().maven(new Action<MavenArtifactRepository>() {
+            @Override
+            public void execute(MavenArtifactRepository repo)
+            {
+                repo.setName(name);
+                repo.setUrl(url);
+            }
+        });
     }
 
     protected DelayedString   delayedString  (String path){ return new DelayedString  (project, path); }

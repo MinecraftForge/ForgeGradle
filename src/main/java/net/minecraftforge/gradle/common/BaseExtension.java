@@ -5,7 +5,7 @@ import org.gradle.api.Project;
 public class BaseExtension
 {
     protected Project project;
-    private String version = "null";
+    protected String version = "null";
     
     public BaseExtension(Project project)
     {

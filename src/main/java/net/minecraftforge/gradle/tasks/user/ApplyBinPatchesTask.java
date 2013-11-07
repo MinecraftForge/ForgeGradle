@@ -18,7 +18,7 @@ public class ApplyBinPatchesTask extends CachedTask
     DelayedFile outJar;
 
     @InputFile
-    DelayedFile patches;  // this will be a patches.lzma    lzma'd and zipped.
+    DelayedFile patches;  // this will be a patches.lzma
     
     @TaskAction
     public void doTask()
@@ -46,12 +46,12 @@ public class ApplyBinPatchesTask extends CachedTask
         this.outJar = outJar;
     }
 
-    public File getPatchesJar()
+    public File getPatches()
     {
         return patches.call();
     }
 
-    public void setPatchesJar(DelayedFile patchesJar)
+    public void setPatches(DelayedFile patchesJar)
     {
         this.patches = patchesJar;
     }
