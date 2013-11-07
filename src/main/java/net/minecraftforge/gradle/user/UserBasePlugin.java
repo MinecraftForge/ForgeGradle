@@ -7,26 +7,62 @@ import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_FRESH;
 import static net.minecraftforge.gradle.common.Constants.JAR_SRG;
 import static net.minecraftforge.gradle.common.Constants.PACKAGED_EXC;
 import static net.minecraftforge.gradle.common.Constants.PACKAGED_SRG;
+
+import org.gradle.api.DefaultTask;
+import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.tasks.Delete;
+
 import net.minecraftforge.gradle.common.BasePlugin;
+import net.minecraftforge.gradle.delayed.DelayedBase;
+import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 
-public abstract class UserBasePlugin<K extends UserExtension> extends BasePlugin<K> // TODO: change this to the actual extension class eventually, the one specific to the FML User plugin
+public abstract class UserBasePlugin extends BasePlugin<UserExtension> implements IDelayedResolver<UserExtension>
 {
 
     @Override
     public void applyPlugin()
     {
         // TODO tasks....
+        makeJarTasks();
+        
+        configureCIWorkspace();
+        
+        // lifecycle tasks
+        
+        Task task = makeTask("setupCIWorkspace", DefaultTask.class);
+        addSetupCiTaskDeps(task);
+        
+        task = makeTask("setupDevWorkspace", DefaultTask.class);
+        addSetupDevTaskDeps(task);
+        
+        task = makeTask("setupDecompWorkspace", DefaultTask.class);
+        addSetupDecompTaskDeps(task);
+        
+        // deleteTask
+        Delete del = makeTask("cleanMc", Delete.class);
+        {
+            del.delete(delayedFile("{BASE_DIR}"));
+        }
     }
     
-    protected abstract Class<K> getExtensionClass(); // forces impl later.
+    protected abstract void addSetupCiTaskDeps(Task task);
+    
+    protected abstract void addSetupDevTaskDeps(Task task);
+    
+    protected abstract void addSetupDecompTaskDeps(Task task);
+    
+    protected Class<UserExtension> getExtensionClass()
+    {
+        return UserExtension.class;
+    }
 
     @Override
     protected String getDevJson()
     {
-        // TODO what should we put here?
-        return null;
+        return DelayedBase.resolve(UserConstants.JSON, project, this);
     }
     
     private void makeJarTasks()
@@ -40,7 +76,6 @@ public abstract class UserBasePlugin<K extends UserExtension> extends BasePlugin
             task.dependsOn("downloadClient", "downloadServer");
         }
 
-        // TODO: FIXING NECESSARY!
         ProcessJarTask task2 = makeTask("deobfuscateJar", ProcessJarTask.class);
         {
             task2.setInJar(delayedFile(JAR_MERGED));
@@ -48,9 +83,24 @@ public abstract class UserBasePlugin<K extends UserExtension> extends BasePlugin
             task2.setOutJar(delayedFile(JAR_SRG));
             task2.setSrg(delayedFile(PACKAGED_SRG));
             task2.setExceptorCfg(delayedFile(PACKAGED_EXC));
-            //task2.addTransformer(delayedFile(FML_COMMON + "/fml_at.cfg"));  need the AT
+            //task2.addTransformer(delayedFile(FML_COMMON + "/fml_at.cfg"));
+            // TODO closure that aggregates all the stuff.
             task2.dependsOn("downloadMcpTools", "fixMappings", "mergeJars");
         }
+    }
+    
+    private void configureCIWorkspace()
+    {
+        // TODO
+    }
+    
+    @Override
+    public String resolve(String pattern, Project project, UserExtension exten)
+    {
+        pattern = pattern.replace("{SRC_DIR}", exten.getSrcDir());
+        pattern = pattern.replace("{BASE_DIR}", exten.getBaseDir());
+        pattern = pattern.replace("{PACK_DIR}", exten.getBaseDir()+"/unpacked");
+        return pattern;
     }
 
 }

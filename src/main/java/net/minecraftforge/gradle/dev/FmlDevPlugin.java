@@ -49,10 +49,10 @@ import java.util.Date;
 import net.minecraftforge.gradle.CopyInto;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedBase;
+import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.delayed.DelayedString;
-import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.tasks.ChangelogTask;
 import net.minecraftforge.gradle.tasks.CompressLZMA;
 import net.minecraftforge.gradle.tasks.DecompileTask;
@@ -74,7 +74,6 @@ import net.minecraftforge.gradle.tasks.SubprojectTask;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.file.CopySpec;
 import org.gradle.api.java.archives.Manifest;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.Delete;
@@ -519,6 +518,7 @@ public class FmlDevPlugin extends DevBasePlugin
         }
     }
 
+    @SuppressWarnings("rawtypes")
     public static String getVersionFromGit(Project project)
     {
         String fullVersion = runGit(project, "describe", "--long");

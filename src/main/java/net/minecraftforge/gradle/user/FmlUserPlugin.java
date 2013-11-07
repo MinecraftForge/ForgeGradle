@@ -1,7 +1,9 @@
 package net.minecraftforge.gradle.user;
 
+import org.gradle.api.Task;
 
-public class FmlUserPlugin extends UserBasePlugin<FmlUserExtension>
+
+public class FmlUserPlugin extends UserBasePlugin
 {
     @Override
     public void applyPlugin()
@@ -39,6 +41,25 @@ public class FmlUserPlugin extends UserBasePlugin<FmlUserExtension>
                  minecraft-source.jar a jar of the decompiled code, the source shoukd bnever be linked in the final workspace
      */
     }
-    
-    protected Class<FmlUserExtension> getExtensionClass(){ return FmlUserExtension.class; }
+
+    @Override
+    protected void addSetupCiTaskDeps(Task task)
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    protected void addSetupDevTaskDeps(Task task)
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    protected void addSetupDecompTaskDeps(Task task)
+    {
+        // TODO Auto-generated method stub
+        
+    }
 }

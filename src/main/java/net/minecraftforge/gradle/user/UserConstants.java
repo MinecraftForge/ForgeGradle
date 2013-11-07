@@ -7,7 +7,8 @@ public final class UserConstants
         // no touch
     }
     
-    public static final String PACK_DIR = "{PACK_DIR}"; // probably ./minecraft/unpacked  or something.. depends on the extension
+    public static final String PACK_DIR = "{PACK_DIR}";
+    
     public static final String CONF_DIR = PACK_DIR + "/conf";
     public static final String MERGE_CFG = CONF_DIR + "/mcp_merge.cfg";
     public static final String ASTYLE_CFG = CONF_DIR + "/astyle.cfg";
@@ -17,4 +18,6 @@ public final class UserConstants
     public static final String FIELD_CSV = CONF_DIR+"/fields.csv";
     public static final String PARAM_CSV = CONF_DIR+"/params.csv";
     public static final String PACKAGE_CSV = CONF_DIR+"/packages.csv";
+    
+    public static final String JSON = PACK_DIR+"/dev.json";
 }

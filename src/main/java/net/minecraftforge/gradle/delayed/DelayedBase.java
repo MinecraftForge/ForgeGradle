@@ -3,8 +3,8 @@ package net.minecraftforge.gradle.delayed;
 import static net.minecraftforge.gradle.common.Constants.EXT_NAME_JENKINS;
 import static net.minecraftforge.gradle.common.Constants.EXT_NAME_MC;
 import groovy.lang.Closure;
+import net.minecraftforge.gradle.common.BaseExtension;
 import net.minecraftforge.gradle.common.JenkinsExtension;
-import net.minecraftforge.gradle.dev.DevExtension;
 
 import org.gradle.api.Project;
 
@@ -14,22 +14,24 @@ public abstract class DelayedBase<V> extends Closure<V>
     protected Project project;
     protected V resolved;
     protected String pattern;
+    @SuppressWarnings("rawtypes")
     protected IDelayedResolver[] resolvers;
-    public static final IDelayedResolver RESOLVER = new IDelayedResolver()
+    public static final IDelayedResolver<BaseExtension> RESOLVER = new IDelayedResolver<BaseExtension>()
     {
         @Override
-        public String resolve(String pattern, Project project, DevExtension extension)
+        public String resolve(String pattern, Project project, BaseExtension extension)
         {
             return pattern;
         }
     };
     
+    @SuppressWarnings("unchecked")
     public DelayedBase(Project owner, String pattern)
     {
         this(owner, pattern, RESOLVER);
     }
 
-    public DelayedBase(Project owner, String pattern, IDelayedResolver... resolvers)
+    public DelayedBase(Project owner, String pattern, IDelayedResolver<? extends BaseExtension>... resolvers)
     {
         super(owner);
         this.project = owner;
@@ -41,15 +43,16 @@ public abstract class DelayedBase<V> extends Closure<V>
     public abstract V call();
     
     // interface
-    public static interface IDelayedResolver
+    public static interface IDelayedResolver<K extends BaseExtension>
     {
-        public String resolve(String pattern, Project project, DevExtension extension);
+        public String resolve(String pattern, Project project, K extension);
     }
     
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public static String resolve(String patern, Project project, IDelayedResolver... resolvers)
     {
         project.getLogger().info("Resolving: " + patern);
-        DevExtension exten = (DevExtension)project.getExtensions().getByName(EXT_NAME_MC);
+        BaseExtension exten = (BaseExtension)project.getExtensions().getByName(EXT_NAME_MC);
         JenkinsExtension jenk = (JenkinsExtension)project.getExtensions().getByName(EXT_NAME_JENKINS);
         
         String build = "0";
@@ -67,7 +70,6 @@ public abstract class DelayedBase<V> extends Closure<V>
         }
         
         patern = patern.replace("{MC_VERSION}", exten.getVersion());
-        patern = patern.replace("{MAIN_CLASS}", exten.getMainClass());
         patern = patern.replace("{CACHE_DIR}", project.getGradle().getGradleUserHomeDir().getAbsolutePath() + "/caches");
         patern = patern.replace("{BUILD_DIR}", project.getBuildDir().getAbsolutePath());
         patern = patern.replace("{VERSION}", version);

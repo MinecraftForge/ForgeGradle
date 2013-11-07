@@ -10,7 +10,7 @@ import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import org.gradle.api.Project;
 import org.gradle.process.ExecSpec;
 
-public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements IDelayedResolver
+public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements IDelayedResolver<DevExtension>
 {
     @SuppressWarnings("serial")
     protected static String runGit(final Project project, final String... args)
@@ -37,12 +37,12 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
     protected Class<DevExtension> getExtensionClass(){ return DevExtension.class; }
     
     @Override
-    public String resolve(String pattern, Project project, DevExtension extension)
+    public String resolve(String pattern, Project project, DevExtension exten)
     {
-        DevExtension exten = getExtension();
+        pattern = pattern.replace("{MAIN_CLASS}", exten.getMainClass());
         pattern = pattern.replace("{INSTALLER_VERSION}", exten.getInstallerVersion());
-        pattern = pattern.replace("{FML_DIR}", extension.getFmlDir());
-        pattern = pattern.replace("{MAPPINGS_DIR}", extension.getFmlDir() + "/conf");
+        pattern = pattern.replace("{FML_DIR}", exten.getFmlDir());
+        pattern = pattern.replace("{MAPPINGS_DIR}", exten.getFmlDir() + "/conf");
         return pattern;
     }
 }
