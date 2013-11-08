@@ -545,7 +545,7 @@ public class FmlDevPlugin extends DevBasePlugin
         String branch = null;
         if (!System.getenv().containsKey("GIT_BRANCH"))
         {
-            branch = runGit(project, "rev-parse", "--abbrev-ref", "head");
+            branch = runGit(project, "rev-parse", "--abbrev-ref", "HEAD");
         }
         else
         {
