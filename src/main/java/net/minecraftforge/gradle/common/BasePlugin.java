@@ -25,7 +25,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     public final void apply(Project arg)
     {
         project = arg;
-        
+
         project.getLogger().lifecycle("**************************");
         project.getLogger().lifecycle("  MMMMMMM  CCCCC  PPPPP  ");
         project.getLogger().lifecycle("  M  M  M  CC     P   P  ");
@@ -34,38 +34,39 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         project.getLogger().lifecycle("  M     M  CCCCC  P      ");
         project.getLogger().lifecycle("**************************");
         project.getLogger().lifecycle(" http://mcp.ocean-labs.de/ ");
-        project.getLogger().lifecycle(" Searge, ProfMobius, Fesh0r, R4wk");
+        project.getLogger().lifecycle(" Searge, ProfMobius, Fesh0r, ");
+        project.getLogger().lifecycle(" R4wk, ZeuX, IngisKahn ");
         project.getLogger().lifecycle("**************************");
-        
+
         project.getExtensions().create(Constants.EXT_NAME_MC, getExtensionClass(), project);
         project.getExtensions().create(Constants.EXT_NAME_JENKINS, JenkinsExtension.class, project);
-        
-        
+
+
         addMavenRepo("forge2", "http://files.minecraftforge.net/maven2");
         addMavenRepo("forge", "http://files.minecraftforge.net/maven");
         project.getRepositories().mavenCentral();
         addMavenRepo("minecraft", "http://s3.amazonaws.com/Minecraft.Download/libraries");
-        
+
         project.afterEvaluate(new Action<Project>(){
             @Override
             public void execute(Project project)
-            {   
+            {
                 afterEvaluate();
             }
         });
-        
+
         makeObtainTasks();
-        
+
         // at last....
         applyPlugin();
     }
-    
+
     public abstract void applyPlugin();
-    
+
     protected abstract String getDevJson();
-    
+
     public void afterEvaluate() {}
-    
+
     private void makeObtainTasks()
     {
         // download tasks
@@ -82,7 +83,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             task.setOutput(delayedFile(Constants.JAR_SERVER_FRESH));
             task.setUrl(delayedString(Constants.MC_SERVER_URL));
         }
-        
+
         ObtainMcpStuffTask mcpTask = makeTask("downloadMcpTools", ObtainMcpStuffTask.class);
         {
             mcpTask.setMcpUrl(delayedString(Constants.MCP_URL));
@@ -90,14 +91,14 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             mcpTask.setInjectorJar(delayedFile(Constants.EXCEPTOR));
         }
     }
-    
+
     /**
      * This extension object will have the name "minecraft"
      * @return
      */
     @SuppressWarnings("unchecked")
     protected Class<K> getExtensionClass(){ return (Class<K>) BaseExtension.class; }
-    
+
     /**
      * @return the extension object with name EXT_NAME_MC
      * @see Constants.EXT_NAME_MC
@@ -107,12 +108,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     {
         return (K) project.getExtensions().getByName(Constants.EXT_NAME_MC);
     }
-    
+
     public DefaultTask makeTask(String name)
     {
         return makeTask(name, DefaultTask.class);
     }
-    
+
     public <T extends Task> T makeTask(String name, Class<T> type)
     {
         return makeTask(project, name, type);
@@ -142,14 +143,14 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         return project;
     }
-    
+
     public void applyExternalPlugin(String plugin)
     {
         HashMap<String, Object> map = new HashMap<String, Object>();
         map.put("plugin", plugin);
         project.apply(map);
     }
-    
+
     public void addMavenRepo(final String name, final String url)
     {
         project.getRepositories().maven(new Action<MavenArtifactRepository>() {
