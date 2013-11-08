@@ -67,6 +67,7 @@ public class FmlUserPlugin extends UserBasePlugin
         super.afterEvaluate();
 
         project.getDependencies().add(UserConstants.CONFIG, project.files(delayedFile(UserConstants.FML_DEOBF_MCP).call()));
+        fixEclipseProject(UserConstants.ECLIPSE_LOCATION);
     }
 
     @Override

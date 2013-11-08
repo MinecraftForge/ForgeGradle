@@ -480,6 +480,7 @@ public class FmlDevPlugin extends DevBasePlugin
                     return classZip.getArchivePath();
                 }
             });
+            userDev.from(delayedFile(FmlDevConstants.CHANGELOG));
             userDev.from(delayedZipTree(DevConstants.BINPATCH_TMP), new CopyInto("", "devbinpatches.pack.lzma"));
             userDev.from(delayedFileTree("{FML_DIR}/common"), new CopyInto("src"));
             userDev.from(delayedFileTree("{FML_DIR}/client"), new CopyInto("src"));
@@ -498,6 +499,19 @@ public class FmlDevPlugin extends DevBasePlugin
             userDev.setExtension("jar");
         }
         project.getArtifacts().add("archives", userDev);
+
+        Zip src = makeTask("packageSrc", Zip.class);
+        {
+            src.setClassifier("src");
+            src.from(delayedFile(FmlDevConstants.CHANGELOG));
+            src.from(delayedFileTree(FmlDevConstants.ECLIPSE_RELEASE), new CopyInto("eclipse"));
+            src.from(delayedFile("{FML_DIR}/gradlew"));
+            src.from(delayedFile("{FML_DIR}/gradlew.bat"));
+            src.from(delayedFile("{FML_DIR}/gradle/wrapper"), new CopyInto("gradle/wrapper"));
+            src.dependsOn("createChangelog");
+            src.setExtension("zip");
+        }
+        project.getArtifacts().add("archives", src);
     }
 
     private String getServerClassPath(File json)

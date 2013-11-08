@@ -44,4 +44,5 @@ public final class UserConstants
     public static final String JAVADOC_JAR = PACK_DIR+"/javadoc.jar";
     
     public static final String JSON = PACK_DIR+"/dev.json";
+    public static final String ECLIPSE_LOCATION = "eclipse/.metadata/.plugins/org.eclipse.core.resources/.projects/Minecraft/.location";
 }

@@ -27,12 +27,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         project = arg;
 
         project.getLogger().lifecycle("**************************");
-        project.getLogger().lifecycle("  MMMMMMM  CCCCC  PPPPP  ");
-        project.getLogger().lifecycle("  M  M  M  CC     P   P  ");
-        project.getLogger().lifecycle("  M  M  M  C      PPPPP  ");
-        project.getLogger().lifecycle("  M     M  CC     P      ");
-        project.getLogger().lifecycle("  M     M  CCCCC  P      ");
-        project.getLogger().lifecycle("**************************");
+        project.getLogger().lifecycle("Powered By MCP Data:      ");
         project.getLogger().lifecycle(" http://mcp.ocean-labs.de/ ");
         project.getLogger().lifecycle(" Searge, ProfMobius, Fesh0r, ");
         project.getLogger().lifecycle(" R4wk, ZeuX, IngisKahn ");
@@ -42,7 +37,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         project.getExtensions().create(Constants.EXT_NAME_JENKINS, JenkinsExtension.class, project);
 
 
-        addMavenRepo("forge2", "http://files.minecraftforge.net/maven2");
         addMavenRepo("forge", "http://files.minecraftforge.net/maven");
         project.getRepositories().mavenCentral();
         addMavenRepo("minecraft", "http://s3.amazonaws.com/Minecraft.Download/libraries");

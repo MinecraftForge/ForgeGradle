@@ -8,7 +8,10 @@ import groovy.util.XmlSlurper;
 import groovy.xml.StreamingMarkupBuilder;
 import groovy.xml.XmlUtil;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -284,6 +287,31 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         ExtractTask natives = (ExtractTask) project.getTasks().findByName("extractUserDev");
         for (File file : project.getConfigurations().getByName(UserConstants.CONFIG_NATIVES).getFiles())
             natives.from(delayedFile(file.getAbsolutePath()));
+    }
+
+    private static final byte[] LOCATION_BEFORE = new byte[]{ 0x40, (byte)0xB1, (byte)0x8B, (byte)0x81, 0x23, (byte)0xBC, 0x00, 0x14, 0x1A, 0x25, (byte)0x96, (byte)0xE7, (byte)0xA3, (byte)0x93, (byte)0xBE, 0x1E};
+    private static final byte[] LOCATION_AFTER = new byte[]{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte)0xC0, 0x58, (byte)0xFB, (byte)0xF3, 0x23, (byte)0xBC, 0x00, 0x14, 0x1A, 0x51, (byte)0xF3, (byte)0x8C, 0x7B, (byte)0xBB, 0x77, (byte)0xC6};
+    protected void fixEclipseProject(String path)
+    {
+        File f = new File(path);
+        if (f.exists() && f.length() == 0)
+        {
+            String projectDir = "URI//file:/" + project.getProjectDir().getAbsolutePath();
+            try
+            {
+                FileOutputStream fos = new FileOutputStream(f);
+                fos.write(LOCATION_BEFORE); //Unknown but w/e
+                fos.write((byte)((projectDir.length() & 0xFF) >> 8));
+                fos.write((byte)((projectDir.length() & 0xFF) >> 0));
+                fos.write(projectDir.getBytes());
+                fos.write(LOCATION_AFTER); //Unknown but w/e
+                fos.close();
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void readAndApplyJson(File file, String depConfig, String nativeConfig)
