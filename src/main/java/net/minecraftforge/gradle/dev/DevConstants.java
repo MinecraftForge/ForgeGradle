@@ -11,6 +11,7 @@ public final class DevConstants
 
     public static final String PACKAGED_SRG    = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/packaged-{MC_VERSION}.srg";
     public static final String PACKAGED_EXC    = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/packaged-{MC_VERSIOn}.exc";
+    public static final String PACKAGED_PATCH  = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/packaged-{MC_VERSION}.patch";
     public static final String DEOBF_DATA      = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/deobfuscation_data-{MC_VERSION}.lzma";
 
     public static final String INSTALLER_BASE  = "{BUILD_DIR}/tmp/installer_base.{INSTALLER_VERSION}.jar";
@@ -27,6 +28,7 @@ public final class DevConstants
     public static final String ECLIPSE_NATIVES = ECLIPSE_RUN + "/bin/natives";
 
     // src dirs   for only the DEV plugins
-    public static final String BUKKIT_SRC      = "bukkit";
-    public static final String PATCH_DIR       = "patches/minecraft";
+    public static final String SRC_DIR         = "src/main/java";
+    public static final String RES_DIR         = "src/main/resources";
+    public static final String TEST_DIR        = "src/test/java";
 }

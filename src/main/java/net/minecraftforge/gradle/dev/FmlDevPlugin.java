@@ -146,7 +146,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task.setOutSRG(delayedFile(DevConstants.PACKAGED_SRG));
             task.setOutEXC(delayedFile(DevConstants.PACKAGED_EXC));
             task.setInPatch(delayedFile(FmlDevConstants.MCP_PATCH));
-            task.setOutPatch(delayedFile(FmlDevConstants.PACKAGED_PATCH));
+            task.setOutPatch(delayedFile(DevConstants.PACKAGED_PATCH));
         }
     }
 
@@ -168,7 +168,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task2.setOutCleanJar(delayedFile(Constants.JAR_SRG));
             task2.setSrg(delayedFile(DevConstants.PACKAGED_SRG));
             task2.setExceptorCfg(delayedFile(DevConstants.PACKAGED_EXC));
-            task2.addTransformer(delayedFile(FmlDevConstants.FML_COMMON + "/fml_at.cfg"));
+            task2.addTransformer(delayedFile(FmlDevConstants.FML_RESOURCES + "/fml_at.cfg"));
             task2.dependsOn("downloadMcpTools", "fixMappings", "mergeJars");
         }
 
@@ -177,7 +177,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task3.setInJar(delayedFile(Constants.JAR_SRG));
             task3.setOutJar(delayedFile(Constants.ZIP_DECOMP));
             task3.setFernFlower(delayedFile(Constants.FERNFLOWER));
-            task3.setPatch(delayedFile(FmlDevConstants.PACKAGED_PATCH));
+            task3.setPatch(delayedFile(DevConstants.PACKAGED_PATCH));
             task3.setAstyleConfig(delayedFile(FmlDevConstants.ASTYLE_CFG));
             task3.dependsOn("downloadMcpTools", "deobfuscateJar", "fixMappings");
         }
@@ -265,13 +265,11 @@ public class FmlDevPlugin extends DevBasePlugin
             task.setJson(delayedFile(FmlDevConstants.JSON_DEV));
             task.setTargetDir(delayedFile(DevConstants.ECLIPSE_FML));
 
-            task.addSource(delayedFile(DevConstants.ECLIPSE_FML + "/src/minecraft")); // Minecraft's base files
-            task.addSource(delayedFile(FmlDevConstants.FML_CLIENT)); // Eventually merge this into a single 'fml_source' in the repository
-            task.addSource(delayedFile(FmlDevConstants.FML_COMMON));
+            task.addSource(delayedFile(DevConstants.ECLIPSE_FML + "/src/minecraft"));
+            task.addSource(delayedFile(FmlDevConstants.FML_SOURCES));
 
             task.addResource(delayedFile(DevConstants.ECLIPSE_FML + "/src/resources"));
-            task.addResource(delayedFile(FmlDevConstants.FML_CLIENT)); // Eventually change to 'fml_resources' in the repo
-            task.addResource(delayedFile(FmlDevConstants.FML_COMMON));
+            task.addResource(delayedFile(FmlDevConstants.FML_RESOURCES));
 
             task.dependsOn("extractNatives");
         }
@@ -309,7 +307,7 @@ public class FmlDevPlugin extends DevBasePlugin
 
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
         {
-            task2.setPatchDir(delayedFile(DevConstants.PATCH_DIR));
+            task2.setPatchDir(delayedFile(FmlDevConstants.FML_PATCH_DIR));
             task2.setOriginalDir(delayedFile(DevConstants.ECLIPSE_CLEAN + "/src/main/java"));
             task2.setChangedDir(delayedFile(DevConstants.ECLIPSE_FML + "/src/minecraft"));
             task2.setOriginalPrefix("../src-base/minecraft");
@@ -372,8 +370,8 @@ public class FmlDevPlugin extends DevBasePlugin
             uni.getInputs().file(delayedFile(FmlDevConstants.JSON_REL));
             uni.getOutputs().upToDateWhen(Constants.CALL_FALSE);
             uni.from(delayedZipTree(DevConstants.BINPATCH_TMP));
-            uni.from(delayedFileTree(FmlDevConstants.FML_CLIENT));
-            uni.from(delayedFileTree(FmlDevConstants.FML_COMMON));
+            uni.from(delayedFileTree(FmlDevConstants.FML_SOURCES));
+            uni.from(delayedFileTree(FmlDevConstants.FML_RESOURCES));
             uni.from(delayedFile(FmlDevConstants.FML_VERSIONF));
             uni.from(delayedFile(FmlDevConstants.FML_LICENSE));
             uni.from(delayedFile(DevConstants.DEOBF_DATA));
@@ -490,7 +488,7 @@ public class FmlDevPlugin extends DevBasePlugin
             userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("mappings", "*.csv", "!packages.csv"));
             userDev.from(delayedFile(DevConstants.PACKAGED_SRG), new CopyInto("conf"));
             userDev.from(delayedFile(DevConstants.PACKAGED_EXC), new CopyInto("conf"));
-            userDev.from(delayedFile(FmlDevConstants.PACKAGED_PATCH), new CopyInto("conf"));
+            userDev.from(delayedFile(DevConstants.PACKAGED_PATCH), new CopyInto("conf"));
             userDev.rename(".+?\\.json", "dev.json");
             userDev.rename(".+?\\.srg", "packaged.srg");
             userDev.rename(".+?\\.exc", "packaged.exc");
