@@ -281,7 +281,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             readAndApplyJson(delayedFile(UserConstants.JSON).call(), UserConstants.CONFIG, UserConstants.CONFIG_NATIVES);
         }
 
-        project.getDependencies().add(UserConstants.CONFIG_USERDEV, getExtension().getNotation() + ":userdev");
         ((ExtractTask) project.getTasks().findByName("extractUserDev")).from(delayedFile(project.getConfigurations().getByName(UserConstants.CONFIG_USERDEV).getSingleFile().getAbsolutePath()));
 
         ExtractTask natives = (ExtractTask) project.getTasks().findByName("extractUserDev");
