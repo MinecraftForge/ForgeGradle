@@ -9,7 +9,9 @@ archivesBaseName = 'ForgeGradle'
 targetCompatibility = '1.7'
 sourceCompatibility = '1.7'
 
-repositories { mavenCentral() }
+repositories {
+  mavenCentral()
+}
 
 jar {
     manifest {
@@ -39,7 +41,7 @@ dependencies {
 
     // just for the extension object
     //compile "edu.sc.seis.gradle:launch4j:latest.integration"
-    
+
     // stupid maven
     deployerJars "org.apache.maven.wagon:wagon-ssh:2.2"
 }
@@ -104,6 +106,10 @@ uploadArchives {
                     }
                 }
             }
+        }
+        else
+        {
+            add project.repositories.mavenLocal()
         }
     }
 }
