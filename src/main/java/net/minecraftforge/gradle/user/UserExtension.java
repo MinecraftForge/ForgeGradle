@@ -11,7 +11,7 @@ public class UserExtension extends BaseExtension
 {
     // groups:  mcVersion  forgeVersion
     //private static final Pattern VERSION_CHECK = Pattern.compile("(?:[\\w\\d.-]+):(?:[\\w\\d-]+):([\\d.]+)-([\\d.]+)-(?:[\\w\\d.]+)");
-    private static final Pattern VERSION_CHECK = Pattern.compile("([\\d.]+)-([\\d.]+)-(?:[\\w\\d.]+)");
+    private static final Pattern VERSION_CHECK = Pattern.compile("([\\d.]+)-([\\w\\d.]+)(?:-[\\w\\d.]+)");
     
     private String apiVersion;
     
