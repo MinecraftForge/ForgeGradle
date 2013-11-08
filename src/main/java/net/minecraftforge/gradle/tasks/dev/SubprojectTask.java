@@ -31,7 +31,8 @@ public class SubprojectTask extends DefaultTask
             Set<Task> list = childProj.getTasksByName(task, false);
             for (Task t : list)
             {
-                configureTask.call(t);
+                if (configureTask != null)
+                    configureTask.call(t);
                 executeTask((AbstractTask)t);
             }
         }
