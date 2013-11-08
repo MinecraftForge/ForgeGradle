@@ -504,7 +504,7 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             src.setClassifier("src");
             src.from(delayedFile(FmlDevConstants.CHANGELOG));
-            src.from(delayedFileTree(FmlDevConstants.ECLIPSE_RELEASE), new CopyInto("eclipse"));
+            src.from(delayedFileTree("{FML_DIR}/install"));
             src.from(delayedFile("{FML_DIR}/gradlew"));
             src.from(delayedFile("{FML_DIR}/gradlew.bat"));
             src.from(delayedFile("{FML_DIR}/gradle/wrapper"), new CopyInto("gradle/wrapper"));
