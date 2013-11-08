@@ -145,10 +145,6 @@ public class MergeJarsTask extends CachedTask
             for (Entry<String, ZipEntry> entry : cClasses.entrySet())
             {
                 String name = entry.getKey();
-                if ("META-INF/MANIFEST.MF".equals(name))
-                {
-                    continue;
-                }
                 ZipEntry cEntry = entry.getValue();
                 ZipEntry sEntry = sClasses.get(name);
 
@@ -197,12 +193,13 @@ public class MergeJarsTask extends CachedTask
             for (String name : new String[] { SideOnly.class.getName(), Side.class.getName() })
             {
                 String eName = name.replace(".", "/");
-                String classPath = eName = ".class";
+                String classPath = eName + ".class";
                 ZipEntry newEntry = new ZipEntry(classPath);
+                System.out.printf("Adding %s\n", classPath);
                 if (!cAdded.contains(eName))
                 {
                     outJar.putNextEntry(newEntry);
-                    outJar.write(getClassBytes(classPath));
+                    outJar.write(getClassBytes(name));
                 }
             }
 
@@ -296,7 +293,11 @@ public class MergeJarsTask extends CachedTask
         for (ZipEntry entry : Collections.list(inFile.entries()))
         {
             String entryName = entry.getName();
-
+            // Always skip the manifest
+            if ("META-INF/MANIFEST.MF".equals(entryName))
+            {
+                continue;
+            }
             if (entry.isDirectory())
             {
                 if (!resources.contains(entryName))
@@ -323,6 +324,7 @@ public class MergeJarsTask extends CachedTask
                     ZipEntry newEntry = new ZipEntry(entryName);
                     outFile.putNextEntry(newEntry);
                     outFile.write(readEntry(inFile, entry));
+                    resources.add(entryName);
                 }
             }
             else
