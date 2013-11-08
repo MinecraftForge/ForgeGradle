@@ -12,6 +12,7 @@ public final class UserConstants
     public static final String CONFIG = "minecraft";
     
     public static final String PACK_DIR = "{BUILD_DIR}/unpacked";
+    public static final String NATIVES_DIR = "{BUILD_DIR}/natives";
     
     public static final String CONF_DIR = PACK_DIR + "/conf";
     public static final String MERGE_CFG = CONF_DIR + "/mcp_merge.cfg";
@@ -34,7 +35,7 @@ public final class UserConstants
     public static final String FORGE_DEOBF_SRG = "{CACHE_DIR}/net/minecraftforge/minecraftforge/{API_VERSION}/minecraftforge-{API_VERSION}-srg.jar";
     
     public static final String FML_BINPATCHED = "{CACHE_DIR}/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}.jar";
-    public static final String FML_DEOBF_SRG = "{CACHE_DIR}/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}-srg.jar";
+    public static final String FML_DEOBF_MCP = "{CACHE_DIR}/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}-srg.jar";
     
     public static final String FML_PATCHES_ZIP = PACK_DIR+"/patches.zip";
     

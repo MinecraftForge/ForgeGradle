@@ -1,8 +1,21 @@
 package net.minecraftforge.gradle.user;
 
+import groovy.lang.Closure;
+import groovy.util.Node;
+import groovy.util.NodeList;
+import groovy.util.XmlParser;
+import groovy.util.XmlSlurper;
+import groovy.xml.StreamingMarkupBuilder;
+import groovy.xml.XmlUtil;
+
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.xml.parsers.ParserConfigurationException;
 
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
@@ -20,16 +33,16 @@ import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.XmlProvider;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
-import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
-import org.gradle.plugins.ide.idea.IdeaPlugin;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
+import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
 
 import argo.jdom.JsonNode;
 import argo.jdom.JsonRootNode;
@@ -114,63 +127,142 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         project.getConfigurations().create(UserConstants.CONFIG);
 
         // special userDev stuff
-        final ExtractTask extracter = makeTask("extractUserDev", ExtractTask.class);
-        extracter.into(delayedFile(UserConstants.PACK_DIR));
-        extracter.doLast(new Action<Task>() {
+        ExtractTask extractUserDev = makeTask("extractUserDev", ExtractTask.class);
+        extractUserDev.into(delayedFile(UserConstants.PACK_DIR));
+        extractUserDev.doLast(new Action<Task>() {
             @Override
             public void execute(Task arg0)
             {
                 readAndApplyJson(delayedFile(UserConstants.JSON).call(), UserConstants.CONFIG, UserConstants.CONFIG_NATIVES);
             }
         });
+
+        // special native stuff
+        ExtractTask extractNatives = makeTask("extractNatives", ExtractTask.class);
+        extractNatives.into(delayedFile(UserConstants.NATIVES_DIR));
     }
-    
+
     protected void configureCompilation()
     {
         Configuration config = project.getConfigurations().getByName(UserConstants.CONFIG);
-        
+
         Javadoc javadoc = (Javadoc) project.getTasks().getByName("javadoc");
         javadoc.getClasspath().add(config);
-        
+
         // get conventions
         JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
         IdeaModel ideaConv = (IdeaModel) project.getExtensions().getByName("idea");
         EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse");
-        
+
         SourceSet api = javaConv.getSourceSets().getByName("main");
         SourceSet main = javaConv.getSourceSets().create("api");
-        
+
         // set the Source
         javaConv.setTargetCompatibility("1.6");
-        
+
         // add to SourceSet compile paths
         api.setCompileClasspath(api.getCompileClasspath().plus(config));
         main.setCompileClasspath(main.getCompileClasspath().plus(config).plus(api.getOutput()));
-        
+
         // add to eclipse and idea
         ideaConv.getModule().getScopes().get("COMPILE").get("plus").add(config);
         eclipseConv.getClasspath().getPlusConfigurations().add(config);
-        
+
         // add sourceDirs to Intellij
         ideaConv.getModule().getSourceDirs().addAll(main.getAllSource().getFiles());
         ideaConv.getModule().getSourceDirs().addAll(api.getAllSource().getFiles());
     }
-    
+
+    @SuppressWarnings("serial")
     protected void configureEclipse()
     {
         EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse");
-        
+
         eclipseConv.getClasspath().setDownloadJavadoc(true);
         eclipseConv.getClasspath().setDownloadSources(true);
-        
-        // TODO:
-        // native hackery.
+
+        // XML NATIVESHACKERY
+        eclipseConv.getClasspath().getFile().withXml(new Closure<Object>(project) {
+            @SuppressWarnings("unchecked")
+            public Object call(Object... obj)
+            {
+                Node root = ((XmlProvider) getDelegate()).asNode();
+
+                HashMap<String, String> map = new HashMap<String, String>();
+                map.put("name", "org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY");
+                map.put("value", delayedString(UserConstants.NATIVES_DIR).call());
+
+                for (Node child : (List<Node>) root.children())
+                {
+                    String path = (String) child.attribute("path");
+
+                    if (path == null)
+                        continue;
+                    else if (!path.contains("lwjg") && !path.contains("jinput"))
+                        continue;
+
+                    if (child.children().isEmpty())
+                        child.appendNode("attributes").appendNode("attribute", map);
+                    else
+                    {
+                        for (Node attrib : (List<Node>) child.children())
+                        {
+                            if (attrib.name().toString().equals("attributes"))
+                            {
+                                attrib.appendNode("attribute", map);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                return null;
+            }
+        });
+
+        Task task = makeTask("afterEclipseImport", DefaultTask.class);
+        task.doLast(new Action<Object>() {
+            @SuppressWarnings("unchecked")
+            public void execute(Object obj)
+            {
+                try
+                {
+                    Node root = new XmlParser().parseText(Files.toString(project.file(".classpath"), Charset.defaultCharset()));
+                    
+                    HashMap<String, String> map = new HashMap<String, String>();
+                    map.put("name", "org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY");
+                    map.put("value", delayedString(UserConstants.NATIVES_DIR).call());
+
+                    for (Node child : (List<Node>) root.children())
+                    {
+                         if (child.attribute("path").equals("org.springsource.ide.eclipse.gradle.classpathcontainer"))
+                         {
+                             child.appendNode("attributes").appendNode("attribute", map);
+                             break;
+                         }
+                    }
+                    
+
+                    String result = XmlUtil.serialize(root);
+                    
+                    project.getLogger().lifecycle(result);
+                    Files.write(result, project.file(".classpath"), Charset.defaultCharset());
+                    
+                }
+                catch (Exception e)
+                {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                    return;
+                }
+            }
+        });
     }
-    
+
     protected void configureIntellij()
     {
         IdeaModel ideaConv = (IdeaModel) project.getExtensions().getByName("idea");
-        
+
         ideaConv.getModule().getExcludeDirs().addAll(project.files(".gradle", "build").getFiles());
         ideaConv.getModule().setDownloadJavadoc(true);
         ideaConv.getModule().setDownloadSources(true);
@@ -189,8 +281,9 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         project.getDependencies().add(UserConstants.CONFIG_USERDEV, getExtension().getNotation() + ":userdev");
         ((ExtractTask) project.getTasks().findByName("extractUserDev")).from(delayedFile(project.getConfigurations().getByName(UserConstants.CONFIG_USERDEV).getSingleFile().getAbsolutePath()));
 
-        FileCollection files = project.files(delayedString(UserConstants.JAVADOC_JAR).call());
-        project.getDependencies().add(UserConstants.CONFIG, files);
+        ExtractTask natives = (ExtractTask) project.getTasks().findByName("extractUserDev");
+        for (File file : project.getConfigurations().getByName(UserConstants.CONFIG_NATIVES).getFiles())
+            natives.from(delayedFile(file.getAbsolutePath()));
     }
 
     private void readAndApplyJson(File file, String depConfig, String nativeConfig)

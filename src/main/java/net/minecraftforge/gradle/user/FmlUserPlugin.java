@@ -24,7 +24,7 @@ public class FmlUserPlugin extends UserBasePlugin
         {
             procTask.dependsOn(binTask);
             procTask.setInJar(delayedFile(UserConstants.FML_BINPATCHED));
-            procTask.setOutCleanJar(delayedFile(UserConstants.FML_DEOBF_SRG));
+            procTask.setOutCleanJar(delayedFile(UserConstants.FML_DEOBF_MCP));
         }
 
         /*
@@ -66,11 +66,7 @@ public class FmlUserPlugin extends UserBasePlugin
     {
         super.afterEvaluate();
 
-        project.getDependencies().add(
-                UserConstants.CONFIG,
-                project.files(
-                        delayedFile(UserConstants.FML_BINPATCHED).call(),
-                        delayedFile(UserConstants.FML_DEOBF_SRG).call()));
+        project.getDependencies().add(UserConstants.CONFIG, project.files(delayedFile(UserConstants.FML_DEOBF_MCP).call()));
     }
 
     @Override
