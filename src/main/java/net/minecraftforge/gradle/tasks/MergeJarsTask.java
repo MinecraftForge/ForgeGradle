@@ -145,6 +145,10 @@ public class MergeJarsTask extends CachedTask
             for (Entry<String, ZipEntry> entry : cClasses.entrySet())
             {
                 String name = entry.getKey();
+                if ("META-INF/MANIFEST.MF".equals(name))
+                {
+                    continue;
+                }
                 ZipEntry cEntry = entry.getValue();
                 ZipEntry sEntry = sClasses.get(name);
 
