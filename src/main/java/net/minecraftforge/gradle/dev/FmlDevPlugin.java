@@ -236,6 +236,7 @@ public class FmlDevPlugin extends DevBasePlugin
         copy = makeTask("copyDeobfData", Copy.class);
         {
             copy.from(delayedFile(DevConstants.DEOBF_DATA));
+            copy.from(delayedFile(DevConstants.FML_VERSIONF));
             copy.into(delayedFile(DevConstants.ECLIPSE_FML + "/src/resources"));
             copy.dependsOn("extractFmlResources", "compressDeobfData");
         }
@@ -271,7 +272,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task.addResource(delayedFile(DevConstants.ECLIPSE_FML + "/src/resources"));
             task.addResource(delayedFile(DevConstants.FML_RESOURCES));
 
-            task.dependsOn("extractNatives");
+            task.dependsOn("extractNatives","createVersionProperties");
         }
 
         makeTask("generateProjects").dependsOn("generateProjectClean", "generateProjectFML");
@@ -341,6 +342,11 @@ public class FmlDevPlugin extends DevBasePlugin
             task3.setSrg(delayedFile(DevConstants.PACKAGED_SRG));
             task3.setPatchList(delayedFileTree(DevConstants.FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData", "fixMappings");
+        }
+        FMLVersionPropTask prop = makeTask("createVersionProperties", FMLVersionPropTask.class);
+        {
+            prop.getOutputs().upToDateWhen(Constants.CALL_FALSE);
+            prop.setOutputFile(delayedFile(DevConstants.FML_VERSIONF));
         }
     }
 
