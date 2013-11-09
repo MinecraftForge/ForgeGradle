@@ -290,7 +290,7 @@ public class MergeJarsTask extends CachedTask
     private HashMap<String, ZipEntry> getClassEntries(ZipFile inFile, ZipOutputStream outFile, HashSet<String> resources) throws IOException
     {
         HashMap<String, ZipEntry> ret = new HashMap<String, ZipEntry>();
-        for (ZipEntry entry : Collections.list(inFile.entries()))
+        master: for (ZipEntry entry : Collections.list(inFile.entries()))
         {
             String entryName = entry.getName();
             // Always skip the manifest
@@ -307,16 +307,14 @@ public class MergeJarsTask extends CachedTask
                 continue;
             }
 
-            boolean filtered = false;
             for (String filter : dontProcess)
             {
                 if (entryName.startsWith(filter))
                 {
-                    filtered = true;
-                    break;
+                    System.out.printf("Skipping %s (filtermatch %s)\n", entryName, filter);
+                    continue master;
                 }
             }
-            if (filtered) continue;
 
             if (!entryName.endsWith(".class") || entryName.startsWith("."))
             {
