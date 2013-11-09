@@ -1,6 +1,6 @@
 package net.minecraftforge.gradle.user;
 
-final class UserConstants
+public final class UserConstants
 {
     private UserConstants()
     {
@@ -20,7 +20,7 @@ final class UserConstants
     static final String PACKAGED_SRG = CONF_DIR+"/packaged.srg";
     static final String PACKAGED_EXC = CONF_DIR+"/packaged.exc";
     static final String DEOBF_SRG = CONF_DIR+"/notch-mcp.srg";
-    static final String REOBF_SRG = CONF_DIR+"/mcp-srg.srg";
+    public static final String REOBF_SRG = CONF_DIR+"/mcp-srg.srg";
 
     static final String MAPPINGS_DIR = PACK_DIR + "/mappings";
     static final String METHOD_CSV = MAPPINGS_DIR+"/methods.csv";

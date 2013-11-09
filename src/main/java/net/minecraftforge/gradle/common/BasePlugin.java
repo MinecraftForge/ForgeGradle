@@ -19,7 +19,7 @@ import org.gradle.testfixtures.ProjectBuilder;
 
 public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Project>
 {
-    protected Project project;
+    public static Project project;
 
     @Override
     public final void apply(Project arg)

@@ -24,6 +24,8 @@ import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.user.GenSrgTask;
+import net.minecraftforge.gradle.tasks.user.reobf.ArtifactSpec;
+import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
@@ -114,6 +116,22 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             addATs(task3);
             task3.setExceptorCfg(delayedFile(UserConstants.PACKAGED_EXC));
             task3.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
+        }
+        
+        // reobfuscate task.
+        ReobfTask task4 = makeTask("reobf", ReobfTask.class);
+        {
+            task4.reobf(project.getTasks().getByName("jar"), new Action<ArtifactSpec>() {
+
+                @Override
+                public void execute(ArtifactSpec arg0)
+                {
+                    JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+                    arg0.setClasspath(javaConv.getSourceSets().getByName("main").getCompileClasspath());
+                }
+                
+            });
+            project.getTasks().getByName("assemble").dependsOn(task4);
         }
     }
 

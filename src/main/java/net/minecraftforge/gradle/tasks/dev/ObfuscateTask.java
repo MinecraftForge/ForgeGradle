@@ -94,7 +94,7 @@ public class ObfuscateTask extends DefaultTask
         remapper.remapJar(input, getOutJar());
     }
     
-    public URL[] toUrls(FileCollection collection) throws MalformedURLException
+    public static URL[] toUrls(FileCollection collection) throws MalformedURLException
     {
         ArrayList<URL> urls = new ArrayList<URL>();
         
