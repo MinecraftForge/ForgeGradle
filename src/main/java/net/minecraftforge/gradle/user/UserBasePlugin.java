@@ -154,8 +154,8 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         IdeaModel ideaConv = (IdeaModel) project.getExtensions().getByName("idea");
         EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse");
 
-        SourceSet api = javaConv.getSourceSets().getByName("main");
-        SourceSet main = javaConv.getSourceSets().create("api");
+        SourceSet main = javaConv.getSourceSets().getByName("main");
+        SourceSet api = javaConv.getSourceSets().create("api");
 
         // set the Source
         javaConv.setTargetCompatibility("1.6");
