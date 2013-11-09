@@ -77,7 +77,7 @@ public class FmlCleanup
                 insideMethod = false;
             }
 
-            // inside emthod actions now.
+            // inside method actions now.
             if (insideMethod)
             {
                 if (skip)
@@ -114,7 +114,15 @@ public class FmlCleanup
 
                     for (String var : methodVars)
                     {
-                        todo.put(var.split(" ")[1], namer.getName(var.split(" ")[0], var.split(" ")[1]));
+                        String[] split = var.split(" ");
+                        if (split.length > 1)
+                        {
+                            todo.put(split[1], namer.getName(split[0], split[1]));
+                        }
+                        else
+                        {
+                            System.out.printf("Unknown thing : %s (%s)\n", var, method);
+                        }
                     }
 
                     List<String> sortedKeys = new ArrayList<String>(todo.keySet());
