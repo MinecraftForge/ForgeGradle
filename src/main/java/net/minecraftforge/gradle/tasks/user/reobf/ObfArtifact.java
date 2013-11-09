@@ -36,7 +36,7 @@ public class ObfArtifact extends AbstractPublishArtifact
     private Date                  date;
     private File                  file;
     private FileCollection        classpath;
-    
+
     @SuppressWarnings("unused")
     private String                type;
 
@@ -96,7 +96,7 @@ public class ObfArtifact extends AbstractPublishArtifact
     /**
      * Creates an obfuscated artifact for the file returned by the {@code toObf} closure.
      * <p>
-     * The closures will be “evaluated” on demand whenever the value is needed (e.g. at generation time)
+     * The closures will be evaluated on demand whenever the value is needed (e.g. at generation time)
      * </p>
      * @param toObf A closure that produces a File for the object to obfuscate (non File return values will be used as the path to the file)
      * @param outputSpec The specification of artifact to outputted

@@ -3,6 +3,7 @@ package net.minecraftforge.gradle.sourcemanip;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 
+import net.minecraftforge.gradle.StringUtils;
 import net.minecraftforge.gradle.common.Constants;
 
 import java.util.*;
@@ -205,7 +206,7 @@ public class FmlCleanup
                 type = type.replaceAll("\\[\\]\\[\\]", "[]");
             }
 
-            String name = type.toLowerCase();
+            String name = StringUtils.lower(type);
             boolean skip_zero = true;
 
             if (Pattern.compile("\\[").matcher(type).find())
@@ -222,7 +223,7 @@ public class FmlCleanup
         if (Strings.isNullOrEmpty(index))
         {
             //TODO: Debug: System.out.println("NO DATA FOR TYPE " + type + " " + var);
-            return type.toLowerCase();
+            return StringUtils.lower(type);
         }
 
         Holder holder = last.get(index);

@@ -13,6 +13,7 @@ import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.minecraftforge.gradle.StringUtils;
 import net.minecraftforge.gradle.dev.DevExtension;
 
 import org.gradle.api.Project;
@@ -30,7 +31,7 @@ public class Constants
 
         public String toString()
         {
-            return name().toLowerCase();
+            return StringUtils.lower(name());
         }
     }
 
@@ -42,7 +43,7 @@ public class Constants
 
     // json parser
     public static final JdomParser PARSER = new JdomParser();
-    
+
     @SuppressWarnings("serial")
     public static final Closure<Boolean> CALL_FALSE = new Closure<Boolean>(null){ public Boolean call(Object o){ return false; }};
 
@@ -61,6 +62,7 @@ public class Constants
     public static final String ZIP_FML          = "{CACHE_DIR}/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_fml-{MC_VERSION}.zip";
     public static final String FERNFLOWER       = "{CACHE_DIR}/fernflower.jar";
     public static final String EXCEPTOR         = "{CACHE_DIR}/exceptor.jar";
+    public static final String MCP_VERSION      = "{MCP_VERSION}";
 
     // util
     public static final String NEWLINE = System.getProperty("line.separator");
@@ -68,6 +70,7 @@ public class Constants
     {
         public void write(int b) throws IOException{}
     };
+
 
     // helper methods
     public static File cacheFile(Project project, String... otherFiles)
@@ -102,7 +105,7 @@ public class Constants
 
     private static OperatingSystem getOs()
     {
-        String name = System.getProperty("os.name").toString().toLowerCase();
+        String name = StringUtils.lower(System.getProperty("os.name"));
         if (name.contains("windows"))
         {
             return OperatingSystem.WINDOWS;

@@ -24,7 +24,7 @@ public abstract class DelayedBase<V> extends Closure<V>
             return pattern;
         }
     };
-    
+
     @SuppressWarnings("unchecked")
     public DelayedBase(Project owner, String pattern)
     {
@@ -38,29 +38,29 @@ public abstract class DelayedBase<V> extends Closure<V>
         this.pattern = pattern;
         this.resolvers = resolvers;
     }
-    
+
     @Override
     public abstract V call();
-    
+
     @Override
     public String toString()
     {
         return call().toString();
     }
-    
+
     // interface
     public static interface IDelayedResolver<K extends BaseExtension>
     {
         public String resolve(String pattern, Project project, K extension);
     }
-    
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static String resolve(String patern, Project project, IDelayedResolver... resolvers)
     {
         project.getLogger().info("Resolving: " + patern);
         BaseExtension exten = (BaseExtension)project.getExtensions().getByName(EXT_NAME_MC);
         JenkinsExtension jenk = (JenkinsExtension)project.getExtensions().getByName(EXT_NAME_JENKINS);
-        
+
         String build = "0";
         if (System.getenv().containsKey("BUILD_NUMBER"))
         {
@@ -74,8 +74,9 @@ public abstract class DelayedBase<V> extends Closure<V>
         {
             version = version.substring(exten.getVersion().length() + 1);
         }
-        
+
         patern = patern.replace("{MC_VERSION}", exten.getVersion());
+        patern = patern.replace("{MCP_VERSION}", exten.getMcpVersion());
         patern = patern.replace("{CACHE_DIR}", project.getGradle().getGradleUserHomeDir().getAbsolutePath() + "/caches/minecraft");
         patern = patern.replace("{BUILD_DIR}", project.getBuildDir().getAbsolutePath());
         patern = patern.replace("{VERSION}", version);
@@ -86,12 +87,12 @@ public abstract class DelayedBase<V> extends Closure<V>
         patern = patern.replace("{JENKINS_JOB}",           jenk.getJob());
         patern = patern.replace("{JENKINS_AUTH_NAME}",     jenk.getAuthName());
         patern = patern.replace("{JENKINS_AUTH_PASSWORD}", jenk.getAuthPassword());
-        
+
         for (IDelayedResolver r : resolvers)
         {
             patern = r.resolve(patern, project, exten);
         }
-        
+
         project.getLogger().info("Resolved:  " + patern);
         return patern;
     }

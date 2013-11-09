@@ -15,7 +15,7 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
 public class FMLVersionPropTask extends DefaultTask
-{   
+{
     @OutputFile
     DelayedFile outputFile;
 
@@ -23,13 +23,13 @@ public class FMLVersionPropTask extends DefaultTask
     public void doTask() throws IOException
     {
         String[] version = ((String)getProject().getVersion()).split("-")[1].split("\\.");
-        String data = 
+        String data =
         "fmlbuild.major.number="    + version[0] + "\n" +
         "fmlbuild.minor.number="    + version[1] + "\n" +
         "fmlbuild.revision.number=" + version[2] + "\n" +
         "fmlbuild.build.number="    + version[3] + "\n" +
-        "fmlbuild.mcversion=" + new DelayedString(getProject(), Constants.MC_VERSION).call() + "\n";
-        //fmlbuild.mcpversion -- Not actually used anywhere
+        "fmlbuild.mcversion=" + new DelayedString(getProject(), Constants.MC_VERSION).call() + "\n" +
+        "fmlbuild.mcpversion=" + new DelayedString(getProject(), Constants.MCP_VERSION).call() + "\n";
         //fmlbuild.deobfuscation.hash -- Not actually used anywhere
         Files.write(data.getBytes(Charsets.UTF_8), getOutputFile());
     }
