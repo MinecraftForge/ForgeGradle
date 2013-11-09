@@ -82,10 +82,10 @@ public class GenSrgTask extends DefaultTask
         // notch -> srg
         
         // deobf
-        // notch -> deobf
+        // notch -> mcp
         
         // reobf
-        // mcp -> srg 
+        // mcp -> srg
         
         String line, temp, in, out;
         String[] split;
@@ -117,7 +117,7 @@ public class GenSrgTask extends DefaultTask
                 // deobf: need to rename that method.
                 split = line.split(" "); // 0=type  1=notch  2=srg
                 
-                temp = split[2].substring(split[2].lastIndexOf('/'));
+                temp = split[2].substring(split[2].lastIndexOf('/')+1);
                 out = split[2];
                 
                 if (fields.containsKey(temp))
@@ -127,14 +127,14 @@ public class GenSrgTask extends DefaultTask
                 deobf.newLine();
                 
                 // reobf: reverse too
-                reobf.write("FD: "+temp+" "+split[2]);
+                reobf.write("FD: "+out+" "+split[2]);
                 reobf.newLine();
             }
             else if (line.startsWith("MD:"))
             {
                 // deobf: rename that method.
                 split = line.split(" "); // 0=type  1-2=notch  3-4=srg
-                temp = split[3].substring(split[3].lastIndexOf('/'));
+                temp = split[3].substring(split[3].lastIndexOf('/')+1);
                 
                 in = split[1] + " " + split[2]; // notch
                 out = split[3] + " " + split[4]; // srg
@@ -147,8 +147,7 @@ public class GenSrgTask extends DefaultTask
                 
                 // reobf reverse too
                 reobf.write("MD: "+out+" "+split[3]+" "+split[4]);
-                deobf.newLine();
-                
+                reobf.newLine();
             }
         }
         

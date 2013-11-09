@@ -110,7 +110,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         ProcessJarTask task3 = makeTask("deobfuscateJar", ProcessJarTask.class);
         {
             task3.setExceptorJar(delayedFile(Constants.EXCEPTOR));
-            task3.setSrg(delayedFile(UserConstants.PACKAGED_SRG));
+            task3.setSrg(delayedFile(UserConstants.DEOBF_SRG));
             addATs(task3);
             task3.setExceptorCfg(delayedFile(UserConstants.PACKAGED_EXC));
             task3.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
@@ -158,6 +158,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         SourceSet api = javaConv.getSourceSets().create("api");
 
         // set the Source
+        javaConv.setSourceCompatibility("1.6");
         javaConv.setTargetCompatibility("1.6");
 
         // add to SourceSet compile paths

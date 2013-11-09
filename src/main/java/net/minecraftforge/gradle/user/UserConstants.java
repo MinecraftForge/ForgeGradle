@@ -33,10 +33,10 @@ final class UserConstants
     static final String FORGE_AT = RES_DIR + "/forge_at.cfg";
     
     static final String FORGE_BINPATCHED = "{CACHE_DIR}/net/minecraftforge/minecraftforge/{API_VERSION}/minecraftforge-{API_VERSION}.jar";
-    static final String FORGE_DEOBF_SRG = "{CACHE_DIR}/net/minecraftforge/minecraftforge/{API_VERSION}/minecraftforge-{API_VERSION}-srg.jar";
+    static final String FORGE_DEOBF_MCP = "{CACHE_DIR}/net/minecraftforge/minecraftforge/{API_VERSION}/minecraftforge-{API_VERSION}-mcp.jar";
     
     static final String FML_BINPATCHED = "{CACHE_DIR}/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}.jar";
-    static final String FML_DEOBF_MCP = "{CACHE_DIR}/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}-srg.jar";
+    static final String FML_DEOBF_MCP = "{CACHE_DIR}/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}-mcp.jar";
     
     static final String FML_PATCHES_ZIP = PACK_DIR+"/patches.zip";
     
