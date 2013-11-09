@@ -42,6 +42,12 @@ public abstract class DelayedBase<V> extends Closure<V>
     @Override
     public abstract V call();
     
+    @Override
+    public String toString()
+    {
+        return call().toString();
+    }
+    
     // interface
     public static interface IDelayedResolver<K extends BaseExtension>
     {

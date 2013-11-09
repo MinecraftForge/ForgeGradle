@@ -81,7 +81,7 @@ public class FmlDevPlugin extends DevBasePlugin
     @Override
     protected String getDevJson()
     {
-        return DelayedBase.resolve(FmlDevConstants.JSON_DEV, project, this);
+        return DelayedBase.resolve(DevConstants.JSON_DEV, project, this);
     }
 
     private void createDownloadTasks()
@@ -140,12 +140,12 @@ public class FmlDevPlugin extends DevBasePlugin
     {
         MergeMappingsTask task = makeTask("fixMappings", MergeMappingsTask.class);
         {
-            task.setPackageCSV(delayedFile(FmlDevConstants.PACK_CSV));
-            task.setInSRG(delayedFile(FmlDevConstants.JOINED_SRG));
-            task.setInEXC(delayedFile(FmlDevConstants.JOINED_EXC));
+            task.setPackageCSV(delayedFile(DevConstants.PACK_CSV));
+            task.setInSRG(delayedFile(DevConstants.JOINED_SRG));
+            task.setInEXC(delayedFile(DevConstants.JOINED_EXC));
             task.setOutSRG(delayedFile(DevConstants.PACKAGED_SRG));
             task.setOutEXC(delayedFile(DevConstants.PACKAGED_EXC));
-            task.setInPatch(delayedFile(FmlDevConstants.MCP_PATCH));
+            task.setInPatch(delayedFile(DevConstants.MCP_PATCH));
             task.setOutPatch(delayedFile(DevConstants.PACKAGED_PATCH));
         }
     }
@@ -157,7 +157,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task.setClient(delayedFile(Constants.JAR_CLIENT_FRESH));
             task.setServer(delayedFile(Constants.JAR_SERVER_FRESH));
             task.setOutJar(delayedFile(Constants.JAR_MERGED));
-            task.setMergeCfg(delayedFile(FmlDevConstants.MERGE_CFG));
+            task.setMergeCfg(delayedFile(DevConstants.MERGE_CFG));
             task.dependsOn("downloadClient", "downloadServer");
         }
 
@@ -168,7 +168,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task2.setOutCleanJar(delayedFile(Constants.JAR_SRG));
             task2.setSrg(delayedFile(DevConstants.PACKAGED_SRG));
             task2.setExceptorCfg(delayedFile(DevConstants.PACKAGED_EXC));
-            task2.addTransformer(delayedFile(FmlDevConstants.FML_RESOURCES + "/fml_at.cfg"));
+            task2.addTransformer(delayedFile(DevConstants.FML_RESOURCES + "/fml_at.cfg"));
             task2.dependsOn("downloadMcpTools", "fixMappings", "mergeJars");
         }
 
@@ -178,7 +178,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task3.setOutJar(delayedFile(Constants.ZIP_DECOMP));
             task3.setFernFlower(delayedFile(Constants.FERNFLOWER));
             task3.setPatch(delayedFile(DevConstants.PACKAGED_PATCH));
-            task3.setAstyleConfig(delayedFile(FmlDevConstants.ASTYLE_CFG));
+            task3.setAstyleConfig(delayedFile(DevConstants.ASTYLE_CFG));
             task3.dependsOn("downloadMcpTools", "deobfuscateJar", "fixMappings");
         }
 
@@ -186,7 +186,7 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             task4.setInJar(delayedFile(Constants.ZIP_DECOMP));
             task4.setOutJar(delayedFile(Constants.ZIP_FML));
-            task4.setInPatches(delayedFile(FmlDevConstants.FML_PATCH_DIR));
+            task4.setInPatches(delayedFile(DevConstants.FML_PATCH_DIR));
             task4.dependsOn("decompile");
         }
     }
@@ -195,7 +195,7 @@ public class FmlDevPlugin extends DevBasePlugin
     {
         ExtractTask task = makeTask("extractWorkspace", ExtractTask.class);
         {
-            task.from(delayedFile(FmlDevConstants.FML_ECLIPSE_WS));
+            task.from(delayedFile(DevConstants.WORKSPACE_ZIP));
             task.into(delayedFile(DevConstants.WORKSPACE));
         }
 
@@ -256,20 +256,20 @@ public class FmlDevPlugin extends DevBasePlugin
         GenDevProjectsTask task = makeTask("generateProjectClean", GenDevProjectsTask.class);
         {
             task.setTargetDir(delayedFile(DevConstants.ECLIPSE_CLEAN));
-            task.setJson(delayedFile(FmlDevConstants.JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
+            task.setJson(delayedFile(DevConstants.JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
             task.dependsOn("extractNatives");
         }
 
         task = makeTask("generateProjectFML", GenDevProjectsTask.class);
         {
-            task.setJson(delayedFile(FmlDevConstants.JSON_DEV));
+            task.setJson(delayedFile(DevConstants.JSON_DEV));
             task.setTargetDir(delayedFile(DevConstants.ECLIPSE_FML));
 
             task.addSource(delayedFile(DevConstants.ECLIPSE_FML + "/src/minecraft"));
-            task.addSource(delayedFile(FmlDevConstants.FML_SOURCES));
+            task.addSource(delayedFile(DevConstants.FML_SOURCES));
 
             task.addResource(delayedFile(DevConstants.ECLIPSE_FML + "/src/resources"));
-            task.addResource(delayedFile(FmlDevConstants.FML_RESOURCES));
+            task.addResource(delayedFile(DevConstants.FML_RESOURCES));
 
             task.dependsOn("extractNatives");
         }
@@ -307,7 +307,7 @@ public class FmlDevPlugin extends DevBasePlugin
 
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
         {
-            task2.setPatchDir(delayedFile(FmlDevConstants.FML_PATCH_DIR));
+            task2.setPatchDir(delayedFile(DevConstants.FML_PATCH_DIR));
             task2.setOriginalDir(delayedFile(DevConstants.ECLIPSE_CLEAN + "/src/main/java"));
             task2.setChangedDir(delayedFile(DevConstants.ECLIPSE_FML + "/src/minecraft"));
             task2.setOriginalPrefix("../src-base/minecraft");
@@ -339,7 +339,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task3.setDeobfDataLzma(delayedFile(DevConstants.DEOBF_DATA));
             task3.setOutJar(delayedFile(DevConstants.BINPATCH_TMP));
             task3.setSrg(delayedFile(DevConstants.PACKAGED_SRG));
-            task3.setPatchList(delayedFileTree(FmlDevConstants.FML_PATCH_DIR));
+            task3.setPatchList(delayedFileTree(DevConstants.FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData", "fixMappings");
         }
     }
@@ -355,28 +355,28 @@ public class FmlDevPlugin extends DevBasePlugin
             log.setAuthName(delayedString("{JENKINS_AUTH_NAME}"));
             log.setAuthPassword(delayedString("{JENKINS_AUTH_PASSWORD}"));
             log.setTargetBuild(delayedString("{BUILD_NUM}"));
-            log.setOutput(delayedFile(FmlDevConstants.CHANGELOG));
+            log.setOutput(delayedFile(DevConstants.CHANGELOG));
         }
 
         FMLVersionPropTask prop = makeTask("createVersionProperties", FMLVersionPropTask.class);
         {
             prop.getOutputs().upToDateWhen(Constants.CALL_FALSE);
-            prop.setOutputFile(delayedFile(FmlDevConstants.FML_VERSIONF));
+            prop.setOutputFile(delayedFile(DevConstants.FML_VERSIONF));
         }
 
         final DelayedJar uni = makeTask("packageUniversal", DelayedJar.class);
         {
             uni.setClassifier("universal");
-            uni.getInputs().file(delayedFile(FmlDevConstants.JSON_REL));
+            uni.getInputs().file(delayedFile(DevConstants.JSON_REL));
             uni.getOutputs().upToDateWhen(Constants.CALL_FALSE);
             uni.from(delayedZipTree(DevConstants.BINPATCH_TMP));
-            uni.from(delayedFileTree(FmlDevConstants.FML_SOURCES));
-            uni.from(delayedFileTree(FmlDevConstants.FML_RESOURCES));
-            uni.from(delayedFile(FmlDevConstants.FML_VERSIONF));
-            uni.from(delayedFile(FmlDevConstants.FML_LICENSE));
-            uni.from(delayedFile(FmlDevConstants.FML_CREDITS));
+            uni.from(delayedFileTree(DevConstants.FML_SOURCES));
+            uni.from(delayedFileTree(DevConstants.FML_RESOURCES));
+            uni.from(delayedFile(DevConstants.FML_VERSIONF));
+            uni.from(delayedFile(DevConstants.FML_LICENSE));
+            uni.from(delayedFile(DevConstants.FML_CREDITS));
             uni.from(delayedFile(DevConstants.DEOBF_DATA));
-            uni.from(delayedFile(FmlDevConstants.CHANGELOG));
+            uni.from(delayedFile(DevConstants.CHANGELOG));
             uni.exclude(JAVA_FILES);
             uni.exclude("devbinpatches.pack.lzma");
             uni.setIncludeEmptyDirs(false);
@@ -386,7 +386,7 @@ public class FmlDevPlugin extends DevBasePlugin
                 {
                     Manifest mani = (Manifest) getDelegate();
                     mani.getAttributes().put("Main-Class", delayedString("{MAIN_CLASS}").call());
-                    mani.getAttributes().put("Class-Path", FmlDevPlugin.this.getServerClassPath(FmlDevPlugin.this.delayedFile(FmlDevConstants.JSON_REL).call()));
+                    mani.getAttributes().put("Class-Path", FmlDevPlugin.this.getServerClassPath(FmlDevPlugin.this.delayedFile(DevConstants.JSON_REL).call()));
                     return null;
                 }
             });
@@ -396,7 +396,7 @@ public class FmlDevPlugin extends DevBasePlugin
 
         FileFilterTask task = makeTask("generateInstallJson", FileFilterTask.class);
         {
-            task.setInputFile(delayedFile(FmlDevConstants.JSON_REL));
+            task.setInputFile(delayedFile(DevConstants.JSON_REL));
             task.setOutputFile(delayedFile(DevConstants.INSTALL_PROFILE));
             task.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
             task.addReplacement("@version@", delayedString("{VERSION}"));
@@ -426,10 +426,10 @@ public class FmlDevPlugin extends DevBasePlugin
                 }
             });
             inst.from(delayedFile(DevConstants.INSTALL_PROFILE));
-            inst.from(delayedFile(FmlDevConstants.CHANGELOG));
-            inst.from(delayedFile(FmlDevConstants.FML_LICENSE));
-            inst.from(delayedFile(FmlDevConstants.FML_CREDITS));
-            inst.from(delayedFile(FmlDevConstants.FML_LOGO));
+            inst.from(delayedFile(DevConstants.CHANGELOG));
+            inst.from(delayedFile(DevConstants.FML_LICENSE));
+            inst.from(delayedFile(DevConstants.FML_CREDITS));
+            inst.from(delayedFile(DevConstants.FML_LOGO));
             inst.from(delayedZipTree(DevConstants.INSTALLER_BASE), new CopyInto(".", "!*.json", "!.png"));
             inst.dependsOn("packageUniversal", "downloadBaseInstaller", "generateInstallJson");
             inst.setExtension("jar");
@@ -438,7 +438,7 @@ public class FmlDevPlugin extends DevBasePlugin
 
         final Zip patchZip = makeTask("zipPatches", Zip.class);
         {
-            patchZip.from(delayedFile(FmlDevConstants.FML_PATCH_DIR));
+            patchZip.from(delayedFile(DevConstants.FML_PATCH_DIR));
             patchZip.setArchiveName("fmlpatches.zip");
         }
         
@@ -468,7 +468,7 @@ public class FmlDevPlugin extends DevBasePlugin
         Zip userDev = makeTask("packageUserDev", Zip.class);
         {
             userDev.setClassifier("userdev");
-            userDev.from(delayedFile(FmlDevConstants.JSON_DEV));
+            userDev.from(delayedFile(DevConstants.JSON_DEV));
             userDev.from(delayedFile(DevConstants.JAVADOC_TMP));
             userDev.from(new Closure<File>(project) {
                 public File call()
@@ -482,11 +482,10 @@ public class FmlDevPlugin extends DevBasePlugin
                     return classZip.getArchivePath();
                 }
             });
-            userDev.from(delayedFile(FmlDevConstants.CHANGELOG));
+            userDev.from(delayedFile(DevConstants.CHANGELOG));
             userDev.from(delayedZipTree(DevConstants.BINPATCH_TMP), new CopyInto("", "devbinpatches.pack.lzma"));
-            userDev.from(delayedFileTree("{FML_DIR}/common"), new CopyInto("src"));
-            userDev.from(delayedFileTree("{FML_DIR}/client"), new CopyInto("src"));
-            userDev.from(delayedFileTree(FmlDevConstants.MERGE_CFG), new CopyInto("conf"));
+            userDev.from(delayedFileTree("{FML_DIR}/src"), new CopyInto("src"));
+            userDev.from(delayedFileTree(DevConstants.MERGE_CFG), new CopyInto("conf"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "astyle.cfg"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("mappings", "*.csv", "!packages.csv"));
             userDev.from(delayedFile(DevConstants.PACKAGED_SRG), new CopyInto("conf"));
@@ -505,13 +504,15 @@ public class FmlDevPlugin extends DevBasePlugin
         Zip src = makeTask("packageSrc", Zip.class);
         {
             src.setClassifier("src");
-            src.from(delayedFile(FmlDevConstants.CHANGELOG));
-            src.from(delayedFile(FmlDevConstants.FML_LICENSE));
-            src.from(delayedFile(FmlDevConstants.FML_CREDITS));
-            src.from(delayedFileTree("{FML_DIR}/install"));
+            src.from(delayedFile(DevConstants.CHANGELOG));
+            src.from(delayedFile(DevConstants.FML_LICENSE));
+            src.from(delayedFile(DevConstants.FML_CREDITS));
+            src.from(delayedFile("{FML_DIR}/install"), new CopyInto(null, "!*.gradle"));
+            src.from(delayedFile("{FML_DIR}/install"), (new CopyInto(null, "*.gradle")).addExpand("version", delayedString("{MC_VERSION}-{VERSION}")).addExpand("name", "fml"));
             src.from(delayedFile("{FML_DIR}/gradlew"));
             src.from(delayedFile("{FML_DIR}/gradlew.bat"));
             src.from(delayedFile("{FML_DIR}/gradle/wrapper"), new CopyInto("gradle/wrapper"));
+            src.rename(".+?\\.gradle", "build.gradle");
             src.dependsOn("createChangelog");
             src.setExtension("zip");
         }

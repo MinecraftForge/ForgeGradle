@@ -2,14 +2,9 @@ package net.minecraftforge.gradle.user;
 
 import groovy.lang.Closure;
 import groovy.util.Node;
-import groovy.util.NodeList;
 import groovy.util.XmlParser;
-import groovy.util.XmlSlurper;
-import groovy.xml.StreamingMarkupBuilder;
 import groovy.xml.XmlUtil;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -17,8 +12,6 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
-import javax.xml.parsers.ParserConfigurationException;
 
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
@@ -44,8 +37,6 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
-import org.w3c.dom.Element;
-import org.xml.sax.SAXException;
 
 import argo.jdom.JsonNode;
 import argo.jdom.JsonRootNode;
@@ -73,9 +64,15 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         tasks();
 
         // lifecycle tasks
-        makeTask("setupCIWorkspace", DefaultTask.class);
-        makeTask("setupDevWorkspace", DefaultTask.class);
-        makeTask("setupDecompWorkspace", DefaultTask.class);
+        Task task = makeTask("setupCIWorkspace", DefaultTask.class);
+        task.setGroup("ForgeGradle");
+        
+        task = makeTask("setupDevWorkspace", DefaultTask.class);
+        task.setGroup("ForgeGradle");
+        task.dependsOn("genSrgs", "deobfuscateJar");
+        
+        task = makeTask("setupDecompWorkspace", DefaultTask.class);
+        task.setGroup("ForgeGradle");
     }
 
     protected Class<UserExtension> getExtensionClass()
@@ -97,7 +94,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             task.setServer(delayedFile(Constants.JAR_SERVER_FRESH));
             task.setOutJar(delayedFile(Constants.JAR_MERGED));
             task.setMergeCfg(delayedFile(UserConstants.MERGE_CFG));
-            task.dependsOn("downloadClient", "downloadServer", "extractUserDev");
+            task.dependsOn("extractUserDev", "downloadClient", "downloadServer");
         }
 
         GenSrgTask task2 = makeTask("genSrgs", GenSrgTask.class);
@@ -283,7 +280,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
 
         ((ExtractTask) project.getTasks().findByName("extractUserDev")).from(delayedFile(project.getConfigurations().getByName(UserConstants.CONFIG_USERDEV).getSingleFile().getAbsolutePath()));
 
-        ExtractTask natives = (ExtractTask) project.getTasks().findByName("extractUserDev");
+        ExtractTask natives = (ExtractTask) project.getTasks().findByName("extractNatives");
         for (File file : project.getConfigurations().getByName(UserConstants.CONFIG_NATIVES).getFiles())
             natives.from(delayedFile(file.getAbsolutePath()));
     }
@@ -358,6 +355,8 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
 
         for (String dep : natives)
             handler.add(nativeConfig, dep);
+        
+        hasApplied = true;
     }
 
     @Override
