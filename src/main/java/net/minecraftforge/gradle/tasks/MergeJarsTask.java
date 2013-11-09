@@ -311,7 +311,6 @@ public class MergeJarsTask extends CachedTask
             {
                 if (entryName.startsWith(filter))
                 {
-                    System.out.printf("Skipping %s (filtermatch %s)\n", entryName, filter);
                     continue master;
                 }
             }
