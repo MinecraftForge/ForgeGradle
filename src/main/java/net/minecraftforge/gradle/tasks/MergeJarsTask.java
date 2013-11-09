@@ -307,17 +307,15 @@ public class MergeJarsTask extends CachedTask
                 continue;
             }
 
-            boolean filtered = false;
             for (String filter : dontProcess)
             {
                 if (entryName.startsWith(filter))
                 {
-                    filtered = true;
-                    break;
+                    continue;
                 }
             }
 
-            if (filtered || !entryName.endsWith(".class") || entryName.startsWith("."))
+            if (!entryName.endsWith(".class") || entryName.startsWith("."))
             {
                 if (!resources.contains(entryName))
                 {
