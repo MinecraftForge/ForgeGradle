@@ -24,6 +24,7 @@ public final class FmlDevConstants
     public static final String FML_TEST_SOURCES = "{FML_DIR}/src/test/resources";
     public static final String FML_VERSIONF     = "{BUILD_DIR}/tmp/fmlversion.properties";
     public static final String FML_LICENSE      = "{FML_DIR}/LICENSE-fml.txt";
+    public static final String FML_CREDITS      = "{FML_DIR}/CREDITS-fml.txt";
     public static final String FML_LOGO         = "{FML_DIR}/jsons/big_logo.png";
     public static final String ECLIPSE_RELEASE  = "{FML_DIR}/eclipse-rel";
 

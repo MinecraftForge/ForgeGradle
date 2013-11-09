@@ -374,6 +374,7 @@ public class FmlDevPlugin extends DevBasePlugin
             uni.from(delayedFileTree(FmlDevConstants.FML_RESOURCES));
             uni.from(delayedFile(FmlDevConstants.FML_VERSIONF));
             uni.from(delayedFile(FmlDevConstants.FML_LICENSE));
+            uni.from(delayedFile(FmlDevConstants.FML_CREDITS));
             uni.from(delayedFile(DevConstants.DEOBF_DATA));
             uni.from(delayedFile(FmlDevConstants.CHANGELOG));
             uni.exclude(JAVA_FILES);
@@ -427,6 +428,7 @@ public class FmlDevPlugin extends DevBasePlugin
             inst.from(delayedFile(DevConstants.INSTALL_PROFILE));
             inst.from(delayedFile(FmlDevConstants.CHANGELOG));
             inst.from(delayedFile(FmlDevConstants.FML_LICENSE));
+            inst.from(delayedFile(FmlDevConstants.FML_CREDITS));
             inst.from(delayedFile(FmlDevConstants.FML_LOGO));
             inst.from(delayedZipTree(DevConstants.INSTALLER_BASE), new CopyInto(".", "!*.json", "!.png"));
             inst.dependsOn("packageUniversal", "downloadBaseInstaller", "generateInstallJson");
@@ -504,6 +506,8 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             src.setClassifier("src");
             src.from(delayedFile(FmlDevConstants.CHANGELOG));
+            src.from(delayedFile(FmlDevConstants.FML_LICENSE));
+            src.from(delayedFile(FmlDevConstants.FML_CREDITS));
             src.from(delayedFileTree("{FML_DIR}/install"));
             src.from(delayedFile("{FML_DIR}/gradlew"));
             src.from(delayedFile("{FML_DIR}/gradlew.bat"));
