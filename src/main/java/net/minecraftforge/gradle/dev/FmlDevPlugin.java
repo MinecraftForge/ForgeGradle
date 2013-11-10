@@ -56,6 +56,7 @@ public class FmlDevPlugin extends DevBasePlugin
         // set fmlDir
         getExtension().setFmlDir(".");
 
+        project.getLogger().lifecycle("FISHY");
         createDownloadTasks();
         //configureLaunch4J();
         creatMappingFixTask();
@@ -76,6 +77,7 @@ public class FmlDevPlugin extends DevBasePlugin
         //task.dependsOn("launch4j", "packageUniversal", "createChangelog", "packageInstaller");
         task.dependsOn("createChangelog", "packageUniversal", "packageInstaller", "packageInstaller");
         task.setGroup("FML");
+        project.getLogger().lifecycle("FISHY");
     }
 
     @Override
@@ -364,12 +366,6 @@ public class FmlDevPlugin extends DevBasePlugin
             log.setOutput(delayedFile(DevConstants.CHANGELOG));
         }
 
-        FMLVersionPropTask prop = makeTask("createVersionProperties", FMLVersionPropTask.class);
-        {
-            prop.getOutputs().upToDateWhen(Constants.CALL_FALSE);
-            prop.setOutputFile(delayedFile(DevConstants.FML_VERSIONF));
-        }
-
         final DelayedJar uni = makeTask("packageUniversal", DelayedJar.class);
         {
             uni.setClassifier("universal");
@@ -447,7 +443,7 @@ public class FmlDevPlugin extends DevBasePlugin
             patchZip.from(delayedFile(DevConstants.FML_PATCH_DIR));
             patchZip.setArchiveName("fmlpatches.zip");
         }
-        
+
         final Zip classZip = makeTask("jarClasses", Zip.class);
         {
             classZip.from(delayedZipTree(DevConstants.BINPATCH_TMP), new CopyInto("", "**/*.class"));

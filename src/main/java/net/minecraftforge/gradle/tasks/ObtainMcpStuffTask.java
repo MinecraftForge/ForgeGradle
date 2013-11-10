@@ -67,22 +67,6 @@ public class ObtainMcpStuffTask extends CachedTask
                 Files.touch(exc);
                 Files.write(ByteStreams.toByteArray(zin), exc);
             }
-            else if (StringUtils.lower(entry.getName()).endsWith("version.cfg"))
-            {
-                String mcpVersionData = StringUtils.fromUTF8Stream(zin);
-                Splitter splitter = Splitter.on('=').trimResults();
-
-                for (String line : StringUtils.lines(mcpVersionData))
-                {
-                    String[] lineParts = Iterables.toArray(splitter.split(line),String.class);
-                    if (lineParts.length > 1 && "MCPVersion".equals(lineParts[0]))
-                    {
-                        BaseExtension exten = (BaseExtension)getProject().getExtensions().getByName(EXT_NAME_MC);
-                        exten.setMcpVersion(lineParts[1]);
-                        getLogger().info("MCP data version " + lineParts[1]);
-                    }
-                }
-            }
         }
 
         zin.close();
