@@ -16,6 +16,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.tasks.Delete;
 import org.gradle.testfixtures.ProjectBuilder;
 
 public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Project>
@@ -95,6 +96,11 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         DownloadAssetsTask assets = makeTask("getAssets", DownloadAssetsTask.class);
         {
             assets.setAssetsDir(delayedFile(Constants.ASSETS));
+        }
+
+        Delete clearCache = makeTask("cleanCache", Delete.class);
+        {
+            clearCache.delete(delayedFile("{CACHE_DIR}/minecraft"));
         }
     }
 
