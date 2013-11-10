@@ -23,7 +23,7 @@ final class DevConstants
     static final String BINPATCH_TMP      = "{BUILD_DIR}/tmp/bin_patches.jar";
 
     // mappings
-    static final String METHOD_CSV        = "{MAPPINGS_DIR}/methods.csv";
+    static final String METHODS_CSV        = "{MAPPINGS_DIR}/methods.csv";
     static final String FIELDS_CSV        = "{MAPPINGS_DIR}/fields.csv";
     static final String PARAMS_CSV        = "{MAPPINGS_DIR}/params.csv";
     static final String PACK_CSV          = "{MAPPINGS_DIR}/packages.csv";
@@ -44,6 +44,7 @@ final class DevConstants
 
     // forge intermediate jars
     static final String ZIP_FMLED_FORGE   = "{BUILD_DIR}/forgeTmp/minecraft_fmlpatched.zip";
+    static final String ZIP_INJECT_FORGE  = "{BUILD_DIR}/forgeTmp/minecraft_fmlinjected.zip";
     static final String ZIP_RENAMED_FORGE = "{BUILD_DIR}/forgeTmp/minecraft_renamed.zip";
     static final String ZIP_PATCHED_FORGE = "{BUILD_DIR}/forgeTmp/minecraft_patches.zip";
 
@@ -79,10 +80,9 @@ final class DevConstants
     static final String FORGE_SOURCES       = "src/main/java";
     static final String FORGE_RESOURCES     = "src/main/resources";
     static final String FORGE_TEST_SOURCES  = "src/test/java";
-    static final String FORGE_VERSIONF      = "{BUILD_DIR}/tmp/forgeversion.properties";
-    static final String FORGE_LICENSE       = "install/MinecraftForge-License.txt";
-    static final String FORGE_CREDITS       = "install/MinecraftForge-Credits.txt";
-    static final String PAULSCODE_LISCENCE1 = "install/Paulscode IBXM Library License.txt";
-    static final String PAULSCODE_LISCENCE2 = "install/Paulscode SoundSystem CodecIBXM License.txt";
+    static final String FORGE_LICENSE       = "MinecraftForge-License.txt";
+    static final String FORGE_CREDITS       = "MinecraftForge-Credits.txt";
+    static final String PAULSCODE_LISCENCE1 = "Paulscode IBXM Library License.txt";
+    static final String PAULSCODE_LISCENCE2 = "Paulscode SoundSystem CodecIBXM License.txt";
     static final String FORGE_LOGO          = FORGE_RESOURCES+"/forge_logo.png";
 }

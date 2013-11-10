@@ -15,6 +15,7 @@ import net.minecraftforge.gradle.delayed.DelayedString;
 import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.tasks.DownloadTask;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
+import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.dev.CompressLZMA;
 import net.minecraftforge.gradle.tasks.dev.MergeMappingsTask;
 
@@ -34,6 +35,12 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
     @Override
     public void applyPlugin()
     {
+        ExtractTask task = makeTask("extractWorkspace", ExtractTask.class);
+        {
+            task.from(delayedFile(DevConstants.WORKSPACE_ZIP));
+            task.into(delayedFile(DevConstants.WORKSPACE));
+        }
+        
         DownloadTask task1 = makeTask("downloadBaseInstaller", DownloadTask.class);
         {
             task1.setOutput(delayedFile(DevConstants.INSTALLER_BASE));

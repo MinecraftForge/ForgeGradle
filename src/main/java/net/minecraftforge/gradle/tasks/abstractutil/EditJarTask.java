@@ -37,15 +37,28 @@ public abstract class EditJarTask extends CachedTask
         getLogger().info("Reading jar: "+inJar);
         readJarAndClean(getInJar());
         
-        doStuff();
+        doStuffMiddle();
         
         getLogger().info("Saving jar: "+outJar);
         saveJar(getOutJar());
     }
 
     public abstract String asRead(String file);
+    
+    /**
+     * Do Stuff before the jar is read
+     */
+    public abstract void doStuffBefore() throws Throwable;
 
-    public abstract void doStuff() throws Throwable;
+    /**
+     * Do Stuff after the jar is read, but before it is written.
+     */
+    public abstract void doStuffMiddle() throws Throwable;
+    
+    /**
+     * Do Stuff after the jar is Written
+     */
+    public abstract void doStuffAfter() throws Throwable;
 
     private void readJarAndClean(final File jar) throws IOException
     {

@@ -29,6 +29,7 @@ import net.minecraftforge.gradle.delayed.DelayedFileTree;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.internal.file.collections.SimpleFileCollection;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
@@ -58,7 +59,7 @@ public class GenBinaryPatches extends DefaultTask
     private DelayedFile dirtyJar;
     
     @InputFiles
-    private DelayedFileTree patchList;
+    private List<DelayedFileTree> patchList = new ArrayList<DelayedFileTree>();
 
     @InputFile
     private DelayedFile deobfDataLzma;
@@ -316,12 +317,17 @@ public class GenBinaryPatches extends DefaultTask
 
     public FileCollection getPatchList()
     {
-        return patchList.call();
+        FileCollection collection = new SimpleFileCollection(new File[] {});
+        for (DelayedFileTree tree: patchList)
+        {
+            collection.add(tree.call());
+        }
+        return collection;
     }
 
-    public void setPatchList(DelayedFileTree patchList)
+    public void addPatchList(DelayedFileTree patchList)
     {
-        this.patchList = patchList;
+        this.patchList.add(patchList);
     }
 
     public File getDeobfDataLzma()

@@ -32,7 +32,7 @@ public class PatchJarTask extends EditJarTask
     }
 
     @Override
-    public void doStuff() throws Throwable
+    public void doStuffMiddle() throws Throwable
     {
         PROVIDER = new ContextProvider(sourceMap);
         
@@ -192,5 +192,19 @@ public class PatchJarTask extends EditJarTask
     public void setInPatches(DelayedFile inPatches)
     {
         this.inPatches = inPatches;
+    }
+
+    @Override
+    public void doStuffBefore() throws Throwable
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void doStuffAfter() throws Throwable
+    {
+        // TODO Auto-generated method stub
+        
     }
 }

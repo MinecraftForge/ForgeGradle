@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.dev;
 
+import static net.minecraftforge.gradle.dev.DevConstants.*;
 import groovy.lang.Closure;
 
 import java.io.File;
@@ -8,16 +9,14 @@ import java.util.Date;
 
 import net.minecraftforge.gradle.CopyInto;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.delayed.DelayedBase;
-import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
+import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DelayedJar;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.abstractutil.FileFilterTask;
 import net.minecraftforge.gradle.tasks.dev.ChangelogTask;
-import net.minecraftforge.gradle.tasks.dev.FMLVersionPropTask;
 import net.minecraftforge.gradle.tasks.dev.GenBinaryPatches;
 import net.minecraftforge.gradle.tasks.dev.GenDevProjectsTask;
 import net.minecraftforge.gradle.tasks.dev.GeneratePatches;
@@ -25,10 +24,8 @@ import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
 import net.minecraftforge.gradle.tasks.dev.SubprojectTask;
 
 import org.gradle.api.DefaultTask;
-import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.java.archives.Manifest;
-import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
@@ -43,7 +40,6 @@ public class ForgeDevPlugin extends DevBasePlugin
         // set fmlDir
         getExtension().setFmlDir("fml");
 
-        //configureLaunch4J();
         createJarProcessTasks();
         createProjectTasks();
         createEclipseTasks();
@@ -53,7 +49,7 @@ public class ForgeDevPlugin extends DevBasePlugin
 
         // the master setup task.
         Task task = makeTask("setupForge", DefaultTask.class);
-        task.dependsOn("extractFmlSources", "generateProjects", "eclipse");
+        task.dependsOn("extractForgeSources", "generateProjects", "eclipse");
         task.setGroup("Forge");
 
         // the master task.
@@ -63,47 +59,6 @@ public class ForgeDevPlugin extends DevBasePlugin
         task.setGroup("Forge");
     }
 
-    /*
-     * private void configureLaunch4J()
-     * {
-     * Task task = project.getTasks().getByName("generateXmlConfig");
-     * task.dependsOn("packageInstaller");
-     * task.getInputs().file(delayedFile(Constants.INSTALLER));
-     * task.doFirst(new Closure(project, this) {
-     * @Override
-     * public Object call()
-     * {
-     * // get teh extension object
-     * Launch4jPluginExtension ext = (Launch4jPluginExtension) project.getExtensions().getByName("launch4j");
-     * //ext.setJar(((Zip)project.getTasks().getByName("packageInstaller")).getArchivePath().getAbsolutePath());
-     * //ext.setOutfile(((Zip)project.getTasks().getByName("packageInstaller")).getArchiveName().replace(".zip", ".exe"));
-     * try
-     * {
-     * // set jar stuff
-     * JarFile file = new JarFile(delayedFile(Constants.INSTALLER).call());
-     * java.util.jar.Manifest man = file.getManifest();
-     * ext.setMainClassName(man.getMainAttributes().getValue("Main-Class"));
-     * }
-     * catch (IOException e)
-     * {
-     * Throwables.propagate(e); // -_-
-     * }
-     * return null;
-     * }
-     * @Override
-     * public Object call(Object obj)
-     * {
-     * return call();
-     * }
-     * @Override
-     * public Object call(Object... obj)
-     * {
-     * return call();
-     * }
-     * });
-     * }
-     */
-
     protected void createJarProcessTasks()
     {
 
@@ -111,90 +66,103 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             task2.setInJar(delayedFile(Constants.JAR_MERGED));
             task2.setExceptorJar(delayedFile(Constants.EXCEPTOR));
-            task2.setOutCleanJar(delayedFile(DevConstants.JAR_SRG_FORGE));
-            task2.setSrg(delayedFile(DevConstants.PACKAGED_SRG));
-            task2.setExceptorCfg(delayedFile(DevConstants.PACKAGED_EXC));
-            task2.addTransformer(delayedFile(DevConstants.FML_RESOURCES + "/fml_at.cfg"));
-            task2.addTransformer(delayedFile(DevConstants.FORGE_RESOURCES + "/forge_at.cfg"));
+            task2.setOutCleanJar(delayedFile(JAR_SRG_FORGE));
+            task2.setSrg(delayedFile(PACKAGED_SRG));
+            task2.setExceptorCfg(delayedFile(PACKAGED_EXC));
+            task2.addTransformer(delayedFile(FML_RESOURCES + "/fml_at.cfg"));
+            task2.addTransformer(delayedFile(FORGE_RESOURCES + "/forge_at.cfg"));
             task2.dependsOn("downloadMcpTools", "fixMappings", "mergeJars");
         }
 
         DecompileTask task3 = makeTask("decompile", DecompileTask.class);
         {
-            task3.setInJar(delayedFile(DevConstants.JAR_SRG_FORGE));
-            task3.setOutJar(delayedFile(DevConstants.ZIP_DECOMP_FORGE));
+            task3.setInJar(delayedFile(JAR_SRG_FORGE));
+            task3.setOutJar(delayedFile(ZIP_DECOMP_FORGE));
             task3.setFernFlower(delayedFile(Constants.FERNFLOWER));
-            task3.setPatch(delayedFile(DevConstants.PACKAGED_PATCH));
-            task3.setAstyleConfig(delayedFile(DevConstants.ASTYLE_CFG));
+            task3.setPatch(delayedFile(PACKAGED_PATCH));
+            task3.setAstyleConfig(delayedFile(ASTYLE_CFG));
             task3.dependsOn("downloadMcpTools", "deobfuscateJar", "fixMappings");
         }
 
         PatchJarTask task4 = makeTask("fmlPatchJar", PatchJarTask.class);
         {
-            task4.setInJar(delayedFile(DevConstants.ZIP_DECOMP_FORGE));
-            task4.setOutJar(delayedFile(DevConstants.ZIP_FMLED_FORGE));
-            task4.setInPatches(delayedFile(DevConstants.FML_PATCH_DIR));
+            task4.setInJar(delayedFile(ZIP_DECOMP_FORGE));
+            task4.setOutJar(delayedFile(ZIP_FMLED_FORGE));
+            task4.setInPatches(delayedFile(FML_PATCH_DIR));
             task4.dependsOn("decompile");
+        }
+        
+        // add fml sources
+        Zip task5 = makeTask("fmlInjectJar", Zip.class);
+        {
+            task5.from(delayedFileTree(FML_SOURCES));
+            task5.from(delayedFileTree(FML_RESOURCES));
+            task5.from(delayedZipTree(ZIP_FMLED_FORGE));
+            task5.from(delayedFile("{MAPPINGS_DIR}/patches"), new CopyInto("", "Start.java"));
+            task5.from(delayedFile(DEOBF_DATA));
+            task5.from(delayedFile(FML_VERSIONF));
+            
+            // see ZIP_INJECT_FORGE
+            task5.setArchiveName("minecraft_fmlinjected.zip");
+            task5.setDestinationDir(delayedFile("{BUILD_DIR}/forgeTmp").call());
+            
+            task5.dependsOn("fmlPatchJar", "compressDeobfData");
+        }
+        
+        RemapSourcesTask task6 = makeTask("remapSourcesJar", RemapSourcesTask.class);
+        {
+            task6.setInJar(delayedFile(ZIP_INJECT_FORGE));
+            task6.setOutJar(delayedFile(ZIP_RENAMED_FORGE));
+            task6.setMethodsCsv(delayedFile(METHODS_CSV));
+            task6.setFieldsCsv(delayedFile(FIELDS_CSV));
+            task6.setParamsCsv(delayedFile(PARAMS_CSV));
+            task6.dependsOn("fmlInjectJar");
+        }
+        
+        task4 = makeTask("forgePatchJar", PatchJarTask.class);
+        {
+            task4.setInJar(delayedFile(ZIP_RENAMED_FORGE));
+            task4.setOutJar(delayedFile(ZIP_PATCHED_FORGE));
+            task4.setInPatches(delayedFile(FORGE_PATCH_DIR));
+            task4.dependsOn("remapSourcesJar");
         }
     }
 
     private void createSourceCopyTasks()
     {
-        ExtractTask task = makeTask("extractWorkspace", ExtractTask.class);
-        {
-            task.from(delayedFile(DevConstants.WORKSPACE_ZIP));
-            task.into(delayedFile(DevConstants.WORKSPACE));
-        }
-
-        task = makeTask("extractMcResources", ExtractTask.class);
+        ExtractTask task = makeTask("extractMcResources", ExtractTask.class);
         {
             task.exclude(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
-            task.from(delayedFile(DevConstants.ZIP_DECOMP_FORGE));
-            task.into(delayedFile(DevConstants.ECLIPSE_CLEAN + "/src/main/resources"));
-            task.dependsOn("extractWorkspace", "decompile");
-        }
-
-        Copy copy = makeTask("copyStart", Copy.class);
-        {
-            copy.from(delayedFile("{MAPPINGS_DIR}/patches"));
-            copy.include("Start.java");
-            copy.into(delayedFile(DevConstants.ECLIPSE_CLEAN + "/src/main/java"));
-            copy.dependsOn("extractMcResources");
+            task.from(delayedFile(ZIP_RENAMED_FORGE));
+            task.into(delayedFile(ECLIPSE_CLEAN + "/src/main/resources"));
+            task.dependsOn("extractWorkspace", "remapSourcesJar");
         }
 
         task = makeTask("extractMcSource", ExtractTask.class);
         {
             task.include(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
-            task.from(delayedFile(DevConstants.ZIP_DECOMP_FORGE));
-            task.into(delayedFile(DevConstants.ECLIPSE_CLEAN + "/src/main/java"));
-            task.dependsOn("copyStart");
+            task.from(delayedFile(ZIP_RENAMED_FORGE));
+            task.into(delayedFile(ECLIPSE_CLEAN + "/src/main/java"));
+            task.dependsOn("extractMcResources");
         }
 
-        task = makeTask("extractFmlResources", ExtractTask.class);
+        task = makeTask("extractForgeResources", ExtractTask.class);
         {
             task.exclude(JAVA_FILES);
-            task.from(delayedFile(DevConstants.ZIP_PATCHED_FORGE));
-            task.into(delayedFile(DevConstants.ECLIPSE_FORGE + "/src/resources"));
-            task.dependsOn("fmlPatchJar", "extractWorkspace");
+            task.from(delayedFile(ZIP_PATCHED_FORGE));
+            task.into(delayedFile(ECLIPSE_FORGE + "/src/resources"));
+            task.dependsOn("forgePatchJar", "extractWorkspace");
         }
 
-        copy = makeTask("copyDeobfData", Copy.class);
-        {
-            copy.from(delayedFile(DevConstants.DEOBF_DATA));
-            copy.from(delayedFile(DevConstants.FML_VERSIONF));
-            copy.into(delayedFile(DevConstants.ECLIPSE_FORGE + "/src/resources"));
-            copy.dependsOn("extractFmlResources", "compressDeobfData");
-        }
-
-        task = makeTask("extractFmlSources", ExtractTask.class);
+        task = makeTask("extractForgeSources", ExtractTask.class);
         {
             task.include(JAVA_FILES);
             task.exclude("cpw/**");
-            task.from(delayedFile(DevConstants.ZIP_PATCHED_FORGE));
-            task.into(delayedFile(DevConstants.ECLIPSE_FORGE + "/src/minecraft"));
-            task.dependsOn("copyDeobfData");
+            task.from(delayedFile(ZIP_PATCHED_FORGE));
+            task.into(delayedFile(ECLIPSE_FORGE + "/src/minecraft"));
+            task.dependsOn("extractForgeResources");
         }
 
     }
@@ -203,60 +171,60 @@ public class ForgeDevPlugin extends DevBasePlugin
     {
         GenDevProjectsTask task = makeTask("generateProjectClean", GenDevProjectsTask.class);
         {
-            task.setTargetDir(delayedFile(DevConstants.ECLIPSE_CLEAN));
-            task.setJson(delayedFile(DevConstants.JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
+            task.setTargetDir(delayedFile(ECLIPSE_CLEAN));
+            task.setJson(delayedFile(JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
             task.dependsOn("extractNatives");
         }
 
-        task = makeTask("generateProjectFML", GenDevProjectsTask.class);
+        task = makeTask("generateProjectForge", GenDevProjectsTask.class);
         {
-            task.setJson(delayedFile(DevConstants.JSON_DEV));
-            task.setTargetDir(delayedFile(DevConstants.ECLIPSE_FORGE));
+            task.setJson(delayedFile(JSON_DEV));
+            task.setTargetDir(delayedFile(ECLIPSE_FORGE));
 
-            task.addSource(delayedFile(DevConstants.ECLIPSE_FORGE + "/src/minecraft"));
-            task.addSource(delayedFile(DevConstants.FML_SOURCES));
+            task.addSource(delayedFile(ECLIPSE_FORGE + "/src/minecraft"));
+            task.addSource(delayedFile(FORGE_SOURCES));
 
-            task.addResource(delayedFile(DevConstants.ECLIPSE_FORGE + "/src/resources"));
-            task.addResource(delayedFile(DevConstants.FML_RESOURCES));
+            task.addResource(delayedFile(ECLIPSE_FORGE + "/src/resources"));
+            task.addResource(delayedFile(FORGE_RESOURCES));
 
-            task.dependsOn("extractNatives","createVersionProperties");
+            task.dependsOn("extractNatives","fml:createVersionProperties");
         }
 
-        makeTask("generateProjects").dependsOn("generateProjectClean", "generateProjectFML");
+        makeTask("generateProjects").dependsOn("generateProjectClean", "generateProjectForge");
     }
 
     private void createEclipseTasks()
     {
         SubprojectTask task = makeTask("eclipseClean", SubprojectTask.class);
         {
-            task.setBuildFile(delayedFile(DevConstants.ECLIPSE_CLEAN + "/build.gradle"));
+            task.setBuildFile(delayedFile(ECLIPSE_CLEAN + "/build.gradle"));
             task.setTasks("eclipse");
             task.dependsOn("extractMcSource", "generateProjects");
         }
 
-        task = makeTask("eclipseFML", SubprojectTask.class);
+        task = makeTask("eclipseForge", SubprojectTask.class);
         {
-            task.setBuildFile(delayedFile(DevConstants.ECLIPSE_FORGE + "/build.gradle"));
+            task.setBuildFile(delayedFile(ECLIPSE_FORGE + "/build.gradle"));
             task.setTasks("eclipse");
-            task.dependsOn("extractFmlSources", "generateProjects");
+            task.dependsOn("extractForgeSources", "generateProjects");
         }
 
-        makeTask("eclipse").dependsOn("eclipseClean", "eclipseFML");
+        makeTask("eclipse").dependsOn("eclipseClean", "eclipseForge");
     }
 
     private void createMiscTasks()
     {
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
         {
-            task2.setPatchDir(delayedFile(DevConstants.FML_PATCH_DIR));
-            task2.setOriginalDir(delayedFile(DevConstants.ECLIPSE_CLEAN + "/src/main/java"));
-            task2.setChangedDir(delayedFile(DevConstants.ECLIPSE_FORGE + "/src/minecraft"));
-            task2.setOriginalPrefix("../src-base/minecraft");
-            task2.setChangedPrefix("../src-work/minecraft");
-            task2.setGroup("FML");
+            task2.setPatchDir(delayedFile(FORGE_PATCH_DIR));
+            task2.setOriginalDir(delayedFile(ECLIPSE_CLEAN + "/src/main/java"));
+            task2.setChangedDir(delayedFile(ECLIPSE_FORGE + "/src/minecraft"));
+            task2.setOriginalPrefix("../src_base/minecraft");
+            task2.setChangedPrefix("../src_work/minecraft");
+            task2.setGroup("Forge");
         }
 
-        Delete clean = makeTask("cleanFml", Delete.class);
+        Delete clean = makeTask("cleanForge", Delete.class);
         {
             clean.delete("eclipse");
             clean.setGroup("Clean");
@@ -264,11 +232,11 @@ public class ForgeDevPlugin extends DevBasePlugin
 
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
-            obf.setSrg(delayedFile(DevConstants.PACKAGED_SRG));
+            obf.setSrg(delayedFile(PACKAGED_SRG));
             obf.setReverse(true);
-            obf.setOutJar(delayedFile(DevConstants.REOBF_TMP));
-            obf.setBuildFile(delayedFile(DevConstants.ECLIPSE_FORGE + "/build.gradle"));
-            obf.dependsOn("generateProjects", "extractFmlSources", "fixMappings");
+            obf.setOutJar(delayedFile(REOBF_TMP));
+            obf.setBuildFile(delayedFile(ECLIPSE_FORGE + "/build.gradle"));
+            obf.dependsOn("generateProjects", "extractForgeSources", "fixMappings");
         }
 
         GenBinaryPatches task3 = makeTask("genBinPatches", GenBinaryPatches.class);
@@ -276,17 +244,13 @@ public class ForgeDevPlugin extends DevBasePlugin
             task3.setCleanClient(delayedFile(Constants.JAR_CLIENT_FRESH));
             task3.setCleanServer(delayedFile(Constants.JAR_SERVER_FRESH));
             task3.setCleanMerged(delayedFile(Constants.JAR_MERGED));
-            task3.setDirtyJar(delayedFile(DevConstants.REOBF_TMP));
-            task3.setDeobfDataLzma(delayedFile(DevConstants.DEOBF_DATA));
-            task3.setOutJar(delayedFile(DevConstants.BINPATCH_TMP));
-            task3.setSrg(delayedFile(DevConstants.PACKAGED_SRG));
-            task3.setPatchList(delayedFileTree(DevConstants.FML_PATCH_DIR));
+            task3.setDirtyJar(delayedFile(REOBF_TMP));
+            task3.setDeobfDataLzma(delayedFile(DEOBF_DATA));
+            task3.setOutJar(delayedFile(BINPATCH_TMP));
+            task3.setSrg(delayedFile(PACKAGED_SRG));
+            task3.addPatchList(delayedFileTree(FORGE_PATCH_DIR));
+            task3.addPatchList(delayedFileTree(FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData", "fixMappings");
-        }
-        FMLVersionPropTask prop = makeTask("createVersionProperties", FMLVersionPropTask.class);
-        {
-            prop.getOutputs().upToDateWhen(Constants.CALL_FALSE);
-            prop.setOutputFile(delayedFile(DevConstants.FML_VERSIONF));
         }
     }
 
@@ -301,29 +265,26 @@ public class ForgeDevPlugin extends DevBasePlugin
             log.setAuthName(delayedString("{JENKINS_AUTH_NAME}"));
             log.setAuthPassword(delayedString("{JENKINS_AUTH_PASSWORD}"));
             log.setTargetBuild(delayedString("{BUILD_NUM}"));
-            log.setOutput(delayedFile(DevConstants.CHANGELOG));
-        }
-
-        FMLVersionPropTask prop = makeTask("createVersionProperties", FMLVersionPropTask.class);
-        {
-            prop.getOutputs().upToDateWhen(Constants.CALL_FALSE);
-            prop.setOutputFile(delayedFile(DevConstants.FML_VERSIONF));
+            log.setOutput(delayedFile(CHANGELOG));
         }
 
         final DelayedJar uni = makeTask("packageUniversal", DelayedJar.class);
         {
             uni.setClassifier("universal");
-            uni.getInputs().file(delayedFile(DevConstants.JSON_REL));
+            uni.getInputs().file(delayedFile(JSON_REL));
             uni.getOutputs().upToDateWhen(Constants.CALL_FALSE);
-            uni.from(delayedZipTree(DevConstants.BINPATCH_TMP));
-            uni.from(delayedFileTree(DevConstants.FML_SOURCES));
-            uni.from(delayedFileTree(DevConstants.FML_RESOURCES));
-            uni.from(delayedFile(DevConstants.FML_VERSIONF));
-            uni.from(delayedFile(DevConstants.FML_LICENSE));
-            uni.from(delayedFile(DevConstants.FML_CREDITS));
-            uni.from(delayedFile(DevConstants.DEOBF_DATA));
-            uni.from(delayedFile(DevConstants.CHANGELOG));
-            uni.exclude(JAVA_FILES);
+            uni.from(delayedZipTree(BINPATCH_TMP));
+            uni.from(delayedFileTree(FML_RESOURCES));
+            uni.from(delayedFileTree(FORGE_RESOURCES));
+            uni.from(delayedFile(FML_VERSIONF));
+            uni.from(delayedFile(FML_LICENSE));
+            uni.from(delayedFile(FML_CREDITS));
+            uni.from(delayedFile(FORGE_LICENSE));
+            uni.from(delayedFile(FORGE_CREDITS));
+            uni.from(delayedFile(PAULSCODE_LISCENCE1));
+            uni.from(delayedFile(PAULSCODE_LISCENCE2));
+            uni.from(delayedFile(DEOBF_DATA));
+            uni.from(delayedFile(CHANGELOG));
             uni.exclude("devbinpatches.pack.lzma");
             uni.setIncludeEmptyDirs(false);
             uni.setManifest(new Closure<Object>(project)
@@ -332,20 +293,22 @@ public class ForgeDevPlugin extends DevBasePlugin
                 {
                     Manifest mani = (Manifest) getDelegate();
                     mani.getAttributes().put("Main-Class", delayedString("{MAIN_CLASS}").call());
-                    mani.getAttributes().put("Class-Path", getServerClassPath(delayedFile(DevConstants.JSON_REL).call()));
+                    mani.getAttributes().put("Class-Path", getServerClassPath(delayedFile(JSON_REL).call()));
                     return null;
                 }
             });
-            uni.dependsOn("genBinPatches", "createChangelog", "createVersionProperties");
+            uni.dependsOn("genBinPatches", "createChangelog", "fml:createVersionProperties");
         }
         project.getArtifacts().add("archives", uni);
 
         FileFilterTask task = makeTask("generateInstallJson", FileFilterTask.class);
         {
-            task.setInputFile(delayedFile(DevConstants.JSON_REL));
-            task.setOutputFile(delayedFile(DevConstants.INSTALL_PROFILE));
+            task.setInputFile(delayedFile(JSON_REL));
+            task.setOutputFile(delayedFile(INSTALL_PROFILE));
             task.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
             task.addReplacement("@version@", delayedString("{VERSION}"));
+            task.addReplacement("@project@", delayedString("Forge"));
+            task.addReplacement("@artifact@", delayedString("net.minecraftforge:forge:{MC_VERSION}-{VERSION}"));
             task.addReplacement("@universal_jar@", new Closure<String>(project)
             {
                 public String call()
@@ -371,38 +334,49 @@ public class ForgeDevPlugin extends DevBasePlugin
                     return uni.getArchivePath();
                 }
             });
-            inst.from(delayedFile(DevConstants.INSTALL_PROFILE));
-            inst.from(delayedFile(DevConstants.CHANGELOG));
-            inst.from(delayedFile(DevConstants.FML_LICENSE));
-            inst.from(delayedFile(DevConstants.FML_CREDITS));
-            inst.from(delayedFile(DevConstants.FML_LOGO));
-            inst.from(delayedZipTree(DevConstants.INSTALLER_BASE), new CopyInto(".", "!*.json", "!.png"));
+            inst.from(delayedFile(INSTALL_PROFILE));
+            inst.from(delayedFile(CHANGELOG));
+            inst.from(delayedFile(FML_LICENSE));
+            inst.from(delayedFile(FML_CREDITS));
+            uni.from(delayedFile(FORGE_LICENSE));
+            uni.from(delayedFile(FORGE_CREDITS));
+            uni.from(delayedFile(PAULSCODE_LISCENCE1));
+            uni.from(delayedFile(PAULSCODE_LISCENCE2));
+            inst.from(delayedFile(FORGE_LOGO));
+            inst.from(delayedZipTree(INSTALLER_BASE), new CopyInto(".", "!*.json", "!.png"));
             inst.dependsOn("packageUniversal", "downloadBaseInstaller", "generateInstallJson");
+            inst.rename("forge_logo\\.png", "big_logo.png");
             inst.setExtension("jar");
         }
         project.getArtifacts().add("archives", inst);
 
-        final Zip patchZip = makeTask("zipPatches", Zip.class);
+        final Zip patchZipFML = makeTask("zipFmlPatches", Zip.class);
         {
-            patchZip.from(delayedFile(DevConstants.FML_PATCH_DIR));
-            patchZip.setArchiveName("fmlpatches.zip");
+            patchZipFML.from(delayedFile(FML_PATCH_DIR));
+            patchZipFML.setArchiveName("fmlpatches.zip");
+        }
+        
+        final Zip patchZipForge = makeTask("zipForgePatches", Zip.class);
+        {
+            patchZipForge.from(delayedFile(FORGE_PATCH_DIR));
+            patchZipForge.setArchiveName("forgepatches.zip");
         }
         
         final Zip classZip = makeTask("jarClasses", Zip.class);
         {
-            classZip.from(delayedZipTree(DevConstants.BINPATCH_TMP), new CopyInto("", "**/*.class"));
+            classZip.from(delayedZipTree(BINPATCH_TMP), new CopyInto("", "**/*.class"));
             classZip.setArchiveName("binaries.jar");
         }
 
         final SubprojectTask javadocJar = makeTask("genJavadocs", SubprojectTask.class);
         {
-            javadocJar.setBuildFile(delayedFile(DevConstants.ECLIPSE_FORGE + "/build.gradle"));
+            javadocJar.setBuildFile(delayedFile(ECLIPSE_FORGE + "/build.gradle"));
             javadocJar.setTasks("jar");
             javadocJar.setConfigureTask(new Closure<Object>(this, null) {
                 public Object call(Object obj)
                 {
                     Jar task = (Jar) obj;
-                    File file = delayedFile(DevConstants.JAVADOC_TMP).call();
+                    File file = delayedFile(JAVADOC_TMP).call();
                     task.setDestinationDir(file.getParentFile());
                     task.setArchiveName(file.getName());
 
@@ -414,12 +388,18 @@ public class ForgeDevPlugin extends DevBasePlugin
         Zip userDev = makeTask("packageUserDev", Zip.class);
         {
             userDev.setClassifier("userdev");
-            userDev.from(delayedFile(DevConstants.JSON_DEV));
-            userDev.from(delayedFile(DevConstants.JAVADOC_TMP));
+            userDev.from(delayedFile(JSON_DEV));
+            userDev.from(delayedFile(JAVADOC_TMP));
             userDev.from(new Closure<File>(project) {
                 public File call()
                 {
-                    return patchZip.getArchivePath();
+                    return patchZipFML.getArchivePath();
+                }
+            });
+            userDev.from(new Closure<File>(project) {
+                public File call()
+                {
+                    return patchZipForge.getArchivePath();
                 }
             });
             userDev.from(new Closure<File>(project) {
@@ -428,15 +408,16 @@ public class ForgeDevPlugin extends DevBasePlugin
                     return classZip.getArchivePath();
                 }
             });
-            userDev.from(delayedFile(DevConstants.CHANGELOG));
-            userDev.from(delayedZipTree(DevConstants.BINPATCH_TMP), new CopyInto("", "devbinpatches.pack.lzma"));
+            userDev.from(delayedFile(CHANGELOG));
+            userDev.from(delayedZipTree(BINPATCH_TMP), new CopyInto("", "devbinpatches.pack.lzma"));
             userDev.from(delayedFileTree("{FML_DIR}/src"), new CopyInto("src"));
-            userDev.from(delayedFileTree(DevConstants.MERGE_CFG), new CopyInto("conf"));
+            userDev.from(delayedFileTree("src"), new CopyInto("src"));
+            userDev.from(delayedFileTree(MERGE_CFG), new CopyInto("conf"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "astyle.cfg"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("mappings", "*.csv", "!packages.csv"));
-            userDev.from(delayedFile(DevConstants.PACKAGED_SRG), new CopyInto("conf"));
-            userDev.from(delayedFile(DevConstants.PACKAGED_EXC), new CopyInto("conf"));
-            userDev.from(delayedFile(DevConstants.PACKAGED_PATCH), new CopyInto("conf"));
+            userDev.from(delayedFile(PACKAGED_SRG), new CopyInto("conf"));
+            userDev.from(delayedFile(PACKAGED_EXC), new CopyInto("conf"));
+            userDev.from(delayedFile(PACKAGED_PATCH), new CopyInto("conf"));
             userDev.rename(".+?\\.json", "dev.json");
             userDev.rename(".+?\\.srg", "packaged.srg");
             userDev.rename(".+?\\.exc", "packaged.exc");
@@ -450,11 +431,11 @@ public class ForgeDevPlugin extends DevBasePlugin
         Zip src = makeTask("packageSrc", Zip.class);
         {
             src.setClassifier("src");
-            src.from(delayedFile(DevConstants.CHANGELOG));
-            src.from(delayedFile(DevConstants.FML_LICENSE));
-            src.from(delayedFile(DevConstants.FML_CREDITS));
+            src.from(delayedFile(CHANGELOG));
+            src.from(delayedFile(FML_LICENSE));
+            src.from(delayedFile(FML_CREDITS));
             src.from(delayedFile("{FML_DIR}/install"), new CopyInto(null, "!*.gradle"));
-            src.from(delayedFile("{FML_DIR}/install"), (new CopyInto(null, "*.gradle")).addExpand("version", delayedString("{MC_VERSION}-{VERSION}")).addExpand("name", "fml"));
+            src.from(delayedFile("{FML_DIR}/install"), (new CopyInto(null, "*.gradle")).addExpand("version", delayedString("{MC_VERSION}-{VERSION}")).addExpand("name", "forge"));
             src.from(delayedFile("{FML_DIR}/gradlew"));
             src.from(delayedFile("{FML_DIR}/gradlew.bat"));
             src.from(delayedFile("{FML_DIR}/gradle/wrapper"), new CopyInto("gradle/wrapper"));
@@ -463,49 +444,5 @@ public class ForgeDevPlugin extends DevBasePlugin
             src.setExtension("zip");
         }
         project.getArtifacts().add("archives", src);
-    }
-
-    @SuppressWarnings("rawtypes")
-    public static String getVersionFromGit(Project project)
-    {
-        String fullVersion = runGit(project, "describe", "--long");
-        fullVersion = fullVersion.replace('-', '.').replaceAll("[^0-9.]", ""); //Normalize splitter, and remove non-numbers
-        String[] pts = fullVersion.split("\\.");
-
-        String major = pts[0];
-        String minor = pts[1];
-        String revision = pts[2];
-        String build = "0";
-
-        if (System.getenv().containsKey("BUILD_NUMBER"))
-        {
-            build = System.getenv("BUILD_NUMBER");
-        }
-
-        String branch = null;
-        if (!System.getenv().containsKey("GIT_BRANCH"))
-        {
-            branch = runGit(project, "rev-parse", "--abbrev-ref", "HEAD");
-        }
-        else
-        {
-            branch = System.getenv("GIT_BRANCH");
-            branch = branch.substring(branch.lastIndexOf('/') + 1);
-        }
-
-        if (branch != null && branch.equals("master"))
-        {
-            branch = null;
-        }
-
-        StringBuilder out = new StringBuilder();
-        out.append(DelayedBase.resolve("{MC_VERSION}", project, (IDelayedResolver) project.getPlugins().findPlugin("forgedev"))).append('-'); // Somehow configure this?
-        out.append(major).append('.').append(minor).append('.').append(revision).append('.').append(build);
-        if (branch != null)
-        {
-            out.append('-').append(branch);
-        }
-
-        return out.toString();
     }
 }

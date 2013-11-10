@@ -140,13 +140,8 @@ public class FmlDevPlugin extends DevBasePlugin
 
     private void createSourceCopyTasks()
     {
-        ExtractTask task = makeTask("extractWorkspace", ExtractTask.class);
-        {
-            task.from(delayedFile(DevConstants.WORKSPACE_ZIP));
-            task.into(delayedFile(DevConstants.WORKSPACE));
-        }
 
-        task = makeTask("extractMcResources", ExtractTask.class);
+        ExtractTask task = makeTask("extractMcResources", ExtractTask.class);
         {
             task.exclude(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
@@ -280,9 +275,10 @@ public class FmlDevPlugin extends DevBasePlugin
             task3.setDeobfDataLzma(delayedFile(DevConstants.DEOBF_DATA));
             task3.setOutJar(delayedFile(DevConstants.BINPATCH_TMP));
             task3.setSrg(delayedFile(DevConstants.PACKAGED_SRG));
-            task3.setPatchList(delayedFileTree(DevConstants.FML_PATCH_DIR));
+            task3.addPatchList(delayedFileTree(DevConstants.FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData", "fixMappings");
         }
+        
         FMLVersionPropTask prop = makeTask("createVersionProperties", FMLVersionPropTask.class);
         {
             prop.getOutputs().upToDateWhen(Constants.CALL_FALSE);
@@ -310,14 +306,12 @@ public class FmlDevPlugin extends DevBasePlugin
             uni.getInputs().file(delayedFile(DevConstants.JSON_REL));
             uni.getOutputs().upToDateWhen(Constants.CALL_FALSE);
             uni.from(delayedZipTree(DevConstants.BINPATCH_TMP));
-            uni.from(delayedFileTree(DevConstants.FML_SOURCES));
             uni.from(delayedFileTree(DevConstants.FML_RESOURCES));
             uni.from(delayedFile(DevConstants.FML_VERSIONF));
             uni.from(delayedFile(DevConstants.FML_LICENSE));
             uni.from(delayedFile(DevConstants.FML_CREDITS));
             uni.from(delayedFile(DevConstants.DEOBF_DATA));
             uni.from(delayedFile(DevConstants.CHANGELOG));
-            uni.exclude(JAVA_FILES);
             uni.exclude("devbinpatches.pack.lzma");
             uni.setIncludeEmptyDirs(false);
             uni.setManifest(new Closure<Object>(project)
@@ -340,6 +334,8 @@ public class FmlDevPlugin extends DevBasePlugin
             task.setOutputFile(delayedFile(DevConstants.INSTALL_PROFILE));
             task.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
             task.addReplacement("@version@", delayedString("{VERSION}"));
+            task.addReplacement("@project@", delayedString("FML"));
+            task.addReplacement("@artifact@", delayedString("cpw.mods:fml:{MC_VERSION}-{VERSION}"));
             task.addReplacement("@universal_jar@", new Closure<String>(project)
             {
                 public String call()

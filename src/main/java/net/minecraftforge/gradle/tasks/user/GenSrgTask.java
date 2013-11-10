@@ -8,16 +8,16 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 
 import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.sourcemanip.SourceRemapper;
+import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import com.google.common.io.Files;
-
 import au.com.bytecode.opencsv.CSVReader;
+
+import com.google.common.io.Files;
 
 public class GenSrgTask extends DefaultTask
 {
@@ -44,14 +44,14 @@ public class GenSrgTask extends DefaultTask
         HashMap<String, String> fields = new HashMap<String, String>();
         
         // read methods
-        CSVReader csvReader = SourceRemapper.getReader(getMethodsCsv());
+        CSVReader csvReader = RemapSourcesTask.getReader(getMethodsCsv());
         for (String[] s : csvReader.readAll())
         {
             methods.put(s[0], s[1]);
         }
 
         // read fields
-        csvReader = SourceRemapper.getReader(getFieldsCsv());
+        csvReader = RemapSourcesTask.getReader(getFieldsCsv());
         for (String[] s : csvReader.readAll())
         {
             fields.put(s[0], s[1]);
