@@ -48,21 +48,16 @@ public class Constants
     public static final Closure<Boolean> CALL_FALSE = new Closure<Boolean>(null){ public Boolean call(Object o){ return false; }};
 
     // urls
-    public static final String MC_VERSION       = "{MC_VERSION}";
     public static final String MC_JAR_URL       = "http://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/{MC_VERSION}.jar";
     public static final String MC_SERVER_URL    = "http://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/minecraft_server.{MC_VERSION}.jar";
     public static final String MCP_URL          = "http://mcp.ocean-labs.de/files/archive/mcp804.zip";
 
     // things in the cache dir.
-    public static final String JAR_CLIENT_FRESH = "{CACHE_DIR}/net/minecraft/minecraft/{MC_VERSION}/minecraft-{MC_VERSION}.jar";
-    public static final String JAR_SERVER_FRESH = "{CACHE_DIR}/net/minecraft/minecraft_server/{MC_VERSION}/minecraft_server-{MC_VERSION}.jar";
-    public static final String JAR_MERGED       = "{CACHE_DIR}/net/minecraft/minecraft_merged/{MC_VERSION}/minecraft_merged-{MC_VERSION}.jar";
-    public static final String JAR_SRG          = "{CACHE_DIR}/net/minecraft/minecraft_srg/{MC_VERSION}/minecraft_srg-{MC_VERSION}.jar";
-    public static final String ZIP_DECOMP       = "{CACHE_DIR}/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_decomp-{MC_VERSION}.zip";
-    public static final String ZIP_FML          = "{CACHE_DIR}/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_fml-{MC_VERSION}.zip";
-    public static final String FERNFLOWER       = "{CACHE_DIR}/fernflower.jar";
-    public static final String EXCEPTOR         = "{CACHE_DIR}/exceptor.jar";
-    public static final String MCP_VERSION      = "{MCP_VERSION}";
+    public static final String JAR_CLIENT_FRESH = "{CACHE_DIR}/minecraft/net/minecraft/minecraft/{MC_VERSION}/minecraft-{MC_VERSION}.jar";
+    public static final String JAR_SERVER_FRESH = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_server/{MC_VERSION}/minecraft_server-{MC_VERSION}.jar";
+    public static final String JAR_MERGED       = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_merged/{MC_VERSION}/minecraft_merged-{MC_VERSION}.jar";
+    public static final String FERNFLOWER       = "{CACHE_DIR}/minecraft/fernflower.jar";
+    public static final String EXCEPTOR         = "{CACHE_DIR}/minecraft/exceptor.jar";
 
     // util
     public static final String NEWLINE = System.getProperty("line.separator");

@@ -3,7 +3,6 @@ package net.minecraftforge.gradle.tasks.dev;
 import java.io.File;
 import java.io.IOException;
 
-import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedString;
 
@@ -28,8 +27,8 @@ public class FMLVersionPropTask extends DefaultTask
         "fmlbuild.minor.number="    + version[1] + "\n" +
         "fmlbuild.revision.number=" + version[2] + "\n" +
         "fmlbuild.build.number="    + version[3] + "\n" +
-        "fmlbuild.mcversion=" + new DelayedString(getProject(), Constants.MC_VERSION).call() + "\n" +
-        "fmlbuild.mcpversion=" + new DelayedString(getProject(), Constants.MCP_VERSION).call() + "\n";
+        "fmlbuild.mcversion=" + new DelayedString(getProject(), "{MCP_VERSION}").call() + "\n" +
+        "fmlbuild.mcpversion=" + new DelayedString(getProject(), "{MCP_VERSION}").call() + "\n";
         //fmlbuild.deobfuscation.hash -- Not actually used anywhere
         Files.write(data.getBytes(Charsets.UTF_8), getOutputFile());
     }
