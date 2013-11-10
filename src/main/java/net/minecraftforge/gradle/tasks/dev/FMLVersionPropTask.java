@@ -27,7 +27,7 @@ public class FMLVersionPropTask extends DefaultTask
         "fmlbuild.minor.number="    + version[1] + "\n" +
         "fmlbuild.revision.number=" + version[2] + "\n" +
         "fmlbuild.build.number="    + version[3] + "\n" +
-        "fmlbuild.mcversion=" + new DelayedString(getProject(), "{MCP_VERSION}").call() + "\n" +
+        "fmlbuild.mcversion=" + new DelayedString(getProject(), "{MC_VERSION}").call() + "\n" +
         "fmlbuild.mcpversion=" + new DelayedString(getProject(), "{MCP_VERSION}").call() + "\n";
         //fmlbuild.deobfuscation.hash -- Not actually used anywhere
         Files.write(data.getBytes(Charsets.UTF_8), getOutputFile());

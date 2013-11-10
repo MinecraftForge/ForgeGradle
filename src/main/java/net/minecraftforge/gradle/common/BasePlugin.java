@@ -26,12 +26,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     {
         project = arg;
 
-        project.getLogger().lifecycle("****************************");
-        project.getLogger().lifecycle(" Powered By MCP:            ");
-        project.getLogger().lifecycle(" http://mcp.ocean-labs.de/  ");
-        project.getLogger().lifecycle(" Searge, ProfMobius, Fesh0r,");
-        project.getLogger().lifecycle(" R4wk, ZeuX, IngisKahn      ");
-
         project.getExtensions().create(Constants.EXT_NAME_MC, getExtensionClass(), project);
         project.getExtensions().create(Constants.EXT_NAME_JENKINS, JenkinsExtension.class, project);
 
@@ -52,15 +46,25 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         // at last....
         applyPlugin();
-        project.getLogger().lifecycle(delayedString(" MCP Data version : {MCP_VERSION}").call());
-        project.getLogger().lifecycle(              "****************************");
     }
 
     public abstract void applyPlugin();
 
     protected abstract String getDevJson();
 
-    public void afterEvaluate() {}
+    private static boolean displayBanner = true;
+    public void afterEvaluate()
+    {
+        if (!displayBanner) return;
+        project.getLogger().lifecycle("****************************");
+        project.getLogger().lifecycle(" Powered By MCP:            ");
+        project.getLogger().lifecycle(" http://mcp.ocean-labs.de/  ");
+        project.getLogger().lifecycle(" Searge, ProfMobius, Fesh0r,");
+        project.getLogger().lifecycle(" R4wk, ZeuX, IngisKahn      ");
+        project.getLogger().lifecycle(delayedString(" MCP Data version : {MCP_VERSION}").call());
+        project.getLogger().lifecycle("****************************");
+        displayBanner = false;
+    }
 
     private void makeObtainTasks()
     {

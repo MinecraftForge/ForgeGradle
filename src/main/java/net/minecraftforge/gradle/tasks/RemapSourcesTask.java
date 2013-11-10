@@ -36,15 +36,13 @@ public class RemapSourcesTask extends EditJarTask
     @InputFile
     private DelayedFile                            paramsCsv;
 
-    private final Map<String, Map<String, String>> methods      = new HashMap<String, Map<String, String>>();
-    private final Map<String, Map<String, String>> fields       = new HashMap<String, Map<String, String>>();
-    private final Map<String, String>              params       = new HashMap<String, String>();
+    private final Map<String, Map<String, String>> methods    = new HashMap<String, Map<String, String>>();
+    private final Map<String, Map<String, String>> fields     = new HashMap<String, Map<String, String>>();
+    private final Map<String, String>              params     = new HashMap<String, String>();
 
-    private static final Pattern                   METHOD_SMALL = Pattern.compile("func_[0-9]+_[a-zA-Z_]+");
-    private static final Pattern                   FIELD_SMALL  = Pattern.compile("field_[0-9]+_[a-zA-Z_]+");
-    private static final Pattern                   PARAM        = Pattern.compile("p_[\\w]+_\\d+_");
-    private static final Pattern                   METHOD       = Pattern.compile("^( {4}|\\t)(?:[\\w$.\\[\\]]+ )*(func_[0-9]+_[a-zA-Z_]+)\\(");
-    private static final Pattern                   FIELD        = Pattern.compile("^( {4}|\\t)(?:[\\w$.\\[\\]]+ )*(field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
+    private static final Pattern                   SRG_FINDER = Pattern.compile("func_[0-9]+_[a-zA-Z_]+|field_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_");
+    private static final Pattern                   METHOD     = Pattern.compile("^( {4}|\\t)(?:[\\w$.\\[\\]]+ )*(func_[0-9]+_[a-zA-Z_]+)\\(");
+    private static final Pattern                   FIELD      = Pattern.compile("^( {4}|\\t)(?:[\\w$.\\[\\]]+ )*(field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
 
     @Override
     public void doStuffBefore() throws Throwable
@@ -71,15 +69,13 @@ public class RemapSourcesTask extends EditJarTask
 
                 if (methods.containsKey(name) && methods.get(name).containsKey("name"))
                 {
-                    ;
-                }
-                {
                     line = line.replace(name, methods.get(name).get("name"));
 
                     // get javadoc
-                    if (methods.get(name).containsKey("javadoc"))
+                    String javadoc = methods.get(name).get("javadoc");
+                    if (!Strings.isNullOrEmpty(javadoc))
                     {
-                        line = buildJavadoc(matcher.group(1), methods.get(name).get("javadoc"), true) + line;
+                        line = buildJavadoc(matcher.group(1), javadoc, true) + line;
 
                         if (!Strings.isNullOrEmpty(prevLine) && !prevLine.endsWith("{"))
                         {
@@ -101,9 +97,10 @@ public class RemapSourcesTask extends EditJarTask
                     line = line.replace(name, fields.get(name).get("name"));
 
                     // get javadoc
-                    if (fields.get(name).get("javadoc") != null)
+                    String javadoc = fields.get(name).get("javadoc");
+                    if (!Strings.isNullOrEmpty(javadoc))
                     {
-                        line = buildJavadoc(matcher.group(1), fields.get(name).get("javadoc"), false) + line;
+                        line = buildJavadoc(matcher.group(1), javadoc, false) + line;
 
                         if (!Strings.isNullOrEmpty(prevLine) && !prevLine.endsWith("{"))
                         {
@@ -119,37 +116,34 @@ public class RemapSourcesTask extends EditJarTask
 
         text = Joiner.on(Constants.NEWLINE).join(newLines) + Constants.NEWLINE;
 
-        // FAR all parameters
-        matcher = PARAM.matcher(text);
-        while (matcher.find())
-        {
-            if (params.containsKey(matcher.group()))
-            {
-                matcher.replaceFirst(params.get(matcher.group()));
-            }
-        }
-
         // FAR all methods
-        matcher = METHOD_SMALL.matcher(text);
+        StringBuffer buf = new StringBuffer();
+        matcher = SRG_FINDER.matcher(text);
         while (matcher.find())
         {
-            if (methods.containsKey(matcher.group()))
-            {
-                matcher.replaceFirst(methods.get(matcher.group()).get("name"));
-            }
+            String find = matcher.group();
+            
+            if (find.startsWith("p_"))
+                find = params.get(find);
+            else if (find.startsWith("func_"))
+                find = stupidMacro(methods, find);
+            else if (find.startsWith("field_"))
+                find = stupidMacro(fields, find);
+            
+            if (find == null)
+                find = matcher.group();
+            
+            matcher.appendReplacement(buf, find);
         }
+        matcher.appendTail(buf);
+        
+        return buf.toString();
+    }
 
-        // FAR all fields
-        matcher = FIELD_SMALL.matcher(text);
-        while (matcher.find())
-        {
-            if (fields.containsKey(matcher.group()))
-            {
-                matcher.replaceFirst(fields.get(matcher.group()).get("name"));
-            }
-        }
-
-        return text;
+    private String stupidMacro(Map<String, Map<String, String>> map, String key)
+    {
+        Map<String, String> s = map.get(key);
+        return s == null ? null : s.get("name");
     }
 
     private void readCsvFiles() throws IOException

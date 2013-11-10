@@ -38,7 +38,8 @@ public final class UserConstants
     static final String FML_BINPATCHED = "{CACHE_DIR}/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}.jar";
     static final String FML_DEOBF_MCP = "{CACHE_DIR}/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}-mcp.jar";
     
-    static final String FML_PATCHES_ZIP = PACK_DIR+"/patches.zip";
+    static final String FML_PATCHES_ZIP = PACK_DIR+"/fmlpatches.zip";
+    static final String FORGE_PATCHES_ZIP = PACK_DIR+"/forgepatches.zip";
     
     static final String BINPATCHES = PACK_DIR+"/devbinpatches.pack.lzma";
     static final String BINARIES_JAR= PACK_DIR+"/binaries.jar";

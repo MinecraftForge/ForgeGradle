@@ -32,11 +32,19 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
 {
     protected static final String[] JAVA_FILES = new String[] { "**.java", "*.java", "**/*.java" };
     
+    @SuppressWarnings("serial")
     @Override
     public void applyPlugin()
     {
         ExtractTask task = makeTask("extractWorkspace", ExtractTask.class);
         {
+            task.getOutputs().upToDateWhen(new Closure<Boolean>(null) {
+                public Boolean call(Object... obj)
+                {
+                    File file = new File(project.getProjectDir(), "eclipse");
+                    return (file.exists() && file.isDirectory());
+                }
+            });
             task.from(delayedFile(DevConstants.WORKSPACE_ZIP));
             task.into(delayedFile(DevConstants.WORKSPACE));
         }
@@ -84,6 +92,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
     @Override
     public void afterEvaluate()
     {
+        super.afterEvaluate();
         try
         {
             Copy copyTask = makeTask("extractNatives", Copy.class);

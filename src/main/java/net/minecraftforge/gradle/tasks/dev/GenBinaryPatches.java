@@ -10,8 +10,10 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -29,7 +31,6 @@ import net.minecraftforge.gradle.delayed.DelayedFileTree;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.internal.file.collections.SimpleFileCollection;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
@@ -47,48 +48,50 @@ import com.nothome.delta.Delta;
 public class GenBinaryPatches extends DefaultTask
 {
     @InputFile
-    private DelayedFile cleanClient;
-    
-    @InputFile
-    private DelayedFile cleanServer;
+    private DelayedFile             cleanClient;
 
     @InputFile
-    private DelayedFile cleanMerged;
-    
-    @InputFile
-    private DelayedFile dirtyJar;
-    
-    @InputFiles
-    private List<DelayedFileTree> patchList = new ArrayList<DelayedFileTree>();
+    private DelayedFile             cleanServer;
 
     @InputFile
-    private DelayedFile deobfDataLzma;
-    
+    private DelayedFile             cleanMerged;
+
     @InputFile
-    private DelayedFile srg;
-    
+    private DelayedFile             dirtyJar;
+
+    private List<DelayedFileTree>   patchList    = new ArrayList<DelayedFileTree>();
+
+    @InputFile
+    private DelayedFile             deobfDataLzma;
+
+    @InputFile
+    private DelayedFile             srg;
+
     @OutputFile
-    private DelayedFile outJar;
+    private DelayedFile             outJar;
 
-    private HashMap<String, String> obfMapping = new HashMap<String, String>();
-    private HashMap<String, String> srgMapping = new HashMap<String, String>();
-    private List<String> patchedFiles = new ArrayList<String>();
-    private Delta delta = new Delta();
-    
+    private HashMap<String, String> obfMapping   = new HashMap<String, String>();
+    private HashMap<String, String> srgMapping   = new HashMap<String, String>();
+    private Set<String>             patchedFiles = new HashSet<String>();
+    private Delta                   delta        = new Delta();
+
     @TaskAction
     public void doTask() throws Exception
     {
         loadMappings();
 
-        for (File patch : getPatchList().getFiles())
+        for (DelayedFileTree tree : patchList)
         {
-            String name = patch.getName().replace(".java.patch", "");
-            patchedFiles.add(srgMapping.get(name));
+            for (File patch : tree.call().getFiles())
+            {
+                String name = patch.getName().replace(".java.patch", "");
+                patchedFiles.add(srgMapping.get(name));
+            }
         }
 
         HashMap<String, byte[]> runtime = new HashMap<String, byte[]>();
         HashMap<String, byte[]> devtime = new HashMap<String, byte[]>();
-        
+
         createBinPatches(runtime, "client/", getCleanClient(), getDirtyJar());
         createBinPatches(runtime, "server/", getCleanServer(), getDirtyJar());
         createBinPatches(devtime, "merged/", getCleanMerged(), getDirtyJar());
@@ -107,9 +110,9 @@ public class GenBinaryPatches extends DefaultTask
     private void loadMappings() throws Exception
     {
         Files.readLines(getSrg(), Charset.defaultCharset(), new LineProcessor<String>() {
-            
+
             Splitter splitter = Splitter.on(CharMatcher.anyOf(": ")).omitEmptyStrings().trimResults();
-            
+
             @Override
             public boolean processLine(String line) throws IOException
             {
@@ -117,7 +120,7 @@ public class GenBinaryPatches extends DefaultTask
                 {
                     return true;
                 }
-                
+
                 String[] parts = Iterables.toArray(splitter.split(line), String.class);
                 obfMapping.put(parts[1], parts[2]);
                 srgMapping.put(parts[2].substring(parts[2].lastIndexOf('/') + 1), parts[1]);
@@ -172,21 +175,20 @@ public class GenBinaryPatches extends DefaultTask
             }
             out.writeInt(diff.length); // Patch length
             out.write(diff);           // Patch
-            
+
             patches.put(root + srg.replace('/', '.') + ".binpatch", out.toByteArray());
         }
 
         cleanJ.close();
         dirtyJ.close();
     }
-    
+
     private int adlerHash(byte[] input)
     {
         Adler32 hasher = new Adler32();
         hasher.update(input);
         return (int) hasher.getValue();
     }
-    
 
     private byte[] createPatchJar(HashMap<String, byte[]> patches) throws Exception
     {
@@ -207,17 +209,17 @@ public class GenBinaryPatches extends DefaultTask
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         Packer packer = Pack200.newPacker();
-        
+
         SortedMap<String, String> props = packer.properties();
         props.put(Packer.EFFORT, "9");
         props.put(Packer.KEEP_FILE_ORDER, Packer.TRUE);
         props.put(Packer.UNKNOWN_ATTRIBUTE, Packer.PASS);
-        
+
         final PrintStream err = new PrintStream(System.err);
         System.setErr(new PrintStream(Constants.getNullStream()));
         packer.pack(in, out);
         System.setErr(err);
-        
+
         in.close();
         out.close();
 
@@ -232,7 +234,7 @@ public class GenBinaryPatches extends DefaultTask
         lzma.close();
         return out.toByteArray();
     }
-    
+
     private void buildOutput(byte[] runtime, byte[] devtime) throws Exception
     {
         JarOutputStream out = new JarOutputStream(new FileOutputStream(getOutJar()));
@@ -249,8 +251,8 @@ public class GenBinaryPatches extends DefaultTask
             out.putNextEntry(new JarEntry("devbinpatches.pack.lzma"));
             out.write(devtime);
         }
-        
-        for (JarEntry e: Collections.list(in.entries()))
+
+        for (JarEntry e : Collections.list(in.entries()))
         {
             if (e.isDirectory())
             {
@@ -259,7 +261,7 @@ public class GenBinaryPatches extends DefaultTask
             else
             {
                 if (!e.getName().endsWith(".class") || // It's not a class, we don't want resources or anything
-                    obfMapping.containsKey(e.getName().replace(".class", ""))) //It's a base class and as such should be in the binpatches
+                obfMapping.containsKey(e.getName().replace(".class", ""))) //It's a base class and as such should be in the binpatches
                 {
                     continue;
                 }
@@ -270,7 +272,7 @@ public class GenBinaryPatches extends DefaultTask
                 out.write(ByteStreams.toByteArray(in.getInputStream(e)));
             }
         }
-        
+
         out.close();
         in.close();
     }
@@ -313,16 +315,6 @@ public class GenBinaryPatches extends DefaultTask
     public void setDirtyJar(DelayedFile dirtyJar)
     {
         this.dirtyJar = dirtyJar;
-    }
-
-    public FileCollection getPatchList()
-    {
-        FileCollection collection = new SimpleFileCollection(new File[] {});
-        for (DelayedFileTree tree: patchList)
-        {
-            collection.add(tree.call());
-        }
-        return collection;
     }
 
     public void addPatchList(DelayedFileTree patchList)

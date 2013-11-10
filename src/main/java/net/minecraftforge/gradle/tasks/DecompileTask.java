@@ -177,7 +177,7 @@ public class DecompileTask extends CachedTask
                     // catch the failed hunks
                     if (!hunk.getStatus().isSuccess())
                     {
-                        getLogger().error("Hunk "+hunk.getIndex()+" failed!");
+                        getLogger().error("Hunk "+hunk.getHunkID()+" failed!");
                     }
                 }
 
@@ -197,7 +197,7 @@ public class DecompileTask extends CachedTask
                     // catch the failed hunks
                     if (!hunk.getStatus().isSuccess())
                     {
-                        getLogger().info("Hunk "+hunk.getIndex()+" fuzzed "+hunk.getFuzz()+"!");
+                        getLogger().info("Hunk "+hunk.getHunkID()+" fuzzed "+hunk.getFuzz()+"!");
                     }
                 }
             }

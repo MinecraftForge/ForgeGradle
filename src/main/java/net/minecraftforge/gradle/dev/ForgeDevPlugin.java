@@ -4,11 +4,15 @@ import static net.minecraftforge.gradle.dev.DevConstants.*;
 import groovy.lang.Closure;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 import net.minecraftforge.gradle.CopyInto;
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.delayed.DelayedBase;
+import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
@@ -23,7 +27,9 @@ import net.minecraftforge.gradle.tasks.dev.GeneratePatches;
 import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
 import net.minecraftforge.gradle.tasks.dev.SubprojectTask;
 
+import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.java.archives.Manifest;
 import org.gradle.api.tasks.Delete;
@@ -106,7 +112,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task5.setArchiveName("minecraft_fmlinjected.zip");
             task5.setDestinationDir(delayedFile("{BUILD_DIR}/forgeTmp").call());
             
-            task5.dependsOn("fmlPatchJar", "compressDeobfData");
+            task5.dependsOn("fmlPatchJar", "compressDeobfData", "createVersionPropertiesFML");
         }
         
         RemapSourcesTask task6 = makeTask("remapSourcesJar", RemapSourcesTask.class);
@@ -159,7 +165,6 @@ public class ForgeDevPlugin extends DevBasePlugin
         task = makeTask("extractForgeSources", ExtractTask.class);
         {
             task.include(JAVA_FILES);
-            task.exclude("cpw/**");
             task.from(delayedFile(ZIP_PATCHED_FORGE));
             task.into(delayedFile(ECLIPSE_FORGE + "/src/minecraft"));
             task.dependsOn("extractForgeResources");
@@ -169,13 +174,19 @@ public class ForgeDevPlugin extends DevBasePlugin
 
     private void createProjectTasks()
     {
+        SubprojectTask sub = makeTask("createVersionPropertiesFML", SubprojectTask.class);
+        {
+            sub.setTasks("createVersionProperties");
+            sub.setBuildFile(delayedFile("{FML_DIR}/build.gradle"));
+        }
+
         GenDevProjectsTask task = makeTask("generateProjectClean", GenDevProjectsTask.class);
         {
             task.setTargetDir(delayedFile(ECLIPSE_CLEAN));
             task.setJson(delayedFile(JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
             task.dependsOn("extractNatives");
         }
-
+        
         task = makeTask("generateProjectForge", GenDevProjectsTask.class);
         {
             task.setJson(delayedFile(JSON_DEV));
@@ -187,7 +198,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task.addResource(delayedFile(ECLIPSE_FORGE + "/src/resources"));
             task.addResource(delayedFile(FORGE_RESOURCES));
 
-            task.dependsOn("extractNatives","fml:createVersionProperties");
+            task.dependsOn("extractNatives","createVersionPropertiesFML");
         }
 
         makeTask("generateProjects").dependsOn("generateProjectClean", "generateProjectForge");
@@ -297,7 +308,7 @@ public class ForgeDevPlugin extends DevBasePlugin
                     return null;
                 }
             });
-            uni.dependsOn("genBinPatches", "createChangelog", "fml:createVersionProperties");
+            uni.dependsOn("genBinPatches", "createChangelog", "createVersionPropertiesFML");
         }
         project.getArtifacts().add("archives", uni);
 
@@ -418,12 +429,13 @@ public class ForgeDevPlugin extends DevBasePlugin
             userDev.from(delayedFile(PACKAGED_SRG), new CopyInto("conf"));
             userDev.from(delayedFile(PACKAGED_EXC), new CopyInto("conf"));
             userDev.from(delayedFile(PACKAGED_PATCH), new CopyInto("conf"));
+            userDev.from(delayedFile(FML_VERSIONF), new CopyInto("src/main/resources"));
             userDev.rename(".+?\\.json", "dev.json");
             userDev.rename(".+?\\.srg", "packaged.srg");
             userDev.rename(".+?\\.exc", "packaged.exc");
             userDev.rename(".+?\\.patch", "packaged.patch");
             userDev.setIncludeEmptyDirs(false);
-            userDev.dependsOn("packageUniversal", "zipPatches", "jarClasses");
+            userDev.dependsOn("packageUniversal", "zipFmlPatches", "zipForgePatches", "jarClasses", "createVersionPropertiesFML");
             userDev.setExtension("jar");
         }
         project.getArtifacts().add("archives", userDev);
@@ -444,5 +456,64 @@ public class ForgeDevPlugin extends DevBasePlugin
             src.setExtension("zip");
         }
         project.getArtifacts().add("archives", src);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public static String getVersionFromJava(Project project, String file) throws IOException
+    {
+        String major = "0";
+        String minor = "0";
+        String revision = "0";
+        String build = "0";
+
+        String prefix = "public static final int";
+        List<String> lines = (List<String>)FileUtils.readLines(project.file(file));
+        for (String s : lines)
+        {
+            s = s.trim();
+            if (s.startsWith(prefix))
+            {
+                s = s.substring(prefix.length(), s.length() - 1);
+                s = s.replace('=', ' ').replace("Version", "").replaceAll(" +", " ").trim();
+                String[] pts = s.split(" ");
+
+                if (pts[0].equals("major")) major = pts[pts.length - 1];
+                else if (pts[0].equals("minor")) minor = pts[pts.length - 1];
+                else if (pts[0].equals("revision")) revision = pts[pts.length - 1];
+            }
+        }
+
+        if (System.getenv().containsKey("BUILD_NUMBER"))
+        {
+            build = System.getenv("BUILD_NUMBER");
+        }
+
+        String branch = null;
+        if (!System.getenv().containsKey("GIT_BRANCH"))
+        {
+            branch = runGit(project, "rev-parse", "--abbrev-ref", "HEAD");
+        }
+        else
+        {
+            branch = System.getenv("GIT_BRANCH");
+            branch = branch.substring(branch.lastIndexOf('/') + 1);
+        }
+
+        if (branch != null && branch.equals("master"))
+        {
+            branch = null;
+        }
+        
+        IDelayedResolver resolver = (IDelayedResolver)project.getPlugins().findPlugin("forgedev");
+        StringBuilder out = new StringBuilder();
+
+        out.append(DelayedBase.resolve("{MC_VERSION}", project, resolver)).append('-'); // Somehow configure this?
+        out.append(major).append('.').append(minor).append('.').append(revision).append('.').append(build);
+        if (branch != null)
+        {
+            out.append('-').append(branch);
+        }
+
+        return out.toString();
     }
 }
