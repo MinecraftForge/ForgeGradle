@@ -40,10 +40,10 @@ public class FmlDevPlugin extends DevBasePlugin
     public void applyPlugin()
     {
         super.applyPlugin();
-        
+
         // set fmlDir
         getExtension().setFmlDir(".");
-        
+
         //configureLaunch4J();
         createJarProcessTasks();
         createProjectTasks();
@@ -278,7 +278,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task3.addPatchList(delayedFileTree(DevConstants.FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData", "fixMappings");
         }
-        
+
         FMLVersionPropTask prop = makeTask("createVersionProperties", FMLVersionPropTask.class);
         {
             prop.getOutputs().upToDateWhen(Constants.CALL_FALSE);
@@ -366,7 +366,7 @@ public class FmlDevPlugin extends DevBasePlugin
             inst.from(delayedFile(DevConstants.FML_LICENSE));
             inst.from(delayedFile(DevConstants.FML_CREDITS));
             inst.from(delayedFile(DevConstants.FML_LOGO));
-            inst.from(delayedZipTree(DevConstants.INSTALLER_BASE), new CopyInto(".", "!*.json", "!.png"));
+            inst.from(delayedZipTree(DevConstants.INSTALLER_BASE), new CopyInto("/", "!*.json", "!*.png"));
             inst.dependsOn("packageUniversal", "downloadBaseInstaller", "generateInstallJson");
             inst.setExtension("jar");
         }
