@@ -55,7 +55,7 @@ public class ForgeDevPlugin extends DevBasePlugin
 
         // the master setup task.
         Task task = makeTask("setupForge", DefaultTask.class);
-        task.dependsOn("extractForgeSources", "generateProjects", "eclipse");
+        task.dependsOn("extractForgeSources", "generateProjects", "eclipse", "copyAssets");
         task.setGroup("Forge");
 
         // the master task.

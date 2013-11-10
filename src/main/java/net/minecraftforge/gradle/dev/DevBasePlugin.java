@@ -21,6 +21,7 @@ import net.minecraftforge.gradle.tasks.dev.MergeMappingsTask;
 
 import org.gradle.api.Project;
 import org.gradle.api.tasks.Copy;
+import org.gradle.api.tasks.Sync;
 import org.gradle.process.ExecSpec;
 
 import argo.jdom.JsonNode;
@@ -80,6 +81,13 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
             task4.setOutJar(delayedFile(Constants.JAR_MERGED));
             task4.setMergeCfg(delayedFile(DevConstants.MERGE_CFG));
             task4.dependsOn("downloadClient", "downloadServer");
+        }
+        
+        Sync task5 = makeTask("copyAssets", Sync.class);
+        {
+            task5.from(delayedFile(Constants.ASSETS));
+            task5.setDestinationDir(new File(DevConstants.ECLIPSE_ASSETS));
+            task5.dependsOn("getAssets", "extractWorkspace");
         }
     }
     

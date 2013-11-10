@@ -6,6 +6,7 @@ import java.util.HashMap;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.delayed.DelayedString;
+import net.minecraftforge.gradle.tasks.DownloadAssetsTask;
 import net.minecraftforge.gradle.tasks.DownloadTask;
 import net.minecraftforge.gradle.tasks.ObtainMcpStuffTask;
 
@@ -29,12 +30,11 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         project.getExtensions().create(Constants.EXT_NAME_MC, getExtensionClass(), project);
         project.getExtensions().create(Constants.EXT_NAME_JENKINS, JenkinsExtension.class, project);
 
-
         addMavenRepo("forge", "http://files.minecraftforge.net/maven");
         project.getRepositories().mavenCentral();
         addMavenRepo("minecraft", "http://s3.amazonaws.com/Minecraft.Download/libraries");
 
-        project.afterEvaluate(new Action<Project>(){
+        project.afterEvaluate(new Action<Project>() {
             @Override
             public void execute(Project project)
             {
@@ -53,9 +53,11 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     protected abstract String getDevJson();
 
     private static boolean displayBanner = true;
+
     public void afterEvaluate()
     {
-        if (!displayBanner) return;
+        if (!displayBanner)
+            return;
         project.getLogger().lifecycle("****************************");
         project.getLogger().lifecycle(" Powered By MCP:            ");
         project.getLogger().lifecycle(" http://mcp.ocean-labs.de/  ");
@@ -89,6 +91,11 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             mcpTask.setFfJar(delayedFile(Constants.FERNFLOWER));
             mcpTask.setInjectorJar(delayedFile(Constants.EXCEPTOR));
         }
+
+        DownloadAssetsTask assets = makeTask("getAssets", DownloadAssetsTask.class);
+        {
+            assets.setAssetsDir(delayedFile(Constants.ASSETS));
+        }
     }
 
     /**
@@ -96,7 +103,10 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
      * @return
      */
     @SuppressWarnings("unchecked")
-    protected Class<K> getExtensionClass(){ return (Class<K>) BaseExtension.class; }
+    protected Class<K> getExtensionClass()
+    {
+        return (Class<K>) BaseExtension.class;
+    }
 
     /**
      * @return the extension object with name EXT_NAME_MC
@@ -162,9 +172,24 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         });
     }
 
-    protected DelayedString   delayedString  (String path){ return new DelayedString  (project, path); }
-    protected DelayedFile     delayedFile    (String path){ return new DelayedFile    (project, path); }
-    protected DelayedFileTree delayedFileTree(String path){ return new DelayedFileTree(project, path); }
-    protected DelayedFileTree delayedZipTree (String path){ return new DelayedFileTree(project, path, true); }
+    protected DelayedString delayedString(String path)
+    {
+        return new DelayedString(project, path);
+    }
+
+    protected DelayedFile delayedFile(String path)
+    {
+        return new DelayedFile(project, path);
+    }
+
+    protected DelayedFileTree delayedFileTree(String path)
+    {
+        return new DelayedFileTree(project, path);
+    }
+
+    protected DelayedFileTree delayedZipTree(String path)
+    {
+        return new DelayedFileTree(project, path, true);
+    }
 
 }

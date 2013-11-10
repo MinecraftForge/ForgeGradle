@@ -54,7 +54,7 @@ public class FmlDevPlugin extends DevBasePlugin
 
         // the master setup task.
         Task task = makeTask("setupFML", DefaultTask.class);
-        task.dependsOn("extractFmlSources", "generateProjects", "eclipse");
+        task.dependsOn("extractFmlSources", "generateProjects", "eclipse", "copyAssets");
         task.setGroup("FML");
 
         // the master task.
