@@ -1,24 +1,37 @@
 package net.minecraftforge.gradle.dev;
 
 import groovy.lang.Closure;
+import groovy.util.MapEntry;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedBase;
+import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.delayed.DelayedString;
-import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.tasks.DownloadTask;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.dev.CompressLZMA;
 import net.minecraftforge.gradle.tasks.dev.MergeMappingsTask;
 
+import org.apache.shiro.util.AntPathMatcher;
+import org.apache.tools.ant.taskdefs.SignJar;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.Sync;
@@ -27,10 +40,13 @@ import org.gradle.process.ExecSpec;
 import argo.jdom.JsonNode;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Maps;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
 public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements IDelayedResolver<DevExtension>
 {
+    private AntPathMatcher antMatcher = new AntPathMatcher();
     protected static final String[] JAVA_FILES = new String[] { "**.java", "*.java", "**/*.java" };
     
     @SuppressWarnings("serial")
@@ -230,5 +246,115 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
     protected DelayedFileTree delayedZipTree(String path)
     {
         return new DelayedFileTree(project, path, true, this);
+    }
+
+    private boolean shouldSign(String path, List<String> includes, List<String> excludes)
+    {
+        for (String exclude : excludes)
+        {
+            if (antMatcher.matches(exclude, path))
+            {
+                return false;
+            }
+        }
+
+        for (String include : includes)
+        {
+            if (antMatcher.matches(include, path))
+            {
+                return true;
+            }
+        }
+
+        return includes.size() == 0; //If it gets to here, then it matches nothing. default to true, if no includes were specified
+    }
+
+    @SuppressWarnings("unchecked")
+    protected void signJar(File archive, String keyName,  String... filters) throws IOException
+    {
+        if (!project.hasProperty("jarsigner")) return;
+
+        List<String> excludes = new ArrayList<String>();
+        List<String> includes = new ArrayList<String>();
+
+        for (String s : filters)
+        {
+            if (s.startsWith("!")) excludes.add(s.substring(1));
+            else includes.add(s);
+        }
+
+        Map<String, Map.Entry<byte[], Long>> unsigned = Maps.newHashMap();
+        File temp = new File(archive.getAbsoluteFile() + ".tmp");
+        File signed = new File(archive.getAbsoluteFile() + ".signed");
+
+        // Create a temporary jar with only the things we want to sign
+        ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(temp)));
+        ZipFile base = new ZipFile(archive);
+        for (ZipEntry e: Collections.list(base.entries()))
+        {
+            if (e.isDirectory())
+            {
+                out.putNextEntry(e);
+            }
+            else
+            {
+                if (shouldSign(e.getName(), includes, excludes))
+                {
+                    ZipEntry n = new ZipEntry(e.getName());
+                    n.setTime(e.getTime());
+                    out.putNextEntry(n);
+                    ByteStreams.copy(base.getInputStream(e), out);
+                }
+                else
+                {
+                    unsigned.put(e.getName(), new MapEntry(ByteStreams.toByteArray(base.getInputStream(e)), e.getTime()));
+                }
+            }
+        }
+        base.close();
+        out.close();
+
+        // Sign the temporary jar
+        Map<String, String> jarsigner = (Map<String, String>)project.property("jarsigner");
+        SignJar sign = new SignJar();
+        sign.setAlias(keyName);
+        sign.setStorepass(jarsigner.get("storepass"));
+        sign.setKeypass(jarsigner.get("keypass"));
+        sign.setKeystore(jarsigner.get("keystore"));
+        sign.setJar(temp);
+        sign.setSignedjar(signed);
+        sign.execute();
+
+        //Kill temp files to make room
+        archive.delete();
+        temp.delete();
+
+        //Join the signed jar and our unsigned content
+        out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(archive)));
+        base = new ZipFile(signed);
+        for (ZipEntry e: Collections.list(base.entries()))
+        {
+            if (e.isDirectory())
+            {
+                out.putNextEntry(e);
+            }
+            else
+            {
+                ZipEntry n = new ZipEntry(e.getName());
+                n.setTime(e.getTime());
+                out.putNextEntry(n);
+                ByteStreams.copy(base.getInputStream(e), out);
+            }
+        }
+        base.close();
+
+        for (Map.Entry<String, Map.Entry<byte[], Long>> e : unsigned.entrySet())
+        {
+            ZipEntry n = new ZipEntry(e.getKey());
+            n.setTime(e.getValue().getValue());
+            out.putNextEntry(n);
+            out.write(e.getValue().getKey());
+        }
+        out.close();
     }
 }

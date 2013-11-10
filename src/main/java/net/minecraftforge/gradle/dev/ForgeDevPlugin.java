@@ -28,6 +28,7 @@ import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
 import net.minecraftforge.gradle.tasks.dev.SubprojectTask;
 
 import org.apache.commons.io.FileUtils;
+import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -35,6 +36,8 @@ import org.gradle.api.java.archives.Manifest;
 import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
+
+import com.google.common.base.Throwables;
 
 public class ForgeDevPlugin extends DevBasePlugin
 {
@@ -306,6 +309,21 @@ public class ForgeDevPlugin extends DevBasePlugin
                     mani.getAttributes().put("Main-Class", delayedString("{MAIN_CLASS}").call());
                     mani.getAttributes().put("Class-Path", getServerClassPath(delayedFile(JSON_REL).call()));
                     return null;
+                }
+            });
+            uni.doLast(new Action<Task>()
+            {
+                @Override
+                public void execute(Task arg0)
+                {
+                    try
+                    {
+                        signJar(((DelayedJar)arg0).getArchivePath(), "forge", "*/**", "!paulscode/**");
+                    }
+                    catch (Exception e)
+                    {
+                        Throwables.propagate(e);
+                    }
                 }
             });
             uni.dependsOn("genBinPatches", "createChangelog", "createVersionPropertiesFML");
