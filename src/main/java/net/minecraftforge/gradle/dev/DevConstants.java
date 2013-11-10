@@ -49,7 +49,7 @@ final class DevConstants
     static final String ZIP_PATCHED_FORGE   = "{BUILD_DIR}/forgeTmp/minecraft_patches.zip";
 
     // other stuff
-    static final String CHANGELOG           = "{BUILD_DIR}/libs/{PROJECT}-{MC_VERSION}-{VERSION}-changelog.txt";
+    static final String CHANGELOG           = "{BUILD_DIR}/distributions/{PROJECT}-{MC_VERSION}-{VERSION}-changelog.txt";
 
     // jsons
     static final String JSON_DEV            = "{FML_DIR}/jsons/{MC_VERSION}-dev.json";

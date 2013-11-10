@@ -318,7 +318,7 @@ public class ForgeDevPlugin extends DevBasePlugin
                 {
                     try
                     {
-                        signJar(((DelayedJar)arg0).getArchivePath(), "forge", "*/**", "!paulscode/**");
+                        signJar(((DelayedJar)arg0).getArchivePath(), "forge", "*/*/**", "!paulscode/**");
                     }
                     catch (Exception e)
                     {
@@ -326,6 +326,7 @@ public class ForgeDevPlugin extends DevBasePlugin
                     }
                 }
             });
+            uni.setDestinationDir(delayedFile("{BUILD_DIR}/distributions").call());
             uni.dependsOn("genBinPatches", "createChangelog", "createVersionPropertiesFML");
         }
         project.getArtifacts().add("archives", uni);
@@ -372,7 +373,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             uni.from(delayedFile(PAULSCODE_LISCENCE1));
             uni.from(delayedFile(PAULSCODE_LISCENCE2));
             inst.from(delayedFile(FORGE_LOGO));
-            inst.from(delayedZipTree(INSTALLER_BASE), new CopyInto(".", "!*.json", "!.png"));
+            inst.from(delayedZipTree(INSTALLER_BASE), new CopyInto("", "!*.json", "!.png"));
             inst.dependsOn("packageUniversal", "downloadBaseInstaller", "generateInstallJson");
             inst.rename("forge_logo\\.png", "big_logo.png");
             inst.setExtension("jar");
@@ -383,18 +384,21 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             patchZipFML.from(delayedFile(FML_PATCH_DIR));
             patchZipFML.setArchiveName("fmlpatches.zip");
+            patchZipFML.setDestinationDir(delayedFile("{BUILD_DIR}/tmp/").call());
         }
         
         final Zip patchZipForge = makeTask("zipForgePatches", Zip.class);
         {
             patchZipForge.from(delayedFile(FORGE_PATCH_DIR));
             patchZipForge.setArchiveName("forgepatches.zip");
+            patchZipForge.setDestinationDir(delayedFile("{BUILD_DIR}/tmp/").call());
         }
         
         final Zip classZip = makeTask("jarClasses", Zip.class);
         {
             classZip.from(delayedZipTree(BINPATCH_TMP), new CopyInto("", "**/*.class"));
             classZip.setArchiveName("binaries.jar");
+            classZip.setDestinationDir(delayedFile("{BUILD_DIR}/tmp/").call());
         }
 
         final SubprojectTask javadocJar = makeTask("genJavadocs", SubprojectTask.class);

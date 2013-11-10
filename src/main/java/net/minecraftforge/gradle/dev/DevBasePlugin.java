@@ -287,28 +287,24 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
         File temp = new File(archive.getAbsoluteFile() + ".tmp");
         File signed = new File(archive.getAbsoluteFile() + ".signed");
 
+        if (temp.exists()) temp.delete();
+        if (signed.exists()) signed.delete();
+
         // Create a temporary jar with only the things we want to sign
         ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(temp)));
         ZipFile base = new ZipFile(archive);
         for (ZipEntry e: Collections.list(base.entries()))
         {
-            if (e.isDirectory())
+            if (shouldSign(e.getName(), includes, excludes))
             {
-                out.putNextEntry(e);
+                ZipEntry n = new ZipEntry(e.getName());
+                n.setTime(e.getTime());
+                out.putNextEntry(n);
+                ByteStreams.copy(base.getInputStream(e), out);
             }
             else
             {
-                if (shouldSign(e.getName(), includes, excludes))
-                {
-                    ZipEntry n = new ZipEntry(e.getName());
-                    n.setTime(e.getTime());
-                    out.putNextEntry(n);
-                    ByteStreams.copy(base.getInputStream(e), out);
-                }
-                else
-                {
-                    unsigned.put(e.getName(), new MapEntry(ByteStreams.toByteArray(base.getInputStream(e)), e.getTime()));
-                }
+                unsigned.put(e.getName(), new MapEntry(ByteStreams.toByteArray(base.getInputStream(e)), e.getTime()));
             }
         }
         base.close();
@@ -316,14 +312,15 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
 
         // Sign the temporary jar
         Map<String, String> jarsigner = (Map<String, String>)project.property("jarsigner");
-        SignJar sign = new SignJar();
-        sign.setAlias(keyName);
-        sign.setStorepass(jarsigner.get("storepass"));
-        sign.setKeypass(jarsigner.get("keypass"));
-        sign.setKeystore(jarsigner.get("keystore"));
-        sign.setJar(temp);
-        sign.setSignedjar(signed);
-        sign.execute();
+        
+        Map<String, String> args = Maps.newHashMap();
+        args.put("alias", keyName);
+        args.put("storepass", jarsigner.get("storepass"));
+        args.put("keypass", jarsigner.get("keypass"));
+        args.put("keystore", jarsigner.get("keystore"));
+        args.put("jar", temp.getAbsolutePath());
+        args.put("signedjar", signed.getAbsolutePath());
+        project.getAnt().invokeMethod("signjar", args);
 
         //Kill temp files to make room
         archive.delete();
@@ -356,5 +353,6 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
             out.write(e.getValue().getKey());
         }
         out.close();
+        signed.delete();
     }
 }
