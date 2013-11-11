@@ -374,7 +374,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             uni.from(delayedFile(PAULSCODE_LISCENCE1));
             uni.from(delayedFile(PAULSCODE_LISCENCE2));
             inst.from(delayedFile(FORGE_LOGO));
-            inst.from(delayedZipTree(INSTALLER_BASE), new CopyInto("", "!*.json", "!.png"));
+            inst.from(delayedZipTree(INSTALLER_BASE), new CopyInto("", "!*.json", "!*.png"));
             inst.dependsOn("packageUniversal", "downloadBaseInstaller", "generateInstallJson");
             inst.rename("forge_logo\\.png", "big_logo.png");
             inst.setExtension("jar");
