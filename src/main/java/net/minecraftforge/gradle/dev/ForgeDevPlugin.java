@@ -36,6 +36,7 @@ import org.gradle.api.java.archives.Manifest;
 import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
+import org.gradle.api.tasks.javadoc.Javadoc;
 
 import com.google.common.base.Throwables;
 
@@ -64,7 +65,7 @@ public class ForgeDevPlugin extends DevBasePlugin
         // the master task.
         task = makeTask("buildPackages");
         //task.dependsOn("launch4j", "packageUniversal", "createChangelog", "packageInstaller");
-        task.dependsOn("createChangelog", "packageUniversal", "packageInstaller", "packageInstaller");
+        task.dependsOn("createChangelog", "packageUniversal", "packageInstaller", "packageInstaller", "packageJavadoc");
         task.setGroup("Forge");
     }
 
@@ -404,25 +405,29 @@ public class ForgeDevPlugin extends DevBasePlugin
         final SubprojectTask javadocJar = makeTask("genJavadocs", SubprojectTask.class);
         {
             javadocJar.setBuildFile(delayedFile(ECLIPSE_FORGE + "/build.gradle"));
-            javadocJar.setTasks("jar");
+            javadocJar.setTasks("javadoc");
             javadocJar.setConfigureTask(new Closure<Object>(this, null) {
                 public Object call(Object obj)
                 {
-                    Jar task = (Jar) obj;
-                    File file = delayedFile(JAVADOC_TMP).call();
-                    task.setDestinationDir(file.getParentFile());
-                    task.setArchiveName(file.getName());
-
+                    Javadoc task = (Javadoc)obj;
+                    task.setDestinationDir(delayedFile(JAVADOC_TMP).call());
                     return null;
                 }
             });
         }
 
+        final Zip javadoc = makeTask("packageJavadoc", Zip.class);
+        {
+            javadoc.from(delayedFile(JAVADOC_TMP));
+            javadoc.setClassifier("javadoc");
+            javadoc.dependsOn("genJavadocs");
+        }
+        project.getArtifacts().add("archives", javadoc);
+
         Zip userDev = makeTask("packageUserDev", Zip.class);
         {
             userDev.setClassifier("userdev");
             userDev.from(delayedFile(JSON_DEV));
-            userDev.from(delayedFile(JAVADOC_TMP));
             userDev.from(new Closure<File>(project) {
                 public File call()
                 {
