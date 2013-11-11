@@ -33,6 +33,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.XmlProvider;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Configuration.State;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
@@ -141,9 +142,9 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     private void configureDeps()
     {
         // create configs
-        project.getConfigurations().create(UserConstants.CONFIG_USERDEV);
-        project.getConfigurations().create(UserConstants.CONFIG_NATIVES);
-        project.getConfigurations().create(UserConstants.CONFIG);
+        Configuration userdev = project.getConfigurations().create(UserConstants.CONFIG_USERDEV);
+        Configuration nativeConfig = project.getConfigurations().create(UserConstants.CONFIG_NATIVES);
+        final Configuration config = project.getConfigurations().create(UserConstants.CONFIG);
 
         // special userDev stuff
         ExtractTask extractUserDev = makeTask("extractUserDev", ExtractTask.class);
@@ -334,6 +335,12 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     {
         if (hasApplied)
             return;
+        
+        if (project.getConfigurations().getByName(depConfig).getState() != State.UNRESOLVED)
+            return;
+        else if (project.getConfigurations().getByName(nativeConfig).getState() != State.UNRESOLVED)
+            return;
+            
 
         ArrayList<String> libs = new ArrayList<String>();
         ArrayList<String> natives = new ArrayList<String>();

@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
@@ -68,6 +69,8 @@ public class ApplyBinPatchesTask extends CachedTask
         ZipInputStream classesIn = new ZipInputStream(new FileInputStream(getClassesJar()));
         ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(getOutJar())));
         
+        HashSet<String> entries = new HashSet<String>();
+        
         try
         {
             // DO PATCHES
@@ -103,20 +106,21 @@ public class ApplyBinPatchesTask extends CachedTask
     
                     out.write(data);
                 }
+                
+                // add the names to the hashset
+                entries.add(e.getName());
             }
             
             // COPY DATA
             ZipEntry entry = null;
             while ((entry = classesIn.getNextEntry()) != null)
             {
-                // no META or dirs. wel take care of dirs later.
-                if (entry.getName().contains("META-INF") || entry.getName().equals("cpw/mods/fml/relauncher/Side.class") || entry.getName().equals("cpw/mods/fml/relauncher/SideOnly.class"))
-                {
+                if (entries.contains(entry.getName()))
                     continue;
-                }
                 
                 out.putNextEntry(entry);
                 out.write(ByteStreams.toByteArray(classesIn));
+                entries.add(entry.getName());
             }
             
         }

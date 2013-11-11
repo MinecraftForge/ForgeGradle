@@ -140,7 +140,7 @@ public class GenSrgTask extends DefaultTask
                 mcpToSrg.newLine();
                 
                 // output is notch
-                mcpToSrg.write("CL: "+out+" "+split[1]);
+                mcpToSrg.write("FD: "+out+" "+split[1]);
                 mcpToNotch.newLine();
             }
             else if (line.startsWith("MD:"))
@@ -163,7 +163,7 @@ public class GenSrgTask extends DefaultTask
                 mcpToSrg.newLine();
                 
                 // output is notch
-                mcpToSrg.write("CL: "+out+" "+split[1]+" "+split[2]);
+                mcpToSrg.write("MD: "+out+" "+split[1]+" "+split[2]);
                 mcpToNotch.newLine();
             }
         }
