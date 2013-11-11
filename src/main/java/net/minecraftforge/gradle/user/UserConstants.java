@@ -21,6 +21,7 @@ public final class UserConstants
     static final String PACKAGED_EXC = CONF_DIR+"/packaged.exc";
     static final String DEOBF_SRG = CONF_DIR+"/notch-mcp.srg";
     public static final String REOBF_SRG = CONF_DIR+"/mcp-srg.srg";
+    static final String REOBF_NOTCH_SRG = CONF_DIR+"/mcp-notch.srg";
 
     static final String MAPPINGS_DIR = PACK_DIR + "/mappings";
     static final String METHOD_CSV = MAPPINGS_DIR+"/methods.csv";

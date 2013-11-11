@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.tasks.user;
+package net.minecraftforge.gradle.tasks;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -8,7 +8,6 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 
 import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.InputFile;
@@ -32,10 +31,13 @@ public class GenSrgTask extends DefaultTask
     private DelayedFile fieldsCsv;
 
     @OutputFile
-    private DelayedFile deobfSrg;
+    private DelayedFile notchToMcpSrg;
 
     @OutputFile
-    private DelayedFile reobfSrg;
+    private DelayedFile mcpToSrgSrg;
+    
+    @OutputFile
+    private DelayedFile mcpToNotchSrg;
     
     @TaskAction
     public void doTask() throws IOException
@@ -58,8 +60,8 @@ public class GenSrgTask extends DefaultTask
         }
         
         
-        File deobfFile = getDeobfSrg();
-        File reobfFile = getReobfSrg();
+        File deobfFile = getNotchToMcpSrg();
+        File reobfFile = getMcpToSrgSrg();
 
         // verify files...
         if (!deobfFile.exists())
@@ -75,8 +77,9 @@ public class GenSrgTask extends DefaultTask
         
         // create streams
         BufferedReader srgIn = Files.newReader(getInSrg(), Charset.defaultCharset());
-        BufferedWriter deobf = Files.newWriter(getDeobfSrg(), Charset.defaultCharset());
-        BufferedWriter reobf = Files.newWriter(getReobfSrg(), Charset.defaultCharset());
+        BufferedWriter notch2Mcp = Files.newWriter(getNotchToMcpSrg(), Charset.defaultCharset());
+        BufferedWriter mcpToSrg = Files.newWriter(getMcpToSrgSrg(), Charset.defaultCharset());
+        BufferedWriter mcpToNotch = Files.newWriter(getMcpToNotchSrg(), Charset.defaultCharset());
         
         // IN
         // notch -> srg
@@ -94,23 +97,29 @@ public class GenSrgTask extends DefaultTask
             if (line.startsWith("PK:"))
             {
                 // nobody cares about the packages.
-                deobf.write(line);
-                deobf.newLine();
+                notch2Mcp.write(line);
+                notch2Mcp.newLine();
                 
-                reobf.write(line);
-                reobf.newLine();
+                mcpToSrg.write(line);
+                mcpToSrg.newLine();
+                
+                mcpToNotch.write(line);
+                mcpToNotch.newLine();
             }
             else if (line.startsWith("CL:"))
             {
                 // deobf:  no change here...
-                deobf.write(line);
-                deobf.newLine();
+                notch2Mcp.write(line);
+                notch2Mcp.newLine();
                 
                 // reobf: same classes on both sides.
                 split = line.split(" "); // 0=type  1=notch  2=srg=mcp
-                reobf.write("CL: "+split[2]+" "+split[2]);
-                reobf.newLine();
+                mcpToSrg.write("CL: "+split[2]+" "+split[2]);
+                mcpToSrg.newLine();
                 
+                // output is notch
+                mcpToSrg.write("CL: "+split[2]+" "+split[1]);
+                mcpToNotch.newLine();
             }
             else if (line.startsWith("FD:"))
             {
@@ -123,12 +132,16 @@ public class GenSrgTask extends DefaultTask
                 if (fields.containsKey(temp))
                     out = split[2].replace(temp, fields.get(temp));
                 
-                deobf.write("FD: "+split[1]+" "+out);
-                deobf.newLine();
+                notch2Mcp.write("FD: "+split[1]+" "+out);
+                notch2Mcp.newLine();
                 
                 // reobf: reverse too
-                reobf.write("FD: "+out+" "+split[2]);
-                reobf.newLine();
+                mcpToSrg.write("FD: "+out+" "+split[2]);
+                mcpToSrg.newLine();
+                
+                // output is notch
+                mcpToSrg.write("CL: "+out+" "+split[1]);
+                mcpToNotch.newLine();
             }
             else if (line.startsWith("MD:"))
             {
@@ -142,20 +155,29 @@ public class GenSrgTask extends DefaultTask
                 if (methods.containsKey(temp))
                     out = out.replace(temp, methods.get(temp)); // now MCP
                 
-                deobf.write("MD: "+in+" "+out);
-                deobf.newLine();
+                notch2Mcp.write("MD: "+in+" "+out);
+                notch2Mcp.newLine();
                 
                 // reobf reverse too
-                reobf.write("MD: "+out+" "+split[3]+" "+split[4]);
-                reobf.newLine();
+                mcpToSrg.write("MD: "+out+" "+split[3]+" "+split[4]);
+                mcpToSrg.newLine();
+                
+                // output is notch
+                mcpToSrg.write("CL: "+out+" "+split[1]+" "+split[2]);
+                mcpToNotch.newLine();
             }
         }
         
         srgIn.close();
-        deobf.flush();
-        deobf.close();
-        reobf.flush();
-        reobf.close();
+        
+        notch2Mcp.flush();
+        notch2Mcp.close();
+        
+        mcpToSrg.flush();
+        mcpToSrg.close();
+        
+        mcpToNotch.flush();
+        mcpToNotch.close();
     }
 
     public File getInSrg()
@@ -188,23 +210,33 @@ public class GenSrgTask extends DefaultTask
         this.fieldsCsv = fieldsCsv;
     }
 
-    public File getDeobfSrg()
+    public File getNotchToMcpSrg()
     {
-        return deobfSrg.call();
+        return notchToMcpSrg.call();
     }
 
-    public void setDeobfSrg(DelayedFile deobfSrg)
+    public void setNotchToMcpSrg(DelayedFile deobfSrg)
     {
-        this.deobfSrg = deobfSrg;
+        this.notchToMcpSrg = deobfSrg;
     }
 
-    public File getReobfSrg()
+    public File getMcpToSrgSrg()
     {
-        return reobfSrg.call();
+        return mcpToSrgSrg.call();
     }
 
-    public void setReobfSrg(DelayedFile reobfSrg)
+    public void setMcpToSrgSrg(DelayedFile reobfSrg)
     {
-        this.reobfSrg = reobfSrg;
+        this.mcpToSrgSrg = reobfSrg;
+    }
+    
+    public File getMcpToNotchSrg()
+    {
+        return mcpToNotchSrg.call();
+    }
+
+    public void setMcpToNotchSrg(DelayedFile reobfSrg)
+    {
+        this.mcpToNotchSrg = reobfSrg;
     }
 }

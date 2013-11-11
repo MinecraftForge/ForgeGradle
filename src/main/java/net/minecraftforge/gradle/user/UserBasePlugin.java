@@ -20,10 +20,10 @@ import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.delayed.DelayedString;
+import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
-import net.minecraftforge.gradle.tasks.user.GenSrgTask;
 import net.minecraftforge.gradle.tasks.user.reobf.ArtifactSpec;
 import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
 
@@ -102,8 +102,9 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         GenSrgTask task2 = makeTask("genSrgs", GenSrgTask.class);
         {
             task2.setInSrg(delayedFile(UserConstants.PACKAGED_SRG));
-            task2.setDeobfSrg(delayedFile(UserConstants.DEOBF_SRG));
-            task2.setReobfSrg(delayedFile(UserConstants.REOBF_SRG));
+            task2.setNotchToMcpSrg(delayedFile(UserConstants.DEOBF_SRG));
+            task2.setMcpToSrgSrg(delayedFile(UserConstants.REOBF_SRG));
+            task2.setMcpToNotchSrg(delayedFile(UserConstants.REOBF_NOTCH_SRG));
             task2.setMethodsCsv(delayedFile(UserConstants.METHOD_CSV));
             task2.setFieldsCsv(delayedFile(UserConstants.FIELD_CSV));
             task2.dependsOn("extractUserDev");

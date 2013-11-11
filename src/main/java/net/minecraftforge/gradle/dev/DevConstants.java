@@ -19,6 +19,9 @@ final class DevConstants
     static final String INSTALLER_BASE      = "{BUILD_DIR}/tmp/installer_base.{INSTALLER_VERSION}.jar";
     static final String INSTALL_PROFILE     = "{BUILD_DIR}/tmp/install_profile.json";
     static final String REOBF_TMP           = "{BUILD_DIR}/tmp/recomp_obfed.jar";
+    static final String MCP_2_SRG_SRG       = "{BUILD_DIR}/tmp/mcp2srg.srg";
+    static final String MCP_2_NOTCH_SRG     = "{BUILD_DIR}/tmp/mcp2notch.srg";
+    static final String NOTCH_2_MCP_SRG     = "{BUILD_DIR}/tmp/notch2mcp.srg";
     static final String JAVADOC_TMP         = "{BUILD_DIR}/tmp/javadoc";
     static final String BINPATCH_TMP        = "{BUILD_DIR}/tmp/bin_patches.jar";
 

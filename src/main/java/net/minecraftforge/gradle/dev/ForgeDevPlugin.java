@@ -247,11 +247,11 @@ public class ForgeDevPlugin extends DevBasePlugin
 
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
-            obf.setSrg(delayedFile(PACKAGED_SRG));
+            obf.setSrg(delayedFile(MCP_2_NOTCH_SRG));
             obf.setReverse(true);
             obf.setOutJar(delayedFile(REOBF_TMP));
             obf.setBuildFile(delayedFile(ECLIPSE_FORGE + "/build.gradle"));
-            obf.dependsOn("generateProjects", "extractForgeSources", "fixMappings");
+            obf.dependsOn("generateProjects", "extractForgeSources", "genSrgs");
         }
 
         GenBinaryPatches task3 = makeTask("genBinPatches", GenBinaryPatches.class);

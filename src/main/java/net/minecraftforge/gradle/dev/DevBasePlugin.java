@@ -25,10 +25,12 @@ import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.delayed.DelayedString;
 import net.minecraftforge.gradle.tasks.DownloadTask;
+import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.dev.CompressLZMA;
 import net.minecraftforge.gradle.tasks.dev.MergeMappingsTask;
+import net.minecraftforge.gradle.user.UserConstants;
 
 import org.apache.shiro.util.AntPathMatcher;
 import org.apache.tools.ant.taskdefs.SignJar;
@@ -104,6 +106,17 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
             task5.from(delayedFile(Constants.ASSETS));
             task5.setDestinationDir(new File(DevConstants.ECLIPSE_ASSETS));
             task5.dependsOn("getAssets", "extractWorkspace");
+        }
+        
+        GenSrgTask task6 = makeTask("genSrgs", GenSrgTask.class);
+        {
+            task6.setInSrg(delayedFile(DevConstants.PACKAGED_SRG));
+            task6.setNotchToMcpSrg(delayedFile(DevConstants.NOTCH_2_MCP_SRG));
+            task6.setMcpToSrgSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
+            task6.setMcpToNotchSrg(delayedFile(DevConstants.MCP_2_NOTCH_SRG));
+            task6.setMethodsCsv(delayedFile(DevConstants.METHODS_CSV));
+            task6.setFieldsCsv(delayedFile(DevConstants.FIELDS_CSV));
+            task6.dependsOn("fixMappings");
         }
     }
     
