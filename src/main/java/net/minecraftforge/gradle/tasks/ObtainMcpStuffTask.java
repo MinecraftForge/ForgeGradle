@@ -1,7 +1,5 @@
 package net.minecraftforge.gradle.tasks;
 
-import static net.minecraftforge.gradle.common.Constants.EXT_NAME_MC;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -11,7 +9,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import net.minecraftforge.gradle.StringUtils;
-import net.minecraftforge.gradle.common.BaseExtension;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedString;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
@@ -20,8 +17,6 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.Iterables;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 

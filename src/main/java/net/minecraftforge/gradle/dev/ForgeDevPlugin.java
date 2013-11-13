@@ -34,7 +34,6 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.java.archives.Manifest;
 import org.gradle.api.tasks.Delete;
-import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.api.tasks.javadoc.Javadoc;
 
@@ -99,6 +98,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task4.setInJar(delayedFile(ZIP_DECOMP_FORGE));
             task4.setOutJar(delayedFile(ZIP_FMLED_FORGE));
             task4.setInPatches(delayedFile(FML_PATCH_DIR));
+            task4.setDoesCache(false);
             task4.dependsOn("decompile");
         }
         
@@ -126,6 +126,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task6.setMethodsCsv(delayedFile(METHODS_CSV));
             task6.setFieldsCsv(delayedFile(FIELDS_CSV));
             task6.setParamsCsv(delayedFile(PARAMS_CSV));
+            task6.setDoesCache(false);
             task6.dependsOn("fmlInjectJar");
         }
         
@@ -134,6 +135,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task4.setInJar(delayedFile(ZIP_RENAMED_FORGE));
             task4.setOutJar(delayedFile(ZIP_PATCHED_FORGE));
             task4.setInPatches(delayedFile(FORGE_PATCH_DIR));
+            task4.setDoesCache(false);
             task4.dependsOn("remapSourcesJar");
         }
     }

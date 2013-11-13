@@ -30,10 +30,8 @@ import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.dev.CompressLZMA;
 import net.minecraftforge.gradle.tasks.dev.MergeMappingsTask;
-import net.minecraftforge.gradle.user.UserConstants;
 
 import org.apache.shiro.util.AntPathMatcher;
-import org.apache.tools.ant.taskdefs.SignJar;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.Sync;

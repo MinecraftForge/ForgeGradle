@@ -142,9 +142,9 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     private void configureDeps()
     {
         // create configs
-        Configuration userdev = project.getConfigurations().create(UserConstants.CONFIG_USERDEV);
-        Configuration nativeConfig = project.getConfigurations().create(UserConstants.CONFIG_NATIVES);
-        final Configuration config = project.getConfigurations().create(UserConstants.CONFIG);
+        project.getConfigurations().create(UserConstants.CONFIG_USERDEV);
+        project.getConfigurations().create(UserConstants.CONFIG_NATIVES);
+        project.getConfigurations().create(UserConstants.CONFIG);
 
         // special userDev stuff
         ExtractTask extractUserDev = makeTask("extractUserDev", ExtractTask.class);

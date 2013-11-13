@@ -134,6 +134,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task4.setInJar(delayedFile(DevConstants.ZIP_DECOMP_FML));
             task4.setOutJar(delayedFile(DevConstants.ZIP_PATCHED_FML));
             task4.setInPatches(delayedFile(DevConstants.FML_PATCH_DIR));
+            task4.setDoesCache(false);
             task4.dependsOn("decompile");
         }
     }

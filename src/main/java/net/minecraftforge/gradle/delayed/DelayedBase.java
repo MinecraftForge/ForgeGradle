@@ -31,6 +31,7 @@ public abstract class DelayedBase<V> extends Closure<V>
         this(owner, pattern, RESOLVER);
     }
 
+    @SuppressWarnings("unchecked")
     public DelayedBase(Project owner, String pattern, IDelayedResolver<? extends BaseExtension>... resolvers)
     {
         super(owner);

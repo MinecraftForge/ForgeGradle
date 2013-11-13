@@ -6,6 +6,7 @@ import com.google.common.io.Files;
 import groovy.lang.Closure;
 import net.minecraftforge.gradle.common.Constants;
 
+import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;
 import org.gradle.api.tasks.Input;
@@ -27,8 +28,8 @@ import java.util.List;
  */
 public abstract class CachedTask extends DefaultTask
 {
+    private boolean doesCache = true;
     private final ArrayList<Annotated> cachedList = new ArrayList<Annotated>();
-
     private final ArrayList<Annotated> inputList  = new ArrayList<Annotated>();
 
     @SuppressWarnings("unchecked")
@@ -64,8 +65,11 @@ public abstract class CachedTask extends DefaultTask
             private static final long serialVersionUID = -1685502083302238195L;
 
             @Override
-            public Boolean call()
+            public Boolean call(Object...objects)
             {
+                if (!doesCache())
+                    return true;
+                
                 if (cachedList.isEmpty())
                     return true;
                 
@@ -116,12 +120,6 @@ public abstract class CachedTask extends DefaultTask
                 return false;
             }
 
-            @Override
-            public Boolean call(Object obj)
-            {
-                return call();
-            }
-
             private File getFile(Annotated field) throws IllegalAccessException, NoSuchFieldException
             {
                 Field f = field.taskClass.getDeclaredField(field.fieldName);
@@ -135,20 +133,21 @@ public abstract class CachedTask extends DefaultTask
     {
         cachedList.add(annot);
 
-        this.doLast(new Closure<Boolean>(this, this)
+        this.doLast(new Action<Task>()
         {
-            private static final long serialVersionUID = 6279472530160032491L;
-
             @Override
-            public Boolean call()
+            public void execute(Task task)
             {
+                if (!doesCache())
+                    return;
+                
                 try
                 {
-                    File outFile = getProject().file(annot.getValue(getDelegate()));
+                    File outFile = getProject().file(annot.getValue(task));
                     if (outFile.exists())
                     {
                         File hashFile = getHashFile(outFile);
-                        Files.write(getHashes(annot, inputList, getDelegate()), hashFile, Charset.defaultCharset());
+                        Files.write(getHashes(annot, inputList, task), hashFile, Charset.defaultCharset());
                     }
                 }
                 // error? spit it and do the task.
@@ -156,14 +155,6 @@ public abstract class CachedTask extends DefaultTask
                 {
                     e.printStackTrace();
                 }
-
-                return true;
-            }
-
-            @Override
-            public Boolean call(Object obj)
-            {
-                return call();
             }
         });
     }
@@ -230,5 +221,15 @@ public abstract class CachedTask extends DefaultTask
             f.setAccessible(true);
             return f.get(instance);
         }
+    }
+
+    public boolean doesCache()
+    {
+        return doesCache;
+    }
+
+    public void setDoesCache(boolean cacheStuff)
+    {
+        this.doesCache = cacheStuff;
     }
 }
