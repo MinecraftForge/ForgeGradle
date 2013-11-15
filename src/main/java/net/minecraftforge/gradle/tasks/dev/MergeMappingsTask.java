@@ -3,6 +3,8 @@ package net.minecraftforge.gradle.tasks.dev;
 import au.com.bytecode.opencsv.CSVParser;
 import au.com.bytecode.opencsv.CSVReader;
 
+import com.google.code.regexp.Matcher;
+import com.google.code.regexp.Pattern;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ObjectArrays;
@@ -25,8 +27,6 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class MergeMappingsTask extends CachedTask
 {
