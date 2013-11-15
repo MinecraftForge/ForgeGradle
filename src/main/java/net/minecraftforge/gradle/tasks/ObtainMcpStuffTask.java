@@ -8,8 +8,10 @@ import java.net.URL;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import net.minecraftforge.gradle.StringUtils;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedString;
+import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
@@ -22,13 +24,13 @@ public class ObtainMcpStuffTask extends CachedTask
 {
     @Input
     private DelayedString mcpUrl;
-    
+
     @OutputFile
     private DelayedFile ffJar;
-    
+
     @OutputFile
     private DelayedFile injectorJar;
-    
+
     @TaskAction
     public void doTask() throws MalformedURLException, IOException
     {
@@ -48,13 +50,13 @@ public class ObtainMcpStuffTask extends CachedTask
 
         while ((entry = zin.getNextEntry()) != null)
         {
-            if (entry.getName().toLowerCase().endsWith("fernflower.jar"))
+            if (StringUtils.lower(entry.getName()).endsWith("fernflower.jar"))
             {
                 ff.getParentFile().mkdirs();
                 Files.touch(ff);
                 Files.write(ByteStreams.toByteArray(zin), ff);
             }
-            else if (entry.getName().toLowerCase().endsWith("mcinjector.jar"))
+            else if (StringUtils.lower(entry.getName()).endsWith("mcinjector.jar"))
             {
                 exc.getParentFile().mkdirs();
                 Files.touch(exc);
@@ -66,7 +68,7 @@ public class ObtainMcpStuffTask extends CachedTask
 
         getLogger().info("Download and Extraction complete");
     }
-    
+
     public String getMcpUrl()
     {
         return mcpUrl.call();

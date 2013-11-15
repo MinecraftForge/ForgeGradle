@@ -4,8 +4,9 @@ import groovy.lang.Closure;
 import net.md_5.specialsource.*;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
-import net.minecraftforge.gradle.Constants;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
@@ -33,21 +34,40 @@ public class ProcessJarTask extends CachedTask
 
     @OutputFile
     @Cached
-    private DelayedFile outJar;
+    private DelayedFile outCleanJar; // clean = pure forge, or pure FML
+    
+    @OutputFile
+    @Cached
+    private DelayedFile outDirtyJar = new DelayedFile(getProject(), "{BUILD_DIR}/deobfuscated.jar"); // dirty = has any other ATs
 
     @InputFiles
     private ArrayList<DelayedFile> ats = new ArrayList<DelayedFile>();
+    
+    private boolean isClean = true;
 
-    /**
-     * adds an access transformer to the deobfuscation of this
-     *
-     * @param obj
-     */
     public void addTransformer(DelayedFile... obj)
     {
         for (DelayedFile object : obj)
         {
             ats.add(object);
+        }
+    }
+    
+    /**
+     * adds an access transformer to the deobfuscation of this
+     *
+     * @param obj
+     */
+    public void addTransformer(Object... obj)
+    {
+        for (Object object : obj)
+        {
+            if (object instanceof File)
+                ats.add(new DelayedFile(getProject(), ((File) object).getAbsolutePath()));
+            else if (object instanceof String)
+                ats.add(new DelayedFile(getProject(), (String) object));
+            
+            isClean = false;
         }
     }
 
@@ -67,10 +87,12 @@ public class ProcessJarTask extends CachedTask
         // deobf
         getLogger().lifecycle("Applying SpecialSource...");
         deobfJar(getInJar(), tempObfJar, getSrg(), ats);
+        
+        File out = isClean ? getOutCleanJar() : getOutDirtyJar();
 
         // apply exceptor
         getLogger().lifecycle("Applying Exceptor...");
-        applyExceptor(getExceptorJar(), tempObfJar, getOutJar(), getExceptorCfg(), new File(getTemporaryDir(), "exceptorLog"));
+        applyExceptor(getExceptorJar(), tempObfJar, out, getExceptorCfg(), new File(getTemporaryDir(), "exceptorLog"));
     }
 
     private void deobfJar(File inJar, File outJar, File srg, ArrayList<File> ats) throws IOException
@@ -175,14 +197,14 @@ public class ProcessJarTask extends CachedTask
         this.inJar = inJar;
     }
 
-    public File getOutJar()
+    public File getOutCleanJar()
     {
-        return outJar.call();
+        return outCleanJar.call();
     }
 
-    public void setOutJar(DelayedFile outJar)
+    public void setOutCleanJar(DelayedFile outJar)
     {
-        this.outJar = outJar;
+        this.outCleanJar = outJar;
     }
 
     public File getSrg()
@@ -193,5 +215,15 @@ public class ProcessJarTask extends CachedTask
     public void setSrg(DelayedFile srg)
     {
         this.srg = srg;
+    }
+
+    public File getOutDirtyJar()
+    {
+        return outDirtyJar.call();
+    }
+
+    public void setOutDirtyJar(DelayedFile outDirtyJar)
+    {
+        this.outDirtyJar = outDirtyJar;
     }
 }

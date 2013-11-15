@@ -1,48 +1,31 @@
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
-apply plugin: 'groovy'
+apply plugin: 'maven'
 
 group = 'net.minecraftforge.gradle'
-version = '0.1'
-archivesBaseName = 'FMLCustom'
+version = '1.0-SNAPSHOT'
+archivesBaseName = 'ForgeGradle'
 targetCompatibility = '1.6'
 sourceCompatibility = '1.6'
 
-repositories
-{
+repositories {
     mavenCentral()
 }
 
-jar
-{
-    // packs a bunch of stuff into my jar.
-    // everything marked as packed
-    from {
-        configurations.packed.collect {
-            it.isDirectory() ? it : zipTree(it).matching {
-                exclude "META-INF", "META-INF/**", "*META-INF*", "meta-inf"
-                exclude "**.jar", "**/*.jar", "*.jar"
-            }
-        }
-    }
-    
+jar {
     manifest {
         attributes 'version':project.version, 'javaCompliance': project.targetCompatibility
         attributes 'group':project.group
     }
 }
 
-configurations
-{
-    packed
-    compile.extendsFrom packed
+configurations {
+    deployerJars
 }
 
-dependencies
-{
+dependencies {
     compile gradleApi()
-    compile localGroovy()
 
     compile 'net.sourceforge.argo:argo:3.4' // json stuff? perhaps replace with json slurper and stuff?
     compile 'net.sf.opencsv:opencsv:2.3' // reading CSVs.. also used by SpecialSource
@@ -55,15 +38,79 @@ dependencies
     compile 'com.nothome:javaxdelta:2.0.1' // GDIFF implementation for BinPatches
     compile 'org.apache.shiro:shiro-all:1.2.2' // Ant style patern matching
     compile 'com.google.code.gson:gson:2.2.4' // Used instead of Argo for buuilding changelog.
-    
+    compile 'com.github.tony19:named-regexp:0.2.3' // 1.7 regexp behaviour.
+
     // just for the extension object
     //compile "edu.sc.seis.gradle:launch4j:latest.integration"
 
-    // Named regexp. 1.6
-    compile 'com.github.tony19:named-regexp:0.2.3' // 1.7 regexp behaviour.
-
+    // stupid maven
+    deployerJars "org.apache.maven.wagon:wagon-ssh:2.2"
 }
 
-artifacts {
-    archives jar
+artifacts { archives jar }
+
+uploadArchives {
+    repositories {
+        if (project.hasProperty("filesmaven")) {
+            logger.info('Publishing to files server')
+
+            mavenDeployer {
+                configuration = configurations.deployerJars
+
+                repository(url: project.filesmaven.url) {
+                    authentication(userName: project.filesmaven.username, privateKey: project.filesmaven.key)
+                }
+
+                pom {
+                    groupId = project.group
+                    version = project.version
+                    artifactId = project.archivesBaseName
+                    project {
+                        name project.archivesBaseName
+                        packaging 'jar'
+                        description 'Gradle plugin for Forge'
+                        url 'https://github.com/MinecraftForge/ForgeGradle'
+
+                        scm {
+                            url 'https://github.com/MinecraftForge/ForgeGradle'
+                            connection 'scm:git:git://github.com/MinecraftForge/ForgeGradle.git'
+                            developerConnection 'scm:git:git@github.com:MinecraftForge/ForgeGradle.git'
+                        }
+
+                        issueManagement {
+                            system 'github'
+                            url 'https://github.com/MinecraftForge/ForgeGradle/issues'
+                        }
+
+                        licenses {
+                            license {
+                                name 'Eclipse Public License (EPL), Version 1.0'
+                                url 'http://www.eclipse.org/legal/epl-v10.html'
+                                distribution 'repo'
+                            }
+                        }
+
+                        developers {
+                            developer {
+                                id 'AbrarSyed'
+                                name 'Abrar Syed'
+                                roles { role 'developer' }
+                            }
+                        }
+                        developers {
+                            developer {
+                                id 'LexManos'
+                                name 'Lex Manos'
+                                roles { role 'developer' }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            add project.repositories.mavenLocal()
+        }
+    }
 }

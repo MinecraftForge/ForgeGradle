@@ -5,9 +5,11 @@ import argo.jdom.JsonNode;
 import argo.jdom.JsonRootNode;
 import argo.jdom.JsonStringNode;
 import argo.saj.InvalidSyntaxException;
+
 import com.google.common.base.Joiner;
 import com.google.common.io.Resources;
-import net.minecraftforge.gradle.Constants;
+
+import net.minecraftforge.gradle.common.Constants;
 
 import java.io.IOException;
 import java.nio.charset.Charset;

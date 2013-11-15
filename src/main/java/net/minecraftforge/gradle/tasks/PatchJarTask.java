@@ -7,9 +7,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import net.minecraftforge.gradle.Constants;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.patching.ContextualPatch;
+import net.minecraftforge.gradle.tasks.abstractutil.EditJarTask;
 
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.InputDirectory;
@@ -31,7 +32,7 @@ public class PatchJarTask extends EditJarTask
     }
 
     @Override
-    public void doStuff() throws Throwable
+    public void doStuffMiddle() throws Throwable
     {
         PROVIDER = new ContextProvider(sourceMap);
         
@@ -191,5 +192,19 @@ public class PatchJarTask extends EditJarTask
     public void setInPatches(DelayedFile inPatches)
     {
         this.inPatches = inPatches;
+    }
+
+    @Override
+    public void doStuffBefore() throws Throwable
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void doStuffAfter() throws Throwable
+    {
+        // TODO Auto-generated method stub
+        
     }
 }

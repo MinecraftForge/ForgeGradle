@@ -5,7 +5,7 @@ import com.google.code.regexp.Pattern;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 
-import net.minecraftforge.gradle.Constants;
+import net.minecraftforge.gradle.common.Constants;
 
 import java.io.IOException;
 import java.util.ArrayList;

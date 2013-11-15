@@ -9,13 +9,14 @@ import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
 import groovy.lang.Closure;
-import net.minecraftforge.gradle.Constants;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.patching.ContextualPatch;
 import net.minecraftforge.gradle.sourcemanip.FFPatcher;
 import net.minecraftforge.gradle.sourcemanip.FmlCleanup;
 import net.minecraftforge.gradle.sourcemanip.GLConstantFixer;
 import net.minecraftforge.gradle.sourcemanip.McpCleanup;
+import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.InputFile;
@@ -176,7 +177,7 @@ public class DecompileTask extends CachedTask
                     // catch the failed hunks
                     if (!hunk.getStatus().isSuccess())
                     {
-                        getLogger().error("Hunk "+hunk.getIndex()+" failed!");
+                        getLogger().error("Hunk "+hunk.getHunkID()+" failed!");
                     }
                 }
 
@@ -196,7 +197,7 @@ public class DecompileTask extends CachedTask
                     // catch the failed hunks
                     if (!hunk.getStatus().isSuccess())
                     {
-                        getLogger().info("Hunk "+hunk.getIndex()+" fuzzed "+hunk.getFuzz()+"!");
+                        getLogger().info("Hunk "+hunk.getHunkID()+" fuzzed "+hunk.getFuzz()+"!");
                     }
                 }
             }

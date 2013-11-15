@@ -2,7 +2,9 @@ package net.minecraftforge.gradle.sourcemanip;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
-import net.minecraftforge.gradle.Constants;
+
+import net.minecraftforge.gradle.StringUtils;
+import net.minecraftforge.gradle.common.Constants;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -76,7 +78,7 @@ public class FmlCleanup
                 insideMethod = false;
             }
 
-            // inside emthod actions now.
+            // inside method actions now.
             if (insideMethod)
             {
                 if (skip)
@@ -113,7 +115,15 @@ public class FmlCleanup
 
                     for (String var : methodVars)
                     {
-                        todo.put(var.split(" ")[1], namer.getName(var.split(" ")[0], var.split(" ")[1]));
+                        String[] split = var.split(" ");
+                        if (split.length > 1)
+                        {
+                            todo.put(split[1], namer.getName(split[0], split[1]));
+                        }
+                        else
+                        {
+                            System.out.printf("Unknown thing : %s (%s)\n", var, method);
+                        }
                     }
 
                     List<String> sortedKeys = new ArrayList<String>(todo.keySet());
@@ -196,7 +206,7 @@ public class FmlCleanup
                 type = type.replaceAll("\\[\\]\\[\\]", "[]");
             }
 
-            String name = type.toLowerCase();
+            String name = StringUtils.lower(type);
             boolean skip_zero = true;
 
             if (Pattern.compile("\\[").matcher(type).find())
@@ -213,7 +223,7 @@ public class FmlCleanup
         if (Strings.isNullOrEmpty(index))
         {
             //TODO: Debug: System.out.println("NO DATA FOR TYPE " + type + " " + var);
-            return type.toLowerCase();
+            return StringUtils.lower(type);
         }
 
         Holder holder = last.get(index);
