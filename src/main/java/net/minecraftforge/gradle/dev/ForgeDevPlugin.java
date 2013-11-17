@@ -251,7 +251,7 @@ public class ForgeDevPlugin extends DevBasePlugin
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
             obf.setSrg(delayedFile(MCP_2_NOTCH_SRG));
-            obf.setReverse(true);
+            obf.setReverse(false);
             obf.setOutJar(delayedFile(REOBF_TMP));
             obf.setBuildFile(delayedFile(ECLIPSE_FORGE + "/build.gradle"));
             obf.dependsOn("generateProjects", "extractForgeSources", "genSrgs");
