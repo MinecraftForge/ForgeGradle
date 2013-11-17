@@ -476,6 +476,8 @@ public class ForgeDevPlugin extends DevBasePlugin
             src.from(delayedFile(CHANGELOG));
             src.from(delayedFile(FML_LICENSE));
             src.from(delayedFile(FML_CREDITS));
+            uni.from(delayedFile(FORGE_LICENSE));
+            uni.from(delayedFile(FORGE_CREDITS));
             src.from(delayedFile("{FML_DIR}/install"), new CopyInto(null, "!*.gradle"));
             src.from(delayedFile("{FML_DIR}/install"), (new CopyInto(null, "*.gradle")).addExpand("version", delayedString("{MC_VERSION}-{VERSION}")).addExpand("name", "forge"));
             src.from(delayedFile("{FML_DIR}/gradlew"));
