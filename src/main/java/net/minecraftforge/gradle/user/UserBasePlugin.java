@@ -315,7 +315,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         File f = new File(path);
         if (f.exists() && f.length() == 0)
         {
-            String projectDir = "URI//file:/" + project.getProjectDir().getAbsolutePath();
+            String projectDir = "URI//file:/" + project.getProjectDir().getAbsolutePath().replace('\\', '/');
             try
             {
                 FileOutputStream fos = new FileOutputStream(f);
