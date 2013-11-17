@@ -300,10 +300,12 @@ public class MergeJarsTask extends CachedTask
             }
             if (entry.isDirectory())
             {
+                /*
                 if (!resources.contains(entryName))
                 {
                     outFile.putNextEntry(entry);
                 }
+                */
                 continue;
             }
 
