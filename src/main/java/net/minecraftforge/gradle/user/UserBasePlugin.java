@@ -76,6 +76,8 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         
         task = makeTask("setupDecompWorkspace", DefaultTask.class);
         task.setGroup("ForgeGradle");
+
+        project.task("eclipse").dependsOn("setupDevWorkspace");
     }
 
     protected Class<UserExtension> getExtensionClass()

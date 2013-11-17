@@ -246,6 +246,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             clean.delete("eclipse");
             clean.setGroup("Clean");
         }
+        project.task("clean").dependsOn("cleanForge");
 
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
