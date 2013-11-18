@@ -203,7 +203,7 @@ public class ApplyBinPatchesTask extends CachedTask
                 if (matcher.matcher(entry.getName()).matches())
                 {
                     ClassPatch cp = readPatch(entry, jis);
-                    patchlist.put(cp.sourceClassName + ".class", cp);
+                    patchlist.put(cp.sourceClassName.replace('.', '/') + ".class", cp);
                 }
                 else
                 {
