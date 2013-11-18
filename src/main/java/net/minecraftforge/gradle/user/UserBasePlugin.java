@@ -37,6 +37,7 @@ import org.gradle.api.artifacts.Configuration.State;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
@@ -68,13 +69,15 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
 
         // lifecycle tasks
         Task task = makeTask("setupCIWorkspace", DefaultTask.class);
+        task.dependsOn("genSrgs", "deobfuscateJar");
         task.setGroup("ForgeGradle");
         
         task = makeTask("setupDevWorkspace", DefaultTask.class);
+        task.dependsOn("genSrgs", "deobfuscateJar", "copyAssets");
         task.setGroup("ForgeGradle");
-        task.dependsOn("genSrgs", "deobfuscateJar");
         
         task = makeTask("setupDecompWorkspace", DefaultTask.class);
+        task.dependsOn("setupDevWorkspace");
         task.setGroup("ForgeGradle");
 
         (project.getTasksByName("eclipse", false).toArray(new Task[0])[0]).dependsOn("setupDevWorkspace");
@@ -136,6 +139,13 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                 
             });
             project.getTasks().getByName("assemble").dependsOn(task4);
+        }
+
+        Sync task5 = makeTask("copyAssets", Sync.class);
+        {
+            task5.from(delayedFile(Constants.ASSETS));
+            task5.into(delayedFile("{ASSET_DIR}"));
+            task5.dependsOn("getAssets", "extractWorkspace");
         }
     }
 

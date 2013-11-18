@@ -83,6 +83,7 @@ public abstract class DelayedBase<V> extends Closure<V>
         patern = patern.replace("{VERSION}", version);
         patern = patern.replace("{BUILD_NUM}", build);
         patern = patern.replace("{PROJECT}", project.getName());
+        patern = patern.replace("{ASSET_DIR}", exten.getAssetDir());
 
         patern = patern.replace("{JENKINS_SERVER}",        jenk.getServer());
         patern = patern.replace("{JENKINS_JOB}",           jenk.getJob());

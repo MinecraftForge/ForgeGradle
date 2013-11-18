@@ -7,6 +7,7 @@ public class BaseExtension
     protected Project project;
     protected String version = "null";
     protected String mcpVersion = "unknown";
+    protected String assetDir = "eclipse/assets";
 
     public BaseExtension(Project project)
     {
@@ -31,5 +32,15 @@ public class BaseExtension
     public void setMcpVersion(String mcpVersion)
     {
         this.mcpVersion = mcpVersion;
+    }
+
+    public void setAorkDir(String value)
+    {
+        this.assetDir = value;
+    }
+
+    public String getAssetDir()
+    {
+        return this.assetDir;
     }
 }
