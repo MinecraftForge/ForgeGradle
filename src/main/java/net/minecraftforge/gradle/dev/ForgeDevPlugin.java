@@ -12,6 +12,7 @@ import java.util.List;
 import net.minecraftforge.gradle.CopyInto;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedBase;
+import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.PatchJarTask;
@@ -380,10 +381,10 @@ public class ForgeDevPlugin extends DevBasePlugin
             inst.from(delayedFile(CHANGELOG));
             inst.from(delayedFile(FML_LICENSE));
             inst.from(delayedFile(FML_CREDITS));
-            uni.from(delayedFile(FORGE_LICENSE));
-            uni.from(delayedFile(FORGE_CREDITS));
-            uni.from(delayedFile(PAULSCODE_LISCENCE1));
-            uni.from(delayedFile(PAULSCODE_LISCENCE2));
+            inst.from(delayedFile(FORGE_LICENSE));
+            inst.from(delayedFile(FORGE_CREDITS));
+            inst.from(delayedFile(PAULSCODE_LISCENCE1));
+            inst.from(delayedFile(PAULSCODE_LISCENCE2));
             inst.from(delayedFile(FORGE_LOGO));
             inst.from(delayedZipTree(INSTALLER_BASE), new CopyInto("", "!*.json", "!*.png"));
             inst.dependsOn("packageUniversal", "downloadBaseInstaller", "generateInstallJson");
@@ -421,7 +422,7 @@ public class ForgeDevPlugin extends DevBasePlugin
                 public Object call(Object obj)
                 {
                     Javadoc task = (Javadoc)obj;
-                    task.setDestinationDir(delayedFile(JAVADOC_TMP).call());
+                    task.setDestinationDir(new File("build/tmp/javadoc"));
                     return null;
                 }
             });
@@ -429,7 +430,7 @@ public class ForgeDevPlugin extends DevBasePlugin
 
         final Zip javadoc = makeTask("packageJavadoc", Zip.class);
         {
-            javadoc.from(delayedFile(JAVADOC_TMP));
+            javadoc.from(delayedFile("build/tmp/javadoc"));
             javadoc.setClassifier("javadoc");
             javadoc.dependsOn("genJavadocs");
         }
