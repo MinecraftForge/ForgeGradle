@@ -75,7 +75,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         task.setGroup("ForgeGradle");
         
         task = makeTask("setupDevWorkspace", DefaultTask.class);
-        task.dependsOn("genSrgs", "deobfuscateJar", "copyAssets");
+        task.dependsOn("genSrgs", "deobfuscateJar", "copyAssets", "extractNatives");
         task.setGroup("ForgeGradle");
         
         task = makeTask("setupDecompWorkspace", DefaultTask.class);
@@ -354,6 +354,20 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                 }
                 else if (node.isNode("extract"))
                 {
+                    String osName = System.getProperty("os.name").toLowerCase();
+
+                    if (osName.contains("linux") || osName.contains("unix"))
+                        natives.add(dep + ":" + node.getStringValue("natives", "linux"));
+                    else if (osName.contains("win"))
+                        natives.add(dep + ":" + node.getStringValue("natives", "windows"));
+                    else if (osName.contains("mac"))
+                        natives.add(dep + ":" + node.getStringValue("natives", "osx"));
+                    else
+                    {
+                        natives.add(dep + ":" + node.getStringValue("natives", "linux"));
+                        natives.add(dep + ":" + node.getStringValue("natives", "windows"));
+                        natives.add(dep + ":" + node.getStringValue("natives", "osx"));
+                    }
                     natives.add(dep);
                 }
                 else
