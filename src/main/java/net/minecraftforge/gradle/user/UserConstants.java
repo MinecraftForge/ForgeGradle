@@ -9,6 +9,7 @@ public final class UserConstants
     
     static final String CONFIG_USERDEV = "userDevPackageDepConfig";
     static final String CONFIG_NATIVES = "minecraftNatives";
+    static final String CONFIG_API_JAVADOCS = "apiJavaDocsConfig";
     static final String CONFIG = "minecraft";
     
     static final String PACK_DIR = "{BUILD_DIR}/unpacked";
@@ -33,8 +34,8 @@ public final class UserConstants
     static final String FML_AT = RES_DIR + "/fml_at.cfg";
     static final String FORGE_AT = RES_DIR + "/forge_at.cfg";
     
-    static final String FORGE_BINPATCHED = "{CACHE_DIR}/net/minecraftforge/minecraftforge/{API_VERSION}/minecraftforge-{API_VERSION}.jar";
-    static final String FORGE_DEOBF_MCP = "{CACHE_DIR}/net/minecraftforge/minecraftforge/{API_VERSION}/minecraftforge-{API_VERSION}-mcp.jar";
+    static final String FORGE_BINPATCHED = "{CACHE_DIR}/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}.jar";
+    static final String FORGE_DEOBF_MCP = "{CACHE_DIR}/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-mcp.jar";
     
     static final String FML_BINPATCHED = "{CACHE_DIR}/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}.jar";
     static final String FML_DEOBF_MCP = "{CACHE_DIR}/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}-mcp.jar";

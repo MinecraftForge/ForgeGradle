@@ -1,6 +1,5 @@
 package net.minecraftforge.gradle.user;
 
-import groovy.lang.Closure;
 import groovy.util.Node;
 import groovy.util.XmlParser;
 import groovy.xml.XmlUtil;
@@ -31,7 +30,6 @@ import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.XmlProvider;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Configuration.State;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
@@ -39,7 +37,11 @@ import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.javadoc.Javadoc;
+import org.gradle.listener.ActionBroadcast;
+import org.gradle.plugins.ide.eclipse.model.Classpath;
+import org.gradle.plugins.ide.eclipse.model.ClasspathEntry;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
+import org.gradle.plugins.ide.eclipse.model.Library;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
 import argo.jdom.JsonNode;
@@ -145,7 +147,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         {
             task5.from(delayedFile(Constants.ASSETS));
             task5.into(delayedFile("{ASSET_DIR}"));
-            task5.dependsOn("getAssets", "extractWorkspace");
+            task5.dependsOn("getAssets");
         }
     }
 
@@ -155,6 +157,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     {
         // create configs
         project.getConfigurations().create(UserConstants.CONFIG_USERDEV);
+        project.getConfigurations().create(UserConstants.CONFIG_API_JAVADOCS);
         project.getConfigurations().create(UserConstants.CONFIG_NATIVES);
         project.getConfigurations().create(UserConstants.CONFIG);
 
@@ -206,56 +209,35 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         ideaConv.getModule().getSourceDirs().addAll(api.getAllSource().getFiles());
     }
 
-    @SuppressWarnings("serial")
+    @SuppressWarnings({"unchecked" })
     protected void configureEclipse()
     {
         EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse");
 
         eclipseConv.getClasspath().setDownloadJavadoc(true);
         eclipseConv.getClasspath().setDownloadSources(true);
-
-        // XML NATIVESHACKERY
-        eclipseConv.getClasspath().getFile().withXml(new Closure<Object>(project) {
-            @SuppressWarnings("unchecked")
-            public Object call(Object... obj)
+        ((ActionBroadcast<Classpath>)eclipseConv.getClasspath().getFile().getWhenMerged()).add(new Action<Classpath>()
+        {
+            @Override
+            public void execute(Classpath classpath)
             {
-                Node root = ((XmlProvider) getDelegate()).asNode();
-
-                HashMap<String, String> map = new HashMap<String, String>();
-                map.put("name", "org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY");
-                map.put("value", delayedString(UserConstants.NATIVES_DIR).call());
-
-                for (Node child : (List<Node>) root.children())
+                String natives = delayedString(UserConstants.NATIVES_DIR).call().replace('\\', '/');
+                for (ClasspathEntry e : classpath.getEntries())
                 {
-                    String path = (String) child.attribute("path");
-
-                    if (path == null)
-                        continue;
-                    else if (!path.contains("lwjg") && !path.contains("jinput"))
-                        continue;
-
-                    if (child.children().isEmpty())
-                        child.appendNode("attributes").appendNode("attribute", map);
-                    else
+                    if (e instanceof Library)
                     {
-                        for (Node attrib : (List<Node>) child.children())
+                        Library lib = (Library)e;
+                        if (lib.getPath().contains("lwjg") || lib.getPath().contains("jinput"))
                         {
-                            if (attrib.name().toString().equals("attributes"))
-                            {
-                                attrib.appendNode("attribute", map);
-                                break;
-                            }
+                            lib.setNativeLibraryLocation(natives);
                         }
                     }
                 }
-
-                return null;
             }
         });
 
         Task task = makeTask("afterEclipseImport", DefaultTask.class);
         task.doLast(new Action<Object>() {
-            @SuppressWarnings("unchecked")
             public void execute(Object obj)
             {
                 try
