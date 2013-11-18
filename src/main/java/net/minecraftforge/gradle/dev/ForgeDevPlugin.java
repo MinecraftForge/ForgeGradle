@@ -414,6 +414,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             classZip.setDestinationDir(delayedFile("{BUILD_DIR}/tmp/").call());
         }
 
+        final File javadoc_temp = project.file("build/tmp/javadoc"); //TODO: Abrar why the fuck is this putting shit in /fml?
         final SubprojectTask javadocJar = makeTask("genJavadocs", SubprojectTask.class);
         {
             javadocJar.setBuildFile(delayedFile(ECLIPSE_FORGE + "/build.gradle"));
@@ -422,7 +423,7 @@ public class ForgeDevPlugin extends DevBasePlugin
                 public Object call(Object obj)
                 {
                     Javadoc task = (Javadoc)obj;
-                    task.setDestinationDir(new File("build/tmp/javadoc"));
+                    task.setDestinationDir(javadoc_temp);
                     return null;
                 }
             });
@@ -430,7 +431,7 @@ public class ForgeDevPlugin extends DevBasePlugin
 
         final Zip javadoc = makeTask("packageJavadoc", Zip.class);
         {
-            javadoc.from(delayedFile("build/tmp/javadoc"));
+            javadoc.from(javadoc_temp);
             javadoc.setClassifier("javadoc");
             javadoc.dependsOn("genJavadocs");
         }
