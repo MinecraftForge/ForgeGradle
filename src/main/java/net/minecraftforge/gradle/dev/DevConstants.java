@@ -89,4 +89,5 @@ final class DevConstants
     static final String PAULSCODE_LISCENCE1 = "Paulscode IBXM Library License.txt";
     static final String PAULSCODE_LISCENCE2 = "Paulscode SoundSystem CodecIBXM License.txt";
     static final String FORGE_LOGO          = FORGE_RESOURCES + "/forge_logo.png";
+    static final String FORGE_VERSION_JAVA  = FORGE_SOURCES + "/net/minecraftforge/common/ForgeVersion.java";
 }

@@ -21,6 +21,7 @@ import net.minecraftforge.gradle.tasks.abstractutil.DelayedJar;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.abstractutil.FileFilterTask;
 import net.minecraftforge.gradle.tasks.dev.ChangelogTask;
+import net.minecraftforge.gradle.tasks.dev.ForgeVersionReplaceTask;
 import net.minecraftforge.gradle.tasks.dev.GenBinaryPatches;
 import net.minecraftforge.gradle.tasks.dev.GenDevProjectsTask;
 import net.minecraftforge.gradle.tasks.dev.GeneratePatches;
@@ -270,6 +271,13 @@ public class ForgeDevPlugin extends DevBasePlugin
             task3.addPatchList(delayedFileTree(FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData", "fixMappings");
         }
+
+        ForgeVersionReplaceTask task4 = makeTask("ciWriteBuildNumber", ForgeVersionReplaceTask.class);
+        {
+            task4.getOutputs().upToDateWhen(Constants.CALL_FALSE);
+            task4.setOutputFile(delayedFile(FORGE_VERSION_JAVA));
+            task4.setReplacement(delayedString("{BUILD_NUM}"));
+        }
     }
 
     @SuppressWarnings("serial")
@@ -476,8 +484,8 @@ public class ForgeDevPlugin extends DevBasePlugin
             src.from(delayedFile(CHANGELOG));
             src.from(delayedFile(FML_LICENSE));
             src.from(delayedFile(FML_CREDITS));
-            uni.from(delayedFile(FORGE_LICENSE));
-            uni.from(delayedFile(FORGE_CREDITS));
+            src.from(delayedFile(FORGE_LICENSE));
+            src.from(delayedFile(FORGE_CREDITS));
             src.from(delayedFile("{FML_DIR}/install"), new CopyInto(null, "!*.gradle"));
             src.from(delayedFile("{FML_DIR}/install"), (new CopyInto(null, "*.gradle")).addExpand("version", delayedString("{MC_VERSION}-{VERSION}")).addExpand("name", "forge"));
             src.from(delayedFile("{FML_DIR}/gradlew"));
