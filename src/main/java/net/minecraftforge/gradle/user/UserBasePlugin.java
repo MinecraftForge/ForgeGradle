@@ -266,7 +266,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                 }
                 catch (Exception e)
                 {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                     return;
                 }

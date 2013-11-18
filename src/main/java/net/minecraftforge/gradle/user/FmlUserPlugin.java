@@ -17,6 +17,7 @@ public class FmlUserPlugin extends UserBasePlugin
             binTask.setOutJar(delayedFile(UserConstants.FML_BINPATCHED));
             binTask.setPatches(delayedFile(UserConstants.BINPATCHES));
             binTask.setClassesJar(delayedFile(UserConstants.BINARIES_JAR));
+            binTask.setResources(delayedFileTree(UserConstants.RES_DIR));
             binTask.dependsOn("mergeJars");
         }
 

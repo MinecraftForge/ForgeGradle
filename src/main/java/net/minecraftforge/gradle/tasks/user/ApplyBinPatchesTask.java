@@ -24,9 +24,14 @@ import java.util.zip.ZipOutputStream;
 import lzma.sdk.lzma.Decoder;
 import lzma.streams.LzmaInputStream;
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
+import org.gradle.api.file.FileTree;
+import org.gradle.api.file.FileVisitDetails;
+import org.gradle.api.file.FileVisitor;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -52,6 +57,9 @@ public class ApplyBinPatchesTask extends CachedTask
     @InputFile
     DelayedFile patches;  // this will be a patches.lzma
 
+    @InputFiles
+    DelayedFileTree resources;
+
     private HashMap<String, ClassPatch> patchlist = Maps.newHashMap();
     private GDiffPatcher patcher = new GDiffPatcher();
     
@@ -67,9 +75,8 @@ public class ApplyBinPatchesTask extends CachedTask
 
         ZipFile in = new ZipFile(getInJar());
         ZipInputStream classesIn = new ZipInputStream(new FileInputStream(getClassesJar()));
-        ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(getOutJar())));
-        
-        HashSet<String> entries = new HashSet<String>();
+        final ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(getOutJar())));
+        final HashSet<String> entries = new HashSet<String>();
         
         try
         {
@@ -122,7 +129,32 @@ public class ApplyBinPatchesTask extends CachedTask
                 out.write(ByteStreams.toByteArray(classesIn));
                 entries.add(entry.getName());
             }
-            
+
+            getResources().visit(new FileVisitor()
+            {
+                @Override public void visitDir(FileVisitDetails dirDetails){}
+                @Override
+                public void visitFile(FileVisitDetails file)
+                {
+                    try
+                    {
+                        String name = file.getRelativePath().toString().replace('\\', '/');
+                        if (!entries.contains(name))
+                        {
+                            ZipEntry n = new ZipEntry(name);
+                            n.setTime(file.getLastModified());
+                            out.putNextEntry(n);
+                            ByteStreams.copy(file.open(), out);
+                            entries.add(name);
+                        }
+                    } 
+                    catch (IOException e)
+                    {
+                        Throwables.propagateIfPossible(e);
+                    }
+                }
+                
+            });
         }
         finally
         {
@@ -276,5 +308,15 @@ public class ApplyBinPatchesTask extends CachedTask
         {
             return String.format("%s : %s => %s (%b) size %d", name, sourceClassName, targetClassName, existsAtTarget, patch.length);
         }
+    }
+
+    public FileTree getResources()
+    {
+        return resources.call();
+    }
+
+    public void setResources(DelayedFileTree resources)
+    {
+        this.resources = resources;
     }
 }
