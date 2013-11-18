@@ -26,6 +26,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import com.google.common.base.Throwables;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
@@ -68,12 +69,13 @@ public class ChangelogTask extends DefaultTask
         getLatestBuild(builds);
         
         StringBuilder out = new StringBuilder();
+        out.append("Changelog:\r\n");
         for (Map<String, Object> build : builds)
         {
             int number = ((Double)build.get("number")).intValue();
             List<MapEntry> items = (List<MapEntry>)build.get("items");
 
-            if (number > getTargetBuild()) continue;
+            if (getTargetBuild() > 0 && number > getTargetBuild()) continue;
 
             out.append("Build ");
             out.append(build.get("version") == null ? number : build.get("version"));
