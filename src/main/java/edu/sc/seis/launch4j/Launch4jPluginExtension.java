@@ -13,27 +13,27 @@ public class Launch4jPluginExtension implements Serializable
 {
     private static final long serialVersionUID = 1001523559902066994L;
     
-    private String launch4jCmd = "launch4j";
-    private String outputDir = "launch4j";
-    private String xmlFileName = "launch4j.xml";
-    private String mainClassName;
-    private boolean dontWrapJar = false;
-    private String headerType = "gui";
-    private String jar;
-    private String outfile;
-    private String errTitle = "";
-    private String cmdLine = "";
-    private String chdir = ".";
-    private String priority = "normal";
-    private String downloadUrl = "";
-    private String supportUrl = "";
+    private String  launch4jCmd    = "launch4j";
+    private String  outputDir      = "launch4j";
+    private String  xmlFileName    = "launch4j.xml";
+    private String  mainClassName;
+    private boolean dontWrapJar    = false;
+    private String  headerType     = "gui";
+    private String  jar;
+    private String  outfile;
+    private String  errTitle       = "";
+    private String  cmdLine        = "";
+    private String  chdir          = ".";
+    private String  priority       = "normal";
+    private String  downloadUrl    = "";
+    private String  supportUrl     = "";
     private boolean customProcName = false;
-    private boolean stayAlive = false;
-    private String manifest = "";
-    private String icon = "";
-    private String version = "";
-    private String copyright = "unknown";
-    private String opt = "";
+    private boolean stayAlive      = false;
+    private String  manifest       = "";
+    private String  icon           = "";
+    private String  version        = "";
+    private String  copyright      = "unknown";
+    private String  opt            = "";
 	
 	private String bundledJrePath;
 	private String jreMinVersion;
@@ -62,17 +62,12 @@ public class Launch4jPluginExtension implements Serializable
     void initExtensionDefaults(Project project)
     {
         outfile = project.getName()+".exe";
-        //jar = "lib/"+project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME).getOutputs().getFiles().getSingleFile().getName();
-        // nope... we do NOT have the jar plugin...
-        version = (String) project.getVersion();
+        version = (String)project.getVersion();
         
-        JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
-        
+        JavaPluginConvention javaConv = (JavaPluginConvention)project.getConvention().getPlugins().get("java");
         if (javaConv != null)
         {
-
             jreMinVersion = javaConv.getTargetCompatibility().toString();
-
             if (JAVA_VERSION_REGEX.matcher(jreMinVersion).matches())
             {
                 jreMinVersion = jreMinVersion + ".0";

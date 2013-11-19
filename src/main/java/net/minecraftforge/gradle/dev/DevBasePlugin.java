@@ -1,6 +1,5 @@
 package net.minecraftforge.gradle.dev;
 
-import edu.sc.seis.launch4j.Launch4jPlugin;
 import edu.sc.seis.launch4j.Launch4jPluginExtension;
 import groovy.lang.Closure;
 import groovy.util.MapEntry;
@@ -15,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -35,7 +33,6 @@ import net.minecraftforge.gradle.tasks.dev.CompressLZMA;
 import net.minecraftforge.gradle.tasks.dev.MergeMappingsTask;
 
 import org.apache.shiro.util.AntPathMatcher;
-import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.tasks.Copy;
@@ -60,9 +57,8 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
     public void applyPlugin()
     {
         // apply L4J
+        this.applyExternalPlugin("java");
         this.applyExternalPlugin("launch4j");
-        
-        Launch4jPluginExtension ext = ((Launch4jPluginExtension) project.getExtensions().getByName("launch4j"));
         
         project.getTasks().getByName("uploadArchives").dependsOn("launch4j");
         
@@ -150,11 +146,10 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
         
         File output = new File(installer.getParentFile(), installer.getName().replace(".jar", ".exe"));
         project.getArtifacts().add("archives", output);
-        
        
         Launch4jPluginExtension ext = (Launch4jPluginExtension) project.getExtensions().getByName("launch4j");
         ext.setOutfile(installer.getAbsolutePath().replace(".jar", ".exe"));
-        ext.setJar(installer.getName());
+        ext.setJar(installer.getAbsolutePath());
         
         String command = delayedFile(DevConstants.LAUNCH4J_DIR).call().getAbsolutePath();
         command += "/launch4j/launch4jc";
@@ -176,35 +171,6 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
         icon = new File(icon).getAbsolutePath();
         ext.setIcon(icon);
         ext.setMainClassName(delayedString("{MAIN_CLASS}").call());
-        project.getLogger().lifecycle("Icon: " + icon);
-        project.getLogger().lifecycle("MainClass: " + ext.getMainClassName());
-        
-//        task = project.getTasks().getByName("packageInstaller");
-//        task.doLast(new Action<Task>() {
-//            @Override
-//            public void execute(Task task)
-//            {
-//                // get teh extension object
-//                Launch4jPluginExtension ext = (Launch4jPluginExtension) project.getExtensions().getByName("launch4j");
-//                
-//                try
-//                {
-//                    // set jar stuff
-//                    JarFile file = new JarFile(installer);
-//                    java.util.jar.Manifest man = file.getManifest();
-//                    String main = man.getMainAttributes().getValue("Main-Class");
-//                    ext.setMainClassName(main);
-//                    System.out.println("INSTALLER >> "+installer.getAbsolutePath());
-//                    System.out.println("Setting Main Class >> "+main);
-//                    System.out.println("Setting Main Class >> "+ext.getMainClassName());
-//                    file.close();
-//                }
-//                catch (IOException e)
-//                {
-//                    Throwables.propagate(e); // -_-
-//                }
-//            }
-//        });
     }
     
     @Override

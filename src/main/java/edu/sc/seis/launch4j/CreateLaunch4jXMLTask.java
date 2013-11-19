@@ -78,7 +78,7 @@ public class CreateLaunch4jXMLTask extends DefaultTask
             textElement(doc, child, "txtProductVersion", cfg.getVersion());
             textElement(doc, child, "productName",       getProject().getName());
             textElement(doc, child, "internalName",      getProject().getName());
-            textElement(doc, child, "originalFilename",  cfg.getOutfile());
+            textElement(doc, child, "originalFilename",  new File(cfg.getOutfile()).getName());
         }
 
         child = doc.createElement("jre");
@@ -139,6 +139,7 @@ public class CreateLaunch4jXMLTask extends DefaultTask
 
     private void textElement(Document doc, Element parent, String name, Integer val)
     {
+        if (val == null) return;
         textElement(doc, parent, name, val.toString());
     }
     private void textElement(Document doc, Element parent, String name, boolean val)

@@ -40,7 +40,6 @@ public class Launch4jPlugin implements Plugin<Project>
             .setDescription("The launch4j configuration for this project.");
         
         Launch4jPluginExtension pluginExtension = new Launch4jPluginExtension();
-        pluginExtension.initExtensionDefaults(project);
         project.getExtensions().add("launch4j", pluginExtension);
         
         Task xmlTask = addCreateLaunch4jXMLTask(project, pluginExtension);
@@ -53,6 +52,9 @@ public class Launch4jPlugin implements Plugin<Project>
         
         Task l4jTask = addLaunch4jTask(project, pluginExtension);
         l4jTask.dependsOn(runTask);
+
+        Launch4jPluginExtension ext = (Launch4jPluginExtension)project.getExtensions().getByName("launch4j");
+        ext.initExtensionDefaults(project);
     }
 
     private Task addCreateLaunch4jXMLTask(Project project, Launch4jPluginExtension configuration)
@@ -74,7 +76,8 @@ public class Launch4jPlugin implements Plugin<Project>
         task.setGroup(LAUNCH4J_GROUP);
         // more stuff with the java plugin
         //task.with(configureDistSpec(project));
-        task.into( new Closure<File>(null) {
+        task.into( new Closure<File>(null)
+        {
             @Override
             public File call(Object... obj)
             {
@@ -99,7 +102,6 @@ public class Launch4jPlugin implements Plugin<Project>
                 
                 task.setCommandLine(ext.getLaunch4jCmd(), project.getBuildDir() + "/" + ext.getOutputDir() + "/" + ext.getXmlFileName());
                 File work = new File(ext.getLaunch4jCmd()).getParentFile();
-                project.getLogger().lifecycle("WorkDir: " + work.getAbsolutePath());
                 task.setWorkingDir(work);
             }
         });
