@@ -7,7 +7,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-class CreateLaunch4jXMLTask extends DefaultTask
+public class CreateLaunch4jXMLTask extends DefaultTask
 {
     @Input
     Launch4jPluginExtension configuration;

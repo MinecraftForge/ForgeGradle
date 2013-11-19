@@ -16,7 +16,7 @@ import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.Exec;
 import org.gradle.api.tasks.bundling.Jar;
 
-class Launch4jPlugin implements Plugin<Project> 
+public class Launch4jPlugin implements Plugin<Project> 
 {
 
     static final String LAUNCH4J_PLUGIN_NAME = "launch4j";

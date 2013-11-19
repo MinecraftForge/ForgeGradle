@@ -9,7 +9,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 
 
-class Launch4jPluginExtension{
+public class Launch4jPluginExtension{
 
     private String launch4jCmd = "launch4j";
     private String outputDir = "launch4j";
