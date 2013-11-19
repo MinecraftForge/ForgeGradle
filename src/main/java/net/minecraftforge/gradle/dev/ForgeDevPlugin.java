@@ -26,6 +26,7 @@ import net.minecraftforge.gradle.tasks.dev.GenBinaryPatches;
 import net.minecraftforge.gradle.tasks.dev.GenDevProjectsTask;
 import net.minecraftforge.gradle.tasks.dev.GeneratePatches;
 import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
+import net.minecraftforge.gradle.tasks.dev.SubmoduleChangelogTask;
 import net.minecraftforge.gradle.tasks.dev.SubprojectTask;
 
 import org.apache.commons.io.FileUtils;
@@ -277,6 +278,13 @@ public class ForgeDevPlugin extends DevBasePlugin
             task4.getOutputs().upToDateWhen(Constants.CALL_FALSE);
             task4.setOutputFile(delayedFile(FORGE_VERSION_JAVA));
             task4.setReplacement(delayedString("{BUILD_NUM}"));
+        }
+
+        SubmoduleChangelogTask task5 = makeTask("fmlChangelog", SubmoduleChangelogTask.class);
+        {
+            task5.setSubmodule(delayedFile("fml"));
+            task5.setModuleName("FML");
+            task5.setPrefix("MinecraftForge/FML");
         }
     }
 
