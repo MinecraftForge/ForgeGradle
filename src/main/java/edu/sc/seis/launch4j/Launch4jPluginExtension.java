@@ -1,265 +1,415 @@
 
-package edu.sc.seis.launch4j
+package edu.sc.seis.launch4j;
 
 import java.io.File;
+import java.util.regex.Pattern;
 
-import org.codehaus.groovy.util.HashCodeHelper;
-import org.gradle.api.Project
+import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.plugins.JavaPluginConvention;
 
 
-class Launch4jPluginExtension implements Serializable {
+class Launch4jPluginExtension{
 
-    String launch4jCmd = "launch4j"
-    String outputDir = "launch4j"
-    String xmlFileName = "launch4j.xml"
-    String mainClassName
-    boolean dontWrapJar = false
-    String headerType = "gui"
-    String jar
-    String outfile
-    String errTitle = ""
-    String cmdLine = ""
-    String chdir = '.'
-    String priority = 'normal'
-    String downloadUrl = ""
-    String supportUrl = ""
-    boolean customProcName = false
-    boolean stayAlive = false
-    String manifest = ""
-    String icon = ""
-    String version = ""
-    String copyright = "unknown"
-    String opt = ""
+    private String launch4jCmd = "launch4j";
+    private String outputDir = "launch4j";
+    private String xmlFileName = "launch4j.xml";
+    private String mainClassName;
+    private boolean dontWrapJar = false;
+    private String headerType = "gui";
+    private String jar;
+    private String outfile;
+    private String errTitle = "";
+    private String cmdLine = "";
+    private String chdir = ".";
+    private String priority = "normal";
+    private String downloadUrl = "";
+    private String supportUrl = "";
+    private boolean customProcName = false;
+    private boolean stayAlive = false;
+    private String manifest = "";
+    private String icon = "";
+    private String version = "";
+    private String copyright = "unknown";
+    private String opt = "";
 	
-	String bundledJrePath
-	String jreMinVersion
-	String jreMaxVersion
+	private String bundledJrePath;
+	private String jreMinVersion;
+	private String jreMaxVersion;
 	
-	String mutexName
-	String windowTitle
+	private String mutexName;
+	private String windowTitle;
 	
-	String messagesStartupError
-	String messagesBundledJreError
-	String messagesJreVersionError
-    String messagesLauncherError
+	private String messagesStartupError;
+	private String messagesBundledJreError;
+	private String messagesJreVersionError;
+    private String messagesLauncherError;
 	
-	Integer initialHeapSize
-	Integer initialHeapPercent
-	Integer maxHeapSize
-	Integer maxHeapPercent
+	private Integer initialHeapSize;
+	private Integer initialHeapPercent;
+	private Integer maxHeapSize;
+	private Integer maxHeapPercent;
 	
-    public File getXmlOutFileForProject(Project project) {
-        return project.file("${project.buildDir}/${outputDir}/${xmlFileName}")
-    }
- 
-    void initExtensionDefaults(Project project) {
-        outfile = new File(project.name+'.exe')
-        jar = "lib/"+project.tasks[JavaPlugin.JAR_TASK_NAME].outputs.files.getSingleFile().name
-        version = project.version
-        jreMinVersion = project.targetCompatibility
-        while (jreMinVersion ==~ /\d+(\.\d+){0,1}/) {
-                jreMinVersion = jreMinVersion+'.0'
-            }
+	private static final Pattern JAVA_VERSION_REGEX = Pattern.compile("\\d+(\\.\\d+){0,1}");
+	
+    public File getXmlOutFileForProject(Project project)
+    {
+        return project.file(project.getBuildDir() + "/" + outputDir + "/" + xmlFileName);
     }
 
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((chdir == null) ? 0 : chdir.hashCode());
-        result = prime * result + (cmdLine ? 1231 : 1237);
-        result = prime * result + ((copyright == null) ? 0 : copyright.hashCode());
-        result = prime * result + (customProcName ? 1231 : 1237);
-        result = prime * result + (dontWrapJar ? 1231 : 1237);
-        result = prime * result + ((downloadUrl == null) ? 0 : downloadUrl.hashCode());
-        result = prime * result + ((errTitle == null) ? 0 : errTitle.hashCode());
-        result = prime * result + ((headerType == null) ? 0 : headerType.hashCode());
-        result = prime * result + ((icon == null) ? 0 : icon.hashCode());
-        result = prime * result + ((jar == null) ? 0 : jar.hashCode());
-        result = prime * result + ((launch4jCmd == null) ? 0 : launch4jCmd.hashCode());
-        result = prime * result + ((mainClassName == null) ? 0 : mainClassName.hashCode());
-        result = prime * result + ((manifest == null) ? 0 : manifest.hashCode());
-        result = prime * result + ((opt == null) ? 0 : opt.hashCode());
-        result = prime * result + ((outfile == null) ? 0 : outfile.hashCode());
-        result = prime * result + ((outputDir == null) ? 0 : outputDir.hashCode());
-        result = prime * result + ((priority == null) ? 0 : priority.hashCode());
-        result = prime * result + (stayAlive ? 1231 : 1237);
-        result = prime * result + ((supportUrl == null) ? 0 : supportUrl.hashCode());
-        result = prime * result + ((version == null) ? 0 : version.hashCode());
-        result = prime * result + ((xmlFileName == null) ? 0 : xmlFileName.hashCode());
-		
-		result = HashCodeHelper.updateHash(result, bundledJrePath);
-		result = HashCodeHelper.updateHash(result, jreMinVersion);
-		result = HashCodeHelper.updateHash(result, jreMaxVersion);
-		
-		result = HashCodeHelper.updateHash(result, mutexName);
-		result = HashCodeHelper.updateHash(result, windowTitle);
-		
-		result = HashCodeHelper.updateHash(result, messagesStartupError);
-		result = HashCodeHelper.updateHash(result, messagesBundledJreError);
-		result = HashCodeHelper.updateHash(result, messagesJreVersionError);
-		result = HashCodeHelper.updateHash(result, messagesLauncherError);
-		
-		result = HashCodeHelper.updateHash(result, initialHeapSize);
-		result = HashCodeHelper.updateHash(result, initialHeapPercent);
-		result = HashCodeHelper.updateHash(result, maxHeapSize);
-		result = HashCodeHelper.updateHash(result, maxHeapPercent);
-		
-		return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-		if (this.is(obj)) return true;
-		if (obj == null) return false;
-		if (getClass() != obj.getClass()) return false;
-		
-        Launch4jPluginExtension other = (Launch4jPluginExtension)obj;
+    void initExtensionDefaults(Project project)
+    {
+        outfile = project.getName()+".exe";
+        jar = "lib/"+project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME).getOutputs().getFiles().getSingleFile().getName();
+        version = (String) project.getVersion();
         
-		if ((chdir == null && other.chdir != null) || !chdir.equals(other.chdir)) {
-			return false;
-        } 
-			
-        if (cmdLine != other.cmdLine)
-            return false;
-			
-        if (copyright == null) {
-            if (other.copyright != null)
-                return false;
-				
-        } 
-		else if (!copyright.equals(other.copyright))
-            return false;
-			
-        if (customProcName != other.customProcName)
-            return false;
-        if (dontWrapJar != other.dontWrapJar)
-            return false;
-        if (downloadUrl == null) {
-            if (other.downloadUrl != null)
-                return false;
-        } else if (!downloadUrl.equals(other.downloadUrl))
-            return false;
-        if (errTitle == null) {
-            if (other.errTitle != null)
-                return false;
-        } else if (!errTitle.equals(other.errTitle))
-            return false;
-        if (headerType == null) {
-            if (other.headerType != null)
-                return false;
-        } else if (!headerType.equals(other.headerType))
-            return false;
-        if (icon == null) {
-            if (other.icon != null)
-                return false;
-        } else if (!icon.equals(other.icon))
-            return false;
-        if (jar == null) {
-            if (other.jar != null)
-                return false;
-        } else if (!jar.equals(other.jar))
-            return false;
-        if (launch4jCmd == null) {
-            if (other.launch4jCmd != null)
-                return false;
-        } else if (!launch4jCmd.equals(other.launch4jCmd))
-            return false;
-        if (mainClassName == null) {
-            if (other.mainClassName != null)
-                return false;
-        } else if (!mainClassName.equals(other.mainClassName))
-            return false;
-        if (manifest == null) {
-            if (other.manifest != null)
-                return false;
-        } else if (!manifest.equals(other.manifest))
-            return false;
-        if (opt == null) {
-            if (other.opt != null)
-                return false;
-        } else if (!opt.equals(other.opt))
-            return false;
-        if (outfile == null) {
-            if (other.outfile != null)
-                return false;
-        } else if (!outfile.equals(other.outfile))
-            return false;
-        if (outputDir == null) {
-            if (other.outputDir != null)
-                return false;
-        } else if (!outputDir.equals(other.outputDir))
-            return false;
-        if (priority == null) {
-            if (other.priority != null)
-                return false;
-        } else if (!priority.equals(other.priority))
-            return false;
-        if (stayAlive != other.stayAlive)
-            return false;
-        if (supportUrl == null) {
-            if (other.supportUrl != null)
-                return false;
-        } else if (!supportUrl.equals(other.supportUrl))
-            return false;
-        if (version == null) {
-            if (other.version != null)
-                return false;
-        } else if (!version.equals(other.version))
-            return false;
-			
-        if (xmlFileName == null) {
-            if (other.xmlFileName != null)
-                return false;
-        } else if (!xmlFileName.equals(other.xmlFileName))
-            return false;
-			
-	    if ((bundledJrePath == null && other.bundledJrePath != null) || !bundledJrePath.equals(other.bundledJrePath)) {
-	        return false;
-        }    
-		if ((jreMinVersion == null && other.jreMinVersion != null) || !jreMinVersion.equals(other.jreMinVersion)) {
-			return false;
-		}
-		if ((jreMaxVersion == null && other.jreMaxVersion != null) || !jreMaxVersion.equals(other.jreMaxVersion)) {
-			return false;
-		}
-		
-		if ((mutexName == null && other.mutexName != null) || !mutexName.equals(other.mutexName)) {
-			return false;
-		} 
-		if ((windowTitle == null && other.windowTitle != null) || !windowTitle.equals(other.windowTitle)) {
-			return false;
-		}
-		
-		if ((messagesStartupError == null && other.messagesStartupError != null) || !messagesStartupError.equals(other.messagesStartupError)) {
-			return false;
-		}
-		if ((messagesBundledJreError == null && other.messagesBundledJreError != null) || !messagesBundledJreError.equals(other.messagesBundledJreError)) {
-			return false;
-		}
-		if ((messagesJreVersionError == null && other.messagesJreVersionError != null) || !messagesJreVersionError.equals(other.messagesJreVersionError)) {
-			return false;
-		}
-		if ((messagesLauncherError == null && other.messagesLauncherError != null) || !messagesLauncherError.equals(other.messagesLauncherError)) {
-			return false;
-		}
-		
-		if ((initialHeapSize == null && other.initialHeapSize != null) || !initialHeapSize.equals(other.initialHeapSize)) {
-			return false;
-		}
-		if ((initialHeapPercent == null && other.initialHeapPercent != null) || !initialHeapPercent.equals(other.initialHeapPercent)) {
-			return false;
-		}
-		if ((maxHeapSize == null && other.maxHeapSize != null) || !maxHeapSize.equals(other.maxHeapSize)) {
-			return false;
-		}
-		if ((maxHeapPercent == null && other.maxHeapPercent != null) || !maxHeapPercent.equals(other.maxHeapPercent)) {
-			return false;
-		}
-			
-		return true;
+        JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+        
+        jreMinVersion = javaConv.getTargetCompatibility().toString();
+        
+        if (JAVA_VERSION_REGEX.matcher(jreMinVersion).matches())
+        {
+                jreMinVersion = jreMinVersion+".0";
+        }
     }
 
+    public String getLaunch4jCmd()
+    {
+        return launch4jCmd;
+    }
 
+    public void setLaunch4jCmd(String launch4jCmd)
+    {
+        this.launch4jCmd = launch4jCmd;
+    }
+
+    public String getOutputDir()
+    {
+        return outputDir;
+    }
+
+    public void setOutputDir(String outputDir)
+    {
+        this.outputDir = outputDir;
+    }
+
+    public String getXmlFileName()
+    {
+        return xmlFileName;
+    }
+
+    public void setXmlFileName(String xmlFileName)
+    {
+        this.xmlFileName = xmlFileName;
+    }
+
+    public String getMainClassName()
+    {
+        return mainClassName;
+    }
+
+    public void setMainClassName(String mainClassName)
+    {
+        this.mainClassName = mainClassName;
+    }
+
+    public boolean isDontWrapJar()
+    {
+        return dontWrapJar;
+    }
+
+    public void setDontWrapJar(boolean dontWrapJar)
+    {
+        this.dontWrapJar = dontWrapJar;
+    }
+
+    public String getHeaderType()
+    {
+        return headerType;
+    }
+
+    public void setHeaderType(String headerType)
+    {
+        this.headerType = headerType;
+    }
+
+    public String getJar()
+    {
+        return jar;
+    }
+
+    public void setJar(String jar)
+    {
+        this.jar = jar;
+    }
+
+    public String getOutfile()
+    {
+        return outfile;
+    }
+
+    public void setOutfile(String outfile)
+    {
+        this.outfile = outfile;
+    }
+
+    public String getErrTitle()
+    {
+        return errTitle;
+    }
+
+    public void setErrTitle(String errTitle)
+    {
+        this.errTitle = errTitle;
+    }
+
+    public String getCmdLine()
+    {
+        return cmdLine;
+    }
+
+    public void setCmdLine(String cmdLine)
+    {
+        this.cmdLine = cmdLine;
+    }
+
+    public String getChdir()
+    {
+        return chdir;
+    }
+
+    public void setChdir(String chdir)
+    {
+        this.chdir = chdir;
+    }
+
+    public String getPriority()
+    {
+        return priority;
+    }
+
+    public void setPriority(String priority)
+    {
+        this.priority = priority;
+    }
+
+    public String getDownloadUrl()
+    {
+        return downloadUrl;
+    }
+
+    public void setDownloadUrl(String downloadUrl)
+    {
+        this.downloadUrl = downloadUrl;
+    }
+
+    public String getSupportUrl()
+    {
+        return supportUrl;
+    }
+
+    public void setSupportUrl(String supportUrl)
+    {
+        this.supportUrl = supportUrl;
+    }
+
+    public boolean isCustomProcName()
+    {
+        return customProcName;
+    }
+
+    public void setCustomProcName(boolean customProcName)
+    {
+        this.customProcName = customProcName;
+    }
+
+    public boolean isStayAlive()
+    {
+        return stayAlive;
+    }
+
+    public void setStayAlive(boolean stayAlive)
+    {
+        this.stayAlive = stayAlive;
+    }
+
+    public String getManifest()
+    {
+        return manifest;
+    }
+
+    public void setManifest(String manifest)
+    {
+        this.manifest = manifest;
+    }
+
+    public String getIcon()
+    {
+        return icon;
+    }
+
+    public void setIcon(String icon)
+    {
+        this.icon = icon;
+    }
+
+    public String getVersion()
+    {
+        return version;
+    }
+
+    public void setVersion(String version)
+    {
+        this.version = version;
+    }
+
+    public String getCopyright()
+    {
+        return copyright;
+    }
+
+    public void setCopyright(String copyright)
+    {
+        this.copyright = copyright;
+    }
+
+    public String getOpt()
+    {
+        return opt;
+    }
+
+    public void setOpt(String opt)
+    {
+        this.opt = opt;
+    }
+
+    public String getBundledJrePath()
+    {
+        return bundledJrePath;
+    }
+
+    public void setBundledJrePath(String bundledJrePath)
+    {
+        this.bundledJrePath = bundledJrePath;
+    }
+
+    public String getJreMinVersion()
+    {
+        return jreMinVersion;
+    }
+
+    public void setJreMinVersion(String jreMinVersion)
+    {
+        this.jreMinVersion = jreMinVersion;
+    }
+
+    public String getJreMaxVersion()
+    {
+        return jreMaxVersion;
+    }
+
+    public void setJreMaxVersion(String jreMaxVersion)
+    {
+        this.jreMaxVersion = jreMaxVersion;
+    }
+
+    public String getMutexName()
+    {
+        return mutexName;
+    }
+
+    public void setMutexName(String mutexName)
+    {
+        this.mutexName = mutexName;
+    }
+
+    public String getWindowTitle()
+    {
+        return windowTitle;
+    }
+
+    public void setWindowTitle(String windowTitle)
+    {
+        this.windowTitle = windowTitle;
+    }
+
+    public String getMessagesStartupError()
+    {
+        return messagesStartupError;
+    }
+
+    public void setMessagesStartupError(String messagesStartupError)
+    {
+        this.messagesStartupError = messagesStartupError;
+    }
+
+    public String getMessagesBundledJreError()
+    {
+        return messagesBundledJreError;
+    }
+
+    public void setMessagesBundledJreError(String messagesBundledJreError)
+    {
+        this.messagesBundledJreError = messagesBundledJreError;
+    }
+
+    public String getMessagesJreVersionError()
+    {
+        return messagesJreVersionError;
+    }
+
+    public void setMessagesJreVersionError(String messagesJreVersionError)
+    {
+        this.messagesJreVersionError = messagesJreVersionError;
+    }
+
+    public String getMessagesLauncherError()
+    {
+        return messagesLauncherError;
+    }
+
+    public void setMessagesLauncherError(String messagesLauncherError)
+    {
+        this.messagesLauncherError = messagesLauncherError;
+    }
+
+    public Integer getInitialHeapSize()
+    {
+        return initialHeapSize;
+    }
+
+    public void setInitialHeapSize(Integer initialHeapSize)
+    {
+        this.initialHeapSize = initialHeapSize;
+    }
+
+    public Integer getInitialHeapPercent()
+    {
+        return initialHeapPercent;
+    }
+
+    public void setInitialHeapPercent(Integer initialHeapPercent)
+    {
+        this.initialHeapPercent = initialHeapPercent;
+    }
+
+    public Integer getMaxHeapSize()
+    {
+        return maxHeapSize;
+    }
+
+    public void setMaxHeapSize(Integer maxHeapSize)
+    {
+        this.maxHeapSize = maxHeapSize;
+    }
+
+    public Integer getMaxHeapPercent()
+    {
+        return maxHeapPercent;
+    }
+
+    public void setMaxHeapPercent(Integer maxHeapPercent)
+    {
+        this.maxHeapPercent = maxHeapPercent;
+    }
 }
