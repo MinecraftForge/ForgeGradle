@@ -143,11 +143,11 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
     {
         final File installer = ((Zip) project.getTasks().getByName("packageInstaller")).getArchivePath();
         
-        File output = new File(installer.getParentFile(), installer.getName().replace(".jar", ".exe"));
+        File output = new File(installer.getParentFile(), installer.getName().replace(".jar", "-win.exe"));
         project.getArtifacts().add("archives", output);
        
         Launch4jPluginExtension ext = (Launch4jPluginExtension) project.getExtensions().getByName("launch4j");
-        ext.setOutfile(installer.getAbsolutePath().replace(".jar", ".exe"));
+        ext.setOutfile(output.getAbsolutePath());
         ext.setJar(installer.getAbsolutePath());
         
         String command = delayedFile(DevConstants.LAUNCH4J_DIR).call().getAbsolutePath();
