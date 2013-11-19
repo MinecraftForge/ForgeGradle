@@ -1,20 +1,29 @@
 package net.minecraftforge.gradle.tasks.dev;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Set;
+
+import net.minecraftforge.gradle.delayed.DelayedFile;
+
+import org.gradle.api.DefaultTask;
+import org.gradle.api.file.FileTree;
+import org.gradle.api.file.FileVisitDetails;
+import org.gradle.api.file.FileVisitor;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.TaskAction;
+
 import com.cloudbees.diff.Diff;
 import com.cloudbees.diff.Hunk;
 import com.cloudbees.diff.PatchException;
 import com.google.common.io.Files;
 
-import net.minecraftforge.gradle.delayed.DelayedFile;
-
-import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputDirectory;
-import org.gradle.api.tasks.TaskAction;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
 
 public class GeneratePatches extends DefaultTask
 {
@@ -33,13 +42,66 @@ public class GeneratePatches extends DefaultTask
     @Input
     String changedPrefix = "";
 
+    private Set<File> created = new HashSet<File>();
+
     @TaskAction
     public void doTask() throws IOException, PatchException
     {
+        created.clear();
         getPatchDir().mkdirs();
 
         // fix and create patches.
         processDir(getOriginalDir());
+        
+        removeOld(getPatchDir());
+    }
+
+    private void removeOld(File dir) throws IOException
+    {
+        final ArrayList<File> directories = new ArrayList<File>();
+        FileTree tree = getProject().fileTree(dir);
+
+        tree.visit(new FileVisitor()
+        {
+            @Override
+            public void visitDir(FileVisitDetails dir)
+            {
+                directories.add(dir.getFile());
+            }
+
+            @Override
+            public void visitFile(FileVisitDetails f)
+            {
+                File file = f.getFile();
+                if (!created.contains(file))
+                {
+                    getLogger().debug("Removed patch: " + f.getRelativePath());
+                    file.delete();
+                }
+            }
+        });
+
+        // We want things sorted in reverse order. Do that sub folders come before parents
+        Collections.sort(directories, new Comparator<File>()
+        {
+            @Override
+            public int compare(File o1, File o2)
+            {
+                int r = o1.compareTo(o2);
+                if (r < 0) return  1;
+                if (r > 0) return -1;
+                return 0;
+            }
+        });
+
+        for (File f : directories)
+        {
+            if (f.listFiles().length == 0)
+            {
+                getLogger().debug("Removing empty dir: " + f);
+                f.delete();
+            }
+        }
     }
 
     public void processDir(File dir) throws IOException
@@ -98,6 +160,7 @@ public class GeneratePatches extends DefaultTask
             {
                 getLogger().debug("Patch did not change");
             }
+            created.add(patchFile);
         }
     }
 
