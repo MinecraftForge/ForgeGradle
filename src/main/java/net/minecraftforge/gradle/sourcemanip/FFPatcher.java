@@ -2,6 +2,8 @@ package net.minecraftforge.gradle.sourcemanip;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.code.regexp.Pattern;
+import com.google.code.regexp.Matcher;
 
 import net.minecraftforge.gradle.common.Constants;
 
@@ -9,8 +11,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class FFPatcher
 {
