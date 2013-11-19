@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
@@ -29,7 +30,7 @@ public class CreateLaunch4jXMLTask extends DefaultTask
     @TaskAction
     public void writeXmlConfig() throws ParserConfigurationException, TransformerException
     {
-        Launch4jPluginExtension configuration = (Launch4jPluginExtension) getProject().getExtensions().getByName("launch4j");
+        Launch4jPluginExtension cfg = (Launch4jPluginExtension) getProject().getExtensions().getByName("launch4j");
         
         File file = getXmlOutFile();
         file.getParentFile().mkdirs();
@@ -42,109 +43,79 @@ public class CreateLaunch4jXMLTask extends DefaultTask
         doc.appendChild(root);
 
         Element child;
-        
-        System.out.println("Getting Main Class >> "+configuration.getMainClassName());
 
-        makeTextElement(doc, root, "dontWrapJar", "" + configuration.getDontWrapJar());
-        makeTextElement(doc, root, "headerType", configuration.getHeaderType());
-        makeTextElement(doc, root, "jar", configuration.getJar());
-        makeTextElement(doc, root, "outfile", configuration.getOutfile());
-        makeTextElement(doc, root, "errTitle", configuration.getErrTitle());
-        makeTextElement(doc, root, "cmdLine", configuration.getCmdLine());
-        makeTextElement(doc, root, "chdir", configuration.getChdir());
-        makeTextElement(doc, root, "priority", configuration.getPriority());
-        makeTextElement(doc, root, "downloadUrl", configuration.getDownloadUrl());
-        makeTextElement(doc, root, "supportUrl", configuration.getSupportUrl());
-        makeTextElement(doc, root, "customProcName", "" + configuration.getCustomProcName());
-        makeTextElement(doc, root, "stayAlive", "" + configuration.getStayAlive());
-        makeTextElement(doc, root, "manifest", configuration.getManifest());
-        
-        if (!configuration.getIcon().isEmpty())
-            makeTextElement(doc, root, "icon", configuration.getIcon());
+        textElement(doc, root, "dontWrapJar",    cfg.getDontWrapJar());
+        textElement(doc, root, "headerType",     cfg.getHeaderType());
+        textElement(doc, root, "jar",            new File(cfg.getJar()).getAbsolutePath());
+        textElement(doc, root, "outfile",        new File(cfg.getOutfile()).getAbsolutePath());
+        textElement(doc, root, "errTitle",       cfg.getErrTitle());
+        textElement(doc, root, "cmdLine",        cfg.getCmdLine());
+        textElement(doc, root, "chdir",          cfg.getChdir());
+        textElement(doc, root, "priority",       cfg.getPriority());
+        textElement(doc, root, "downloadUrl",    cfg.getDownloadUrl());
+        textElement(doc, root, "supportUrl",     cfg.getSupportUrl());
+        textElement(doc, root, "customProcName", cfg.getCustomProcName());
+        textElement(doc, root, "stayAlive",      cfg.getStayAlive());
+        textElement(doc, root, "manifest",       cfg.getManifest());
+        textElement(doc, root, "icon",           cfg.getIcon());
 
+        /*
         child = doc.createElement("classPath");
         {
             root.appendChild(child);
-
-            makeTextElement(doc, child, "icon", "" + configuration.getIcon());
+            textElement(doc, child, "icon", cfg.getIcon());
         }
+        */
 
         child = doc.createElement("versionInfo");
         {
             root.appendChild(child);
-
-            makeTextElement(doc, child, "fileVersion", parseDotVersion(configuration.getVersion()));
-            makeTextElement(doc, child, "txtFileVersion", "" + configuration.getVersion());
-            makeTextElement(doc, child, "fileDescription", getProject().getName());
-            makeTextElement(doc, child, "copyright", configuration.getCopyright());
-            makeTextElement(doc, child, "productVersion", parseDotVersion(configuration.getVersion()));
-            makeTextElement(doc, child, "txtProductVersion", configuration.getVersion());
-            makeTextElement(doc, child, "productName", getProject().getName());
-            makeTextElement(doc, child, "internalName", getProject().getName());
-            makeTextElement(doc, child, "originalFilename", "" + configuration.getOutfile());
+            textElement(doc, child, "fileVersion",       parseDotVersion(cfg.getVersion()));
+            textElement(doc, child, "txtFileVersion",    cfg.getVersion());
+            textElement(doc, child, "fileDescription",   getProject().getName());
+            textElement(doc, child, "copyright",         cfg.getCopyright());
+            textElement(doc, child, "productVersion",    parseDotVersion(cfg.getVersion()));
+            textElement(doc, child, "txtProductVersion", cfg.getVersion());
+            textElement(doc, child, "productName",       getProject().getName());
+            textElement(doc, child, "internalName",      getProject().getName());
+            textElement(doc, child, "originalFilename",  cfg.getOutfile());
         }
 
         child = doc.createElement("jre");
         {
             root.appendChild(child);
-
-            if (configuration.getBundledJrePath() != null)
-                makeTextElement(doc, child, "path", configuration.getBundledJrePath());
-
-            if (configuration.getJreMinVersion() != null)
-                makeTextElement(doc, child, "minVersion", configuration.getJreMinVersion());
-
-            if (configuration.getJreMaxVersion() != null)
-                makeTextElement(doc, child, "maxVersion", configuration.getJreMaxVersion());
-
-            if (!configuration.getOpt().isEmpty())
-                makeTextElement(doc, child, "opt", configuration.getOpt());
-
-            if (configuration.getInitialHeapSize() != null)
-                makeTextElement(doc, child, "initialHeapSize", "" + configuration.getInitialHeapSize());
-
-            if (configuration.getInitialHeapPercent() != null)
-                makeTextElement(doc, child, "initialHeapPercent", "" + configuration.getInitialHeapPercent());
-
-            if (configuration.getMaxHeapSize() != null)
-                makeTextElement(doc, child, "maxHeapSize", "" + configuration.getMaxHeapSize());
-
-            if (configuration.getMaxHeapPercent() != null)
-                makeTextElement(doc, child, "maxHeapPercent", "" + configuration.getMaxHeapPercent());
+            textElement(doc, child, "path",               cfg.getBundledJrePath());
+            textElement(doc, child, "minVersion",         cfg.getJreMinVersion());
+            textElement(doc, child, "maxVersion",         cfg.getJreMaxVersion());
+            textElement(doc, child, "opt",                cfg.getOpt());
+            textElement(doc, child, "initialHeapSize",    cfg.getInitialHeapSize());
+            textElement(doc, child, "initialHeapPercent", cfg.getInitialHeapPercent());
+            textElement(doc, child, "maxHeapSize",        cfg.getMaxHeapSize());
+            textElement(doc, child, "maxHeapPercent",     cfg.getMaxHeapPercent());
         }
 
-        if (configuration.getMessagesStartupError() != null || configuration.getMessagesBundledJreError() != null ||
-                configuration.getMessagesJreVersionError() != null || configuration.getMessagesLauncherError() != null)
+        if (cfg.getMessagesStartupError() != null || 
+            cfg.getMessagesBundledJreError() != null ||
+            cfg.getMessagesJreVersionError() != null || 
+            cfg.getMessagesLauncherError() != null)
         {
             child = doc.createElement("messages");
             {
                 root.appendChild(child);
-
-                if (configuration.getMessagesStartupError() != null)
-                    makeTextElement(doc, child, "startupErr", "" + configuration.getMessagesStartupError());
-
-                if (configuration.getMessagesBundledJreError() != null)
-                    makeTextElement(doc, child, "bundledJreErr", "" + configuration.getMessagesBundledJreError());
-
-                if (configuration.getMessagesJreVersionError() != null)
-                    makeTextElement(doc, child, "jreVersionErr", "" + configuration.getMessagesJreVersionError());
-
-                if (configuration.getMessagesLauncherError() != null)
-                    makeTextElement(doc, child, "launcherErr", "" + configuration.getMessagesLauncherError());
+                textElement(doc, child, "startupErr",    cfg.getMessagesStartupError());
+                textElement(doc, child, "bundledJreErr", cfg.getMessagesBundledJreError());
+                textElement(doc, child, "jreVersionErr", cfg.getMessagesJreVersionError());
+                textElement(doc, child, "launcherErr",   cfg.getMessagesLauncherError());
             }
         }
 
-        if (configuration.getMutexName() != null || configuration.getWindowTitle() != null)
+        if (cfg.getMutexName() != null || cfg.getWindowTitle() != null)
         {
             child = doc.createElement("singleInstance");
             {
                 root.appendChild(child);
-
-                if (configuration.getMutexName() != null)
-                    makeTextElement(doc, child, "mutexName", "" + configuration.getMutexName());
-
-                if (configuration.getWindowTitle() != null)
-                    makeTextElement(doc, child, "windowTitle", "" + configuration.getWindowTitle());
+                textElement(doc, child, "mutexName", cfg.getMutexName());
+                textElement(doc, child, "windowTitle", cfg.getWindowTitle());
             }
         }
 
@@ -153,16 +124,32 @@ public class CreateLaunch4jXMLTask extends DefaultTask
         // write the content into xml file
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         Transformer transformer = transformerFactory.newTransformer();
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+        transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+
         DOMSource source = new DOMSource(doc);
-        
         StreamResult result = new StreamResult(file);
         //StreamResult result = new StreamResult(System.out);
         
         transformer.transform(source, result);
     }
 
-    private void makeTextElement(Document doc, Element parent, String name, String val)
+    private void textElement(Document doc, Element parent, String name, Integer val)
     {
+        textElement(doc, parent, name, val.toString());
+    }
+    private void textElement(Document doc, Element parent, String name, boolean val)
+    {
+        textElement(doc, parent, name, val ? "true" : "false");
+    }
+    private void textElement(Document doc, Element parent, String name, String val)
+    {
+        if (val == null || name == null || val.isEmpty())
+            return;
+        
         Element node = doc.createElement(name);
 
         node.appendChild(doc.createTextNode(val));

@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.dev;
 
+import edu.sc.seis.launch4j.Launch4jPlugin;
 import edu.sc.seis.launch4j.Launch4jPluginExtension;
 import groovy.lang.Closure;
 import groovy.util.MapEntry;
@@ -60,6 +61,8 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
     {
         // apply L4J
         this.applyExternalPlugin("launch4j");
+        
+        Launch4jPluginExtension ext = ((Launch4jPluginExtension) project.getExtensions().getByName("launch4j"));
         
         project.getTasks().getByName("uploadArchives").dependsOn("launch4j");
         
@@ -148,24 +151,33 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
         File output = new File(installer.getParentFile(), installer.getName().replace(".jar", ".exe"));
         project.getArtifacts().add("archives", output);
         
+       
         Launch4jPluginExtension ext = (Launch4jPluginExtension) project.getExtensions().getByName("launch4j");
         ext.setOutfile(installer.getAbsolutePath().replace(".jar", ".exe"));
         ext.setJar(installer.getName());
         
         String command = delayedFile(DevConstants.LAUNCH4J_DIR).call().getAbsolutePath();
-        command += "/launch4j/launch4j";
+        command += "/launch4j/launch4jc";
         
         if (Constants.OPERATING_SYSTEM == Constants.OperatingSystem.WINDOWS)
             command += ".exe";
         
         ext.setLaunch4jCmd(command);
         
-        ext.setMainClassName("cpw.mods.fml.installer.SimpleInstaller");
-        
-        
         Task task = project.getTasks().getByName("generateXmlConfig");
         task.dependsOn("packageInstaller", "extractL4J");
         task.getInputs().file(installer);
+
+        String icon = ext.getIcon();
+        if (icon == null || icon.isEmpty())
+        {
+            icon = delayedFile(DevConstants.LAUNCH4J_DIR + "/launch4j/demo/SimpleApp/l4j/SimpleApp.ico").call().getAbsolutePath();   
+        }
+        icon = new File(icon).getAbsolutePath();
+        ext.setIcon(icon);
+        ext.setMainClassName(delayedString("{MAIN_CLASS}").call());
+        project.getLogger().lifecycle("Icon: " + icon);
+        project.getLogger().lifecycle("MainClass: " + ext.getMainClassName());
         
 //        task = project.getTasks().getByName("packageInstaller");
 //        task.doLast(new Action<Task>() {
