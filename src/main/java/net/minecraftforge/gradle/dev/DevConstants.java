@@ -1,5 +1,7 @@
 package net.minecraftforge.gradle.dev;
 
+import net.minecraftforge.gradle.common.Constants;
+
 final class DevConstants
 {
     private DevConstants()
@@ -8,6 +10,7 @@ final class DevConstants
     }
 
     static final String INSTALLER_URL       = "http://files.minecraftforge.net/installer/forge-installer-{INSTALLER_VERSION}-shrunk.jar";
+    public static final String LAUNCH4J_URL      = "files.minecraftforge.net/launch4j/launch4j-3.0.0-"+Constants.OPERATING_SYSTEM+".zip";
 
     // generated mapping related stuff
     static final String PACKAGED_SRG        = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/packaged-{MC_VERSION}.srg";
@@ -24,6 +27,7 @@ final class DevConstants
     static final String NOTCH_2_MCP_SRG     = "{BUILD_DIR}/tmp/notch2mcp.srg";
     static final String JAVADOC_TMP         = "{BUILD_DIR}/tmp/javadoc";
     static final String BINPATCH_TMP        = "{BUILD_DIR}/tmp/bin_patches.jar";
+    static final String LAUNCH4J_DIR        = "{BUILD_DIR}/launch4j_exec";
 
     // mappings
     static final String METHODS_CSV         = "{MAPPINGS_DIR}/methods.csv";
@@ -41,6 +45,7 @@ final class DevConstants
     static final String JAR_SRG_FML         = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/minecraft_srg_fml-{MC_VERSION}.jar";
     static final String ZIP_DECOMP_FML      = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_decomp_fml-{MC_VERSION}.zip";
     static final String ZIP_DECOMP_FORGE    = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_decomp_forge-{MC_VERSION}.zip";
+    static final String LAUNCH4J            = "{CACHE_DIR}/minecraft/launch4j.zip";
 
     // fml intermediate jars
     static final String ZIP_PATCHED_FML     = "{BUILD_DIR}/fmlTmp/minecraft_patched.zip";

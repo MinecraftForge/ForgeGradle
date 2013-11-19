@@ -59,51 +59,9 @@ public class FmlDevPlugin extends DevBasePlugin
 
         // the master task.
         task = makeTask("buildPackages");
-        //task.dependsOn("launch4j", "packageUniversal", "createChangelog", "packageInstaller");
-        task.dependsOn("createChangelog", "packageUniversal", "packageInstaller", "packageInstaller");
+        task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "packageInstaller");
         task.setGroup("FML");
     }
-
-    /*
-     * private void configureLaunch4J()
-     * {
-     * Task task = project.getTasks().getByName("generateXmlConfig");
-     * task.dependsOn("packageInstaller");
-     * task.getInputs().file(delayedFile(Constants.INSTALLER));
-     * task.doFirst(new Closure(project, this) {
-     * @Override
-     * public Object call()
-     * {
-     * // get teh extension object
-     * Launch4jPluginExtension ext = (Launch4jPluginExtension) project.getExtensions().getByName("launch4j");
-     * //ext.setJar(((Zip)project.getTasks().getByName("packageInstaller")).getArchivePath().getAbsolutePath());
-     * //ext.setOutfile(((Zip)project.getTasks().getByName("packageInstaller")).getArchiveName().replace(".zip", ".exe"));
-     * try
-     * {
-     * // set jar stuff
-     * JarFile file = new JarFile(delayedFile(Constants.INSTALLER).call());
-     * java.util.jar.Manifest man = file.getManifest();
-     * ext.setMainClassName(man.getMainAttributes().getValue("Main-Class"));
-     * }
-     * catch (IOException e)
-     * {
-     * Throwables.propagate(e); // -_-
-     * }
-     * return null;
-     * }
-     * @Override
-     * public Object call(Object obj)
-     * {
-     * return call();
-     * }
-     * @Override
-     * public Object call(Object... obj)
-     * {
-     * return call();
-     * }
-     * });
-     * }
-     */
 
     protected void createJarProcessTasks()
     {

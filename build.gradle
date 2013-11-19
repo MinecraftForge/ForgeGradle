@@ -40,7 +40,7 @@ dependencies {
     compile 'com.google.code.gson:gson:2.2.4' // Used instead of Argo for buuilding changelog.
 
     // just for the extension object
-    //compile "edu.sc.seis.gradle:launch4j:latest.integration"
+    compile "edu.sc.seis.gradle:launch4j:latest.integration"
 
     // stupid maven
     deployerJars "org.apache.maven.wagon:wagon-ssh:2.2"

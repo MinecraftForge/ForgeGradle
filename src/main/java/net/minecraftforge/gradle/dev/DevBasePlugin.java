@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.dev;
 
+import edu.sc.seis.launch4j.Launch4jPluginExtension;
 import groovy.lang.Closure;
 import groovy.util.MapEntry;
 
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -32,9 +34,12 @@ import net.minecraftforge.gradle.tasks.dev.CompressLZMA;
 import net.minecraftforge.gradle.tasks.dev.MergeMappingsTask;
 
 import org.apache.shiro.util.AntPathMatcher;
+import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.Sync;
+import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.process.ExecSpec;
 
 import argo.jdom.JsonNode;
@@ -53,6 +58,11 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
     @Override
     public void applyPlugin()
     {
+        // apply L4J
+        this.applyExternalPlugin("launch4j");
+        
+        project.getTasks().getByName("uploadArchives").dependsOn("launch4j");
+        
         ExtractTask task = makeTask("extractWorkspace", ExtractTask.class);
         {
             task.getOutputs().upToDateWhen(new Closure<Boolean>(null) {
@@ -70,6 +80,19 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
         {
             task1.setOutput(delayedFile(DevConstants.INSTALLER_BASE));
             task1.setUrl(delayedString(DevConstants.INSTALLER_URL));
+        }
+        
+        task1 = makeTask("downloadL4J", DownloadTask.class);
+        {
+            task1.setOutput(delayedFile(DevConstants.LAUNCH4J));
+            task1.setUrl(delayedString(DevConstants.LAUNCH4J_URL));
+        }
+        
+        task = makeTask("extractL4J", ExtractTask.class);
+        {
+            task.dependsOn("downloadL4J");
+            task.from(delayedFile(DevConstants.LAUNCH4J));
+            task.into(delayedFile(DevConstants.LAUNCH4J_DIR));
         }
         
         MergeMappingsTask task2 = makeTask("fixMappings", MergeMappingsTask.class);
@@ -118,6 +141,50 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
         }
     }
     
+    private void configureLaunch4J()
+    {
+        final File installer = ((Zip) project.getTasks().getByName("packageInstaller")).getArchivePath();
+        
+        File output = new File(installer.getParentFile(), installer.getName().replace(".jar", ".exe"));
+        project.getArtifacts().add("archives", output);
+        
+        Task task = project.getTasks().getByName("generateXmlConfig");
+        task.dependsOn("packageInstaller", "extractL4J");
+        task.getInputs().file(installer);
+        task.doFirst(new Action<Task>() {
+            @Override
+            public void execute(Task task)
+            {
+                // get teh extension object
+                Launch4jPluginExtension ext = (Launch4jPluginExtension) project.getExtensions().getByName("launch4j");
+                ext.setOutputDir("libs");
+                ext.setOutfile(installer.getName().replace(".jar", ".exe"));
+                ext.setJar(installer.getName());
+                
+                String command = delayedFile(DevConstants.LAUNCH4J_DIR).call().getAbsolutePath();
+                command += "/launch4j";
+                
+                if (Constants.OPERATING_SYSTEM == Constants.OperatingSystem.WINDOWS)
+                    command += ".exe";
+                
+                ext.setLaunch4jCmd(command);
+                
+                try
+                {
+                    // set jar stuff
+                    JarFile file = new JarFile(installer);
+                    java.util.jar.Manifest man = file.getManifest();
+                    ext.setMainClassName(man.getMainAttributes().getValue("Main-Class"));
+                    file.close();
+                }
+                catch (IOException e)
+                {
+                    Throwables.propagate(e); // -_-
+                }
+            }
+        });
+    }
+    
     @Override
     protected final String getDevJson()
     {
@@ -128,6 +195,9 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
     public void afterEvaluate()
     {
         super.afterEvaluate();
+        
+        configureLaunch4J(); 
+        
         try
         {
             Copy copyTask = makeTask("extractNatives", Copy.class);

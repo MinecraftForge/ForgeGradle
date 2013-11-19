@@ -65,8 +65,7 @@ public class ForgeDevPlugin extends DevBasePlugin
 
         // the master task.
         task = makeTask("buildPackages");
-        //task.dependsOn("launch4j", "packageUniversal", "createChangelog", "packageInstaller");
-        task.dependsOn("createChangelog", "packageUniversal", "packageInstaller", "packageInstaller", "packageJavadoc");
+        task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "packageInstaller");
         task.setGroup("Forge");
     }
 
