@@ -57,7 +57,6 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
     public void applyPlugin()
     {
         // apply L4J
-        this.applyExternalPlugin("java");
         this.applyExternalPlugin("launch4j");
         
         project.getTasks().getByName("uploadArchives").dependsOn("launch4j");
