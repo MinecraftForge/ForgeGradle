@@ -28,7 +28,6 @@ public class Launch4jPlugin implements Plugin<Project>
     static final String TASK_RUN_NAME = "createExe";
     static final String TASK_LAUNCH4J_NAME = "launch4j";
     
-    Launch4jPluginExtension pluginConvention;
     Project project;
 
     public void apply(Project project)
@@ -64,7 +63,6 @@ public class Launch4jPlugin implements Plugin<Project>
         task.getInputs().property("project version", project.getVersion());
         task.getInputs().property("Launch4j extension", configuration);
         task.getOutputs().file(project.file(configuration.getXmlFileName()));
-        task.configuration = configuration;
         return task;
     }
 

@@ -148,41 +148,51 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
         File output = new File(installer.getParentFile(), installer.getName().replace(".jar", ".exe"));
         project.getArtifacts().add("archives", output);
         
+        Launch4jPluginExtension ext = (Launch4jPluginExtension) project.getExtensions().getByName("launch4j");
+        ext.setOutfile(installer.getAbsolutePath().replace(".jar", ".exe"));
+        ext.setJar(installer.getName());
+        
+        String command = delayedFile(DevConstants.LAUNCH4J_DIR).call().getAbsolutePath();
+        command += "/launch4j/launch4j";
+        
+        if (Constants.OPERATING_SYSTEM == Constants.OperatingSystem.WINDOWS)
+            command += ".exe";
+        
+        ext.setLaunch4jCmd(command);
+        
+        ext.setMainClassName("cpw.mods.fml.installer.SimpleInstaller");
+        
+        
         Task task = project.getTasks().getByName("generateXmlConfig");
         task.dependsOn("packageInstaller", "extractL4J");
         task.getInputs().file(installer);
-        task.doFirst(new Action<Task>() {
-            @Override
-            public void execute(Task task)
-            {
-                // get teh extension object
-                Launch4jPluginExtension ext = (Launch4jPluginExtension) project.getExtensions().getByName("launch4j");
-                ext.setOutputDir("libs");
-                ext.setOutfile(installer.getName().replace(".jar", ".exe"));
-                ext.setJar(installer.getName());
-                
-                String command = delayedFile(DevConstants.LAUNCH4J_DIR).call().getAbsolutePath();
-                command += "/launch4j";
-                
-                if (Constants.OPERATING_SYSTEM == Constants.OperatingSystem.WINDOWS)
-                    command += ".exe";
-                
-                ext.setLaunch4jCmd(command);
-                
-                try
-                {
-                    // set jar stuff
-                    JarFile file = new JarFile(installer);
-                    java.util.jar.Manifest man = file.getManifest();
-                    ext.setMainClassName(man.getMainAttributes().getValue("Main-Class"));
-                    file.close();
-                }
-                catch (IOException e)
-                {
-                    Throwables.propagate(e); // -_-
-                }
-            }
-        });
+        
+//        task = project.getTasks().getByName("packageInstaller");
+//        task.doLast(new Action<Task>() {
+//            @Override
+//            public void execute(Task task)
+//            {
+//                // get teh extension object
+//                Launch4jPluginExtension ext = (Launch4jPluginExtension) project.getExtensions().getByName("launch4j");
+//                
+//                try
+//                {
+//                    // set jar stuff
+//                    JarFile file = new JarFile(installer);
+//                    java.util.jar.Manifest man = file.getManifest();
+//                    String main = man.getMainAttributes().getValue("Main-Class");
+//                    ext.setMainClassName(main);
+//                    System.out.println("INSTALLER >> "+installer.getAbsolutePath());
+//                    System.out.println("Setting Main Class >> "+main);
+//                    System.out.println("Setting Main Class >> "+ext.getMainClassName());
+//                    file.close();
+//                }
+//                catch (IOException e)
+//                {
+//                    Throwables.propagate(e); // -_-
+//                }
+//            }
+//        });
     }
     
     @Override

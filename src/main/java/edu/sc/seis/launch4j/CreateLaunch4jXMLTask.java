@@ -13,7 +13,6 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.w3c.dom.Document;
@@ -21,9 +20,6 @@ import org.w3c.dom.Element;
 
 public class CreateLaunch4jXMLTask extends DefaultTask
 {
-    @Input
-    Launch4jPluginExtension configuration;
-
     @OutputFile
     public File getXmlOutFile()
     {
@@ -33,9 +29,8 @@ public class CreateLaunch4jXMLTask extends DefaultTask
     @TaskAction
     public void writeXmlConfig() throws ParserConfigurationException, TransformerException
     {
-        if (configuration == null)
-            configuration = ((Launch4jPluginExtension) getProject().getExtensions().getByName(Launch4jPlugin.LAUNCH4J_CONFIGURATION_NAME));
-
+        Launch4jPluginExtension configuration = (Launch4jPluginExtension) getProject().getExtensions().getByName("launch4j");
+        
         File file = getXmlOutFile();
         file.getParentFile().mkdirs();
 
@@ -47,6 +42,8 @@ public class CreateLaunch4jXMLTask extends DefaultTask
         doc.appendChild(root);
 
         Element child;
+        
+        System.out.println("Getting Main Class >> "+configuration.getMainClassName());
 
         makeTextElement(doc, root, "dontWrapJar", "" + configuration.getDontWrapJar());
         makeTextElement(doc, root, "headerType", configuration.getHeaderType());
@@ -61,7 +58,9 @@ public class CreateLaunch4jXMLTask extends DefaultTask
         makeTextElement(doc, root, "customProcName", "" + configuration.getCustomProcName());
         makeTextElement(doc, root, "stayAlive", "" + configuration.getStayAlive());
         makeTextElement(doc, root, "manifest", configuration.getManifest());
-        makeTextElement(doc, root, "icon", configuration.getIcon());
+        
+        if (!configuration.getIcon().isEmpty())
+            makeTextElement(doc, root, "icon", configuration.getIcon());
 
         child = doc.createElement("classPath");
         {
@@ -156,8 +155,8 @@ public class CreateLaunch4jXMLTask extends DefaultTask
         Transformer transformer = transformerFactory.newTransformer();
         DOMSource source = new DOMSource(doc);
         
-        //StreamResult result = new StreamResult(file);
-        StreamResult result = new StreamResult(System.out);
+        StreamResult result = new StreamResult(file);
+        //StreamResult result = new StreamResult(System.out);
         
         transformer.transform(source, result);
     }

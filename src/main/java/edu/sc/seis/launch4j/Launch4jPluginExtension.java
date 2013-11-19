@@ -2,15 +2,17 @@
 package edu.sc.seis.launch4j;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.regex.Pattern;
 
 import org.gradle.api.Project;
-import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 
 
-public class Launch4jPluginExtension{
-
+public class Launch4jPluginExtension implements Serializable
+{
+    private static final long serialVersionUID = 1001523559902066994L;
+    
     private String launch4jCmd = "launch4j";
     private String outputDir = "launch4j";
     private String xmlFileName = "launch4j.xml";

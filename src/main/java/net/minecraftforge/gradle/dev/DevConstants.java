@@ -10,7 +10,7 @@ final class DevConstants
     }
 
     static final String INSTALLER_URL       = "http://files.minecraftforge.net/installer/forge-installer-{INSTALLER_VERSION}-shrunk.jar";
-    public static final String LAUNCH4J_URL = "http://files.minecraftforge.net/launch4j/launch4j-3.0.0-"+Constants.OPERATING_SYSTEM+".zip";
+    static final String LAUNCH4J_URL        = "http://files.minecraftforge.net/launch4j/launch4j-3.0.0-"+Constants.OPERATING_SYSTEM+".zip";
 
     // generated mapping related stuff
     static final String PACKAGED_SRG        = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/packaged-{MC_VERSION}.srg";
