@@ -237,8 +237,8 @@ public class ForgeDevPlugin extends DevBasePlugin
             task2.setPatchDir(delayedFile(FORGE_PATCH_DIR));
             task2.setOriginalDir(delayedFile(ECLIPSE_CLEAN + "/src/main/java"));
             task2.setChangedDir(delayedFile(ECLIPSE_FORGE + "/src/minecraft"));
-            task2.setOriginalPrefix("../src_base/minecraft");
-            task2.setChangedPrefix("../src_work/minecraft");
+            task2.setOriginalPrefix("../src-base/minecraft");
+            task2.setChangedPrefix("../src-work/minecraft");
             task2.setGroup("Forge");
         }
 
