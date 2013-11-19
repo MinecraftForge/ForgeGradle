@@ -1,33 +1,30 @@
-package edu.sc.seis.launch4j
+package edu.sc.seis.launch4j;
 
 import java.io.File;
 
-import org.gradle.api.internal.ConventionTask
+import org.gradle.api.DefaultTask;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.TaskAction;
 
-import groovy.xml.MarkupBuilder
-import org.gradle.api.DefaultTask
-import org.gradle.api.InvalidUserDataException
-import org.gradle.api.Project;
-import org.gradle.api.file.FileCollection
-import org.gradle.api.tasks.*
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-
-class CreateLaunch4jXMLTask extends DefaultTask {
-
-    static final Logger LOGGER = LoggerFactory.getLogger(CreateLaunch4jXMLTask)
-
-    def Launch4jPluginExtension configuration
+class CreateLaunch4jXMLTask extends DefaultTask
+{
+    @Input
+    Launch4jPluginExtension configuration;
 
     @OutputFile
     File getXmlOutFile() {
-        return project.launch4j.getXmlOutFileForProject(project)
+        return ((Launch4jPluginExtension) getProject().getExtensions().getByName(Launch4jPlugin.LAUNCH4J_CONFIGURATION_NAME)).getXmlOutFileForProject(getProject());
     }
 
     @TaskAction
-    def void writeXmlConfig() {
-        if (configuration == null) configuration = project.launch4j
-        def classpath = project.configurations.runtime.collect { "lib/${it.name}" }
+    public void writeXmlConfig()
+    {
+        if (configuration == null)
+           configuration = ((Launch4jPluginExtension) getProject().getExtensions().getByName(Launch4jPlugin.LAUNCH4J_CONFIGURATION_NAME));
+        
+        /*
+        def classpath = getProject().configurations.runtime.collect { "lib/${it.name}" }
         def file = getXmlOutFile()
         file.parentFile.mkdirs()
         def writer = new BufferedWriter(new FileWriter(file))
@@ -54,12 +51,12 @@ class CreateLaunch4jXMLTask extends DefaultTask {
             versionInfo() {
                 fileVersion(parseDotVersion(configuration.version) )
                 txtFileVersion(configuration.version )
-                fileDescription(project.name)
+                fileDescription(getProject().name)
                 copyright(configuration.copyright)
                 productVersion(parseDotVersion(configuration.version) )
                 txtProductVersion(configuration.version )
-                productName(project.name )
-                internalName(project.name )
+                productName(getProject().name )
+                internalName(getProject().name )
                 originalFilename(configuration.outfile )
             }
 
@@ -113,6 +110,7 @@ class CreateLaunch4jXMLTask extends DefaultTask {
             }
         }
         writer.close()
+        */
     }
 
     /**
@@ -122,6 +120,7 @@ class CreateLaunch4jXMLTask extends DefaultTask {
      * @param version
      * @return
      */
+    /*
     String parseDotVersion(version) {
         if (version ==~ /\d+(\.\d+){3}/) {
             return version
@@ -135,5 +134,6 @@ class CreateLaunch4jXMLTask extends DefaultTask {
             return '0.0.0.1'
         }
     }
+    */
 
 }
