@@ -1,11 +1,23 @@
 package edu.sc.seis.launch4j;
 
 import java.io.File;
+import java.util.regex.Pattern;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 public class CreateLaunch4jXMLTask extends DefaultTask
 {
@@ -13,127 +25,179 @@ public class CreateLaunch4jXMLTask extends DefaultTask
     Launch4jPluginExtension configuration;
 
     @OutputFile
-    File getXmlOutFile() {
+    public File getXmlOutFile()
+    {
         return ((Launch4jPluginExtension) getProject().getExtensions().getByName(Launch4jPlugin.LAUNCH4J_CONFIGURATION_NAME)).getXmlOutFileForProject(getProject());
     }
 
     @TaskAction
-    public void writeXmlConfig()
+    public void writeXmlConfig() throws ParserConfigurationException, TransformerException
     {
         if (configuration == null)
-           configuration = ((Launch4jPluginExtension) getProject().getExtensions().getByName(Launch4jPlugin.LAUNCH4J_CONFIGURATION_NAME));
-        
-        /*
-        def classpath = getProject().configurations.runtime.collect { "lib/${it.name}" }
-        def file = getXmlOutFile()
-        file.parentFile.mkdirs()
-        def writer = new BufferedWriter(new FileWriter(file))
-        def xml = new MarkupBuilder(writer)
-        xml.launch4jConfig() {
-            dontWrapJar(configuration.dontWrapJar)
-            headerType(configuration.headerType)
-            jar(configuration.jar)
-            outfile(configuration.outfile)
-            errTitle(configuration.errTitle)
-            cmdLine(configuration.cmdLine)
-            chdir(configuration.chdir)
-            priority(configuration.priority)
-            downloadUrl(configuration.downloadUrl)
-            supportUrl(configuration.supportUrl)
-            customProcName(configuration.customProcName)
-            stayAlive(configuration.stayAlive)
-            manifest(configuration.manifest)
-            icon(configuration.icon)
-            classPath() {
-                mainClass(configuration.mainClassName)
-                classpath.each() { val -> cp(val ) }
-            }
-            versionInfo() {
-                fileVersion(parseDotVersion(configuration.version) )
-                txtFileVersion(configuration.version )
-                fileDescription(getProject().name)
-                copyright(configuration.copyright)
-                productVersion(parseDotVersion(configuration.version) )
-                txtProductVersion(configuration.version )
-                productName(getProject().name )
-                internalName(getProject().name )
-                originalFilename(configuration.outfile )
-            }
+            configuration = ((Launch4jPluginExtension) getProject().getExtensions().getByName(Launch4jPlugin.LAUNCH4J_CONFIGURATION_NAME));
 
-            jre() {
-                if(configuration.bundledJrePath != null)
-                    xml.path(configuration.bundledJrePath)
-                if (configuration.jreMinVersion != null)
-                    minVersion(configuration.jreMinVersion)
+        File file = getXmlOutFile();
+        file.getParentFile().mkdirs();
 
-                if (configuration.jreMaxVersion != null)
-                    maxVersion(configuration.jreMaxVersion)
+        DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+        Document doc = docBuilder.newDocument();
 
-                if (configuration.opt.length() != 0) opt(configuration.opt)
+        Element root = doc.createElement("launch4jConfig");
+        doc.appendChild(root);
 
-                if (configuration.initialHeapSize != null)
-                    initialHeapSize(configuration.initialHeapSize)
+        Element child;
 
-                if (configuration.initialHeapPercent != null)
-                    initialHeapPercent(configuration.initialHeapPercent)
+        makeTextElement(doc, root, "dontWrapJar", "" + configuration.getDontWrapJar());
+        makeTextElement(doc, root, "headerType", configuration.getHeaderType());
+        makeTextElement(doc, root, "jar", configuration.getJar());
+        makeTextElement(doc, root, "outfile", configuration.getOutfile());
+        makeTextElement(doc, root, "errTitle", configuration.getErrTitle());
+        makeTextElement(doc, root, "cmdLine", configuration.getCmdLine());
+        makeTextElement(doc, root, "chdir", configuration.getChdir());
+        makeTextElement(doc, root, "priority", configuration.getPriority());
+        makeTextElement(doc, root, "downloadUrl", configuration.getDownloadUrl());
+        makeTextElement(doc, root, "supportUrl", configuration.getSupportUrl());
+        makeTextElement(doc, root, "customProcName", "" + configuration.getCustomProcName());
+        makeTextElement(doc, root, "stayAlive", "" + configuration.getStayAlive());
+        makeTextElement(doc, root, "manifest", configuration.getManifest());
+        makeTextElement(doc, root, "icon", configuration.getIcon());
 
-                if (configuration.maxHeapSize != null)
-                    maxHeapSize(configuration.maxHeapSize)
+        child = doc.createElement("classPath");
+        {
+            root.appendChild(child);
 
-                if (configuration.maxHeapPercent != null)
-                    maxHeapPercent(configuration.maxHeapPercent)
-            }
+            makeTextElement(doc, child, "icon", "" + configuration.getIcon());
+        }
 
-            if (configuration.messagesStartupError != null ||
-            configuration.messagesBundledJreError != null ||
-            configuration.messagesJreVersionError != null ||
-            configuration.messagesLauncherError != null) {
-                messages(){
-                    if (configuration.messagesStartupError != null)
-                        startupErr(configuration.messagesStartupError)
-                    if (configuration.messagesBundledJreError != null)
-                        bundledJreErr(configuration.messagesBundledJreError)
-                    if (configuration.messagesJreVersionError != null)
-                        jreVersionErr(configuration.messagesJreVersionError)
-                    if (configuration.messagesLauncherError != null)
-                        launcherErr(configuration.messagesLauncherError)
-                }
-            }
-            if (configuration.mutexName != null || configuration.windowTitle != null) {
-                singleInstance(){
-                    if (configuration.mutexName != null)
-                        mutexName(configuration.mutexName)
+        child = doc.createElement("versionInfo");
+        {
+            root.appendChild(child);
 
-                    if (configuration.windowTitle != null)
-                        windowTitle(configuration.windowTitle)
-                }
+            makeTextElement(doc, child, "fileVersion", parseDotVersion(configuration.getVersion()));
+            makeTextElement(doc, child, "txtFileVersion", "" + configuration.getVersion());
+            makeTextElement(doc, child, "fileDescription", getProject().getName());
+            makeTextElement(doc, child, "copyright", configuration.getCopyright());
+            makeTextElement(doc, child, "productVersion", parseDotVersion(configuration.getVersion()));
+            makeTextElement(doc, child, "txtProductVersion", configuration.getVersion());
+            makeTextElement(doc, child, "productName", getProject().getName());
+            makeTextElement(doc, child, "internalName", getProject().getName());
+            makeTextElement(doc, child, "originalFilename", "" + configuration.getOutfile());
+        }
+
+        child = doc.createElement("jre");
+        {
+            root.appendChild(child);
+
+            if (configuration.getBundledJrePath() != null)
+                makeTextElement(doc, child, "path", configuration.getBundledJrePath());
+
+            if (configuration.getJreMinVersion() != null)
+                makeTextElement(doc, child, "minVersion", configuration.getJreMinVersion());
+
+            if (configuration.getJreMaxVersion() != null)
+                makeTextElement(doc, child, "maxVersion", configuration.getJreMaxVersion());
+
+            if (configuration.getOpt().length() != 0)
+                makeTextElement(doc, child, "opt", configuration.getOpt());
+
+            if (configuration.getInitialHeapSize() != null)
+                makeTextElement(doc, child, "initialHeapSize", "" + configuration.getInitialHeapSize());
+
+            if (configuration.getInitialHeapPercent() != null)
+                makeTextElement(doc, child, "initialHeapPercent", "" + configuration.getInitialHeapPercent());
+
+            if (configuration.getMaxHeapSize() != null)
+                makeTextElement(doc, child, "maxHeapSize", "" + configuration.getMaxHeapSize());
+
+            if (configuration.getMaxHeapPercent() != null)
+                makeTextElement(doc, child, "maxHeapPercent", "" + configuration.getMaxHeapPercent());
+        }
+
+        if (configuration.getMessagesStartupError() != null || configuration.getMessagesBundledJreError() != null ||
+                configuration.getMessagesJreVersionError() != null || configuration.getMessagesLauncherError() != null)
+        {
+            child = doc.createElement("messages");
+            {
+                root.appendChild(child);
+
+                if (configuration.getMessagesStartupError() != null)
+                    makeTextElement(doc, child, "startupErr", "" + configuration.getMessagesStartupError());
+
+                if (configuration.getMessagesBundledJreError() != null)
+                    makeTextElement(doc, child, "bundledJreErr", "" + configuration.getMessagesBundledJreError());
+
+                if (configuration.getMessagesJreVersionError() != null)
+                    makeTextElement(doc, child, "jreVersionErr", "" + configuration.getMessagesJreVersionError());
+
+                if (configuration.getMessagesLauncherError() != null)
+                    makeTextElement(doc, child, "launcherErr", "" + configuration.getMessagesLauncherError());
             }
         }
-        writer.close()
-        */
+
+        if (configuration.getMutexName() != null || configuration.getWindowTitle() != null)
+        {
+            child = doc.createElement("singleInstance");
+            {
+                root.appendChild(child);
+
+                if (configuration.getMutexName() != null)
+                    makeTextElement(doc, child, "mutexName", "" + configuration.getMutexName());
+
+                if (configuration.getWindowTitle() != null)
+                    makeTextElement(doc, child, "windowTitle", "" + configuration.getWindowTitle());
+            }
+        }
+
+        // now for writing it...
+
+        // write the content into xml file
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        Transformer transformer = transformerFactory.newTransformer();
+        DOMSource source = new DOMSource(doc);
+        StreamResult result = new StreamResult(file);
+        transformer.transform(source, result);
     }
 
+    private void makeTextElement(Document doc, Element parent, String name, String val)
+    {
+        Element node = doc.createElement(name);
+
+        node.appendChild(doc.createTextNode(val));
+
+        if (parent != null)
+            parent.appendChild(node);
+    }
+
+    private final Pattern VERSION1 = Pattern.compile("\\d+(\\.\\d+){3}");
+    private final Pattern VERSION2 = Pattern.compile("\\d+(\\.\\d+){0,2}");
+
     /**
-     * launch4j fileVersion and productVersion are required to be x.y.z.w format, no text like beta or 
-     * SNAPSHOT. I think this is a windows thing. So we check the version, and if it is only dots and 
+     * launch4j fileVersion and productVersion are required to be x.y.z.w format, no text like beta or
+     * SNAPSHOT. I think this is a windows thing. So we check the version, and if it is only dots and
      * numbers, we use it. If not we use 0.0.0.1
      * @param version
      * @return
      */
-    /*
-    String parseDotVersion(version) {
-        if (version ==~ /\d+(\.\d+){3}/) {
-            return version
-        } else if (version ==~ /\d+(\.\d+){0,2}/) {
-            def s = version+'.0'
-            while (s ==~ /\d+(\.\d+){0,2}/) {
-                s = s+'.0'
+    private String parseDotVersion(String version)
+    {
+        if (VERSION1.matcher(version).matches())
+        {
+            return version;
+        }
+        else if (VERSION2.matcher(version).matches())
+        {
+            String s = version + ".0";
+            while (VERSION2.matcher(s).matches())
+            {
+                s += ".0";
             }
-            return s
-        } else {
-            return '0.0.0.1'
+            return s;
+        }
+        else
+        {
+            return "0.0.0.1";
         }
     }
-    */
 
 }

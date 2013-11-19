@@ -113,7 +113,7 @@ public class Launch4jPluginExtension{
         this.mainClassName = mainClassName;
     }
 
-    public boolean isDontWrapJar()
+    public boolean getDontWrapJar()
     {
         return dontWrapJar;
     }
@@ -213,7 +213,7 @@ public class Launch4jPluginExtension{
         this.supportUrl = supportUrl;
     }
 
-    public boolean isCustomProcName()
+    public boolean getCustomProcName()
     {
         return customProcName;
     }
@@ -223,7 +223,7 @@ public class Launch4jPluginExtension{
         this.customProcName = customProcName;
     }
 
-    public boolean isStayAlive()
+    public boolean getStayAlive()
     {
         return stayAlive;
     }
