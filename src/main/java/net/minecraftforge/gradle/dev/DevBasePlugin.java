@@ -196,7 +196,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
     {
         super.afterEvaluate();
         
-        configureLaunch4J(); 
+        configureLaunch4J();
         
         try
         {

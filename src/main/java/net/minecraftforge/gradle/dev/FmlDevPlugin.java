@@ -59,7 +59,7 @@ public class FmlDevPlugin extends DevBasePlugin
 
         // the master task.
         task = makeTask("buildPackages");
-        task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "packageInstaller");
+        task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller");
         task.setGroup("FML");
     }
 

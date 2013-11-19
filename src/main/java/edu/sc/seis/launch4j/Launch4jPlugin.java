@@ -74,7 +74,8 @@ public class Launch4jPlugin implements Plugin<Project>
         final Sync task = makeTask(TASK_LIB_COPY_NAME, Sync.class);
         task.setDescription("Copies the project dependency jars in the lib directory.");
         task.setGroup(LAUNCH4J_GROUP);
-        task.with(configureDistSpec(project));
+        // more stuff with the java plugin
+        //task.with(configureDistSpec(project));
         task.into( new Closure<File>(null) {
             @Override
             public File call(Object... obj)
@@ -113,7 +114,7 @@ public class Launch4jPlugin implements Plugin<Project>
         return task;
     }
 
-    @SuppressWarnings("serial")
+    @SuppressWarnings({ "serial", "unused" })
     private CopySpec configureDistSpec(Project project)
     {
         CopySpec distSpec = project.copySpec(new Closure<Object>(null) {});

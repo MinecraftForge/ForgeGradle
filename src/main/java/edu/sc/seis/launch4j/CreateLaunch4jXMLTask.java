@@ -98,7 +98,7 @@ public class CreateLaunch4jXMLTask extends DefaultTask
             if (configuration.getJreMaxVersion() != null)
                 makeTextElement(doc, child, "maxVersion", configuration.getJreMaxVersion());
 
-            if (configuration.getOpt().length() != 0)
+            if (!configuration.getOpt().isEmpty())
                 makeTextElement(doc, child, "opt", configuration.getOpt());
 
             if (configuration.getInitialHeapSize() != null)
@@ -155,7 +155,10 @@ public class CreateLaunch4jXMLTask extends DefaultTask
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         Transformer transformer = transformerFactory.newTransformer();
         DOMSource source = new DOMSource(doc);
-        StreamResult result = new StreamResult(file);
+        
+        //StreamResult result = new StreamResult(file);
+        StreamResult result = new StreamResult(System.out);
+        
         transformer.transform(source, result);
     }
 

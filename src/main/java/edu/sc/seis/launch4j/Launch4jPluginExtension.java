@@ -60,16 +60,21 @@ public class Launch4jPluginExtension{
     void initExtensionDefaults(Project project)
     {
         outfile = project.getName()+".exe";
-        jar = "lib/"+project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME).getOutputs().getFiles().getSingleFile().getName();
+        //jar = "lib/"+project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME).getOutputs().getFiles().getSingleFile().getName();
+        // nope... we do NOT have the jar plugin...
         version = (String) project.getVersion();
         
         JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
         
-        jreMinVersion = javaConv.getTargetCompatibility().toString();
-        
-        if (JAVA_VERSION_REGEX.matcher(jreMinVersion).matches())
+        if (javaConv != null)
         {
-                jreMinVersion = jreMinVersion+".0";
+
+            jreMinVersion = javaConv.getTargetCompatibility().toString();
+
+            if (JAVA_VERSION_REGEX.matcher(jreMinVersion).matches())
+            {
+                jreMinVersion = jreMinVersion + ".0";
+            }
         }
     }
 
