@@ -51,7 +51,7 @@ public class Constants
     public static final String MC_JAR_URL       = "http://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/{MC_VERSION}.jar";
     public static final String MC_SERVER_URL    = "http://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/minecraft_server.{MC_VERSION}.jar";
     public static final String MCP_URL          = "http://mcp.ocean-labs.de/files/archive/mcp804.zip";
-    public static final String ASSETS_URL       = "http://s3.amazonaws.com/Minecraft.Resources";
+    public static final String ASSETS_URL       = "http://resources.download.minecraft.net";
 
     // things in the cache dir.
     public static final String JAR_CLIENT_FRESH = "{CACHE_DIR}/minecraft/net/minecraft/minecraft/{MC_VERSION}/minecraft-{MC_VERSION}.jar";

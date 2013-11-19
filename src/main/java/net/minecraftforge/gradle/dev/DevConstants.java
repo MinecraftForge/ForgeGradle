@@ -67,7 +67,7 @@ final class DevConstants
     static final String ECLIPSE_FORGE       = WORKSPACE + "/Forge";
     static final String ECLIPSE_RUN         = WORKSPACE + "/run";
     static final String ECLIPSE_NATIVES     = ECLIPSE_RUN + "/bin/natives";
-    static final String ECLIPSE_ASSETS      = ECLIPSE_RUN + "/bin/assets";
+    static final String ECLIPSE_ASSETS      = ECLIPSE_RUN + "assets";
 
     // FML stuff only...
     static final String FML_PATCH_DIR       = "{FML_DIR}/patches/minecraft";
