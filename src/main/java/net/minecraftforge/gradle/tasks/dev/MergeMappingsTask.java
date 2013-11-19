@@ -8,6 +8,8 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
+import com.google.code.regexp.Pattern;
+import com.google.code.regexp.Matcher;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
@@ -25,8 +27,6 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class MergeMappingsTask extends CachedTask
 {

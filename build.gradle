@@ -6,8 +6,8 @@ apply plugin: 'maven'
 group = 'net.minecraftforge.gradle'
 version = '1.0-SNAPSHOT'
 archivesBaseName = 'ForgeGradle'
-targetCompatibility = '1.7'
-sourceCompatibility = '1.7'
+targetCompatibility = '1.6'
+sourceCompatibility = '1.6'
 
 repositories {
   mavenCentral()
@@ -38,6 +38,7 @@ dependencies {
     compile 'com.nothome:javaxdelta:2.0.1' // GDIFF implementation for BinPatches
     compile 'org.apache.shiro:shiro-all:1.2.2' // Ant style patern matching
     compile 'com.google.code.gson:gson:2.2.4' // Used instead of Argo for buuilding changelog.
+    compile 'com.github.tony19:named-regexp:0.2.3' // 1.7 Named regexp features
 
     // just for the extension object
     //compile "edu.sc.seis.gradle:launch4j:latest.integration"
