@@ -34,7 +34,7 @@ public class BaseExtension
         this.mcpVersion = mcpVersion;
     }
 
-    public void setAorkDir(String value)
+    public void setAssetDir(String value)
     {
         this.assetDir = value;
     }
