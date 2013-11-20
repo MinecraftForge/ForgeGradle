@@ -33,6 +33,7 @@ import net.minecraftforge.gradle.tasks.dev.CompressLZMA;
 import net.minecraftforge.gradle.tasks.dev.MergeMappingsTask;
 
 import org.apache.shiro.util.AntPathMatcher;
+import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.file.FileTree;
@@ -160,24 +161,34 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
             command += "c.exe";
         else
         {
-            File f = new File(command);
-            if (!f.canExecute())
-            {
-                boolean worked = f.setExecutable(true);
-                project.getLogger().info("Setting file +X "+worked + " : "+f.getPath());
-            }
-            FileTree tree = project.fileTree(DevConstants.LAUNCH4J_DIR + "/bin");
-            tree.visit(new FileVisitor()
-            {
-                @Override public void visitDir(FileVisitDetails dirDetails){}
+            final String extraCommand = command;
+            
+            Task task = project.getTasks().getByName("extractL4J");
+            task.doLast(new Action<Task>() {
+                
                 @Override
-                public void visitFile(FileVisitDetails fileDetails)
+                public void execute(Task task)
                 {
-                    if (!fileDetails.getFile().canExecute())
+                    File f = new File(extraCommand);
+                    if (!f.canExecute())
                     {
-                        boolean worked = fileDetails.getFile().setExecutable(true);
-                        project.getLogger().info("Setting file +X "+worked + " : "+fileDetails.getPath());
+                        boolean worked = f.setExecutable(true);
+                        project.getLogger().info("Setting file +X "+worked + " : "+f.getPath());
                     }
+                    FileTree tree = project.fileTree(DevConstants.LAUNCH4J_DIR + "/bin");
+                    tree.visit(new FileVisitor()
+                    {
+                        @Override public void visitDir(FileVisitDetails dirDetails){}
+                        @Override
+                        public void visitFile(FileVisitDetails fileDetails)
+                        {
+                            if (!fileDetails.getFile().canExecute())
+                            {
+                                boolean worked = fileDetails.getFile().setExecutable(true);
+                                project.getLogger().info("Setting file +X "+worked + " : "+fileDetails.getPath());
+                            }
+                        }
+                    });
                 }
             });
         }
