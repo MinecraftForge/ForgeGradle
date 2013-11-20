@@ -175,7 +175,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
                         boolean worked = f.setExecutable(true);
                         project.getLogger().info("Setting file +X "+worked + " : "+f.getPath());
                     }
-                    FileTree tree = project.fileTree(DevConstants.LAUNCH4J_DIR + "/bin");
+                    FileTree tree = delayedFileTree(DevConstants.LAUNCH4J_DIR + "/bin").call();
                     tree.visit(new FileVisitor()
                     {
                         @Override public void visitDir(FileVisitDetails dirDetails){}
