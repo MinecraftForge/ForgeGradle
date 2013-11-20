@@ -151,10 +151,10 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
         ext.setJar(installer.getAbsolutePath());
         
         String command = delayedFile(DevConstants.LAUNCH4J_DIR).call().getAbsolutePath();
-        command += "/launch4j/launch4jc";
+        command += "/launch4j/launch4j";
         
         if (Constants.OPERATING_SYSTEM == Constants.OperatingSystem.WINDOWS)
-            command += ".exe";
+            command += "c.exe";
         
         ext.setLaunch4jCmd(command);
         
