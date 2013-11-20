@@ -142,7 +142,7 @@ public class Constants
         }
         else
         {
-            return SystemArch.BIT_64;
+            return SystemArch.BIT_32;
         }
     }
 
