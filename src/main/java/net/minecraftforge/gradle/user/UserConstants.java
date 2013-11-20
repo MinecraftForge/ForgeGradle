@@ -34,11 +34,11 @@ public final class UserConstants
     static final String FML_AT = RES_DIR + "/fml_at.cfg";
     static final String FORGE_AT = RES_DIR + "/forge_at.cfg";
     
-    static final String FORGE_BINPATCHED = "{CACHE_DIR}/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}.jar";
-    static final String FORGE_DEOBF_MCP = "{CACHE_DIR}/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-mcp.jar";
+    static final String FORGE_BINPATCHED = "{CACHE_DIR}/minecraft/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}.jar";
+    static final String FORGE_DEOBF_MCP = "{CACHE_DIR}/minecraft/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-mcp.jar";
     
-    static final String FML_BINPATCHED = "{CACHE_DIR}/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}.jar";
-    static final String FML_DEOBF_MCP = "{CACHE_DIR}/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}-mcp.jar";
+    static final String FML_BINPATCHED = "{CACHE_DIR}/minecraft/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}.jar";
+    static final String FML_DEOBF_MCP = "{CACHE_DIR}/minecraft/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}-mcp.jar";
     
     static final String FML_PATCHES_ZIP = PACK_DIR+"/fmlpatches.zip";
     static final String FORGE_PATCHES_ZIP = PACK_DIR+"/forgepatches.zip";

@@ -84,6 +84,9 @@ public class ApplyBinPatchesTask extends CachedTask
             log("Patching Class:");
             for (ZipEntry e : Collections.list(in.entries()))
             {
+                if (e.getName().contains("META-INF"))
+                    continue;
+                
                 if (e.isDirectory())
                 {
                     out.putNextEntry(e);
