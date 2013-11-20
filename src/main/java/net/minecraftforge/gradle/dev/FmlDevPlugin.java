@@ -443,7 +443,7 @@ public class FmlDevPlugin extends DevBasePlugin
             branch = branch.substring(branch.lastIndexOf('/') + 1);
         }
 
-        if (branch != null && branch.equals("master"))
+        if (branch != null && (branch.equals("master") || branch.equals("HEAD")))
         {
             branch = null;
         }

@@ -153,6 +153,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 .withName(buildFile.getParentFile().getName())
                 .withParent(parent)
                 .build();
+        parent.getLogger().info("Project Type: " + project.getClass());
 
         HashMap<String, String> map = new HashMap<String, String>();
         map.put("from", buildFile.getAbsolutePath());
