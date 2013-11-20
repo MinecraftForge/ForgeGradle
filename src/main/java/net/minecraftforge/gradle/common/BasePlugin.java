@@ -145,20 +145,27 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
     public static Project getProject(File buildFile, Project parent)
     {
-        parent.getLogger().info("Project Dir: " + buildFile.getParentFile());
-        parent.getLogger().info("Project Name: " + buildFile.getParentFile().getName());
-        parent.getLogger().info("Project File: " + buildFile.getAbsolutePath());
-        Project project = ProjectBuilder.builder()
-                .withProjectDir(buildFile.getParentFile())
-                .withName(buildFile.getParentFile().getName())
-                .withParent(parent)
-                .build();
-        parent.getLogger().info("Project Type: " + project.getClass());
+        ProjectBuilder builder = ProjectBuilder.builder();
+        if (buildFile != null)
+        {
+            builder = builder.withProjectDir(buildFile.getParentFile())
+                    .withName(buildFile.getParentFile().getName());
+        }
 
-        HashMap<String, String> map = new HashMap<String, String>();
-        map.put("from", buildFile.getAbsolutePath());
+        if (parent != null)
+        {
+            builder = builder.withParent(parent);
+        }
 
-        project.apply(map);
+        Project project = builder.build();
+
+        if (buildFile != null)
+        {
+            HashMap<String, String> map = new HashMap<String, String>();
+            map.put("from", buildFile.getAbsolutePath());
+
+            project.apply(map);
+        }
 
         return project;
     }

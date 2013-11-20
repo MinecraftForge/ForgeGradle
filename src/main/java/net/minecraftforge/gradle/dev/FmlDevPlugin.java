@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import net.minecraftforge.gradle.CopyInto;
+import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedBase;
 import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
@@ -418,6 +419,11 @@ public class FmlDevPlugin extends DevBasePlugin
     @SuppressWarnings("rawtypes")
     public static String getVersionFromGit(Project project)
     {
+        if (project == null)
+        {
+            project = BasePlugin.getProject(null, null);
+        }
+
         String fullVersion = runGit(project, "describe", "--long");
         fullVersion = fullVersion.replace('-', '.').replaceAll("[^0-9.]", ""); //Normalize splitter, and remove non-numbers
         String[] pts = fullVersion.split("\\.");
