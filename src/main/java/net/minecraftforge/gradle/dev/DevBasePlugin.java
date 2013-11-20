@@ -155,6 +155,12 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
         
         if (Constants.OPERATING_SYSTEM == Constants.OperatingSystem.WINDOWS)
             command += "c.exe";
+        else
+        {
+            File f = new File(command);
+            if (!f.canExecute())
+                f.setExecutable(true);
+        }
         
         ext.setLaunch4jCmd(command);
         
