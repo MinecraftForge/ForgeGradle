@@ -163,7 +163,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
             File f = new File(command);
             if (!f.canExecute())
                 f.setExecutable(true);
-            FileTree tree = project.fileTree(DevConstants.LAUNCH4J_DIR + "/bin");
+            FileTree tree = project.fileTree(DevConstants.LAUNCH4J_DIR + "/launch4j/bin");
             tree.visit(new FileVisitor()
             {
                 @Override public void visitDir(FileVisitDetails dirDetails){}
