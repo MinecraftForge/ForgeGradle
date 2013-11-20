@@ -154,7 +154,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
         ext.setJar(installer.getAbsolutePath());
         
         String command = delayedFile(DevConstants.LAUNCH4J_DIR).call().getAbsolutePath();
-        command += "/launch4j/launch4j";
+        command += "/launch4j";
         
         if (Constants.OPERATING_SYSTEM == Constants.OperatingSystem.WINDOWS)
             command += "c.exe";
@@ -163,7 +163,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
             File f = new File(command);
             if (!f.canExecute())
                 f.setExecutable(true);
-            FileTree tree = project.fileTree(DevConstants.LAUNCH4J_DIR + "/launch4j/bin");
+            FileTree tree = project.fileTree(DevConstants.LAUNCH4J_DIR + "/bin");
             tree.visit(new FileVisitor()
             {
                 @Override public void visitDir(FileVisitDetails dirDetails){}
@@ -185,7 +185,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
         String icon = ext.getIcon();
         if (icon == null || icon.isEmpty())
         {
-            icon = delayedFile(DevConstants.LAUNCH4J_DIR + "/launch4j/demo/SimpleApp/l4j/SimpleApp.ico").call().getAbsolutePath();   
+            icon = delayedFile(DevConstants.LAUNCH4J_DIR + "/demo/SimpleApp/l4j/SimpleApp.ico").call().getAbsolutePath();   
         }
         icon = new File(icon).getAbsolutePath();
         ext.setIcon(icon);

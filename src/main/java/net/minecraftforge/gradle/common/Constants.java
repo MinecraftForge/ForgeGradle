@@ -34,8 +34,20 @@ public class Constants
             return StringUtils.lower(name());
         }
     }
+    
+    // OS
+    public static enum SystemArch
+    {
+        BIT_32, BIT_64;
 
-    public static final OperatingSystem OPERATING_SYSTEM = getOs();
+        public String toString()
+        {
+            return StringUtils.lower(name()).replace("bit_", "");
+        }
+    }
+
+    public static final OperatingSystem  OPERATING_SYSTEM = getOs();
+    public static final SystemArch       SYSTEM_ARCH      = getArch();
 
     // extension nam
     public static final String EXT_NAME_MC      = "minecraft";
@@ -118,6 +130,19 @@ public class Constants
         else
         {
             return null;
+        }
+    }
+    
+    private static SystemArch getArch()
+    {
+        String name = StringUtils.lower(System.getProperty("os.arch"));
+        if (name.contains("64"))
+        {
+            return SystemArch.BIT_64;
+        }
+        else
+        {
+            return SystemArch.BIT_64;
         }
     }
 
