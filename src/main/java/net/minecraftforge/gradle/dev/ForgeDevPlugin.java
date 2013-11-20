@@ -10,7 +10,6 @@ import java.util.Date;
 import java.util.List;
 
 import net.minecraftforge.gradle.CopyInto;
-import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedBase;
 import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
@@ -67,7 +66,7 @@ public class ForgeDevPlugin extends DevBasePlugin
 
         // the master task.
         task = makeTask("buildPackages");
-        task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller");
+        task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "packageUserDev", "packageSrc", "genJavadocs");
         task.setGroup("Forge");
     }
 
@@ -181,6 +180,7 @@ public class ForgeDevPlugin extends DevBasePlugin
 
     }
 
+    @SuppressWarnings("serial")
     private void createProjectTasks()
     {
         FMLVersionPropTask sub = makeTask("createVersionPropertiesFML", FMLVersionPropTask.class);

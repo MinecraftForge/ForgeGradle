@@ -11,7 +11,6 @@ import net.minecraftforge.gradle.CopyInto;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedBase;
-import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
@@ -60,7 +59,7 @@ public class FmlDevPlugin extends DevBasePlugin
 
         // the master task.
         task = makeTask("buildPackages");
-        task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller");
+        task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "packageUserDev", "packageSrc", "genJavadocs");
         task.setGroup("FML");
     }
 
@@ -421,7 +420,6 @@ public class FmlDevPlugin extends DevBasePlugin
         return getVersionFromGit(project, project.getProjectDir());
     }
 
-    @SuppressWarnings("rawtypes")
     public static String getVersionFromGit(Project project, File workDir)
     {
         if (project == null)
