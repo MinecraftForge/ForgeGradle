@@ -35,6 +35,9 @@ import net.minecraftforge.gradle.tasks.dev.MergeMappingsTask;
 import org.apache.shiro.util.AntPathMatcher;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.file.FileTree;
+import org.gradle.api.file.FileVisitDetails;
+import org.gradle.api.file.FileVisitor;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.bundling.Zip;
@@ -160,6 +163,17 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
             File f = new File(command);
             if (!f.canExecute())
                 f.setExecutable(true);
+            FileTree tree = project.fileTree(DevConstants.LAUNCH4J_DIR + "/bin");
+            tree.visit(new FileVisitor()
+            {
+                @Override public void visitDir(FileVisitDetails dirDetails){}
+                @Override
+                public void visitFile(FileVisitDetails fileDetails)
+                {
+                    if (!fileDetails.getFile().canExecute())
+                        fileDetails.getFile().setExecutable(true);
+                }
+            });
         }
         
         ext.setLaunch4jCmd(command);
