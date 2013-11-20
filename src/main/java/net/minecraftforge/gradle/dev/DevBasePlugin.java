@@ -384,7 +384,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
         args.put("alias", keyName);
         args.put("storepass", jarsigner.get("storepass"));
         args.put("keypass", jarsigner.get("keypass"));
-        args.put("keystore", jarsigner.get("keystore"));
+        args.put("keystore", new File(jarsigner.get("keystore")).getAbsolutePath());
         args.put("jar", temp.getAbsolutePath());
         args.put("signedjar", signed.getAbsolutePath());
         project.getAnt().invokeMethod("signjar", args);
