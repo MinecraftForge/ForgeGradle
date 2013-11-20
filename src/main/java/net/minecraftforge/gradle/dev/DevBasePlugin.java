@@ -274,12 +274,9 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
     }
     
     @SuppressWarnings("serial")
-    protected static String runGit(final Project project, final String... args)
+    protected static String runGit(final Project project, final File workDir, final String... args)
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-        System.out.println("Project Directory: " + project.getProjectDir());
-        System.out.println("Working Directory: " + new File(".").getAbsolutePath());
         project.exec(new Closure<ExecSpec>(project, project)
         {
             @Override
@@ -289,7 +286,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
                 exec.setExecutable("git");
                 exec.args((Object[]) args);
                 exec.setStandardOutput(out);
-                exec.setWorkingDir(project.getProjectDir());
+                exec.setWorkingDir(workDir);
                 return exec;
             }
         });

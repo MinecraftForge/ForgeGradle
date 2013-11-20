@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.List;
 
 import net.minecraftforge.gradle.CopyInto;
+import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedBase;
 import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
@@ -21,6 +22,7 @@ import net.minecraftforge.gradle.tasks.abstractutil.DelayedJar;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.abstractutil.FileFilterTask;
 import net.minecraftforge.gradle.tasks.dev.ChangelogTask;
+import net.minecraftforge.gradle.tasks.dev.FMLVersionPropTask;
 import net.minecraftforge.gradle.tasks.dev.ForgeVersionReplaceTask;
 import net.minecraftforge.gradle.tasks.dev.GenBinaryPatches;
 import net.minecraftforge.gradle.tasks.dev.GenDevProjectsTask;
@@ -181,10 +183,19 @@ public class ForgeDevPlugin extends DevBasePlugin
 
     private void createProjectTasks()
     {
-        SubprojectTask sub = makeTask("createVersionPropertiesFML", SubprojectTask.class);
+        FMLVersionPropTask sub = makeTask("createVersionPropertiesFML", FMLVersionPropTask.class);
         {
-            sub.setTasks("createVersionProperties");
-            sub.setBuildFile(delayedFile("{FML_DIR}/build.gradle"));
+            //sub.setTasks("createVersionProperties");
+            //sub.setBuildFile(delayedFile("{FML_DIR}/build.gradle"));
+            sub.setVersion(new Closure<String>(project)
+            {
+                @Override
+                public String call(Object... args)
+                {
+                    return FmlDevPlugin.getVersionFromGit(project, new File(delayedString("{FML_DIR}").call()));
+                }
+            });
+            sub.setOutputFile(delayedFile(FML_VERSIONF));
         }
 
         GenDevProjectsTask task = makeTask("generateProjectClean", GenDevProjectsTask.class);
@@ -540,7 +551,7 @@ public class ForgeDevPlugin extends DevBasePlugin
         String branch = null;
         if (!System.getenv().containsKey("GIT_BRANCH"))
         {
-            branch = runGit(project, "rev-parse", "--abbrev-ref", "HEAD");
+            branch = runGit(project, project.getProjectDir(), "rev-parse", "--abbrev-ref", "HEAD");
         }
         else
         {

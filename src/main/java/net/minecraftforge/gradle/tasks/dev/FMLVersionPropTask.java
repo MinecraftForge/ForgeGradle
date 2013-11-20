@@ -1,5 +1,7 @@
 package net.minecraftforge.gradle.tasks.dev;
 
+import groovy.lang.Closure;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -17,16 +19,22 @@ public class FMLVersionPropTask extends DefaultTask
 {
     @OutputFile
     DelayedFile outputFile;
+    
+    private Closure<String> version;
 
     @TaskAction
     public void doTask() throws IOException
     {
-        String[] version = ((String)getProject().getVersion()).split("-")[1].split("\\.");
+        String[] v;
+        if (this.version == null)
+            v = ((String)getProject().getVersion()).split("-")[1].split("\\.");
+        else
+            v = this.version.call().split("-")[1].split("\\.");
         String data =
-        "fmlbuild.major.number="    + version[0] + "\n" +
-        "fmlbuild.minor.number="    + version[1] + "\n" +
-        "fmlbuild.revision.number=" + version[2] + "\n" +
-        "fmlbuild.build.number="    + version[3] + "\n" +
+        "fmlbuild.major.number="    + v[0] + "\n" +
+        "fmlbuild.minor.number="    + v[1] + "\n" +
+        "fmlbuild.revision.number=" + v[2] + "\n" +
+        "fmlbuild.build.number="    + v[3] + "\n" +
         "fmlbuild.mcversion=" + new DelayedString(getProject(), "{MC_VERSION}").call() + "\n" +
         "fmlbuild.mcpversion=" + new DelayedString(getProject(), "{MCP_VERSION}").call() + "\n";
         //fmlbuild.deobfuscation.hash -- Not actually used anywhere
@@ -41,5 +49,10 @@ public class FMLVersionPropTask extends DefaultTask
     public File getOutputFile()
     {
         return outputFile.call();
+    }
+
+    public void setVersion(Closure<String> value)
+    {
+        this.version = value;
     }
 }

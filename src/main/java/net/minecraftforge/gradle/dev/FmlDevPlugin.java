@@ -416,15 +416,20 @@ public class FmlDevPlugin extends DevBasePlugin
         project.getArtifacts().add("archives", src);
     }
 
-    @SuppressWarnings("rawtypes")
     public static String getVersionFromGit(Project project)
+    {
+        return getVersionFromGit(project, project.getProjectDir());
+    }
+
+    @SuppressWarnings("rawtypes")
+    public static String getVersionFromGit(Project project, File workDir)
     {
         if (project == null)
         {
             project = BasePlugin.getProject(null, null);
         }
 
-        String fullVersion = runGit(project, "describe", "--long");
+        String fullVersion = runGit(project, workDir, "describe", "--long");
         fullVersion = fullVersion.replace('-', '.').replaceAll("[^0-9.]", ""); //Normalize splitter, and remove non-numbers
         String[] pts = fullVersion.split("\\.");
 
@@ -441,7 +446,7 @@ public class FmlDevPlugin extends DevBasePlugin
         String branch = null;
         if (!System.getenv().containsKey("GIT_BRANCH"))
         {
-            branch = runGit(project, "rev-parse", "--abbrev-ref", "HEAD");
+            branch = runGit(project, workDir, "rev-parse", "--abbrev-ref", "HEAD");
         }
         else
         {
@@ -455,7 +460,7 @@ public class FmlDevPlugin extends DevBasePlugin
         }
 
         StringBuilder out = new StringBuilder();
-        out.append(DelayedBase.resolve("{MC_VERSION}", project, (IDelayedResolver) project.getPlugins().findPlugin("fmldev"))).append('-'); // Somehow configure this?
+        out.append(DelayedBase.resolve("{MC_VERSION}", project)).append('-'); // Somehow configure this?
         out.append(major).append('.').append(minor).append('.').append(revision).append('.').append(build);
         if (branch != null)
         {
