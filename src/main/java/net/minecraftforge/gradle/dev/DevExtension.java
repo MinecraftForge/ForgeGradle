@@ -17,7 +17,7 @@ public class DevExtension extends BaseExtension
 
     public String getFmlDir()
     {
-        return fmlDir == null ? project.getProjectDir().getPath() : fmlDir;
+        return fmlDir == null ? project.getProjectDir().getPath().replace('\\', '/') : fmlDir.replace('\\', '/');
     }
 
     public void setFmlDir(String fmlDir)

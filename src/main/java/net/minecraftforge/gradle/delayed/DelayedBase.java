@@ -77,12 +77,12 @@ public abstract class DelayedBase<V> extends Closure<V>
 
         patern = patern.replace("{MC_VERSION}", exten.getVersion());
         patern = patern.replace("{MCP_VERSION}", exten.getMcpVersion());
-        patern = patern.replace("{CACHE_DIR}", project.getGradle().getGradleUserHomeDir().getAbsolutePath() + "/caches");
-        patern = patern.replace("{BUILD_DIR}", project.getBuildDir().getAbsolutePath());
+        patern = patern.replace("{CACHE_DIR}", project.getGradle().getGradleUserHomeDir().getAbsolutePath().replace('\\', '/') + "/caches");
+        patern = patern.replace("{BUILD_DIR}", project.getBuildDir().getAbsolutePath().replace('\\', '/'));
         patern = patern.replace("{VERSION}", version);
         patern = patern.replace("{BUILD_NUM}", build);
         patern = patern.replace("{PROJECT}", project.getName());
-        patern = patern.replace("{ASSET_DIR}", exten.getAssetDir());
+        patern = patern.replace("{ASSET_DIR}", exten.getAssetDir().replace('\\', '/'));
 
         patern = patern.replace("{JENKINS_SERVER}",        jenk.getServer());
         patern = patern.replace("{JENKINS_JOB}",           jenk.getJob());
