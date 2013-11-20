@@ -162,7 +162,10 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
         {
             File f = new File(command);
             if (!f.canExecute())
-                f.setExecutable(true);
+            {
+                boolean worked = f.setExecutable(true);
+                project.getLogger().info("Setting file +X "+worked + " : "+f.getPath());
+            }
             FileTree tree = project.fileTree(DevConstants.LAUNCH4J_DIR + "/bin");
             tree.visit(new FileVisitor()
             {
@@ -171,7 +174,10 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
                 public void visitFile(FileVisitDetails fileDetails)
                 {
                     if (!fileDetails.getFile().canExecute())
-                        fileDetails.getFile().setExecutable(true);
+                    {
+                        boolean worked = fileDetails.getFile().setExecutable(true);
+                        project.getLogger().info("Setting file +X "+worked + " : "+fileDetails.getPath());
+                    }
                 }
             });
         }
