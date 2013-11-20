@@ -279,6 +279,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         System.out.println("Project Directory: " + project.getProjectDir());
+        System.out.println("Working Directory: " + new File(".").getAbsolutePath());
         project.exec(new Closure<ExecSpec>(project, project)
         {
             @Override

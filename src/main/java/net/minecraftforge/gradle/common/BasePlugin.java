@@ -151,6 +151,10 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             builder = builder.withProjectDir(buildFile.getParentFile())
                     .withName(buildFile.getParentFile().getName());
         }
+        else
+        {
+            builder = builder.withProjectDir(new File("."));
+        }
 
         if (parent != null)
         {
