@@ -3,6 +3,7 @@ package net.minecraftforge.gradle.common;
 import java.io.File;
 import java.util.HashMap;
 
+import net.minecraftforge.gradle.FileLogListenner;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.delayed.DelayedString;
@@ -27,14 +28,23 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     public final void apply(Project arg)
     {
         project = arg;
+        
+        // logging
+        FileLogListenner listenner = new FileLogListenner(project.file(Constants.LOG));
+        project.getLogging().addStandardOutputListener(listenner);
+        project.getLogging().addStandardErrorListener(listenner);
+        project.getGradle().addBuildListener(listenner);
 
+        // extension objects
         project.getExtensions().create(Constants.EXT_NAME_MC, getExtensionClass(), project);
         project.getExtensions().create(Constants.EXT_NAME_JENKINS, JenkinsExtension.class, project);
 
+        // repos
         addMavenRepo("forge", "http://files.minecraftforge.net/maven");
         project.getRepositories().mavenCentral();
         addMavenRepo("minecraft", "http://s3.amazonaws.com/Minecraft.Download/libraries");
 
+        // after eval
         project.afterEvaluate(new Action<Project>() {
             @Override
             public void execute(Project project)
@@ -43,9 +53,10 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             }
         });
 
+        // some default tasks
         makeObtainTasks();
 
-        // at last....
+        // at last, apply the child plugins
         applyPlugin();
     }
 
