@@ -29,6 +29,7 @@ import net.minecraftforge.gradle.tasks.dev.GeneratePatches;
 import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
 import net.minecraftforge.gradle.tasks.dev.SubmoduleChangelogTask;
 import net.minecraftforge.gradle.tasks.dev.SubprojectTask;
+import net.minecraftforge.gradle.tasks.dev.VersionJsonTask;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Action;
@@ -312,6 +313,13 @@ public class ForgeDevPlugin extends DevBasePlugin
             log.setOutput(delayedFile(CHANGELOG));
         }
 
+        VersionJsonTask vjson = makeTask("generateVersionJson", VersionJsonTask.class);
+        {
+            vjson.setInput(delayedFile(INSTALL_PROFILE));
+            vjson.setOutput(delayedFile(VERSION_JSON));
+            vjson.dependsOn("generateInstallJson");
+        }
+
         final DelayedJar uni = makeTask("packageUniversal", DelayedJar.class);
         {
             uni.setClassifier("universal");
@@ -329,6 +337,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             uni.from(delayedFile(PAULSCODE_LISCENCE2));
             uni.from(delayedFile(DEOBF_DATA));
             uni.from(delayedFile(CHANGELOG));
+            uni.from(delayedFile(VERSION_JSON));
             uni.exclude("devbinpatches.pack.lzma");
             uni.setIncludeEmptyDirs(false);
             uni.setManifest(new Closure<Object>(project)
@@ -357,7 +366,7 @@ public class ForgeDevPlugin extends DevBasePlugin
                 }
             });
             uni.setDestinationDir(delayedFile("{BUILD_DIR}/distributions").call());
-            uni.dependsOn("genBinPatches", "createChangelog", "createVersionPropertiesFML");
+            uni.dependsOn("genBinPatches", "createChangelog", "createVersionPropertiesFML", "generateVersionJson");
         }
         project.getArtifacts().add("archives", uni);
 
