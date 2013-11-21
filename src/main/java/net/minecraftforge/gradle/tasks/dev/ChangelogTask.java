@@ -140,10 +140,12 @@ public class ChangelogTask extends DefaultTask
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> getBuildInfo()
     {
+        String data = null;
         try
         {
             boolean versioned = false;
-            String data = read("/api/python?tree=allBuilds[result,number,actions[text],changeSet[items[author[fullName],comment]]]");//&pretty=true");
+            data = read("/api/python?tree=allBuilds[result,number,actions[text],changeSet[items[author[fullName],comment]]]");//&pretty=true");
+            data = data.replace("\"result\":None", "\"result\":\"\"");
             data = cleanJson(data, "None"); //This kills Gson for some reason
             data = cleanJson(data, "{}"); //Empty entries, just for sanities sake
 
@@ -220,6 +222,7 @@ public class ChangelogTask extends DefaultTask
         catch (Exception e)
         {
             e.printStackTrace();
+            getLogger().lifecycle(data);
         }
         return new ArrayList<Map<String, Object>>();
     }
@@ -227,15 +230,21 @@ public class ChangelogTask extends DefaultTask
     @SuppressWarnings("unchecked")
     private void getLatestBuild(List<Map<String, Object>> builds)
     {
+        String data = null;
         try
         {
+            String ver = "";
+            if (builds.size() > 0)
+            {
+                ver = (String)builds.get(0).get("number");
+            }
             boolean versioned = false;
-            String data = read("/lastBuild/api/python?pretty=true&tree=number,changeSet[items[author[fullName],comment]]");//&pretty=true");
+            data = read("/lastBuild/api/python?tree=number,changeSet[items[author[fullName],comment]]");//&pretty=true");
             data = cleanJson(data, "None"); //This kills Gson for some reason
             data = cleanJson(data, "{}"); //Empty entries, just for sanities sake
 
             Map<String, Object> build = (Map<String, Object>)new Gson().fromJson(data, Map.class);
-            if (build.get("number").equals(builds.get(0).get("number")))
+            if (build.get("number").equals(ver))
             {
                 return;
             }
@@ -258,6 +267,7 @@ public class ChangelogTask extends DefaultTask
         catch (Exception e)
         {
             e.printStackTrace();
+            getLogger().lifecycle(data);
         }
     }
     
