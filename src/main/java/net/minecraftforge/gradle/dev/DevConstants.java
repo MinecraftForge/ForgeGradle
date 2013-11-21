@@ -28,7 +28,7 @@ final class DevConstants
     static final String JAVADOC_TMP         = "{BUILD_DIR}/tmp/javadoc";
     static final String BINPATCH_TMP        = "{BUILD_DIR}/tmp/bin_patches.jar";
     static final String LAUNCH4J_DIR        = "{BUILD_DIR}/launch4j_exec";
-    static final String VERSION_JSON        = "{BUILD_DIR}/tmp/version,json";
+    static final String VERSION_JSON        = "{BUILD_DIR}/tmp/version.json";
 
     // mappings
     static final String METHODS_CSV         = "{MAPPINGS_DIR}/methods.csv";
