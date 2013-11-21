@@ -305,14 +305,14 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         ProcessJarTask deobf = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
         
         // from the ExtensionObject
-        deobf.addTransformer(getExtension().getAccessTransformers());
+        deobf.addTransformer(getExtension().getAccessTransformers().toArray());
         
         // from the resources dirs
         {
             JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
 
             SourceSet main = javaConv.getSourceSets().getByName("main");
-            SourceSet api = javaConv.getSourceSets().create("api");
+            SourceSet api = javaConv.getSourceSets().getByName("api");
 
             for (File at : main.getResources().getFiles())
             {
