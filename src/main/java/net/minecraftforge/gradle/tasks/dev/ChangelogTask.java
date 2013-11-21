@@ -233,10 +233,10 @@ public class ChangelogTask extends DefaultTask
         String data = null;
         try
         {
-            String ver = "";
+            Object ver = "";
             if (builds.size() > 0)
             {
-                ver = (String)builds.get(0).get("number");
+                ver = builds.get(0).get("number");
             }
             boolean versioned = false;
             data = read("/lastBuild/api/python?tree=number,changeSet[items[author[fullName],comment]]");//&pretty=true");
