@@ -316,13 +316,13 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
 
             for (File at : main.getResources().getFiles())
             {
-                if (at.getName().endsWith("_at.cfg"))
+                if (at.getName().toLowerCase().endsWith("_at.cfg"))
                     deobf.addTransformer(at);
             }
 
             for (File at : api.getResources().getFiles())
             {
-                if (at.getName().endsWith("_at.cfg"))
+                if (at.getName().toLowerCase().endsWith("_at.cfg"))
                     deobf.addTransformer(at);
             }
         }
