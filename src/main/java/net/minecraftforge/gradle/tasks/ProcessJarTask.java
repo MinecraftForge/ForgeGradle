@@ -17,6 +17,9 @@ import org.gradle.process.JavaExecSpec;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ProcessJarTask extends CachedTask
 {
@@ -66,6 +69,8 @@ public class ProcessJarTask extends CachedTask
                 ats.add(new DelayedFile(getProject(), ((File) object).getAbsolutePath()));
             else if (object instanceof String)
                 ats.add(new DelayedFile(getProject(), (String) object));
+            else
+                ats.add(new DelayedFile(getProject(), object.toString()));
             
             isClean = false;
         }
@@ -77,11 +82,11 @@ public class ProcessJarTask extends CachedTask
         // make stuff into files.
         File tempObfJar = new File(getTemporaryDir(), "obfed.jar"); // courtesy of gradle temp dir.
 
-        // make the ATs LIST
-        ArrayList<File> ats = new ArrayList<File>();
+        // make the ATs list.. its a Set to avoid duplication.
+        Set<File> ats = new HashSet<File>();
         for (DelayedFile obj : this.ats)
         {
-            ats.add(obj.call());
+            ats.add(getProject().file(obj).getCanonicalFile());
         }
 
         // deobf
@@ -95,7 +100,7 @@ public class ProcessJarTask extends CachedTask
         applyExceptor(getExceptorJar(), tempObfJar, out, getExceptorCfg(), new File(getTemporaryDir(), "exceptorLog"));
     }
 
-    private void deobfJar(File inJar, File outJar, File srg, ArrayList<File> ats) throws IOException
+    private void deobfJar(File inJar, File outJar, File srg, Collection<File> ats) throws IOException
     {
         getLogger().debug("INPUT: " + inJar);
         getLogger().debug("OUTPUT: " + outJar);

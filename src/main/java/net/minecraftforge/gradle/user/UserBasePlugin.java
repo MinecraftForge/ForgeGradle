@@ -287,16 +287,45 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     {
         super.afterEvaluate();
 
+        // grab the json
         if (delayedFile(UserConstants.JSON).call().exists())
         {
             readAndApplyJson(delayedFile(UserConstants.JSON).call(), UserConstants.CONFIG, UserConstants.CONFIG_NATIVES);
         }
 
+        // extract userdev
         ((ExtractTask) project.getTasks().findByName("extractUserDev")).from(delayedFile(project.getConfigurations().getByName(UserConstants.CONFIG_USERDEV).getSingleFile().getAbsolutePath()));
 
+        // extract natives
         ExtractTask natives = (ExtractTask) project.getTasks().findByName("extractNatives");
         for (File file : project.getConfigurations().getByName(UserConstants.CONFIG_NATIVES).getFiles())
             natives.from(delayedFile(file.getAbsolutePath()));
+        
+        // add src ATs
+        ProcessJarTask deobf = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
+        
+        // from the ExtensionObject
+        deobf.addTransformer(getExtension().getAccessTransformers());
+        
+        // from the resources dirs
+        {
+            JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+
+            SourceSet main = javaConv.getSourceSets().getByName("main");
+            SourceSet api = javaConv.getSourceSets().create("api");
+
+            for (File at : main.getResources().getFiles())
+            {
+                if (at.getName().endsWith("_at.cfg"))
+                    deobf.addTransformer(at);
+            }
+
+            for (File at : api.getResources().getFiles())
+            {
+                if (at.getName().endsWith("_at.cfg"))
+                    deobf.addTransformer(at);
+            }
+        }
     }
 
     private static final byte[] LOCATION_BEFORE = new byte[]{ 0x40, (byte)0xB1, (byte)0x8B, (byte)0x81, 0x23, (byte)0xBC, 0x00, 0x14, 0x1A, 0x25, (byte)0x96, (byte)0xE7, (byte)0xA3, (byte)0x93, (byte)0xBE, 0x1E};
