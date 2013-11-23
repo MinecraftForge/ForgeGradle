@@ -10,6 +10,7 @@ public final class UserConstants
     static final String CONFIG_USERDEV = "userDevPackageDepConfig";
     static final String CONFIG_NATIVES = "minecraftNatives";
     static final String CONFIG_API_JAVADOCS = "apiJavaDocsConfig";
+    static final String CONFIG_API_SRC = "apiSrcConfig";
     static final String CONFIG = "minecraft";
     
     static final String PACK_DIR = "{BUILD_DIR}/unpacked";

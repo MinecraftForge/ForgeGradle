@@ -1,5 +1,7 @@
 package net.minecraftforge.gradle.user;
 
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_API_SRC;
+
 import java.io.File;
 
 import org.gradle.api.Task;
@@ -94,5 +96,7 @@ public class FmlUserPlugin extends UserBasePlugin
             remap.setMethodsCsv(delayedFile(UserConstants.METHOD_CSV));
             remap.setParamsCsv(delayedFile(UserConstants.PARAM_CSV));
         }
+        
+        project.getDependencies().add(CONFIG_API_SRC, project.files(remapped));
     }
 }

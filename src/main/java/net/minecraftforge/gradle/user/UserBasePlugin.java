@@ -390,6 +390,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             }
         }
         
+        delayedTasks();
         
         final File deobfOut = ((ProcessJarTask) project.getTasks().getByName("deobfBinJar")).getOutJar();
 
@@ -410,7 +411,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                         if (lib.getLibrary().getFile().equals(deobfOut))
                         {
                             lib.setJavadocPath(factory.fromFile(project.getConfigurations().getByName(UserConstants.CONFIG_API_JAVADOCS).getSingleFile()));
-                            //TODO: Add the source attachment here....
+                            lib.setSourcePath(factory.fromFile(project.getConfigurations().getByName(UserConstants.CONFIG_API_SRC).getSingleFile()));
                         }
                     }
                 }
@@ -429,7 +430,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                         if (lib.getLibraryFile().equals(deobfOut))
                         {
                             lib.getJavadoc().add(factory.path("jar://" + project.getConfigurations().getByName(UserConstants.CONFIG_API_JAVADOCS).getSingleFile().getAbsolutePath().replace('\\', '/') + "!/"));
-                            //TODO: Add the source attachment here....
+                            lib.getSources().add(factory.path("jar://" + project.getConfigurations().getByName(UserConstants.CONFIG_API_SRC).getSingleFile().getAbsolutePath().replace('\\', '/') + "!/"));
                         }
                     }
                 }
@@ -437,8 +438,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         });
 
         fixEclipseProject(ECLIPSE_LOCATION);
-        
-        delayedTasks();
     }
 
     private static final byte[] LOCATION_BEFORE = new byte[]{ 0x40, (byte)0xB1, (byte)0x8B, (byte)0x81, 0x23, (byte)0xBC, 0x00, 0x14, 0x1A, 0x25, (byte)0x96, (byte)0xE7, (byte)0xA3, (byte)0x93, (byte)0xBE, 0x1E};

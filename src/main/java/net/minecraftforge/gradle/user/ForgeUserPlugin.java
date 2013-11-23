@@ -1,7 +1,6 @@
 package net.minecraftforge.gradle.user;
 
-import static net.minecraftforge.gradle.user.UserConstants.CONFIG_API_JAVADOCS;
-import static net.minecraftforge.gradle.user.UserConstants.CONFIG_USERDEV;
+import static net.minecraftforge.gradle.user.UserConstants.*;
 
 import java.io.File;
 
@@ -23,13 +22,13 @@ public class ForgeUserPlugin extends UserBasePlugin
         
         ProcessJarTask procTask = (ProcessJarTask) project.getTasks().getByName("deobfBinJar");
         {
-            procTask.setInJar(delayedFile(UserConstants.FORGE_BINPATCHED));
-            procTask.setOutCleanJar(delayedFile(UserConstants.FORGE_DEOBF_MCP));
+            procTask.setInJar(delayedFile(FORGE_BINPATCHED));
+            procTask.setOutCleanJar(delayedFile(FORGE_DEOBF_MCP));
         }
         
         procTask = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
         {
-            procTask.setOutCleanJar(delayedFile(UserConstants.FORGE_DEOBF_SRG));
+            procTask.setOutCleanJar(delayedFile(FORGE_DEOBF_SRG));
         }
         
         Task task = project.getTasks().getByName("setupDecompWorkspace");
@@ -49,37 +48,37 @@ public class ForgeUserPlugin extends UserBasePlugin
     @Override
     protected void addATs(ProcessJarTask task)
     {
-        task.addTransformer(delayedFile(UserConstants.FML_AT));
-        task.addTransformer(delayedFile(UserConstants.FORGE_AT));
+        task.addTransformer(delayedFile(FML_AT));
+        task.addTransformer(delayedFile(FORGE_AT));
     }
     
     @Override
     protected DelayedFile getBinPatchOut()
     {
-        return delayedFile(UserConstants.FORGE_BINPATCHED);
+        return delayedFile(FORGE_BINPATCHED);
     }
     
     @Override
     protected DelayedFile getDecompOut()
     {
-        return delayedFile(UserConstants.FORGE_DECOMP);
+        return delayedFile(FORGE_DECOMP);
     }
 
     @Override
     protected void doPostDecompTasks(boolean isClean, DelayedFile decompOut)
     {
-        DelayedFile fmled = delayedFile(isClean ? UserConstants.FORGE_FMLED : Constants.DECOMP_FMLED);
-        DelayedFile fmlInjected = delayedFile(isClean ? UserConstants.FORGE_FMLINJECTED : Constants.DECOMP_FMLINJECTED);
-        DelayedFile remapped = delayedFile(isClean ? UserConstants.FORGE_REMAPPED : Constants.DECOMP_REMAPPED);
-        DelayedFile forged = delayedFile(isClean ? UserConstants.FORGE_FORGED : Constants.DECOMP_FORGED);
-        DelayedFile forgeInjected = delayedFile(isClean ? UserConstants.FORGE_FORGEINJECTED : Constants.DECOMP_FORGEINJECTED);
+        DelayedFile fmled = delayedFile(isClean ? FORGE_FMLED : Constants.DECOMP_FMLED);
+        DelayedFile fmlInjected = delayedFile(isClean ? FORGE_FMLINJECTED : Constants.DECOMP_FMLINJECTED);
+        DelayedFile remapped = delayedFile(isClean ? FORGE_REMAPPED : Constants.DECOMP_REMAPPED);
+        DelayedFile forged = delayedFile(isClean ? FORGE_FORGED : Constants.DECOMP_FORGED);
+        DelayedFile forgeInjected = delayedFile(isClean ? FORGE_FORGEINJECTED : Constants.DECOMP_FORGEINJECTED);
         
         PatchJarTask fmlPatches = makeTask("doFmlPatches", PatchJarTask.class);
         {
             fmlPatches.dependsOn("decompile");
             fmlPatches.setInJar(decompOut);
             fmlPatches.setOutJar(fmled);
-            fmlPatches.setInPatches(delayedFile(UserConstants.FML_PATCHES_ZIP));
+            fmlPatches.setInPatches(delayedFile(FML_PATCHES_ZIP));
         }
         
         Zip inject = makeTask("addFmlSources", Zip.class);
@@ -98,9 +97,9 @@ public class ForgeUserPlugin extends UserBasePlugin
             remap.dependsOn("addFmlSources");
             remap.setInJar(fmled);
             remap.setOutJar(remapped);
-            remap.setFieldsCsv(delayedFile(UserConstants.FIELD_CSV));
-            remap.setMethodsCsv(delayedFile(UserConstants.METHOD_CSV));
-            remap.setParamsCsv(delayedFile(UserConstants.PARAM_CSV));
+            remap.setFieldsCsv(delayedFile(FIELD_CSV));
+            remap.setMethodsCsv(delayedFile(METHOD_CSV));
+            remap.setParamsCsv(delayedFile(PARAM_CSV));
         }
         
         PatchJarTask forgePatches = makeTask("doForgePatches", PatchJarTask.class);
@@ -108,7 +107,7 @@ public class ForgeUserPlugin extends UserBasePlugin
             forgePatches.dependsOn("remapJar");
             forgePatches.setInJar(remapped);
             forgePatches.setOutJar(forged);
-            forgePatches.setInPatches(delayedFile(UserConstants.FORGE_PATCHES_ZIP));
+            forgePatches.setInPatches(delayedFile(FORGE_PATCHES_ZIP));
         }
         
         inject = makeTask("addForgeSources", Zip.class);
@@ -121,5 +120,7 @@ public class ForgeUserPlugin extends UserBasePlugin
             inject.setDestinationDir(injectFile.getParentFile());
             inject.setArchiveName(injectFile.getName());
         }
+        
+        project.getDependencies().add(CONFIG_API_SRC, project.files(forgeInjected));
     }
 }
