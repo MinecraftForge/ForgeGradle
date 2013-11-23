@@ -8,6 +8,7 @@ import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
@@ -43,7 +44,6 @@ public class ProcessJarTask extends CachedTask
     @Cached
     private DelayedFile outDirtyJar = new DelayedFile(getProject(), Constants.DEOBF_JAR); // dirty = has any other ATs
 
-    @InputFiles
     private ArrayList<DelayedFile> ats = new ArrayList<DelayedFile>();
     
     private boolean isClean = true;
@@ -253,5 +253,11 @@ public class ProcessJarTask extends CachedTask
     public File getOutJar()
     {
         return isClean ? outCleanJar.call() : outDirtyJar.call();
+    }
+    
+    @InputFiles
+    public FileCollection getAts()
+    {
+        return getProject().files(ats.toArray());
     }
 }
