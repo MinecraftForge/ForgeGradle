@@ -41,7 +41,7 @@ public class ProcessJarTask extends CachedTask
     
     @OutputFile
     @Cached
-    private DelayedFile outDirtyJar = new DelayedFile(getProject(), "{BUILD_DIR}/deobfuscated.jar"); // dirty = has any other ATs
+    private DelayedFile outDirtyJar = new DelayedFile(getProject(), Constants.DEOBF_JAR); // dirty = has any other ATs
 
     @InputFiles
     private ArrayList<DelayedFile> ats = new ArrayList<DelayedFile>();

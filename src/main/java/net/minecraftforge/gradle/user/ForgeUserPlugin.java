@@ -55,9 +55,10 @@ public class ForgeUserPlugin extends UserBasePlugin
 
         super.afterEvaluate();
 
-        final File deobf = delayedFile(FORGE_DEOBF_MCP).call();
+        final File deobf1 = delayedFile(FORGE_DEOBF_MCP).call();
+        final File deobf2 = delayedFile(Constants.DEOBF_JAR).call();
 
-        project.getDependencies().add(CONFIG, project.files(deobf));
+        project.getDependencies().add(UserConstants.CONFIG, project.files(deobf1, deobf2));
 
         EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse");
         ((ActionBroadcast<Classpath>)eclipseConv.getClasspath().getFile().getWhenMerged()).add(new Action<Classpath>()
@@ -71,7 +72,7 @@ public class ForgeUserPlugin extends UserBasePlugin
                     if (e instanceof Library)
                     {
                         Library lib = (Library)e;
-                        if (lib.getLibrary().getFile().equals(deobf))
+                        if (lib.getLibrary().getFile().equals(deobf1) || lib.getLibrary().getFile().equals(deobf2))
                         {
                             lib.setJavadocPath(factory.fromFile(project.getConfigurations().getByName(UserConstants.CONFIG_API_JAVADOCS).getSingleFile()));
                             //TODO: Add the source attachment here....
@@ -90,7 +91,8 @@ public class ForgeUserPlugin extends UserBasePlugin
                 for (Dependency d : module.getDependencies()) {
                     if (d instanceof SingleEntryModuleLibrary) {
                         SingleEntryModuleLibrary lib = (SingleEntryModuleLibrary) d;
-                        if (lib.getLibraryFile().equals(deobf)) {
+                        if (lib.getLibraryFile().equals(deobf1) || lib.getLibraryFile().equals(deobf2))
+                        {
                             lib.getJavadoc().add(factory.path("jar://" + project.getConfigurations().getByName(UserConstants.CONFIG_API_JAVADOCS).getSingleFile().getAbsolutePath().replace('\\', '/') + "!/"));
                             //TODO: Add the source attachment here....
                         }

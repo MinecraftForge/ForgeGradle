@@ -68,7 +68,7 @@ public class FmlUserPlugin extends UserBasePlugin
         project.getDependencies().add(UserConstants.CONFIG_USERDEV, "cpw.mods:fml:" + getExtension().getApiVersion() + ":userdev");
         super.afterEvaluate();
 
-        project.getDependencies().add(UserConstants.CONFIG, project.files(delayedFile(UserConstants.FML_DEOBF_MCP).call()));
+        project.getDependencies().add(UserConstants.CONFIG, project.files(delayedFile(UserConstants.FML_DEOBF_MCP).call(), delayedFile(Constants.DEOBF_JAR).call()));
         fixEclipseProject(UserConstants.ECLIPSE_LOCATION);
     }
 

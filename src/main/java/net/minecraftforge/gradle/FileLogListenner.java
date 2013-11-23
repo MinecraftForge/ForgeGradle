@@ -59,7 +59,7 @@ public class FileLogListenner implements StandardOutputListener, BuildListener
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            // to stop recursion....
         }
     }
 

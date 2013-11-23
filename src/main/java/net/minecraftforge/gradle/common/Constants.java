@@ -74,6 +74,10 @@ public class Constants
     public static final String FERNFLOWER       = "{CACHE_DIR}/minecraft/fernflower.jar";
     public static final String EXCEPTOR         = "{CACHE_DIR}/minecraft/exceptor.jar";
     public static final String ASSETS           = "{CACHE_DIR}/minecraft/assets";
+    
+    public static final String DEOBF_JAR = "{BUILD_DIR}/deobfuscated.jar";
+    public static final String DECOMP_JAR = "{BUILD_DIR}/decompiled.jar";
+    public static final String DECOMP_READY_JAR = "{BUILD_DIR}/decompiled_processed.jar";
 
     // util
     public static final String NEWLINE = System.getProperty("line.separator");
