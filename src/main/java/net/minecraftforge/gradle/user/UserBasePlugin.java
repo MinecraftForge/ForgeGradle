@@ -7,6 +7,7 @@ import groovy.xml.XmlUtil;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,6 +34,7 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Configuration.State;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.Sync;
@@ -168,13 +170,15 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             @Override
             public void execute(Task arg0)
             {
-                readAndApplyJson(delayedFile(UserConstants.JSON).call(), UserConstants.CONFIG, UserConstants.CONFIG_NATIVES);
+                arg0.getLogger().lifecycle("STUFF IS HAPPENNING");
+                readAndApplyJson(delayedFile(UserConstants.JSON).call(), UserConstants.CONFIG, UserConstants.CONFIG_NATIVES, arg0.getLogger());
             }
         });
 
         // special native stuff
         ExtractTask extractNatives = makeTask("extractNatives", ExtractTask.class);
         extractNatives.into(delayedFile(UserConstants.NATIVES_DIR));
+        extractNatives.dependsOn("extractUserDev");
     }
 
     protected void configureCompilation()
@@ -286,20 +290,15 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     public void afterEvaluate()
     {
         super.afterEvaluate();
-
-        // grab the json
+        
+        // grab the json && read dependencies
         if (delayedFile(UserConstants.JSON).call().exists())
         {
-            readAndApplyJson(delayedFile(UserConstants.JSON).call(), UserConstants.CONFIG, UserConstants.CONFIG_NATIVES);
+            readAndApplyJson(delayedFile(UserConstants.JSON).call(), UserConstants.CONFIG, UserConstants.CONFIG_NATIVES, project.getLogger());
         }
 
         // extract userdev
         ((ExtractTask) project.getTasks().findByName("extractUserDev")).from(delayedFile(project.getConfigurations().getByName(UserConstants.CONFIG_USERDEV).getSingleFile().getAbsolutePath()));
-
-        // extract natives
-        ExtractTask natives = (ExtractTask) project.getTasks().findByName("extractNatives");
-        for (File file : project.getConfigurations().getByName(UserConstants.CONFIG_NATIVES).getFiles())
-            natives.from(delayedFile(file.getAbsolutePath()));
         
         // add src ATs
         ProcessJarTask deobf = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
@@ -353,23 +352,20 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         }
     }
 
-    private void readAndApplyJson(File file, String depConfig, String nativeConfig)
+    private void readAndApplyJson(File file, String depConfig, String nativeConfig, Logger log)
     {
         if (hasApplied)
             return;
-        
-        if (project.getConfigurations().getByName(depConfig).getState() != State.UNRESOLVED)
-            return;
-        else if (project.getConfigurations().getByName(nativeConfig).getState() != State.UNRESOLVED)
-            return;
-            
 
         ArrayList<String> libs = new ArrayList<String>();
         ArrayList<String> natives = new ArrayList<String>();
 
         try
         {
-            JsonRootNode root = Constants.PARSER.parse(Files.newReader(file, Charset.defaultCharset()));
+            Reader reader = Files.newReader(file, Charset.defaultCharset());
+            JsonRootNode root = Constants.PARSER.parse(reader);
+            
+            log.lifecycle("READING JSON NOW");
 
             for (JsonNode node : root.getArrayNode("libraries"))
             {
@@ -404,22 +400,41 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                     libs.add(dep);
                 }
             }
+            
+            reader.close();
+            
+            // apply the dep info.
+            DependencyHandler handler = project.getDependencies();
+
+            // actual dependencies
+            if (project.getConfigurations().getByName(depConfig).getState() == State.UNRESOLVED)
+                for (String dep : libs)
+                    handler.add(depConfig, dep);
+            else
+                log.info("RESOLVED: "+depConfig);
+
+            // the natives
+            if (project.getConfigurations().getByName(nativeConfig).getState() == State.UNRESOLVED)
+                for (String dep : natives)
+                    handler.add(nativeConfig, dep);
+            else
+                log.info("RESOLVED: " + nativeConfig);
+
+            hasApplied = true;
+            
+            // add stuff to the natives tas thing..
+            // extract natives
+            ExtractTask task = (ExtractTask) project.getTasks().findByName("extractNatives");
+            for (File dep : project.getConfigurations().getByName(UserConstants.CONFIG_NATIVES).getFiles())
+            {
+                project.getLogger().lifecycle("ADDING NATIVE: "+dep.getPath());
+                task.from(delayedFile(dep.getAbsolutePath()));
+            }
         }
         catch (Exception e)
         {
             Throwables.propagate(e);
         }
-
-        // apply the dep info.
-        DependencyHandler handler = project.getDependencies();
-
-        for (String dep : libs)
-            handler.add(depConfig, dep);
-
-        for (String dep : natives)
-            handler.add(nativeConfig, dep);
-        
-        hasApplied = true;
     }
 
     @Override
