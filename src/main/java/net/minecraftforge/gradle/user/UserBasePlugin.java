@@ -217,6 +217,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         // create configs
         project.getConfigurations().create(UserConstants.CONFIG_USERDEV);
         project.getConfigurations().create(UserConstants.CONFIG_API_JAVADOCS);
+        project.getConfigurations().create(UserConstants.CONFIG_API_SRC);
         project.getConfigurations().create(UserConstants.CONFIG_NATIVES);
         project.getConfigurations().create(UserConstants.CONFIG);
 
