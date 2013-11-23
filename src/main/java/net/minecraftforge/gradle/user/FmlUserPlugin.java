@@ -1,6 +1,9 @@
 package net.minecraftforge.gradle.user;
 
+import java.io.File;
+
 import org.gradle.api.Task;
+import org.gradle.api.tasks.bundling.Zip;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
@@ -59,8 +62,9 @@ public class FmlUserPlugin extends UserBasePlugin
     @Override
     protected void doPostDecompTasks(boolean isClean, DelayedFile decompOut)
     {
-        DelayedFile fmled = delayedFile( isClean ? UserConstants.FML_FMLED : Constants.DECOMP_FMLED);
-        DelayedFile remapped = delayedFile( isClean ? UserConstants.FML_REMAPPED : Constants.DECOMP_REMAPPED);
+        DelayedFile fmled = delayedFile(isClean ? UserConstants.FML_FMLED : Constants.DECOMP_FMLED);
+        DelayedFile injected = delayedFile(isClean ? UserConstants.FML_INJECTED : Constants.DECOMP_FMLINJECTED);
+        DelayedFile remapped = delayedFile(isClean ? UserConstants.FML_REMAPPED : Constants.DECOMP_REMAPPED);
         
         PatchJarTask fmlPatches = makeTask("doFmlPatches", PatchJarTask.class);
         {
@@ -70,9 +74,20 @@ public class FmlUserPlugin extends UserBasePlugin
             fmlPatches.setInPatches(delayedFile(UserConstants.FML_PATCHES_ZIP));
         }
         
+        Zip inject = makeTask("addFmlSources", Zip.class);
+        {
+            inject.dependsOn("doFmlPatches");
+            inject.from(fmled.toZipTree());
+            //inject.from(delayedFile(src.))  get the source!!!!
+            
+            File injectFile = injected.call();
+            inject.setDestinationDir(injectFile.getParentFile());
+            inject.setArchiveName(injectFile.getName());
+        }
+        
         RemapSourcesTask remap = makeTask("remapJar", RemapSourcesTask.class);
         {
-            remap.dependsOn("doFmlPatches");
+            remap.dependsOn("addFmlSources");
             remap.setInJar(fmled);
             remap.setOutJar(remapped);
             remap.setFieldsCsv(delayedFile(UserConstants.FIELD_CSV));

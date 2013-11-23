@@ -42,8 +42,10 @@ public final class UserConstants
     static final String FORGE_DEOBF_SRG = "{CACHE_DIR}/minecraft/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-srg.jar";
     static final String FORGE_DECOMP = "{CACHE_DIR}/minecraft/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-decomp.jar";
     static final String FORGE_FMLED = "{CACHE_DIR}/minecraft/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-fmled.jar";
+    static final String FORGE_FMLINJECTED = "{CACHE_DIR}/minecraft/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-fmlinjected.jar";
     static final String FORGE_REMAPPED = "{CACHE_DIR}/minecraft/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-mcped.jar";
     static final String FORGE_FORGED = "{CACHE_DIR}/minecraft/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-src.jar";
+    static final String FORGE_FORGEINJECTED = "{CACHE_DIR}/minecraft/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-fmlinjected.jar";
     
     static final String FML_BINPATCHED = "{CACHE_DIR}/minecraft/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}.jar";
     static final String FML_DEOBF_MCP = "{CACHE_DIR}/minecraft/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}-mcp.jar";
@@ -51,6 +53,7 @@ public final class UserConstants
     static final String FML_DEOBF_SRG = "{CACHE_DIR}/minecraft/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}-srg.jar";
     static final String FML_DECOMP = "{CACHE_DIR}/minecraft/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}-decomp.jar";
     static final String FML_FMLED = "{CACHE_DIR}/minecraft/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}-fmled.jar";
+    static final String FML_INJECTED = "{CACHE_DIR}/minecraft/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}-src-injected.jar";
     static final String FML_REMAPPED = "{CACHE_DIR}/minecraft/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}-src.jar";
     
     static final String FML_PATCHES_ZIP = PACK_DIR+"/fmlpatches.zip";
