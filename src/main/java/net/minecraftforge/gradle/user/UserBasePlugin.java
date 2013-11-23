@@ -170,7 +170,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             @Override
             public void execute(Task arg0)
             {
-                arg0.getLogger().lifecycle("STUFF IS HAPPENNING");
                 readAndApplyJson(delayedFile(UserConstants.JSON).call(), UserConstants.CONFIG, UserConstants.CONFIG_NATIVES, arg0.getLogger());
             }
         });
@@ -427,7 +426,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             ExtractTask task = (ExtractTask) project.getTasks().findByName("extractNatives");
             for (File dep : project.getConfigurations().getByName(UserConstants.CONFIG_NATIVES).getFiles())
             {
-                project.getLogger().lifecycle("ADDING NATIVE: "+dep.getPath());
+                log.info("ADDING NATIVE: "+dep.getPath());
                 task.from(delayedFile(dep.getAbsolutePath()));
             }
         }
