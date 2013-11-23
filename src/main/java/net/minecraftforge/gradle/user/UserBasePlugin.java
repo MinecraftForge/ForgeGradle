@@ -21,10 +21,12 @@ import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.delayed.DelayedString;
+import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
+import net.minecraftforge.gradle.tasks.user.ApplyBinPatchesTask;
 import net.minecraftforge.gradle.tasks.user.reobf.ArtifactSpec;
 import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
 
@@ -79,11 +81,11 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
 
         // lifecycle tasks
         Task task = makeTask("setupCIWorkspace", DefaultTask.class);
-        task.dependsOn("genSrgs", "deobfuscateJar");
+        task.dependsOn("genSrgs", "deobfBinJar");
         task.setGroup("ForgeGradle");
         
         task = makeTask("setupDevWorkspace", DefaultTask.class);
-        task.dependsOn("genSrgs", "deobfuscateJar", "copyAssets", "extractNatives");
+        task.dependsOn("genSrgs", "deobfBinJar", "copyAssets", "extractNatives");
         task.setGroup("ForgeGradle");
         
         task = makeTask("setupDecompWorkspace", DefaultTask.class);
@@ -118,21 +120,45 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         GenSrgTask task2 = makeTask("genSrgs", GenSrgTask.class);
         {
             task2.setInSrg(delayedFile(UserConstants.PACKAGED_SRG));
-            task2.setNotchToMcpSrg(delayedFile(UserConstants.DEOBF_SRG));
+            task2.setNotchToMcpSrg(delayedFile(UserConstants.DEOBF_MCP_SRG));
             task2.setMcpToSrgSrg(delayedFile(UserConstants.REOBF_SRG));
             task2.setMcpToNotchSrg(delayedFile(UserConstants.REOBF_NOTCH_SRG));
             task2.setMethodsCsv(delayedFile(UserConstants.METHOD_CSV));
             task2.setFieldsCsv(delayedFile(UserConstants.FIELD_CSV));
             task2.dependsOn("extractUserDev");
         }
-
-        ProcessJarTask task3 = makeTask("deobfuscateJar", ProcessJarTask.class);
+        
+        ApplyBinPatchesTask binTask = makeTask("applyBinPatches", ApplyBinPatchesTask.class);
         {
-            task3.setExceptorJar(delayedFile(Constants.EXCEPTOR));
-            task3.setSrg(delayedFile(UserConstants.DEOBF_SRG));
-            addATs(task3);
-            task3.setExceptorCfg(delayedFile(UserConstants.PACKAGED_EXC));
-            task3.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
+            binTask.setInJar(delayedFile(Constants.JAR_MERGED));
+            binTask.setOutJar(getBinPatchOut());
+            binTask.setPatches(delayedFile(UserConstants.BINPATCHES));
+            binTask.setClassesJar(delayedFile(UserConstants.BINARIES_JAR));
+            binTask.setResources(delayedFileTree(UserConstants.RES_DIR));
+            binTask.dependsOn("mergeJars");
+        }
+        
+        ProcessJarTask deobfBinTask = makeTask("deobfBinJar", ProcessJarTask.class);
+        {
+            deobfBinTask.setExceptorJar(delayedFile(Constants.EXCEPTOR));
+            deobfBinTask.setSrg(delayedFile(UserConstants.DEOBF_MCP_SRG));
+            deobfBinTask.setOutDirtyJar(delayedFile(Constants.DEOBF_BIN_JAR));
+            addATs(deobfBinTask);
+            deobfBinTask.setExceptorCfg(delayedFile(UserConstants.PACKAGED_EXC));
+            deobfBinTask.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
+            deobfBinTask.dependsOn(binTask);
+        }
+        
+        
+        ProcessJarTask deobfTask = makeTask("deobfuscateJar", ProcessJarTask.class);
+        {
+            deobfTask.setExceptorJar(delayedFile(Constants.EXCEPTOR));
+            deobfTask.setSrg(delayedFile(UserConstants.PACKAGED_SRG));
+            deobfTask.setInJar(delayedFile(Constants.JAR_MERGED));
+            deobfTask.setOutDirtyJar(delayedFile(Constants.DEOBF_JAR));
+            addATs(deobfTask);
+            deobfTask.setExceptorCfg(delayedFile(UserConstants.PACKAGED_EXC));
+            deobfTask.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
         }
         
         // reobfuscate task.
@@ -159,6 +185,31 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         }
     }
 
+    private void delayedTasks()
+    {
+        ProcessJarTask deobf = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
+        boolean clean = deobf.isClean();
+        DelayedFile decompOut = clean ? getDecompOut() : delayedFile(Constants.DECOMP_JAR);
+        
+        DecompileTask decompile = makeTask("decompile", DecompileTask.class);
+        {
+            decompile.setInJar(deobf.getDelayedOutput());
+            decompile.setOutJar(decompOut);
+            decompile.setFernFlower(delayedFile(Constants.FERNFLOWER));
+            decompile.setPatch(delayedFile(UserConstants.MCP_PATCH));
+            decompile.setAstyleConfig(delayedFile(UserConstants.ASTYLE_CFG));
+            decompile.dependsOn("downloadMcpTools", "deobfuscateJar", "genSrgs");
+        }
+        
+        doPostDecompTasks(clean, decompOut);
+    }
+    
+    protected abstract void doPostDecompTasks(boolean isClean, DelayedFile decompOut);
+    
+    protected abstract DelayedFile getBinPatchOut();
+    
+    protected abstract DelayedFile getDecompOut();
+    
     protected abstract void addATs(ProcessJarTask task);
 
     private void configureDeps()
@@ -166,6 +217,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         // create configs
         project.getConfigurations().create(UserConstants.CONFIG_USERDEV);
         project.getConfigurations().create(UserConstants.CONFIG_API_JAVADOCS);
+        project.getConfigurations().create(UserConstants.CONFIG_API_SRC);
         project.getConfigurations().create(UserConstants.CONFIG_NATIVES);
         project.getConfigurations().create(UserConstants.CONFIG);
 
@@ -307,10 +359,11 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         ((ExtractTask) project.getTasks().findByName("extractUserDev")).from(delayedFile(project.getConfigurations().getByName(UserConstants.CONFIG_USERDEV).getSingleFile().getAbsolutePath()));
         
         // add src ATs
-        ProcessJarTask deobf = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
+        ProcessJarTask binDeobf = (ProcessJarTask) project.getTasks().getByName("deobfBinJar");
+        ProcessJarTask decompDeobf = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
         
         // from the ExtensionObject
-        deobf.addTransformer(getExtension().getAccessTransformers().toArray());
+        binDeobf.addTransformer(getExtension().getAccessTransformers().toArray());
         
         // from the resources dirs
         {
@@ -322,18 +375,25 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             for (File at : main.getResources().getFiles())
             {
                 if (at.getName().toLowerCase().endsWith("_at.cfg"))
-                    deobf.addTransformer(at);
+                {
+                    binDeobf.addTransformer(at);
+                    decompDeobf.addTransformer(at);
+                }
             }
 
             for (File at : api.getResources().getFiles())
             {
                 if (at.getName().toLowerCase().endsWith("_at.cfg"))
-                    deobf.addTransformer(at);
+                {
+                    binDeobf.addTransformer(at);
+                    decompDeobf.addTransformer(at);
+                }
             }
         }
         
+        delayedTasks();
         
-        final File deobfOut = ((ProcessJarTask) project.getTasks().getByName("deobfuscateJar")).getOutJar();
+        final File deobfOut = ((ProcessJarTask) project.getTasks().getByName("deobfBinJar")).getOutJar();
 
         project.getDependencies().add(UserConstants.CONFIG, project.files(deobfOut));
 
@@ -352,7 +412,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                         if (lib.getLibrary().getFile().equals(deobfOut))
                         {
                             lib.setJavadocPath(factory.fromFile(project.getConfigurations().getByName(UserConstants.CONFIG_API_JAVADOCS).getSingleFile()));
-                            //TODO: Add the source attachment here....
+                            lib.setSourcePath(factory.fromFile(project.getConfigurations().getByName(UserConstants.CONFIG_API_SRC).getSingleFile()));
                         }
                     }
                 }
@@ -371,7 +431,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                         if (lib.getLibraryFile().equals(deobfOut))
                         {
                             lib.getJavadoc().add(factory.path("jar://" + project.getConfigurations().getByName(UserConstants.CONFIG_API_JAVADOCS).getSingleFile().getAbsolutePath().replace('\\', '/') + "!/"));
-                            //TODO: Add the source attachment here....
+                            lib.getSources().add(factory.path("jar://" + project.getConfigurations().getByName(UserConstants.CONFIG_API_SRC).getSingleFile().getAbsolutePath().replace('\\', '/') + "!/"));
                         }
                     }
                 }

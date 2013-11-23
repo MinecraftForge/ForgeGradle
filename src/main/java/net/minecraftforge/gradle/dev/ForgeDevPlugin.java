@@ -74,7 +74,7 @@ public class ForgeDevPlugin extends DevBasePlugin
     protected void createJarProcessTasks()
     {
 
-        ProcessJarTask task2 = makeTask("deobfuscateJar", ProcessJarTask.class);
+        ProcessJarTask task2 = makeTask("deobfBinJar", ProcessJarTask.class);
         {
             task2.setInJar(delayedFile(Constants.JAR_MERGED));
             task2.setExceptorJar(delayedFile(Constants.EXCEPTOR));
@@ -93,7 +93,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task3.setFernFlower(delayedFile(Constants.FERNFLOWER));
             task3.setPatch(delayedFile(PACKAGED_PATCH));
             task3.setAstyleConfig(delayedFile(ASTYLE_CFG));
-            task3.dependsOn("downloadMcpTools", "deobfuscateJar", "fixMappings");
+            task3.dependsOn("downloadMcpTools", "deobfBinJar", "fixMappings");
         }
 
         PatchJarTask task4 = makeTask("fmlPatchJar", PatchJarTask.class);

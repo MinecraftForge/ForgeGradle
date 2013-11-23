@@ -27,4 +27,9 @@ public class DelayedFile extends DelayedBase<File>
         }
         return resolved;
     }
+    
+    public DelayedFileTree toZipTree()
+    {
+        return new DelayedFileTree(project, pattern, true, resolvers);
+    }
 }
