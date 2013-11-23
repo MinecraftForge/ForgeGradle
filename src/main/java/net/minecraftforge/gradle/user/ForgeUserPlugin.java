@@ -2,8 +2,13 @@ package net.minecraftforge.gradle.user;
 
 import static net.minecraftforge.gradle.user.UserConstants.CONFIG_API_JAVADOCS;
 import static net.minecraftforge.gradle.user.UserConstants.CONFIG_USERDEV;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
+import net.minecraftforge.gradle.tasks.RemapSourcesTask;
+
+import org.gradle.api.Task;
 
 public class ForgeUserPlugin extends UserBasePlugin
 {
@@ -22,6 +27,9 @@ public class ForgeUserPlugin extends UserBasePlugin
         {
             procTask.setOutCleanJar(delayedFile(UserConstants.FORGE_DEOBF_SRG));
         }
+        
+        Task task = project.getTasks().getByName("setupDecompWorkspace");
+        task.dependsOn("doForgePatches");
     }
 
     @Override
@@ -54,8 +62,36 @@ public class ForgeUserPlugin extends UserBasePlugin
     }
 
     @Override
-    protected void doPostDecompTasks(boolean isClean, String decompTaskName)
+    protected void doPostDecompTasks(boolean isClean, DelayedFile decompOut)
     {
+        DelayedFile fmled = delayedFile( isClean ? UserConstants.FORGE_FMLED : Constants.DECOMP_FMLED);
+        DelayedFile remapped = delayedFile( isClean ? UserConstants.FORGE_REMAPPED : Constants.DECOMP_REMAPPED);
+        DelayedFile forged = delayedFile( isClean ? UserConstants.FORGE_FORGED : Constants.DECOMP_FORGED);
         
+        PatchJarTask fmlPatches = makeTask("doFmlPatches", PatchJarTask.class);
+        {
+            fmlPatches.dependsOn("decompile");
+            fmlPatches.setInJar(decompOut);
+            fmlPatches.setOutJar(fmled);
+            fmlPatches.setInPatches(delayedFile(UserConstants.FML_PATCHES_ZIP));
+        }
+        
+        RemapSourcesTask remap = makeTask("remapJar", RemapSourcesTask.class);
+        {
+            remap.dependsOn("doFmlPatches");
+            remap.setInJar(fmled);
+            remap.setOutJar(remapped);
+            remap.setFieldsCsv(delayedFile(UserConstants.FIELD_CSV));
+            remap.setMethodsCsv(delayedFile(UserConstants.METHOD_CSV));
+            remap.setParamsCsv(delayedFile(UserConstants.PARAM_CSV));
+        }
+        
+        PatchJarTask forgePatches = makeTask("doForgePatches", PatchJarTask.class);
+        {
+            forgePatches.dependsOn("remapJar");
+            forgePatches.setInJar(remapped);
+            forgePatches.setOutJar(forged);
+            forgePatches.setInPatches(delayedFile(UserConstants.FORGE_PATCHES_ZIP));
+        }
     }
 }

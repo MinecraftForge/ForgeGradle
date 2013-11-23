@@ -1,7 +1,12 @@
 package net.minecraftforge.gradle.user;
 
+import org.gradle.api.Task;
+
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
+import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 
 public class FmlUserPlugin extends UserBasePlugin
 {
@@ -20,39 +25,9 @@ public class FmlUserPlugin extends UserBasePlugin
         {
             procTask.setOutCleanJar(delayedFile(UserConstants.FML_DEOBF_SRG));
         }
-
-        /*
-            setupDevWorkspace
-              Downloads:  CHECK
-                notch->srg Srg File
-                Exceptor info
-                merge config
-                FML/Forge src file
-                Decomp:
-                  Mapping Info, with full comments
-                  MCP patches
-                  FML/Forge patches
-                No Decomp:
-                  Mapping Info (fields/methods/params.csv minus comments?)
-                  Binpatches
-                  Javadoc jar
-                    
-              Process:
-                Download MC/Server
-                Merged
-                No Decomp:
-                  Apply BinPatches
-                  TODO: add in FML classes
-                  Apply mapping to notch->srg to get notch->mapped
-                  Apply notch->mapped to merged
-                  Resulting jar is 'minecraft.jar'
-                  Link Javadocs to ',inecraft.jar'
-                  Link jar containing FML/Forge's src files to 'minecraft.jar'
-                Decomp:
-                  Full MCP decompile process
-                     should result in: minecraft.jar {recompiled version fo the fully mapped source with commends and the like} 
-                     minecraft-source.jar a jar of the decompiled code, the source shoukd bnever be linked in the final workspace
-         */
+        
+        Task task = project.getTasks().getByName("setupDecompWorkspace");
+        task.dependsOn("remapJar");
     }
 
     @Override
@@ -82,8 +57,27 @@ public class FmlUserPlugin extends UserBasePlugin
     }
 
     @Override
-    protected void doPostDecompTasks(boolean isClean, String decompTaskName)
+    protected void doPostDecompTasks(boolean isClean, DelayedFile decompOut)
     {
+        DelayedFile fmled = delayedFile( isClean ? UserConstants.FML_FMLED : Constants.DECOMP_FMLED);
+        DelayedFile remapped = delayedFile( isClean ? UserConstants.FML_REMAPPED : Constants.DECOMP_REMAPPED);
         
+        PatchJarTask fmlPatches = makeTask("doFmlPatches", PatchJarTask.class);
+        {
+            fmlPatches.dependsOn("decompile");
+            fmlPatches.setInJar(decompOut);
+            fmlPatches.setOutJar(fmled);
+            fmlPatches.setInPatches(delayedFile(UserConstants.FML_PATCHES_ZIP));
+        }
+        
+        RemapSourcesTask remap = makeTask("remapJar", RemapSourcesTask.class);
+        {
+            remap.dependsOn("doFmlPatches");
+            remap.setInJar(fmled);
+            remap.setOutJar(remapped);
+            remap.setFieldsCsv(delayedFile(UserConstants.FIELD_CSV));
+            remap.setMethodsCsv(delayedFile(UserConstants.METHOD_CSV));
+            remap.setParamsCsv(delayedFile(UserConstants.PARAM_CSV));
+        }
     }
 }

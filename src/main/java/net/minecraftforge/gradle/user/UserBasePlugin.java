@@ -187,12 +187,13 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
 
     private void delayedTasks()
     {
-        boolean clean = ((ProcessJarTask) project.getTasks().getByName("deobfuscateJar")).isClean();
+        ProcessJarTask deobf = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
+        boolean clean = deobf.isClean();
         DelayedFile decompOut = clean ? getDecompOut() : delayedFile(Constants.DECOMP_JAR);
         
         DecompileTask decompile = makeTask("decompile", DecompileTask.class);
         {
-            decompile.setInJar(((ProcessJarTask) project.getTasks().getByName("deobfBinJar")).getDelayedOutput());
+            decompile.setInJar(deobf.getDelayedOutput());
             decompile.setOutJar(decompOut);
             decompile.setFernFlower(delayedFile(Constants.FERNFLOWER));
             decompile.setPatch(delayedFile(UserConstants.MCP_PATCH));
@@ -200,10 +201,10 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             decompile.dependsOn("downloadMcpTools", "deobfuscateJar", "genSrgs");
         }
         
-        doPostDecompTasks(clean, "decompile");
+        doPostDecompTasks(clean, decompOut);
     }
     
-    protected abstract void doPostDecompTasks(boolean isClean, String decompTaskName);
+    protected abstract void doPostDecompTasks(boolean isClean, DelayedFile decompOut);
     
     protected abstract DelayedFile getBinPatchOut();
     
