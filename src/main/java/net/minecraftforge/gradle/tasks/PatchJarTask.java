@@ -12,15 +12,16 @@ import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.patching.ContextualPatch;
 import net.minecraftforge.gradle.tasks.abstractutil.EditJarTask;
 
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.logging.LogLevel;
-import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.InputFiles;
 
 import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 
 public class PatchJarTask extends EditJarTask
 {
-    @InputDirectory
+    @InputFiles
     private DelayedFile inPatches;
 
     private ContextProvider PROVIDER;
@@ -107,17 +108,13 @@ public class PatchJarTask extends EditJarTask
         }
     }
 
-    private ArrayList<ContextualPatch> readPatches(File dir) throws IOException
+    private ArrayList<ContextualPatch> readPatches(FileCollection patchFiles) throws IOException
     {
         ArrayList<ContextualPatch> patches = new ArrayList<ContextualPatch>();
 
-        for (File file : dir.listFiles())
+        for (File file : patchFiles.getFiles())
         {
-            if (file.isDirectory())
-            {
-                patches.addAll(readPatches(file));
-            }
-            else if (file.getPath().endsWith(".patch"))
+            if (file.getPath().endsWith(".patch"))
             {
                 patches.add(readPatch(file));
             }
@@ -184,9 +181,13 @@ public class PatchJarTask extends EditJarTask
         }
     }
 
-    public File getInPatches()
+    public FileCollection getInPatches()
     {
-        return inPatches.call();
+        File file = inPatches.call();
+        if (file.isDirectory())
+            return getProject().fileTree(file);
+        else
+            return getProject().files(file);
     }
 
     public void setInPatches(DelayedFile inPatches)
