@@ -1,8 +1,7 @@
 package net.minecraftforge.gradle.user;
 
-import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
-import net.minecraftforge.gradle.tasks.user.ApplyBinPatchesTask;
 
 public class FmlUserPlugin extends UserBasePlugin
 {
@@ -11,21 +10,15 @@ public class FmlUserPlugin extends UserBasePlugin
     {
         super.applyPlugin();
 
-        ApplyBinPatchesTask binTask = makeTask("applyBinPatches", ApplyBinPatchesTask.class);
+        ProcessJarTask procTask = (ProcessJarTask) project.getTasks().getByName("deobfBinJar");
         {
-            binTask.setInJar(delayedFile(Constants.JAR_MERGED));
-            binTask.setOutJar(delayedFile(UserConstants.FML_BINPATCHED));
-            binTask.setPatches(delayedFile(UserConstants.BINPATCHES));
-            binTask.setClassesJar(delayedFile(UserConstants.BINARIES_JAR));
-            binTask.setResources(delayedFileTree(UserConstants.RES_DIR));
-            binTask.dependsOn("mergeJars");
-        }
-
-        ProcessJarTask procTask = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
-        {
-            procTask.dependsOn(binTask);
             procTask.setInJar(delayedFile(UserConstants.FML_BINPATCHED));
             procTask.setOutCleanJar(delayedFile(UserConstants.FML_DEOBF_MCP));
+        }
+        
+        procTask = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
+        {
+            procTask.setOutCleanJar(delayedFile(UserConstants.FML_DEOBF_SRG));
         }
 
         /*
@@ -74,5 +67,17 @@ public class FmlUserPlugin extends UserBasePlugin
     protected void addATs(ProcessJarTask task)
     {
         task.addTransformer(delayedFile(UserConstants.FML_AT));
+    }
+    
+    @Override
+    protected DelayedFile getBinPatchOut()
+    {
+        return delayedFile(UserConstants.FML_BINPATCHED);
+    }
+
+    @Override
+    protected DelayedFile getDecompOut()
+    {
+        return delayedFile(UserConstants.FML_DECOMP);
     }
 }

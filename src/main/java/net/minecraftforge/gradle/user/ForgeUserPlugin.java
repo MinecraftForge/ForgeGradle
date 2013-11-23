@@ -2,9 +2,8 @@ package net.minecraftforge.gradle.user;
 
 import static net.minecraftforge.gradle.user.UserConstants.CONFIG_API_JAVADOCS;
 import static net.minecraftforge.gradle.user.UserConstants.CONFIG_USERDEV;
-import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
-import net.minecraftforge.gradle.tasks.user.ApplyBinPatchesTask;
 
 public class ForgeUserPlugin extends UserBasePlugin
 {
@@ -12,22 +11,16 @@ public class ForgeUserPlugin extends UserBasePlugin
     public void applyPlugin()
     {
         super.applyPlugin();
-
-        ApplyBinPatchesTask binTask = makeTask("applyBinPatches", ApplyBinPatchesTask.class);
+        
+        ProcessJarTask procTask = (ProcessJarTask) project.getTasks().getByName("deobfBinJar");
         {
-            binTask.setInJar(delayedFile(Constants.JAR_MERGED));
-            binTask.setOutJar(delayedFile(UserConstants.FORGE_BINPATCHED));
-            binTask.setPatches(delayedFile(UserConstants.BINPATCHES));
-            binTask.setClassesJar(delayedFile(UserConstants.BINARIES_JAR));
-            binTask.setResources(delayedFileTree(UserConstants.RES_DIR));
-            binTask.dependsOn("mergeJars");
-        }
-
-        ProcessJarTask procTask = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
-        {
-            procTask.dependsOn(binTask);
             procTask.setInJar(delayedFile(UserConstants.FORGE_BINPATCHED));
             procTask.setOutCleanJar(delayedFile(UserConstants.FORGE_DEOBF_MCP));
+        }
+        
+        procTask = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
+        {
+            procTask.setOutCleanJar(delayedFile(UserConstants.FORGE_DEOBF_SRG));
         }
     }
 
@@ -46,5 +39,17 @@ public class ForgeUserPlugin extends UserBasePlugin
     {
         task.addTransformer(delayedFile(UserConstants.FML_AT));
         task.addTransformer(delayedFile(UserConstants.FORGE_AT));
+    }
+    
+    @Override
+    protected DelayedFile getBinPatchOut()
+    {
+        return delayedFile(UserConstants.FORGE_BINPATCHED);
+    }
+    
+    @Override
+    protected DelayedFile getDecompOut()
+    {
+        return delayedFile(UserConstants.FORGE_DECOMP);
     }
 }
