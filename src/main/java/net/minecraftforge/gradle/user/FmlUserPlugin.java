@@ -80,4 +80,10 @@ public class FmlUserPlugin extends UserBasePlugin
     {
         return delayedFile(UserConstants.FML_DECOMP);
     }
+
+    @Override
+    protected void doPostDecompTasks(boolean isClean, String decompTaskName)
+    {
+        
+    }
 }

@@ -52,4 +52,10 @@ public class ForgeUserPlugin extends UserBasePlugin
     {
         return delayedFile(UserConstants.FORGE_DECOMP);
     }
+
+    @Override
+    protected void doPostDecompTasks(boolean isClean, String decompTaskName)
+    {
+        
+    }
 }

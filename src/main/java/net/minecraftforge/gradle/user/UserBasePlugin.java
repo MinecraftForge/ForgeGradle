@@ -199,7 +199,11 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             decompile.setAstyleConfig(delayedFile(UserConstants.ASTYLE_CFG));
             decompile.dependsOn("downloadMcpTools", "deobfuscateJar", "genSrgs");
         }
+        
+        doPostDecompTasks(clean, "decompile");
     }
+    
+    protected abstract void doPostDecompTasks(boolean isClean, String decompTaskName);
     
     protected abstract DelayedFile getBinPatchOut();
     
