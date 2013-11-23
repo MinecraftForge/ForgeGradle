@@ -95,7 +95,7 @@ public class ForgeUserPlugin extends UserBasePlugin
         RemapSourcesTask remap = makeTask("remapJar", RemapSourcesTask.class);
         {
             remap.dependsOn("addFmlSources");
-            remap.setInJar(fmled);
+            remap.setInJar(fmlInjected);
             remap.setOutJar(remapped);
             remap.setFieldsCsv(delayedFile(FIELD_CSV));
             remap.setMethodsCsv(delayedFile(METHOD_CSV));

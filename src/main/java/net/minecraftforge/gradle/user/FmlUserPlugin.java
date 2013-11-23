@@ -91,7 +91,7 @@ public class FmlUserPlugin extends UserBasePlugin
         RemapSourcesTask remap = makeTask("remapJar", RemapSourcesTask.class);
         {
             remap.dependsOn("addFmlSources");
-            remap.setInJar(fmled);
+            remap.setInJar(injected);
             remap.setOutJar(remapped);
             remap.setFieldsCsv(delayedFile(FIELD_CSV));
             remap.setMethodsCsv(delayedFile(METHOD_CSV));
