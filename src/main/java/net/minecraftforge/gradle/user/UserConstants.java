@@ -46,7 +46,6 @@ public final class UserConstants
     static final String FORGE_FMLINJECTED = "{CACHE_DIR}/minecraft/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-fmlinjected.jar";
     static final String FORGE_REMAPPED = "{CACHE_DIR}/minecraft/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-mcped.jar";
     static final String FORGE_FORGED = "{CACHE_DIR}/minecraft/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-src.jar";
-    static final String FORGE_FORGEINJECTED = "{CACHE_DIR}/minecraft/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-fmlinjected.jar";
     
     static final String FML_BINPATCHED = "{CACHE_DIR}/minecraft/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}.jar";
     static final String FML_DEOBF_MCP = "{CACHE_DIR}/minecraft/cpw/mods/fml/{API_VERSION}/fml-{API_VERSION}-mcp.jar";

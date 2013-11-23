@@ -32,7 +32,7 @@ public class ForgeUserPlugin extends UserBasePlugin
         }
         
         Task task = project.getTasks().getByName("setupDecompWorkspace");
-        task.dependsOn("addForgeSources");
+        task.dependsOn("doForgePatches");
     }
 
     @Override
@@ -71,7 +71,6 @@ public class ForgeUserPlugin extends UserBasePlugin
         DelayedFile fmlInjected = delayedFile(isClean ? FORGE_FMLINJECTED : Constants.DECOMP_FMLINJECTED);
         DelayedFile remapped = delayedFile(isClean ? FORGE_REMAPPED : Constants.DECOMP_REMAPPED);
         DelayedFile forged = delayedFile(isClean ? FORGE_FORGED : Constants.DECOMP_FORGED);
-        DelayedFile forgeInjected = delayedFile(isClean ? FORGE_FORGEINJECTED : Constants.DECOMP_FORGEINJECTED);
         
         PatchJarTask fmlPatches = makeTask("doFmlPatches", PatchJarTask.class);
         {
@@ -85,7 +84,8 @@ public class ForgeUserPlugin extends UserBasePlugin
         {
             inject.dependsOn("doFmlPatches");
             inject.from(fmled.toZipTree());
-            //inject.from(delayedFile(src.))  get the source!!!!
+            inject.from(delayedFile(SRC_DIR));
+            inject.from(delayedFile(RES_DIR));
             
             File injectFile = fmlInjected.call();
             inject.setDestinationDir(injectFile.getParentFile());
@@ -110,17 +110,6 @@ public class ForgeUserPlugin extends UserBasePlugin
             forgePatches.setInPatches(delayedFile(FORGE_PATCHES_ZIP));
         }
         
-        inject = makeTask("addForgeSources", Zip.class);
-        {
-            inject.dependsOn("doForgePatches");
-            inject.from(forged.toZipTree());
-            //inject.from(delayedFile(src.))  get the source!!!!
-            
-            File injectFile = forgeInjected.call();
-            inject.setDestinationDir(injectFile.getParentFile());
-            inject.setArchiveName(injectFile.getName());
-        }
-        
-        project.getDependencies().add(CONFIG_API_SRC, project.files(forgeInjected));
+        project.getDependencies().add(CONFIG_API_SRC, project.files(forged));
     }
 }

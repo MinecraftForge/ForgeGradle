@@ -1,6 +1,6 @@
 package net.minecraftforge.gradle.user;
 
-import static net.minecraftforge.gradle.user.UserConstants.CONFIG_API_SRC;
+import static net.minecraftforge.gradle.user.UserConstants.*;
 
 import java.io.File;
 
@@ -22,13 +22,13 @@ public class FmlUserPlugin extends UserBasePlugin
 
         ProcessJarTask procTask = (ProcessJarTask) project.getTasks().getByName("deobfBinJar");
         {
-            procTask.setInJar(delayedFile(UserConstants.FML_BINPATCHED));
-            procTask.setOutCleanJar(delayedFile(UserConstants.FML_DEOBF_MCP));
+            procTask.setInJar(delayedFile(FML_BINPATCHED));
+            procTask.setOutCleanJar(delayedFile(FML_DEOBF_MCP));
         }
         
         procTask = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
         {
-            procTask.setOutCleanJar(delayedFile(UserConstants.FML_DEOBF_SRG));
+            procTask.setOutCleanJar(delayedFile(FML_DEOBF_SRG));
         }
         
         Task task = project.getTasks().getByName("setupDecompWorkspace");
@@ -38,7 +38,7 @@ public class FmlUserPlugin extends UserBasePlugin
     @Override
     public void afterEvaluate()
     {
-        project.getDependencies().add(UserConstants.CONFIG_USERDEV, "cpw.mods:fml:" + getExtension().getApiVersion() + ":userdev");
+        project.getDependencies().add(CONFIG_USERDEV, "cpw.mods:fml:" + getExtension().getApiVersion() + ":userdev");
         
         super.afterEvaluate();
     }
@@ -46,41 +46,42 @@ public class FmlUserPlugin extends UserBasePlugin
     @Override
     protected void addATs(ProcessJarTask task)
     {
-        task.addTransformer(delayedFile(UserConstants.FML_AT));
+        task.addTransformer(delayedFile(FML_AT));
     }
     
     @Override
     protected DelayedFile getBinPatchOut()
     {
-        return delayedFile(UserConstants.FML_BINPATCHED);
+        return delayedFile(FML_BINPATCHED);
     }
 
     @Override
     protected DelayedFile getDecompOut()
     {
-        return delayedFile(UserConstants.FML_DECOMP);
+        return delayedFile(FML_DECOMP);
     }
 
     @Override
     protected void doPostDecompTasks(boolean isClean, DelayedFile decompOut)
     {
-        DelayedFile fmled = delayedFile(isClean ? UserConstants.FML_FMLED : Constants.DECOMP_FMLED);
-        DelayedFile injected = delayedFile(isClean ? UserConstants.FML_INJECTED : Constants.DECOMP_FMLINJECTED);
-        DelayedFile remapped = delayedFile(isClean ? UserConstants.FML_REMAPPED : Constants.DECOMP_REMAPPED);
+        DelayedFile fmled = delayedFile(isClean ? FML_FMLED : Constants.DECOMP_FMLED);
+        DelayedFile injected = delayedFile(isClean ? FML_INJECTED : Constants.DECOMP_FMLINJECTED);
+        DelayedFile remapped = delayedFile(isClean ? FML_REMAPPED : Constants.DECOMP_REMAPPED);
         
         PatchJarTask fmlPatches = makeTask("doFmlPatches", PatchJarTask.class);
         {
             fmlPatches.dependsOn("decompile");
             fmlPatches.setInJar(decompOut);
             fmlPatches.setOutJar(fmled);
-            fmlPatches.setInPatches(delayedFile(UserConstants.FML_PATCHES_ZIP));
+            fmlPatches.setInPatches(delayedFile(FML_PATCHES_ZIP));
         }
         
         Zip inject = makeTask("addFmlSources", Zip.class);
         {
             inject.dependsOn("doFmlPatches");
             inject.from(fmled.toZipTree());
-            //inject.from(delayedFile(src.))  get the source!!!!
+            inject.from(delayedFile(SRC_DIR));
+            inject.from(delayedFile(RES_DIR));
             
             File injectFile = injected.call();
             inject.setDestinationDir(injectFile.getParentFile());
@@ -92,9 +93,9 @@ public class FmlUserPlugin extends UserBasePlugin
             remap.dependsOn("addFmlSources");
             remap.setInJar(fmled);
             remap.setOutJar(remapped);
-            remap.setFieldsCsv(delayedFile(UserConstants.FIELD_CSV));
-            remap.setMethodsCsv(delayedFile(UserConstants.METHOD_CSV));
-            remap.setParamsCsv(delayedFile(UserConstants.PARAM_CSV));
+            remap.setFieldsCsv(delayedFile(FIELD_CSV));
+            remap.setMethodsCsv(delayedFile(METHOD_CSV));
+            remap.setParamsCsv(delayedFile(PARAM_CSV));
         }
         
         project.getDependencies().add(CONFIG_API_SRC, project.files(remapped));
