@@ -1,24 +1,10 @@
 package net.minecraftforge.gradle.user;
 
-import java.io.File;
-
-import org.gradle.api.Action;
-import org.gradle.listener.ActionBroadcast;
-import org.gradle.plugins.ide.eclipse.model.Classpath;
-import org.gradle.plugins.ide.eclipse.model.ClasspathEntry;
-import org.gradle.plugins.ide.eclipse.model.EclipseModel;
-import org.gradle.plugins.ide.eclipse.model.Library;
-import org.gradle.plugins.ide.eclipse.model.internal.FileReferenceFactory;
-import org.gradle.plugins.ide.idea.model.Dependency;
-import org.gradle.plugins.ide.idea.model.IdeaModel;
-import org.gradle.plugins.ide.idea.model.Module;
-import org.gradle.plugins.ide.idea.model.PathFactory;
-import org.gradle.plugins.ide.idea.model.SingleEntryModuleLibrary;
-
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_API_JAVADOCS;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_USERDEV;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.user.ApplyBinPatchesTask;
-import static net.minecraftforge.gradle.user.UserConstants.*;
 
 public class ForgeUserPlugin extends UserBasePlugin
 {
@@ -45,7 +31,6 @@ public class ForgeUserPlugin extends UserBasePlugin
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public void afterEvaluate()
     {
@@ -54,54 +39,6 @@ public class ForgeUserPlugin extends UserBasePlugin
         project.getDependencies().add(CONFIG_API_JAVADOCS, depBase + ":javadoc@zip");
 
         super.afterEvaluate();
-
-        final File deobf1 = delayedFile(FORGE_DEOBF_MCP).call();
-        final File deobf2 = delayedFile(Constants.DEOBF_JAR).call();
-
-        project.getDependencies().add(UserConstants.CONFIG, project.files(deobf1, deobf2));
-
-        EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse");
-        ((ActionBroadcast<Classpath>)eclipseConv.getClasspath().getFile().getWhenMerged()).add(new Action<Classpath>()
-        {
-            FileReferenceFactory factory = new FileReferenceFactory();
-            @Override
-            public void execute(Classpath classpath)
-            {
-                for (ClasspathEntry e : classpath.getEntries())
-                {
-                    if (e instanceof Library)
-                    {
-                        Library lib = (Library)e;
-                        if (lib.getLibrary().getFile().equals(deobf1) || lib.getLibrary().getFile().equals(deobf2))
-                        {
-                            lib.setJavadocPath(factory.fromFile(project.getConfigurations().getByName(UserConstants.CONFIG_API_JAVADOCS).getSingleFile()));
-                            //TODO: Add the source attachment here....
-                        }
-                    }
-                }
-            }
-        });
-
-        IdeaModel ideaConv = (IdeaModel) project.getExtensions().getByName("idea");
-        ((ActionBroadcast<Module>) ideaConv.getModule().getIml().getWhenMerged()).add(new Action<Module>() {
-
-            PathFactory factory = new PathFactory();
-            @Override
-            public void execute(Module module) {
-                for (Dependency d : module.getDependencies()) {
-                    if (d instanceof SingleEntryModuleLibrary) {
-                        SingleEntryModuleLibrary lib = (SingleEntryModuleLibrary) d;
-                        if (lib.getLibraryFile().equals(deobf1) || lib.getLibraryFile().equals(deobf2))
-                        {
-                            lib.getJavadoc().add(factory.path("jar://" + project.getConfigurations().getByName(UserConstants.CONFIG_API_JAVADOCS).getSingleFile().getAbsolutePath().replace('\\', '/') + "!/"));
-                            //TODO: Add the source attachment here....
-                        }
-                    }
-                }
-            }
-        });
-
-        fixEclipseProject(ECLIPSE_LOCATION);
     }
 
     @Override

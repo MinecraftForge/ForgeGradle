@@ -201,17 +201,7 @@ public class ProcessJarTask extends CachedTask
     {
         this.inJar = inJar;
     }
-
-    public File getOutCleanJar()
-    {
-        return outCleanJar.call();
-    }
-
-    public void setOutCleanJar(DelayedFile outJar)
-    {
-        this.outCleanJar = outJar;
-    }
-
+    
     public File getSrg()
     {
         return srg.call();
@@ -222,6 +212,17 @@ public class ProcessJarTask extends CachedTask
         this.srg = srg;
     }
 
+
+    public File getOutCleanJar()
+    {
+        return outCleanJar.call();
+    }
+
+    public void setOutCleanJar(DelayedFile outJar)
+    {
+        this.outCleanJar = outJar;
+    }
+    
     public File getOutDirtyJar()
     {
         return outDirtyJar.call();
@@ -230,5 +231,27 @@ public class ProcessJarTask extends CachedTask
     public void setOutDirtyJar(DelayedFile outDirtyJar)
     {
         this.outDirtyJar = outDirtyJar;
+    }
+    
+    public boolean isClean()
+    {
+        return isClean;
+    }
+    
+    /**
+     * returns the actual output DelayedFile depending on Clean status
+     * Unlike getOutputJar() this method does not resolve the files.
+     */
+    public DelayedFile getDelayedOutput()
+    {
+        return isClean ? outCleanJar : outDirtyJar;
+    }
+    
+    /**
+     * returns the actual output file depending on Clean status
+     */
+    public File getOutJar()
+    {
+        return isClean ? outCleanJar.call() : outDirtyJar.call();
     }
 }

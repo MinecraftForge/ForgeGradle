@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.user;
 
+import static net.minecraftforge.gradle.user.UserConstants.ECLIPSE_LOCATION;
 import groovy.util.Node;
 import groovy.util.XmlParser;
 import groovy.xml.XmlUtil;
@@ -44,7 +45,12 @@ import org.gradle.plugins.ide.eclipse.model.Classpath;
 import org.gradle.plugins.ide.eclipse.model.ClasspathEntry;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.eclipse.model.Library;
+import org.gradle.plugins.ide.eclipse.model.internal.FileReferenceFactory;
+import org.gradle.plugins.ide.idea.model.Dependency;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
+import org.gradle.plugins.ide.idea.model.Module;
+import org.gradle.plugins.ide.idea.model.PathFactory;
+import org.gradle.plugins.ide.idea.model.SingleEntryModuleLibrary;
 
 import argo.jdom.JsonNode;
 import argo.jdom.JsonRootNode;
@@ -285,6 +291,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         ideaConv.getModule().setDownloadSources(true);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void afterEvaluate()
     {
@@ -324,6 +331,54 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                     deobf.addTransformer(at);
             }
         }
+        
+        
+        final File deobfOut = ((ProcessJarTask) project.getTasks().getByName("deobfuscateJar")).getOutJar();
+
+        project.getDependencies().add(UserConstants.CONFIG, project.files(deobfOut));
+
+        EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse");
+        ((ActionBroadcast<Classpath>)eclipseConv.getClasspath().getFile().getWhenMerged()).add(new Action<Classpath>()
+        {
+            FileReferenceFactory factory = new FileReferenceFactory();
+            @Override
+            public void execute(Classpath classpath)
+            {
+                for (ClasspathEntry e : classpath.getEntries())
+                {
+                    if (e instanceof Library)
+                    {
+                        Library lib = (Library)e;
+                        if (lib.getLibrary().getFile().equals(deobfOut))
+                        {
+                            lib.setJavadocPath(factory.fromFile(project.getConfigurations().getByName(UserConstants.CONFIG_API_JAVADOCS).getSingleFile()));
+                            //TODO: Add the source attachment here....
+                        }
+                    }
+                }
+            }
+        });
+
+        IdeaModel ideaConv = (IdeaModel) project.getExtensions().getByName("idea");
+        ((ActionBroadcast<Module>) ideaConv.getModule().getIml().getWhenMerged()).add(new Action<Module>() {
+
+            PathFactory factory = new PathFactory();
+            @Override
+            public void execute(Module module) {
+                for (Dependency d : module.getDependencies()) {
+                    if (d instanceof SingleEntryModuleLibrary) {
+                        SingleEntryModuleLibrary lib = (SingleEntryModuleLibrary) d;
+                        if (lib.getLibraryFile().equals(deobfOut))
+                        {
+                            lib.getJavadoc().add(factory.path("jar://" + project.getConfigurations().getByName(UserConstants.CONFIG_API_JAVADOCS).getSingleFile().getAbsolutePath().replace('\\', '/') + "!/"));
+                            //TODO: Add the source attachment here....
+                        }
+                    }
+                }
+            }
+        });
+
+        fixEclipseProject(ECLIPSE_LOCATION);
     }
 
     private static final byte[] LOCATION_BEFORE = new byte[]{ 0x40, (byte)0xB1, (byte)0x8B, (byte)0x81, 0x23, (byte)0xBC, 0x00, 0x14, 0x1A, 0x25, (byte)0x96, (byte)0xE7, (byte)0xA3, (byte)0x93, (byte)0xBE, 0x1E};
