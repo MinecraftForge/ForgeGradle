@@ -11,6 +11,10 @@ sourceCompatibility = '1.6'
 
 repositories {
   mavenCentral()
+  maven {
+      name = "forge"
+      url = "http://files.minecraftforge.net/maven"
+  }
 }
 
 jar {
@@ -29,7 +33,6 @@ dependencies {
 
     compile 'net.sourceforge.argo:argo:3.4' // json stuff? perhaps replace with json slurper and stuff?
     compile 'net.sf.opencsv:opencsv:2.3' // reading CSVs.. also used by SpecialSource
-    compile 'net.md-5:SpecialSource:1.6' // this is needed...
     compile 'com.cloudbees:diff4j:1.1' // for difing and patching
     compile 'com.github.abrarsyed.jastyle:jAstyle:1.2' // formatting
     compile 'org.ow2.asm:asm-debug-all:4.1' // Debug version, so we can have generics!
@@ -39,6 +42,12 @@ dependencies {
     compile 'org.apache.shiro:shiro-all:1.2.2' // Ant style patern matching
     compile 'com.google.code.gson:gson:2.2.4' // Used instead of Argo for buuilding changelog.
     compile 'com.github.tony19:named-regexp:0.2.3' // 1.7 Named regexp features
+    
+    compile 'net.md-5:SpecialSource:1.6' // deobf and reobs
+    
+    // mcp stuff
+    compile 'de.oceanlabs.mcp:RetroGuard:3.6.+'
+    compile 'de.oceanlabs.mcp:MCInjector:3.+'
 
     // stupid maven
     deployerJars "org.apache.maven.wagon:wagon-ssh:2.2"
