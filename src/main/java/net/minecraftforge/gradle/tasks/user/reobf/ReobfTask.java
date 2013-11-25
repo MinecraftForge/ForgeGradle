@@ -23,7 +23,7 @@ public class ReobfTask extends DefaultTask
 {
     final private DefaultDomainObjectSet<ObfArtifact> obfOutput = new DefaultDomainObjectSet<ObfArtifact>(ObfArtifact.class);
     
-    private boolean useRG = true;
+    private boolean useRG = false;
 
     @SuppressWarnings("serial")
     public ReobfTask()
