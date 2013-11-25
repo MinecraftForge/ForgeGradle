@@ -77,7 +77,6 @@ public class ForgeDevPlugin extends DevBasePlugin
         ProcessJarTask task2 = makeTask("deobfBinJar", ProcessJarTask.class);
         {
             task2.setInJar(delayedFile(Constants.JAR_MERGED));
-            task2.setExceptorJar(delayedFile(Constants.EXCEPTOR));
             task2.setOutCleanJar(delayedFile(JAR_SRG_FORGE));
             task2.setSrg(delayedFile(PACKAGED_SRG));
             task2.setExceptorCfg(delayedFile(PACKAGED_EXC));

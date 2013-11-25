@@ -69,7 +69,6 @@ public class FmlDevPlugin extends DevBasePlugin
         ProcessJarTask task2 = makeTask("deobfuscateJar", ProcessJarTask.class);
         {
             task2.setInJar(delayedFile(Constants.JAR_MERGED));
-            task2.setExceptorJar(delayedFile(Constants.EXCEPTOR));
             task2.setOutCleanJar(delayedFile(DevConstants.JAR_SRG_FML));
             task2.setSrg(delayedFile(DevConstants.PACKAGED_SRG));
             task2.setExceptorCfg(delayedFile(DevConstants.PACKAGED_EXC));

@@ -140,7 +140,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         
         ProcessJarTask deobfBinTask = makeTask("deobfBinJar", ProcessJarTask.class);
         {
-            deobfBinTask.setExceptorJar(delayedFile(Constants.EXCEPTOR));
             deobfBinTask.setSrg(delayedFile(UserConstants.DEOBF_MCP_SRG));
             deobfBinTask.setOutDirtyJar(delayedFile(Constants.DEOBF_BIN_JAR));
             addATs(deobfBinTask);
@@ -152,7 +151,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         
         ProcessJarTask deobfTask = makeTask("deobfuscateJar", ProcessJarTask.class);
         {
-            deobfTask.setExceptorJar(delayedFile(Constants.EXCEPTOR));
             deobfTask.setSrg(delayedFile(UserConstants.PACKAGED_SRG));
             deobfTask.setInJar(delayedFile(Constants.JAR_MERGED));
             deobfTask.setOutDirtyJar(delayedFile(Constants.DEOBF_JAR));

@@ -1,7 +1,17 @@
 package net.minecraftforge.gradle.tasks;
 
-import groovy.lang.Closure;
-import net.md_5.specialsource.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
+import net.md_5.specialsource.AccessMap;
+import net.md_5.specialsource.Jar;
+import net.md_5.specialsource.JarMapping;
+import net.md_5.specialsource.JarRemapper;
+import net.md_5.specialsource.RemapperPreprocessor;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
 import net.minecraftforge.gradle.common.Constants;
@@ -13,22 +23,13 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.process.JavaExecSpec;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
 
 public class ProcessJarTask extends CachedTask
 {
     @InputFile
     private DelayedFile inJar;
-
-    @InputFile
-    private DelayedFile exceptorJar;
 
     @InputFile
     private DelayedFile srg;
@@ -97,7 +98,7 @@ public class ProcessJarTask extends CachedTask
 
         // apply exceptor
         getLogger().lifecycle("Applying Exceptor...");
-        applyExceptor(getExceptorJar(), tempObfJar, out, getExceptorCfg(), new File(getTemporaryDir(), "exceptorLog"));
+        applyExceptor(tempObfJar, out, getExceptorCfg(), new File(getTemporaryDir(), "exceptor.log"));
     }
 
     private void deobfJar(File inJar, File outJar, File srg, Collection<File> ats) throws IOException
@@ -135,41 +136,20 @@ public class ProcessJarTask extends CachedTask
         remapper.remapJar(input, outJar);
     }
 
-    public void applyExceptor(final File injectorJar, final File inJar, final File outJar, final File config, final File log)
+    public void applyExceptor(File inJar, File outJar, File config, File log) throws IOException
     {
         getLogger().debug("INPUT: " + inJar);
         getLogger().debug("OUTPUT: " + outJar);
         getLogger().debug("CONFIG: " + config);
-        // http://www.gradle.org/docs/current/dsl/org.gradle.api.tasks.JavaExec.html
-        getProject().javaexec(new Closure<JavaExecSpec>(this)
-        {
-            private static final long serialVersionUID = -1201498060683667405L;
-
-            public JavaExecSpec call()
-            {
-                JavaExecSpec exec = (JavaExecSpec) getDelegate();
-
-                exec.args(
-                        injectorJar.getAbsolutePath(),
-                        inJar.getAbsolutePath(),
-                        outJar.getAbsolutePath(),
-                        config.getAbsolutePath(),
-                        log.getAbsolutePath()
-                );
-
-                //exec.jvmArgs("-jar", injectorJar.getAbsolutePath());
-
-                exec.setMain("-jar");
-                //exec.setExecutable(injectorJar);
-                exec.setWorkingDir(injectorJar.getParentFile());
-
-                exec.classpath(Constants.getClassPath());
-
-                exec.setStandardOutput(Constants.getNullStream());
-
-                return exec;
-            }
-        });
+        
+        MCInjectorImpl.process(inJar.getCanonicalPath(),
+                outJar.getCanonicalPath(),
+                config.getCanonicalPath(),
+                log.getCanonicalPath(),
+                null,
+                0,
+                null,
+                false);
     }
 
     public File getExceptorCfg()
@@ -180,16 +160,6 @@ public class ProcessJarTask extends CachedTask
     public void setExceptorCfg(DelayedFile exceptorCfg)
     {
         this.exceptorCfg = exceptorCfg;
-    }
-
-    public File getExceptorJar()
-    {
-        return exceptorJar.call();
-    }
-
-    public void setExceptorJar(DelayedFile exceptorJar)
-    {
-        this.exceptorJar = exceptorJar;
     }
 
     public File getInJar()

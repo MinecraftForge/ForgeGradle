@@ -10,11 +10,11 @@ targetCompatibility = '1.6'
 sourceCompatibility = '1.6'
 
 repositories {
-  mavenCentral()
-  maven {
-      name = "forge"
-      url = "http://files.minecraftforge.net/maven"
-  }
+    maven {
+        name = "forge"
+        url = "http://files.minecraftforge.net/maven"
+    }
+    mavenCentral()
 }
 
 jar {
@@ -46,8 +46,8 @@ dependencies {
     compile 'net.md-5:SpecialSource:1.6' // deobf and reobs
     
     // mcp stuff
-    compile 'de.oceanlabs.mcp:RetroGuard:3.6.+'
-    compile 'de.oceanlabs.mcp:MCInjector:3.+'
+    compile 'de.oceanlabs.mcp:RetroGuard:3.6.5'
+    compile 'de.oceanlabs.mcp:mcinjector:3.1'
 
     // stupid maven
     deployerJars "org.apache.maven.wagon:wagon-ssh:2.2"
