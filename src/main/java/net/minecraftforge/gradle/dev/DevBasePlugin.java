@@ -242,6 +242,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
             File jsonFile = delayedFile(devJson).call().getAbsoluteFile(); // ToDo: Support files in zips, for Modder dev workspace.
             node = Constants.PARSER.parse(Files.newReader(jsonFile, Charset.defaultCharset()));
 
+            int i = 1;
             for (JsonNode lib : node.getArrayNode("libraries"))
             {
                 if (lib.isNode("natives") && lib.isNode("extract"))
@@ -252,14 +253,16 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
                             s[0].replace('.', '/'), s[1], s[2], s[1], s[2], Constants.OPERATING_SYSTEM
                             );
 
-                    DownloadTask task = makeTask("downloadNatives-" + s[1], DownloadTask.class);
+                    DownloadTask task = makeTask("downloadNatives-" + i, DownloadTask.class);
                     {
                         task.setOutput(delayedFile("{CACHE_DIR}/" + path));
                         task.setUrl(delayedString("http://repo1.maven.org/maven2/" + path));
                     }
 
                     copyTask.from(delayedZipTree("{CACHE_DIR}/" + path));
-                    copyTask.dependsOn("downloadNatives-" + s[1]);
+                    copyTask.dependsOn("downloadNatives-" + i);
+                    
+                    i++;
                 }
             }
 
