@@ -30,12 +30,14 @@ configurations {
 
 dependencies {
     compile gradleApi()
+    
+    // moved to the beginning to be the overrider
+    compile 'org.ow2.asm:asm-debug-all:4.1' // Debug version, so we can have generics!
 
     compile 'net.sourceforge.argo:argo:3.4' // json stuff? perhaps replace with json slurper and stuff?
     compile 'net.sf.opencsv:opencsv:2.3' // reading CSVs.. also used by SpecialSource
     compile 'com.cloudbees:diff4j:1.1' // for difing and patching
     compile 'com.github.abrarsyed.jastyle:jAstyle:1.2' // formatting
-    compile 'org.ow2.asm:asm-debug-all:4.1' // Debug version, so we can have generics!
 
     compile 'com.github.jponge:lzma-java:1.3' // replaces the LZMA binary
     compile 'com.nothome:javaxdelta:2.0.1' // GDIFF implementation for BinPatches
