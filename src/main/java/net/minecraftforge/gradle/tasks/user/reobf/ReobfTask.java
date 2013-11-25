@@ -22,6 +22,8 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 public class ReobfTask extends DefaultTask
 {
     final private DefaultDomainObjectSet<ObfArtifact> obfOutput = new DefaultDomainObjectSet<ObfArtifact>(ObfArtifact.class);
+    
+    private boolean useRG = true;
 
     @SuppressWarnings("serial")
     public ReobfTask()
@@ -284,5 +286,15 @@ public class ReobfTask extends DefaultTask
             act.execute(obj);
             return null;
         }
+    }
+
+    public boolean getUseRetroGuard()
+    {
+        return useRG;
+    }
+
+    public void setUseRetroGuard(boolean useRG)
+    {
+        this.useRG = useRG;
     }
 }

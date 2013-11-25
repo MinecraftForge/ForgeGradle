@@ -5,6 +5,7 @@ import groovy.lang.Closure;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLClassLoader;
+import java.nio.charset.Charset;
 import java.util.Date;
 
 import net.md_5.specialsource.Jar;
@@ -13,6 +14,7 @@ import net.md_5.specialsource.JarRemapper;
 import net.md_5.specialsource.provider.ClassLoaderProvider;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
 import net.minecraftforge.gradle.user.UserConstants;
@@ -24,6 +26,9 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.artifacts.publish.AbstractPublishArtifact;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 
+import COM.rl.NameProvider;
+
+import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 
 public class ObfArtifact extends AbstractPublishArtifact
@@ -41,7 +46,7 @@ public class ObfArtifact extends AbstractPublishArtifact
     private String                type;
 
     private final Closure<Object> toObfGenerator;
-    private final Task            caller;
+    private final ReobfTask       caller;
 
     final ArtifactSpec            outputSpec;
 
@@ -309,29 +314,95 @@ public class ObfArtifact extends AbstractPublishArtifact
         }
 
         File output = getFile();
+        File srg = new DelayedFile(caller.getProject(), UserConstants.REOBF_SRG).call();
 
         // obfuscate here
         File inTemp = new File(caller.getTemporaryDir(), "jarIn.jar");
         Files.copy(toObf, inTemp);
-
+        
+        if (caller.getUseRetroGuard())
+            applyRetroGuard(inTemp, output, srg);
+        else
+            applySpecialSource(inTemp, output, srg);
+    }
+    
+    private void applySpecialSource(File input, File output, File srg) throws IOException
+    {
         // load mapping
         JarMapping mapping = new JarMapping();
-        mapping.loadMappings(new DelayedFile(caller.getProject(), UserConstants.REOBF_SRG).call());
+        mapping.loadMappings(srg);
 
         // make remapper
         JarRemapper remapper = new JarRemapper(null, mapping);
 
         // load jar
-        Jar input = Jar.init(inTemp);
+        Jar inputJar = Jar.init(input);
 
         // ensure that inheritance provider is used
         JointProvider inheritanceProviders = new JointProvider();
-        inheritanceProviders.add(new JarProvider(input));
+        inheritanceProviders.add(new JarProvider(inputJar));
         if (classpath != null)
             inheritanceProviders.add(new ClassLoaderProvider(new URLClassLoader(ObfuscateTask.toUrls(classpath))));
         mapping.setFallbackInheritanceProvider(inheritanceProviders);
 
         // remap jar
-        remapper.remapJar(input, output);
+        remapper.remapJar(inputJar, output);
+    }
+    
+    private void applyRetroGuard(File input, File output, File srg) throws IOException
+    {
+        File cfg = new File(caller.getTemporaryDir(), "retroguard.cfg");
+        generateRgConfig(cfg, input, output, srg);
+        
+        String[] args = new String[] {
+                "-notch",
+                cfg.getCanonicalPath()
+        };
+        
+        NameProvider.parseCommandLine(args);
+    }
+    
+    private void generateRgConfig(File config, File in, File out, File srg) throws IOException
+    {
+        String log = new File(caller.getTemporaryDir(), "retroguard.log").getCanonicalPath();
+        File script = new File(caller.getTemporaryDir(), "retroguard.script");
+        
+        // the config
+        String[] lines = new String[] {
+                "reobinput = "+in.getCanonicalPath(),
+                "reoboutput = "+out.getCanonicalPath(),
+                "script = "+script.getCanonicalPath(),
+                "log = "+log,
+                "verbose = 0",
+                "quiet = 1",
+                "fullmap = 0",
+                "startindex = 0",
+                "protectedpackage = paulscode",
+                "protectedpackage = com",
+                "protectedpackage = isom",
+                "protectedpackage = ibxm",
+                "protectedpackage = de/matthiasmann/twl",
+                "protectedpackage = org",
+                "protectedpackage = javax",
+                "protectedpackage = argo",
+                "protectedpackage = gnu",
+                "protectedpackage = io/netty"
+        };
+        
+        Files.write(Joiner.on(Constants.NEWLINE).join(lines), config, Charset.defaultCharset());
+        
+        // the script.
+        lines = new String[] {
+                ".option Application",
+                ".option Applet",
+                ".option Repackage",
+                ".option Annotations",
+                ".option MapClassString",
+                ".attribute LineNumberTable",
+                ".attribute EnclosingMethod",
+                ".attribute Deprecated"
+        };
+        
+        Files.write(Joiner.on(Constants.NEWLINE).join(lines), script, Charset.defaultCharset());
     }
 }
