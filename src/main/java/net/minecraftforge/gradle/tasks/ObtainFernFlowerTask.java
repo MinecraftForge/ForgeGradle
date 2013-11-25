@@ -20,7 +20,7 @@ import org.gradle.api.tasks.TaskAction;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
-public class ObtainMcpStuffTask extends CachedTask
+public class ObtainFernFlowerTask extends CachedTask
 {
     @Input
     private DelayedString mcpUrl;
@@ -28,19 +28,14 @@ public class ObtainMcpStuffTask extends CachedTask
     @OutputFile
     private DelayedFile ffJar;
 
-    @OutputFile
-    private DelayedFile injectorJar;
-
     @TaskAction
     public void doTask() throws MalformedURLException, IOException
     {
         File ff = getFfJar();
-        File exc = getInjectorJar();
         String url = getMcpUrl();
 
         getLogger().info("Downloading " + url);
         getLogger().info("Fernflower output location " + ff);
-        getLogger().info("Injector output location " + exc);
 
         HttpURLConnection connect = (HttpURLConnection) (new URL(url)).openConnection();
         connect.setInstanceFollowRedirects(true);
@@ -56,12 +51,6 @@ public class ObtainMcpStuffTask extends CachedTask
                 Files.touch(ff);
                 Files.write(ByteStreams.toByteArray(zin), ff);
             }
-            else if (StringUtils.lower(entry.getName()).endsWith("mcinjector.jar"))
-            {
-                exc.getParentFile().mkdirs();
-                Files.touch(exc);
-                Files.write(ByteStreams.toByteArray(zin), exc);
-            }
         }
 
         zin.close();
@@ -73,24 +62,19 @@ public class ObtainMcpStuffTask extends CachedTask
     {
         return mcpUrl.call();
     }
+    
     public void setMcpUrl(DelayedString mcpUrl)
     {
         this.mcpUrl = mcpUrl;
     }
+    
     public File getFfJar()
     {
         return ffJar.call();
     }
+    
     public void setFfJar(DelayedFile ffJar)
     {
         this.ffJar = ffJar;
-    }
-    public File getInjectorJar()
-    {
-        return injectorJar.call();
-    }
-    public void setInjectorJar(DelayedFile injectorJar)
-    {
-        this.injectorJar = injectorJar;
     }
 }

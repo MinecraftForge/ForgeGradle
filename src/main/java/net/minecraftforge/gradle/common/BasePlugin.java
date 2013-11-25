@@ -9,7 +9,7 @@ import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.delayed.DelayedString;
 import net.minecraftforge.gradle.tasks.DownloadAssetsTask;
 import net.minecraftforge.gradle.tasks.DownloadTask;
-import net.minecraftforge.gradle.tasks.ObtainMcpStuffTask;
+import net.minecraftforge.gradle.tasks.ObtainFernFlowerTask;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
@@ -97,11 +97,10 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             task.setUrl(delayedString(Constants.MC_SERVER_URL));
         }
 
-        ObtainMcpStuffTask mcpTask = makeTask("downloadMcpTools", ObtainMcpStuffTask.class);
+        ObtainFernFlowerTask mcpTask = makeTask("downloadMcpTools", ObtainFernFlowerTask.class);
         {
             mcpTask.setMcpUrl(delayedString(Constants.MCP_URL));
             mcpTask.setFfJar(delayedFile(Constants.FERNFLOWER));
-            mcpTask.setInjectorJar(delayedFile(Constants.EXCEPTOR));
         }
 
         DownloadAssetsTask assets = makeTask("getAssets", DownloadAssetsTask.class);
