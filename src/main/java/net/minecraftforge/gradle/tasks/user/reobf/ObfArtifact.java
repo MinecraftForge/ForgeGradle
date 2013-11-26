@@ -371,6 +371,7 @@ public class ObfArtifact extends AbstractPublishArtifact
         String[] lines = new String[] {
                 "reobinput = "+in.getCanonicalPath(),
                 "reoboutput = "+out.getCanonicalPath(),
+                "reobf = "+srg.getCanonicalPath(),
                 "script = "+script.getCanonicalPath(),
                 "log = "+log,
                 "verbose = 0",
