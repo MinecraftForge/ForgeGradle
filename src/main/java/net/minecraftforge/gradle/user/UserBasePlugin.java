@@ -1,6 +1,7 @@
 package net.minecraftforge.gradle.user;
 
-import static net.minecraftforge.gradle.user.UserConstants.ECLIPSE_LOCATION;
+import static net.minecraftforge.gradle.user.UserConstants.*;
+
 import groovy.util.Node;
 import groovy.util.XmlParser;
 import groovy.xml.XmlUtil;
@@ -16,7 +17,6 @@ import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
@@ -65,7 +65,6 @@ import org.gradle.plugins.ide.idea.model.SingleEntryModuleLibrary;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 import argo.jdom.JsonNode;
 import argo.jdom.JsonRootNode;
@@ -116,7 +115,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     @Override
     protected String getDevJson()
     {
-        return DelayedBase.resolve(UserConstants.JSON, project);
+        return DelayedBase.resolve(JSON, project);
     }
 
     private void tasks()
@@ -126,18 +125,18 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             task.setClient(delayedFile(Constants.JAR_CLIENT_FRESH));
             task.setServer(delayedFile(Constants.JAR_SERVER_FRESH));
             task.setOutJar(delayedFile(Constants.JAR_MERGED));
-            task.setMergeCfg(delayedFile(UserConstants.MERGE_CFG));
+            task.setMergeCfg(delayedFile(MERGE_CFG));
             task.dependsOn("extractUserDev", "downloadClient", "downloadServer");
         }
 
         GenSrgTask task2 = makeTask("genSrgs", GenSrgTask.class);
         {
-            task2.setInSrg(delayedFile(UserConstants.PACKAGED_SRG));
-            task2.setNotchToMcpSrg(delayedFile(UserConstants.DEOBF_MCP_SRG));
-            task2.setMcpToSrgSrg(delayedFile(UserConstants.REOBF_SRG));
-            task2.setMcpToNotchSrg(delayedFile(UserConstants.REOBF_NOTCH_SRG));
-            task2.setMethodsCsv(delayedFile(UserConstants.METHOD_CSV));
-            task2.setFieldsCsv(delayedFile(UserConstants.FIELD_CSV));
+            task2.setInSrg(delayedFile(PACKAGED_SRG));
+            task2.setNotchToMcpSrg(delayedFile(DEOBF_MCP_SRG));
+            task2.setMcpToSrgSrg(delayedFile(REOBF_SRG));
+            task2.setMcpToNotchSrg(delayedFile(REOBF_NOTCH_SRG));
+            task2.setMethodsCsv(delayedFile(METHOD_CSV));
+            task2.setFieldsCsv(delayedFile(FIELD_CSV));
             task2.dependsOn("extractUserDev");
         }
         
@@ -145,18 +144,18 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         {
             binTask.setInJar(delayedFile(Constants.JAR_MERGED));
             binTask.setOutJar(getBinPatchOut());
-            binTask.setPatches(delayedFile(UserConstants.BINPATCHES));
-            binTask.setClassesJar(delayedFile(UserConstants.BINARIES_JAR));
-            binTask.setResources(delayedFileTree(UserConstants.RES_DIR));
+            binTask.setPatches(delayedFile(BINPATCHES));
+            binTask.setClassesJar(delayedFile(BINARIES_JAR));
+            binTask.setResources(delayedFileTree(RES_DIR));
             binTask.dependsOn("mergeJars");
         }
         
         ProcessJarTask deobfBinTask = makeTask("deobfBinJar", ProcessJarTask.class);
         {
-            deobfBinTask.setSrg(delayedFile(UserConstants.DEOBF_MCP_SRG));
+            deobfBinTask.setSrg(delayedFile(DEOBF_MCP_SRG));
             deobfBinTask.setOutDirtyJar(delayedFile(Constants.DEOBF_BIN_JAR));
             addATs(deobfBinTask);
-            deobfBinTask.setExceptorCfg(delayedFile(UserConstants.PACKAGED_EXC));
+            deobfBinTask.setExceptorCfg(delayedFile(PACKAGED_EXC));
             deobfBinTask.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
             deobfBinTask.dependsOn(binTask);
         }
@@ -164,11 +163,11 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         
         ProcessJarTask deobfTask = makeTask("deobfuscateJar", ProcessJarTask.class);
         {
-            deobfTask.setSrg(delayedFile(UserConstants.PACKAGED_SRG));
+            deobfTask.setSrg(delayedFile(PACKAGED_SRG));
             deobfTask.setInJar(delayedFile(Constants.JAR_MERGED));
             deobfTask.setOutDirtyJar(delayedFile(Constants.DEOBF_JAR));
             addATs(deobfTask);
-            deobfTask.setExceptorCfg(delayedFile(UserConstants.PACKAGED_EXC));
+            deobfTask.setExceptorCfg(delayedFile(PACKAGED_EXC));
             deobfTask.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
         }
         
@@ -207,8 +206,8 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             decompile.setInJar(deobf.getDelayedOutput());
             decompile.setOutJar(decompOut);
             decompile.setFernFlower(delayedFile(Constants.FERNFLOWER));
-            decompile.setPatch(delayedFile(UserConstants.MCP_PATCH));
-            decompile.setAstyleConfig(delayedFile(UserConstants.ASTYLE_CFG));
+            decompile.setPatch(delayedFile(MCP_PATCH));
+            decompile.setAstyleConfig(delayedFile(ASTYLE_CFG));
             decompile.dependsOn("downloadMcpTools", "deobfuscateJar", "genSrgs");
         }
         
@@ -226,32 +225,32 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     private void configureDeps()
     {
         // create configs
-        project.getConfigurations().create(UserConstants.CONFIG_USERDEV);
-        project.getConfigurations().create(UserConstants.CONFIG_API_JAVADOCS);
-        project.getConfigurations().create(UserConstants.CONFIG_API_SRC);
-        project.getConfigurations().create(UserConstants.CONFIG_NATIVES);
-        project.getConfigurations().create(UserConstants.CONFIG);
+        project.getConfigurations().create(CONFIG_USERDEV);
+        project.getConfigurations().create(CONFIG_API_JAVADOCS);
+        project.getConfigurations().create(CONFIG_API_SRC);
+        project.getConfigurations().create(CONFIG_NATIVES);
+        project.getConfigurations().create(CONFIG);
 
         // special userDev stuff
         ExtractTask extractUserDev = makeTask("extractUserDev", ExtractTask.class);
-        extractUserDev.into(delayedFile(UserConstants.PACK_DIR));
+        extractUserDev.into(delayedFile(PACK_DIR));
         extractUserDev.doLast(new Action<Task>() {
             @Override
             public void execute(Task arg0)
             {
-                readAndApplyJson(delayedFile(UserConstants.JSON).call(), UserConstants.CONFIG, UserConstants.CONFIG_NATIVES, arg0.getLogger());
+                readAndApplyJson(delayedFile(JSON).call(), CONFIG, CONFIG_NATIVES, arg0.getLogger());
             }
         });
 
         // special native stuff
         ExtractTask extractNatives = makeTask("extractNatives", ExtractTask.class);
-        extractNatives.into(delayedFile(UserConstants.NATIVES_DIR));
+        extractNatives.into(delayedFile(NATIVES_DIR));
         extractNatives.dependsOn("extractUserDev");
     }
 
     protected void configureCompilation()
     {
-        Configuration config = project.getConfigurations().getByName(UserConstants.CONFIG);
+        Configuration config = project.getConfigurations().getByName(CONFIG);
 
         Javadoc javadoc = (Javadoc) project.getTasks().getByName("javadoc");
         javadoc.getClasspath().add(config);
@@ -293,7 +292,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             @Override
             public void execute(Classpath classpath)
             {
-                String natives = delayedString(UserConstants.NATIVES_DIR).call().replace('\\', '/');
+                String natives = delayedString(NATIVES_DIR).call().replace('\\', '/');
                 for (ClasspathEntry e : classpath.getEntries())
                 {
                     if (e instanceof Library)
@@ -318,7 +317,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                     
                     HashMap<String, String> map = new HashMap<String, String>();
                     map.put("name", "org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY");
-                    map.put("value", delayedString(UserConstants.NATIVES_DIR).call());
+                    map.put("value", delayedString(NATIVES_DIR).call());
 
                     for (Node child : (List<Node>) root.children())
                     {
@@ -413,7 +412,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                         sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "VM_PARAMETERS");
-                            sub.setAttribute("value", "-Xincgc -Xmx1024M -Xms1024M -Djava.library.path=\"" + delayedFile(UserConstants.NATIVES_DIR).call().getCanonicalPath().replace(module, "$PROJECT_DIR$") + "\"");
+                            sub.setAttribute("value", "-Xincgc -Xmx1024M -Xms1024M -Djava.library.path=\"" + delayedFile(NATIVES_DIR).call().getCanonicalPath().replace(module, "$PROJECT_DIR$") + "\"");
                             child.appendChild(sub);
                         }
                         
@@ -624,13 +623,13 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         super.afterEvaluate();
         
         // grab the json && read dependencies
-        if (delayedFile(UserConstants.JSON).call().exists())
+        if (delayedFile(JSON).call().exists())
         {
-            readAndApplyJson(delayedFile(UserConstants.JSON).call(), UserConstants.CONFIG, UserConstants.CONFIG_NATIVES, project.getLogger());
+            readAndApplyJson(delayedFile(JSON).call(), CONFIG, CONFIG_NATIVES, project.getLogger());
         }
 
         // extract userdev
-        ((ExtractTask) project.getTasks().findByName("extractUserDev")).from(delayedFile(project.getConfigurations().getByName(UserConstants.CONFIG_USERDEV).getSingleFile().getAbsolutePath()));
+        ((ExtractTask) project.getTasks().findByName("extractUserDev")).from(delayedFile(project.getConfigurations().getByName(CONFIG_USERDEV).getSingleFile().getAbsolutePath()));
         
         // add src ATs
         ProcessJarTask binDeobf = (ProcessJarTask) project.getTasks().getByName("deobfBinJar");
@@ -669,7 +668,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         
         final File deobfOut = ((ProcessJarTask) project.getTasks().getByName("deobfBinJar")).getOutJar();
 
-        project.getDependencies().add(UserConstants.CONFIG, project.files(deobfOut));
+        project.getDependencies().add(CONFIG, project.files(deobfOut));
 
         EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse");
         ((ActionBroadcast<Classpath>)eclipseConv.getClasspath().getFile().getWhenMerged()).add(new Action<Classpath>()
@@ -685,8 +684,8 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                         Library lib = (Library)e;
                         if (lib.getLibrary().getFile().equals(deobfOut))
                         {
-                            lib.setJavadocPath(factory.fromFile(project.getConfigurations().getByName(UserConstants.CONFIG_API_JAVADOCS).getSingleFile()));
-                            lib.setSourcePath(factory.fromFile(project.getConfigurations().getByName(UserConstants.CONFIG_API_SRC).getSingleFile()));
+                            lib.setJavadocPath(factory.fromFile(project.getConfigurations().getByName(CONFIG_API_JAVADOCS).getSingleFile()));
+                            lib.setSourcePath(factory.fromFile(project.getConfigurations().getByName(CONFIG_API_SRC).getSingleFile()));
                         }
                     }
                 }
@@ -704,8 +703,8 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                         SingleEntryModuleLibrary lib = (SingleEntryModuleLibrary) d;
                         if (lib.getLibraryFile().equals(deobfOut))
                         {
-                            lib.getJavadoc().add(factory.path("jar://" + project.getConfigurations().getByName(UserConstants.CONFIG_API_JAVADOCS).getSingleFile().getAbsolutePath().replace('\\', '/') + "!/"));
-                            lib.getSources().add(factory.path("jar://" + project.getConfigurations().getByName(UserConstants.CONFIG_API_SRC).getSingleFile().getAbsolutePath().replace('\\', '/') + "!/"));
+                            lib.getJavadoc().add(factory.path("jar://" + project.getConfigurations().getByName(CONFIG_API_JAVADOCS).getSingleFile().getAbsolutePath().replace('\\', '/') + "!/"));
+                            lib.getSources().add(factory.path("jar://" + project.getConfigurations().getByName(CONFIG_API_SRC).getSingleFile().getAbsolutePath().replace('\\', '/') + "!/"));
                         }
                     }
                 }
@@ -813,7 +812,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             // add stuff to the natives tas thing..
             // extract natives
             ExtractTask task = (ExtractTask) project.getTasks().findByName("extractNatives");
-            for (File dep : project.getConfigurations().getByName(UserConstants.CONFIG_NATIVES).getFiles())
+            for (File dep : project.getConfigurations().getByName(CONFIG_NATIVES).getFiles())
             {
                 log.info("ADDING NATIVE: "+dep.getPath());
                 task.from(delayedFile(dep.getAbsolutePath()));
