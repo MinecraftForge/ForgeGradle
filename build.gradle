@@ -47,7 +47,7 @@ dependencies {
     compile 'net.md-5:SpecialSource:1.6.1' // deobf and reobs
     
     // mcp stuff
-    compile 'de.oceanlabs.mcp:RetroGuard:3.6.6-SNAPSHOT'
+    compile 'de.oceanlabs.mcp:RetroGuard:3.6.6'
     compile 'de.oceanlabs.mcp:mcinjector:3.1'
 
     // stupid maven
