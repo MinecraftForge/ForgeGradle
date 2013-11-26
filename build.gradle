@@ -33,6 +33,9 @@ dependencies {
     
     // moved to the beginning to be the overrider
     compile 'org.ow2.asm:asm-debug-all:4.1' // Debug version, so we can have generics!
+    compile 'org.ow2.asm:asm-all:4.1'
+    compile 'asm:asm-debug-all:3.2'
+    compile 'asm:asm-all:3.1'
 
     compile 'net.sourceforge.argo:argo:3.4' // json stuff? perhaps replace with json slurper and stuff?
     compile 'net.sf.opencsv:opencsv:2.3' // reading CSVs.. also used by SpecialSource
