@@ -14,6 +14,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedBase;
@@ -53,6 +62,9 @@ import org.gradle.plugins.ide.idea.model.IdeaModel;
 import org.gradle.plugins.ide.idea.model.Module;
 import org.gradle.plugins.ide.idea.model.PathFactory;
 import org.gradle.plugins.ide.idea.model.SingleEntryModuleLibrary;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
 
 import argo.jdom.JsonNode;
 import argo.jdom.JsonRootNode;
@@ -339,6 +351,258 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         ideaConv.getModule().getExcludeDirs().addAll(project.files(".gradle", "build").getFiles());
         ideaConv.getModule().setDownloadJavadoc(true);
         ideaConv.getModule().setDownloadSources(true);
+        
+        Task task = makeTask("genIntellijRuns", DefaultTask.class);
+        task.doLast(new Action<Task>() {
+            @Override
+            public void execute(Task task)
+            {
+                try
+                {
+                    String module = task.getProject().getProjectDir().getAbsolutePath();
+                    File file = project.file(".idea/workspace.xml");
+                    
+                    DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+                    DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+                    Document doc = docBuilder.parse(file);
+                    
+                    Element root = (Element) doc.getElementsByTagName("RunManager").item(0);
+                    
+                    Element child, sub;
+                    
+                    // CLIENT
+                    child = doc.createElement("configuration");
+                    {
+                        child.setAttribute("default", "false");
+                        child.setAttribute("name", "Minecraft Client");
+                        child.setAttribute("type", "Application");
+                        child.setAttribute("factoryName", "Application");
+                        child.setAttribute("default", "false");
+                        root.appendChild(child);
+                        
+                        sub = child = doc.createElement("extension");
+                        {
+                            sub.setAttribute("name", "coverage");
+                            sub.setAttribute("enabled", "false");
+                            sub.setAttribute("sample_coverage", "true");
+                            sub.setAttribute("runner", "idea");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("option");
+                        {
+                            sub.setAttribute("name", "MAIN-CLASS");
+                            sub.setAttribute("value", "net.minecraft.launchwrapper.Launch");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("option");
+                        {
+                            sub.setAttribute("name", "VM_PARAMETERS");
+                            sub.setAttribute("value", "-Xincgc -Xmx1024M -Xms1024M -Djava.library.path=\"" + delayedFile(UserConstants.NATIVES_DIR).call().getCanonicalPath().replace(module, "$PROJECT_DIR$") + "\"");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("option");
+                        {
+                            sub.setAttribute("name", "PROGRAM_PARAMETERS");
+                            sub.setAttribute("value", "--version 1.6 --tweakClass cpw.mods.fml.common.launcher.FMLTweaker --username=Player1234");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("option");
+                        {
+                            sub.setAttribute("name", "WORKING_DIRECTORY");
+                            sub.setAttribute("value", "file://"+delayedFile("{ASSETS_DIR}").call().getParentFile().getCanonicalPath().replace(module, "$PROJECT_DIR$"));
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("option");
+                        {
+                            sub.setAttribute("name", "ALTERNATIVE_JRE_PATH_ENABLED");
+                            sub.setAttribute("value", "false");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("option");
+                        {
+                            sub.setAttribute("name", "ALTERNATIVE_JRE_PATH");
+                            sub.setAttribute("value", "");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("option");
+                        {
+                            sub.setAttribute("name", "ENABLE_SWING_INSPECTOR");
+                            sub.setAttribute("value", "false");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("option");
+                        {
+                            sub.setAttribute("name", "ENV_VARIABLES");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("option");
+                        {
+                            sub.setAttribute("name", "PASS_PARENT_ENVS");
+                            sub.setAttribute("value", "true");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("module");
+                        {
+                            sub.setAttribute("name", ((IdeaModel) project.getExtensions().getByName("idea")).getModule().getName());
+                            child.appendChild(sub);
+                        }
+                        
+                        child.appendChild(doc.createElement("envs"));
+                        
+                        sub = child = doc.createElement("RunnerSettings");
+                        {
+                            sub.setAttribute("RunnerId", "Run");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("ConfigurationWrapper");
+                        {
+                            sub.setAttribute("RunnerId", "Run");
+                            child.appendChild(sub);
+                        }
+                        
+                        child.appendChild(doc.createElement("method"));
+                    }
+                    
+                    
+                    // SEERVER
+                    child = doc.createElement("configuration");
+                    {
+                        child.setAttribute("default", "false");
+                        child.setAttribute("name", "Minecraft Server");
+                        child.setAttribute("type", "Application");
+                        child.setAttribute("factoryName", "Application");
+                        child.setAttribute("default", "false");
+                        root.appendChild(child);
+                        
+                        sub = child = doc.createElement("extension");
+                        {
+                            sub.setAttribute("name", "coverage");
+                            sub.setAttribute("enabled", "false");
+                            sub.setAttribute("sample_coverage", "true");
+                            sub.setAttribute("runner", "idea");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("option");
+                        {
+                            sub.setAttribute("name", "MAIN-CLASS");
+                            sub.setAttribute("value", "cpw.mods.fml.relauncher.ServerLaunchWrapper");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("option");
+                        {
+                            sub.setAttribute("name", "VM_PARAMETERS");
+                            sub.setAttribute("value", "-Xincgc XX:-UseSplitVerifier");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("option");
+                        {
+                            sub.setAttribute("name", "PROGRAM_PARAMETERS");
+                            sub.setAttribute("value", "");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("option");
+                        {
+                            sub.setAttribute("name", "WORKING_DIRECTORY");
+                            sub.setAttribute("value", "file://"+delayedFile("{ASSETS_DIR}").call().getParentFile().getCanonicalPath().replace(module, "$PROJECT_DIR$"));
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("option");
+                        {
+                            sub.setAttribute("name", "ALTERNATIVE_JRE_PATH_ENABLED");
+                            sub.setAttribute("value", "false");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("option");
+                        {
+                            sub.setAttribute("name", "ALTERNATIVE_JRE_PATH");
+                            sub.setAttribute("value", "");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("option");
+                        {
+                            sub.setAttribute("name", "ENABLE_SWING_INSPECTOR");
+                            sub.setAttribute("value", "false");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("option");
+                        {
+                            sub.setAttribute("name", "ENV_VARIABLES");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("option");
+                        {
+                            sub.setAttribute("name", "PASS_PARENT_ENVS");
+                            sub.setAttribute("value", "true");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("module");
+                        {
+                            sub.setAttribute("name", ((IdeaModel) project.getExtensions().getByName("idea")).getModule().getName());
+                            child.appendChild(sub);
+                        }
+                        
+                        child.appendChild(doc.createElement("envs"));
+                        
+                        sub = child = doc.createElement("RunnerSettings");
+                        {
+                            sub.setAttribute("RunnerId", "Run");
+                            child.appendChild(sub);
+                        }
+                        
+                        sub = child = doc.createElement("ConfigurationWrapper");
+                        {
+                            sub.setAttribute("RunnerId", "Run");
+                            child.appendChild(sub);
+                        }
+                        
+                        child.appendChild(doc.createElement("method"));
+                    }
+                    
+                    // write the content into xml file
+                    TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                    Transformer transformer = transformerFactory.newTransformer();
+                    transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+                    transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                    transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+                    transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+                    
+                    DOMSource source = new DOMSource(doc);
+                    StreamResult result = new StreamResult(file);
+                    //StreamResult result = new StreamResult(System.out);
+                    
+                    transformer.transform(source, result);
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        
+        
     }
 
     @SuppressWarnings("unchecked")
