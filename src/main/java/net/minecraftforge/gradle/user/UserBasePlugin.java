@@ -64,6 +64,7 @@ import org.gradle.plugins.ide.idea.model.PathFactory;
 import org.gradle.plugins.ide.idea.model.SingleEntryModuleLibrary;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import argo.jdom.JsonNode;
@@ -366,7 +367,20 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                     DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
                     Document doc = docBuilder.parse(file);
                     
-                    Element root = (Element) doc.getElementsByTagName("RunManager").item(0);
+                    Element root = null;
+                    
+                    {
+                        NodeList list = doc.getElementsByTagName("component");
+                        for (int i = 0; i < list.getLength(); i++)
+                        {
+                            Element e = (Element) list.item(i);
+                            if ("RunManager".equals(e.getAttribute("name")))
+                            {
+                                root = e;
+                                break;
+                            }
+                        }
+                    }
                     
                     Element child, sub;
                     
@@ -380,7 +394,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                         child.setAttribute("default", "false");
                         root.appendChild(child);
                         
-                        sub = child = doc.createElement("extension");
+                        sub = doc.createElement("extension");
                         {
                             sub.setAttribute("name", "coverage");
                             sub.setAttribute("enabled", "false");
@@ -389,69 +403,69 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("option");
+                        sub = doc.createElement("option");
                         {
-                            sub.setAttribute("name", "MAIN-CLASS");
+                            sub.setAttribute("name", "MAIN_CLASS_NAME");
                             sub.setAttribute("value", "net.minecraft.launchwrapper.Launch");
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("option");
+                        sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "VM_PARAMETERS");
                             sub.setAttribute("value", "-Xincgc -Xmx1024M -Xms1024M -Djava.library.path=\"" + delayedFile(UserConstants.NATIVES_DIR).call().getCanonicalPath().replace(module, "$PROJECT_DIR$") + "\"");
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("option");
+                        sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "PROGRAM_PARAMETERS");
                             sub.setAttribute("value", "--version 1.6 --tweakClass cpw.mods.fml.common.launcher.FMLTweaker --username=Player1234");
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("option");
+                        sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "WORKING_DIRECTORY");
                             sub.setAttribute("value", "file://"+delayedFile("{ASSETS_DIR}").call().getParentFile().getCanonicalPath().replace(module, "$PROJECT_DIR$"));
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("option");
+                        sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "ALTERNATIVE_JRE_PATH_ENABLED");
                             sub.setAttribute("value", "false");
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("option");
+                        sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "ALTERNATIVE_JRE_PATH");
                             sub.setAttribute("value", "");
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("option");
+                        sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "ENABLE_SWING_INSPECTOR");
                             sub.setAttribute("value", "false");
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("option");
+                        sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "ENV_VARIABLES");
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("option");
+                        sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "PASS_PARENT_ENVS");
                             sub.setAttribute("value", "true");
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("module");
+                        sub = doc.createElement("module");
                         {
                             sub.setAttribute("name", ((IdeaModel) project.getExtensions().getByName("idea")).getModule().getName());
                             child.appendChild(sub);
@@ -459,13 +473,13 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                         
                         child.appendChild(doc.createElement("envs"));
                         
-                        sub = child = doc.createElement("RunnerSettings");
+                        sub = doc.createElement("RunnerSettings");
                         {
                             sub.setAttribute("RunnerId", "Run");
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("ConfigurationWrapper");
+                        sub = doc.createElement("ConfigurationWrapper");
                         {
                             sub.setAttribute("RunnerId", "Run");
                             child.appendChild(sub);
@@ -485,7 +499,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                         child.setAttribute("default", "false");
                         root.appendChild(child);
                         
-                        sub = child = doc.createElement("extension");
+                        sub = doc.createElement("extension");
                         {
                             sub.setAttribute("name", "coverage");
                             sub.setAttribute("enabled", "false");
@@ -494,69 +508,69 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("option");
+                        sub = doc.createElement("option");
                         {
-                            sub.setAttribute("name", "MAIN-CLASS");
+                            sub.setAttribute("name", "MAIN_CLASS_NAME");
                             sub.setAttribute("value", "cpw.mods.fml.relauncher.ServerLaunchWrapper");
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("option");
+                        sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "VM_PARAMETERS");
                             sub.setAttribute("value", "-Xincgc XX:-UseSplitVerifier");
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("option");
+                        sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "PROGRAM_PARAMETERS");
                             sub.setAttribute("value", "");
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("option");
+                        sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "WORKING_DIRECTORY");
                             sub.setAttribute("value", "file://"+delayedFile("{ASSETS_DIR}").call().getParentFile().getCanonicalPath().replace(module, "$PROJECT_DIR$"));
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("option");
+                        sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "ALTERNATIVE_JRE_PATH_ENABLED");
                             sub.setAttribute("value", "false");
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("option");
+                        sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "ALTERNATIVE_JRE_PATH");
                             sub.setAttribute("value", "");
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("option");
+                        sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "ENABLE_SWING_INSPECTOR");
                             sub.setAttribute("value", "false");
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("option");
+                        sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "ENV_VARIABLES");
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("option");
+                        sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "PASS_PARENT_ENVS");
                             sub.setAttribute("value", "true");
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("module");
+                        sub = doc.createElement("module");
                         {
                             sub.setAttribute("name", ((IdeaModel) project.getExtensions().getByName("idea")).getModule().getName());
                             child.appendChild(sub);
@@ -564,13 +578,13 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                         
                         child.appendChild(doc.createElement("envs"));
                         
-                        sub = child = doc.createElement("RunnerSettings");
+                        sub = doc.createElement("RunnerSettings");
                         {
                             sub.setAttribute("RunnerId", "Run");
                             child.appendChild(sub);
                         }
                         
-                        sub = child = doc.createElement("ConfigurationWrapper");
+                        sub = doc.createElement("ConfigurationWrapper");
                         {
                             sub.setAttribute("RunnerId", "Run");
                             child.appendChild(sub);
@@ -600,8 +614,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                 }
             }
         });
-
-        
         
     }
 
