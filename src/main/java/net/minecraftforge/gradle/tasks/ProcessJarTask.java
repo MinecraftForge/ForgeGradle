@@ -18,7 +18,9 @@ import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
+import org.gradle.api.Nullable;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
@@ -36,6 +38,13 @@ public class ProcessJarTask extends CachedTask
 
     @InputFile
     private DelayedFile exceptorCfg;
+    
+    @Nullable
+    @InputFile
+    private DelayedFile exceptorJson;
+    
+    @Input
+    private boolean applyMarkers = false;
 
     @OutputFile
     @Cached
@@ -44,6 +53,8 @@ public class ProcessJarTask extends CachedTask
     @OutputFile
     @Cached
     private DelayedFile outDirtyJar = new DelayedFile(getProject(), Constants.DEOBF_JAR); // dirty = has any other ATs
+    
+    private DelayedFile log;
 
     private ArrayList<DelayedFile> ats = new ArrayList<DelayedFile>();
     
@@ -95,10 +106,14 @@ public class ProcessJarTask extends CachedTask
         deobfJar(getInJar(), tempObfJar, getSrg(), ats);
         
         File out = isClean ? getOutCleanJar() : getOutDirtyJar();
+        
+        File log = getLog();
+        if (log == null)
+            log = new File(getTemporaryDir(), "exceptor.log");
 
         // apply exceptor
         getLogger().lifecycle("Applying Exceptor...");
-        applyExceptor(tempObfJar, out, getExceptorCfg(), new File(getTemporaryDir(), "exceptor.log"));
+        applyExceptor(tempObfJar, out, getExceptorCfg(), log);
     }
 
     private void deobfJar(File inJar, File outJar, File srg, Collection<File> ats) throws IOException
@@ -138,9 +153,16 @@ public class ProcessJarTask extends CachedTask
 
     public void applyExceptor(File inJar, File outJar, File config, File log) throws IOException
     {
+        String json = null;
+        File getJson = getExceptorJson();
+        if (getJson != null)
+            json = getJson.getCanonicalPath();
+        
         getLogger().debug("INPUT: " + inJar);
         getLogger().debug("OUTPUT: " + outJar);
         getLogger().debug("CONFIG: " + config);
+        getLogger().debug("JSON: " + json);
+        getLogger().debug("LOG: " + log);
         
         MCInjectorImpl.process(inJar.getCanonicalPath(),
                 outJar.getCanonicalPath(),
@@ -148,8 +170,8 @@ public class ProcessJarTask extends CachedTask
                 log.getCanonicalPath(),
                 null,
                 0,
-                null,
-                false);
+                json,
+                getApplyMarkers());
     }
 
     public File getExceptorCfg()
@@ -161,6 +183,29 @@ public class ProcessJarTask extends CachedTask
     {
         this.exceptorCfg = exceptorCfg;
     }
+    
+    public File getExceptorJson()
+    {
+        if (exceptorJson == null)
+            return null;
+        else
+            return exceptorJson.call();
+    }
+
+    public void setExceptorJson(DelayedFile exceptorJson)
+    {
+        this.exceptorJson = exceptorJson;
+    }
+    
+    public boolean getApplyMarkers()
+    {
+        return applyMarkers;
+    }
+
+    public void setApplyMarkers(boolean applyMarkers)
+    {
+        this.applyMarkers = applyMarkers;
+    }
 
     public File getInJar()
     {
@@ -170,6 +215,19 @@ public class ProcessJarTask extends CachedTask
     public void setInJar(DelayedFile inJar)
     {
         this.inJar = inJar;
+    }
+    
+    public File getLog()
+    {
+        if (log == null)
+            return null;
+        else
+            return log.call();
+    }
+
+    public void setLog(DelayedFile Log)
+    {
+        this.log = Log;
     }
     
     public File getSrg()
