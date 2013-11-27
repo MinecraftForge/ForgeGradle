@@ -43,7 +43,6 @@ public class ProcessJarTask extends CachedTask
     @InputFile
     private DelayedFile exceptorJson;
     
-    @Input
     private boolean applyMarkers = false;
 
     @OutputFile
