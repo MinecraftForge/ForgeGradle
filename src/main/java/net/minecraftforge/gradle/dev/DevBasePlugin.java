@@ -30,7 +30,6 @@ import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.dev.CompressLZMA;
-import net.minecraftforge.gradle.tasks.dev.MergeMappingsTask;
 
 import org.apache.shiro.util.AntPathMatcher;
 import org.gradle.api.Action;
@@ -97,22 +96,10 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
             task.into(delayedFile(DevConstants.LAUNCH4J_DIR));
         }
         
-        MergeMappingsTask task2 = makeTask("fixMappings", MergeMappingsTask.class);
-        {
-            task2.setPackageCSV(delayedFile(DevConstants.PACK_CSV));
-            task2.setInSRG(delayedFile(DevConstants.JOINED_SRG));
-            task2.setInEXC(delayedFile(DevConstants.JOINED_EXC));
-            task2.setOutSRG(delayedFile(DevConstants.PACKAGED_SRG));
-            task2.setOutEXC(delayedFile(DevConstants.PACKAGED_EXC));
-            task2.setInPatch(delayedFile(DevConstants.MCP_PATCH));
-            task2.setOutPatch(delayedFile(DevConstants.PACKAGED_PATCH));
-        }
-        
         CompressLZMA task3 = makeTask("compressDeobfData", CompressLZMA.class);
         {
-            task3.setInputFile(delayedFile(DevConstants.PACKAGED_SRG));
+            task3.setInputFile(delayedFile(DevConstants.JOINED_SRG));
             task3.setOutputFile(delayedFile(DevConstants.DEOBF_DATA));
-            task3.dependsOn("fixMappings");
         }
         
         MergeJarsTask task4 = makeTask("mergeJars", MergeJarsTask.class);
@@ -133,13 +120,12 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
         
         GenSrgTask task6 = makeTask("genSrgs", GenSrgTask.class);
         {
-            task6.setInSrg(delayedFile(DevConstants.PACKAGED_SRG));
+            task6.setInSrg(delayedFile(DevConstants.JOINED_SRG));
             task6.setNotchToMcpSrg(delayedFile(DevConstants.NOTCH_2_MCP_SRG));
             task6.setMcpToSrgSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
             task6.setMcpToNotchSrg(delayedFile(DevConstants.MCP_2_NOTCH_SRG));
             task6.setMethodsCsv(delayedFile(DevConstants.METHODS_CSV));
             task6.setFieldsCsv(delayedFile(DevConstants.FIELDS_CSV));
-            task6.dependsOn("fixMappings");
         }
     }
     

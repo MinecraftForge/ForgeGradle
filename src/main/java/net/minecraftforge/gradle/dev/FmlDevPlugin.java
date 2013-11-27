@@ -70,11 +70,11 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             task2.setInJar(delayedFile(Constants.JAR_MERGED));
             task2.setOutCleanJar(delayedFile(DevConstants.JAR_SRG_FML));
-            task2.setSrg(delayedFile(DevConstants.PACKAGED_SRG));
-            task2.setExceptorCfg(delayedFile(DevConstants.PACKAGED_EXC));
+            task2.setSrg(delayedFile(DevConstants.JOINED_SRG));
+            task2.setExceptorCfg(delayedFile(DevConstants.JOINED_EXC));
             task2.setExceptorJson(delayedFile(DevConstants.EXC_JSON));
             task2.addTransformer(delayedFile(DevConstants.FML_RESOURCES + "/fml_at.cfg"));
-            task2.dependsOn("downloadMcpTools", "fixMappings", "mergeJars");
+            task2.dependsOn("downloadMcpTools", "mergeJars");
         }
 
         DecompileTask task3 = makeTask("decompile", DecompileTask.class);
@@ -82,9 +82,9 @@ public class FmlDevPlugin extends DevBasePlugin
             task3.setInJar(delayedFile(DevConstants.JAR_SRG_FML));
             task3.setOutJar(delayedFile(DevConstants.ZIP_DECOMP_FML));
             task3.setFernFlower(delayedFile(Constants.FERNFLOWER));
-            task3.setPatch(delayedFile(DevConstants.PACKAGED_PATCH));
+            task3.setPatch(delayedFile(DevConstants.MCP_PATCH));
             task3.setAstyleConfig(delayedFile(DevConstants.ASTYLE_CFG));
-            task3.dependsOn("downloadMcpTools", "deobfuscateJar", "fixMappings");
+            task3.dependsOn("downloadMcpTools", "deobfuscateJar");
         }
 
         PatchJarTask task4 = makeTask("fmlPatchJar", PatchJarTask.class);
@@ -218,11 +218,11 @@ public class FmlDevPlugin extends DevBasePlugin
 
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
-            obf.setSrg(delayedFile(DevConstants.PACKAGED_SRG));
+            obf.setSrg(delayedFile(DevConstants.JOINED_SRG));
             obf.setReverse(true);
             obf.setOutJar(delayedFile(DevConstants.REOBF_TMP));
             obf.setBuildFile(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"));
-            obf.dependsOn("generateProjects", "extractFmlSources", "fixMappings");
+            obf.dependsOn("generateProjects", "extractFmlSources");
         }
 
         GenBinaryPatches task3 = makeTask("genBinPatches", GenBinaryPatches.class);
@@ -233,9 +233,9 @@ public class FmlDevPlugin extends DevBasePlugin
             task3.setDirtyJar(delayedFile(DevConstants.REOBF_TMP));
             task3.setDeobfDataLzma(delayedFile(DevConstants.DEOBF_DATA));
             task3.setOutJar(delayedFile(DevConstants.BINPATCH_TMP));
-            task3.setSrg(delayedFile(DevConstants.PACKAGED_SRG));
+            task3.setSrg(delayedFile(DevConstants.JOINED_SRG));
             task3.addPatchList(delayedFileTree(DevConstants.FML_PATCH_DIR));
-            task3.dependsOn("obfuscateJar", "compressDeobfData", "fixMappings");
+            task3.dependsOn("obfuscateJar", "compressDeobfData");
         }
 
         FMLVersionPropTask prop = makeTask("createVersionProperties", FMLVersionPropTask.class);
@@ -384,9 +384,9 @@ public class FmlDevPlugin extends DevBasePlugin
             userDev.from(delayedFileTree(DevConstants.MERGE_CFG), new CopyInto("conf"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "astyle.cfg"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("mappings", "*.csv", "!packages.csv"));
-            userDev.from(delayedFile(DevConstants.PACKAGED_SRG), new CopyInto("conf"));
-            userDev.from(delayedFile(DevConstants.PACKAGED_EXC), new CopyInto("conf"));
-            userDev.from(delayedFile(DevConstants.PACKAGED_PATCH), new CopyInto("conf"));
+            userDev.from(delayedFile(DevConstants.JOINED_SRG), new CopyInto("conf"));
+            userDev.from(delayedFile(DevConstants.JOINED_EXC), new CopyInto("conf"));
+            userDev.from(delayedFile(DevConstants.MCP_PATCH), new CopyInto("conf"));
             userDev.rename(".+?\\.json", "dev.json");
             userDev.rename(".+?\\.srg", "packaged.srg");
             userDev.rename(".+?\\.exc", "packaged.exc");

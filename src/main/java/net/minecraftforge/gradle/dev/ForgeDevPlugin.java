@@ -78,12 +78,12 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             task2.setInJar(delayedFile(Constants.JAR_MERGED));
             task2.setOutCleanJar(delayedFile(JAR_SRG_FORGE));
-            task2.setSrg(delayedFile(PACKAGED_SRG));
-            task2.setExceptorCfg(delayedFile(PACKAGED_EXC));
+            task2.setSrg(delayedFile(JOINED_SRG));
+            task2.setExceptorCfg(delayedFile(JOINED_EXC));
             task2.setExceptorJson(delayedFile(DevConstants.EXC_JSON));
             task2.addTransformer(delayedFile(FML_RESOURCES + "/fml_at.cfg"));
             task2.addTransformer(delayedFile(FORGE_RESOURCES + "/forge_at.cfg"));
-            task2.dependsOn("downloadMcpTools", "fixMappings", "mergeJars");
+            task2.dependsOn("downloadMcpTools", "mergeJars");
         }
 
         DecompileTask task3 = makeTask("decompile", DecompileTask.class);
@@ -91,9 +91,9 @@ public class ForgeDevPlugin extends DevBasePlugin
             task3.setInJar(delayedFile(JAR_SRG_FORGE));
             task3.setOutJar(delayedFile(ZIP_DECOMP_FORGE));
             task3.setFernFlower(delayedFile(Constants.FERNFLOWER));
-            task3.setPatch(delayedFile(PACKAGED_PATCH));
+            task3.setPatch(delayedFile(MCP_PATCH));
             task3.setAstyleConfig(delayedFile(ASTYLE_CFG));
-            task3.dependsOn("downloadMcpTools", "deobfBinJar", "fixMappings");
+            task3.dependsOn("downloadMcpTools", "deobfBinJar");
         }
 
         PatchJarTask task4 = makeTask("fmlPatchJar", PatchJarTask.class);
@@ -278,10 +278,10 @@ public class ForgeDevPlugin extends DevBasePlugin
             task3.setDirtyJar(delayedFile(REOBF_TMP));
             task3.setDeobfDataLzma(delayedFile(DEOBF_DATA));
             task3.setOutJar(delayedFile(BINPATCH_TMP));
-            task3.setSrg(delayedFile(PACKAGED_SRG));
+            task3.setSrg(delayedFile(JOINED_SRG));
             task3.addPatchList(delayedFileTree(FORGE_PATCH_DIR));
             task3.addPatchList(delayedFileTree(FML_PATCH_DIR));
-            task3.dependsOn("obfuscateJar", "compressDeobfData", "fixMappings");
+            task3.dependsOn("obfuscateJar", "compressDeobfData");
         }
 
         ForgeVersionReplaceTask task4 = makeTask("ciWriteBuildNumber", ForgeVersionReplaceTask.class);
@@ -493,9 +493,9 @@ public class ForgeDevPlugin extends DevBasePlugin
             userDev.from(delayedFileTree(MERGE_CFG), new CopyInto("conf"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "astyle.cfg"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("mappings", "*.csv", "!packages.csv"));
-            userDev.from(delayedFile(PACKAGED_SRG), new CopyInto("conf"));
-            userDev.from(delayedFile(PACKAGED_EXC), new CopyInto("conf"));
-            userDev.from(delayedFile(PACKAGED_PATCH), new CopyInto("conf"));
+            userDev.from(delayedFile(JOINED_SRG), new CopyInto("conf"));
+            userDev.from(delayedFile(JOINED_EXC), new CopyInto("conf"));
+            userDev.from(delayedFile(MCP_PATCH), new CopyInto("conf"));
             userDev.from(delayedFile(FML_VERSIONF), new CopyInto("src/main/resources"));
             userDev.rename(".+?\\.json", "dev.json");
             userDev.rename(".+?\\.srg", "packaged.srg");
