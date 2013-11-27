@@ -412,7 +412,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                         sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "VM_PARAMETERS");
-                            sub.setAttribute("value", "-Xincgc -Xmx1024M -Xms1024M -Djava.library.path=\"" + delayedFile(NATIVES_DIR).call().getCanonicalPath().replace(module, "$PROJECT_DIR$") + "\"");
+                            sub.setAttribute("value", "-Xincgc -Xmx1024M -Xms1024M -Djava.library.path=\"" + delayedFile(NATIVES_DIR).call().getCanonicalPath().replace(module, "$PROJECT_DIR$") + "\" -Dfml.ignoreInvalidMinecraftCertificates=true");
                             child.appendChild(sub);
                         }
                         
@@ -517,7 +517,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                         sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "VM_PARAMETERS");
-                            sub.setAttribute("value", "-Xincgc XX:-UseSplitVerifier");
+                            sub.setAttribute("value", "-Xincgc XX:-UseSplitVerifier -Dfml.ignoreInvalidMinecraftCertificates=true");
                             child.appendChild(sub);
                         }
                         
