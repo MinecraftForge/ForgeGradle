@@ -72,6 +72,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task2.setOutCleanJar(delayedFile(DevConstants.JAR_SRG_FML));
             task2.setSrg(delayedFile(DevConstants.PACKAGED_SRG));
             task2.setExceptorCfg(delayedFile(DevConstants.PACKAGED_EXC));
+            task2.setExceptorJson(delayedFile(DevConstants.EXC_JSON));
             task2.addTransformer(delayedFile(DevConstants.FML_RESOURCES + "/fml_at.cfg"));
             task2.dependsOn("downloadMcpTools", "fixMappings", "mergeJars");
         }

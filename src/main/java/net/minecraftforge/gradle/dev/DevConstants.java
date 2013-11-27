@@ -38,6 +38,7 @@ final class DevConstants
     static final String JOINED_SRG          = "{MAPPINGS_DIR}/joined.srg";
     static final String JOINED_EXC          = "{MAPPINGS_DIR}/joined.exc";
     static final String ASTYLE_CFG          = "{MAPPINGS_DIR}/astyle.cfg";
+    static final String EXC_JSON            = "{MAPPINGS_DIR}/exceptor.json";
     static final String MCP_PATCH           = "{MAPPINGS_DIR}/patches/minecraft_ff.patch";
     static final String MERGE_CFG           = "{FML_DIR}/mcp_merge.cfg";
 
