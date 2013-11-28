@@ -17,7 +17,6 @@ public class McpCleanup
         boolean inMultiline = false;
         for (String line : lines)
         {
-            boolean test = line.contains("var4.append(\"// \");");
             if (!inMultiline)
             {
                 if (!line.contains("//") && !line.contains("/*"))
@@ -59,11 +58,7 @@ public class McpCleanup
                                 inMultiline = false;
                             }
                         }
-                        if (c1 != 0)
-                        {
-                            if (test) System.out.println("1: " + c1);
-                            out.append(c1);
-                        }
+                        if (c1 != 0) out.append(c1);
                         c1 = c2;
                     }
                     else
@@ -88,20 +83,12 @@ public class McpCleanup
                                     literal = 0;
                                 }
                             }
-                            if (c1 != 0)
-                            {
-                                if (test) System.out.println("2: " + c1);
-                                out.append(c1);
-                            }
+                            if (c1 != 0) out.append(c1);
                             c1 = c2;
                         }
                     }
                 }
-                if (c1 != 0)
-                {
-                    if (test) System.out.println("3: " + c1);
-                    out.append(c1);
-                }
+                if (c1 != 0) out.append(c1);
             }
             else
             {
