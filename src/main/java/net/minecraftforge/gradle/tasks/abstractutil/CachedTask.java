@@ -21,6 +21,8 @@ import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -89,6 +91,7 @@ public abstract class CachedTask extends DefaultTask
                         File hashFile = getHashFile(file);
                         if (!hashFile.exists())
                         {
+                            file.delete(); // Kill the output file if the hash doesn't exist, else gradle will think it's up-to-date
                             return true;
                         }
 
@@ -185,8 +188,26 @@ public abstract class CachedTask extends DefaultTask
 
                 if (obj instanceof Closure)
                     obj = ((Closure) obj).call();
-
-                hashes.add(Constants.hash((String) obj));
+                
+                if (obj instanceof String)
+                    hashes.add(Constants.hash((String) obj));
+                else if (obj instanceof File)
+                {
+                    File file = (File)obj;
+                    if (file.isDirectory())
+                    {
+                        List<File> files = Arrays.asList(file.listFiles());
+                        Collections.sort(files);
+                        for (File i : files)
+                        {
+                            hashes.add(Constants.hash(i));
+                        }
+                    }
+                    else
+                    {
+                        hashes.add(Constants.hash(file));   
+                    }
+                }
             }
         }
 
