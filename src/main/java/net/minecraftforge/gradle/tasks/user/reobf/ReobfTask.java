@@ -77,7 +77,7 @@ public class ReobfTask extends DefaultTask
             }
 
             dependsOn((AbstractArchiveTask) task);
-            addArtifact(new ObfArtifact(new DelayedThingy(task), new ArtifactSpec(), this));
+            addArtifact(new ObfArtifact(new DelayedThingy(task), new ArtifactSpec(getProject()), this));
         }
     }
     
@@ -91,7 +91,7 @@ public class ReobfTask extends DefaultTask
      */
     public void reobf(PublishArtifact publishArtifact, Closure<Object> artifactSpec)
     {
-        ArtifactSpec spec = new ArtifactSpec(publishArtifact);
+        ArtifactSpec spec = new ArtifactSpec(publishArtifact, getProject());
         artifactSpec.call(spec);
 
         dependsOn(publishArtifact);
@@ -106,7 +106,7 @@ public class ReobfTask extends DefaultTask
         for (PublishArtifact publishArtifact : publishArtifacts)
         {
             dependsOn(publishArtifact);
-            addArtifact(new ObfArtifact(publishArtifact, new ArtifactSpec(publishArtifact), this));
+            addArtifact(new ObfArtifact(publishArtifact, new ArtifactSpec(publishArtifact, getProject()), this));
         }
     }
     
@@ -120,7 +120,7 @@ public class ReobfTask extends DefaultTask
      */
     public void reobf(File file, Closure<Object> artifactSpec)
     {
-        ArtifactSpec spec = new ArtifactSpec(file);
+        ArtifactSpec spec = new ArtifactSpec(file, getProject());
         artifactSpec.call(spec);
 
         addArtifact(new ObfArtifact(file, spec, this));
@@ -133,7 +133,7 @@ public class ReobfTask extends DefaultTask
     {
         for (File file : files)
         {
-            addArtifact(new ObfArtifact(file, new ArtifactSpec(file), this));
+            addArtifact(new ObfArtifact(file, new ArtifactSpec(file, getProject()), this));
         }
     }
 
