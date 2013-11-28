@@ -12,99 +12,101 @@ public class McpCleanup
 
     public static String stripComments(String text)
     {
-        String[] lines = text.split("(\r)\n");
-        StringBuilder out = new StringBuilder();
-        boolean inMultiline = false;
-        for (String line : lines)
+        Reader in = new StringReader(text);
+        Writer out = new StringWriter(text.length());
+        boolean inComment = false;
+        boolean inString = false;
+        char c;
+        int ci;
+        try
         {
-            if (!inMultiline)
+            while ((ci = in.read()) != -1)
             {
-                if (!line.contains("//") && !line.contains("/*"))
+                c = (char) ci;
+                switch (c)
                 {
-                    out.append(line).append('\n');
-                    continue;
-                }
-                char c1 = 0;
-                char c2 = 0;
-                char literal = 0;
-                char[] data = line.toCharArray();
-                for (int x = 0; x < data.length; x++)
-                {
-                    c2 = data[x];
-                    if (literal == 0)
+                    case '\\':
                     {
-                        if (!inMultiline)
-                        {
-                            if (c2 == '\'' || c2 == '"')
-                            {
-                                literal = c2;
-                            }
-                            else if (c1 == '/' && c2 == '/') // Line comment
-                            {
-                                c1 = c2 = 0;
-                                break; //Nothing more to append from this line 
-                            }
-                            else if (c1 == '/' && c2 == '*') // Multiline comment
-                            {
-                                inMultiline = true;
-                                c1 = c2 = 0;
-                            }
-                        }
-                        else
-                        {
-                            if (c1 == '*' && c2 == '/') // End Muiltiline
-                            {
-                                c1 = c2 = 0;
-                                inMultiline = false;
-                            }
-                        }
-                        if (c1 != 0) out.append(c1);
-                        c1 = c2;
+                        out.write(c);
+                        out.write(in.read());//Skip escaped chars
+                        break;
                     }
-                    else
+                    case '\"':
                     {
-                        boolean escaped = false;
-                        x--;
-                        while(literal != 0 && x < data.length - 1)
+                        if (!inComment)
                         {
-                            c2 = data[++x];
-                            if (escaped)
-                            {
-                                escaped = false;
-                            }
-                            else
-                            {
-                                if (c2 == '\\')
-                                {
-                                    escaped = true;
-                                }
-                                else if (c2 == literal)
-                                {
-                                    literal = 0;
-                                }
-                            }
-                            if (c1 != 0) out.append(c1);
-                            c1 = c2;
+                            out.write(c);
+                            inString = !inString;
                         }
+                        break;
                     }
-                }
-                if (c1 != 0) out.append(c1);
-            }
-            else
-            {
-                char c1 = 0;
-                for (char c2 : line.toCharArray())
-                {
-                    if (c1 == '*' && c2 == '/')
+                    case '\'':
                     {
-                        inMultiline = false;
-                        c1 = c2 = 0;
+                        if (!inComment)
+                        {
+                            out.write(c);
+                            out.write(in.read());
+                            out.write(in.read());
+                        }
+                        break;
                     }
-                    if (c1 != 0) out.append(c1);
-                    c1 = c2;
+                    case '*':
+                    {
+                        char c2 = (char) in.read();
+                        if (inComment && c2 == '/')
+                        {
+                            inComment = false;
+                            out.write(' ');//Allows int x = 3; int y = -/**/-x; to work
+                        } else
+                        {
+                            out.write(c);
+                            out.write(c2);
+                        }
+                        break;
+                    }
+                    case '/':
+                    {
+                        if (!inString)
+                        {
+                            char c2 = (char) in.read();
+                            switch (c2)
+                            {
+                                case '/':
+                                    char c3 = 0;
+                                    while (c3 != '\n' && c3 != '\r')
+                                    {
+                                        c3 = (char) in.read();
+                                    }
+                                    out.write(c3);//write newline
+                                    break;
+                                case '*':
+                                    inComment = true;
+                                    break;
+                                default:
+                                    out.write(c);
+                                    out.write(c2);
+                                    break;
+                            }
+                        } else
+                        {
+                            out.write(c);
+                        }
+                        break;
+                    }
+                    default:
+                    {
+                        if (!inComment)
+                        {
+                            out.write(c);
+                        }
+                        break;
+                    }
                 }
             }
-            out.append('\n');
+            out.close();
+        } catch (Exception e)
+        {
+            throw new RuntimeException(e);
         }
         text = out.toString();
 
