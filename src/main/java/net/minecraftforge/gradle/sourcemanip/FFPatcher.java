@@ -12,9 +12,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
+
 public class FFPatcher
 {
-    static final String MODIFIERS = "public|protected|private|static|abstract|final|native|synchronized|transient|volatile|strict";
+    static final String MODIFIERS = "public|protected|private|static|abstract|final|native|synchronized|transient|volatile|strictfp";
+
+    public static final Pattern SYNTHETICS = Pattern.compile("(?m)(\\s*// \\$FF: (synthetic|bridge) method(\\r\\n|\\n|\\r)){1,2}\\s*(?<modifiers>(?:(?:" + MODIFIERS + ") )*)(?<return>.+?) (?<method>.+?)\\((?<arguments>.*)\\)\\s*\\{(\\r\\n|\\n|\\r)\\s*return this\\.(?<method2>.+?)\\((?<arguments2>.*)\\);(\\r\\n|\\n|\\r)\\s*\\}");
+    public static final Pattern TYPECAST = Pattern.compile("\\([\\w\\.]+\\)");
 
     // Remove TRAILING whitespace
     public static final String TRAILING = "(?m)[ \\t]+$";
@@ -46,6 +51,15 @@ public class FFPatcher
     public static String processFile(String fileName, String text) throws IOException
     {
         String classname = fileName.split("\\.")[0];
+        
+        StringBuffer out = new StringBuffer();
+        Matcher m = SYNTHETICS.matcher(text);
+        while(m.find())
+        {
+            m.appendReplacement(out, synthetic_replacement(m).replace("$", "\\$"));
+        }
+        m.appendTail(out);
+        text = out.toString();
 
         text = text.replaceAll(TRAILING, "");
 
@@ -89,6 +103,41 @@ public class FFPatcher
         text = text.replaceAll("(\r\n|\r|\n)", Constants.NEWLINE);
 
         return text;
+    }
+
+
+    private static String synthetic_replacement(Matcher match)
+    {
+        //This is designed to remove all the synthetic/bridge methods that the compiler will just generate again
+        //First off this only works on methods that bounce to methods that are named exactly alike.
+        if (!match.group("method").equals(match.group("method2")))
+            return match.group();
+
+        //Next, we normalize the arugment list, if the lists are the same then it's a simple bounce method.
+        //MC's code strips generic information so the compiler doesn't know to regen typecast methods
+        //Uncomment the two lines below if we ever inject generic info     
+        String arg1 = match.group("arguments");
+        String arg2 = match.group("arguments2");
+        //String arg1 = _REGEXP['typecast'].sub(r'', match.group('arguments'))
+        //String arg2 = _REGEXP['typecast'].sub(r'', match.group('arguments2'))
+
+        if (arg1.equals(arg2) && arg1.equals(""))
+            return "";
+        
+        String[] args = match.group("arguments").split(", ");
+        for (int x = 0; x < args.length; x++)
+            args[x] = args[x].split(" ")[1];
+        
+        StringBuilder b = new StringBuilder();
+        b.append(args[0]);
+        for (int x = 1; x < args.length; x++)
+            b.append(", ").append(args[x]);
+        arg1 = b.toString();
+        
+        if (arg1.equals(arg2))
+            return "";
+        
+        return match.group();
     }
 
     private static String processEnum(String classname, String classtype, List<String> modifiers, List<String> interfaces, String body, String end)
