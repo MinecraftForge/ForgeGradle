@@ -27,6 +27,8 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -50,7 +52,6 @@ public class MergeJarsTask extends CachedTask
     @Cached
     private Closure<File>                     outJar;
 
-    private static HashMap<String, ClassInfo> shared       = new HashMap<String, ClassInfo>();
     private static HashSet<String>            copyToServer = new HashSet<String>();
     private static HashSet<String>            copyToClient = new HashSet<String>();
     private static HashSet<String>            dontAnnotate = new HashSet<String>();
@@ -168,12 +169,9 @@ public class MergeJarsTask extends CachedTask
                 }
 
                 sClasses.remove(name);
-                ClassInfo info = new ClassInfo(name);
-                shared.put(name, info);
-
                 byte[] cData = readEntry(cInJar, entry.getValue());
                 byte[] sData = readEntry(sInJar, sEntry);
-                byte[] data = processClass(cData, sData, info);
+                byte[] data = processClass(cData, sData);
 
                 ZipEntry newEntry = new ZipEntry(cEntry.getName());
                 outJar.putNextEntry(newEntry);
@@ -353,13 +351,13 @@ public class MergeJarsTask extends CachedTask
         }
     }
 
-    public byte[] processClass(byte[] cIn, byte[] sIn, ClassInfo info)
+    public byte[] processClass(byte[] cIn, byte[] sIn)
     {
         ClassNode cClassNode = getClassNode(cIn);
         ClassNode sClassNode = getClassNode(sIn);
 
-        processFields(cClassNode, sClassNode, info);
-        processMethods(cClassNode, sClassNode, info);
+        processFields(cClassNode, sClassNode);
+        processMethods(cClassNode, sClassNode);
 
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         cClassNode.accept(writer);
@@ -374,75 +372,78 @@ public class MergeJarsTask extends CachedTask
         return classNode;
     }
 
-    private void processFields(ClassNode cClass, ClassNode sClass, ClassInfo info)
+    private void processFields(ClassNode cClass, ClassNode sClass)
     {
         List<FieldNode> cFields = cClass.fields;
         List<FieldNode> sFields = sClass.fields;
 
-        int sI = 0;
-        for (int x = 0; x < cFields.size(); x++)
+        int serverFieldIdx = 0;
+        if (DEBUG) System.out.printf("B: Server List: %s\nB: Client List: %s\n", Lists.transform(sFields, FieldName.instance), Lists.transform(cFields, FieldName.instance));
+        for (int clientFieldIdx = 0; clientFieldIdx < cFields.size(); clientFieldIdx++)
         {
-            FieldNode cF = cFields.get(x);
-            if (sI < sFields.size())
+            FieldNode clientField = cFields.get(clientFieldIdx);
+            if (serverFieldIdx < sFields.size())
             {
-                if (!cF.name.equals(sFields.get(sI).name))
+                FieldNode serverField = sFields.get(serverFieldIdx);
+                if (!clientField.name.equals(serverField.name))
                 {
-                    boolean serverHas = false;
-                    for (int y = sI + 1; y < sFields.size(); y++)
+                    boolean foundServerField = false;
+                    for (int serverFieldSearchIdx = serverFieldIdx + 1; serverFieldSearchIdx < sFields.size(); serverFieldSearchIdx++)
                     {
-                        if (cF.name.equals(sFields.get(y).name))
+                        if (clientField.name.equals(sFields.get(serverFieldSearchIdx).name))
                         {
-                            serverHas = true;
+                            foundServerField = true;
                             break;
                         }
                     }
-                    if (serverHas)
+                    // Found a server field match ahead in the list - walk to it and add the missing server fields to the client
+                    if (foundServerField)
                     {
-                        boolean clientHas = false;
-                        FieldNode sF = sFields.get(sI);
-                        for (int y = x + 1; y < cFields.size(); y++)
+                        boolean foundClientField = false;
+                        for (int clientFieldSearchIdx = clientFieldIdx + 1; clientFieldSearchIdx < cFields.size(); clientFieldSearchIdx++)
                         {
-                            if (sF.name.equals(cFields.get(y).name))
+                            if (serverField.name.equals(cFields.get(clientFieldSearchIdx).name))
                             {
-                                clientHas = true;
+                                foundClientField = true;
                                 break;
                             }
                         }
-                        if (!clientHas)
+                        if (!foundClientField)
                         {
-                            if (sF.visibleAnnotations == null)
+                            if (serverField.visibleAnnotations == null)
                             {
-                                sF.visibleAnnotations = new ArrayList<AnnotationNode>();
+                                serverField.visibleAnnotations = new ArrayList<AnnotationNode>();
                             }
-                            sF.visibleAnnotations.add(getSideAnn(false));
-                            cFields.add(x++, sF);
-                            info.sField.add(sF);
+                            serverField.visibleAnnotations.add(getSideAnn(false));
+                            cFields.add(clientFieldIdx, serverField);
+                            if (DEBUG) System.out.printf("1. Server List: %s\n1. Client List: %s\nIdx: %d %d\n", Lists.transform(sFields, FieldName.instance), Lists.transform(cFields, FieldName.instance), serverFieldIdx, clientFieldIdx);
                         }
                     }
                     else
                     {
-                        if (cF.visibleAnnotations == null)
+                        if (clientField.visibleAnnotations == null)
                         {
-                            cF.visibleAnnotations = new ArrayList<AnnotationNode>();
+                            clientField.visibleAnnotations = new ArrayList<AnnotationNode>();
                         }
-                        cF.visibleAnnotations.add(getSideAnn(true));
-                        sFields.add(sI, cF);
-                        info.cField.add(cF);
+                        clientField.visibleAnnotations.add(getSideAnn(true));
+                        sFields.add(serverFieldIdx, clientField);
+                        if (DEBUG) System.out.printf("2. Server List: %s\n2. Client List: %s\nIdx: %d %d\n", Lists.transform(sFields, FieldName.instance), Lists.transform(cFields, FieldName.instance), serverFieldIdx, clientFieldIdx);
                     }
                 }
             }
             else
             {
-                if (cF.visibleAnnotations == null)
+                if (clientField.visibleAnnotations == null)
                 {
-                    cF.visibleAnnotations = new ArrayList<AnnotationNode>();
+                    clientField.visibleAnnotations = new ArrayList<AnnotationNode>();
                 }
-                cF.visibleAnnotations.add(getSideAnn(true));
-                sFields.add(sI, cF);
-                info.cField.add(cF);
+                clientField.visibleAnnotations.add(getSideAnn(true));
+                sFields.add(serverFieldIdx, clientField);
+                if (DEBUG) System.out.printf("3. Server List: %s\n3. Client List: %s\nIdx: %d %d\n", Lists.transform(sFields, FieldName.instance), Lists.transform(cFields, FieldName.instance), serverFieldIdx, clientFieldIdx);
             }
-            sI++;
+            serverFieldIdx++;
         }
+        if (DEBUG) System.out.printf("A. Server List: %s\nA. Client List: %s\n", Lists.transform(sFields, FieldName.instance), Lists.transform(cFields, FieldName.instance));
         if (sFields.size() != cFields.size())
         {
             for (int x = cFields.size(); x < sFields.size(); x++)
@@ -454,12 +455,18 @@ public class MergeJarsTask extends CachedTask
                 }
                 sF.visibleAnnotations.add(getSideAnn(true));
                 cFields.add(x++, sF);
-                info.sField.add(sF);
             }
         }
+        if (DEBUG) System.out.printf("E. Server List: %s\nE. Client List: %s\n", Lists.transform(sFields, FieldName.instance), Lists.transform(cFields, FieldName.instance));
     }
 
-    private void processMethods(ClassNode cClass, ClassNode sClass, ClassInfo info)
+    private static class FieldName implements Function<FieldNode, String> {
+        public static FieldName instance = new FieldName();
+        public String apply(FieldNode in) {
+            return in.name;
+        }
+    }
+    private void processMethods(ClassNode cClass, ClassNode sClass)
     {
         List<MethodNode> cMethods = cClass.methods;
         List<MethodNode> sMethods = sClass.methods;
@@ -550,15 +557,6 @@ public class MergeJarsTask extends CachedTask
                 }
 
                 mw.node.visibleAnnotations.add(getSideAnn(mw.client));
-
-                if (mw.client)
-                {
-                    info.sMethods.add(mw.node);
-                }
-                else
-                {
-                    info.cMethods.add(mw.node);
-                }
             }
         }
     }
@@ -607,26 +605,6 @@ public class MergeJarsTask extends CachedTask
         public String toString()
         {
             return Objects.toStringHelper(this).add("name", node.name).add("desc", node.desc).add("server", server).add("client", client).toString();
-        }
-    }
-
-    @SuppressWarnings("unused")
-    private class ClassInfo
-    {
-        public String                name;
-        public ArrayList<FieldNode>  cField   = new ArrayList<FieldNode>();
-        public ArrayList<FieldNode>  sField   = new ArrayList<FieldNode>();
-        public ArrayList<MethodNode> cMethods = new ArrayList<MethodNode>();
-        public ArrayList<MethodNode> sMethods = new ArrayList<MethodNode>();
-
-        public ClassInfo(String name)
-        {
-            this.name = name;
-        }
-
-        public boolean isSame()
-        {
-            return cField.size() == 0 && sField.size() == 0 && cMethods.size() == 0 && sMethods.size() == 0;
         }
     }
 
