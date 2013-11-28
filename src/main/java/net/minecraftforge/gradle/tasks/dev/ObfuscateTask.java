@@ -8,6 +8,10 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.md_5.specialsource.Jar;
 import net.md_5.specialsource.JarMapping;
@@ -24,12 +28,17 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.AbstractTask;
 import org.gradle.api.tasks.TaskAction;
 
+import com.google.common.collect.Maps;
 import com.google.common.io.Files;
+import com.google.common.io.LineProcessor;
+
+import de.oceanlabs.mcp.mcinjector.StringUtil;
 
 public class ObfuscateTask extends DefaultTask
 {
     private DelayedFile outJar;
     private DelayedFile srg;
+    private DelayedFile exc;
     private boolean     reverse;
     private DelayedFile buildFile;
 
@@ -44,9 +53,16 @@ public class ObfuscateTask extends DefaultTask
         // executing jar task
         getLogger().debug("Executing child Jar task...");
         executeTask(jarTask);
+        
+        File srg = getSrg();
+
+        if (getExc() != null)
+        {
+            srg = createSrg(srg, getExc());
+        }
 
         getLogger().debug("Obfuscating jar...");
-        obfuscate((File)jarTask.property("archivePath"), (FileCollection)compileTask.property("classpath"));
+        obfuscate((File)jarTask.property("archivePath"), (FileCollection)compileTask.property("classpath"), srg);
     }
     
     private void executeTask(AbstractTask task)
@@ -63,11 +79,11 @@ public class ObfuscateTask extends DefaultTask
         }
     }
 
-    private void obfuscate(File inJar, FileCollection classpath) throws FileNotFoundException, IOException
+    private void obfuscate(File inJar, FileCollection classpath, File srg) throws FileNotFoundException, IOException
     {
         // load mapping
         JarMapping mapping = new JarMapping();
-        mapping.loadMappings(Files.newReader(getSrg(), Charset.defaultCharset()), null, null, reverse);
+        mapping.loadMappings(Files.newReader(srg, Charset.defaultCharset()), null, null, reverse);
 
         // make remapper
         JarRemapper remapper = new JarRemapper(null, mapping);
@@ -93,7 +109,108 @@ public class ObfuscateTask extends DefaultTask
         // remap jar
         remapper.remapJar(input, getOutJar());
     }
-    
+
+    private File createSrg(File base, File exc) throws IOException
+    {
+        File srg = new File(this.getTemporaryDir(), "reobf_cls.srg");
+        if (srg.isFile())
+            srg.delete();
+        
+        Map<String, String> map = Files.readLines(exc, Charset.defaultCharset(), new LineProcessor<Map<String, String>>()
+        {
+            Map<String, String> tmp = Maps.newHashMap();
+            
+            @Override
+            public boolean processLine(String line) throws IOException
+            {
+                if (line.contains(".") ||
+                   !line.contains("=") ||
+                    line.startsWith("#")) return true;
+
+                String[] s = line.split("=");
+                tmp.put(s[0], s[1] + "_");
+
+                return true;
+            }
+
+            @Override
+            public Map<String, String> getResult()
+            {
+                return tmp;
+            }
+        });
+
+        String fixed = Files.readLines(base, Charset.defaultCharset(), new SrgLineProcessor(map));
+        Files.write(fixed.getBytes(), srg);
+        return srg;
+    }
+
+    private static class SrgLineProcessor implements LineProcessor<String>
+    {
+        Map<String, String> map;
+        StringBuilder out = new StringBuilder();
+        Pattern reg = Pattern.compile("L([^;]+);");
+
+        private SrgLineProcessor(Map<String, String> map)
+        {
+            this.map = map;
+        }
+
+        private String rename(String cls)
+        {
+            String rename = map.get(cls);
+            return rename == null ? cls : rename;
+        }
+
+        private String[] rsplit(String value, String delim)
+        {
+            int idx = value.lastIndexOf(delim);
+            return new String[]
+            {
+                value.substring(0, idx),
+                value.substring(idx + 1)
+            };
+        }
+
+        @Override
+        public boolean processLine(String line) throws IOException
+        {
+            String[] split = line.split(" ");
+            if (split[0].equals("CL:"))
+            {
+                split[2] = rename(split[2]);
+            }
+            else if (split[0].equals("FD:"))
+            {
+                String[] s = rsplit(split[2], "/");
+                split[2] = rename(s[0] + "/" + s[1]);
+            }
+            else if (split[0].equals("MD:"))
+            {
+                String[] s = rsplit(split[2], "/");
+                split[2] = rename(s[0] + "/" + s[1]);
+
+                Matcher m = reg.matcher(split[3]);
+                StringBuffer b = new StringBuffer();
+                while(m.find())
+                {
+                    m.appendReplacement(b, "L" + rename(m.group(1)) + ";");
+                }
+                m.appendTail(b);
+                split[3] = m.toString();
+            }
+            out.append(StringUtil.joinString(Arrays.asList(split), " ")).append('\n');
+            return true;
+        }
+
+        @Override
+        public String getResult()
+        {
+            return out.toString();
+        }
+        
+    }
+
     public static URL[] toUrls(FileCollection collection) throws MalformedURLException
     {
         ArrayList<URL> urls = new ArrayList<URL>();
@@ -122,6 +239,16 @@ public class ObfuscateTask extends DefaultTask
     public void setSrg(DelayedFile srg)
     {
         this.srg = srg;
+    }
+
+    public File getExc()
+    {
+        return exc.call();
+    }
+
+    public void setExc(DelayedFile exc)
+    {
+        this.exc = exc;
     }
 
     public boolean isReverse()
