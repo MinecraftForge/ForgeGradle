@@ -7,20 +7,119 @@ import java.util.regex.Pattern;
 
 public class McpCleanup
 {
-    public static final Pattern COMMENTS_COMMENTS = Pattern.compile("(?ms)\\/\\/.*?$|\\/\\*.*?\\*\\/|\\'(?:\\.|[^\\'])*'|\"(?:\\.|[^\\\"])*\"");
     public static final Pattern COMMENTS_TRAILING = Pattern.compile("(?m)[ \\t]+$");
     public static final Pattern COMMENTS_NEWLINES = Pattern.compile("(?m)^(?:\\r\\n|\\r|\\n){2,}");
 
     public static String stripComments(String text)
     {
-        Matcher match = COMMENTS_COMMENTS.matcher(text);
-        while (match.find())
+        String[] lines = text.split("(\r)\n");
+        StringBuilder out = new StringBuilder();
+        boolean inMultiline = false;
+        for (String line : lines)
         {
-            if (match.group().startsWith("/"))
+            boolean test = line.contains("var4.append(\"// \");");
+            if (!inMultiline)
             {
-                text = text.replace(match.group(), "");
+                if (!line.contains("//") && !line.contains("/*"))
+                {
+                    out.append(line).append('\n');
+                    continue;
+                }
+                char c1 = 0;
+                char c2 = 0;
+                char literal = 0;
+                char[] data = line.toCharArray();
+                for (int x = 0; x < data.length; x++)
+                {
+                    c2 = data[x];
+                    if (literal == 0)
+                    {
+                        if (!inMultiline)
+                        {
+                            if (c2 == '\'' || c2 == '"')
+                            {
+                                literal = c2;
+                            }
+                            else if (c1 == '/' && c2 == '/') // Line comment
+                            {
+                                c1 = c2 = 0;
+                                break; //Nothing more to append from this line 
+                            }
+                            else if (c1 == '/' && c2 == '*') // Multiline comment
+                            {
+                                inMultiline = true;
+                                c1 = c2 = 0;
+                            }
+                        }
+                        else
+                        {
+                            if (c1 == '*' && c2 == '/') // End Muiltiline
+                            {
+                                c1 = c2 = 0;
+                                inMultiline = false;
+                            }
+                        }
+                        if (c1 != 0)
+                        {
+                            if (test) System.out.println("1: " + c1);
+                            out.append(c1);
+                        }
+                        c1 = c2;
+                    }
+                    else
+                    {
+                        boolean escaped = false;
+                        x--;
+                        while(literal != 0 && x < data.length - 1)
+                        {
+                            c2 = data[++x];
+                            if (escaped)
+                            {
+                                escaped = false;
+                            }
+                            else
+                            {
+                                if (c2 == '\\')
+                                {
+                                    escaped = true;
+                                }
+                                else if (c2 == literal)
+                                {
+                                    literal = 0;
+                                }
+                            }
+                            if (c1 != 0)
+                            {
+                                if (test) System.out.println("2: " + c1);
+                                out.append(c1);
+                            }
+                            c1 = c2;
+                        }
+                    }
+                }
+                if (c1 != 0)
+                {
+                    if (test) System.out.println("3: " + c1);
+                    out.append(c1);
+                }
             }
+            else
+            {
+                char c1 = 0;
+                for (char c2 : line.toCharArray())
+                {
+                    if (c1 == '*' && c2 == '/')
+                    {
+                        inMultiline = false;
+                        c1 = c2 = 0;
+                    }
+                    if (c1 != 0) out.append(c1);
+                    c1 = c2;
+                }
+            }
+            out.append('\n');
         }
+        text = out.toString();
 
         text = COMMENTS_TRAILING.matcher(text).replaceAll("");
         text = COMMENTS_NEWLINES.matcher(text).replaceAll(Constants.NEWLINE);
