@@ -11,21 +11,74 @@ public class McpCleanup
     public static final Pattern COMMENTS_TRAILING = Pattern.compile("(?m)[ \\t]+$");
     public static final Pattern COMMENTS_NEWLINES = Pattern.compile("(?m)^(?:\\r\\n|\\r|\\n){2,}");
 
-    public static String stripComments(String text)
+    public static String stripComments(String source)
     {
-        Matcher match = COMMENTS_COMMENTS.matcher(text);
-        while (match.find())
+        StringBuilder builder = new StringBuilder(source.length());
+
+        int state = 0; // 0 = normal, 1 = inside literals, 2 = inside one-line comment, 3 = inside multi-line comment
+
+        for (int i = 0; i < source.length(); ++i)
         {
-            if (match.group().startsWith("/"))
+            char charAtn1 = i > 0 ? source.charAt(i - 1) : '\0';
+            char charAt0 = source.charAt(i);
+            char charAt1 = (i + 1) < source.length() ? source.charAt(i + 1) : '\0';
+
+            if (charAt0 == '\"' && charAtn1 != '\\')
             {
-                text = text.replace(match.group(), "");
+                if (state == 1)
+                {
+                    state = 0;
+                }
+                else if (state == 0)
+                {
+                    state = 1;
+                }
+            }
+
+            if (state == 0)
+            {
+                if (charAt0 == '/')
+                {
+                    if (charAt1 == '/')
+                    {
+                        state = 2;
+                        i++;
+                        continue;
+                    }
+                    else if (charAt1 == '*')
+                    {
+                        state = 3;
+                        i++;
+                        continue;
+                    }
+                }
+            }
+
+            if (state == 2)
+            {
+                if (charAt0 == '\r' || charAt0 == '\n')
+                {
+                    state = 0;
+                }
+            }
+
+            if (state == 3)
+            {
+                if (charAt0 == '*' && charAt1 == '/')
+                {
+                    state = 0;
+                    i++;
+                    continue;
+                }
+            }
+
+            if (state < 2)
+            {
+                builder.append(charAt0);
             }
         }
 
-        text = COMMENTS_TRAILING.matcher(text).replaceAll("");
-        text = COMMENTS_NEWLINES.matcher(text).replaceAll(Constants.NEWLINE);
-
-        return text;
+        return builder.toString();
     }
 
     //---------------------------------------------
