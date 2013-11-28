@@ -62,7 +62,7 @@ public class Constants
     // urls
     public static final String MC_JAR_URL       = "http://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/{MC_VERSION}.jar";
     public static final String MC_SERVER_URL    = "http://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/minecraft_server.{MC_VERSION}.jar";
-    public static final String MCP_URL          = "http://mcp.ocean-labs.de/files/archive/mcp804.zip";
+    public static final String MCP_URL          = "http://files.minecraftforge.net/fernflower_temporary.zip";
     public static final String ASSETS_URL       = "http://resources.download.minecraft.net";
     
     public static final String LOG              = ".gradle/gradle.log";
