@@ -36,6 +36,7 @@ final class DevConstants
     static final String ASTYLE_CFG          = "{MAPPINGS_DIR}/astyle.cfg";
     static final String EXC_JSON            = "{MAPPINGS_DIR}/exceptor.json";
     static final String MCP_PATCH           = "{MAPPINGS_DIR}/patches/minecraft_ff.patch";
+    static final String MCP_PATCH_DIR       = "{MAPPINGS_DIR}/patches/minecraft_ff";
     static final String MERGE_CFG           = "{FML_DIR}/mcp_merge.cfg";
 
     // jars.

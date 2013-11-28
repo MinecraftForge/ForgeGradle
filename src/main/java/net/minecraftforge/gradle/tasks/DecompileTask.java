@@ -3,8 +3,11 @@ package net.minecraftforge.gradle.tasks;
 import argo.saj.InvalidSyntaxException;
 
 import com.github.abrarsyed.jastyle.ASFormatter;
+import com.github.abrarsyed.jastyle.FileWildcardFilter;
 import com.github.abrarsyed.jastyle.OptParser;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
@@ -17,8 +20,10 @@ import net.minecraftforge.gradle.sourcemanip.FmlCleanup;
 import net.minecraftforge.gradle.sourcemanip.GLConstantFixer;
 import net.minecraftforge.gradle.sourcemanip.McpCleanup;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
+import static net.minecraftforge.gradle.patching.ContextualPatch.*;
 
 import org.gradle.api.logging.LogLevel;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -27,6 +32,7 @@ import org.gradle.process.JavaExecSpec;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +49,7 @@ public class DecompileTask extends CachedTask
     @InputFile
     private DelayedFile fernFlower;
 
-    @InputFile
+    @Input
     private DelayedFile patch;
 
     @InputFile
@@ -75,7 +81,14 @@ public class DecompileTask extends CachedTask
         readJarAndFix(temp);
 
         getLogger().info("Applying MCP patches");
-        applyMcpPatches(getPatch());
+        if (getPatch().isFile())
+        {
+            applySingleMcpPatch(getPatch());
+        }
+        else
+        {
+            applyPatchDirectory(getPatch());
+        }
 
         getLogger().info("Cleaning source");
         applyMcpCleanup(getAstyleConfig());
@@ -96,7 +109,7 @@ public class DecompileTask extends CachedTask
 
                 exec.args(
                         fernFlower.getAbsolutePath(),
-                        "-din=0",
+                        "-din=1",
                         "-rbr=0",
                         "-dgs=1",
                         "-asc=1",
@@ -157,60 +170,96 @@ public class DecompileTask extends CachedTask
         zin.close();
     }
 
-    private void applyMcpPatches(File patchFile) throws Throwable
+    private void applySingleMcpPatch(File patchFile) throws Throwable
     {
         ContextualPatch patch = ContextualPatch.create(Files.toString(patchFile, Charset.defaultCharset()), new ContextProvider(sourceMap));
+        printPatchErrors(patch.patch(false));
+    }
 
+    private void printPatchErrors(List<PatchReport> errors) throws Throwable
+    {
         boolean fuzzed = false;
-
-        List<ContextualPatch.PatchReport> errors = patch.patch(false);
-        for (ContextualPatch.PatchReport report : errors)
+        for (PatchReport report : errors)
         {
-            // catch failed patches
             if (!report.getStatus().isSuccess())
             {
                 getLogger().log(LogLevel.ERROR, "Patching failed: " + report.getTarget(), report.getFailure());
 
-                // now spit the hunks
-                for (ContextualPatch.HunkReport hunk : report.getHunks())
+                for (HunkReport hunk : report.getHunks())
                 {
-                    // catch the failed hunks
                     if (!hunk.getStatus().isSuccess())
                     {
-                        getLogger().error("Hunk "+hunk.getHunkID()+" failed!");
+                        getLogger().error("Hunk " + hunk.getHunkID() + " failed!");
                     }
                 }
 
                 throw report.getFailure();
             }
-            // catch fuzzed patches
-            else if (report.getStatus() == ContextualPatch.PatchStatus.Fuzzed)
+            else if (report.getStatus() == PatchStatus.Fuzzed) // catch fuzzed patches
             {
                 getLogger().log(LogLevel.INFO, "Patching fuzzed: " + report.getTarget(), report.getFailure());
-
-                // set the boolean for later use
                 fuzzed = true;
 
-                // now spit the hunks
-                for (ContextualPatch.HunkReport hunk : report.getHunks())
+                for (HunkReport hunk : report.getHunks())
                 {
-                    // catch the failed hunks
                     if (!hunk.getStatus().isSuccess())
                     {
-                        getLogger().info("Hunk "+hunk.getHunkID()+" fuzzed "+hunk.getFuzz()+"!");
+                        getLogger().info("Hunk " + hunk.getHunkID() + " fuzzed " + hunk.getFuzz() + "!");
                     }
                 }
             }
-
-            // sucesful patches
             else
             {
                 getLogger().info("Patch succeeded: " + report.getTarget());
             }
         }
-
         if (fuzzed)
             getLogger().lifecycle("Patches Fuzzed!");
+    }
+
+    private void applyPatchDirectory(File patchDir) throws Throwable
+    {
+        Multimap<String, File> patches = ArrayListMultimap.create();
+        for (File f : patchDir.listFiles(new FileWildcardFilter("*.patch")))
+        {
+            String base = f.getName();
+            patches.put(base, f);
+            for(File e : patchDir.listFiles(new FileWildcardFilter(base + ".*")))
+            {
+                patches.put(base, e);
+            }
+        }
+
+        for (String key : patches.keySet())
+        {
+            ContextualPatch patch = findPatch(patches.get(key));
+            if (patch == null)
+            {
+                getLogger().lifecycle("Patch not found for set: " + key); //This should never happen, but whatever
+            }
+            else
+            {
+                printPatchErrors(patch.patch(false));
+            }
+        }
+    }
+
+    private ContextualPatch findPatch(Collection<File> files) throws Throwable
+    {
+        ContextualPatch patch = null;
+        for (File f : files)
+        {
+            patch = ContextualPatch.create(Files.toString(f, Charset.defaultCharset()), new ContextProvider(sourceMap));
+            List<PatchReport> errors = patch.patch(true);
+            
+            boolean success = true;
+            for (PatchReport rep : errors)
+            {
+                if (!rep.getStatus().isSuccess()) success = false;
+            }
+            if (success) break;
+        }
+        return patch;
     }
 
     private void applyMcpCleanup(File conf) throws IOException, InvalidSyntaxException

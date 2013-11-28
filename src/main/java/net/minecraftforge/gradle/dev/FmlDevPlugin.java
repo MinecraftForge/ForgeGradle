@@ -74,6 +74,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task2.setExceptorCfg(delayedFile(DevConstants.JOINED_EXC));
             task2.setExceptorJson(delayedFile(DevConstants.EXC_JSON));
             task2.addTransformer(delayedFile(DevConstants.FML_RESOURCES + "/fml_at.cfg"));
+            task2.setApplyMarkers(true);
             task2.dependsOn("downloadMcpTools", "mergeJars");
         }
 
@@ -82,7 +83,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task3.setInJar(delayedFile(DevConstants.JAR_SRG_FML));
             task3.setOutJar(delayedFile(DevConstants.ZIP_DECOMP_FML));
             task3.setFernFlower(delayedFile(Constants.FERNFLOWER));
-            task3.setPatch(delayedFile(DevConstants.MCP_PATCH));
+            task3.setPatch(delayedFile(DevConstants.MCP_PATCH_DIR));
             task3.setAstyleConfig(delayedFile(DevConstants.ASTYLE_CFG));
             task3.dependsOn("downloadMcpTools", "deobfuscateJar");
         }
@@ -219,6 +220,7 @@ public class FmlDevPlugin extends DevBasePlugin
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
             obf.setSrg(delayedFile(DevConstants.JOINED_SRG));
+            obf.setExc(delayedFile(DevConstants.JOINED_EXC));
             obf.setReverse(true);
             obf.setOutJar(delayedFile(DevConstants.REOBF_TMP));
             obf.setBuildFile(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"));
