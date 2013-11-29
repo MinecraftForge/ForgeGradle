@@ -20,7 +20,6 @@ import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
 import org.gradle.api.Nullable;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
@@ -38,25 +37,25 @@ public class ProcessJarTask extends CachedTask
 
     @InputFile
     private DelayedFile exceptorCfg;
-    
+
     @Nullable
     @InputFile
     private DelayedFile exceptorJson;
-    
+
     private boolean applyMarkers = false;
 
     @OutputFile
     @Cached
     private DelayedFile outCleanJar; // clean = pure forge, or pure FML
-    
+
     @OutputFile
     @Cached
     private DelayedFile outDirtyJar = new DelayedFile(getProject(), Constants.DEOBF_JAR); // dirty = has any other ATs
-    
+
     private DelayedFile log;
 
     private ArrayList<DelayedFile> ats = new ArrayList<DelayedFile>();
-    
+
     private boolean isClean = true;
 
     public void addTransformer(DelayedFile... obj)
@@ -66,7 +65,7 @@ public class ProcessJarTask extends CachedTask
             ats.add(object);
         }
     }
-    
+
     /**
      * adds an access transformer to the deobfuscation of this
      *
@@ -82,7 +81,7 @@ public class ProcessJarTask extends CachedTask
                 ats.add(new DelayedFile(getProject(), (String) object));
             else
                 ats.add(new DelayedFile(getProject(), object.toString()));
-            
+
             isClean = false;
         }
     }
@@ -103,9 +102,9 @@ public class ProcessJarTask extends CachedTask
         // deobf
         getLogger().lifecycle("Applying SpecialSource...");
         deobfJar(getInJar(), tempObfJar, getSrg(), ats);
-        
+
         File out = isClean ? getOutCleanJar() : getOutDirtyJar();
-        
+
         File log = getLog();
         if (log == null)
             log = new File(getTemporaryDir(), "exceptor.log");
@@ -156,13 +155,13 @@ public class ProcessJarTask extends CachedTask
         File getJson = getExceptorJson();
         if (getJson != null)
             json = getJson.getCanonicalPath();
-        
+
         getLogger().debug("INPUT: " + inJar);
         getLogger().debug("OUTPUT: " + outJar);
         getLogger().debug("CONFIG: " + config);
         getLogger().debug("JSON: " + json);
         getLogger().debug("LOG: " + log);
-        
+
         MCInjectorImpl.process(inJar.getCanonicalPath(),
                 outJar.getCanonicalPath(),
                 config.getCanonicalPath(),
@@ -182,7 +181,7 @@ public class ProcessJarTask extends CachedTask
     {
         this.exceptorCfg = exceptorCfg;
     }
-    
+
     public File getExceptorJson()
     {
         if (exceptorJson == null)
@@ -195,7 +194,7 @@ public class ProcessJarTask extends CachedTask
     {
         this.exceptorJson = exceptorJson;
     }
-    
+
     public boolean getApplyMarkers()
     {
         return applyMarkers;
@@ -215,7 +214,7 @@ public class ProcessJarTask extends CachedTask
     {
         this.inJar = inJar;
     }
-    
+
     public File getLog()
     {
         if (log == null)
@@ -228,7 +227,7 @@ public class ProcessJarTask extends CachedTask
     {
         this.log = Log;
     }
-    
+
     public File getSrg()
     {
         return srg.call();
@@ -249,7 +248,7 @@ public class ProcessJarTask extends CachedTask
     {
         this.outCleanJar = outJar;
     }
-    
+
     public File getOutDirtyJar()
     {
         return outDirtyJar.call();
@@ -259,12 +258,12 @@ public class ProcessJarTask extends CachedTask
     {
         this.outDirtyJar = outDirtyJar;
     }
-    
+
     public boolean isClean()
     {
         return isClean;
     }
-    
+
     /**
      * returns the actual output DelayedFile depending on Clean status
      * Unlike getOutputJar() this method does not resolve the files.
@@ -273,7 +272,7 @@ public class ProcessJarTask extends CachedTask
     {
         return isClean ? outCleanJar : outDirtyJar;
     }
-    
+
     /**
      * returns the actual output file depending on Clean status
      */
@@ -281,7 +280,7 @@ public class ProcessJarTask extends CachedTask
     {
         return isClean ? outCleanJar.call() : outDirtyJar.call();
     }
-    
+
     @InputFiles
     public FileCollection getAts()
     {

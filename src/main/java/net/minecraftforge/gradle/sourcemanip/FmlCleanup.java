@@ -199,14 +199,18 @@ public class FmlCleanup
         if (Strings.isNullOrEmpty(index) && (CAPS_START.matcher(type).find() || ARRAY.matcher(type).find()))
         {
             // replace multi things with arrays.
+            if (type.contains("[")) System.out.printf("Array %s %s\n", type, var);
             type = type.replace("...", "[]");
 
             while (type.contains("[][]"))
             {
                 type = type.replaceAll("\\[\\]\\[\\]", "[]");
+                System.out.printf("Array trim %s %s\n", type, var);
             }
 
             String name = StringUtils.lower(type);
+            // Strip single dots that might happen because of inner class references
+            name = name.replace(".", "");
             boolean skip_zero = true;
 
             if (Pattern.compile("\\[").matcher(type).find())
@@ -244,6 +248,7 @@ public class FmlCleanup
         }
 
         holder.id++;
+        if (type.contains("[")) System.out.printf("Array %s %s %s\n", type, var, name);
         return name;
     }
 
