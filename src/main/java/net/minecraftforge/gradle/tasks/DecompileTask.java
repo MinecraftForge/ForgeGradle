@@ -279,8 +279,8 @@ public class DecompileTask extends CachedTask
 
             getLogger().debug("Processing file: " + file);
 
-//            getLogger().debug("processing comments");
-//            text = McpCleanup.stripComments(text);
+            getLogger().debug("processing comments");
+            text = McpCleanup.stripComments(text);
 
             getLogger().debug("fixing imports comments");
             text = McpCleanup.fixImports(text);
