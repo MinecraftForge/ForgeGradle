@@ -12,7 +12,7 @@ public class McpCleanup
 
     public static String stripComments(String text)
     {
-        String[] lines = text.split("(\r)\n");
+        String[] lines = text.split("\r\n|\r|\n");
         StringBuilder out = new StringBuilder();
         boolean inMultiline = false;
         for (String line : lines)
