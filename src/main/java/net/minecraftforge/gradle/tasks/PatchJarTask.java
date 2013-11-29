@@ -16,6 +16,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.InputFiles;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 
@@ -36,9 +37,9 @@ public class PatchJarTask extends EditJarTask
     public void doStuffMiddle() throws Throwable
     {
         PROVIDER = new ContextProvider(sourceMap);
-        
+
         getLogger().info("Reading patches");
-        ArrayList<ContextualPatch> patches = readPatches(getInPatches());
+        ArrayList<PatchedFile> patches = readPatches(getInPatches());
 
         boolean fuzzed = false;
 
@@ -46,16 +47,20 @@ public class PatchJarTask extends EditJarTask
 
         Throwable failure = null;
 
-        for (ContextualPatch patch : patches)
+        for (PatchedFile patch : patches)
         {
-            List<ContextualPatch.PatchReport> errors = patch.patch(false);
+            List<ContextualPatch.PatchReport> errors = patch.patch.patch(false);
             for (ContextualPatch.PatchReport report : errors)
             {
                 // catch failed patches
                 if (!report.getStatus().isSuccess())
                 {
+                    File reject = patch.makeRejectFile();
+                    if (reject.exists())
+                    {
+                        reject.delete();
+                    }
                     getLogger().log(LogLevel.ERROR, "Patching failed: " + PROVIDER.strip(report.getTarget()) + " " + report.getFailure().getMessage());
-
                     // now spit the hunks
                     for (ContextualPatch.HunkReport hunk : report.getHunks())
                     {
@@ -63,8 +68,12 @@ public class PatchJarTask extends EditJarTask
                         if (!hunk.getStatus().isSuccess())
                         {
                             getLogger().error("Hunk " + hunk.getHunkID() + " failed! " + (hunk.getFailure() != null ? hunk.getFailure().getMessage() : ""));
+                            Files.append(String.format("++++ REJECTED PATCH %d\n", hunk.getHunkID()), reject, Charsets.UTF_8);
+                            Files.append(Joiner.on('\n').join(hunk.hunk.lines), reject, Charsets.UTF_8);
+                            Files.append(String.format("\n++++ END PATCH\n"), reject, Charsets.UTF_8);
                         }
                     }
+                    getLogger().log(LogLevel.ERROR, "Rejects written to "+reject.getAbsolutePath());
 
                     if (failure == null) failure = report.getFailure();
                 }
@@ -102,15 +111,15 @@ public class PatchJarTask extends EditJarTask
             getLogger().lifecycle("Patches Fuzzed!");
         }
 
-        if (failure != null)
-        {
-            throw failure;
-        }
+//        if (failure != null)
+//        {
+//            throw failure;
+//        }
     }
 
-    private ArrayList<ContextualPatch> readPatches(FileCollection patchFiles) throws IOException
+    private ArrayList<PatchedFile> readPatches(FileCollection patchFiles) throws IOException
     {
-        ArrayList<ContextualPatch> patches = new ArrayList<ContextualPatch>();
+        ArrayList<PatchedFile> patches = new ArrayList<PatchedFile>();
 
         for (File file : patchFiles.getFiles())
         {
@@ -123,12 +132,27 @@ public class PatchJarTask extends EditJarTask
         return patches;
     }
 
-    public ContextualPatch readPatch(File file) throws IOException
+    public PatchedFile readPatch(File file) throws IOException
     {
         getLogger().debug("Reading patch file: " + file);
-        return ContextualPatch.create(Files.toString(file, Charset.defaultCharset()), PROVIDER).setAccessC14N(true).setMaxFuzz(0);
+        return new PatchedFile(file);
     }
 
+    private class PatchedFile {
+        public final File fileToPatch;
+        public final ContextualPatch patch;
+
+        public PatchedFile(File file) throws IOException
+        {
+            this.fileToPatch = file;
+            this.patch = ContextualPatch.create(Files.toString(file, Charset.defaultCharset()), PROVIDER).setAccessC14N(true).setMaxFuzz(0);
+        }
+
+        public File makeRejectFile()
+        {
+            return new File(fileToPatch.getParentFile(),fileToPatch.getName()+".rej");
+        }
+    }
     /**
      * A private inner class to be used with the FmlPatches
      */
@@ -199,13 +223,13 @@ public class PatchJarTask extends EditJarTask
     public void doStuffBefore() throws Throwable
     {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
     public void doStuffAfter() throws Throwable
     {
         // TODO Auto-generated method stub
-        
+
     }
 }

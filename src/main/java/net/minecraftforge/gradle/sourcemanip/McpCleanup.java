@@ -240,13 +240,13 @@ public class McpCleanup
         text = CLEANUP_blockends.matcher(text).replaceAll("");
         text = CLEANUP_gl.matcher(text).replaceAll("");
         text = CLEANUP_maxD.matcher(text).replaceAll("Double.MAX_VALUE");
-
+    
         // unicode chars
         {
             Matcher matcher = CLEANUP_unicode.matcher(text);
             int val;
             StringBuffer buffer = new StringBuffer(text.length());
-
+    
             while (matcher.find())
             {
                 val = Integer.parseInt(matcher.group(1), 16);
@@ -259,10 +259,10 @@ public class McpCleanup
             matcher.appendTail(buffer);
             text = buffer.toString();
         }
-
+    
         // charval.. its stupid.
         text = CLEANUP_charval.matcher(text).replaceAll("$1"); // TESTING NEEDED
-
+    
         //		 pi?   true
         text = CLEANUP_piD.matcher(text).replaceAll("Math.PI");
         text = CLEANUP_piF.matcher(text).replaceAll("(float)Math.PI");
@@ -288,7 +288,7 @@ public class McpCleanup
         text = CLEANUP_7pi100F.matcher(text).replaceAll("((float)Math.PI * 7F / 100F)");
         text = CLEANUP_185pi100D.matcher(text).replaceAll("(Math.PI * 185D / 100D)");
         text = CLEANUP_185pi100F.matcher(text).replaceAll("((float)Math.PI * 185F / 100F)");
-
+    
         return text;
     }
 

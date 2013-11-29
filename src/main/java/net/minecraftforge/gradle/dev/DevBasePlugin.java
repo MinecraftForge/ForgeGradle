@@ -18,6 +18,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
+import net.minecraftforge.gradle.JsonUtil;
+import net.minecraftforge.gradle.StringUtils;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedBase;
@@ -44,7 +46,7 @@ import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.process.ExecSpec;
 
 import argo.jdom.JsonNode;
-
+import argo.jdom.JsonNodeFactories;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
@@ -228,27 +230,30 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
             File jsonFile = delayedFile(devJson).call().getAbsoluteFile(); // ToDo: Support files in zips, for Modder dev workspace.
             node = Constants.PARSER.parse(Files.newReader(jsonFile, Charset.defaultCharset()));
 
-            int i = 1;
             for (JsonNode lib : node.getArrayNode("libraries"))
             {
                 if (lib.isNode("natives") && lib.isNode("extract"))
                 {
+                    boolean filter = !lib.isNode("rules") || JsonUtil.ruleMatches(lib.getArrayNode("rules"));
+                    if (!filter)
+                    {
+                        continue;
+                    }
                     String notation = lib.getStringValue("name");
                     String[] s = notation.split(":");
                     String path = String.format("%s/%s/%s/%s-%s-natives-%s.jar",
                             s[0].replace('.', '/'), s[1], s[2], s[1], s[2], Constants.OPERATING_SYSTEM
                             );
 
-                    DownloadTask task = makeTask("downloadNatives-" + i, DownloadTask.class);
+                    DownloadTask task = makeTask("downloadNatives-" + s[1], DownloadTask.class);
                     {
                         task.setOutput(delayedFile("{CACHE_DIR}/" + path));
-                        task.setUrl(delayedString("http://repo1.maven.org/maven2/" + path));
+                        task.setUrl(delayedString("http://s3.amazonaws.com/Minecraft.Download/libraries/" + path));
                     }
 
                     copyTask.from(delayedZipTree("{CACHE_DIR}/" + path));
-                    copyTask.dependsOn("downloadNatives-" + i);
-                    
-                    i++;
+                    copyTask.dependsOn("downloadNatives-" + s[1]);
+
                 }
             }
 

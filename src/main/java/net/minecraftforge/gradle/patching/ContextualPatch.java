@@ -256,7 +256,7 @@ public final class ContextualPatch
                         }
                         catch (Exception e)
                         {
-                            ret.add(new HunkReport(PatchStatus.Failure, e, 0, 0, x));
+                            ret.add(new HunkReport(PatchStatus.Failure, e, 0, 0, x, hunk));
                         }
                     }
                 }
@@ -1200,6 +1200,7 @@ public final class ContextualPatch
         private int index;
         private int fuzz;
         private int hunkID;
+        public Hunk hunk;
 
         public HunkReport(PatchStatus status, Throwable failure, int index, int fuzz, int hunkID)
         {
@@ -1208,6 +1209,12 @@ public final class ContextualPatch
             this.index = index;
             this.fuzz = fuzz;
             this.hunkID = hunkID;
+        }
+
+        public HunkReport(PatchStatus status, Throwable failure, int index, int fuzz, int hunkID, Hunk hunk)
+        {
+            this(status, failure, index, fuzz, hunkID);
+            this.hunk = hunk;
         }
 
         public PatchStatus getStatus()

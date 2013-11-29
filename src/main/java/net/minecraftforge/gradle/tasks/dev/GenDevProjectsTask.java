@@ -6,6 +6,7 @@ import argo.saj.InvalidSyntaxException;
 import com.google.common.io.Files;
 
 import groovy.lang.Closure;
+import net.minecraftforge.gradle.JsonUtil;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import static net.minecraftforge.gradle.common.Constants.NEWLINE;
@@ -55,7 +56,7 @@ public class GenDevProjectsTask extends DefaultTask
             {
                 continue;
             }
-            else
+            else if (!lib.isNode("rules") || JsonUtil.ruleMatches(lib.getArrayNode("rules")))
             {
                 deps.add(lib.getStringValue("name"));
             }
