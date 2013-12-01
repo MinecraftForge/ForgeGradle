@@ -14,6 +14,10 @@ repositories {
         name = "forge"
         url = "http://files.minecraftforge.net/maven"
     }
+    maven {
+        name = "sonatype"
+        url = "https://oss.sonatype.org/content/repositories/snapshots/"
+    }
     mavenCentral()
 }
 
@@ -44,7 +48,7 @@ dependencies {
     compile 'com.google.code.gson:gson:2.2.4' // Used instead of Argo for buuilding changelog.
     compile 'com.github.tony19:named-regexp:0.2.3' // 1.7 Named regexp features
     
-    compile 'net.md-5:SpecialSource:1.6.1' // deobf and reobs
+    compile 'net.md-5:SpecialSource:1.7-SNAPSHOT' // deobf and reobs
     
     // mcp stuff
     compile 'de.oceanlabs.mcp:RetroGuard:3.6.6'

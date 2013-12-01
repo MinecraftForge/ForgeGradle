@@ -10,7 +10,6 @@ public class JsonUtil {
 
     public static boolean ruleMatches(List<JsonNode> rules)
     {
-        System.out.printf("Evaluating rule %s\n", rules);
         boolean testPositive = false;
         boolean result = false;
         for (JsonNode node : rules)
@@ -38,7 +37,6 @@ public class JsonUtil {
                 result |= (testPositive ?  testResult: !testResult);
             }
         }
-        System.out.printf("Rule returning %b\n", result);
         return result;
     }
 

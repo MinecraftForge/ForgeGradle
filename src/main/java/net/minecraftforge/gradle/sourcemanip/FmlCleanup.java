@@ -31,7 +31,7 @@ public class FmlCleanup
             return str2.length() - str1.length();
         }
     };
-
+    private static final Pattern CLASS = Pattern.compile("class (\\w+)");
     public static String renameClass(String text)
     {
         String[] lines = text.split("(\r\n|\r|\n)");
@@ -187,9 +187,14 @@ public class FmlCleanup
     private String getName(String type, String var)
     {
         String index = null;
-        if (last.containsKey(type))
+        String findtype = type;
+        while (findtype.contains("[][]"))
         {
-            index = type;
+            findtype = findtype.replaceAll("\\[\\]\\[\\]", "[]");
+        }
+        if (last.containsKey(findtype))
+        {
+            index = findtype;
         }
         else if (remap.containsKey(type))
         {
@@ -199,13 +204,11 @@ public class FmlCleanup
         if (Strings.isNullOrEmpty(index) && (CAPS_START.matcher(type).find() || ARRAY.matcher(type).find()))
         {
             // replace multi things with arrays.
-            if (type.contains("[")) System.out.printf("Array %s %s\n", type, var);
             type = type.replace("...", "[]");
 
             while (type.contains("[][]"))
             {
                 type = type.replaceAll("\\[\\]\\[\\]", "[]");
-                System.out.printf("Array trim %s %s\n", type, var);
             }
 
             String name = StringUtils.lower(type);
@@ -248,7 +251,6 @@ public class FmlCleanup
         }
 
         holder.id++;
-        if (type.contains("[")) System.out.printf("Array %s %s %s\n", type, var, name);
         return name;
     }
 
