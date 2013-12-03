@@ -105,6 +105,9 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         task.setGroup("ForgeGradle");
 
         project.getTasks().getByName("eclipseClasspath").dependsOn("setupDevWorkspace");
+        project.getTasks().getByName("reobf").dependsOn("genSrgs");
+        project.getTasks().getByName("compileJava").dependsOn("deobfBinJar");
+        project.getTasks().getByName("compileApiJava").dependsOn("deobfBinJar");
     }
 
     protected Class<UserExtension> getExtensionClass()
