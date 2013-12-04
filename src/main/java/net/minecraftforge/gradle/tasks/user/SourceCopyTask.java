@@ -2,7 +2,9 @@ package net.minecraftforge.gradle.tasks.user;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
@@ -29,6 +31,9 @@ public class SourceCopyTask extends DefaultTask
     
     @Input
     HashMap<String, String> replacements = new HashMap<String, String>();
+    
+    @Input
+    ArrayList<String> includes = new ArrayList<String>();
     
     @OutputDirectory
     DelayedFile output;
@@ -64,14 +69,17 @@ public class SourceCopyTask extends DefaultTask
             
             for (File file : tree)
             {
-                getLogger().info("PARSING FILE IN >> " + file);
+                if (!isIncluded(file))
+                    continue;
+                
+                getLogger().debug("PARSING FILE IN >> " + file);
                 String text = Files.toString(file, Charsets.UTF_8);
                 
                 for (Entry<String, String> entry : replacements.entrySet())
                     text = text.replaceAll(entry.getKey(), entry.getValue());
                 
                 File dest = getDest(file, dir, out);
-                getLogger().info("PARSING FILE OUT >> " + dest);
+                getLogger().debug("PARSING FILE OUT >> " + dest);
                 dest.getParentFile().mkdirs();
                 dest.createNewFile();
                 Files.write(text, dest, Charsets.UTF_8);
@@ -83,6 +91,21 @@ public class SourceCopyTask extends DefaultTask
     {
         String relative = in.getCanonicalPath().replace(base.getCanonicalPath(), "");
         return new File(baseOut, relative);
+    }
+    
+    private boolean isIncluded(File file) throws IOException
+    {
+        if (includes.isEmpty())
+            return true;
+        
+        String path = file.getCanonicalPath().replace('\\', '/');
+        for (String include : includes)
+        {
+            if (path.endsWith(include.replace('\\', '/')))
+                return true;
+        }
+        
+        return false;
     }
     
     private boolean deleteDir(File dir)
@@ -144,5 +167,20 @@ public class SourceCopyTask extends DefaultTask
     public HashMap<String, String> getReplacements()
     {
         return replacements;
+    }
+    
+    public void include(String str)
+    {
+        includes.add(str);
+    }
+    
+    public void include(List<String> strs)
+    {
+        includes.addAll(strs);
+    }
+    
+    public ArrayList<String> getIncudes()
+    {
+        return includes;
     }
 }

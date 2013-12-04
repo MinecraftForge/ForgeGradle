@@ -23,6 +23,7 @@ public class UserExtension extends BaseExtension
     private String apiVersion;
     private ArrayList<Object> ats = new ArrayList<Object>();
     private HashMap<String, String> replacements = new HashMap<String, String>();
+    private ArrayList<String> includes = new ArrayList<String>();
     
     public UserExtension(Project project)
     {
@@ -66,6 +67,16 @@ public class UserExtension extends BaseExtension
     public Map<String, String> getReplacements()
     {
         return replacements;
+    }
+    
+    public List<String> getIncludes()
+    {
+        return includes;
+    }
+    
+    public void replaceIn(String path)
+    {
+        includes.add(path);
     }
     
     public void setVersion(String str)

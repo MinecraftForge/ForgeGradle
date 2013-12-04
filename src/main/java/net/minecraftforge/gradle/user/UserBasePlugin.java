@@ -302,6 +302,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             task = makeTask("sourceMainJava", SourceCopyTask.class);
             task.setSource(main.getJava());
             task.replace(getExtension().getReplacements());
+            task.include(getExtension().getIncludes());
             task.setOutput(delayedFile(SOURCES_DIR + "/java"));
             
             JavaCompile compile = (JavaCompile) project.getTasks().getByName(main.getCompileJavaTaskName());
@@ -317,6 +318,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             task = makeTask("sourceMainScala", SourceCopyTask.class);
             task.setSource(set.getScala());
             task.replace(getExtension().getReplacements());
+            task.include(getExtension().getIncludes());
             task.setOutput(delayedFile(SOURCES_DIR + "/scala"));
             
             ScalaCompile compile = (ScalaCompile) project.getTasks().getByName(main.getCompileTaskName("scala"));
@@ -332,6 +334,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             task = makeTask("sourceMainGroovy", SourceCopyTask.class);
             task.setSource(set.getGroovy());
             task.replace(getExtension().getReplacements());
+            task.include(getExtension().getIncludes());
             task.setOutput(delayedFile(SOURCES_DIR + "/groovy"));
             
             GroovyCompile compile = (GroovyCompile) project.getTasks().getByName(main.getCompileTaskName("groovy"));
