@@ -1,7 +1,10 @@
 package net.minecraftforge.gradle.user;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,7 +21,8 @@ public class UserExtension extends BaseExtension
     private static final Pattern VERSION_CHECK = Pattern.compile("([\\d.]+)-([\\w\\d.]+)(?:-[\\w\\d.]+)?");
     
     private String apiVersion;
-    private ArrayList<Object> ats = new ArrayList<Object>(); 
+    private ArrayList<Object> ats = new ArrayList<Object>();
+    private HashMap<String, String> replacements = new HashMap<String, String>();
     
     public UserExtension(Project project)
     {
@@ -40,10 +44,28 @@ public class UserExtension extends BaseExtension
         for (Object object : obj)
             ats.add(new DelayedObject(object, project));
     }
-    
+
     public List<Object> getAccessTransformers()
     {
         return ats;
+    }
+    
+    public void replace(Object token, Object replacement)
+    {
+        replacements.put(token.toString(), replacement.toString());
+    }
+    
+    public void replace(Map<Object, Object> map)
+    {
+        for (Entry<Object, Object> e : map.entrySet())
+        {
+            replace(e.getKey(), e.getValue());
+        }
+    }
+    
+    public Map<String, String> getReplacements()
+    {
+        return replacements;
     }
     
     public void setVersion(String str)

@@ -1,7 +1,6 @@
 package net.minecraftforge.gradle.user;
 
 import static net.minecraftforge.gradle.user.UserConstants.*;
-
 import groovy.util.Node;
 import groovy.util.XmlParser;
 import groovy.xml.XmlUtil;
@@ -36,6 +35,7 @@ import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.user.ApplyBinPatchesTask;
+import net.minecraftforge.gradle.tasks.user.SourceCopyTask;
 import net.minecraftforge.gradle.tasks.user.reobf.ArtifactSpec;
 import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
 
@@ -48,9 +48,14 @@ import org.gradle.api.artifacts.Configuration.State;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.GroovySourceSet;
+import org.gradle.api.tasks.ScalaSourceSet;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.Sync;
+import org.gradle.api.tasks.compile.GroovyCompile;
+import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
+import org.gradle.api.tasks.scala.ScalaCompile;
 import org.gradle.listener.ActionBroadcast;
 import org.gradle.plugins.ide.eclipse.model.Classpath;
 import org.gradle.plugins.ide.eclipse.model.ClasspathEntry;
@@ -62,6 +67,7 @@ import org.gradle.plugins.ide.idea.model.IdeaModel;
 import org.gradle.plugins.ide.idea.model.Module;
 import org.gradle.plugins.ide.idea.model.PathFactory;
 import org.gradle.plugins.ide.idea.model.SingleEntryModuleLibrary;
+import org.gradle.api.internal.plugins.DslObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -263,7 +269,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         IdeaModel ideaConv = (IdeaModel) project.getExtensions().getByName("idea");
         EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse");
 
-        SourceSet main = javaConv.getSourceSets().getByName("main");
+        SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
         SourceSet api = javaConv.getSourceSets().create("api");
 
         // set the Source
@@ -281,6 +287,57 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         // add sourceDirs to Intellij
         ideaConv.getModule().getSourceDirs().addAll(main.getAllSource().getFiles());
         ideaConv.getModule().getSourceDirs().addAll(api.getAllSource().getFiles());
+    }
+    
+    private void doSourceReplacement()
+    {
+        JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+        SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        
+        // do the special source moving...
+        SourceCopyTask task;
+        
+        // main
+        {
+            task = makeTask("sourceMainJava", SourceCopyTask.class);
+            task.setSource(main.getJava());
+            task.replace(getExtension().getReplacements());
+            task.setOutput(delayedFile(SOURCES_DIR + "/java"));
+            
+            JavaCompile compile = (JavaCompile) project.getTasks().getByName(main.getCompileJavaTaskName());
+            compile.dependsOn("sourceMainJava");
+            compile.setSource(task.getOutput());
+        }
+        
+        // scala!!!
+        if (project.getPlugins().hasPlugin("scala"))
+        {
+            ScalaSourceSet set = (ScalaSourceSet) new DslObject(main).getConvention().getPlugins().get("scala");
+            
+            task = makeTask("sourceMainScala", SourceCopyTask.class);
+            task.setSource(set.getScala());
+            task.replace(getExtension().getReplacements());
+            task.setOutput(delayedFile(SOURCES_DIR + "/scala"));
+            
+            ScalaCompile compile = (ScalaCompile) project.getTasks().getByName(main.getCompileTaskName("scala"));
+            compile.dependsOn("sourceMainScala");
+            compile.setSource(task.getOutput());
+        }
+        
+        // groovy!!!
+        if (project.getPlugins().hasPlugin("groovy"))
+        {
+            GroovySourceSet set = (GroovySourceSet) new DslObject(main).getConvention().getPlugins().get("groovy");
+            
+            task = makeTask("sourceMainGroovy", SourceCopyTask.class);
+            task.setSource(set.getGroovy());
+            task.replace(getExtension().getReplacements());
+            task.setOutput(delayedFile(SOURCES_DIR + "/groovy"));
+            
+            GroovyCompile compile = (GroovyCompile) project.getTasks().getByName(main.getCompileTaskName("groovy"));
+            compile.dependsOn("sourceMainGroovy");
+            compile.setSource(task.getOutput());
+        }
     }
 
     @SuppressWarnings({"unchecked" })
@@ -667,12 +724,18 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             }
         }
         
+        // make delayed tasks regarding decompilation
         delayedTasks();
+        
+        // configure source replacement
+        doSourceReplacement();
         
         final File deobfOut = ((ProcessJarTask) project.getTasks().getByName("deobfBinJar")).getOutJar();
 
+        // add dependency
         project.getDependencies().add(CONFIG, project.files(deobfOut));
 
+        // link sources and javadocs eclipse
         EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse");
         ((ActionBroadcast<Classpath>)eclipseConv.getClasspath().getFile().getWhenMerged()).add(new Action<Classpath>()
         {
@@ -695,6 +758,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             }
         });
 
+        // link sources and javadocs ntellij idea
         IdeaModel ideaConv = (IdeaModel) project.getExtensions().getByName("idea");
         ((ActionBroadcast<Module>) ideaConv.getModule().getIml().getWhenMerged()).add(new Action<Module>() {
 
@@ -714,6 +778,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             }
         });
 
+        // fix eclipse project location...
         fixEclipseProject(ECLIPSE_LOCATION);
     }
 
