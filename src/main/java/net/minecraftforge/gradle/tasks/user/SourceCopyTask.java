@@ -20,6 +20,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.util.PatternSet;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -44,7 +45,12 @@ public class SourceCopyTask extends DefaultTask
         getLogger().info("INPUTS >> " + source );
         getLogger().info("OUTPUTS >> " + getOutput() );
         getLogger().info("REPLACE >> " + replacements );
-        
+
+        // get the include/exclude patterns from the source (this is different than what's returned by getFilter)
+        PatternSet patterns = new PatternSet();
+        patterns.setIncludes(source.getIncludes());
+        patterns.setExcludes(source.getExcludes());
+
         // get output
         File out = getOutput();
         if (out.exists())
@@ -64,9 +70,11 @@ public class SourceCopyTask extends DefaultTask
                 continue;
             else
                 dir = dir.getCanonicalFile();
-            
-            FileTree tree = getProject().fileTree(dir).matching(source.getFilter());
-            
+
+            // this could be written as .matching(source), but it doesn't actually work
+            // because later on gradle casts it directly to PatternSet and crashes
+            FileTree tree = getProject().fileTree(dir).matching(source.getFilter()).matching(patterns);
+
             for (File file : tree)
             {
                 if (!isIncluded(file))
