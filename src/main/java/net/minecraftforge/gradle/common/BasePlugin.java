@@ -1,5 +1,7 @@
 package net.minecraftforge.gradle.common;
 
+import groovy.lang.Closure;
+
 import java.io.File;
 import java.util.HashMap;
 
@@ -18,6 +20,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.tasks.Delete;
+import org.gradle.api.tasks.Sync;
 import org.gradle.testfixtures.ProjectBuilder;
 
 public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Project>
@@ -49,6 +52,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             @Override
             public void execute(Project project)
             {
+                delayedTasks();
                 afterEvaluate();
             }
         });
@@ -106,11 +110,31 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         DownloadAssetsTask assets = makeTask("getAssets", DownloadAssetsTask.class);
         {
             assets.setAssetsDir(delayedFile(Constants.ASSETS));
+            assets.dependsOn("syncAssets");
         }
 
         Delete clearCache = makeTask("cleanCache", Delete.class);
         {
             clearCache.delete(delayedFile("{CACHE_DIR}/minecraft"));
+        }
+    }
+    
+    private void delayedTasks()
+    {
+        // find from .minecraft folder
+        Sync syncAssets = makeTask("syncAssets", Sync.class);
+        {
+            syncAssets.from(new File(Constants.getMinecraftDirectory(), "assets/objects"));
+            syncAssets.setDestinationDir(delayedFile("{ASSETS_DIR}/objects").call());
+            
+            syncAssets.onlyIf(new Closure<Boolean>(this, null) {
+                @Override
+                public Boolean call(Object... obj)
+                {
+                    File dir = new File(Constants.getMinecraftDirectory(), "assets/objects");
+                    return dir.exists() && dir.isDirectory();
+                }
+            });
         }
     }
 
