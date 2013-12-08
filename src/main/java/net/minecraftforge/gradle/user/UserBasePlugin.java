@@ -270,6 +270,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse");
 
         SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        SourceSet test = javaConv.getSourceSets().getByName(SourceSet.TEST_SOURCE_SET_NAME);
         SourceSet api = javaConv.getSourceSets().create("api");
 
         // set the Source
@@ -279,6 +280,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         // add to SourceSet compile paths
         api.setCompileClasspath(api.getCompileClasspath().plus(config));
         main.setCompileClasspath(main.getCompileClasspath().plus(config).plus(api.getOutput()));
+        test.setCompileClasspath(test.getCompileClasspath().plus(config).plus(api.getOutput()).plus(main.getCompileClasspath()));
 
         // add to eclipse and idea
         ideaConv.getModule().getScopes().get("COMPILE").get("plus").add(config);
@@ -286,6 +288,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
 
         // add sourceDirs to Intellij
         ideaConv.getModule().getSourceDirs().addAll(main.getAllSource().getFiles());
+        ideaConv.getModule().getSourceDirs().addAll(test.getAllSource().getFiles());
         ideaConv.getModule().getSourceDirs().addAll(api.getAllSource().getFiles());
     }
     
