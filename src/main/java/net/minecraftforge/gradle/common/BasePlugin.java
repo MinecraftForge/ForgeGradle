@@ -63,7 +63,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             public void execute(Project project)
             {
                 afterEvaluate();
-                delayedTasks();
                 
                 try
                 {
@@ -130,15 +129,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             mcpTask.setMcpUrl(delayedString(Constants.MCP_URL));
             mcpTask.setFfJar(delayedFile(Constants.FERNFLOWER));
         }
-
-        Delete clearCache = makeTask("cleanCache", Delete.class);
-        {
-            clearCache.delete(delayedFile("{CACHE_DIR}/minecraft"));
-        }
-    }
-
-    private void delayedTasks()
-    {
+        
         DownloadTask getAssetsIndex = makeTask("getAssetsIndex", DownloadTask.class);
         {
             getAssetsIndex.setUrl(delayedString(Constants.ASSETS_INDEX_URL));
@@ -166,11 +157,16 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             assets.setIndex(getAssetIndexClosure());
             assets.dependsOn("getAssetsIndex");
         }
+
+        Delete clearCache = makeTask("cleanCache", Delete.class);
+        {
+            clearCache.delete(delayedFile("{CACHE_DIR}/minecraft"));
+        }
     }
 
     public void parseAssetIndex() throws JsonSyntaxException, JsonIOException, FileNotFoundException
     {
-        assetIndex = JsonFactory.loadAssetsIndex(delayedFile(Constants.ASSETS + "/indexes/" + version.getAssets() + ".json").call());
+        assetIndex = JsonFactory.loadAssetsIndex(delayedFile(Constants.ASSETS + "/indexes/{ASSET_INDEX}.json").call());
     }
 
     @SuppressWarnings("serial")

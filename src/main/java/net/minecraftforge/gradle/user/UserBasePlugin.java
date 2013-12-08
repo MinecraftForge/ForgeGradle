@@ -690,6 +690,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 
         // extract userdev
         ((ExtractTask) project.getTasks().findByName("extractUserDev")).from(delayedFile(project.getConfigurations().getByName(CONFIG_USERDEV).getSingleFile().getAbsolutePath()));
+        project.getTasks().findByName("getAssetsIndex").dependsOn("extractUserDev");
         
         // add src ATs
         ProcessJarTask binDeobf = (ProcessJarTask) project.getTasks().getByName("deobfBinJar");
