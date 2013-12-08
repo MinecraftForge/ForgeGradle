@@ -8,9 +8,7 @@ import groovy.xml.XmlUtil;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.Reader;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -24,6 +22,7 @@ import javax.xml.transform.stream.StreamResult;
 
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.common.version.json.JsonFactory;
 import net.minecraftforge.gradle.delayed.DelayedBase;
 import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedFile;
@@ -71,9 +70,6 @@ import org.gradle.api.internal.plugins.DslObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-
-import argo.jdom.JsonNode;
-import argo.jdom.JsonRootNode;
 
 import com.google.common.base.Throwables;
 import com.google.common.io.Files;
@@ -815,86 +811,60 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
 
     private void readAndApplyJson(File file, String depConfig, String nativeConfig, Logger log)
     {
-        if (hasApplied)
-            return;
-
-        ArrayList<String> libs = new ArrayList<String>();
-        ArrayList<String> natives = new ArrayList<String>();
-
-        try
+        if (version == null)
         {
-            Reader reader = Files.newReader(file, Charset.defaultCharset());
-            JsonRootNode root = Constants.PARSER.parse(reader);
-            
-            log.lifecycle("READING JSON NOW");
-
-            for (JsonNode node : root.getArrayNode("libraries"))
+            try
             {
-                String dep = node.getStringValue("name");
-
-                // its  maven central one
-                if (dep.contains("_fixed"))
-                {
-                    // nope. we dont like fixed things.
-                    continue;
-                }
-                else if (node.isNode("extract"))
-                {
-                    String osName = System.getProperty("os.name").toLowerCase();
-
-                    if (osName.contains("linux") || osName.contains("unix"))
-                        natives.add(dep + ":" + node.getStringValue("natives", "linux"));
-                    else if (osName.contains("win"))
-                        natives.add(dep + ":" + node.getStringValue("natives", "windows"));
-                    else if (osName.contains("mac"))
-                        natives.add(dep + ":" + node.getStringValue("natives", "osx"));
-                    else
-                    {
-                        natives.add(dep + ":" + node.getStringValue("natives", "linux"));
-                        natives.add(dep + ":" + node.getStringValue("natives", "windows"));
-                        natives.add(dep + ":" + node.getStringValue("natives", "osx"));
-                    }
-                    natives.add(dep);
-                }
-                else
-                {
-                    libs.add(dep);
-                }
+                log.info("READING JSON NOW");
+                version = JsonFactory.loadVersion(file);
             }
-            
-            reader.close();
-            
-            // apply the dep info.
-            DependencyHandler handler = project.getDependencies();
-
-            // actual dependencies
-            if (project.getConfigurations().getByName(depConfig).getState() == State.UNRESOLVED)
-                for (String dep : libs)
-                    handler.add(depConfig, dep);
-            else
-                log.info("RESOLVED: "+depConfig);
-
-            // the natives
-            if (project.getConfigurations().getByName(nativeConfig).getState() == State.UNRESOLVED)
-                for (String dep : natives)
-                    handler.add(nativeConfig, dep);
-            else
-                log.info("RESOLVED: " + nativeConfig);
-
-            hasApplied = true;
-            
-            // add stuff to the natives tas thing..
-            // extract natives
-            ExtractTask task = (ExtractTask) project.getTasks().findByName("extractNatives");
-            for (File dep : project.getConfigurations().getByName(CONFIG_NATIVES).getFiles())
+            catch (Exception e)
             {
-                log.info("ADDING NATIVE: "+dep.getPath());
-                task.from(delayedFile(dep.getAbsolutePath()));
+                log.error("" + file + " could not be parsed");
+                Throwables.propagate(e);
             }
         }
-        catch (Exception e)
+        
+        if (hasApplied)
+            return;
+        
+
+        // apply the dep info.
+        DependencyHandler handler = project.getDependencies();
+
+        // actual dependencies
+        if (project.getConfigurations().getByName(depConfig).getState() == State.UNRESOLVED)
         {
-            Throwables.propagate(e);
+            for (net.minecraftforge.gradle.common.version.Library lib : version.getLibraries())
+            {
+                if (lib.natives == null)
+                    handler.add(depConfig, lib.getArtifactName());
+            }
+        }
+        else
+            log.info("RESOLVED: " + depConfig);
+
+        // the natives
+        if (project.getConfigurations().getByName(nativeConfig).getState() == State.UNRESOLVED)
+        {
+            for (net.minecraftforge.gradle.common.version.Library lib : version.getLibraries())
+            {
+                if (lib.natives != null)
+                    handler.add(depConfig, lib.getArtifactName());
+            }
+        }
+        else
+            log.info("RESOLVED: " + nativeConfig);
+
+        hasApplied = true;
+
+        // add stuff to the natives task thing..
+        // extract natives
+        ExtractTask task = (ExtractTask) project.getTasks().findByName("extractNatives");
+        for (File dep : project.getConfigurations().getByName(CONFIG_NATIVES).getFiles())
+        {
+            log.info("ADDING NATIVE: " + dep.getPath());
+            task.from(delayedFile(dep.getAbsolutePath()));
         }
     }
 

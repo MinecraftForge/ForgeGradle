@@ -6,6 +6,7 @@ import java.io.File;
 import java.util.HashMap;
 
 import net.minecraftforge.gradle.FileLogListenner;
+import net.minecraftforge.gradle.common.version.Version;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.delayed.DelayedString;
@@ -26,6 +27,7 @@ import org.gradle.testfixtures.ProjectBuilder;
 public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Project>
 {
     public Project project;
+    public Version version;
 
     @Override
     public final void apply(Project arg)

@@ -52,6 +52,17 @@ public class Library
         }
         return _artifact.getPath(natives.get(OS.CURRENT));
     }
+    
+    public String getArtifactName()
+    {
+        if (_artifact == null)
+            _artifact = new Artifact(name);
+        
+        if (natives == null)
+            return _artifact.getArtifact();
+        else
+            return _artifact.getArtifact(natives.get(OS.CURRENT));
+    }
 
     public String getUrl()
     {
@@ -87,6 +98,15 @@ public class Library
             if (pts.length > 3) classifier = pts[3];
         }
 
+        public String getArtifact(){ return getArtifact(classifier); }
+        public String getArtifact(String classifier)
+        {
+            String ret = domain + ":" + name + ":" + version;
+            if (classifier != null) ret += ":" + classifier;
+            if (!"jar".equals(ext)) ret += "@" + ext;
+            return ret;
+        }
+        
         public String getPath(){ return getPath(classifier); }
         public String getPath(String classifier)
         {
