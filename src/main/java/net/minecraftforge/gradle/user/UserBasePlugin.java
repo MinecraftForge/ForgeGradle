@@ -815,7 +815,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             try
             {
                 version = JsonFactory.loadVersion(file);
-                parseAssetIndex();
             }
             catch (Exception e)
             {
