@@ -121,13 +121,14 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         }
     }
     
+    @SuppressWarnings("serial")
     private void delayedTasks()
     {
         // find from .minecraft folder
         Sync syncAssets = makeTask("syncAssets", Sync.class);
         {
             syncAssets.from(new File(Constants.getMinecraftDirectory(), "assets/objects"));
-            syncAssets.setDestinationDir(delayedFile("{ASSETS_DIR}/objects").call());
+            syncAssets.setDestinationDir(delayedFile(Constants.ASSETS + "/objects").call());
             
             syncAssets.onlyIf(new Closure<Boolean>(this, null) {
                 @Override

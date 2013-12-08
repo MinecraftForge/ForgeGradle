@@ -865,6 +865,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         {
             log.info("ADDING NATIVE: " + dep.getPath());
             task.from(delayedFile(dep.getAbsolutePath()));
+            task.exclude("META-INF/**", "META-INF/**");
         }
     }
 

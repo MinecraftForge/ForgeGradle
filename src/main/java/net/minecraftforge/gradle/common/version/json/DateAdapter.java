@@ -60,7 +60,10 @@ public class DateAdapter implements JsonDeserializer<Date>, JsonSerializer<Date>
                     try
                     {
                         String tmp = value.replace("Z", "+00:00");
-                        return iso8601Format.parse(tmp.substring(0, 22) + tmp.substring(23));
+                        if (tmp.length() < 22)
+                            return new Date();
+                        else
+                            return iso8601Format.parse(tmp.substring(0, 22) + tmp.substring(23));
                     }
                     catch (ParseException e3)
                     {
