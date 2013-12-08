@@ -28,6 +28,7 @@ import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.delayed.DelayedString;
+import net.minecraftforge.gradle.tasks.CopyAssetsTask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
@@ -45,12 +46,12 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Configuration.State;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.GroovySourceSet;
 import org.gradle.api.tasks.ScalaSourceSet;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.compile.GroovyCompile;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
@@ -66,7 +67,6 @@ import org.gradle.plugins.ide.idea.model.IdeaModel;
 import org.gradle.plugins.ide.idea.model.Module;
 import org.gradle.plugins.ide.idea.model.PathFactory;
 import org.gradle.plugins.ide.idea.model.SingleEntryModuleLibrary;
-import org.gradle.api.internal.plugins.DslObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -191,11 +191,12 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             });
             project.getTasks().getByName("assemble").dependsOn(task4);
         }
-
-        Sync task5 = makeTask("copyAssets", Sync.class);
+        
+        CopyAssetsTask task5 = makeTask("copyAssets", CopyAssetsTask.class);
         {
-            task5.from(delayedFile(Constants.ASSETS));
-            task5.into(delayedFile("{ASSET_DIR}"));
+            task5.setAssetsDir(delayedFile(Constants.ASSETS));
+            task5.setOutputDir(delayedFile("{ASSET_DIR}"));
+            task5.setAssetIndex(getAssetIndexClosure());
             task5.dependsOn("getAssets");
         }
     }

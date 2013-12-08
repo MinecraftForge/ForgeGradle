@@ -25,9 +25,10 @@ import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.delayed.DelayedString;
-import net.minecraftforge.gradle.tasks.DownloadTask;
+import net.minecraftforge.gradle.tasks.CopyAssetsTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
+import net.minecraftforge.gradle.tasks.abstractutil.DownloadTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.dev.CompressLZMA;
 import net.minecraftforge.gradle.tasks.dev.MergeMappingsTask;
@@ -124,10 +125,11 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
             task4.dependsOn("downloadClient", "downloadServer");
         }
         
-        Sync task5 = makeTask("copyAssets", Sync.class);
+        CopyAssetsTask task5 = makeTask("copyAssets", CopyAssetsTask.class);
         {
-            task5.from(delayedFile(Constants.ASSETS));
-            task5.setDestinationDir(new File(DevConstants.ECLIPSE_ASSETS));
+            task5.setAssetsDir(delayedFile(Constants.ASSETS));
+            task5.setOutputDir(delayedFile(DevConstants.ECLIPSE_ASSETS));
+            task5.setAssetIndex(getAssetIndexClosure());
             task5.dependsOn("getAssets", "extractWorkspace");
         }
         

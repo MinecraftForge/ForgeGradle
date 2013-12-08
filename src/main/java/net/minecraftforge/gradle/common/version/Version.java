@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import net.minecraftforge.gradle.common.Constants;
+
 public class Version
 {
     public String id;
@@ -11,10 +13,11 @@ public class Version
     public Date releaseTime;
     public String type;
     public String minecraftArguments;
-    public List<Library> libraries;
+    private List<Library> libraries;
     public String mainClass;
     public int minimumLauncherVersion;
     public String incompatibilityReason;
+    private String assets;
     public List<OSRule> rules;
     
     private List<Library> _libraries;
@@ -34,5 +37,10 @@ public class Version
             }
         }
         return _libraries;
+    }
+    
+    public String getAssets()
+    {
+        return assets == null ? Constants.ASSETS_INDEX : assets;
     }
 }

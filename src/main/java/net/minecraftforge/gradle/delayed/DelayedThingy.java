@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.tasks.user.reobf;
+package net.minecraftforge.gradle.delayed;
 
 import groovy.lang.Closure;
 

@@ -30,7 +30,7 @@ public class FileAdapter extends TypeAdapter<File>
         }
         else
         {
-            json.value(value.getAbsolutePath());
+            json.value(value.getCanonicalPath());
         }
     }
 }
