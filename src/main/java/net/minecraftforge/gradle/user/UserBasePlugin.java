@@ -848,7 +848,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             for (net.minecraftforge.gradle.common.version.Library lib : version.getLibraries())
             {
                 if (lib.natives != null)
-                    handler.add(depConfig, lib.getArtifactName());
+                    handler.add(nativeConfig, lib.getArtifactName());
             }
         }
         else

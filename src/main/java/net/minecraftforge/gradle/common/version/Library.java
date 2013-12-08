@@ -9,7 +9,7 @@ public class Library
     public List<OSRule> rules;
     public Map<OS, String> natives;
     public ExtractRule extract;
-    public String url;
+    private String url;
     
     private Action _applies = null;
     public boolean applies()
