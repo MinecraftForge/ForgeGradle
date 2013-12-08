@@ -20,11 +20,9 @@ import java.util.zip.ZipOutputStream;
 
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.common.version.Library;
+import net.minecraftforge.gradle.common.version.json.JsonFactory;
 import net.minecraftforge.gradle.delayed.DelayedBase;
-import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
-import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.delayed.DelayedFileTree;
-import net.minecraftforge.gradle.delayed.DelayedString;
 import net.minecraftforge.gradle.tasks.CopyAssetsTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
@@ -41,7 +39,6 @@ import org.gradle.api.file.FileTree;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.tasks.Copy;
-import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.process.ExecSpec;
 
@@ -52,7 +49,7 @@ import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
-public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements IDelayedResolver<DevExtension>
+public abstract class DevBasePlugin extends BasePlugin<DevExtension>
 {
     private AntPathMatcher antMatcher = new AntPathMatcher();
     protected static final String[] JAVA_FILES = new String[] { "**.java", "*.java", "**/*.java" };
@@ -239,26 +236,32 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
                 project.getLogger().info("Dev json not set, could not create native downloads tasks");
                 return;
             }
-
-            JsonNode node = null;
-            File jsonFile = delayedFile(devJson).call().getAbsoluteFile(); // ToDo: Support files in zips, for Modder dev workspace.
-            node = Constants.PARSER.parse(Files.newReader(jsonFile, Charset.defaultCharset()));
+            
+            if (version == null)
+            {
+                File jsonFile = delayedFile(devJson).call().getAbsoluteFile();
+                try
+                {
+                    version = JsonFactory.loadVersion(jsonFile);
+                }
+                catch (Exception e)
+                {
+                    project.getLogger().error("" + jsonFile + " could not be parsed");
+                    Throwables.propagate(e);
+                }
+            }
 
             int i = 1;
-            for (JsonNode lib : node.getArrayNode("libraries"))
+            for (Library lib : version.getLibraries())
             {
-                if (lib.isNode("natives") && lib.isNode("extract"))
+                if (lib.extract != null)
                 {
-                    String notation = lib.getStringValue("name");
-                    String[] s = notation.split(":");
-                    String path = String.format("%s/%s/%s/%s-%s-natives-%s.jar",
-                            s[0].replace('.', '/'), s[1], s[2], s[1], s[2], Constants.OPERATING_SYSTEM
-                            );
+                    String path = lib.getPathNatives();
 
                     DownloadTask task = makeTask("downloadNatives-" + i, DownloadTask.class);
                     {
                         task.setOutput(delayedFile("{CACHE_DIR}/" + path));
-                        task.setUrl(delayedString("http://repo1.maven.org/maven2/" + path));
+                        task.setUrl(delayedString(lib.getUrl() + path));
                     }
 
                     copyTask.from(delayedZipTree("{CACHE_DIR}/" + path));
@@ -308,6 +311,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
     @Override
     public String resolve(String pattern, Project project, DevExtension exten)
     {
+        pattern = super.resolve(pattern, project, exten);
         pattern = pattern.replace("{MAIN_CLASS}", exten.getMainClass());
         pattern = pattern.replace("{INSTALLER_VERSION}", exten.getInstallerVersion());
         pattern = pattern.replace("{FML_DIR}", exten.getFmlDir());
@@ -334,27 +338,6 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
         });
 
         return out.toString().trim();
-    }
-    
-
-    protected DelayedString delayedString(String path)
-    {
-        return new DelayedString(project, path, this);
-    }
-
-    protected DelayedFile delayedFile(String path)
-    {
-        return new DelayedFile(project, path, this);
-    }
-
-    protected DelayedFileTree delayedFileTree(String path)
-    {
-        return new DelayedFileTree(project, path, this);
-    }
-
-    protected DelayedFileTree delayedZipTree(String path)
-    {
-        return new DelayedFileTree(project, path, true, this);
     }
 
     private boolean shouldSign(String path, List<String> includes, List<String> excludes)

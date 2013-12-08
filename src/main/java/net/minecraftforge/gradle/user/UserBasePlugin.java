@@ -24,10 +24,7 @@ import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.common.version.json.JsonFactory;
 import net.minecraftforge.gradle.delayed.DelayedBase;
-import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.delayed.DelayedFileTree;
-import net.minecraftforge.gradle.delayed.DelayedString;
 import net.minecraftforge.gradle.tasks.CopyAssetsTask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
@@ -74,7 +71,7 @@ import org.w3c.dom.NodeList;
 import com.google.common.base.Throwables;
 import com.google.common.io.Files;
 
-public abstract class UserBasePlugin extends BasePlugin<UserExtension> implements IDelayedResolver<UserExtension>
+public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 {
     private boolean hasApplied = false;
 
@@ -816,8 +813,8 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         {
             try
             {
-                log.info("READING JSON NOW");
                 version = JsonFactory.loadVersion(file);
+                parseAssetIndex();
             }
             catch (Exception e)
             {
@@ -873,27 +870,8 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
     @Override
     public String resolve(String pattern, Project project, UserExtension exten)
     {
+        pattern = super.resolve(pattern, project, exten);
         pattern = pattern.replace("{API_VERSION}", exten.getApiVersion());
         return pattern;
-    }
-
-    protected DelayedString delayedString(String path)
-    {
-        return new DelayedString(project, path, this);
-    }
-
-    protected DelayedFile delayedFile(String path)
-    {
-        return new DelayedFile(project, path, this);
-    }
-
-    protected DelayedFileTree delayedFileTree(String path)
-    {
-        return new DelayedFileTree(project, path, this);
-    }
-
-    protected DelayedFileTree delayedZipTree(String path)
-    {
-        return new DelayedFileTree(project, path, true, this);
     }
 }

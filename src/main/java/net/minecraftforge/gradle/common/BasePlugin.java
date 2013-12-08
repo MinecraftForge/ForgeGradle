@@ -10,6 +10,7 @@ import net.minecraftforge.gradle.FileLogListenner;
 import net.minecraftforge.gradle.common.version.AssetIndex;
 import net.minecraftforge.gradle.common.version.Version;
 import net.minecraftforge.gradle.common.version.json.JsonFactory;
+import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.delayed.DelayedString;
@@ -30,10 +31,10 @@ import com.google.common.base.Throwables;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
-public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Project>
+public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Project>, IDelayedResolver<K>
 {
-    public Project project;
-    public Version version;
+    public Project    project;
+    public Version    version;
     public AssetIndex assetIndex;
 
     @Override
@@ -66,9 +67,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 
                 try
                 {
-                    File index = delayedFile(Constants.ASSETS + "/indexes/" + version.getAssets() + ".json").call();
-                    if (index.exists())
-                        parseAssetIndex();
+                    if (version != null)
+                    {
+                        File index = delayedFile(Constants.ASSETS + "/indexes/" + version.getAssets() + ".json").call();
+                        if (index.exists())
+                            parseAssetIndex();
+                    }
                 }
                 catch (Exception e)
                 {
@@ -132,18 +136,15 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             clearCache.delete(delayedFile("{CACHE_DIR}/minecraft"));
         }
     }
-    
+
     private void delayedTasks()
     {
-        String assetIndexName = version.getAssets();
-        DelayedFile indexFile = delayedFile(Constants.ASSETS + "/indexes/" + assetIndexName + ".json");
-        
         DownloadTask getAssetsIndex = makeTask("getAssetsIndex", DownloadTask.class);
         {
-            getAssetsIndex.setUrl(delayedString(Constants.ASSETS_INDEX_URL + assetIndexName + ".json"));
-            getAssetsIndex.setOutput(indexFile);
+            getAssetsIndex.setUrl(delayedString(Constants.ASSETS_INDEX_URL));
+            getAssetsIndex.setOutput(delayedFile(Constants.ASSETS + "/indexes/{ASSET_INDEX}.json"));
             getAssetsIndex.setDoesCache(false);
-            
+
             getAssetsIndex.doLast(new Action<Task>() {
                 public void execute(Task task)
                 {
@@ -158,7 +159,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 }
             });
         }
-        
+
         DownloadAssetsTask assets = makeTask("getAssets", DownloadAssetsTask.class);
         {
             assets.setAssetsDir(delayedFile(Constants.ASSETS));
@@ -166,12 +167,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             assets.dependsOn("getAssetsIndex");
         }
     }
-    
+
     public void parseAssetIndex() throws JsonSyntaxException, JsonIOException, FileNotFoundException
     {
         assetIndex = JsonFactory.loadAssetsIndex(delayedFile(Constants.ASSETS + "/indexes/" + version.getAssets() + ".json").call());
     }
-    
+
     @SuppressWarnings("serial")
     public Closure<AssetIndex> getAssetIndexClosure()
     {
@@ -182,7 +183,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             }
         };
     }
-    
+
     public AssetIndex getAssetIndex()
     {
         return assetIndex;
@@ -277,24 +278,32 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         });
     }
 
+    @Override
+    public String resolve(String pattern, Project project, K exten)
+    {
+        if (version != null)
+            pattern = pattern.replace("{ASSET_INDEX}", version.getAssets());
+        return pattern;
+    }
+
     protected DelayedString delayedString(String path)
     {
-        return new DelayedString(project, path);
+        return new DelayedString(project, path, this);
     }
 
     protected DelayedFile delayedFile(String path)
     {
-        return new DelayedFile(project, path);
+        return new DelayedFile(project, path, this);
     }
 
     protected DelayedFileTree delayedFileTree(String path)
     {
-        return new DelayedFileTree(project, path);
+        return new DelayedFileTree(project, path, this);
     }
 
     protected DelayedFileTree delayedZipTree(String path)
     {
-        return new DelayedFileTree(project, path, true);
+        return new DelayedFileTree(project, path, true, this);
     }
 
 }
