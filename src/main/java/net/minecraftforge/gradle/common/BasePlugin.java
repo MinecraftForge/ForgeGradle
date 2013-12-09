@@ -107,6 +107,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         displayBanner = false;
     }
 
+    @SuppressWarnings("serial")
     private void makeObtainTasks()
     {
         // download tasks
@@ -147,6 +148,13 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                     {
                         Throwables.propagate(e);
                     }
+                }
+            });
+            
+            getAssetsIndex.getOutputs().upToDateWhen(new Closure<Boolean>(this, null)  {
+                public Boolean call(Object... obj)
+                {
+                    return false;
                 }
             });
         }
