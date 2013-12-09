@@ -61,6 +61,14 @@ public class FmlDevPlugin extends DevBasePlugin
         task = makeTask("buildPackages");
         task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "packageUserDev", "packageSrc", "genJavadocs");
         task.setGroup("FML");
+        
+        // clean decompile task
+        Delete delTask = makeTask("cleanDecompile", Delete.class);
+        delTask.delete(delayedFile(DevConstants.ECLIPSE_CLEAN_SRC));
+        delTask.delete(delayedFile(DevConstants.ECLIPSE_FML_SRC));
+        delTask.delete(delayedFile(DevConstants.ZIP_DECOMP_FML));
+        delTask.delete(delayedFile(DevConstants.ZIP_PATCHED_FML));
+        delTask.setGroup("Clean");
     }
 
     protected void createJarProcessTasks()
@@ -106,7 +114,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task.exclude(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
             task.from(delayedFile(DevConstants.ZIP_DECOMP_FML));
-            task.into(delayedFile(DevConstants.ECLIPSE_CLEAN + "/src/main/resources"));
+            task.into(delayedFile(DevConstants.ECLIPSE_CLEAN_RES));
             task.dependsOn("extractWorkspace", "decompile");
         }
 
@@ -114,7 +122,7 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             copy.from(delayedFile("{MAPPINGS_DIR}/patches"));
             copy.include("Start.java");
-            copy.into(delayedFile(DevConstants.ECLIPSE_CLEAN + "/src/main/java"));
+            copy.into(delayedFile(DevConstants.ECLIPSE_CLEAN_SRC));
             copy.dependsOn("extractMcResources");
         }
 
@@ -123,7 +131,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task.include(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
             task.from(delayedFile(DevConstants.ZIP_DECOMP_FML));
-            task.into(delayedFile(DevConstants.ECLIPSE_CLEAN + "/src/main/java"));
+            task.into(delayedFile(DevConstants.ECLIPSE_CLEAN_SRC));
             task.dependsOn("copyStart");
         }
 
@@ -131,7 +139,7 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             task.exclude(JAVA_FILES);
             task.from(delayedFile(DevConstants.ZIP_PATCHED_FML));
-            task.into(delayedFile(DevConstants.ECLIPSE_FML + "/src/resources"));
+            task.into(delayedFile(DevConstants.ECLIPSE_FML_RES));
             task.dependsOn("fmlPatchJar", "extractWorkspace");
         }
 
@@ -139,7 +147,7 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             copy.from(delayedFile(DevConstants.DEOBF_DATA));
             copy.from(delayedFile(DevConstants.FML_VERSIONF));
-            copy.into(delayedFile(DevConstants.ECLIPSE_FML + "/src/resources"));
+            copy.into(delayedFile(DevConstants.ECLIPSE_FML_RES));
             copy.dependsOn("extractFmlResources", "compressDeobfData");
         }
 
@@ -148,7 +156,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task.include(JAVA_FILES);
             task.exclude("cpw/**");
             task.from(delayedFile(DevConstants.ZIP_PATCHED_FML));
-            task.into(delayedFile(DevConstants.ECLIPSE_FML + "/src/minecraft"));
+            task.into(delayedFile(DevConstants.ECLIPSE_FML_RES));
             task.dependsOn("copyDeobfData");
         }
 
@@ -204,8 +212,8 @@ public class FmlDevPlugin extends DevBasePlugin
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
         {
             task2.setPatchDir(delayedFile(DevConstants.FML_PATCH_DIR));
-            task2.setOriginalDir(delayedFile(DevConstants.ECLIPSE_CLEAN + "/src/main/java"));
-            task2.setChangedDir(delayedFile(DevConstants.ECLIPSE_FML + "/src/minecraft"));
+            task2.setOriginalDir(delayedFile(DevConstants.ECLIPSE_CLEAN_SRC));
+            task2.setChangedDir(delayedFile(DevConstants.ECLIPSE_FML_SRC));
             task2.setOriginalPrefix("../src-base/minecraft");
             task2.setChangedPrefix("../src-work/minecraft");
             task2.setGroup("FML");

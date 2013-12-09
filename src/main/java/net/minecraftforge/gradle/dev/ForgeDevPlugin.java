@@ -152,7 +152,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task.exclude(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
             task.from(delayedFile(ZIP_RENAMED_FORGE));
-            task.into(delayedFile(ECLIPSE_CLEAN + "/src/main/resources"));
+            task.into(delayedFile(ECLIPSE_CLEAN_RES));
             task.dependsOn("extractWorkspace", "remapSourcesJar");
         }
 
@@ -161,7 +161,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task.include(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
             task.from(delayedFile(ZIP_RENAMED_FORGE));
-            task.into(delayedFile(ECLIPSE_CLEAN + "/src/main/java"));
+            task.into(delayedFile(ECLIPSE_CLEAN_SRC));
             task.dependsOn("extractMcResources");
         }
 
@@ -169,7 +169,7 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             task.exclude(JAVA_FILES);
             task.from(delayedFile(ZIP_PATCHED_FORGE));
-            task.into(delayedFile(ECLIPSE_FORGE + "/src/resources"));
+            task.into(delayedFile(ECLIPSE_FORGE_RES));
             task.dependsOn("forgePatchJar", "extractWorkspace");
         }
 
@@ -177,7 +177,7 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             task.include(JAVA_FILES);
             task.from(delayedFile(ZIP_PATCHED_FORGE));
-            task.into(delayedFile(ECLIPSE_FORGE + "/src/minecraft"));
+            task.into(delayedFile(ECLIPSE_FORGE_SRC));
             task.dependsOn("extractForgeResources");
         }
 
@@ -213,10 +213,10 @@ public class ForgeDevPlugin extends DevBasePlugin
             task.setJson(delayedFile(JSON_DEV));
             task.setTargetDir(delayedFile(ECLIPSE_FORGE));
 
-            task.addSource(delayedFile(ECLIPSE_FORGE + "/src/minecraft"));
+            task.addSource(delayedFile(ECLIPSE_FORGE_SRC));
             task.addSource(delayedFile(FORGE_SOURCES));
 
-            task.addResource(delayedFile(ECLIPSE_FORGE + "/src/resources"));
+            task.addResource(delayedFile(ECLIPSE_FORGE_RES));
             task.addResource(delayedFile(FORGE_RESOURCES));
 
             task.dependsOn("extractNatives","createVersionPropertiesFML");
@@ -249,8 +249,8 @@ public class ForgeDevPlugin extends DevBasePlugin
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
         {
             task2.setPatchDir(delayedFile(FORGE_PATCH_DIR));
-            task2.setOriginalDir(delayedFile(ECLIPSE_CLEAN + "/src/main/java"));
-            task2.setChangedDir(delayedFile(ECLIPSE_FORGE + "/src/minecraft"));
+            task2.setOriginalDir(delayedFile(ECLIPSE_CLEAN_SRC));
+            task2.setChangedDir(delayedFile(ECLIPSE_FORGE_SRC));
             task2.setOriginalPrefix("../src-base/minecraft");
             task2.setChangedPrefix("../src-work/minecraft");
             task2.setGroup("Forge");
@@ -447,7 +447,7 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             jdSource.from(delayedFile(FML_SOURCES));
             jdSource.from(delayedFile(FORGE_SOURCES));
-            jdSource.from(delayedFile(ECLIPSE_FORGE + "/src/minecraft"));
+            jdSource.from(delayedFile(ECLIPSE_FORGE_SRC));
             jdSource.setOutFile(delayedFile("{BUILD_DIR}/tmp/javadocSource"));
             jdSource.setMethodsCsv(delayedFile(METHODS_CSV));
             jdSource.setFieldsCsv(delayedFile(FIELDS_CSV));

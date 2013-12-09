@@ -67,8 +67,14 @@ final class DevConstants
     static final String WORKSPACE_ZIP       = "eclipse-workspace-dev.zip";
     static final String WORKSPACE           = "eclipse";
     static final String ECLIPSE_CLEAN       = WORKSPACE + "/Clean";
+    static final String ECLIPSE_CLEAN_SRC   = ECLIPSE_CLEAN + "/src/main/java";
+    static final String ECLIPSE_CLEAN_RES   = ECLIPSE_CLEAN + "/src/main/resources";
     static final String ECLIPSE_FML         = WORKSPACE + "/FML";
+    static final String ECLIPSE_FML_SRC     = ECLIPSE_FML + "/src/main/java";
+    static final String ECLIPSE_FML_RES     = ECLIPSE_FML + "/src/main/resources";
     static final String ECLIPSE_FORGE       = WORKSPACE + "/Forge";
+    static final String ECLIPSE_FORGE_SRC   = ECLIPSE_FORGE + "/src/main/java";
+    static final String ECLIPSE_FORGE_RES   = ECLIPSE_FORGE + "/src/main/resources";
     static final String ECLIPSE_RUN         = WORKSPACE + "/run";
     static final String ECLIPSE_NATIVES     = ECLIPSE_RUN + "/bin/natives";
     static final String ECLIPSE_ASSETS      = ECLIPSE_RUN + "/assets";
