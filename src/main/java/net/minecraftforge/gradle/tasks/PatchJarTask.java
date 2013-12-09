@@ -32,12 +32,16 @@ public class PatchJarTask extends EditJarTask
     {
         return file;
     }
+    
+    @Override
+    public void doStuffBefore() throws Throwable
+    {
+        PROVIDER = new ContextProvider(sourceMap);
+    }
 
     @Override
     public void doStuffMiddle() throws Throwable
     {
-        PROVIDER = new ContextProvider(sourceMap);
-
         getLogger().info("Reading patches");
         ArrayList<PatchedFile> patches = readPatches(getInPatches());
 
@@ -210,6 +214,10 @@ public class PatchJarTask extends EditJarTask
         File file = inPatches.call();
         if (file.isDirectory())
             return getProject().fileTree(file);
+        else if (file.getName().endsWith(".zip") || file.getName().endsWith(".jar"))
+            return getProject().zipTree(file);
+        else if (file.getName().endsWith(".tar") || file.getName().endsWith(".gz"))
+            return getProject().tarTree(file);
         else
             return getProject().files(file);
     }
@@ -217,13 +225,6 @@ public class PatchJarTask extends EditJarTask
     public void setInPatches(DelayedFile inPatches)
     {
         this.inPatches = inPatches;
-    }
-
-    @Override
-    public void doStuffBefore() throws Throwable
-    {
-        // TODO Auto-generated method stub
-
     }
 
     @Override

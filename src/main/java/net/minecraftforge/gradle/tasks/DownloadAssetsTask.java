@@ -1,22 +1,24 @@
 package net.minecraftforge.gradle.tasks;
 
-import groovy.util.Node;
-import groovy.util.NodeList;
-import groovy.util.XmlParser;
+import groovy.lang.Closure;
 
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.xml.parsers.ParserConfigurationException;
 
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.common.version.AssetIndex;
+import net.minecraftforge.gradle.common.version.AssetIndex.AssetEntry;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.xml.sax.SAXException;
 
@@ -25,43 +27,45 @@ import com.google.common.io.Files;
 
 public class DownloadAssetsTask extends DefaultTask
 {
-    DelayedFile                                       assetsDir;
+    DelayedFile                                assetsDir;
+    
+    @Input
+    Closure<AssetIndex>                        index;
 
-    private final ConcurrentLinkedQueue<Asset> filesLeft   = new ConcurrentLinkedQueue<Asset>();
-    private final ArrayList<AssetsThread>      threads     = new ArrayList<AssetsThread>();
+    private final ConcurrentLinkedQueue<Asset> filesLeft    = new ConcurrentLinkedQueue<Asset>();
+    private final ArrayList<AssetsThread>      threads      = new ArrayList<AssetsThread>();
+    private final File                         minecraftDir = new File(Constants.getMinecraftDirectory(), "assets/objects");
 
-    private static final int                   MAX_THREADS = Runtime.getRuntime().availableProcessors();
+    private static final int                   MAX_THREADS  = Runtime.getRuntime().availableProcessors();
+    private static final int                   MAX_TRIES    = 5;
 
     @TaskAction
     public void doTask() throws ParserConfigurationException, SAXException, IOException, InterruptedException
     {
-        File out = getAssetsDir();
+        File out = new File(getAssetsDir(), "objects");
         out.mkdirs();
+        
+        AssetIndex index = getIndex();
 
-        // get resource XML file
-        Node root = new XmlParser().parse(new BufferedInputStream((new URL(Constants.ASSETS_URL)).openStream()));
-
-        getLogger().info("Parsing assets XML");
-
-        // construct a list of [file, hash] maps
-        for (Object childNode : ((NodeList) root.get("Contents")))
+        for (Entry<String, AssetEntry> e : index.objects.entrySet())
         {
-            Node child = (Node) childNode;
+            Asset asset = new Asset(e.getValue().hash, e.getValue().size);
+            File file = new File(out, asset.path);
 
-            if (((NodeList) child.get("Size")).text().equals("0"))
-            {
-                continue;
-            }
+            // exists but not the right size?? delete
+            if (file.exists() && file.length() != asset.size)
+                file.delete();
 
-            String key = ((NodeList) child.get("Key")).text();
-            String hash = ((NodeList) child.get("ETag")).text().replace('"', ' ').trim();
-            filesLeft.offer(new Asset(key, hash));
+            // does the file exist (still) ??
+            if (!file.exists())
+                filesLeft.offer(asset);
         }
 
-        getLogger().info("Finished parsing XML");
-        getLogger().info("Files found: " + filesLeft.size());
+        getLogger().info("Finished parsing JSON");
+        int max = filesLeft.size();
+        getLogger().info("Files Missing: " + max + "/" + index.objects.size());
 
-        int threadNum = filesLeft.size() / 100;
+        int threadNum = max / 100;
         for (int i = 0; i < threadNum; i++)
             spawnThread();
 
@@ -69,6 +73,8 @@ public class DownloadAssetsTask extends DefaultTask
 
         while (stillRunning())
         {
+            int done = max - filesLeft.size();
+            getLogger().lifecycle("Current status: " + done + "/" + max + "   " + (int) ((double) done / max * 100) + "%");
             spawnThread();
             Thread.sleep(1000);
         }
@@ -108,15 +114,27 @@ public class DownloadAssetsTask extends DefaultTask
         this.assetsDir = assetsDir;
     }
 
-    private class Asset
+    public AssetIndex getIndex()
+    {
+        return index.call();
+    }
+
+    public void setIndex(Closure<AssetIndex> index)
+    {
+        this.index = index;
+    }
+
+    private static class Asset
     {
         public final String path;
         public final String hash;
+        public final long   size;
 
-        Asset(String path, String hash)
+        Asset(String hash, long size)
         {
-            this.path = path;
+            this.path = hash.substring(0, 2) + "/" + hash;
             this.hash = hash.toLowerCase();
+            this.size = size;
         }
     }
 
@@ -133,36 +151,48 @@ public class DownloadAssetsTask extends DefaultTask
             Asset asset;
             while ((asset = filesLeft.poll()) != null)
             {
-                try
+                for (int i = 1; i < MAX_TRIES + 1; i++)
                 {
-                    boolean download = false;
-                    File file = new File(getAssetsDir(), asset.path);
+                    try
+                    {
+                        File file = new File(getAssetsDir(), "objects/" + asset.path);
 
-                    if (!file.exists())
-                    {
-                        download = true;
-                        file.getParentFile().mkdirs();
-                        file.createNewFile();
-                    }
-                    else if (!Constants.hash(file).toLowerCase().equals(asset.hash))
-                    {
-                        download = true;
-                        file.delete();
-                        file.createNewFile();
-                    }
-
-                    if (download)
-                    {
-                        URL url = new URL(Constants.ASSETS_URL + "/" + asset.path);
-                        BufferedInputStream stream = new BufferedInputStream(url.openStream());
+                        // does exist? create
+                        if (!file.exists())
+                        {
+                            file.getParentFile().mkdirs();
+                            file.createNewFile();
+                        }
+                        
+                        File localMc = new File(minecraftDir, asset.path);
+                        BufferedInputStream stream;
+                        
+                        // check for local copy
+                        if (localMc.exists() && Constants.hash(localMc, "SHA1").equals(asset.hash))
+                            // if so, copy
+                            stream = new BufferedInputStream(Files.newInputStreamSupplier(localMc).getInput());
+                        else
+                            // otherwise download
+                            stream = new BufferedInputStream(new URL(Constants.ASSETS_URL + "/" + asset.path).openStream());
+                        
                         Files.write(ByteStreams.toByteArray(stream), file);
                         stream.close();
+
+                        // check hash...
+                        String hash = Constants.hash(file, "SHA1");
+                        if (asset.hash.equals(hash))
+                            break; // hashes are fine;
+                        else
+                        {
+                            file.delete();
+                            getLogger().error("download attempt " + i + " failed! : " + asset.hash + " != " + hash);
+                        }
                     }
-                }
-                catch (Exception e)
-                {
-                    getLogger().error("Error downloading asset: " + asset.path);
-                    e.printStackTrace();
+                    catch (Exception e)
+                    {
+                        getLogger().error("Error downloading asset: " + asset.path);
+                        e.printStackTrace();
+                    }
                 }
             }
         }

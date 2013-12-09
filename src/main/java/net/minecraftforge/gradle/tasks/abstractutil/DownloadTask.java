@@ -1,8 +1,7 @@
-package net.minecraftforge.gradle.tasks;
+package net.minecraftforge.gradle.tasks.abstractutil;
 
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedString;
-import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
@@ -29,6 +28,8 @@ public class DownloadTask extends CachedTask
         outputFile.createNewFile();
 
         getLogger().info("Downloading " + getUrl() + " to " + outputFile);
+        
+        // TODO: check etags... maybe?
 
         HttpURLConnection connect = (HttpURLConnection) (new URL(getUrl())).openConnection();
         connect.setInstanceFollowRedirects(true);

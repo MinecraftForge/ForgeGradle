@@ -15,6 +15,7 @@ public final class UserConstants
     
     static final String PACK_DIR = "{BUILD_DIR}/unpacked";
     static final String NATIVES_DIR = "{BUILD_DIR}/natives";
+    static final String SOURCES_DIR = "{BUILD_DIR}/sources";
     
     static final String CONF_DIR = PACK_DIR + "/conf";
     static final String MERGE_CFG = CONF_DIR + "/mcp_merge.cfg";

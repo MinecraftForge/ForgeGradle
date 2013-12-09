@@ -64,8 +64,10 @@ public class Constants
     public static final String MC_SERVER_URL    = "http://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/minecraft_server.{MC_VERSION}.jar";
     public static final String MCP_URL          = "http://files.minecraftforge.net/fernflower_temporary.zip";
     public static final String ASSETS_URL       = "http://resources.download.minecraft.net";
+    public static final String ASSETS_INDEX_URL = "https://s3.amazonaws.com/Minecraft.Download/indexes/{ASSET_INDEX}.json";
     
     public static final String LOG              = ".gradle/gradle.log";
+    public static final String ASSETS_INDEX     =  "legacy";
 
     // things in the cache dir.
     public static final String JAR_CLIENT_FRESH = "{CACHE_DIR}/minecraft/net/minecraft/minecraft/{MC_VERSION}/minecraft-{MC_VERSION}.jar";
@@ -119,7 +121,6 @@ public class Constants
         {
             list.add(url.getPath());
         }
-        //System.out.println(Joiner.on(';').join(((URLClassLoader) ExtensionObject.class.getClassLoader()).getURLs()));
         return list;
     }
 
@@ -130,11 +131,11 @@ public class Constants
         {
             return OperatingSystem.WINDOWS;
         }
-        else if (name.contains("mac"))
+        else if (name.contains("mac") || name.contains("osx"))
         {
             return OperatingSystem.OSX;
         }
-        else if (name.contains("linux"))
+        else if (name.contains("linux") || name.contains("unix"))
         {
             return OperatingSystem.LINUX;
         }
@@ -143,6 +144,25 @@ public class Constants
             return null;
         }
     }
+    
+    public static File getMinecraftDirectory()
+    {
+        String userDir = System.getProperty("user.home");
+        
+        switch (OPERATING_SYSTEM)
+        {
+            case LINUX:
+                return new File(userDir, ".minecraft/");
+            case WINDOWS:
+                String appData = System.getenv("APPDATA");
+                String folder = appData != null ? appData : userDir;
+                return new File(folder, ".minecraft/");
+            case OSX:
+                return new File(userDir, "Library/Application Support/minecraft");
+            default:
+                return new File(userDir, "minecraft/");
+        }
+      }
     
     private static SystemArch getArch()
     {
@@ -156,8 +176,13 @@ public class Constants
             return SystemArch.BIT_32;
         }
     }
-
+    
     public static String hash(File file)
+    {
+        return hash(file, "MD5");
+    }
+
+    public static String hash(File file, String function)
     {
         try
         {
@@ -165,7 +190,7 @@ public class Constants
             InputStream fis = new FileInputStream(file);
 
             byte[] buffer = new byte[1024];
-            MessageDigest complete = MessageDigest.getInstance("MD5");
+            MessageDigest complete = MessageDigest.getInstance(function);
             int numRead;
 
             do

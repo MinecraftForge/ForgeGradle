@@ -21,14 +21,13 @@ import java.util.zip.ZipOutputStream;
 import net.minecraftforge.gradle.JsonUtil;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.common.version.Library;
+import net.minecraftforge.gradle.common.version.json.JsonFactory;
 import net.minecraftforge.gradle.delayed.DelayedBase;
-import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
-import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.delayed.DelayedFileTree;
-import net.minecraftforge.gradle.delayed.DelayedString;
-import net.minecraftforge.gradle.tasks.DownloadTask;
+import net.minecraftforge.gradle.tasks.CopyAssetsTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
+import net.minecraftforge.gradle.tasks.abstractutil.DownloadTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.dev.CompressLZMA;
 
@@ -40,7 +39,6 @@ import org.gradle.api.file.FileTree;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.tasks.Copy;
-import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.process.ExecSpec;
 
@@ -50,7 +48,7 @@ import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
-public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements IDelayedResolver<DevExtension>
+public abstract class DevBasePlugin extends BasePlugin<DevExtension>
 {
     private AntPathMatcher antMatcher = new AntPathMatcher();
     protected static final String[] JAVA_FILES = new String[] { "**.java", "*.java", "**/*.java" };
@@ -111,10 +109,11 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
             task4.dependsOn("downloadClient", "downloadServer");
         }
         
-        Sync task5 = makeTask("copyAssets", Sync.class);
+        CopyAssetsTask task5 = makeTask("copyAssets", CopyAssetsTask.class);
         {
-            task5.from(delayedFile(Constants.ASSETS));
-            task5.setDestinationDir(new File(DevConstants.ECLIPSE_ASSETS));
+            task5.setAssetsDir(delayedFile(Constants.ASSETS));
+            task5.setOutputDir(delayedFile(DevConstants.ECLIPSE_ASSETS));
+            task5.setAssetIndex(getAssetIndexClosure());
             task5.dependsOn("getAssets", "extractWorkspace");
         }
         
@@ -223,35 +222,38 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
                 project.getLogger().info("Dev json not set, could not create native downloads tasks");
                 return;
             }
-
-            JsonNode node = null;
-            File jsonFile = delayedFile(devJson).call().getAbsoluteFile(); // ToDo: Support files in zips, for Modder dev workspace.
-            node = Constants.PARSER.parse(Files.newReader(jsonFile, Charset.defaultCharset()));
-
-            for (JsonNode lib : node.getArrayNode("libraries"))
+            
+            if (version == null)
             {
-                if (lib.isNode("natives") && lib.isNode("extract"))
+                File jsonFile = delayedFile(devJson).call().getAbsoluteFile();
+                try
                 {
-                    boolean filter = !lib.isNode("rules") || JsonUtil.ruleMatches(lib.getArrayNode("rules"));
-                    if (!filter)
-                    {
-                        continue;
-                    }
-                    String notation = lib.getStringValue("name");
-                    String[] s = notation.split(":");
-                    String path = String.format("%s/%s/%s/%s-%s-natives-%s.jar",
-                            s[0].replace('.', '/'), s[1], s[2], s[1], s[2], Constants.OPERATING_SYSTEM
-                            );
+                    version = JsonFactory.loadVersion(jsonFile);
+                }
+                catch (Exception e)
+                {
+                    project.getLogger().error("" + jsonFile + " could not be parsed");
+                    Throwables.propagate(e);
+                }
+            }
 
-                    DownloadTask task = makeTask("downloadNatives-" + s[1], DownloadTask.class);
+            int i = 1;
+            for (Library lib : version.getLibraries())
+            {
+                if (lib.extract != null)
+                {
+                    String path = lib.getPathNatives();
+
+                    DownloadTask task = makeTask("downloadNatives-" + i, DownloadTask.class);
                     {
                         task.setOutput(delayedFile("{CACHE_DIR}/" + path));
-                        task.setUrl(delayedString("http://s3.amazonaws.com/Minecraft.Download/libraries/" + path));
+                        task.setUrl(delayedString(lib.getUrl() + path));
                     }
 
                     copyTask.from(delayedZipTree("{CACHE_DIR}/" + path));
-                    copyTask.dependsOn("downloadNatives-" + s[1]);
-
+                    copyTask.dependsOn("downloadNatives-" + i);
+                    
+                    i++;
                 }
             }
 
@@ -295,6 +297,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
     @Override
     public String resolve(String pattern, Project project, DevExtension exten)
     {
+        pattern = super.resolve(pattern, project, exten);
         pattern = pattern.replace("{MAIN_CLASS}", exten.getMainClass());
         pattern = pattern.replace("{INSTALLER_VERSION}", exten.getInstallerVersion());
         pattern = pattern.replace("{FML_DIR}", exten.getFmlDir());
@@ -321,27 +324,6 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension> implements 
         });
 
         return out.toString().trim();
-    }
-    
-
-    protected DelayedString delayedString(String path)
-    {
-        return new DelayedString(project, path, this);
-    }
-
-    protected DelayedFile delayedFile(String path)
-    {
-        return new DelayedFile(project, path, this);
-    }
-
-    protected DelayedFileTree delayedFileTree(String path)
-    {
-        return new DelayedFileTree(project, path, this);
-    }
-
-    protected DelayedFileTree delayedZipTree(String path)
-    {
-        return new DelayedFileTree(project, path, true, this);
     }
 
     private boolean shouldSign(String path, List<String> includes, List<String> excludes)

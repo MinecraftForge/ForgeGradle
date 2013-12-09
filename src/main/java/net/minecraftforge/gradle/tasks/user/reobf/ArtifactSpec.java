@@ -5,11 +5,10 @@ import groovy.lang.Closure;
 import java.io.File;
 
 import joptsimple.internal.Strings;
-import net.minecraftforge.gradle.common.BasePlugin;
 
 import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
-
+import org.gradle.api.Project;
 import com.google.common.io.Files;
 
 public class ArtifactSpec
@@ -22,34 +21,41 @@ public class ArtifactSpec
     private Object  archiveName;
     private Object  classpath;
 
+    private Project project;
+
     private boolean archiveSet = false;
 
-    public ArtifactSpec()
+    public ArtifactSpec(Project proj)
     {
+        project = proj;
     }
 
-    public ArtifactSpec(File file)
+    public ArtifactSpec(File file, Project proj)
     {
         archiveName = file.getName();
         extension = Files.getFileExtension(file.getName());
+        project = proj;
     }
 
-    public ArtifactSpec(String file)
+    public ArtifactSpec(String file, Project proj)
     {
         archiveName = file;
         extension = Files.getFileExtension(file);
+        project = proj;
     }
 
-    public ArtifactSpec(PublishArtifact artifact)
+    public ArtifactSpec(PublishArtifact artifact, Project proj)
     {
         baseName = artifact.getName();
         classifier = artifact.getClassifier();
         extension = artifact.getExtension();
+        project = proj;
     }
 
     @SuppressWarnings({ "serial", "rawtypes" })
     public ArtifactSpec(final AbstractArchiveTask task)
     {
+        project = task.getProject();
         baseName = new Closure(null) { public Object call() {return task.getBaseName();} };
         appendix = new Closure(null) { public Object call() {return task.getAppendix();} };
         version = new Closure(null) { public Object call() {return task.getVersion();} };
@@ -111,7 +117,7 @@ public class ArtifactSpec
     public Object getClasspath()
     {
         if (classpath == null)
-            classpath = BasePlugin.project.files((Object)new String[] {});
+            classpath = project.files((Object)new String[] {});
         return classpath;
     }
 
@@ -153,7 +159,7 @@ public class ArtifactSpec
 
         // resolve classpath
         if (classpath != null)
-            classpath = BasePlugin.project.files(classpath);
+            classpath = project.files(classpath);
 
         // skip if its already been set by the user.
         if (archiveSet)

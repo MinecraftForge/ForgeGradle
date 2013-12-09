@@ -1,15 +1,22 @@
 package net.minecraftforge.gradle.common;
 
+import groovy.lang.Closure;
+
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.HashMap;
 
 import net.minecraftforge.gradle.FileLogListenner;
+import net.minecraftforge.gradle.common.version.AssetIndex;
+import net.minecraftforge.gradle.common.version.Version;
+import net.minecraftforge.gradle.common.version.json.JsonFactory;
+import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.delayed.DelayedString;
 import net.minecraftforge.gradle.tasks.DownloadAssetsTask;
-import net.minecraftforge.gradle.tasks.DownloadTask;
 import net.minecraftforge.gradle.tasks.ObtainFernFlowerTask;
+import net.minecraftforge.gradle.tasks.abstractutil.DownloadTask;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
@@ -20,9 +27,15 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.tasks.Delete;
 import org.gradle.testfixtures.ProjectBuilder;
 
-public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Project>
+import com.google.common.base.Throwables;
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
+
+public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Project>, IDelayedResolver<K>
 {
-    public static Project project;
+    public Project    project;
+    public Version    version;
+    public AssetIndex assetIndex;
 
     @Override
     public final void apply(Project arg)
@@ -50,6 +63,20 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             public void execute(Project project)
             {
                 afterEvaluate();
+                
+                try
+                {
+                    if (version != null)
+                    {
+                        File index = delayedFile(Constants.ASSETS + "/indexes/" + version.getAssets() + ".json").call();
+                        if (index.exists())
+                            parseAssetIndex();
+                    }
+                }
+                catch (Exception e)
+                {
+                    Throwables.propagate(e);
+                }
             }
         });
 
@@ -80,6 +107,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         displayBanner = false;
     }
 
+    @SuppressWarnings("serial")
     private void makeObtainTasks()
     {
         // download tasks
@@ -102,16 +130,67 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             mcpTask.setMcpUrl(delayedString(Constants.MCP_URL));
             mcpTask.setFfJar(delayedFile(Constants.FERNFLOWER));
         }
+        
+        DownloadTask getAssetsIndex = makeTask("getAssetsIndex", DownloadTask.class);
+        {
+            getAssetsIndex.setUrl(delayedString(Constants.ASSETS_INDEX_URL));
+            getAssetsIndex.setOutput(delayedFile(Constants.ASSETS + "/indexes/{ASSET_INDEX}.json"));
+            getAssetsIndex.setDoesCache(false);
+
+            getAssetsIndex.doLast(new Action<Task>() {
+                public void execute(Task task)
+                {
+                    try
+                    {
+                        parseAssetIndex();
+                    }
+                    catch (Exception e)
+                    {
+                        Throwables.propagate(e);
+                    }
+                }
+            });
+            
+            getAssetsIndex.getOutputs().upToDateWhen(new Closure<Boolean>(this, null)  {
+                public Boolean call(Object... obj)
+                {
+                    return false;
+                }
+            });
+        }
 
         DownloadAssetsTask assets = makeTask("getAssets", DownloadAssetsTask.class);
         {
             assets.setAssetsDir(delayedFile(Constants.ASSETS));
+            assets.setIndex(getAssetIndexClosure());
+            assets.dependsOn("getAssetsIndex");
         }
 
         Delete clearCache = makeTask("cleanCache", Delete.class);
         {
             clearCache.delete(delayedFile("{CACHE_DIR}/minecraft"));
         }
+    }
+
+    public void parseAssetIndex() throws JsonSyntaxException, JsonIOException, FileNotFoundException
+    {
+        assetIndex = JsonFactory.loadAssetsIndex(delayedFile(Constants.ASSETS + "/indexes/{ASSET_INDEX}.json").call());
+    }
+
+    @SuppressWarnings("serial")
+    public Closure<AssetIndex> getAssetIndexClosure()
+    {
+        return new Closure<AssetIndex>(this, null) {
+            public AssetIndex call(Object... obj)
+            {
+                return getAssetIndex();
+            }
+        };
+    }
+
+    public AssetIndex getAssetIndex()
+    {
+        return assetIndex;
     }
 
     /**
@@ -203,24 +282,32 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         });
     }
 
+    @Override
+    public String resolve(String pattern, Project project, K exten)
+    {
+        if (version != null)
+            pattern = pattern.replace("{ASSET_INDEX}", version.getAssets());
+        return pattern;
+    }
+
     protected DelayedString delayedString(String path)
     {
-        return new DelayedString(project, path);
+        return new DelayedString(project, path, this);
     }
 
     protected DelayedFile delayedFile(String path)
     {
-        return new DelayedFile(project, path);
+        return new DelayedFile(project, path, this);
     }
 
     protected DelayedFileTree delayedFileTree(String path)
     {
-        return new DelayedFileTree(project, path);
+        return new DelayedFileTree(project, path, this);
     }
 
     protected DelayedFileTree delayedZipTree(String path)
     {
-        return new DelayedFileTree(project, path, true);
+        return new DelayedFileTree(project, path, true, this);
     }
 
 }

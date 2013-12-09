@@ -1,7 +1,6 @@
 package net.minecraftforge.gradle.user;
 
 import static net.minecraftforge.gradle.user.UserConstants.*;
-
 import groovy.util.Node;
 import groovy.util.XmlParser;
 import groovy.xml.XmlUtil;
@@ -9,9 +8,7 @@ import groovy.xml.XmlUtil;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.Reader;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -25,17 +22,17 @@ import javax.xml.transform.stream.StreamResult;
 
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.common.version.json.JsonFactory;
 import net.minecraftforge.gradle.delayed.DelayedBase;
-import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.delayed.DelayedFileTree;
-import net.minecraftforge.gradle.delayed.DelayedString;
+import net.minecraftforge.gradle.tasks.CopyAssetsTask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.user.ApplyBinPatchesTask;
+import net.minecraftforge.gradle.tasks.user.SourceCopyTask;
 import net.minecraftforge.gradle.tasks.user.reobf.ArtifactSpec;
 import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
 
@@ -46,11 +43,16 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Configuration.State;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.GroovySourceSet;
+import org.gradle.api.tasks.ScalaSourceSet;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.Sync;
+import org.gradle.api.tasks.compile.GroovyCompile;
+import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
+import org.gradle.api.tasks.scala.ScalaCompile;
 import org.gradle.listener.ActionBroadcast;
 import org.gradle.plugins.ide.eclipse.model.Classpath;
 import org.gradle.plugins.ide.eclipse.model.ClasspathEntry;
@@ -66,13 +68,10 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-import argo.jdom.JsonNode;
-import argo.jdom.JsonRootNode;
-
 import com.google.common.base.Throwables;
 import com.google.common.io.Files;
 
-public abstract class UserBasePlugin extends BasePlugin<UserExtension> implements IDelayedResolver<UserExtension>
+public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 {
     private boolean hasApplied = false;
 
@@ -104,7 +103,10 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         task.dependsOn("setupDevWorkspace");
         task.setGroup("ForgeGradle");
 
-        project.getTasks().getByName("eclipseClasspath").dependsOn("setupDecompWorkspace");
+        project.getTasks().getByName("eclipseClasspath").dependsOn("setupDevWorkspace");
+        project.getTasks().getByName("reobf").dependsOn("genSrgs");
+        project.getTasks().getByName("compileJava").dependsOn("deobfBinJar");
+        project.getTasks().getByName("compileApiJava").dependsOn("deobfBinJar");
     }
 
     protected Class<UserExtension> getExtensionClass()
@@ -186,11 +188,12 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             });
             project.getTasks().getByName("assemble").dependsOn(task4);
         }
-
-        Sync task5 = makeTask("copyAssets", Sync.class);
+        
+        CopyAssetsTask task5 = makeTask("copyAssets", CopyAssetsTask.class);
         {
-            task5.from(delayedFile(Constants.ASSETS));
-            task5.into(delayedFile("{ASSET_DIR}"));
+            task5.setAssetsDir(delayedFile(Constants.ASSETS));
+            task5.setOutputDir(delayedFile("{ASSET_DIR}"));
+            task5.setAssetIndex(getAssetIndexClosure());
             task5.dependsOn("getAssets");
         }
     }
@@ -260,7 +263,8 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         IdeaModel ideaConv = (IdeaModel) project.getExtensions().getByName("idea");
         EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse");
 
-        SourceSet main = javaConv.getSourceSets().getByName("main");
+        SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        SourceSet test = javaConv.getSourceSets().getByName(SourceSet.TEST_SOURCE_SET_NAME);
         SourceSet api = javaConv.getSourceSets().create("api");
 
         // set the Source
@@ -270,6 +274,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
         // add to SourceSet compile paths
         api.setCompileClasspath(api.getCompileClasspath().plus(config));
         main.setCompileClasspath(main.getCompileClasspath().plus(config).plus(api.getOutput()));
+        test.setCompileClasspath(test.getCompileClasspath().plus(config).plus(api.getOutput()).plus(main.getCompileClasspath()));
 
         // add to eclipse and idea
         ideaConv.getModule().getScopes().get("COMPILE").get("plus").add(config);
@@ -277,7 +282,62 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
 
         // add sourceDirs to Intellij
         ideaConv.getModule().getSourceDirs().addAll(main.getAllSource().getFiles());
+        ideaConv.getModule().getSourceDirs().addAll(test.getAllSource().getFiles());
         ideaConv.getModule().getSourceDirs().addAll(api.getAllSource().getFiles());
+    }
+    
+    private void doSourceReplacement()
+    {
+        JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+        SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        
+        // do the special source moving...
+        SourceCopyTask task;
+        
+        // main
+        {
+            task = makeTask("sourceMainJava", SourceCopyTask.class);
+            task.setSource(main.getJava());
+            task.replace(getExtension().getReplacements());
+            task.include(getExtension().getIncludes());
+            task.setOutput(delayedFile(SOURCES_DIR + "/java"));
+            
+            JavaCompile compile = (JavaCompile) project.getTasks().getByName(main.getCompileJavaTaskName());
+            compile.dependsOn("sourceMainJava");
+            compile.setSource(task.getOutput());
+        }
+        
+        // scala!!!
+        if (project.getPlugins().hasPlugin("scala"))
+        {
+            ScalaSourceSet set = (ScalaSourceSet) new DslObject(main).getConvention().getPlugins().get("scala");
+            
+            task = makeTask("sourceMainScala", SourceCopyTask.class);
+            task.setSource(set.getScala());
+            task.replace(getExtension().getReplacements());
+            task.include(getExtension().getIncludes());
+            task.setOutput(delayedFile(SOURCES_DIR + "/scala"));
+            
+            ScalaCompile compile = (ScalaCompile) project.getTasks().getByName(main.getCompileTaskName("scala"));
+            compile.dependsOn("sourceMainScala");
+            compile.setSource(task.getOutput());
+        }
+        
+        // groovy!!!
+        if (project.getPlugins().hasPlugin("groovy"))
+        {
+            GroovySourceSet set = (GroovySourceSet) new DslObject(main).getConvention().getPlugins().get("groovy");
+            
+            task = makeTask("sourceMainGroovy", SourceCopyTask.class);
+            task.setSource(set.getGroovy());
+            task.replace(getExtension().getReplacements());
+            task.include(getExtension().getIncludes());
+            task.setOutput(delayedFile(SOURCES_DIR + "/groovy"));
+            
+            GroovyCompile compile = (GroovyCompile) project.getTasks().getByName(main.getCompileTaskName("groovy"));
+            compile.dependsOn("sourceMainGroovy");
+            compile.setSource(task.getOutput());
+        }
     }
 
     @SuppressWarnings({"unchecked" })
@@ -412,7 +472,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                         sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "VM_PARAMETERS");
-                            sub.setAttribute("value", "-Xincgc -Xmx1024M -Xms1024M -Djava.library.path=\"" + delayedFile(NATIVES_DIR).call().getCanonicalPath().replace(module, "$PROJECT_DIR$") + "\"");
+                            sub.setAttribute("value", "-Xincgc -Xmx1024M -Xms1024M -Djava.library.path=\"" + delayedFile(NATIVES_DIR).call().getCanonicalPath().replace(module, "$PROJECT_DIR$") + "\" -Dfml.ignoreInvalidMinecraftCertificates=true");
                             child.appendChild(sub);
                         }
                         
@@ -517,7 +577,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
                         sub = doc.createElement("option");
                         {
                             sub.setAttribute("name", "VM_PARAMETERS");
-                            sub.setAttribute("value", "-Xincgc XX:-UseSplitVerifier");
+                            sub.setAttribute("value", "-Xincgc XX:-UseSplitVerifier -Dfml.ignoreInvalidMinecraftCertificates=true");
                             child.appendChild(sub);
                         }
                         
@@ -630,6 +690,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
 
         // extract userdev
         ((ExtractTask) project.getTasks().findByName("extractUserDev")).from(delayedFile(project.getConfigurations().getByName(CONFIG_USERDEV).getSingleFile().getAbsolutePath()));
+        project.getTasks().findByName("getAssetsIndex").dependsOn("extractUserDev");
         
         // add src ATs
         ProcessJarTask binDeobf = (ProcessJarTask) project.getTasks().getByName("deobfBinJar");
@@ -664,12 +725,18 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             }
         }
         
+        // make delayed tasks regarding decompilation
         delayedTasks();
+        
+        // configure source replacement
+        doSourceReplacement();
         
         final File deobfOut = ((ProcessJarTask) project.getTasks().getByName("deobfBinJar")).getOutJar();
 
+        // add dependency
         project.getDependencies().add(CONFIG, project.files(deobfOut));
 
+        // link sources and javadocs eclipse
         EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse");
         ((ActionBroadcast<Classpath>)eclipseConv.getClasspath().getFile().getWhenMerged()).add(new Action<Classpath>()
         {
@@ -692,6 +759,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             }
         });
 
+        // link sources and javadocs ntellij idea
         IdeaModel ideaConv = (IdeaModel) project.getExtensions().getByName("idea");
         ((ActionBroadcast<Module>) ideaConv.getModule().getIml().getWhenMerged()).add(new Action<Module>() {
 
@@ -711,6 +779,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
             }
         });
 
+        // fix eclipse project location...
         fixEclipseProject(ECLIPSE_LOCATION);
     }
 
@@ -741,113 +810,68 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension> implement
 
     private void readAndApplyJson(File file, String depConfig, String nativeConfig, Logger log)
     {
-        if (hasApplied)
-            return;
-
-        ArrayList<String> libs = new ArrayList<String>();
-        ArrayList<String> natives = new ArrayList<String>();
-
-        try
+        if (version == null)
         {
-            Reader reader = Files.newReader(file, Charset.defaultCharset());
-            JsonRootNode root = Constants.PARSER.parse(reader);
-            
-            log.lifecycle("READING JSON NOW");
-
-            for (JsonNode node : root.getArrayNode("libraries"))
+            try
             {
-                String dep = node.getStringValue("name");
-
-                // its  maven central one
-                if (dep.contains("_fixed"))
-                {
-                    // nope. we dont like fixed things.
-                    continue;
-                }
-                else if (node.isNode("extract"))
-                {
-                    String osName = System.getProperty("os.name").toLowerCase();
-
-                    if (osName.contains("linux") || osName.contains("unix"))
-                        natives.add(dep + ":" + node.getStringValue("natives", "linux"));
-                    else if (osName.contains("win"))
-                        natives.add(dep + ":" + node.getStringValue("natives", "windows"));
-                    else if (osName.contains("mac"))
-                        natives.add(dep + ":" + node.getStringValue("natives", "osx"));
-                    else
-                    {
-                        natives.add(dep + ":" + node.getStringValue("natives", "linux"));
-                        natives.add(dep + ":" + node.getStringValue("natives", "windows"));
-                        natives.add(dep + ":" + node.getStringValue("natives", "osx"));
-                    }
-                    natives.add(dep);
-                }
-                else
-                {
-                    libs.add(dep);
-                }
+                version = JsonFactory.loadVersion(file);
             }
-            
-            reader.close();
-            
-            // apply the dep info.
-            DependencyHandler handler = project.getDependencies();
-
-            // actual dependencies
-            if (project.getConfigurations().getByName(depConfig).getState() == State.UNRESOLVED)
-                for (String dep : libs)
-                    handler.add(depConfig, dep);
-            else
-                log.info("RESOLVED: "+depConfig);
-
-            // the natives
-            if (project.getConfigurations().getByName(nativeConfig).getState() == State.UNRESOLVED)
-                for (String dep : natives)
-                    handler.add(nativeConfig, dep);
-            else
-                log.info("RESOLVED: " + nativeConfig);
-
-            hasApplied = true;
-            
-            // add stuff to the natives tas thing..
-            // extract natives
-            ExtractTask task = (ExtractTask) project.getTasks().findByName("extractNatives");
-            for (File dep : project.getConfigurations().getByName(CONFIG_NATIVES).getFiles())
+            catch (Exception e)
             {
-                log.info("ADDING NATIVE: "+dep.getPath());
-                task.from(delayedFile(dep.getAbsolutePath()));
+                log.error("" + file + " could not be parsed");
+                Throwables.propagate(e);
             }
         }
-        catch (Exception e)
+        
+        if (hasApplied)
+            return;
+        
+
+        // apply the dep info.
+        DependencyHandler handler = project.getDependencies();
+
+        // actual dependencies
+        if (project.getConfigurations().getByName(depConfig).getState() == State.UNRESOLVED)
         {
-            Throwables.propagate(e);
+            for (net.minecraftforge.gradle.common.version.Library lib : version.getLibraries())
+            {
+                if (lib.natives == null)
+                    handler.add(depConfig, lib.getArtifactName());
+            }
+        }
+        else
+            log.info("RESOLVED: " + depConfig);
+
+        // the natives
+        if (project.getConfigurations().getByName(nativeConfig).getState() == State.UNRESOLVED)
+        {
+            for (net.minecraftforge.gradle.common.version.Library lib : version.getLibraries())
+            {
+                if (lib.natives != null)
+                    handler.add(nativeConfig, lib.getArtifactName());
+            }
+        }
+        else
+            log.info("RESOLVED: " + nativeConfig);
+
+        hasApplied = true;
+
+        // add stuff to the natives task thing..
+        // extract natives
+        ExtractTask task = (ExtractTask) project.getTasks().findByName("extractNatives");
+        for (File dep : project.getConfigurations().getByName(CONFIG_NATIVES).getFiles())
+        {
+            log.info("ADDING NATIVE: " + dep.getPath());
+            task.from(delayedFile(dep.getAbsolutePath()));
+            task.exclude("META-INF/**", "META-INF/**");
         }
     }
 
     @Override
     public String resolve(String pattern, Project project, UserExtension exten)
     {
+        pattern = super.resolve(pattern, project, exten);
         pattern = pattern.replace("{API_VERSION}", exten.getApiVersion());
         return pattern;
-    }
-
-    protected DelayedString delayedString(String path)
-    {
-        return new DelayedString(project, path, this);
-    }
-
-    protected DelayedFile delayedFile(String path)
-    {
-        return new DelayedFile(project, path, this);
-    }
-
-    protected DelayedFileTree delayedFileTree(String path)
-    {
-        return new DelayedFileTree(project, path, this);
-    }
-
-    protected DelayedFileTree delayedZipTree(String path)
-    {
-        return new DelayedFileTree(project, path, true, this);
     }
 }

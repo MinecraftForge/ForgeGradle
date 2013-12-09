@@ -6,6 +6,7 @@
 *.sh text eol=lf
 *.bat text eol=crlf
 *.md text
+*.properties text
 
 #binary
 *.dat binary
