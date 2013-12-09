@@ -237,23 +237,21 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
                 }
             }
 
-            int i = 1;
             for (Library lib : version.getLibraries())
             {
-                if (lib.extract != null)
+                if (lib.natives != null)
                 {
                     String path = lib.getPathNatives();
+                    String taskName = "downloadNatives-" + lib.getArtifactName().split(":")[1];
 
-                    DownloadTask task = makeTask("downloadNatives-" + i, DownloadTask.class);
+                    DownloadTask task = makeTask(taskName, DownloadTask.class);
                     {
                         task.setOutput(delayedFile("{CACHE_DIR}/" + path));
                         task.setUrl(delayedString(lib.getUrl() + path));
                     }
 
                     copyTask.from(delayedZipTree("{CACHE_DIR}/" + path));
-                    copyTask.dependsOn("downloadNatives-" + i);
-                    
-                    i++;
+                    copyTask.dependsOn(taskName);
                 }
             }
 
