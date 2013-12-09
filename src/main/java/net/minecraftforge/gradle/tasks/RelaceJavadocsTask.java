@@ -25,7 +25,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
 
-public class RemapSourcesTask extends EditJarTask
+public class RelaceJavadocsTask extends EditJarTask
 {
     @InputFile
     private DelayedFile                            methodsCsv;
@@ -33,134 +33,14 @@ public class RemapSourcesTask extends EditJarTask
     @InputFile
     private DelayedFile                            fieldsCsv;
 
-    @InputFile
-    private DelayedFile                            paramsCsv;
-    
-    private boolean doesJavadocs = false;
+    private final Map<String, Map<String, String>> methods = new HashMap<String, Map<String, String>>();
+    private final Map<String, Map<String, String>> fields  = new HashMap<String, Map<String, String>>();
 
-    private final Map<String, Map<String, String>> methods    = new HashMap<String, Map<String, String>>();
-    private final Map<String, Map<String, String>> fields     = new HashMap<String, Map<String, String>>();
-    private final Map<String, String>              params     = new HashMap<String, String>();
-
-    private static final Pattern                   SRG_FINDER = Pattern.compile("func_[0-9]+_[a-zA-Z_]+|field_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_");
-    private static final Pattern                   METHOD     = Pattern.compile("^( {4}|\\t)(?:[\\w$.\\[\\]]+ )*(func_[0-9]+_[a-zA-Z_]+)\\(");
-    private static final Pattern                   FIELD      = Pattern.compile("^( {4}|\\t)(?:[\\w$.\\[\\]]+ )*(field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
+    private static final Pattern                   METHOD  = Pattern.compile("^( {4}|\\t)// JAVADOC METHOD \\$\\$ (func\\_\\d+)$");
+    private static final Pattern                   FIELD   = Pattern.compile("^( {4}|\\t)// JAVADOC FIELD \\$\\$ (func\\_\\d+)$");
 
     @Override
     public void doStuffBefore() throws Throwable
-    {
-        readCsvFiles();
-    }
-
-    @Override
-    public String asRead(String text)
-    {
-        Matcher matcher;
-
-        String prevLine = null;
-        ArrayList<String> newLines = new ArrayList<String>();
-        for (String line : StringUtils.lines(text))
-        {
-
-            // check method
-            matcher = METHOD.matcher(line);
-
-            if (matcher.find())
-            {
-                String name = matcher.group(2);
-
-                if (methods.containsKey(name) && methods.get(name).containsKey("name"))
-                {
-                    line = line.replace(name, methods.get(name).get("name"));
-
-                    // get javadoc
-                    String javadoc = methods.get(name).get("javadoc");
-                    if (!Strings.isNullOrEmpty(javadoc))
-                    {
-                        if (doesJavadocs)
-                        {
-                            line = buildJavadoc(matcher.group(1), javadoc, true) + line;
-                            if (!Strings.isNullOrEmpty(prevLine) && !prevLine.endsWith("{"))
-                            {
-                                line = Constants.NEWLINE + line;
-                            }
-                        }
-                        else
-                        {
-                            line = matcher.group(1) + "// JAVADOC METHOD $$ "+name + Constants.NEWLINE + line;
-                        }
-                    }
-                }
-            }
-
-            // check field
-            matcher = FIELD.matcher(line);
-
-            if (matcher.find())
-            {
-                String name = matcher.group(2);
-
-                if (fields.containsKey(name))
-                {
-                    line = line.replace(name, fields.get(name).get("name"));
-
-                    // get javadoc
-                    String javadoc = fields.get(name).get("javadoc");
-                    if (!Strings.isNullOrEmpty(javadoc))
-                    {
-                        if (doesJavadocs)
-                        {
-                            line = buildJavadoc(matcher.group(1), javadoc, false) + line;
-                            if (!Strings.isNullOrEmpty(prevLine) && !prevLine.endsWith("{"))
-                            {
-                                line = Constants.NEWLINE + line;
-                            }
-                        }
-                        else
-                        {
-                            line = matcher.group(1) + "// JAVADOC FIELD $$ "+name + Constants.NEWLINE + line;
-                        }
-                    }
-                }
-            }
-
-            prevLine = line;
-            newLines.add(line);
-        }
-
-        text = Joiner.on(Constants.NEWLINE).join(newLines) + Constants.NEWLINE;
-
-        // FAR all methods
-        StringBuffer buf = new StringBuffer();
-        matcher = SRG_FINDER.matcher(text);
-        while (matcher.find())
-        {
-            String find = matcher.group();
-            
-            if (find.startsWith("p_"))
-                find = params.get(find);
-            else if (find.startsWith("func_"))
-                find = stupidMacro(methods, find);
-            else if (find.startsWith("field_"))
-                find = stupidMacro(fields, find);
-            
-            if (find == null)
-                find = matcher.group();
-            
-            matcher.appendReplacement(buf, find);
-        }
-        matcher.appendTail(buf);
-        
-        return buf.toString();
-    }
-
-    private String stupidMacro(Map<String, Map<String, String>> map, String key)
-    {
-        Map<String, String> s = map.get(key);
-        return s == null ? null : s.get("name");
-    }
-
-    private void readCsvFiles() throws IOException
     {
         CSVReader reader = getReader(getMethodsCsv());
         for (String[] s : reader.readAll())
@@ -179,12 +59,6 @@ public class RemapSourcesTask extends EditJarTask
             temp.put("javadoc", s[3]);
             fields.put(s[0], temp);
         }
-
-        reader = getReader(getParamsCsv());
-        for (String[] s : reader.readAll())
-        {
-            params.put(s[0], s[1]);
-        }
     }
 
     public static CSVReader getReader(File file) throws IOException
@@ -192,6 +66,83 @@ public class RemapSourcesTask extends EditJarTask
         return new CSVReader(Files.newReader(file, Charset.defaultCharset()), CSVParser.DEFAULT_SEPARATOR, CSVParser.DEFAULT_QUOTE_CHARACTER, CSVParser.DEFAULT_ESCAPE_CHARACTER, 1, false);
     }
 
+    @Override
+    public String asRead(String text)
+    {
+        Matcher matcher;
+
+        String prevLine = null;
+        ArrayList<String> newLines = new ArrayList<String>();
+        //ImmutableList<String> lines = StringUtils.lines(text);
+        for (String line : StringUtils.lines(text))
+        {
+            //String line = lines.get(i);
+            
+            // check method
+            matcher = METHOD.matcher(line);
+
+            if (matcher.find())
+            {
+                String name = matcher.group(2);
+
+                if (methods.containsKey(name) && methods.get(name).containsKey("name"))
+                {
+                    // get javadoc
+                    String javadoc = methods.get(name).get("javadoc");
+                    
+                    if (Strings.isNullOrEmpty(javadoc))
+                    {
+                        line = ""; // just delete the marker
+                    }
+                    else
+                    {
+                        // replace the marker
+                        line = buildJavadoc(matcher.group(1), javadoc, true);
+
+                        if (!Strings.isNullOrEmpty(prevLine) && !prevLine.endsWith("{"))
+                        {
+                            line = Constants.NEWLINE + line;
+                        }
+                    }
+                }
+            }
+
+            // check field
+            matcher = FIELD.matcher(line);
+
+            if (matcher.find())
+            {
+                String name = matcher.group(2);
+
+                if (fields.containsKey(name))
+                {
+                    // get javadoc
+                    String javadoc = fields.get(name).get("javadoc");
+                    
+                    if (Strings.isNullOrEmpty(javadoc))
+                    {
+                        line = ""; // just delete the marker
+                    }
+                    else
+                    {
+                        // replace the marker
+                        line = buildJavadoc(matcher.group(1), javadoc, false);
+
+                        if (!Strings.isNullOrEmpty(prevLine) && !prevLine.endsWith("{"))
+                        {
+                            line = Constants.NEWLINE + line;
+                        }
+                    }
+                }
+            }
+
+            prevLine = line;
+            newLines.add(line);
+        }
+
+        return Joiner.on(Constants.NEWLINE).join(newLines);
+    }
+    
     private String buildJavadoc(String indent, String javadoc, boolean isMethod)
     {
         StringBuilder builder = new StringBuilder();
@@ -229,7 +180,7 @@ public class RemapSourcesTask extends EditJarTask
 
         return builder.toString().replace(indent, indent);
     }
-
+    
     private static List<String> wrapText(String text, int len)
     {
         // return empty array for null text
@@ -312,6 +263,16 @@ public class RemapSourcesTask extends EditJarTask
         return temp;
     }
 
+    @Override
+    public void doStuffMiddle() throws Throwable
+    {
+    }
+
+    @Override
+    public void doStuffAfter() throws Throwable
+    {
+    }
+
     public File getMethodsCsv()
     {
         return methodsCsv.call();
@@ -330,35 +291,5 @@ public class RemapSourcesTask extends EditJarTask
     public void setFieldsCsv(DelayedFile fieldsCsv)
     {
         this.fieldsCsv = fieldsCsv;
-    }
-
-    public File getParamsCsv()
-    {
-        return paramsCsv.call();
-    }
-
-    public void setParamsCsv(DelayedFile paramsCsv)
-    {
-        this.paramsCsv = paramsCsv;
-    }
-    
-    public boolean doesJavadocs()
-    {
-        return doesJavadocs;
-    }
-
-    public void setDoesJavadocs(boolean javadoc)
-    {
-        this.doesJavadocs = javadoc;
-    }
-
-    @Override
-    public void doStuffAfter() throws Throwable
-    {
-    }
-
-    @Override
-    public void doStuffMiddle() throws Throwable
-    {
     }
 }
