@@ -61,17 +61,23 @@ public class RemapSourcesTask extends EditJarTask
         ArrayList<String> newLines = new ArrayList<String>();
         for (String line : StringUtils.lines(text))
         {
+            boolean marked = false;
 
             // check method
             matcher = METHOD.matcher(line);
 
             if (matcher.find())
             {
+                marked = true;
                 String name = matcher.group(2);
 
                 if (methods.containsKey(name) && methods.get(name).containsKey("name"))
                 {
+                    // replace name
                     line = line.replace(name, methods.get(name).get("name"));
+                    
+                    // replace params
+                    line = replaceInLine(line);
 
                     // get javadoc
                     String javadoc = methods.get(name).get("javadoc");
@@ -98,6 +104,7 @@ public class RemapSourcesTask extends EditJarTask
 
             if (matcher.find())
             {
+                marked = true;
                 String name = matcher.group(2);
 
                 if (fields.containsKey(name))
@@ -123,16 +130,22 @@ public class RemapSourcesTask extends EditJarTask
                     }
                 }
             }
+            
+            if (!marked)
+                line = replaceInLine(line);
 
             prevLine = line;
             newLines.add(line);
         }
 
-        text = Joiner.on(Constants.NEWLINE).join(newLines) + Constants.NEWLINE;
-
+        return Joiner.on(Constants.NEWLINE).join(newLines);
+    }
+    
+    private String replaceInLine(String line)
+    {
         // FAR all methods
         StringBuffer buf = new StringBuffer();
-        matcher = SRG_FINDER.matcher(text);
+        Matcher matcher = SRG_FINDER.matcher(line);
         while (matcher.find())
         {
             String find = matcher.group();
@@ -150,7 +163,6 @@ public class RemapSourcesTask extends EditJarTask
             matcher.appendReplacement(buf, find);
         }
         matcher.appendTail(buf);
-        
         return buf.toString();
     }
 

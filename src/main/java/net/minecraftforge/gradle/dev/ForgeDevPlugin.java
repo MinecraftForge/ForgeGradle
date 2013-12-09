@@ -17,6 +17,7 @@ import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
+import net.minecraftforge.gradle.tasks.ReplaceJavadocsTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DelayedJar;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.abstractutil.FileFilterTask;
@@ -73,16 +74,16 @@ public class ForgeDevPlugin extends DevBasePlugin
 
     protected void createJarProcessTasks()
     {
-
-        ProcessJarTask task2 = makeTask("deobfBinJar", ProcessJarTask.class);
+        ProcessJarTask task2 = makeTask("deobfuscateJar", ProcessJarTask.class);
         {
             task2.setInJar(delayedFile(Constants.JAR_MERGED));
             task2.setOutCleanJar(delayedFile(JAR_SRG_FORGE));
             task2.setSrg(delayedFile(JOINED_SRG));
             task2.setExceptorCfg(delayedFile(JOINED_EXC));
-            task2.setExceptorJson(delayedFile(DevConstants.EXC_JSON));
+            task2.setExceptorJson(delayedFile(EXC_JSON));
             task2.addTransformer(delayedFile(FML_RESOURCES + "/fml_at.cfg"));
             task2.addTransformer(delayedFile(FORGE_RESOURCES + "/forge_at.cfg"));
+            task2.setApplyMarkers(true);
             task2.dependsOn("downloadMcpTools", "mergeJars");
         }
 
@@ -91,9 +92,9 @@ public class ForgeDevPlugin extends DevBasePlugin
             task3.setInJar(delayedFile(JAR_SRG_FORGE));
             task3.setOutJar(delayedFile(ZIP_DECOMP_FORGE));
             task3.setFernFlower(delayedFile(Constants.FERNFLOWER));
-            task3.setPatch(delayedFile(MCP_PATCH));
+            task3.setPatch(delayedFile(MCP_PATCH_DIR));
             task3.setAstyleConfig(delayedFile(ASTYLE_CFG));
-            task3.dependsOn("downloadMcpTools", "deobfBinJar");
+            task3.dependsOn("downloadMcpTools", "deobfuscateJar");
         }
 
         PatchJarTask task4 = makeTask("fmlPatchJar", PatchJarTask.class);
@@ -130,7 +131,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task6.setFieldsCsv(delayedFile(FIELDS_CSV));
             task6.setParamsCsv(delayedFile(PARAMS_CSV));
             task6.setDoesCache(false);
-            task6.setDoesJavadocs(true);
+            task6.setDoesJavadocs(false);
             task6.dependsOn("fmlInjectJar");
         }
         
@@ -440,16 +441,29 @@ public class ForgeDevPlugin extends DevBasePlugin
             classZip.setArchiveName("binaries.jar");
             classZip.setDestinationDir(delayedFile("{BUILD_DIR}/tmp/").call());
         }
+        
+        final File javadocSource = project.file(delayedFile("{BUILD_DIR}/tmp/javadocSource"));
+        ReplaceJavadocsTask jdSource = makeTask("replaceJavadocs", ReplaceJavadocsTask.class);
+        {
+            jdSource.from(delayedFile(FML_SOURCES));
+            jdSource.from(delayedFile(FORGE_SOURCES));
+            jdSource.from(delayedFile(ECLIPSE_FORGE + "/src/minecraft"));
+            jdSource.setOutFile(delayedFile("{BUILD_DIR}/tmp/javadocSource"));
+            jdSource.setMethodsCsv(delayedFile(METHODS_CSV));
+            jdSource.setFieldsCsv(delayedFile(FIELDS_CSV));
+        }
 
-        final File javadoc_temp = project.file("build/tmp/javadoc"); //TODO: Abrar why the fuck is this putting shit in /fml?
+        final File javadoc_temp = project.file(delayedFile("{BUILD_DIR}/tmp/javadoc"));
         final SubprojectTask javadocJar = makeTask("genJavadocs", SubprojectTask.class);
         {
+            javadocJar.dependsOn("replaceJavadocs");
             javadocJar.setBuildFile(delayedFile(ECLIPSE_FORGE + "/build.gradle"));
             javadocJar.setTasks("javadoc");
             javadocJar.setConfigureTask(new Closure<Object>(this, null) {
                 public Object call(Object obj)
                 {
                     Javadoc task = (Javadoc)obj;
+                    task.setSource(project.fileTree(javadocSource));
                     task.setDestinationDir(javadoc_temp);
                     return null;
                 }

@@ -18,7 +18,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-import net.minecraftforge.gradle.JsonUtil;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.common.version.Library;
@@ -43,6 +42,7 @@ import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.process.ExecSpec;
 
 import argo.jdom.JsonNode;
+
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
