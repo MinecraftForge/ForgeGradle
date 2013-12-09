@@ -129,6 +129,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task6.setFieldsCsv(delayedFile(FIELDS_CSV));
             task6.setParamsCsv(delayedFile(PARAMS_CSV));
             task6.setDoesCache(false);
+            task6.setDoesJavadocs(true);
             task6.dependsOn("fmlInjectJar");
         }
         

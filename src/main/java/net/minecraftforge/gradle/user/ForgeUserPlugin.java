@@ -100,6 +100,7 @@ public class ForgeUserPlugin extends UserBasePlugin
             remap.setFieldsCsv(delayedFile(FIELD_CSV));
             remap.setMethodsCsv(delayedFile(METHOD_CSV));
             remap.setParamsCsv(delayedFile(PARAM_CSV));
+            remap.setDoesJavadocs(true);
         }
         
         PatchJarTask forgePatches = makeTask("doForgePatches", PatchJarTask.class);
