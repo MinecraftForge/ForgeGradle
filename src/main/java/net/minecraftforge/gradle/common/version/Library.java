@@ -3,6 +3,8 @@ package net.minecraftforge.gradle.common.version;
 import java.util.List;
 import java.util.Map;
 
+import net.minecraftforge.gradle.common.Constants;
+
 public class Library
 {
     public String name;
@@ -66,7 +68,7 @@ public class Library
 
     public String getUrl()
     {
-        return url == null ? "https://libraries.minecraft.net/" : url; 
+        return url == null ? Constants.LIBRARY_URL : url; 
     }
 
     @Override
