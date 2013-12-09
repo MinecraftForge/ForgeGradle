@@ -25,7 +25,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
 
-public class RelaceJavadocsTask extends EditJarTask
+public class ReplaceJavadocsTask extends EditJarTask
 {
     @InputFile
     private DelayedFile                            methodsCsv;
@@ -36,8 +36,8 @@ public class RelaceJavadocsTask extends EditJarTask
     private final Map<String, Map<String, String>> methods = new HashMap<String, Map<String, String>>();
     private final Map<String, Map<String, String>> fields  = new HashMap<String, Map<String, String>>();
 
-    private static final Pattern                   METHOD  = Pattern.compile("^( {4}|\\t)// JAVADOC METHOD \\$\\$ (func\\_\\d+)$");
-    private static final Pattern                   FIELD   = Pattern.compile("^( {4}|\\t)// JAVADOC FIELD \\$\\$ (func\\_\\d+)$");
+    private static final Pattern                   METHOD  = Pattern.compile("^([ \t]+)// JAVADOC METHOD \\$\\$ (func\\_\\d+_([\\w+_])$");
+    private static final Pattern                   FIELD   = Pattern.compile("^([ \t]+)// JAVADOC FIELD \\$\\$ (field\\_\\d+_([\\w+_])$");
 
     @Override
     public void doStuffBefore() throws Throwable
