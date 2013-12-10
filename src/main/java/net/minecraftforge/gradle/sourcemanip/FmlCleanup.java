@@ -31,7 +31,7 @@ public class FmlCleanup
             return str2.length() - str1.length();
         }
     };
-    private static final Pattern CLASS = Pattern.compile("class (\\w+)");
+    //private static final Pattern CLASS = Pattern.compile("class (\\w+)");
     public static String renameClass(String text)
     {
         String[] lines = text.split("(\r\n|\r|\n)");
