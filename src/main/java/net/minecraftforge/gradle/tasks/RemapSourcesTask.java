@@ -56,89 +56,61 @@ public class RemapSourcesTask extends EditJarTask
     public String asRead(String text)
     {
         Matcher matcher;
-
-        String prevLine = null;
         ArrayList<String> newLines = new ArrayList<String>();
         for (String line : StringUtils.lines(text))
         {
-            boolean marked = false;
-
-            // check method
             matcher = METHOD.matcher(line);
-
             if (matcher.find())
             {
-                marked = true;
                 String name = matcher.group(2);
 
                 if (methods.containsKey(name) && methods.get(name).containsKey("name"))
                 {
-                    // replace name
-                    line = line.replace(name, methods.get(name).get("name"));
-                    
-                    // replace params
-                    line = replaceInLine(line);
-
-                    // get javadoc
                     String javadoc = methods.get(name).get("javadoc");
                     if (!Strings.isNullOrEmpty(javadoc))
                     {
                         if (doesJavadocs)
-                        {
-                            line = buildJavadoc(matcher.group(1), javadoc, true) + line;
-                            if (!Strings.isNullOrEmpty(prevLine) && !prevLine.endsWith("{"))
-                            {
-                                line = Constants.NEWLINE + line;
-                            }
-                        }
+                            javadoc = buildJavadoc(matcher.group(1), javadoc, true);
                         else
-                        {
-                            line = matcher.group(1) + "// JAVADOC METHOD $$ "+name + Constants.NEWLINE + line;
-                        }
+                            javadoc = matcher.group(1) + "// JAVADOC METHOD $$ " + name;
+                        insetAboveAnnotations(newLines, javadoc);
                     }
                 }
             }
-
-            // check field
-            matcher = FIELD.matcher(line);
-
-            if (matcher.find())
+            else
             {
-                marked = true;
-                String name = matcher.group(2);
-
-                if (fields.containsKey(name))
+                matcher = FIELD.matcher(line);
+                if (matcher.find())
                 {
-                    line = line.replace(name, fields.get(name).get("name"));
-
-                    // get javadoc
-                    String javadoc = fields.get(name).get("javadoc");
-                    if (!Strings.isNullOrEmpty(javadoc))
+                    String name = matcher.group(2);
+                    if (fields.containsKey(name))
                     {
-                        if (doesJavadocs)
+                        String javadoc = fields.get(name).get("javadoc");
+                        if (!Strings.isNullOrEmpty(javadoc))
                         {
-                            line = buildJavadoc(matcher.group(1), javadoc, false) + line;
-                            if (!Strings.isNullOrEmpty(prevLine) && !prevLine.endsWith("{"))
-                            {
-                                line = Constants.NEWLINE + line;
-                            }
-                        }
-                        else
-                        {
-                            line = matcher.group(1) + "// JAVADOC FIELD $$ "+name + Constants.NEWLINE + line;
+                            if (doesJavadocs)
+                                javadoc = buildJavadoc(matcher.group(1), javadoc, false);
+                            else
+                                javadoc = matcher.group(1) + "// JAVADOC FIELD $$ " + name;
+                            insetAboveAnnotations(newLines, javadoc);
                         }
                     }
                 }
             }
-            
-            if (!marked)
-                line = replaceInLine(line);
-
-            prevLine = line;
-            newLines.add(line);
+            newLines.add(replaceInLine(line));
         }
 
         return Joiner.on(Constants.NEWLINE).join(newLines);
+    }
+    
+    private void insetAboveAnnotations(List<String> list, String line)
+    {
+        int x = list.size() - 1;
+        while (list.get(x).trim().startsWith("@"))
+        {
+            x--;
+        }
+        list.add(x + 1, line);
     }
     
     private String replaceInLine(String line)
