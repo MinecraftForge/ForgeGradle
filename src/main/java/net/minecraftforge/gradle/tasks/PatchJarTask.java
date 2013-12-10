@@ -83,6 +83,10 @@ public class PatchJarTask extends EditJarTask
                             Files.append(Joiner.on('\n').join(hunk.hunk.lines), reject, Charsets.UTF_8);
                             Files.append(String.format("\n++++ END PATCH\n"), reject, Charsets.UTF_8);
                         }
+                        else if (hunk.getStatus() == PatchStatus.Fuzzed)
+                        {
+                            getLogger().info("  " + hunk.getHunkID() + " fuzzed " + hunk.getFuzz() + "!");
+                        }
                     }
                     getLogger().log(LogLevel.ERROR, "  " + failed + "/" + report.getHunks().size() + " failed");
                     getLogger().log(LogLevel.ERROR, "  Rejects written to " + reject.getAbsolutePath());
