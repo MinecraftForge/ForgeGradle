@@ -246,11 +246,11 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
 
                     DownloadTask task = makeTask(taskName, DownloadTask.class);
                     {
-                        task.setOutput(delayedFile("{CACHE_DIR}/" + path));
+                        task.setOutput(delayedFile("{CACHE_DIR}/minecraft/" + path));
                         task.setUrl(delayedString(lib.getUrl() + path));
                     }
 
-                    copyTask.from(delayedZipTree("{CACHE_DIR}/" + path));
+                    copyTask.from(delayedZipTree("{CACHE_DIR}/minecraft/" + path));
                     copyTask.dependsOn(taskName);
                 }
             }
