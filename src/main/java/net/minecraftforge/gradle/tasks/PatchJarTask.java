@@ -10,6 +10,7 @@ import java.util.Map;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.patching.ContextualPatch;
+import net.minecraftforge.gradle.patching.ContextualPatch.PatchStatus;
 import net.minecraftforge.gradle.tasks.abstractutil.EditJarTask;
 
 import org.gradle.api.file.FileCollection;
@@ -70,18 +71,21 @@ public class PatchJarTask extends EditJarTask
                     }
                     getLogger().log(LogLevel.ERROR, "Patching failed: " + PROVIDER.strip(report.getTarget()) + " " + report.getFailure().getMessage());
                     // now spit the hunks
+                    int failed = 0;
                     for (ContextualPatch.HunkReport hunk : report.getHunks())
                     {
                         // catch the failed hunks
                         if (!hunk.getStatus().isSuccess())
                         {
-                            getLogger().error("Hunk " + hunk.getHunkID() + " failed! " + (hunk.getFailure() != null ? hunk.getFailure().getMessage() : ""));
+                            failed++;
+                            getLogger().error("  " + hunk.getHunkID() + ": " + (hunk.getFailure() != null ? hunk.getFailure().getMessage() : "") + " @ " + hunk.getIndex());
                             Files.append(String.format("++++ REJECTED PATCH %d\n", hunk.getHunkID()), reject, Charsets.UTF_8);
                             Files.append(Joiner.on('\n').join(hunk.hunk.lines), reject, Charsets.UTF_8);
                             Files.append(String.format("\n++++ END PATCH\n"), reject, Charsets.UTF_8);
                         }
                     }
-                    getLogger().log(LogLevel.ERROR, "Rejects written to "+reject.getAbsolutePath());
+                    getLogger().log(LogLevel.ERROR, "  " + failed + "/" + report.getHunks().size() + " failed");
+                    getLogger().log(LogLevel.ERROR, "  Rejects written to " + reject.getAbsolutePath());
 
                     if (failure == null) failure = report.getFailure();
                 }
@@ -97,9 +101,9 @@ public class PatchJarTask extends EditJarTask
                     for (ContextualPatch.HunkReport hunk : report.getHunks())
                     {
                         // catch the failed hunks
-                        if (!hunk.getStatus().isSuccess())
+                        if (hunk.getStatus() == PatchStatus.Fuzzed)
                         {
-                            getLogger().info("Hunk " + hunk.getHunkID() + " fuzzed " + hunk.getFuzz()+"!");
+                            getLogger().info("  " + hunk.getHunkID() + " fuzzed " + hunk.getFuzz() + "!");
                         }
                     }
 
