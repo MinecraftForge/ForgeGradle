@@ -103,7 +103,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task4.setOutJar(delayedFile(ZIP_FMLED_FORGE));
             task4.setInPatches(delayedFile(FML_PATCH_DIR));
             task4.setDoesCache(false);
-            task4.setMaxFuzz(3);
+            task4.setMaxFuzz(2);
             task4.dependsOn("decompile");
         }
         
@@ -142,7 +142,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task4.setOutJar(delayedFile(ZIP_PATCHED_FORGE));
             task4.setInPatches(delayedFile(FORGE_PATCH_DIR));
             task4.setDoesCache(false);
-            task4.setMaxFuzz(3);
+            task4.setMaxFuzz(2);
             task4.dependsOn("remapSourcesJar");
         }
     }
