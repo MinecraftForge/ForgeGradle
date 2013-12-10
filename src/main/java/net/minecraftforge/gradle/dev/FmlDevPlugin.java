@@ -156,7 +156,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task.include(JAVA_FILES);
             task.exclude("cpw/**");
             task.from(delayedFile(DevConstants.ZIP_PATCHED_FML));
-            task.into(delayedFile(DevConstants.ECLIPSE_FML_RES));
+            task.into(delayedFile(DevConstants.ECLIPSE_FML_SRC));
             task.dependsOn("copyDeobfData");
         }
 
@@ -176,10 +176,10 @@ public class FmlDevPlugin extends DevBasePlugin
             task.setJson(delayedFile(DevConstants.JSON_DEV));
             task.setTargetDir(delayedFile(DevConstants.ECLIPSE_FML));
 
-            task.addSource(delayedFile(DevConstants.ECLIPSE_FML + "/src/minecraft"));
+            task.addSource(delayedFile(DevConstants.ECLIPSE_FML_SRC));
             task.addSource(delayedFile(DevConstants.FML_SOURCES));
 
-            task.addResource(delayedFile(DevConstants.ECLIPSE_FML + "/src/resources"));
+            task.addResource(delayedFile(DevConstants.ECLIPSE_FML_RES));
             task.addResource(delayedFile(DevConstants.FML_RESOURCES));
 
             task.dependsOn("extractNatives","createVersionProperties");
