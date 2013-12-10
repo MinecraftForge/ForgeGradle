@@ -14,6 +14,7 @@ import net.minecraftforge.gradle.tasks.abstractutil.EditJarTask;
 
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.logging.LogLevel;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 
 import com.google.common.base.Charsets;
@@ -24,6 +25,9 @@ public class PatchJarTask extends EditJarTask
 {
     @InputFiles
     private DelayedFile inPatches;
+    
+    @Input
+    private int maxFuzz = 0;
 
     private ContextProvider PROVIDER;
 
@@ -149,7 +153,7 @@ public class PatchJarTask extends EditJarTask
         public PatchedFile(File file) throws IOException
         {
             this.fileToPatch = file;
-            this.patch = ContextualPatch.create(Files.toString(file, Charset.defaultCharset()), PROVIDER).setAccessC14N(true).setMaxFuzz(0);
+            this.patch = ContextualPatch.create(Files.toString(file, Charset.defaultCharset()), PROVIDER).setAccessC14N(true).setMaxFuzz(getMaxFuzz());
         }
 
         public File makeRejectFile()
@@ -232,5 +236,15 @@ public class PatchJarTask extends EditJarTask
     {
         // TODO Auto-generated method stub
 
+    }
+
+    public int getMaxFuzz()
+    {
+        return maxFuzz;
+    }
+
+    public void setMaxFuzz(int maxFuzz)
+    {
+        this.maxFuzz = maxFuzz;
     }
 }
