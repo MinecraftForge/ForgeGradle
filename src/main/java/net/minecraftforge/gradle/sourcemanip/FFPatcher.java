@@ -29,12 +29,12 @@ public class FFPatcher
     public static final String LIST = ", ";
 
     // modifiers, type, name, implements, body, end
-    public static final Pattern ENUM_CLASS = Pattern.compile("(?m)^(?<modifiers>(?:(?:" + MODIFIERS + ") )*)(?<type>enum) (?<name>[\\w$]+)(?: implements (?<implements>[\\w$.]+(?:, [\\w$.]+)*))? \\{(?:\\r\\n|\\r|\\n)(?<body>(?:.*(?:\\r\\n|\\n|\\r))*?)(?<end>\\})");
+    public static final Pattern ENUM_CLASS = Pattern.compile("(?m)^[ \t]*(?<modifiers>(?:(?:" + MODIFIERS + ") )*)(?<type>enum) (?<name>[\\w$]+)(?: implements (?<implements>[\\w$.]+(?:, [\\w$.]+)*))? \\{(?:\\r\\n|\\r|\\n)(?<body>(?:.*(?:\\r\\n|\\n|\\r))*?)(?<end>\\})");
 
     // name, body, end
-    public static final Pattern ENUM_ENTRIES = Pattern.compile("(?m)^ +(?<name>[\\w$]+)\\(\"(?:[\\w$]+)\", [0-9]+(?:, (?<body>.*?))?\\)(?<end>(?:;|,)(?:\\r\\n|\\n|\\r)+)");
+    public static final Pattern ENUM_ENTRIES = Pattern.compile("(?m)^[ \t]+(?<name>[\\w$]+)\\(\"(?:[\\w$]+)\", [0-9]+(?:, (?<body>.*?))?\\)(?<end>(?:;|,)(?:\\r\\n|\\n|\\r)+)");
 
-    public static final String EMPTY_SUPER = "(?m)^ +super\\(\\);(\\r\\n|\\n|\\r)";
+    public static final String EMPTY_SUPER = "(?m)^[ \t]+super\\(\\);(\\r\\n|\\n|\\r)";
 
     // strip TRAILING 0 from doubles and floats to fix decompile differences on OSX
     // 0.0010D => 0.001D
@@ -42,14 +42,12 @@ public class FFPatcher
     public static final String TRAILINGZERO = "([0-9]+\\.[0-9]*[1-9])0+([DdFfEe])";
 
     // modifiers, params, throws, empty, body, end
-    public static final String CONSTRUCTOR = "(?m)^ +(?<modifiers>(?:(?:" + MODIFIERS + ") )*)%s\\((?<parameters>.*?)\\)(?: throws (?<throws>[\\w$.]+(?:, [\\w$.]+)*))? \\{(?:(?<empty>\\}(?:\\r\\n|\\r|\\n)+)|(?:(?<body>(?:\\r\\n|\\r|\\n)(?:.*?(?:\\r\\n|\\r|\\n))*?)(?<end> {3}\\}(?:\\r\\n|\\r|\\n)+)))";
+    public static final String CONSTRUCTOR = "(?m)^[ \t]+(?<modifiers>(?:(?:" + MODIFIERS + ") )*)%s\\((?<parameters>.*?)\\)(?: throws (?<throws>[\\w$.]+(?:, [\\w$.]+)*))? \\{(?:(?<empty>\\}(?:\\r\\n|\\r|\\n)+)|(?:(?<body>(?:\\r\\n|\\r|\\n)(?:.*?(?:\\r\\n|\\r|\\n))*?)(?<end> {3}\\}(?:\\r\\n|\\r|\\n)+)))";
 
-    public static final String ENUM_VALS = "(?m)^ +// \\$FF: synthetic field(\\r\\n|\\n|\\r) +private static final %s\\[\\] [$\\w]+ = new %s\\[\\]\\{.*?\\};(\\r\\n|\\n|\\r)";
+    public static final String ENUM_VALS = "(?m)^[ \t]+// \\$FF: synthetic field(\\r\\n|\\n|\\r) +private static final %s\\[\\] [$\\w]+ = new %s\\[\\]\\{.*?\\};(\\r\\n|\\n|\\r)";
 
     public static String processFile(String fileName, String text) throws IOException
     {
-        String classname = fileName.split("\\.")[0];
-        
         StringBuffer out = new StringBuffer();
         Matcher m = SYNTHETICS.matcher(text);
         while(m.find())
@@ -64,11 +62,7 @@ public class FFPatcher
         Matcher match = ENUM_CLASS.matcher(text);
         while (match.find())
         {
-            // defaults.. inc ase the body isnt there
-            if (!classname.equals(match.group("name")))
-            {
-                throw new RuntimeException("ERROR PARSING ENUM !!!!! Class Name != File Name");
-            }
+            String className = match.group("name");
 
             // find all modifiers
             ArrayList<String> mods = new ArrayList<String>();
@@ -90,7 +84,7 @@ public class FFPatcher
                 interfaces = Arrays.asList(match.group("implements").split(LIST));
             }
 
-            text = text.replace(match.group(), processEnum(classname, match.group("type"), mods, interfaces, match.group("body"), match.group("end")));
+            text = text.replace(match.group(), processEnum(className, match.group("type"), mods, interfaces, match.group("body"), match.group("end")));
         }
 
         text = text.replaceAll(EMPTY_SUPER, "");
