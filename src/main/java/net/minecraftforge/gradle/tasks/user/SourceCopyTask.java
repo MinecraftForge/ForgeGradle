@@ -28,23 +28,23 @@ import com.google.common.io.Files;
 public class SourceCopyTask extends DefaultTask
 {
     @InputFiles
-    SourceDirectorySet source;
-    
+    SourceDirectorySet      source;
+
     @Input
     HashMap<String, String> replacements = new HashMap<String, String>();
-    
+
     @Input
-    ArrayList<String> includes = new ArrayList<String>();
-    
+    ArrayList<String>       includes     = new ArrayList<String>();
+
     @OutputDirectory
-    DelayedFile output;
-    
+    DelayedFile             output;
+
     @TaskAction
     public void doTask() throws IOException
     {
-        getLogger().info("INPUTS >> " + source );
-        getLogger().info("OUTPUTS >> " + getOutput() );
-        getLogger().info("REPLACE >> " + replacements );
+        getLogger().info("INPUTS >> " + source);
+        getLogger().info("OUTPUTS >> " + getOutput());
+        getLogger().info("REPLACE >> " + replacements);
 
         // get the include/exclude patterns from the source (this is different than what's returned by getFilter)
         PatternSet patterns = new PatternSet();
@@ -55,16 +55,16 @@ public class SourceCopyTask extends DefaultTask
         File out = getOutput();
         if (out.exists())
             deleteDir(out);
-        
+
         out.mkdirs();
         out = out.getCanonicalFile();
-        
+
         // start traversing tree
         for (DirectoryTree dirTree : source.getSrcDirTrees())
         {
             File dir = dirTree.getDir();
-            getLogger().info("PARSING DIR >> " + dir );
-         
+            getLogger().info("PARSING DIR >> " + dir);
+
             // handle nonexistant srcDirs
             if (!dir.exists() || !dir.isDirectory())
                 continue;
@@ -77,45 +77,50 @@ public class SourceCopyTask extends DefaultTask
 
             for (File file : tree)
             {
-                if (!isIncluded(file))
-                    continue;
-                
-                getLogger().debug("PARSING FILE IN >> " + file);
-                String text = Files.toString(file, Charsets.UTF_8);
-                
-                for (Entry<String, String> entry : replacements.entrySet())
-                    text = text.replaceAll(entry.getKey(), entry.getValue());
-                
                 File dest = getDest(file, dir, out);
-                getLogger().debug("PARSING FILE OUT >> " + dest);
                 dest.getParentFile().mkdirs();
                 dest.createNewFile();
-                Files.write(text, dest, Charsets.UTF_8);
+
+                if (isIncluded(file))
+                {
+                    getLogger().debug("PARSING FILE IN >> " + file);
+                    String text = Files.toString(file, Charsets.UTF_8);
+
+                    for (Entry<String, String> entry : replacements.entrySet())
+                        text = text.replaceAll(entry.getKey(), entry.getValue());
+
+                    getLogger().debug("PARSING FILE OUT >> " + dest);
+                    Files.write(text, dest, Charsets.UTF_8);
+                }
+                else
+                {
+                    Files.copy(file, dest);
+                }
             }
         }
     }
-    
+
     private File getDest(File in, File base, File baseOut) throws IOException
     {
         String relative = in.getCanonicalPath().replace(base.getCanonicalPath(), "");
         return new File(baseOut, relative);
     }
-    
+
     private boolean isIncluded(File file) throws IOException
     {
         if (includes.isEmpty())
             return true;
-        
+
         String path = file.getCanonicalPath().replace('\\', '/');
         for (String include : includes)
         {
             if (path.endsWith(include.replace('\\', '/')))
                 return true;
         }
-        
+
         return false;
     }
-    
+
     private boolean deleteDir(File dir)
     {
         if (dir.exists())
@@ -148,7 +153,7 @@ public class SourceCopyTask extends DefaultTask
     {
         this.output = output;
     }
-    
+
     public void setSource(SourceDirectorySet source)
     {
         this.source = source;
@@ -158,12 +163,12 @@ public class SourceCopyTask extends DefaultTask
     {
         return source;
     }
-    
+
     public void replace(String key, String val)
     {
         replacements.put(key, val);
     }
-    
+
     public void replace(Map<String, String> map)
     {
         for (Entry<String, String> e : map.entrySet())
@@ -171,22 +176,22 @@ public class SourceCopyTask extends DefaultTask
             replace(Pattern.quote(e.getKey()), e.getValue());
         }
     }
-    
+
     public HashMap<String, String> getReplacements()
     {
         return replacements;
     }
-    
+
     public void include(String str)
     {
         includes.add(str);
     }
-    
+
     public void include(List<String> strs)
     {
         includes.addAll(strs);
     }
-    
+
     public ArrayList<String> getIncudes()
     {
         return includes;
