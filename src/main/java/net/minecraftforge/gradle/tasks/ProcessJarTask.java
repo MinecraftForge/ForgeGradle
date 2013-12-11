@@ -1,12 +1,19 @@
 package net.minecraftforge.gradle.tasks;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
+import joptsimple.internal.Strings;
 import net.md_5.specialsource.AccessMap;
 import net.md_5.specialsource.Jar;
 import net.md_5.specialsource.JarMapping;
@@ -23,31 +30,36 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.tree.ClassNode;
+
+import com.google.common.io.ByteStreams;
 
 import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
 
 public class ProcessJarTask extends CachedTask
 {
     @InputFile
-    private DelayedFile inJar;
+    private DelayedFile            inJar;
 
     @InputFile
-    private DelayedFile srg;
+    private DelayedFile            srg;
 
     @InputFile
-    private DelayedFile exceptorCfg;
+    private DelayedFile            exceptorCfg;
 
     @OutputFile
     @Cached
-    private DelayedFile outCleanJar; // clean = pure forge, or pure FML
-    
+    private DelayedFile            outCleanJar;                                                     // clean = pure forge, or pure FML
+
     @OutputFile
     @Cached
-    private DelayedFile outDirtyJar = new DelayedFile(getProject(), Constants.DEOBF_JAR); // dirty = has any other ATs
+    private DelayedFile            outDirtyJar = new DelayedFile(getProject(), Constants.DEOBF_JAR); // dirty = has any other ATs
 
-    private ArrayList<DelayedFile> ats = new ArrayList<DelayedFile>();
-    
-    private boolean isClean = true;
+    private ArrayList<DelayedFile> ats         = new ArrayList<DelayedFile>();
+
+    private boolean                isClean     = true;
 
     public void addTransformer(DelayedFile... obj)
     {
@@ -56,10 +68,9 @@ public class ProcessJarTask extends CachedTask
             ats.add(object);
         }
     }
-    
+
     /**
      * adds an access transformer to the deobfuscation of this
-     *
      * @param obj
      */
     public void addTransformer(Object... obj)
@@ -72,7 +83,7 @@ public class ProcessJarTask extends CachedTask
                 ats.add(new DelayedFile(getProject(), (String) object));
             else
                 ats.add(new DelayedFile(getProject(), object.toString()));
-            
+
             isClean = false;
         }
     }
@@ -81,7 +92,8 @@ public class ProcessJarTask extends CachedTask
     public void doTask() throws IOException
     {
         // make stuff into files.
-        File tempObfJar = new File(getTemporaryDir(), "obfed.jar"); // courtesy of gradle temp dir.
+        File tempObfJar = new File(getTemporaryDir(), "deobfed.jar"); // courtesy of gradle temp dir.
+        File tempExcJar = new File(getTemporaryDir(), "excepted.jar"); // courtesy of gradle temp dir.
 
         // make the ATs list.. its a Set to avoid duplication.
         Set<File> ats = new HashSet<File>();
@@ -93,12 +105,15 @@ public class ProcessJarTask extends CachedTask
         // deobf
         getLogger().lifecycle("Applying SpecialSource...");
         deobfJar(getInJar(), tempObfJar, getSrg(), ats);
-        
-        File out = isClean ? getOutCleanJar() : getOutDirtyJar();
 
         // apply exceptor
         getLogger().lifecycle("Applying Exceptor...");
-        applyExceptor(tempObfJar, out, getExceptorCfg(), new File(getTemporaryDir(), "exceptor.log"));
+        applyExceptor(tempObfJar, tempExcJar, getExceptorCfg(), new File(getTemporaryDir(), "exceptor.log"));
+
+        File out = isClean ? getOutCleanJar() : getOutDirtyJar();
+
+        getLogger().lifecycle("Injecting source info...");
+        injectSourceInfo(tempExcJar, out);
     }
 
     private void deobfJar(File inJar, File outJar, File srg, Collection<File> ats) throws IOException
@@ -141,7 +156,7 @@ public class ProcessJarTask extends CachedTask
         getLogger().debug("INPUT: " + inJar);
         getLogger().debug("OUTPUT: " + outJar);
         getLogger().debug("CONFIG: " + config);
-        
+
         MCInjectorImpl.process(inJar.getCanonicalPath(),
                 outJar.getCanonicalPath(),
                 config.getCanonicalPath(),
@@ -150,6 +165,56 @@ public class ProcessJarTask extends CachedTask
                 0,
                 null,
                 false);
+    }
+
+    private void injectSourceInfo(File inJar, File outJar) throws IOException
+    {
+        ZipFile in = new ZipFile(inJar);
+        final ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(outJar)));
+
+        for (ZipEntry e : Collections.list(in.entries()))
+        {
+            if (e.getName().contains("META-INF"))
+                continue;
+
+            if (e.isDirectory())
+            {
+                out.putNextEntry(e);
+            }
+            else
+            {
+                ZipEntry n = new ZipEntry(e.getName());
+                n.setTime(e.getTime());
+                out.putNextEntry(n);
+
+                byte[] data = ByteStreams.toByteArray(in.getInputStream(e));
+
+                // correct source name
+                if (e.getName().endsWith(".class"))
+                    data = correctSourceName(e.getName(), data);
+
+                out.write(data);
+            }
+        }
+
+        out.flush();
+        out.close();
+        in.close();
+    }
+
+    private byte[] correctSourceName(String name, byte[] data)
+    {
+        ClassReader reader = new ClassReader(data);
+        ClassNode node = new ClassNode();
+
+        reader.accept(node, 0);
+
+        if (Strings.isNullOrEmpty(node.sourceFile) || !node.sourceFile.endsWith(".java"))
+            node.sourceFile = name.substring(name.lastIndexOf('/') + 1).replace(".class", ".java");
+
+        ClassWriter writer = new ClassWriter(0);
+        node.accept(writer);
+        return writer.toByteArray();
     }
 
     public File getExceptorCfg()
@@ -171,7 +236,7 @@ public class ProcessJarTask extends CachedTask
     {
         this.inJar = inJar;
     }
-    
+
     public File getSrg()
     {
         return srg.call();
@@ -182,7 +247,6 @@ public class ProcessJarTask extends CachedTask
         this.srg = srg;
     }
 
-
     public File getOutCleanJar()
     {
         return outCleanJar.call();
@@ -192,7 +256,7 @@ public class ProcessJarTask extends CachedTask
     {
         this.outCleanJar = outJar;
     }
-    
+
     public File getOutDirtyJar()
     {
         return outDirtyJar.call();
@@ -202,12 +266,12 @@ public class ProcessJarTask extends CachedTask
     {
         this.outDirtyJar = outDirtyJar;
     }
-    
+
     public boolean isClean()
     {
         return isClean;
     }
-    
+
     /**
      * returns the actual output DelayedFile depending on Clean status
      * Unlike getOutputJar() this method does not resolve the files.
@@ -216,7 +280,7 @@ public class ProcessJarTask extends CachedTask
     {
         return isClean ? outCleanJar : outDirtyJar;
     }
-    
+
     /**
      * returns the actual output file depending on Clean status
      */
@@ -224,7 +288,7 @@ public class ProcessJarTask extends CachedTask
     {
         return isClean ? outCleanJar.call() : outDirtyJar.call();
     }
-    
+
     @InputFiles
     public FileCollection getAts()
     {
