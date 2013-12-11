@@ -3,6 +3,7 @@ package net.minecraftforge.gradle.common.version.json;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.Date;
 
 import net.minecraftforge.gradle.common.version.AssetIndex;
@@ -27,13 +28,19 @@ public class JsonFactory
         GSON = builder.create();
     }
 
-    public static Version loadVersion(File json) throws JsonSyntaxException, JsonIOException, FileNotFoundException
+    public static Version loadVersion(File json) throws JsonSyntaxException, JsonIOException, IOException
     {
-        return GSON.fromJson(new FileReader(json), Version.class);
+        FileReader reader = new FileReader(json);
+        Version v =  GSON.fromJson(reader, Version.class);
+        reader.close();
+        return v;
     }
     
-    public static AssetIndex loadAssetsIndex(File json) throws JsonSyntaxException, JsonIOException, FileNotFoundException
+    public static AssetIndex loadAssetsIndex(File json) throws JsonSyntaxException, JsonIOException, IOException
     {
-        return GSON.fromJson(new FileReader(json), AssetIndex.class);
+        FileReader reader = new FileReader(json);
+        AssetIndex a =  GSON.fromJson(reader, AssetIndex.class);
+        reader.close();
+        return a;
     }
 }
