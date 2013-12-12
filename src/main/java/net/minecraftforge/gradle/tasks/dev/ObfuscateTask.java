@@ -11,7 +11,9 @@ import java.net.URLClassLoader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -36,6 +38,9 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Opcodes;
 
+import static org.objectweb.asm.Opcodes.*;
+
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
@@ -69,21 +74,18 @@ public class ObfuscateTask extends DefaultTask
 
         if (getExc() != null)
         {
-            srg = createSrg(srg, getExc());
-            srg = readMarkers(srg, inJar);
+            Map<String, String> recomp = Maps.newHashMap();
+            List<String> interfaces = Lists.newArrayList();
+            readMarkers(inJar, recomp, interfaces);
+            srg = createSrg(srg, getExc(), recomp, interfaces);
         }
 
         getLogger().debug("Obfuscating jar...");
         obfuscate(inJar, (FileCollection)compileTask.property("classpath"), srg);
     }
     
-    private File readMarkers(File base, File inJar) throws IOException
+    private void readMarkers(File inJar, final Map<String, String> map, final List<String> intList) throws IOException
     {
-        File srg = new File(this.getTemporaryDir(), "reobf.srg");
-        if (srg.isFile())
-            srg.delete();
-        
-        final Map<String, String> map = Maps.newHashMap();
         ZipInputStream zip = null;
         try
         {
@@ -104,6 +106,8 @@ public class ObfuscateTask extends DefaultTask
                 public void visit(int version, int access, String name, String signature, String superName, String[] interfaces)
                 {
                     this.className = name;;
+                    if ((access & ACC_INTERFACE) == ACC_INTERFACE)
+                        intList.add(className);
                 }
 
                 @Override
@@ -132,10 +136,6 @@ public class ObfuscateTask extends DefaultTask
                 } catch (IOException e){}
             }
         }
-
-        String fixed = Files.readLines(base, Charset.defaultCharset(), new SrgLineProcessor(map));
-        Files.write(fixed.getBytes(), srg);
-        return srg;
     }
 
     private void executeTask(AbstractTask task)
@@ -183,13 +183,13 @@ public class ObfuscateTask extends DefaultTask
         remapper.remapJar(input, getOutJar());
     }
 
-    private File createSrg(File base, File exc) throws IOException
+    private File createSrg(File base, File exc, Map<String, String> markerMap, final List<String> intList) throws IOException
     {
         File srg = new File(this.getTemporaryDir(), "reobf_cls.srg");
         if (srg.isFile())
             srg.delete();
 
-        Map<String, String> map = Files.readLines(exc, Charset.defaultCharset(), new LineProcessor<Map<String, String>>()
+        Map<String, String> excMap = Files.readLines(exc, Charset.defaultCharset(), new LineProcessor<Map<String, String>>()
         {
             Map<String, String> tmp = Maps.newHashMap();
 
@@ -212,6 +212,15 @@ public class ObfuscateTask extends DefaultTask
                 return tmp;
             }
         });
+        Map<String, String> map = Maps.newHashMap();
+        for (Entry<String, String> e : excMap.entrySet())
+        {
+            String renamed = markerMap.get(e.getValue());
+            if (renamed != null)
+            {
+                map.put(e.getKey(), renamed);
+            }
+        }
 
         String fixed = Files.readLines(base, Charset.defaultCharset(), new SrgLineProcessor(map));
         Files.write(fixed.getBytes(), srg);
