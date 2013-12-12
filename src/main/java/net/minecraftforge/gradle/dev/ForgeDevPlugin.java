@@ -265,6 +265,7 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             obf.setSrg(delayedFile(MCP_2_NOTCH_SRG));
             obf.setReverse(false);
+            obf.setPreFFJar(delayedFile(DevConstants.JAR_SRG_FORGE));
             obf.setOutJar(delayedFile(REOBF_TMP));
             obf.setBuildFile(delayedFile(ECLIPSE_FORGE + "/build.gradle"));
             obf.dependsOn("generateProjects", "extractForgeSources", "genSrgs");

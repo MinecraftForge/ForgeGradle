@@ -219,6 +219,7 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             obf.setSrg(delayedFile(DevConstants.PACKAGED_SRG));
             obf.setReverse(true);
+            obf.setPreFFJar(delayedFile(DevConstants.JAR_SRG_FML));
             obf.setOutJar(delayedFile(DevConstants.REOBF_TMP));
             obf.setBuildFile(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"));
             obf.dependsOn("generateProjects", "extractFmlSources", "fixMappings");

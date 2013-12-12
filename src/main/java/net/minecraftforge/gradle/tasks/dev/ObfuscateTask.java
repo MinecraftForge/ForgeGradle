@@ -29,6 +29,7 @@ import com.google.common.io.Files;
 public class ObfuscateTask extends DefaultTask
 {
     private DelayedFile outJar;
+    private DelayedFile preFFJar;
     private DelayedFile srg;
     private boolean     reverse;
     private DelayedFile buildFile;
@@ -112,6 +113,16 @@ public class ObfuscateTask extends DefaultTask
     public void setOutJar(DelayedFile outJar)
     {
         this.outJar = outJar;
+    }
+    
+    public File getPreFFJar()
+    {
+        return preFFJar.call();
+    }
+
+    public void setPreFFJar(DelayedFile preFFJar)
+    {
+        this.preFFJar = preFFJar;
     }
 
     public File getSrg()
