@@ -53,7 +53,7 @@ public class ObfuscateTask extends DefaultTask
         // executing jar task
         getLogger().debug("Executing child Jar task...");
         executeTask(jarTask);
-        
+
         File srg = getSrg();
 
         if (getExc() != null)
@@ -64,7 +64,7 @@ public class ObfuscateTask extends DefaultTask
         getLogger().debug("Obfuscating jar...");
         obfuscate((File)jarTask.property("archivePath"), (FileCollection)compileTask.property("classpath"), srg);
     }
-    
+
     private void executeTask(AbstractTask task)
     {
         for (Object dep : task.getTaskDependencies().getDependencies(task))
@@ -99,7 +99,7 @@ public class ObfuscateTask extends DefaultTask
             inheritanceProviders.add(new ClassLoaderProvider(new URLClassLoader(toUrls(classpath))));
 
         mapping.setFallbackInheritanceProvider(inheritanceProviders);
-        
+
         File out = getOutJar();
         if (!out.getParentFile().exists()) //Needed because SS doesn't create it.
         {
@@ -115,11 +115,11 @@ public class ObfuscateTask extends DefaultTask
         File srg = new File(this.getTemporaryDir(), "reobf_cls.srg");
         if (srg.isFile())
             srg.delete();
-        
+
         Map<String, String> map = Files.readLines(exc, Charset.defaultCharset(), new LineProcessor<Map<String, String>>()
         {
             Map<String, String> tmp = Maps.newHashMap();
-            
+
             @Override
             public boolean processLine(String line) throws IOException
             {
@@ -187,17 +187,17 @@ public class ObfuscateTask extends DefaultTask
             }
             else if (split[0].equals("MD:"))
             {
-                String[] s = rsplit(split[2], "/");
-                split[2] = rename(s[0] + "/" + s[1]);
+                String[] s = rsplit(split[3], "/");
+                split[3] = rename(s[0] + "/" + s[1]);
 
-                Matcher m = reg.matcher(split[3]);
+                Matcher m = reg.matcher(split[4]);
                 StringBuffer b = new StringBuffer();
                 while(m.find())
                 {
                     m.appendReplacement(b, "L" + rename(m.group(1)) + ";");
                 }
                 m.appendTail(b);
-                split[3] = b.toString();
+                split[4] = b.toString();
             }
             out.append(StringUtil.joinString(Arrays.asList(split), " ")).append('\n');
             return true;
@@ -208,16 +208,16 @@ public class ObfuscateTask extends DefaultTask
         {
             return out.toString();
         }
-        
+
     }
 
     public static URL[] toUrls(FileCollection collection) throws MalformedURLException
     {
         ArrayList<URL> urls = new ArrayList<URL>();
-        
+
         for (File file : collection.getFiles())
             urls.add(file.toURI().toURL());
-        
+
         return urls.toArray(new URL[urls.size()]);
     }
 
