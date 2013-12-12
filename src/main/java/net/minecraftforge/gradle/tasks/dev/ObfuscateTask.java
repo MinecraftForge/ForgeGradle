@@ -197,7 +197,7 @@ public class ObfuscateTask extends DefaultTask
                     m.appendReplacement(b, "L" + rename(m.group(1)) + ";");
                 }
                 m.appendTail(b);
-                split[3] = m.toString();
+                split[3] = b.toString();
             }
             out.append(StringUtil.joinString(Arrays.asList(split), " ")).append('\n');
             return true;
