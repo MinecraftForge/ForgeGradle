@@ -25,6 +25,9 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
+
 import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
 
 public class ProcessJarTask extends CachedTask
@@ -123,7 +126,15 @@ public class ProcessJarTask extends CachedTask
         mapping.loadMappings(srg);
 
         // load in ATs
-        AccessMap accessMap = new AccessMap();
+        AccessMap accessMap = new AccessMap() {
+            @Override
+            public void addAccessChange(String symbolString, String accessString)
+            {
+                Iterable<String> split = Splitter.on(' ').omitEmptyStrings().split(symbolString);
+                String joinedString = Joiner.on('.').join(split);
+                super.addAccessChange(joinedString, accessString);
+            }
+        };
         getLogger().info("Using AccessTransformers...");
         for (File at : ats)
         {
