@@ -782,6 +782,24 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         // fix eclipse project location...
         fixEclipseProject(ECLIPSE_LOCATION);
     }
+    
+    @Override
+    public void finalCall()
+    {
+        Configuration config = project.getConfigurations().getByName(CONFIG);
+
+        Javadoc javadoc = (Javadoc) project.getTasks().getByName("javadoc");
+        javadoc.getClasspath().add(config);
+
+        // get conventions
+        JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+        SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        
+        main.getCompileConfigurationName();
+        Configuration compileConfig = project.getConfigurations().getByName(main.getCompileConfigurationName());
+        
+        compileConfig.extendsFrom(config);
+    }
 
     private static final byte[] LOCATION_BEFORE = new byte[]{ 0x40, (byte)0xB1, (byte)0x8B, (byte)0x81, 0x23, (byte)0xBC, 0x00, 0x14, 0x1A, 0x25, (byte)0x96, (byte)0xE7, (byte)0xA3, (byte)0x93, (byte)0xBE, 0x1E};
     private static final byte[] LOCATION_AFTER = new byte[]{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte)0xC0, 0x58, (byte)0xFB, (byte)0xF3, 0x23, (byte)0xBC, 0x00, 0x14, 0x1A, 0x51, (byte)0xF3, (byte)0x8C, 0x7B, (byte)0xBB, 0x77, (byte)0xC6};

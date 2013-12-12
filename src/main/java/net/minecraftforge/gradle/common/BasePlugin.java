@@ -3,7 +3,6 @@ package net.minecraftforge.gradle.common;
 import groovy.lang.Closure;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 
@@ -78,6 +77,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 {
                     Throwables.propagate(e);
                 }
+                
+                finalCall();
             }
         });
 
@@ -107,6 +108,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         project.getLogger().lifecycle("****************************");
         displayBanner = false;
     }
+    
+    public void finalCall() {}
 
     @SuppressWarnings("serial")
     private void makeObtainTasks()
