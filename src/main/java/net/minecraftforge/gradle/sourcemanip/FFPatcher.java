@@ -1,50 +1,43 @@
 package net.minecraftforge.gradle.sourcemanip;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.Strings;
-import com.google.code.regexp.Pattern;
-import com.google.code.regexp.Matcher;
-
-import net.minecraftforge.gradle.common.Constants;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import net.minecraftforge.gradle.StringUtils;
+import net.minecraftforge.gradle.common.Constants;
+
+import com.google.code.regexp.Matcher;
+import com.google.code.regexp.Pattern;
+import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
+
 public class FFPatcher
 {
     static final String MODIFIERS = "public|protected|private|static|abstract|final|native|synchronized|transient|volatile|strictfp";
 
-    public static final Pattern SYNTHETICS = Pattern.compile("(?m)(\\s*// \\$FF: (synthetic|bridge) method(\\r\\n|\\n|\\r)){1,2}\\s*(?<modifiers>(?:(?:" + MODIFIERS + ") )*)(?<return>.+?) (?<method>.+?)\\((?<arguments>.*)\\)\\s*\\{(\\r\\n|\\n|\\r)\\s*return this\\.(?<method2>.+?)\\((?<arguments2>.*)\\);(\\r\\n|\\n|\\r)\\s*\\}");
-    public static final Pattern TYPECAST = Pattern.compile("\\([\\w\\.]+\\)");
+    private static final Pattern SYNTHETICS = Pattern.compile("(?m)(\\s*// \\$FF: (synthetic|bridge) method(\\r\\n|\\n|\\r)){1,2}\\s*(?<modifiers>(?:(?:" + MODIFIERS + ") )*)(?<return>.+?) (?<method>.+?)\\((?<arguments>.*)\\)\\s*\\{(\\r\\n|\\n|\\r)\\s*return this\\.(?<method2>.+?)\\((?<arguments2>.*)\\);(\\r\\n|\\n|\\r)\\s*\\}");
+    //private static final Pattern TYPECAST = Pattern.compile("\\([\\w\\.]+\\)");
 
     // Remove TRAILING whitespace
-    public static final String TRAILING = "(?m)[ \\t]+$";
+    private static final String TRAILING = "(?m)[ \\t]+$";
 
     //Remove repeated blank lines
-    public static final String NEWLINES = "(?m)^(\\r\\n|\\r|\\n){2,}";
-
-    public static final Pattern MODIFIERS_REG = Pattern.compile("(" + MODIFIERS + ")");
-    public static final String LIST = ", ";
-
-    // modifiers, type, name, implements, body, end
-    public static final Pattern ENUM_CLASS = Pattern.compile("(?m)^[ \t]*(?<modifiers>(?:(?:" + MODIFIERS + ") )*)(?<type>enum) (?<name>[\\w$]+)(?: implements (?<implements>[\\w$.]+(?:, [\\w$.]+)*))? \\{(?:\\r\\n|\\r|\\n)(?<body>(?:.*(?:\\r\\n|\\n|\\r))*?)(?<end>\\})");
-
-    // name, body, end
-    public static final Pattern ENUM_ENTRIES = Pattern.compile("(?m)^[ \t]+(?<name>[\\w$]+)\\(\"(?:[\\w$]+)\", [0-9]+(?:, (?<body>.*?))?\\)(?<end>(?:;|,)(?:\\r\\n|\\n|\\r)+)");
-
-    public static final String EMPTY_SUPER = "(?m)^[ \t]+super\\(\\);(\\r\\n|\\n|\\r)";
+    private static final String NEWLINES = "(?m)^(\\r\\n|\\r|\\n){2,}";
+    private static final String EMPTY_SUPER = "(?m)^[ \t]+super\\(\\);(\\r\\n|\\n|\\r)";
 
     // strip TRAILING 0 from doubles and floats to fix decompile differences on OSX
     // 0.0010D => 0.001D
     // value, type
-    public static final String TRAILINGZERO = "([0-9]+\\.[0-9]*[1-9])0+([DdFfEe])";
-
-    // modifiers, params, throws, empty, body, end
-    public static final String CONSTRUCTOR = "(?m)^[ \t]+(?<modifiers>(?:(?:" + MODIFIERS + ") )*)%s\\((?<parameters>.*?)\\)(?: throws (?<throws>[\\w$.]+(?:, [\\w$.]+)*))? \\{(?:(?<empty>\\}(?:\\r\\n|\\r|\\n)+)|(?:(?<body>(?:\\r\\n|\\r|\\n)(?:.*?(?:\\r\\n|\\r|\\n))*?)(?<end> {3}\\}(?:\\r\\n|\\r|\\n)+)))";
-
-    public static final String ENUM_VALS = "(?m)^[ \t]+// \\$FF: synthetic field(\\r\\n|\\n|\\r) +private static final %s\\[\\] [$\\w]+ = new %s\\[\\]\\{.*?\\};(\\r\\n|\\n|\\r)";
+    private static final String TRAILINGZERO = "([0-9]+\\.[0-9]*[1-9])0+([DdFfEe])";
+    
+    // new regexes
+    private static final String CLASS_REGEX = "(?<modifiers>(?:(?:" + MODIFIERS + ") )*)(?<type>enum|class|interface) (?<name>[\\w$]+)(?: (extends|implements) (?:[\\w$.]+(?:, [\\w$.]+)*))* \\{";
+    private static final String ENUM_ENTRY_REGEX = "(?<name>[\\w$]+)\\(\"(?:[\\w$]+)\", [0-9]+(?:, (?<body>.*?))?\\)(?<end> *(?:;|,|\\{)$)";
+    private static final String CONSTRUCTOR_REGEX = "(?<modifiers>(?:(?:" + MODIFIERS + ") )*)%s\\((?<parameters>.*?)\\)(?<end>(?: throws (?<throws>[\\w$.]+(?:, [\\w$.]+)*))? *(?:\\{\\}| \\{))";
+    private static final String CONSTRUCTOR_CALL_REGEX = "(?<name>this|super)\\((?<body>.*?)\\)(?<end>;)";
+    private static final String VALUE_FIELD_REGEX = "private static final %s\\[\\] [$\\w\\d]+ = new %s\\[\\]\\{.*?\\};";
 
     public static String processFile(String fileName, String text) throws IOException
     {
@@ -58,45 +51,172 @@ public class FFPatcher
         text = out.toString();
 
         text = text.replaceAll(TRAILING, "");
-
-        Matcher match = ENUM_CLASS.matcher(text);
-        while (match.find())
-        {
-            String className = match.group("name");
-
-            // find all modifiers
-            ArrayList<String> mods = new ArrayList<String>();
-            Matcher modMatch = MODIFIERS_REG.matcher(match.group("modifiers"));
-            while (modMatch.find())
-            {
-                mods.add(modMatch.group());
-            }
-
-            // check modifiers
-            if (!Strings.isNullOrEmpty(match.group("modifiers")) && mods.isEmpty())
-            {
-                throw new RuntimeException("ERROR PARSING ENUM !!!!! no modifiers!");
-            }
-
-            List<String> interfaces = new ArrayList<String>();
-            if (!Strings.isNullOrEmpty(match.group("implements")))
-            {
-                interfaces = Arrays.asList(match.group("implements").split(LIST));
-            }
-
-            text = text.replace(match.group(), processEnum(className, match.group("type"), mods, interfaces, match.group("body"), match.group("end")));
-        }
-
-        text = text.replaceAll(EMPTY_SUPER, "");
+        
         text = text.replaceAll(TRAILINGZERO, "");
+        
+        List<String> lines = new ArrayList<String>();
+        lines.addAll(StringUtils.lines(text));
+
+        processClass(lines, "", 0, "", ""); // mutates the list
+        text = Joiner.on(Constants.NEWLINE).join(lines);
+
         text = text.replaceAll(NEWLINES, Constants.NEWLINE);
-
-        text = text.replaceAll("(\\r\\n|\\r|\\n)", Constants.NEWLINE);
-        text = text.replaceAll("(\r\n|\r|\n)", Constants.NEWLINE);
-
+        text = text.replaceAll(EMPTY_SUPER, "");
+        
         return text;
     }
+    
+    private static int processClass(List<String> lines, String indent, int startIndex, String qualifiedName, String simpleName)
+    {
+        Pattern classPattern = Pattern.compile(indent + CLASS_REGEX);
+        
+        for (int i = startIndex; i < lines.size(); i++)
+        {
+            String line = lines.get(i);
+            
+            // who knows.....
+            if (Strings.isNullOrEmpty(line))
+                continue;
+            // ignore packages and imports
+            else if (line.startsWith("package") || line.startsWith("import"))
+                continue;
+            
+            Matcher matcher = classPattern.matcher(line);
+            
+            // found a class!
+            if (matcher.find())
+            {
+                String newIndent;
+                String classPath;
+                if (Strings.isNullOrEmpty(qualifiedName))
+                {
+                    classPath = matcher.group("name");
+                    newIndent = indent;
+                }
+                else
+                {
+                    classPath = qualifiedName + "." + matcher.group("name");
+                    newIndent = indent+ "   ";
+                }
+                
+                // fund an enum class, parse it seperately
+                if (matcher.group("type").equals("enum"))
+                    processEnum(lines, newIndent, i+1, classPath, matcher.group("name"));
+                
+                // nested class searching
+                i = processClass(lines, newIndent, i+1, classPath, matcher.group("name"));
+            }
+            
+            // class has finished
+            if (line.startsWith(indent + "}"))
+                return i;
+        }
+        
+        return 0;
+    }
+    
+    private static void processEnum(List<String> lines, String indent, int startIndex, String qualifiedName, String simpleName)
+    {
+        String newIndent = indent + "   ";
+        Pattern enumEntry = Pattern.compile(newIndent + ENUM_ENTRY_REGEX);
+        Pattern constructor = Pattern.compile(newIndent + String.format(CONSTRUCTOR_REGEX, simpleName));
+        Pattern constructorCall = Pattern.compile(newIndent + "   " + CONSTRUCTOR_CALL_REGEX);
+        String formatted = newIndent + String.format(VALUE_FIELD_REGEX, qualifiedName, qualifiedName);
+        Pattern valueField = Pattern.compile(formatted);
+        String newLine;
+        boolean prevSynthetic = false;
+        
+        for (int i = startIndex; i < lines.size(); i++)
+        {
+            newLine = null;
+            String line = lines.get(i);
+            
+            // find and replace enum entries
+            Matcher matcher = enumEntry.matcher(line);
+            if (matcher.find())
+            {
+                String body = matcher.group("body");
+                
+                newLine = newIndent + matcher.group("name");
+                
+                if (!Strings.isNullOrEmpty(body))
+                {
+                    String[] args = body.split(", ");
 
+                    if (line.endsWith("{"))
+                    {
+                        if (args[args.length - 1].equals("null"))
+                        {
+                            args = Arrays.copyOf(args, args.length - 1);
+                        }
+                    }
+                    body = Joiner.on(", ").join(args);
+                }
+                
+                if (Strings.isNullOrEmpty(body))
+                    newLine += matcher.group("end");
+                else
+                    newLine += "(" + body + ")" + matcher.group("end");
+            }
+            
+            // find and replace constructor
+            matcher = constructor.matcher(line);
+            if (matcher.find())
+            {
+                StringBuilder tmp = new StringBuilder();
+                tmp.append(newIndent).append(matcher.group("modifiers")).append(simpleName).append("(");
+                
+                String[] args = matcher.group("parameters").split(", ");
+                for(int x = 2; x < args.length; x++)
+                    tmp.append(args[x]).append(x < args.length - 1 ? ", " : "");
+                tmp.append(")");
+                
+                tmp.append(matcher.group("end"));
+                newLine = tmp.toString();
+                
+                if (args.length <= 2 && newLine.endsWith("}"))
+                    newLine = "";
+            }
+            
+            // find constructor calls...
+            matcher = constructorCall.matcher(line);
+            if (matcher.find())
+            {
+                String body = matcher.group("body");
+                
+                if (!Strings.isNullOrEmpty(body))
+                {
+                    String[] args = body.split(", ");
+                    args = Arrays.copyOfRange(args, 2, args.length);
+                    body = Joiner.on(", ").join(args);
+                }
+                
+                newLine = newIndent + "   " + matcher.group("name") + "(" + body + ")" + matcher.group("end");
+            }
+            
+            if (prevSynthetic)
+            {
+                matcher = valueField.matcher(line);
+                if (matcher.find())
+                    newLine = "";
+            }
+            
+            if (line.contains("// $FF: synthetic field"))
+            {
+                newLine = "";
+                prevSynthetic = true;
+            }
+            else
+                prevSynthetic = false;
+            
+            if (newLine != null)
+                lines.set(i, newLine);
+            
+            // class has finished.
+            if (line.startsWith(indent + "}"))
+                break;
+        }
+    }
 
     private static String synthetic_replacement(Matcher match)
     {
@@ -130,137 +250,5 @@ public class FFPatcher
             return "";
         
         return match.group();
-    }
-
-    private static String processEnum(String classname, String classtype, List<String> modifiers, List<String> interfaces, String body, String end)
-    {
-        Matcher match = ENUM_ENTRIES.matcher(body);
-        while (match.find())
-        {
-            // defaults.. in case the body isnt there
-            String entryBody = "";
-
-            if (!Strings.isNullOrEmpty(match.group("body")))
-            {
-                entryBody = "(" + match.group("body") + ")";
-            }
-
-            body = body.replace(match.group(), "   " + match.group("name") + entryBody + match.group("end"));
-        }
-
-        String valuesRegex = String.format(ENUM_VALS, classname, classname);
-        body = body.replaceAll(valuesRegex, "");
-
-        String conRegex = String.format(CONSTRUCTOR, classname);
-        match = Pattern.compile(conRegex).matcher(body);
-
-        // process constructors
-        while (match.find())
-        {
-            // find all modifiers
-            ArrayList<String> mods = new ArrayList<String>();
-            Matcher modMatch = MODIFIERS_REG.matcher(match.group("modifiers"));
-            while (modMatch.find())
-            {
-                mods.add(modMatch.group());
-            }
-
-            // check modifiers
-            if (!Strings.isNullOrEmpty(match.group("modifiers")) && mods.isEmpty())
-            {
-                throw new RuntimeException("ERROR PARSING ENUM CONSTRUCTOR! !!!!! no modifiers!");
-            }
-
-            List<String> params = new ArrayList<String>();
-            if (!Strings.isNullOrEmpty(match.group("parameters")))
-            {
-                params = Arrays.asList(match.group("parameters").split(LIST));
-            }
-
-            List<String> exc = new ArrayList<String>();
-            if (!Strings.isNullOrEmpty(match.group("throws")))
-            {
-                exc = Arrays.asList(match.group("throws").split(LIST));
-            }
-
-            String methodBody, methodEnd;
-            if (!Strings.isNullOrEmpty(match.group("empty")))
-            {
-                methodBody = "";
-                methodEnd = match.group("empty");
-            }
-            else
-            {
-                methodBody = match.group("body");
-                methodEnd = match.group("end");
-            }
-
-            body = body.replace(match.group(), processConstructor(classname, mods, params, exc, methodBody, methodEnd));
-        }
-
-        // rebuild enum
-        StringBuilder out = new StringBuilder("");
-
-        if (!modifiers.isEmpty())
-        {
-            out.append(Joiner.on(" ").join(modifiers)).append(" ");
-        }
-
-        out.append(classtype).append(' ').append(classname);
-
-        if (!interfaces.isEmpty())
-        {
-            out.append(" implements ").append(Joiner.on(", ").join(interfaces));
-        }
-
-        out.append(" {").append(Constants.NEWLINE).append(body).append(end);
-
-        return out.toString();
-    }
-
-    private static String processConstructor(String classname, List<String> mods, List<String> params, List<String> exc, String methodBody, String methodEnd)
-    {
-        if (params.size() >= 2)
-        {
-            // special case?
-            if (params.get(0).startsWith("String ") && params.get(1).startsWith("int "))
-            {
-                params = params.subList(2, params.size());
-
-                // empty CONSTRUCTOR
-                if (Strings.isNullOrEmpty(methodBody) && params.isEmpty())
-                {
-                    return "";
-                }
-            }
-            else
-            {
-                throw new RuntimeException("invalid initial parameters in enum");
-            }
-            // ERROR
-        }
-        else
-        {
-            throw new RuntimeException("not enough parameters in enum");
-        }
-
-        // rebuild CONSTRUCTOR
-
-        StringBuilder out = new StringBuilder("   ");
-        if (mods != null && !mods.isEmpty())
-        {
-            out.append(Joiner.on(" ").join(mods)).append(" ");
-        }
-
-        out.append(classname).append("(").append(Joiner.on(", ").join(params)).append(")");
-
-        if (exc != null && !exc.isEmpty())
-        {
-            out.append(" throws ").append(Joiner.on(", ").join(exc));
-        }
-
-        out.append(" {").append(methodBody).append(methodEnd);
-
-        return out.toString();
     }
 }
