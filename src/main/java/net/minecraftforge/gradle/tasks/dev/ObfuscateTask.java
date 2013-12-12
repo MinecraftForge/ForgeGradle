@@ -1,6 +1,8 @@
 package net.minecraftforge.gradle.tasks.dev;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -12,6 +14,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import net.md_5.specialsource.Jar;
 import net.md_5.specialsource.JarMapping;
@@ -27,8 +31,13 @@ import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.AbstractTask;
 import org.gradle.api.tasks.TaskAction;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Opcodes;
 
 import com.google.common.collect.Maps;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
 
@@ -53,16 +62,80 @@ public class ObfuscateTask extends DefaultTask
         // executing jar task
         getLogger().debug("Executing child Jar task...");
         executeTask(jarTask);
+        
+        File inJar = (File)jarTask.property("archivePath");
 
         File srg = getSrg();
 
         if (getExc() != null)
         {
             srg = createSrg(srg, getExc());
+            srg = readMarkers(srg, inJar);
         }
 
         getLogger().debug("Obfuscating jar...");
-        obfuscate((File)jarTask.property("archivePath"), (FileCollection)compileTask.property("classpath"), srg);
+        obfuscate(inJar, (FileCollection)compileTask.property("classpath"), srg);
+    }
+    
+    private File readMarkers(File base, File inJar) throws IOException
+    {
+        File srg = new File(this.getTemporaryDir(), "reobf.srg");
+        if (srg.isFile())
+            srg.delete();
+        
+        final Map<String, String> map = Maps.newHashMap();
+        ZipInputStream zip = null;
+        try
+        {
+            try
+            {
+                zip = new ZipInputStream(new BufferedInputStream(new FileInputStream(inJar)));
+            }
+            catch (FileNotFoundException e)
+            {
+                throw new FileNotFoundException("Could not open input file: " + e.getMessage());
+            }
+
+            ClassVisitor reader = new ClassVisitor(Opcodes.ASM4, null)
+            {
+                private String className;
+
+                @Override
+                public void visit(int version, int access, String name, String signature, String superName, String[] interfaces)
+                {
+                    this.className = name;;
+                }
+
+                @Override
+                public FieldVisitor visitField(int access, String name, String desc, String signature, Object value)
+                {
+                    if (name.equals("__OBFID"))
+                    {
+                        map.put(String.valueOf(value) + "_", className);
+                    }
+                    return null;
+                }
+            };
+            
+            while (true)
+            {
+                ZipEntry entry = zip.getNextEntry();
+                if (entry == null) break;
+                if (entry.isDirectory() ||
+                    !entry.getName().endsWith(".class")) continue;
+                (new ClassReader(ByteStreams.toByteArray(zip))).accept(reader, 0);
+            }
+        } finally {
+            if (zip != null) {
+                try {
+                    zip.close();
+                } catch (IOException e){}
+            }
+        }
+
+        String fixed = Files.readLines(base, Charset.defaultCharset(), new SrgLineProcessor(map));
+        Files.write(fixed.getBytes(), srg);
+        return srg;
     }
 
     private void executeTask(AbstractTask task)
@@ -183,18 +256,18 @@ public class ObfuscateTask extends DefaultTask
             else if (split[0].equals("FD:"))
             {
                 String[] s = rsplit(split[2], "/");
-                split[2] = rename(s[0] + "/" + s[1]);
+                split[2] = rename(s[0]) + "/" + s[1];
             }
             else if (split[0].equals("MD:"))
             {
                 String[] s = rsplit(split[3], "/");
-                split[3] = rename(s[0] + "/" + s[1]);
+                split[3] = rename(s[0]) + "/" + s[1];
 
                 Matcher m = reg.matcher(split[4]);
                 StringBuffer b = new StringBuffer();
                 while(m.find())
                 {
-                    m.appendReplacement(b, "L" + rename(m.group(1)) + ";");
+                    m.appendReplacement(b, "L" + rename(m.group(1)).replace("$",  "\\$") + ";");
                 }
                 m.appendTail(b);
                 split[4] = b.toString();
