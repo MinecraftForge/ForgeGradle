@@ -36,6 +36,7 @@ import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
@@ -70,6 +71,7 @@ public class GenBinaryPatches extends DefaultTask
 
     private HashMap<String, String> obfMapping   = new HashMap<String, String>();
     private HashMap<String, String> srgMapping   = new HashMap<String, String>();
+    private ArrayListMultimap<String, String> innerClasses   = ArrayListMultimap.create();
     private Set<String>             patchedFiles = new HashSet<String>();
     private Delta                   delta        = new Delta();
 
@@ -83,7 +85,9 @@ public class GenBinaryPatches extends DefaultTask
             for (File patch : tree.call().getFiles())
             {
                 String name = patch.getName().replace(".java.patch", "");
-                patchedFiles.add(srgMapping.get(name));
+                String obfName = srgMapping.get(name);
+                patchedFiles.add(obfName);
+                addInnerClasses(name, patchedFiles);
             }
         }
 
@@ -105,6 +109,15 @@ public class GenBinaryPatches extends DefaultTask
         buildOutput(runtimedata, devtimedata);
     }
 
+    private void addInnerClasses(String parent, Set<String> patchList)
+    {
+        // Recursively add inner classes to the list of patches - this will mean we ship anything affected by "access$" changes
+        for (String inner : innerClasses.get(parent))
+        {
+            patchList.add(srgMapping.get(inner));
+            addInnerClasses(inner, patchList);
+        }
+    }
     private void loadMappings() throws Exception
     {
         Files.readLines(getSrg(), Charset.defaultCharset(), new LineProcessor<String>() {
@@ -121,8 +134,14 @@ public class GenBinaryPatches extends DefaultTask
 
                 String[] parts = Iterables.toArray(splitter.split(line), String.class);
                 obfMapping.put(parts[1], parts[2]);
-                srgMapping.put(parts[2].substring(parts[2].lastIndexOf('/') + 1), parts[1]);
-
+                String srgName = parts[2].substring(parts[2].lastIndexOf('/') + 1);
+                srgMapping.put(srgName, parts[1]);
+                int innerDollar = srgName.lastIndexOf('$');
+                if (innerDollar > 0)
+                {
+                    String outer = srgName.substring(0, innerDollar);
+                    innerClasses.put(outer, srgName);
+                }
                 return true;
             }
 
