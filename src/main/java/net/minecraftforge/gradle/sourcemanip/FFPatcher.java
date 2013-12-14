@@ -82,7 +82,7 @@ public class FFPatcher
         }
 
         text = text.replaceAll(EMPTY_SUPER, "");
-        text = text.replaceAll(TRAILINGZERO, "");
+        text = text.replaceAll(TRAILINGZERO, "$1$2");
         text = text.replaceAll(NEWLINES, Constants.NEWLINE);
 
         text = text.replaceAll("(\\r\\n|\\r|\\n)", Constants.NEWLINE);
