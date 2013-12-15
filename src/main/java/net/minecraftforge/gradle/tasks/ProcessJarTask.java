@@ -1,14 +1,21 @@
 package net.minecraftforge.gradle.tasks;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
+import joptsimple.internal.Strings;
 import net.md_5.specialsource.AccessMap;
 import net.md_5.specialsource.Jar;
 import net.md_5.specialsource.JarMapping;
@@ -29,6 +36,11 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.tree.ClassNode;
+
+import com.google.common.io.ByteStreams;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -42,13 +54,13 @@ import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
 public class ProcessJarTask extends CachedTask
 {
     @InputFile
-    private DelayedFile inJar;
+    private DelayedFile            inJar;
 
     @InputFile
-    private DelayedFile srg;
+    private DelayedFile            srg;
 
     @InputFile
-    private DelayedFile exceptorCfg;
+    private DelayedFile            exceptorCfg;
 
     @Nullable
     @InputFile
@@ -62,11 +74,11 @@ public class ProcessJarTask extends CachedTask
 
     @OutputFile
     @Cached
-    private DelayedFile outDirtyJar = new DelayedFile(getProject(), Constants.DEOBF_JAR); // dirty = has any other ATs
+    private DelayedFile            outDirtyJar = new DelayedFile(getProject(), Constants.DEOBF_JAR); // dirty = has any other ATs
+
+    private ArrayList<DelayedFile> ats         = new ArrayList<DelayedFile>();
 
     private DelayedFile log;
-
-    private ArrayList<DelayedFile> ats = new ArrayList<DelayedFile>();
 
     private boolean isClean = true;
 
@@ -80,7 +92,6 @@ public class ProcessJarTask extends CachedTask
 
     /**
      * adds an access transformer to the deobfuscation of this
-     *
      * @param obj
      */
     public void addTransformer(Object... obj)
@@ -102,7 +113,8 @@ public class ProcessJarTask extends CachedTask
     public void doTask() throws IOException
     {
         // make stuff into files.
-        File tempObfJar = new File(getTemporaryDir(), "obfed.jar"); // courtesy of gradle temp dir.
+        File tempObfJar = new File(getTemporaryDir(), "deobfed.jar"); // courtesy of gradle temp dir.
+        File tempExcJar = new File(getTemporaryDir(), "excepted.jar"); // courtesy of gradle temp dir.
 
         // make the ATs list.. its a Set to avoid duplication.
         Set<File> ats = new HashSet<File>();
@@ -115,15 +127,18 @@ public class ProcessJarTask extends CachedTask
         getLogger().lifecycle("Applying SpecialSource...");
         deobfJar(getInJar(), tempObfJar, getSrg(), ats);
 
-        File out = isClean ? getOutCleanJar() : getOutDirtyJar();
-
         File log = getLog();
         if (log == null)
             log = new File(getTemporaryDir(), "exceptor.log");
 
         // apply exceptor
         getLogger().lifecycle("Applying Exceptor...");
-        applyExceptor(tempObfJar, out, getExceptorCfg(), log, ats);
+        applyExceptor(tempObfJar, tempExcJar, getExceptorCfg(), log, ats);
+
+        File out = isClean ? getOutCleanJar() : getOutDirtyJar();
+
+        getLogger().lifecycle("Injecting source info...");
+        injectSourceInfo(tempExcJar, out);
     }
 
     private void deobfJar(File inJar, File outJar, File srg, Collection<File> ats) throws IOException
@@ -255,6 +270,56 @@ public class ProcessJarTask extends CachedTask
                 getApplyMarkers());
     }
 
+    private void injectSourceInfo(File inJar, File outJar) throws IOException
+    {
+        ZipFile in = new ZipFile(inJar);
+        final ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(outJar)));
+
+        for (ZipEntry e : Collections.list(in.entries()))
+        {
+            if (e.getName().contains("META-INF"))
+                continue;
+
+            if (e.isDirectory())
+            {
+                out.putNextEntry(e);
+            }
+            else
+            {
+                ZipEntry n = new ZipEntry(e.getName());
+                n.setTime(e.getTime());
+                out.putNextEntry(n);
+
+                byte[] data = ByteStreams.toByteArray(in.getInputStream(e));
+
+                // correct source name
+                if (e.getName().endsWith(".class"))
+                    data = correctSourceName(e.getName(), data);
+
+                out.write(data);
+            }
+        }
+
+        out.flush();
+        out.close();
+        in.close();
+    }
+
+    private byte[] correctSourceName(String name, byte[] data)
+    {
+        ClassReader reader = new ClassReader(data);
+        ClassNode node = new ClassNode();
+
+        reader.accept(node, 0);
+
+        if (Strings.isNullOrEmpty(node.sourceFile) || !node.sourceFile.endsWith(".java"))
+            node.sourceFile = name.substring(name.lastIndexOf('/') + 1).replace(".class", ".java");
+
+        ClassWriter writer = new ClassWriter(0);
+        node.accept(writer);
+        return writer.toByteArray();
+    }
+
     public File getExceptorCfg()
     {
         return exceptorCfg.call();
@@ -320,7 +385,6 @@ public class ProcessJarTask extends CachedTask
     {
         this.srg = srg;
     }
-
 
     public File getOutCleanJar()
     {

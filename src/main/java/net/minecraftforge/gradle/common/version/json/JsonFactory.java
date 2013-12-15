@@ -34,14 +34,20 @@ public class JsonFactory
         GSON = builder.create();
     }
 
-    public static Version loadVersion(File json) throws JsonSyntaxException, JsonIOException, FileNotFoundException
+    public static Version loadVersion(File json) throws JsonSyntaxException, JsonIOException, IOException
     {
-        return GSON.fromJson(new FileReader(json), Version.class);
+        FileReader reader = new FileReader(json);
+        Version v =  GSON.fromJson(reader, Version.class);
+        reader.close();
+        return v;
     }
     
-    public static AssetIndex loadAssetsIndex(File json) throws JsonSyntaxException, JsonIOException, FileNotFoundException
+    public static AssetIndex loadAssetsIndex(File json) throws JsonSyntaxException, JsonIOException, IOException
     {
-        return GSON.fromJson(new FileReader(json), AssetIndex.class);
+        FileReader reader = new FileReader(json);
+        AssetIndex a =  GSON.fromJson(reader, AssetIndex.class);
+        reader.close();
+        return a;
     }
 
     public static Map<String, MCInjectorStruct> loadMCIJson(File json) throws IOException

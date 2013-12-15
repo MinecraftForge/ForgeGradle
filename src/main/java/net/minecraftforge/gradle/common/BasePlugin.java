@@ -3,7 +3,7 @@ package net.minecraftforge.gradle.common;
 import groovy.lang.Closure;
 
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.HashMap;
 
 import net.minecraftforge.gradle.FileLogListenner;
@@ -77,6 +77,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 {
                     Throwables.propagate(e);
                 }
+                
+                finalCall();
             }
         });
 
@@ -106,6 +108,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         project.getLogger().lifecycle("****************************");
         displayBanner = false;
     }
+    
+    public void finalCall() {}
 
     @SuppressWarnings("serial")
     private void makeObtainTasks()
@@ -172,7 +176,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         }
     }
 
-    public void parseAssetIndex() throws JsonSyntaxException, JsonIOException, FileNotFoundException
+    public void parseAssetIndex() throws JsonSyntaxException, JsonIOException, IOException
     {
         assetIndex = JsonFactory.loadAssetsIndex(delayedFile(Constants.ASSETS + "/indexes/{ASSET_INDEX}.json").call());
     }

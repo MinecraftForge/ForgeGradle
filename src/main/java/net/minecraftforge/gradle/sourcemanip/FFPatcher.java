@@ -52,7 +52,7 @@ public class FFPatcher
 
         text = text.replaceAll(TRAILING, "");
         
-        text = text.replaceAll(TRAILINGZERO, "");
+        text = text.replaceAll(TRAILINGZERO, "$1$2");
         
         List<String> lines = new ArrayList<String>();
         lines.addAll(StringUtils.lines(text));
