@@ -2,9 +2,11 @@ package net.minecraftforge.gradle.tasks;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import net.md_5.specialsource.AccessMap;
@@ -15,6 +17,9 @@ import net.md_5.specialsource.RemapperProcessor;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.common.version.json.JsonFactory;
+import net.minecraftforge.gradle.common.version.json.MCInjectorStruct;
+import net.minecraftforge.gradle.common.version.json.MCInjectorStruct.InnerClass;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
@@ -25,8 +30,12 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import static org.objectweb.asm.Opcodes.*;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
+import com.google.common.io.Files;
+import com.google.common.io.LineProcessor;
 
 import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
 
@@ -114,7 +123,7 @@ public class ProcessJarTask extends CachedTask
 
         // apply exceptor
         getLogger().lifecycle("Applying Exceptor...");
-        applyExceptor(tempObfJar, out, getExceptorCfg(), log);
+        applyExceptor(tempObfJar, out, getExceptorCfg(), log, ats);
     }
 
     private void deobfJar(File inJar, File outJar, File srg, Collection<File> ats) throws IOException
@@ -161,12 +170,74 @@ public class ProcessJarTask extends CachedTask
         remapper.remapJar(input, outJar);
     }
 
-    public void applyExceptor(File inJar, File outJar, File config, File log) throws IOException
+    private int fixAccess(int access, String target)
+    {
+        int ret = access & ~7;
+        int t = 0;
+
+        if      (target.startsWith("public"))    t = ACC_PUBLIC;
+        else if (target.startsWith("private"))   t = ACC_PRIVATE;
+        else if (target.startsWith("protected")) t = ACC_PROTECTED;
+
+        switch (access & 7)
+        {
+            case ACC_PRIVATE:   ret |= t; break;
+            case 0:             ret |= (t != ACC_PRIVATE ? t : 0); break;
+            case ACC_PROTECTED: ret |= (t != ACC_PRIVATE && t != 0 ? t : ACC_PROTECTED); break;
+            case ACC_PUBLIC:    ret |= ACC_PUBLIC; break;
+        }
+
+        if      (target.endsWith("-f")) ret &= ~ACC_FINAL;
+        else if (target.endsWith("+f")) ret |= ACC_FINAL;
+        return ret;
+    }
+
+    public void applyExceptor(File inJar, File outJar, File config, File log, Set<File> ats) throws IOException
     {
         String json = null;
         File getJson = getExceptorJson();
         if (getJson != null)
-            json = getJson.getCanonicalPath();
+        {
+            final Map<String, MCInjectorStruct> struct = JsonFactory.loadMCIJson(getJson);
+            for (File at : ats)
+            {
+                Files.readLines(at, Charset.defaultCharset(), new LineProcessor<Object>()
+                {
+                    @Override
+                    public boolean processLine(String line) throws IOException
+                    {
+                        if (line.indexOf('#') != -1) line = line.substring(0, line.indexOf('#'));
+                        line = line.trim().replace('.', '/');
+                        if (line.isEmpty()) return true;
+
+                        String[] s = line.split(" ");
+                        if (s.length == 2 && s[1].indexOf('$') > 0)
+                        {
+                             String parent = s[1].substring(0, s[1].indexOf('$'));
+                             MCInjectorStruct cls = struct.get(parent);
+                             if (cls != null && cls.innerClasses != null)
+                             {
+                                 for (InnerClass inner : cls.innerClasses)
+                                 {
+                                     if (inner.inner_class.equals(s[1]))
+                                     {
+                                         int access = fixAccess(inner.getAccess(), s[0]);
+                                         inner.access = (access == 0 ? null : Integer.toHexString(access));
+                                     }
+                                 }
+                             }
+                        }
+
+                        return true;
+                    }
+
+                    @Override public Object getResult() { return null; }
+                });
+            }
+            File jsonTmp = new File(this.getTemporaryDir(), "transformed.json");
+            json = jsonTmp.getCanonicalPath();
+            Files.write(JsonFactory.GSON.toJson(struct).getBytes(), jsonTmp);
+        }
 
         getLogger().debug("INPUT: " + inJar);
         getLogger().debug("OUTPUT: " + outJar);

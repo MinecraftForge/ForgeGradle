@@ -33,14 +33,12 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.AbstractTask;
-import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 
 import static org.objectweb.asm.Opcodes.*;
 
