@@ -1,26 +1,116 @@
 package net.minecraftforge.gradle.sourcemanip;
 
-import net.minecraftforge.gradle.common.Constants;
-
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import net.minecraftforge.gradle.common.Constants;
+
 public class McpCleanup
 {
-    public static final Pattern COMMENTS_COMMENTS = Pattern.compile("(?ms)\\/\\/.*?$|\\/\\*.*?\\*\\/|\\'(?:\\.|[^\\'])*'|\"(?:\\.|[^\\\"])*\"");
     public static final Pattern COMMENTS_TRAILING = Pattern.compile("(?m)[ \\t]+$");
     public static final Pattern COMMENTS_NEWLINES = Pattern.compile("(?m)^(?:\\r\\n|\\r|\\n){2,}");
 
     public static String stripComments(String text)
     {
-        Matcher match = COMMENTS_COMMENTS.matcher(text);
-        while (match.find())
+        StringReader in = new StringReader(text);
+        StringWriter out = new StringWriter(text.length());
+        boolean inComment = false;
+        boolean inString = false;
+        char c;
+        int ci;
+        try
         {
-            if (match.group().startsWith("/"))
+            while ((ci = in.read()) != -1)
             {
-                text = text.replace(match.group(), "");
+                c = (char) ci;
+                switch (c)
+                {
+                    case '\\':
+                    {
+                        out.write(c);
+                        out.write(in.read());//Skip escaped chars
+                        break;
+                    }
+                    case '\"':
+                    {
+                        if (!inComment)
+                        {
+                            out.write(c);
+                            inString = !inString;
+                        }
+                        break;
+                    }
+                    case '\'':
+                    {
+                        if (!inComment)
+                        {
+                            out.write(c);
+                            out.write(in.read());
+                            out.write(in.read());
+                        }
+                        break;
+                    }
+                    case '*':
+                    {
+                        char c2 = (char) in.read();
+                        if (inComment && c2 == '/')
+                        {
+                            inComment = false;
+                            out.write(' ');//Allows int x = 3; int y = -/**/-x; to work
+                        } else
+                        {
+                            out.write(c);
+                            out.write(c2);
+                        }
+                        break;
+                    }
+                    case '/':
+                    {
+                        if (!inString)
+                        {
+                            char c2 = (char) in.read();
+                            switch (c2)
+                            {
+                                case '/':
+                                    char c3 = 0;
+                                    while (c3 != '\n' && c3 != '\r')
+                                    {
+                                        c3 = (char) in.read();
+                                    }
+                                    out.write(c3);//write newline
+                                    break;
+                                case '*':
+                                    inComment = true;
+                                    break;
+                                default:
+                                    out.write(c);
+                                    out.write(c2);
+                                    break;
+                            }
+                        } else
+                        {
+                            out.write(c);
+                        }
+                        break;
+                    }
+                    default:
+                    {
+                        if (!inComment)
+                        {
+                            out.write(c);
+                        }
+                        break;
+                    }
+                }
             }
+            out.close();
+        } catch (Exception e)
+        {
+            throw new RuntimeException(e);
         }
+        text = out.toString();
 
         text = COMMENTS_TRAILING.matcher(text).replaceAll("");
         text = COMMENTS_NEWLINES.matcher(text).replaceAll(Constants.NEWLINE);
