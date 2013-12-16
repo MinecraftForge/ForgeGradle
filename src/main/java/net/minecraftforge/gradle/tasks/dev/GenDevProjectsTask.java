@@ -89,7 +89,7 @@ public class GenDevProjectsTask extends DefaultTask
             "    maven",
             "    {",
             "        name 'minecraft'",
-            "        url 'http://s3.amazonaws.com/Minecraft.Download/libraries'",
+            "        url '" + Constants.LIBRARY_URL + "'",
             "    }",
             "}",
             "",
