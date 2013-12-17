@@ -48,6 +48,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         project.getLogging().addStandardErrorListener(listenner);
         project.getGradle().addBuildListener(listenner);
 
+        if (project.getBuildDir().getAbsolutePath().contains("!"))
+        {
+            project.getLogger().error("Build path has !, This will screw over a lot of java things as ! is used to denote archive paths, REMOVE IT if you want to continue");
+            throw new RuntimeException("Build path contains !");
+        }
+
         // extension objects
         project.getExtensions().create(Constants.EXT_NAME_MC, getExtensionClass(), project);
         project.getExtensions().create(Constants.EXT_NAME_JENKINS, JenkinsExtension.class, project);

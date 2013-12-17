@@ -838,9 +838,9 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
     protected void fixEclipseProject(String path)
     {
         File f = new File(path);
-        if (f.exists() && f.length() == 0)
+        if (f.exists())// && f.length() == 0)
         {
-            String projectDir = "URI//file:/" + project.getProjectDir().getAbsolutePath().replace('\\', '/');
+            String projectDir = "URI//" + project.getProjectDir().toURI().toString();
             try
             {
                 FileOutputStream fos = new FileOutputStream(f);
