@@ -1,27 +1,29 @@
 package net.minecraftforge.gradle.sourcemanip;
 
+import com.google.code.regexp.Matcher;
+import com.google.code.regexp.Pattern;
+import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import net.minecraftforge.gradle.StringUtils;
 import net.minecraftforge.gradle.common.Constants;
 
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Map.Entry;
 
 public class FmlCleanup
 {
-    private static final Pattern METHOD_REG = Pattern.compile("^ {4}(\\w+\\s+\\S.*\\(.*|static)$");
+    //private static final Pattern METHOD_REG = Pattern.compile("^ {4}(\\w+\\s+\\S.*\\(.*|static)$");
+    private static final Pattern METHOD_REG = Pattern.compile("^(?<indent>\\s+)(?<modifiers>(?:(?:" + FFPatcher.MODIFIERS + ") )*)(?:(?<return>[\\w\\[\\]\\.$]+) )?(?<name>[\\w$]+)\\((?<parameters>.*?)\\)(?<end>(?: throws (?<throws>[\\w$.]+(?:, [\\w$.]+)*))?)");
     private static final Pattern CATCH_REG = Pattern.compile("catch \\((.*)\\)$");
-    private static final Pattern NESTED_PERINTH = Pattern.compile("\\(.*\\(");
-    private static final Pattern METHOD_PARAMS = Pattern.compile("\\((.+)\\)");
     private static final Pattern METHOD_DEC_END = Pattern.compile("(}|\\);|throws .+?;)$");
-    private static final Pattern METHOD_END = Pattern.compile("^ {4}\\}$");
     private static final Pattern CAPS_START = Pattern.compile("^[A-Z]");
     private static final Pattern ARRAY = Pattern.compile("(\\[|\\.\\.\\.)");
-    private static final Pattern VAR_CALL = Pattern.compile("(?i)[a-z_$][a-z0-9_\\[\\]]+ var\\d+");
-    private static final Pattern VAR = Pattern.compile("var\\d+");
+    private static final Pattern VAR_CALL = Pattern.compile("(?i)[a-z_$][a-z0-9_\\[\\]]+ var\\d+(?:x)*");
+    private static final Pattern VAR = Pattern.compile("var\\d+(?:x)*");
 
     private static final Comparator<String> COMPARATOR = new Comparator<String>()
     {
@@ -31,131 +33,179 @@ public class FmlCleanup
             return str2.length() - str1.length();
         }
     };
-    //private static final Pattern CLASS = Pattern.compile("class (\\w+)");
+
     public static String renameClass(String text)
     {
         String[] lines = text.split("(\r\n|\r|\n)");
-        String output = "";
-
-        boolean insideMethod = false;
-        String method = "";
-        ArrayList<String> methodVars = new ArrayList<String>();
-        boolean skip = false;
+        List<String> output = new ArrayList<String>(lines.length);
+        MethodInfo method = null;
 
         for (String line : lines)
         {
-            // if re.search(METHOD_REG, line) and not re.search('=', line) and not re.search(r'\(.*\(', line):
-            if (METHOD_REG.matcher(line).find() && !line.contains("=") && !NESTED_PERINTH.matcher(line).find())
+            Matcher matcher = METHOD_REG.matcher(line);
+            if (!line.endsWith(";") && !line.endsWith(",") && matcher.find())// && !line.contains("=") && !NESTED_PERINTH.matcher(line).find())
             {
-                // if re.search(r'\(.+\)', line):
-                Matcher match = METHOD_PARAMS.matcher(line);
-                if (match.find())
+                method = new MethodInfo(method, matcher.group("indent"));
+                method.lines.add(line);
+
+                boolean invalid = false; // Can't think of a better way to filter out enum declarations, so make sure that all the parameters have types
+                String args = matcher.group("parameters");
+                if (args != null)
                 {
-                    // method_variables += [s.strip() for s in re.search(r'\((.+)\)', line).group(1).split(',')]
-                    for (String str : Splitter.on(',').trimResults().split(match.group(1)))
+                    for (String str : Splitter.on(',').trimResults().omitEmptyStrings().split(args))
                     {
-                        methodVars.add(str);
+                        if (str.indexOf(' ') == -1)
+                        {
+                            invalid = true;
+                            break;
+                        }
+                        method.addVar(str);
                     }
                 }
 
-                method += line + Constants.NEWLINE;
-                // method += line
-
-                // single line method?
-                skip = true;
-
-                // if not re.search(r'(}|\);|throws .+?;)$', line):
-                if (!METHOD_DEC_END.matcher(line).find())
+                if (invalid || METHOD_DEC_END.matcher(line).find())
                 {
-                    insideMethod = true;
+                    if (method.parent != null)
+                    {
+                        method.parent.children.remove(method);
+                    }
+                    method = method.parent;
+                    output.add(line);
                 }
             }
-
-            //elif re.search(r'^ {%s}}$' % indent, line):
-            else if (METHOD_END.matcher(line).find())
+            else if (method != null && method.ENDING.equals(line))
             {
-                //inside_method = False
-                insideMethod = false;
-            }
+                method.lines.add(line);
 
-            // inside method actions now.
-            if (insideMethod)
-            {
-                if (skip)
+                if (method.parent == null)
                 {
-                    skip = false;
-                    continue;
+                    for (String l : Splitter.on(Constants.NEWLINE).split(method.rename(null)))
+                    {
+                        output.add(l);
+                    }
                 }
 
-                method += line + Constants.NEWLINE;
-
-                Matcher matcher = CATCH_REG.matcher(line);
+                method = method.parent;
+            }
+            else if (method != null)
+            {
+                method.lines.add(line);
+                matcher = CATCH_REG.matcher(line);
                 if (matcher.find())
                 {
-                    methodVars.add(matcher.group(1));
+                    method.addVar(matcher.group(1));
                 }
                 else
                 {
-                    Matcher match = VAR_CALL.matcher(line);
-                    while (match.find())
+                    matcher = VAR_CALL.matcher(line);
+                    while (matcher.find())
                     {
-                        if (!match.group().startsWith("return") && !match.group().startsWith("throw"))
+                        String match = matcher.group();
+                        if (!match.startsWith("return") && !match.startsWith("throw"))
                         {
-                            methodVars.add(match.group());
+                            method.addVar(match);
                         }
                     }
                 }
             }
-            else
+            else // If we get to here, then we are outside of all methods
             {
-                if (!Strings.isNullOrEmpty(method))
-                {
-                    FmlCleanup namer = new FmlCleanup();
-                    HashMap<String, String> todo = new HashMap<String, String>();
-
-                    for (String var : methodVars)
-                    {
-                        String[] split = var.split(" ");
-                        if (split.length > 1)
-                        {
-                            todo.put(split[1], namer.getName(split[0], split[1]));
-                        }
-                        else
-                        {
-                            System.out.printf("Unknown thing : %s (%s)\n", var, method);
-                        }
-                    }
-
-                    List<String> sortedKeys = new ArrayList<String>(todo.keySet());
-                    Collections.sort(sortedKeys, COMPARATOR);
-
-                    // closure changes the sort, to sort by the return value of the closure.
-                    for (String key : sortedKeys)
-                    {
-                        if (VAR.matcher(key).matches())
-                        {
-                            method = method.replace(key, todo.get(key));
-                        }
-                    }
-
-                    output += method;
-
-                    // clear methods.
-                    methodVars.clear();
-                    method = "";
-                }
-
-                if (skip)
-                {
-                    skip = false;
-                    continue;
-                }
-
-                output += line + Constants.NEWLINE;
+                output.add(line);
             }
         }
 
-        return output;
+        return Joiner.on(Constants.NEWLINE).join(output);
+    }
+
+    private static class MethodInfo
+    {
+        private MethodInfo parent = null;
+        private List<Object> lines = Lists.newArrayList();
+        private List<String> vars = Lists.newArrayList();
+        private List<MethodInfo> children = Lists.newArrayList();
+        private final String ENDING;
+
+        private MethodInfo(MethodInfo parent, String indent)
+        {
+            this.parent = parent;
+            ENDING = indent + "}";
+            if (parent != null)
+            {
+                parent.children.add(this);
+                parent.lines.add(this);
+            }
+        }
+
+        private void addVar(String info)
+        {
+            vars.add(info);
+        }
+
+        private String rename(FmlCleanup namer)
+        {
+            namer = namer == null ? new FmlCleanup() : new FmlCleanup(namer);
+
+            Map<String, String> renames = Maps.newHashMap();
+            Map<String, String> unnamed = Maps.newHashMap();
+
+            for (String var : vars)
+            {
+                String[] split = var.split(" ");
+
+                if (!split[1].startsWith("var"))
+                    renames.put(split[1], namer.getName(split[0], split[1]));
+                else
+                    unnamed.put(split[1], split[0]);
+            }
+
+            if (unnamed.size() > 0)
+            {
+                // We sort the var## names because FF is non-deterministic and sometimes decompiles the declarations in different orders.
+                List<String> sorted = new ArrayList<String>(unnamed.keySet());
+                Collections.sort(sorted, new Comparator<String>()
+                {
+                    @Override
+                    public int compare(String o1, String o2)
+                    {
+                        if (o1.length() < o2.length()) return -1;
+                        if (o1.length() > o2.length()) return  1;
+                        return o1.compareTo(o2);
+                    }
+                });
+                for (String s : sorted)
+                {
+                    renames.put(s, namer.getName(unnamed.get(s), s));
+                }
+            }
+
+            StringBuilder buf = new StringBuilder();
+            for (Object line : lines)
+            {
+                if (line instanceof MethodInfo)
+                    buf.append(((MethodInfo)line).rename(namer)).append(Constants.NEWLINE);
+                else
+                    buf.append((String)line).append(Constants.NEWLINE);
+            }
+
+            String body = buf.toString();
+
+            if (renames.size() > 0)
+            {
+                List<String> sortedKeys = new ArrayList<String>(renames.keySet());
+                Collections.sort(sortedKeys, COMPARATOR);
+    
+                // closure changes the sort, to sort by the return value of the closure.
+                for (String key : sortedKeys)
+                {
+                    if (VAR.matcher(key).matches())
+                    {
+                        body = body.replace(key, renames.get(key));
+                    }
+                }
+            }
+
+            return body.substring(0, body.length() - Constants.NEWLINE.length());
+        }
     }
 
     HashMap<String, Holder> last;
@@ -182,6 +232,22 @@ public class FmlCleanup
 
         remap = new HashMap<String, String>();
         remap.put("long", "int");
+    }
+
+    private FmlCleanup(FmlCleanup parent)
+    {
+        last = Maps.newHashMap();
+        for (Entry<String, Holder> e : parent.last.entrySet())
+        {
+            Holder v = e.getValue();
+            last.put(e.getKey(), new Holder(v.id, v.skip_zero, v.names));
+        }
+
+        remap = Maps.newHashMap();
+        for (Entry<String, String> e : parent.remap.entrySet())
+        {
+            remap.put(e.getKey(), e.getValue());
+        }
     }
 
     private String getName(String type, String var)
@@ -229,25 +295,24 @@ public class FmlCleanup
 
         if (Strings.isNullOrEmpty(index))
         {
-            //TODO: Debug: System.out.println("NO DATA FOR TYPE " + type + " " + var);
             return StringUtils.lower(type);
         }
 
         Holder holder = last.get(index);
         int id = holder.id;
-        List<String> data = holder.data;
+        List<String> names = holder.names;
 
-        int ammount = data.size();
+        int ammount = names.size();
 
         String name;
         if (ammount == 1)
         {
-            name = data.get(0) + (id == 0 && holder.skip_zero ? "" : id);
+            name = names.get(0) + (id == 0 && holder.skip_zero ? "" : id);
         }
         else
         {
             int num = id / ammount;
-            name = data.get(id % ammount) + (id < ammount && holder.skip_zero ? "" : num);
+            name = names.get(id % ammount) + (id < ammount && holder.skip_zero ? "" : num);
         }
 
         holder.id++;
@@ -258,15 +323,20 @@ public class FmlCleanup
     {
         public int id;
         public boolean skip_zero;
-        public final ArrayList<String> data;
+        public final List<String> names = Lists.newArrayList();
 
-        public Holder(int t1, boolean skip_zero, String... stuff)
+        public Holder(int t1, boolean skip_zero, String... names)
         {
             this.id = t1;
             this.skip_zero = skip_zero;
-            this.data = new ArrayList<String>();
+            Collections.addAll(this.names, names);
+        }
 
-            Collections.addAll(this.data, stuff);
+        public Holder(int t1, boolean skip_zero, List<String> names)
+        {
+            this.id = t1;
+            this.skip_zero = skip_zero;
+            this.names.addAll(names);
         }
     }
 }

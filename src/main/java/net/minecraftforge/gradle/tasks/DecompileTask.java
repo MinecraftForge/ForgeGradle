@@ -33,6 +33,7 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -272,8 +273,10 @@ public class DecompileTask extends CachedTask
         Writer writer;
 
         GLConstantFixer fixer = new GLConstantFixer();
+        ArrayList<String> files = new ArrayList<String>(sourceMap.keySet());
+        Collections.sort(files); // Just to make sure we have the same order.. shouldn't matter on anything but lets be careful.
 
-        for (String file : sourceMap.keySet())
+        for (String file : files)
         {
             String text = sourceMap.get(file);
 
