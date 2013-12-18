@@ -251,6 +251,9 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         ExtractTask extractNatives = makeTask("extractNatives", ExtractTask.class);
         extractNatives.into(delayedFile(NATIVES_DIR));
         extractNatives.dependsOn("extractUserDev");
+        
+        // extra libs folder.
+        project.getDependencies().add("compile", project.fileTree("libs"));
     }
 
     protected void configureCompilation()
