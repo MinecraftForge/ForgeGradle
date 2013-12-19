@@ -43,7 +43,8 @@ public class FmlCleanup
         for (String line : lines)
         {
             Matcher matcher = METHOD_REG.matcher(line);
-            if (!line.endsWith(";") && !line.endsWith(",") && matcher.find())// && !line.contains("=") && !NESTED_PERINTH.matcher(line).find())
+            boolean found = matcher.find();
+            if (!line.endsWith(";") && !line.endsWith(",") && found)// && !line.contains("=") && !NESTED_PERINTH.matcher(line).find())
             {
                 method = new MethodInfo(method, matcher.group("indent"));
                 method.lines.add(line);
@@ -193,7 +194,7 @@ public class FmlCleanup
             {
                 List<String> sortedKeys = new ArrayList<String>(renames.keySet());
                 Collections.sort(sortedKeys, COMPARATOR);
-    
+
                 // closure changes the sort, to sort by the return value of the closure.
                 for (String key : sortedKeys)
                 {
