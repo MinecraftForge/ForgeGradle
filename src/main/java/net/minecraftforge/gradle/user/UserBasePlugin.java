@@ -457,24 +457,28 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             }
         });
 
-        ideaConv.getWorkspace().getIws().withXml(new Closure<Object>(this, null)
-        {
-            public Object call(Object... obj)
+        if (ideaConv.getWorkspace().getIws() != null) {
+            ideaConv.getWorkspace().getIws().withXml(new Closure<Object>(this, null)
             {
-                Element root = ((XmlProvider) this.getDelegate()).asElement();
-                Document doc = root.getOwnerDocument();
-                try
+                public Object call(Object... obj)
                 {
-                    injectIntellijRuns(doc, project.getProjectDir().getCanonicalPath());
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
+                    Element root = ((XmlProvider) this.getDelegate()).asElement();
+                    Document doc = root.getOwnerDocument();
+                    try
+                    {
+                        injectIntellijRuns(doc, project.getProjectDir().getCanonicalPath());
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
 
-                return null;
-            }
-        });
+                    return null;
+                }
+            });
+        } else {
+            project.getLogger().warn(String.format("subproject %s has no IDEA workspace, skipping configuration",project.getName()));
+        }
     }
 
     public final void injectIntellijRuns(Document doc, String module) throws DOMException, IOException
