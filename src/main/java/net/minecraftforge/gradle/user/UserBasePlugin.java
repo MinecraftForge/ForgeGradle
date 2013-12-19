@@ -456,6 +456,9 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
                 }
             }
         });
+        
+        if (ideaConv.getWorkspace().getIws() == null)
+            return;
 
         ideaConv.getWorkspace().getIws().withXml(new Closure<Object>(this, null)
         {
