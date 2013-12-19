@@ -87,6 +87,13 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
             task1.setUrl(delayedString(DevConstants.LAUNCH4J_URL));
         }
         
+        task1 = makeTask("updateJson", DownloadTask.class);
+        {
+            task1.setUrl(delayedString(DevConstants.MC_JSON_URL));
+            task1.setOutput(delayedFile(DevConstants.JSON_BASE));
+            task1.setDoesCache(false);
+        }
+        
         task = makeTask("extractL4J", ExtractTask.class);
         {
             task.dependsOn("downloadL4J");
@@ -106,7 +113,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
             task4.setServer(delayedFile(Constants.JAR_SERVER_FRESH));
             task4.setOutJar(delayedFile(Constants.JAR_MERGED));
             task4.setMergeCfg(delayedFile(DevConstants.MERGE_CFG));
-            task4.dependsOn("downloadClient", "downloadServer");
+            task4.dependsOn("downloadClient", "downloadServer", "updateJson");
         }
         
         CopyAssetsTask task5 = makeTask("copyAssets", CopyAssetsTask.class);
