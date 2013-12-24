@@ -61,7 +61,7 @@ public class FmlDevPlugin extends DevBasePlugin
         task = makeTask("buildPackages");
         task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "packageUserDev", "packageSrc", "genJavadocs");
         task.setGroup("FML");
-        
+
         // clean decompile task
         Delete delTask = makeTask("cleanDecompile", Delete.class);
         delTask.delete(delayedFile(DevConstants.ECLIPSE_CLEAN_SRC));
@@ -439,7 +439,7 @@ public class FmlDevPlugin extends DevBasePlugin
             project = BasePlugin.getProject(null, null);
         }
 
-        String fullVersion = runGit(project, workDir, "describe", "--long");
+        String fullVersion = runGit(project, workDir, "describe", "--long", "--match='[^(jenkins)]*'");
         fullVersion = fullVersion.replace('-', '.').replaceAll("[^0-9.]", ""); //Normalize splitter, and remove non-numbers
         String[] pts = fullVersion.split("\\.");
 
