@@ -439,7 +439,7 @@ public class FmlDevPlugin extends DevBasePlugin
             project = BasePlugin.getProject(null, null);
         }
 
-        String fullVersion = runGit(project, workDir, "describe", "--long", "--match='[^(jenkins)]*'");
+        String fullVersion = runGit(project, workDir, "describe", "--long", "--match=[^(jenkins)]*");
         fullVersion = fullVersion.replace('-', '.').replaceAll("[^0-9.]", ""); //Normalize splitter, and remove non-numbers
         String[] pts = fullVersion.split("\\.");
 
