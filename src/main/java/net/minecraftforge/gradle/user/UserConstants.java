@@ -23,6 +23,7 @@ public final class UserConstants
     static final String ASTYLE_CFG = CONF_DIR + "/astyle.cfg";
     static final String PACKAGED_SRG = CONF_DIR+"/packaged.srg";
     static final String PACKAGED_EXC = CONF_DIR+"/packaged.exc";
+    static final String EXC_JSON = CONF_DIR+"/exceptor.json";
     
     static final String DEOBF_MCP_SRG = CONF_DIR+"/notch-mcp.srg";
     public static final String REOBF_SRG = CONF_DIR+"/mcp-srg.srg";

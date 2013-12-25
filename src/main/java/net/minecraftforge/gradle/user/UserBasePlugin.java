@@ -159,8 +159,10 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         {
             deobfBinTask.setSrg(delayedFile(DEOBF_MCP_SRG));
             deobfBinTask.setOutDirtyJar(delayedFile(Constants.DEOBF_BIN_JAR));
-            addATs(deobfBinTask);
+            deobfBinTask.setExceptorJson(delayedFile(EXC_JSON));
             deobfBinTask.setExceptorCfg(delayedFile(PACKAGED_EXC));
+            deobfBinTask.setApplyMarkers(false);
+            addATs(deobfBinTask);
             deobfBinTask.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
             deobfBinTask.dependsOn(binTask);
         }
@@ -170,8 +172,10 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             deobfTask.setSrg(delayedFile(PACKAGED_SRG));
             deobfTask.setInJar(delayedFile(Constants.JAR_MERGED));
             deobfTask.setOutDirtyJar(delayedFile(Constants.DEOBF_JAR));
-            addATs(deobfTask);
+            deobfTask.setExceptorJson(delayedFile(EXC_JSON));
             deobfTask.setExceptorCfg(delayedFile(PACKAGED_EXC));
+            deobfTask.setApplyMarkers(true);
+            addATs(deobfTask);
             deobfTask.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
         }
 
