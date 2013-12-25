@@ -17,6 +17,7 @@ import net.md_5.specialsource.provider.JointProvider;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedThingy;
+import net.minecraftforge.gradle.extrastuff.ReobfExceptor;
 import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
 import net.minecraftforge.gradle.user.UserConstants;
 
@@ -305,7 +306,7 @@ public class ObfArtifact extends AbstractPublishArtifact
      * @throws IOException
      * @throws org.gradle.api.InvalidUserDataException if the there is insufficient information available to generate the signature.
      */
-    void generate() throws IOException
+    void generate(ReobfExceptor exc) throws IOException
     {
         File toObf = getToObf();
         if (toObf == null)
@@ -314,16 +315,18 @@ public class ObfArtifact extends AbstractPublishArtifact
         }
 
         File output = getFile();
-        File srg = new DelayedFile(caller.getProject(), UserConstants.REOBF_SRG).call();
+        File excepted = new File(caller.getTemporaryDir(), "excepted.jar");
+        Files.copy(toObf, excepted);
 
-        // obfuscate here
-        File inTemp = new File(caller.getTemporaryDir(), "jarIn.jar");
-        Files.copy(toObf, inTemp);
+        // copy input somewhere else...
+        exc.toReobfJar = toObf;
+        exc.buildSrg();
         
+        // obfuscate!
         if (caller.getUseRetroGuard())
-            applyRetroGuard(inTemp, output, srg);
+            applyRetroGuard(excepted, output, exc.outSrg);
         else
-            applySpecialSource(inTemp, output, srg);
+            applySpecialSource(excepted, output, exc.outSrg);
     }
     
     private void applySpecialSource(File input, File output, File srg) throws IOException

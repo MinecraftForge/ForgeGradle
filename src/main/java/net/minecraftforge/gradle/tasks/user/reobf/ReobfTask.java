@@ -6,7 +6,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedThingy;
+import net.minecraftforge.gradle.extrastuff.ReobfExceptor;
+import net.minecraftforge.gradle.user.UserConstants;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
@@ -18,6 +21,7 @@ import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.DefaultDomainObjectSet;
 import org.gradle.api.internal.file.collections.SimpleFileCollection;
+import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 
@@ -26,6 +30,10 @@ public class ReobfTask extends DefaultTask
     final private DefaultDomainObjectSet<ObfArtifact> obfOutput = new DefaultDomainObjectSet<ObfArtifact>(ObfArtifact.class);
     
     private boolean useRG = false;
+    
+    @InputFile
+    private DelayedFile deobfFile;
+    
 
     @SuppressWarnings("serial")
     public ReobfTask()
@@ -221,8 +229,18 @@ public class ReobfTask extends DefaultTask
     @TaskAction
     public void generate() throws IOException
     {
+        // do stuff.
+        ReobfExceptor exc = new ReobfExceptor();
+        exc.deobfJar = getDeobfFile();
+        exc.inSrg = new DelayedFile(getProject(), UserConstants.REOBF_SRG).call();
+        exc.outSrg = new File(getTemporaryDir(), "reobf.srg");
+        exc.fieldCSV = new DelayedFile(getProject(), UserConstants.FIELD_CSV).call();
+        exc.methodCSV = new DelayedFile(getProject(), UserConstants.METHOD_CSV).call();
+        
+        exc.doFirstThings();
+        
         for (ObfArtifact obf : getObfuscated())
-            obf.generate();
+            obf.generate(exc);
     }
 
     private void addArtifact(ObfArtifact artifact)
@@ -298,5 +316,15 @@ public class ReobfTask extends DefaultTask
     public void setUseRetroGuard(boolean useRG)
     {
         this.useRG = useRG;
+    }
+
+    public File getDeobfFile()
+    {
+        return deobfFile.call();
+    }
+
+    public void setDeobfFile(DelayedFile deobfFile)
+    {
+        this.deobfFile = deobfFile;
     }
 }

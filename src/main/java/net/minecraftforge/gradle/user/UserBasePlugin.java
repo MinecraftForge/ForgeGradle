@@ -182,6 +182,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         // reobfuscate task.
         ReobfTask task4 = makeTask("reobf", ReobfTask.class);
         {
+            task4.setDeobfFile(deobfBinTask.getDelayedOutput());
             task4.reobf(project.getTasks().getByName("jar"), new Action<ArtifactSpec>() {
 
                 @Override
@@ -193,6 +194,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 
             });
             project.getTasks().getByName("assemble").dependsOn(task4);
+            task4.dependsOn("deobfBinJar");
         }
 
         CopyAssetsTask task5 = makeTask("copyAssets", CopyAssetsTask.class);
