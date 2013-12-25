@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.sourcemanip;
+package net.minecraftforge.gradle.extrastuff;
 
 import java.io.IOException;
 import java.util.ArrayList;

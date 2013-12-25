@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.sourcemanip;
+package net.minecraftforge.gradle.extrastuff;
 
 import com.google.code.regexp.Matcher;
 import com.google.code.regexp.Pattern;

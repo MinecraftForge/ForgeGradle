@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.sourcemanip;
+package net.minecraftforge.gradle.extrastuff;
 
 import argo.jdom.JdomParser;
 import argo.jdom.JsonNode;

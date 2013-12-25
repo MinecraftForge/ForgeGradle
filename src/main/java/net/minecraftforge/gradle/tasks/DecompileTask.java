@@ -14,11 +14,11 @@ import com.google.common.io.Files;
 import groovy.lang.Closure;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.extrastuff.FFPatcher;
+import net.minecraftforge.gradle.extrastuff.FmlCleanup;
+import net.minecraftforge.gradle.extrastuff.GLConstantFixer;
+import net.minecraftforge.gradle.extrastuff.McpCleanup;
 import net.minecraftforge.gradle.patching.ContextualPatch;
-import net.minecraftforge.gradle.sourcemanip.FFPatcher;
-import net.minecraftforge.gradle.sourcemanip.FmlCleanup;
-import net.minecraftforge.gradle.sourcemanip.GLConstantFixer;
-import net.minecraftforge.gradle.sourcemanip.McpCleanup;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 import static net.minecraftforge.gradle.patching.ContextualPatch.*;
 
