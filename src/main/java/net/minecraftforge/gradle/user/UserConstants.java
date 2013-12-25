@@ -19,7 +19,7 @@ public final class UserConstants
     
     static final String CONF_DIR = PACK_DIR + "/conf";
     static final String MERGE_CFG = CONF_DIR + "/mcp_merge.cfg";
-    static final String MCP_PATCH = CONF_DIR + "/packaged.patch";
+    static final String MCP_PATCH_DIR = CONF_DIR + "/patches";
     static final String ASTYLE_CFG = CONF_DIR + "/astyle.cfg";
     static final String PACKAGED_SRG = CONF_DIR+"/packaged.srg";
     static final String PACKAGED_EXC = CONF_DIR+"/packaged.exc";

@@ -215,7 +215,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             decompile.setInJar(deobf.getDelayedOutput());
             decompile.setOutJar(decompOut);
             decompile.setFernFlower(delayedFile(Constants.FERNFLOWER));
-            decompile.setPatch(delayedFile(MCP_PATCH));
+            decompile.setPatch(delayedFile(MCP_PATCH_DIR));
             decompile.setAstyleConfig(delayedFile(ASTYLE_CFG));
             decompile.dependsOn("downloadMcpTools", "deobfuscateJar", "genSrgs");
         }
