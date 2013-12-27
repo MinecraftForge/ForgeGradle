@@ -16,12 +16,12 @@ public class SubmoduleChangelogTask extends DefaultTask
     private DelayedFile submodule;
     private String moduleName;
     private String prefix;
-    
+
     @TaskAction
     public void doTask()
     {
         getLogger().lifecycle("");
-        
+
         String[] output = runGit(getProject().getProjectDir(), "--no-pager", "diff", "--no-color", "--", getSubmodule().getName());
         if (output.length == 0)
         {
@@ -42,7 +42,7 @@ public class SubmoduleChangelogTask extends DefaultTask
                 end = line.substring(19);
                 if (line.endsWith("-dirty"))
                 {
-                    end = end.substring(0, end.length() - 5);
+                    end = end.substring(0, end.length() - 6);
                 }
             }
         }
@@ -51,7 +51,7 @@ public class SubmoduleChangelogTask extends DefaultTask
         {
             getLogger().lifecycle("Could not extract start and end range");
             return;
-        }        
+        }
 
         output = runGit(getSubmodule(), "--no-pager", "log", "--reverse", "--pretty=oneline", start + "..." + end);
         getLogger().lifecycle("Updated " + getModuleName() + ":");
@@ -59,7 +59,7 @@ public class SubmoduleChangelogTask extends DefaultTask
         {
             getLogger().lifecycle(getPrefix() + "@" + line);
         }
-        
+
         getLogger().lifecycle("");
     }
 
