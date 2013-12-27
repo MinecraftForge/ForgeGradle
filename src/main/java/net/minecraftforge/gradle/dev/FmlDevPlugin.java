@@ -1,6 +1,8 @@
 package net.minecraftforge.gradle.dev;
 
 //import edu.sc.seis.launch4j.Launch4jPluginExtension;
+import static net.minecraftforge.gradle.dev.DevConstants.FIELDS_CSV;
+import static net.minecraftforge.gradle.dev.DevConstants.METHODS_CSV;
 import groovy.lang.Closure;
 
 import java.io.File;
@@ -234,6 +236,8 @@ public class FmlDevPlugin extends DevBasePlugin
             obf.setPreFFJar(delayedFile(DevConstants.JAR_SRG_FML));
             obf.setOutJar(delayedFile(DevConstants.REOBF_TMP));
             obf.setBuildFile(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"));
+            obf.setMethodsCsv(delayedFile(METHODS_CSV));
+            obf.setFieldsCsv(delayedFile(FIELDS_CSV));
             obf.dependsOn("generateProjects", "extractFmlSources");
         }
 
