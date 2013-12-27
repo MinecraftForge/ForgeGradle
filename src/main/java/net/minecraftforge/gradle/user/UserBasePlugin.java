@@ -535,7 +535,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             sub = doc.createElement("option");
             {
                 sub.setAttribute("name", "PROGRAM_PARAMETERS");
-                sub.setAttribute("value", "--version 1.6 --tweakClass cpw.mods.fml.common.launcher.FMLTweaker --username=Player1234");
+                sub.setAttribute("value", "--version 1.6 --tweakClass cpw.mods.fml.common.launcher.FMLTweaker --username=Player1234 --accessToken FML");
                 child.appendChild(sub);
             }
 
