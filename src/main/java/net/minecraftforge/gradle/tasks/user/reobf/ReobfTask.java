@@ -28,12 +28,12 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 public class ReobfTask extends DefaultTask
 {
     final private DefaultDomainObjectSet<ObfArtifact> obfOutput = new DefaultDomainObjectSet<ObfArtifact>(ObfArtifact.class);
-    
+
     private boolean useRG = false;
-    
+
     @InputFile
     private DelayedFile deobfFile;
-    
+
 
     @SuppressWarnings("serial")
     public ReobfTask()
@@ -54,7 +54,7 @@ public class ReobfTask extends DefaultTask
             }
         });
     }
-    
+
     public void reobf(Task task, Action<ArtifactSpec> artifactSpec)
     {
         reobf(task, new ActionClosure(artifactSpec));
@@ -90,7 +90,7 @@ public class ReobfTask extends DefaultTask
             addArtifact(new ObfArtifact(new DelayedThingy(task), new ArtifactSpec(getProject()), this));
         }
     }
-    
+
     public void reobf(PublishArtifact art, Action<ArtifactSpec> artifactSpec)
     {
         reobf(art, new ActionClosure(artifactSpec));
@@ -119,7 +119,7 @@ public class ReobfTask extends DefaultTask
             addArtifact(new ObfArtifact(publishArtifact, new ArtifactSpec(publishArtifact, getProject()), this));
         }
     }
-    
+
     public void reobf(File file, Action<ArtifactSpec> artifactSpec)
     {
         reobf(file, new ActionClosure(artifactSpec));
@@ -224,7 +224,7 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Generates the signature files.
-     * @throws IOException 
+     * @throws IOException
      */
     @TaskAction
     public void generate() throws IOException
@@ -236,9 +236,9 @@ public class ReobfTask extends DefaultTask
         exc.outSrg = new File(getTemporaryDir(), "reobf.srg");
         exc.fieldCSV = new DelayedFile(getProject(), UserConstants.FIELD_CSV).call();
         exc.methodCSV = new DelayedFile(getProject(), UserConstants.METHOD_CSV).call();
-        
+
         exc.doFirstThings();
-        
+
         for (ObfArtifact obf : getObfuscated())
             obf.generate(exc);
     }
@@ -262,13 +262,13 @@ public class ReobfTask extends DefaultTask
     FileCollection getFilesToObfuscate()
     {
         ArrayList<File> collect = new ArrayList<File>();
-        
+
         for (ObfArtifact obf : getObfuscated())
         {
             if (obf != null && obf.getToObf() != null)
                 collect.add(obf.getToObf());
         }
-        
+
         return new SimpleFileCollection(collect.toArray(new File[collect.size()]));
     }
 
@@ -277,29 +277,29 @@ public class ReobfTask extends DefaultTask
      */
     FileCollection getObfuscatedFiles() {
         ArrayList<File> collect = new ArrayList<File>();
-        
+
         for (ObfArtifact obf : getObfuscated())
         {
             if (obf != null && obf.getFile() != null)
                 collect.add(obf.getFile());
         }
-        
+
         return new SimpleFileCollection(collect.toArray(new File[collect.size()]));
     }
-    
+
     @SuppressWarnings({ "serial" })
     private class ActionClosure extends Closure<Object>
     {
         @SuppressWarnings("rawtypes")
         private final Action act;
-        
+
         @SuppressWarnings("rawtypes")
         public ActionClosure(Action artifactSpec)
         {
             super(null);
             this.act = artifactSpec;
         }
-        
+
         @SuppressWarnings("unchecked")
         public Object call(Object obj)
         {
@@ -320,7 +320,7 @@ public class ReobfTask extends DefaultTask
 
     public File getDeobfFile()
     {
-        return deobfFile.call();
+        return deobfFile != null ? deobfFile.call() : null;
     }
 
     public void setDeobfFile(DelayedFile deobfFile)
