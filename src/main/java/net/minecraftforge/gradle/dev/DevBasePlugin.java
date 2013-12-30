@@ -52,16 +52,16 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
 {
     private AntPathMatcher antMatcher = new AntPathMatcher();
     protected static final String[] JAVA_FILES = new String[] { "**.java", "*.java", "**/*.java" };
-    
+
     @SuppressWarnings("serial")
     @Override
     public void applyPlugin()
     {
         // apply L4J
         this.applyExternalPlugin("launch4j");
-        
+
         project.getTasks().getByName("uploadArchives").dependsOn("launch4j");
-        
+
         ExtractTask task = makeTask("extractWorkspace", ExtractTask.class);
         {
             task.getOutputs().upToDateWhen(new Closure<Boolean>(null) {
@@ -74,39 +74,39 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
             task.from(delayedFile(DevConstants.WORKSPACE_ZIP));
             task.into(delayedFile(DevConstants.WORKSPACE));
         }
-        
+
         DownloadTask task1 = makeTask("downloadBaseInstaller", DownloadTask.class);
         {
             task1.setOutput(delayedFile(DevConstants.INSTALLER_BASE));
             task1.setUrl(delayedString(DevConstants.INSTALLER_URL));
         }
-        
+
         task1 = makeTask("downloadL4J", DownloadTask.class);
         {
             task1.setOutput(delayedFile(DevConstants.LAUNCH4J));
             task1.setUrl(delayedString(DevConstants.LAUNCH4J_URL));
         }
-        
+
         task1 = makeTask("updateJson", DownloadTask.class);
         {
             task1.setUrl(delayedString(DevConstants.MC_JSON_URL));
             task1.setOutput(delayedFile(DevConstants.JSON_BASE));
             task1.setDoesCache(false);
         }
-        
+
         task = makeTask("extractL4J", ExtractTask.class);
         {
             task.dependsOn("downloadL4J");
             task.from(delayedFile(DevConstants.LAUNCH4J));
             task.into(delayedFile(DevConstants.LAUNCH4J_DIR));
         }
-        
+
         CompressLZMA task3 = makeTask("compressDeobfData", CompressLZMA.class);
         {
             task3.setInputFile(delayedFile(DevConstants.JOINED_SRG));
             task3.setOutputFile(delayedFile(DevConstants.DEOBF_DATA));
         }
-        
+
         MergeJarsTask task4 = makeTask("mergeJars", MergeJarsTask.class);
         {
             task4.setClient(delayedFile(Constants.JAR_CLIENT_FRESH));
@@ -115,7 +115,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
             task4.setMergeCfg(delayedFile(DevConstants.MERGE_CFG));
             task4.dependsOn("downloadClient", "downloadServer", "updateJson");
         }
-        
+
         CopyAssetsTask task5 = makeTask("copyAssets", CopyAssetsTask.class);
         {
             task5.setAssetsDir(delayedFile(Constants.ASSETS));
@@ -123,7 +123,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
             task5.setAssetIndex(getAssetIndexClosure());
             task5.dependsOn("getAssets", "extractWorkspace");
         }
-        
+
         GenSrgTask task6 = makeTask("genSrgs", GenSrgTask.class);
         {
             task6.setInSrg(delayedFile(DevConstants.JOINED_SRG));
@@ -134,30 +134,30 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
             task6.setFieldsCsv(delayedFile(DevConstants.FIELDS_CSV));
         }
     }
-    
+
     private void configureLaunch4J()
     {
         final File installer = ((Zip) project.getTasks().getByName("packageInstaller")).getArchivePath();
-        
+
         File output = new File(installer.getParentFile(), installer.getName().replace(".jar", "-win.exe"));
         project.getArtifacts().add("archives", output);
-       
+
         Launch4jPluginExtension ext = (Launch4jPluginExtension) project.getExtensions().getByName("launch4j");
         ext.setOutfile(output.getAbsolutePath());
         ext.setJar(installer.getAbsolutePath());
-        
+
         String command = delayedFile(DevConstants.LAUNCH4J_DIR).call().getAbsolutePath();
         command += "/launch4j";
-        
+
         if (Constants.OPERATING_SYSTEM == Constants.OperatingSystem.WINDOWS)
             command += "c.exe";
         else
         {
             final String extraCommand = command;
-            
+
             Task task = project.getTasks().getByName("extractL4J");
             task.doLast(new Action<Task>() {
-                
+
                 @Override
                 public void execute(Task task)
                 {
@@ -184,9 +184,9 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
                 }
             });
         }
-        
+
         ext.setLaunch4jCmd(command);
-        
+
         Task task = project.getTasks().getByName("generateXmlConfig");
         task.dependsOn("packageInstaller", "extractL4J");
         task.getInputs().file(installer);
@@ -194,13 +194,13 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
         String icon = ext.getIcon();
         if (icon == null || icon.isEmpty())
         {
-            icon = delayedFile(DevConstants.LAUNCH4J_DIR + "/demo/SimpleApp/l4j/SimpleApp.ico").call().getAbsolutePath();   
+            icon = delayedFile(DevConstants.LAUNCH4J_DIR + "/demo/SimpleApp/l4j/SimpleApp.ico").call().getAbsolutePath();
         }
         icon = new File(icon).getAbsolutePath();
         ext.setIcon(icon);
         ext.setMainClassName(delayedString("{MAIN_CLASS}").call());
     }
-    
+
     @Override
     protected final String getDevJson()
     {
@@ -211,9 +211,9 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
     public void afterEvaluate()
     {
         super.afterEvaluate();
-        
+
         configureLaunch4J();
-        
+
         try
         {
             Copy copyTask = makeTask("extractNatives", Copy.class);
@@ -229,7 +229,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
                 project.getLogger().info("Dev json not set, could not create native downloads tasks");
                 return;
             }
-            
+
             if (version == null)
             {
                 File jsonFile = delayedFile(devJson).call().getAbsoluteFile();
@@ -290,7 +290,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
                     buf.append(String.format("libraries/%s/%s/%s/%s-%s.jar ", pts[0].replace('.', '/'), pts[1], pts[2], pts[1], pts[2]));
                 }
             }
-            buf.append(delayedString("minecraft_server.{MC_VERSION}").call());
+            buf.append(delayedString("minecraft_server.{MC_VERSION}.jar").call());
             return buf.toString();
         }
         catch (Exception e)
@@ -298,18 +298,19 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
             throw new RuntimeException(e);
         }
     }
-    
+
     @Override
     public String resolve(String pattern, Project project, DevExtension exten)
     {
         pattern = super.resolve(pattern, project, exten);
         pattern = pattern.replace("{MAIN_CLASS}", exten.getMainClass());
+        pattern = pattern.replace("{FML_TWEAK_CLASS}", exten.getTweakClass());
         pattern = pattern.replace("{INSTALLER_VERSION}", exten.getInstallerVersion());
         pattern = pattern.replace("{FML_DIR}", exten.getFmlDir());
         pattern = pattern.replace("{MAPPINGS_DIR}", exten.getFmlDir() + "/conf");
         return pattern;
     }
-    
+
     @SuppressWarnings("serial")
     protected static String runGit(final Project project, final File workDir, final String... args)
     {
@@ -395,7 +396,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
 
         // Sign the temporary jar
         Map<String, String> jarsigner = (Map<String, String>)project.property("jarsigner");
-        
+
         Map<String, String> args = Maps.newHashMap();
         args.put("alias", keyName);
         args.put("storepass", jarsigner.get("storepass"));

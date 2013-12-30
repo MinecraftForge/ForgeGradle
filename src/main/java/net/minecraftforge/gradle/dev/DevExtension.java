@@ -8,6 +8,7 @@ public class DevExtension extends BaseExtension
 {
     private String fmlDir;
     private String mainClass;
+    private String tweakClass;
     private String installerVersion = "null";
 
     public DevExtension(Project project)
@@ -43,5 +44,15 @@ public class DevExtension extends BaseExtension
     public void setInstallerVersion(String installerVersion)
     {
         this.installerVersion = installerVersion;
+    }
+
+    public String getTweakClass()
+    {
+        return tweakClass;
+    }
+
+    public void setTweakClass(String tweakClass)
+    {
+        this.tweakClass = tweakClass;
     }
 }

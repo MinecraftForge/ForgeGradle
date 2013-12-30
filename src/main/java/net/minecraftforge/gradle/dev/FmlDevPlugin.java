@@ -295,6 +295,7 @@ public class FmlDevPlugin extends DevBasePlugin
                 {
                     Manifest mani = (Manifest) getDelegate();
                     mani.getAttributes().put("Main-Class", delayedString("{MAIN_CLASS}").call());
+                    mani.getAttributes().put("TweakClass", delayedString("{FML_TWEAK_CLASS}").call());
                     mani.getAttributes().put("Class-Path", getServerClassPath(delayedFile(DevConstants.JSON_REL).call()));
                     return null;
                 }
