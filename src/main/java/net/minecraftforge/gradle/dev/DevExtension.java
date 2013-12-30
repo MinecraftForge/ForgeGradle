@@ -48,7 +48,7 @@ public class DevExtension extends BaseExtension
 
     public String getTweakClass()
     {
-        return tweakClass;
+        return tweakClass == null ? "" : tweakClass;
     }
 
     public void setTweakClass(String tweakClass)

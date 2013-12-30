@@ -50,7 +50,7 @@ public class ForgeDevPlugin extends DevBasePlugin
     public void applyPlugin()
     {
         super.applyPlugin();
-        
+
         // set fmlDir
         getExtension().setFmlDir("fml");
 
@@ -106,7 +106,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task4.setMaxFuzz(2);
             task4.dependsOn("decompile");
         }
-        
+
         // add fml sources
         Zip task5 = makeTask("fmlInjectJar", Zip.class);
         {
@@ -116,14 +116,14 @@ public class ForgeDevPlugin extends DevBasePlugin
             task5.from(delayedFile("{MAPPINGS_DIR}/patches"), new CopyInto("", "Start.java"));
             task5.from(delayedFile(DEOBF_DATA));
             task5.from(delayedFile(FML_VERSIONF));
-            
+
             // see ZIP_INJECT_FORGE
             task5.setArchiveName("minecraft_fmlinjected.zip");
             task5.setDestinationDir(delayedFile("{BUILD_DIR}/forgeTmp").call());
-            
+
             task5.dependsOn("fmlPatchJar", "compressDeobfData", "createVersionPropertiesFML");
         }
-        
+
         RemapSourcesTask task6 = makeTask("remapSourcesJar", RemapSourcesTask.class);
         {
             task6.setInJar(delayedFile(ZIP_INJECT_FORGE));
@@ -135,7 +135,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task6.setDoesJavadocs(false);
             task6.dependsOn("fmlInjectJar");
         }
-        
+
         task4 = makeTask("forgePatchJar", PatchJarTask.class);
         {
             task4.setInJar(delayedFile(ZIP_RENAMED_FORGE));
@@ -209,7 +209,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task.setJson(delayedFile(JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
             task.dependsOn("extractNatives");
         }
-        
+
         task = makeTask("generateProjectForge", GenDevProjectsTask.class);
         {
             task.setJson(delayedFile(JSON_DEV));
@@ -354,6 +354,7 @@ public class ForgeDevPlugin extends DevBasePlugin
                 {
                     Manifest mani = (Manifest) getDelegate();
                     mani.getAttributes().put("Main-Class", delayedString("{MAIN_CLASS}").call());
+                    mani.getAttributes().put("TweakClass", delayedString("{FML_TWEAK_CLASS}").call());
                     mani.getAttributes().put("Class-Path", getServerClassPath(delayedFile(JSON_REL).call()));
                     return null;
                 }
@@ -433,21 +434,21 @@ public class ForgeDevPlugin extends DevBasePlugin
             patchZipFML.setArchiveName("fmlpatches.zip");
             patchZipFML.setDestinationDir(delayedFile("{BUILD_DIR}/tmp/").call());
         }
-        
+
         final Zip patchZipForge = makeTask("zipForgePatches", Zip.class);
         {
             patchZipForge.from(delayedFile(FORGE_PATCH_DIR));
             patchZipForge.setArchiveName("forgepatches.zip");
             patchZipForge.setDestinationDir(delayedFile("{BUILD_DIR}/tmp/").call());
         }
-        
+
         final Zip classZip = makeTask("jarClasses", Zip.class);
         {
             classZip.from(delayedZipTree(BINPATCH_TMP), new CopyInto("", "**/*.class"));
             classZip.setArchiveName("binaries.jar");
             classZip.setDestinationDir(delayedFile("{BUILD_DIR}/tmp/").call());
         }
-        
+
         final File javadocSource = project.file(delayedFile("{BUILD_DIR}/tmp/javadocSource"));
         ReplaceJavadocsTask jdSource = makeTask("replaceJavadocs", ReplaceJavadocsTask.class);
         {
@@ -592,7 +593,7 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             branch = null;
         }
-        
+
         IDelayedResolver resolver = (IDelayedResolver)project.getPlugins().findPlugin("forgedev");
         StringBuilder out = new StringBuilder();
 
