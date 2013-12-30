@@ -34,6 +34,9 @@ public class ReobfTask extends DefaultTask
     @InputFile
     private DelayedFile deobfFile;
 
+    @InputFile
+    private DelayedFile exceptorCfg;
+
 
     @SuppressWarnings("serial")
     public ReobfTask()
@@ -232,6 +235,7 @@ public class ReobfTask extends DefaultTask
         // do stuff.
         ReobfExceptor exc = new ReobfExceptor();
         exc.deobfJar = getDeobfFile();
+        exc.excConfig = getExceptorCfg();
         exc.inSrg = new DelayedFile(getProject(), UserConstants.REOBF_SRG).call();
         exc.outSrg = new File(getTemporaryDir(), "reobf.srg");
         exc.fieldCSV = new DelayedFile(getProject(), UserConstants.FIELD_CSV).call();
@@ -327,4 +331,15 @@ public class ReobfTask extends DefaultTask
     {
         this.deobfFile = deobfFile;
     }
+
+    public File getExceptorCfg()
+    {
+        return exceptorCfg.call();
+    }
+
+    public void setExceptorCfg(DelayedFile file)
+    {
+        this.exceptorCfg = file;
+    }
+
 }

@@ -88,6 +88,7 @@ public class ProcessJarTask extends CachedTask
         {
             ats.add(object);
         }
+        isClean = false;
     }
 
     /**
