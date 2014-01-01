@@ -1,6 +1,7 @@
 package net.minecraftforge.gradle.user;
 
 import static net.minecraftforge.gradle.user.UserConstants.*;
+import groovy.lang.Closure;
 
 import java.io.File;
 
@@ -46,7 +47,7 @@ public class FmlUserPlugin extends UserBasePlugin
     @Override
     protected void addATs(ProcessJarTask task)
     {
-        task.addTransformer(delayedFile(FML_AT));
+        task.addTransformerClean(delayedFile(FML_AT));
     }
     
     @Override
@@ -64,7 +65,7 @@ public class FmlUserPlugin extends UserBasePlugin
     @Override
     protected void doPostDecompTasks(boolean isClean, DelayedFile decompOut)
     {
-        DelayedFile fmled = delayedFile(isClean ? FML_FMLED : Constants.DECOMP_FMLED);
+        DelayedFile fmled    = delayedFile(isClean ? FML_FMLED : Constants.DECOMP_FMLED);
         DelayedFile injected = delayedFile(isClean ? FML_INJECTED : Constants.DECOMP_FMLINJECTED);
         DelayedFile remapped = delayedFile(isClean ? FML_REMAPPED : Constants.DECOMP_REMAPPED);
         
@@ -76,8 +77,16 @@ public class FmlUserPlugin extends UserBasePlugin
             fmlPatches.setInPatches(delayedFile(FML_PATCHES_ZIP));
         }
         
-        Zip inject = makeTask("addFmlSources", Zip.class);
+        final Zip inject = makeTask("addFmlSources", Zip.class);
         {
+            inject.getOutputs().upToDateWhen(new Closure<Boolean>(null)
+            {
+                private static final long serialVersionUID = -8480140049890357630L;
+                public Boolean call(Object o)
+                {
+                    return !inject.dependsOnTaskDidWork();
+                }
+            });
             inject.dependsOn("doFmlPatches");
             inject.from(fmled.toZipTree());
             inject.from(delayedFile(SRC_DIR));

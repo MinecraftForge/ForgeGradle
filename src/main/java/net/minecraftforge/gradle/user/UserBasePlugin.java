@@ -1,6 +1,7 @@
 package net.minecraftforge.gradle.user;
 
 import static net.minecraftforge.gradle.user.UserConstants.*;
+import static net.minecraftforge.gradle.common.Constants.*;
 import groovy.lang.Closure;
 import groovy.util.Node;
 import groovy.util.XmlParser;
@@ -22,7 +23,6 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import net.minecraftforge.gradle.common.BasePlugin;
-import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.common.version.json.JsonFactory;
 import net.minecraftforge.gradle.delayed.DelayedBase;
 import net.minecraftforge.gradle.delayed.DelayedFile;
@@ -93,7 +93,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 
         tasks();
 
-        // lifecycle tasks
         Task task = makeTask("setupCIWorkspace", DefaultTask.class);
         task.dependsOn("genSrgs", "deobfBinJar");
         task.setGroup("ForgeGradle");
@@ -125,102 +124,104 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 
     private void tasks()
     {
-        MergeJarsTask task = makeTask("mergeJars", MergeJarsTask.class);
         {
-            task.setClient(delayedFile(Constants.JAR_CLIENT_FRESH));
-            task.setServer(delayedFile(Constants.JAR_SERVER_FRESH));
-            task.setOutJar(delayedFile(Constants.JAR_MERGED));
-            task.setMergeCfg(delayedFile(MERGE_CFG));
+            MergeJarsTask task = makeTask("mergeJars", MergeJarsTask.class);
+            task.setClient  (df(JAR_CLIENT_FRESH));
+            task.setServer  (df(JAR_SERVER_FRESH));
+            task.setOutJar  (df(JAR_MERGED));
+            task.setMergeCfg(df(MERGE_CFG));
             task.dependsOn("extractUserDev", "downloadClient", "downloadServer");
         }
-
-        GenSrgTask task2 = makeTask("genSrgs", GenSrgTask.class);
+        
         {
-            task2.setInSrg(delayedFile(PACKAGED_SRG));
-            task2.setNotchToMcpSrg(delayedFile(DEOBF_MCP_SRG));
-            task2.setMcpToSrgSrg(delayedFile(REOBF_SRG));
-            task2.setMcpToNotchSrg(delayedFile(REOBF_NOTCH_SRG));
-            task2.setMethodsCsv(delayedFile(METHOD_CSV));
-            task2.setFieldsCsv(delayedFile(FIELD_CSV));
-            task2.dependsOn("extractUserDev");
+            GenSrgTask task = makeTask("genSrgs", GenSrgTask.class);
+            task.setInSrg     (df(PACKAGED_SRG));
+            task.setNotchToMcp(df(DEOBF_MCP_SRG));
+            task.setMcpToSrg  (df(REOBF_SRG));
+            task.setMcpToNotch(df(REOBF_NOTCH_SRG));
+            task.setMethodsCsv(df(METHOD_CSV));
+            task.setFieldsCsv (df(FIELD_CSV));
+            task.dependsOn("extractUserDev");
         }
 
-        ApplyBinPatchesTask binTask = makeTask("applyBinPatches", ApplyBinPatchesTask.class);
         {
-            binTask.setInJar(delayedFile(Constants.JAR_MERGED));
-            binTask.setOutJar(getBinPatchOut());
-            binTask.setPatches(delayedFile(BINPATCHES));
-            binTask.setClassesJar(delayedFile(BINARIES_JAR));
-            binTask.setResources(delayedFileTree(RES_DIR));
-            binTask.dependsOn("mergeJars");
+            ApplyBinPatchesTask task = makeTask("applyBinPatches", ApplyBinPatchesTask.class);
+            task.setInJar     (df(JAR_MERGED));
+            task.setOutJar    (getBinPatchOut());
+            task.setPatches   (df(BINPATCHES));
+            task.setClassesJar(df(BINARIES_JAR));
+            task.setResources (delayedFileTree(RES_DIR));
+            task.dependsOn("mergeJars");
         }
 
-        ProcessJarTask deobfBinTask = makeTask("deobfBinJar", ProcessJarTask.class);
+        ProcessJarTask deobfBinJar = null;
         {
-            deobfBinTask.setSrg(delayedFile(DEOBF_MCP_SRG));
-            deobfBinTask.setOutDirtyJar(delayedFile(Constants.DEOBF_BIN_JAR));
-            deobfBinTask.setExceptorJson(delayedFile(EXC_JSON));
-            deobfBinTask.setExceptorCfg(delayedFile(PACKAGED_EXC));
-            deobfBinTask.setApplyMarkers(false);
-            addATs(deobfBinTask);
-            deobfBinTask.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
-            deobfBinTask.dependsOn(binTask);
+            ProcessJarTask task = makeTask("deobfBinJar", ProcessJarTask.class);
+            task.setSrg         (df(DEOBF_MCP_SRG));
+            task.setOutDirtyJar (df(DEOBF_BIN_JAR));
+            task.setExceptorJson(df(EXC_JSON));
+            task.setExceptorCfg (df(PACKAGED_EXC));
+            task.setFieldCsv    (df(FIELD_CSV));
+            task.setMethodCsv   (df(METHOD_CSV));
+            task.setApplyMarkers(false);
+            addATs(task);
+            task.dependsOn("downloadMcpTools", "mergeJars", "genSrgs", "applyBinPatches");
+            deobfBinJar = task;
         }
 
-        ProcessJarTask deobfTask = makeTask("deobfuscateJar", ProcessJarTask.class);
         {
-            deobfTask.setSrg(delayedFile(PACKAGED_SRG));
-            deobfTask.setInJar(delayedFile(Constants.JAR_MERGED));
-            deobfTask.setOutDirtyJar(delayedFile(Constants.DEOBF_JAR));
-            deobfTask.setExceptorJson(delayedFile(EXC_JSON));
-            deobfTask.setExceptorCfg(delayedFile(PACKAGED_EXC));
-            deobfTask.setApplyMarkers(true);
-            addATs(deobfTask);
-            deobfTask.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
+            ProcessJarTask task = makeTask("deobfuscateJar", ProcessJarTask.class);
+            task.setSrg         (df(PACKAGED_SRG));
+            task.setInJar       (df(JAR_MERGED));
+            task.setOutDirtyJar (df(DEOBF_JAR));
+            task.setExceptorJson(df(EXC_JSON));
+            task.setExceptorCfg (df(PACKAGED_EXC));
+            task.setApplyMarkers(true);
+            addATs(task);
+            task.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
         }
 
-        // reobfuscate task.
-        ReobfTask task4 = makeTask("reobf", ReobfTask.class);
         {
-            task4.setDeobfFile(deobfBinTask.getDelayedOutput());
-            task4.setExceptorCfg(delayedFile(PACKAGED_EXC));
-            task4.reobf(project.getTasks().getByName("jar"), new Action<ArtifactSpec>() {
-
+            ReobfTask task = makeTask("reobf", ReobfTask.class);
+            task.setDeobfFile(deobfBinJar.getDelayedOutput());
+            task.setExceptorCfg(delayedFile(PACKAGED_EXC));
+            task.reobf(project.getTasks().getByName("jar"), new Action<ArtifactSpec>()
+            {
                 @Override
                 public void execute(ArtifactSpec arg0)
                 {
-                    JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+                    JavaPluginConvention javaConv = (JavaPluginConvention)project.getConvention().getPlugins().get("java");
                     arg0.setClasspath(javaConv.getSourceSets().getByName("main").getCompileClasspath());
                 }
 
             });
-            project.getTasks().getByName("assemble").dependsOn(task4);
-            task4.dependsOn("deobfBinJar");
+            project.getTasks().getByName("assemble").dependsOn(task);
+            task.dependsOn("deobfBinJar");
         }
 
-        CopyAssetsTask task5 = makeTask("copyAssets", CopyAssetsTask.class);
         {
-            task5.setAssetsDir(delayedFile(Constants.ASSETS));
-            task5.setOutputDir(delayedFile("{ASSET_DIR}"));
-            task5.setAssetIndex(getAssetIndexClosure());
-            task5.dependsOn("getAssets");
+            CopyAssetsTask task = makeTask("copyAssets", CopyAssetsTask.class);
+            task.setAssetsDir(delayedFile(ASSETS));
+            task.setOutputDir(delayedFile("{ASSET_DIR}"));
+            task.setAssetIndex(getAssetIndexClosure());
+            task.dependsOn("getAssets");
         }
     }
 
     private void delayedTasks()
     {
-        ProcessJarTask deobf = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
+        ProcessJarTask deobf = (ProcessJarTask)project.getTasks().getByName("deobfuscateJar");
         boolean clean = deobf.isClean();
-        DelayedFile decompOut = clean ? getDecompOut() : delayedFile(Constants.DECOMP_JAR);
+        DelayedFile decompOut = clean ? getDecompOut() : delayedFile(DECOMP_JAR);
 
-        DecompileTask decompile = makeTask("decompile", DecompileTask.class);
         {
-            decompile.setInJar(deobf.getDelayedOutput());
-            decompile.setOutJar(decompOut);
-            decompile.setFernFlower(delayedFile(Constants.FERNFLOWER));
-            decompile.setPatch(delayedFile(MCP_PATCH_DIR));
-            decompile.setAstyleConfig(delayedFile(ASTYLE_CFG));
-            decompile.dependsOn("downloadMcpTools", "deobfuscateJar", "genSrgs");
+            DecompileTask task = makeTask("decompile", DecompileTask.class);
+            task.setInJar(deobf.getDelayedOutput());
+            task.setOutJar(decompOut);
+            task.setFernFlower(delayedFile(FERNFLOWER));
+            task.setPatch     (delayedFile(MCP_PATCH_DIR));
+            task.setAstyleConfig(delayedFile(ASTYLE_CFG));
+            task.dependsOn("downloadMcpTools", "deobfuscateJar", "genSrgs");
         }
 
         doPostDecompTasks(clean, decompOut);
@@ -246,7 +247,8 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         // special userDev stuff
         ExtractTask extractUserDev = makeTask("extractUserDev", ExtractTask.class);
         extractUserDev.into(delayedFile(PACK_DIR));
-        extractUserDev.doLast(new Action<Task>() {
+        extractUserDev.doLast(new Action<Task>()
+        {
             @Override
             public void execute(Task arg0)
             {
@@ -498,215 +500,66 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             }
         }
 
-        Element child, sub;
+        String natives = delayedFile(NATIVES_DIR).call().getCanonicalPath().replace(module, "$PROJECT_DIR$");
 
-        // CLIENT
-        child = doc.createElement("configuration");
+        String[][] config = new String[][]
         {
-            child.setAttribute("default", "false");
-            child.setAttribute("name", "Minecraft Client");
-            child.setAttribute("type", "Application");
-            child.setAttribute("factoryName", "Application");
-            child.setAttribute("default", "false");
-            root.appendChild(child);
-
-            sub = doc.createElement("extension");
+            new String[]
             {
-                sub.setAttribute("name", "coverage");
-                sub.setAttribute("enabled", "false");
-                sub.setAttribute("sample_coverage", "true");
-                sub.setAttribute("runner", "idea");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("option");
+                "Minecraft Client",
+                "net.minecraft.launchwrapper.Launch",
+                "-Xincgc -Xmx1024M -Xms1024M -Djava.library.path=\"" + natives + "\" -Dfml.ignoreInvalidMinecraftCertificates=true",
+                "--version 1.6 --tweakClass cpw.mods.fml.common.launcher.FMLTweaker --username=ForgeDevName"
+            },
+            new String[]
             {
-                sub.setAttribute("name", "MAIN_CLASS_NAME");
-                sub.setAttribute("value", "net.minecraft.launchwrapper.Launch");
-                child.appendChild(sub);
+                "Minecraft Server",
+                "cpw.mods.fml.relauncher.ServerLaunchWrapper",
+                "-Xincgc -Dfml.ignoreInvalidMinecraftCertificates=true",
+                ""
             }
+        };
 
-            sub = doc.createElement("option");
-            {
-                sub.setAttribute("name", "VM_PARAMETERS");
-                sub.setAttribute("value", "-Xincgc -Xmx1024M -Xms1024M -Djava.library.path=\"" + delayedFile(NATIVES_DIR).call().getCanonicalPath().replace(module, "$PROJECT_DIR$") + "\" -Dfml.ignoreInvalidMinecraftCertificates=true");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("option");
-            {
-                sub.setAttribute("name", "PROGRAM_PARAMETERS");
-                sub.setAttribute("value", "--version 1.6 --tweakClass cpw.mods.fml.common.launcher.FMLTweaker --username=Player1234");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("option");
-            {
-                sub.setAttribute("name", "WORKING_DIRECTORY");
-                sub.setAttribute("value", "file://" + delayedFile("{ASSETS_DIR}").call().getParentFile().getCanonicalPath().replace(module, "$PROJECT_DIR$"));
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("option");
-            {
-                sub.setAttribute("name", "ALTERNATIVE_JRE_PATH_ENABLED");
-                sub.setAttribute("value", "false");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("option");
-            {
-                sub.setAttribute("name", "ALTERNATIVE_JRE_PATH");
-                sub.setAttribute("value", "");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("option");
-            {
-                sub.setAttribute("name", "ENABLE_SWING_INSPECTOR");
-                sub.setAttribute("value", "false");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("option");
-            {
-                sub.setAttribute("name", "ENV_VARIABLES");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("option");
-            {
-                sub.setAttribute("name", "PASS_PARENT_ENVS");
-                sub.setAttribute("value", "true");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("module");
-            {
-                sub.setAttribute("name", ((IdeaModel) project.getExtensions().getByName("idea")).getModule().getName());
-                child.appendChild(sub);
-            }
-
-            child.appendChild(doc.createElement("envs"));
-
-            sub = doc.createElement("RunnerSettings");
-            {
-                sub.setAttribute("RunnerId", "Run");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("ConfigurationWrapper");
-            {
-                sub.setAttribute("RunnerId", "Run");
-                child.appendChild(sub);
-            }
-
-            child.appendChild(doc.createElement("method"));
-        }
-
-        // SERVER
-        child = doc.createElement("configuration");
+        for (String[] data : config)
         {
-            child.setAttribute("default", "false");
-            child.setAttribute("name", "Minecraft Server");
-            child.setAttribute("type", "Application");
-            child.setAttribute("factoryName", "Application");
-            child.setAttribute("default", "false");
-            root.appendChild(child);
+            Element child = add(root, "configuration",
+                "default",     "false",
+                "name",        data[0],
+                "type",        "Application",
+                "factoryName", "Application",
+                "default",     "false");
 
-            sub = doc.createElement("extension");
-            {
-                sub.setAttribute("name", "coverage");
-                sub.setAttribute("enabled", "false");
-                sub.setAttribute("sample_coverage", "true");
-                sub.setAttribute("runner", "idea");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("option");
-            {
-                sub.setAttribute("name", "MAIN_CLASS_NAME");
-                sub.setAttribute("value", "cpw.mods.fml.relauncher.ServerLaunchWrapper");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("option");
-            {
-                sub.setAttribute("name", "VM_PARAMETERS");
-                sub.setAttribute("value", "-Xincgc -Dfml.ignoreInvalidMinecraftCertificates=true");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("option");
-            {
-                sub.setAttribute("name", "PROGRAM_PARAMETERS");
-                sub.setAttribute("value", "");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("option");
-            {
-                sub.setAttribute("name", "WORKING_DIRECTORY");
-                sub.setAttribute("value", "file://" + delayedFile("{ASSETS_DIR}").call().getParentFile().getCanonicalPath().replace(module, "$PROJECT_DIR$"));
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("option");
-            {
-                sub.setAttribute("name", "ALTERNATIVE_JRE_PATH_ENABLED");
-                sub.setAttribute("value", "false");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("option");
-            {
-                sub.setAttribute("name", "ALTERNATIVE_JRE_PATH");
-                sub.setAttribute("value", "");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("option");
-            {
-                sub.setAttribute("name", "ENABLE_SWING_INSPECTOR");
-                sub.setAttribute("value", "false");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("option");
-            {
-                sub.setAttribute("name", "ENV_VARIABLES");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("option");
-            {
-                sub.setAttribute("name", "PASS_PARENT_ENVS");
-                sub.setAttribute("value", "true");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("module");
-            {
-                sub.setAttribute("name", ((IdeaModel) project.getExtensions().getByName("idea")).getModule().getName());
-                child.appendChild(sub);
-            }
-
-            child.appendChild(doc.createElement("envs"));
-
-            sub = doc.createElement("RunnerSettings");
-            {
-                sub.setAttribute("RunnerId", "Run");
-                child.appendChild(sub);
-            }
-
-            sub = doc.createElement("ConfigurationWrapper");
-            {
-                sub.setAttribute("RunnerId", "Run");
-                child.appendChild(sub);
-            }
-
-            child.appendChild(doc.createElement("method"));
+            add(child, "extension",
+                "name",            "coverage",
+                "enabled",         "false",
+                "sample_coverage", "true",
+                "runner",          "idea");
+            add(child, "option", "name", "MAIN_CLASS_NAME", "value", data[1]);
+            add(child, "option", "name", "VM_PARAMETERS", "value", data[2]);
+            add(child, "option", "name", "PROGRAM_PARAMETERS", "value", data[3]);
+            add(child, "option", "name", "WORKING_DIRECTORY", "value", "file://" + delayedFile("{ASSETS_DIR}").call().getParentFile().getCanonicalPath().replace(module, "$PROJECT_DIR$"));
+            add(child, "option", "name", "ALTERNATIVE_JRE_PATH_ENABLED", "value", "false");
+            add(child, "option", "name", "ALTERNATIVE_JRE_PATH", "value", "");
+            add(child, "option", "name", "ENABLE_SWING_INSPECTOR", "value", "false");
+            add(child, "option", "name", "ENV_VARIABLES");
+            add(child, "option", "name", "PASS_PARENT_ENVS", "value", "true");
+            add(child, "module", "name", ((IdeaModel)project.getExtensions().getByName("idea")).getModule().getName());
+            add(child, "envs");
+            add(child, "RunnerSettings", "RunnerId", "Run");
+            add(child, "ConfigurationWrapper", "RunnerId", "Run");
+            add(child, "method");
         }
+    }
+
+    private Element add(Element parent, String name, String... values)
+    {
+        Element e = parent.getOwnerDocument().createElement(name);
+        for (int x = 0; x < values.length; x += 2)
+        {
+            e.setAttribute(values[x], values[x + 1]);
+        }
+        parent.appendChild(e);
+        return e;
     }
 
     @SuppressWarnings("unchecked")
@@ -930,4 +783,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         pattern = pattern.replace("{API_VERSION}", exten.getApiVersion());
         return pattern;
     }
+
+    private DelayedFile df(String file){ return delayedFile(file); }
 }

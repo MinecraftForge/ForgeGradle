@@ -1,10 +1,11 @@
 package net.minecraftforge.gradle.user;
 
 import static net.minecraftforge.gradle.user.UserConstants.*;
+import static net.minecraftforge.gradle.common.Constants.*;
+import groovy.lang.Closure;
 
 import java.io.File;
 
-import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
@@ -48,8 +49,8 @@ public class ForgeUserPlugin extends UserBasePlugin
     @Override
     protected void addATs(ProcessJarTask task)
     {
-        task.addTransformer(delayedFile(FML_AT));
-        task.addTransformer(delayedFile(FORGE_AT));
+        task.addTransformerClean(delayedFile(FML_AT));
+        task.addTransformerClean(delayedFile(FORGE_AT));
     }
 
     @Override
@@ -67,11 +68,11 @@ public class ForgeUserPlugin extends UserBasePlugin
     @Override
     protected void doPostDecompTasks(boolean isClean, DelayedFile decompOut)
     {
-        DelayedFile fmled = delayedFile(isClean ? FORGE_FMLED : Constants.DECOMP_FMLED);
-        DelayedFile fmlInjected = delayedFile(isClean ? FORGE_FMLINJECTED : Constants.DECOMP_FMLINJECTED);
-        DelayedFile remapped = delayedFile(isClean ? FORGE_REMAPPED : Constants.DECOMP_REMAPPED);
-        DelayedFile forged = delayedFile(isClean ? FORGE_FORGED : Constants.DECOMP_FORGED);
-        DelayedFile forgeJavaDocced = delayedFile(isClean ? FORGE_FORGEJAVADOCCED : Constants.DECOMP_FORGEJAVADOCCED);
+        DelayedFile fmled           = delayedFile(isClean ? FORGE_FMLED : DECOMP_FMLED);
+        DelayedFile fmlInjected     = delayedFile(isClean ? FORGE_FMLINJECTED : DECOMP_FMLINJECTED);
+        DelayedFile remapped        = delayedFile(isClean ? FORGE_REMAPPED : DECOMP_REMAPPED);
+        DelayedFile forged          = delayedFile(isClean ? FORGE_FORGED : DECOMP_FORGED);
+        DelayedFile forgeJavaDocced = delayedFile(isClean ? FORGE_FORGEJAVADOCCED : DECOMP_FORGEJAVADOCCED);
 
         PatchJarTask fmlPatches = makeTask("doFmlPatches", PatchJarTask.class);
         {
@@ -81,8 +82,16 @@ public class ForgeUserPlugin extends UserBasePlugin
             fmlPatches.setInPatches(delayedFile(FML_PATCHES_ZIP));
         }
 
-        Zip inject = makeTask("addFmlSources", Zip.class);
+        final Zip inject = makeTask("addFmlSources", Zip.class);
         {
+            inject.getOutputs().upToDateWhen(new Closure<Boolean>(null)
+            {
+                private static final long serialVersionUID = -8480140049890357630L;
+                public Boolean call(Object o)
+                {
+                    return !inject.dependsOnTaskDidWork();
+                }
+            });
             inject.dependsOn("doFmlPatches");
             inject.from(fmled.toZipTree());
             inject.from(delayedFile(SRC_DIR));

@@ -81,8 +81,8 @@ public class ForgeDevPlugin extends DevBasePlugin
             task2.setSrg(delayedFile(JOINED_SRG));
             task2.setExceptorCfg(delayedFile(JOINED_EXC));
             task2.setExceptorJson(delayedFile(EXC_JSON));
-            task2.addTransformer(delayedFile(FML_RESOURCES + "/fml_at.cfg"));
-            task2.addTransformer(delayedFile(FORGE_RESOURCES + "/forge_at.cfg"));
+            task2.addTransformerClean(delayedFile(FML_RESOURCES + "/fml_at.cfg"));
+            task2.addTransformerClean(delayedFile(FORGE_RESOURCES + "/forge_at.cfg"));
             task2.setApplyMarkers(true);
             task2.dependsOn("downloadMcpTools", "mergeJars");
         }
