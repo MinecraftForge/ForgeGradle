@@ -44,8 +44,9 @@ import com.google.common.io.ByteStreams;
 
 import static org.objectweb.asm.Opcodes.*;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
+import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
 
@@ -53,6 +54,9 @@ import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
 
 public class ProcessJarTask extends CachedTask
 {
+    private DelayedFile            fieldCsv;
+    private DelayedFile            methodCsv;
+
     @InputFile
     private DelayedFile            inJar;
 
@@ -82,13 +86,12 @@ public class ProcessJarTask extends CachedTask
 
     private boolean isClean = true;
 
-    public void addTransformer(DelayedFile... obj)
+    public void addTransformerClean(DelayedFile... obj)
     {
         for (DelayedFile object : obj)
         {
             ats.add(object);
         }
-        isClean = false;
     }
 
     /**
@@ -150,13 +153,54 @@ public class ProcessJarTask extends CachedTask
         JarMapping mapping = new JarMapping();
         mapping.loadMappings(srg);
 
+        final Map<String, String> renames = Maps.newHashMap();
+        for (File f : new File[]{ getFieldCsv(), getMethodCsv() })
+        {
+            if (f == null) continue;
+            Files.readLines(f, Charsets.UTF_8, new LineProcessor<String>()
+            {
+                @Override
+                public boolean processLine(String line) throws IOException
+                {
+                    String[] pts = line.split(",");
+                    if (!"searge".equals(pts[0]))
+                    {
+                        renames.put(pts[0], pts[1]);
+                    }
+
+                    return true;
+                }
+
+                @Override public String getResult() { return null; }
+            });
+        }
+
         // load in ATs
         AccessMap accessMap = new AccessMap() {
             @Override
             public void addAccessChange(String symbolString, String accessString)
             {
-                Iterable<String> split = Splitter.on(' ').omitEmptyStrings().split(symbolString);
-                String joinedString = Joiner.on('.').join(split);
+                String[] pts = symbolString.split(" ");
+                if (pts.length >= 2)
+                {
+                    int idx = pts[1].indexOf('(');
+
+                    String start = pts[1];
+                    String end = "";
+
+                    if (idx != -1)
+                    {
+                        start = pts[1].substring(0, idx);
+                        end = pts[1].substring(idx);
+                    }
+
+                    String rename = renames.get(start);
+                    if (rename != null)
+                    {
+                        pts[1] = rename + end;
+                    }
+                }
+                String joinedString = Joiner.on('.').join(pts);
                 super.addAccessChange(joinedString, accessString);
             }
         };
@@ -433,5 +477,25 @@ public class ProcessJarTask extends CachedTask
     public FileCollection getAts()
     {
         return getProject().files(ats.toArray());
+    }
+
+    public File getFieldCsv()
+    {
+        return fieldCsv == null ? null : fieldCsv.call();
+    }
+
+    public void setFieldCsv(DelayedFile fieldCsv)
+    {
+        this.fieldCsv = fieldCsv;
+    }
+
+    public File getMethodCsv()
+    {
+        return methodCsv == null ? null : methodCsv.call();
+    }
+
+    public void setMethodCsv(DelayedFile methodCsv)
+    {
+        this.methodCsv = methodCsv;
     }
 }
