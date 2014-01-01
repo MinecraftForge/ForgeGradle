@@ -181,6 +181,7 @@ public abstract class CachedTask extends DefaultTask
             if (f.isAnnotationPresent(InputFile.class))
             {
                 hashes.add(Constants.hash(getProject().file(input.getValue(instance))));
+                getLogger().info(Constants.hash(getProject().file(input.getValue(instance))) + " " + input.getValue(instance));
             }
             else
             {
@@ -190,7 +191,10 @@ public abstract class CachedTask extends DefaultTask
                     obj = ((Closure) obj).call();
                 
                 if (obj instanceof String)
+                {
                     hashes.add(Constants.hash((String) obj));
+                    getLogger().info(Constants.hash((String) obj) + " " + (String) obj);
+                }
                 else if (obj instanceof File)
                 {
                     File file = (File)obj;
@@ -201,11 +205,13 @@ public abstract class CachedTask extends DefaultTask
                         for (File i : files)
                         {
                             hashes.add(Constants.hash(i));
+                            getLogger().info(Constants.hash(i) + " " + i);
                         }
                     }
                     else
                     {
                         hashes.add(Constants.hash(file));   
+                        getLogger().info(Constants.hash(file) + " " + file);
                     }
                 }
             }
