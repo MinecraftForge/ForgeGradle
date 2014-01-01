@@ -77,6 +77,36 @@ public class RemapSourcesTask extends EditJarTask
                     }
                 }
             }
+            else if (line.trim().startsWith("// JAVADOC "))
+            {
+                Matcher match = SRG_FINDER.matcher(line);
+                if (match.find())
+                {
+                    String indent = line.substring(0, line.indexOf("// JAVADOC"));
+                    String name = match.group();
+                    if (name.startsWith("func_"))
+                    {
+                        Map<String, String> mtd = methods.get(name);
+                        if (mtd != null && !Strings.isNullOrEmpty(mtd.get("javadoc")))
+                        {
+                            line = buildJavadoc(indent, mtd.get("javadoc"), true);
+                        }
+                    }
+                    else if (name.startsWith("field_"))
+                    {
+                        Map<String, String> fld = fields.get(name);
+                        if (fld != null && !Strings.isNullOrEmpty(fld.get("javadoc")))
+                        {
+                            line = buildJavadoc(indent, fld.get("javadoc"), true);
+                        }
+                    }
+
+                    if (line.endsWith(Constants.NEWLINE))
+                    {
+                        line = line.substring(0, line.length() - Constants.NEWLINE.length());
+                    }
+                }
+            }
             else
             {
                 matcher = FIELD.matcher(line);
