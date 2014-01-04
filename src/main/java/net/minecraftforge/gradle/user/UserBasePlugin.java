@@ -511,7 +511,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
                 "Minecraft Client",
                 "net.minecraft.launchwrapper.Launch",
                 "-Xincgc -Xmx1024M -Xms1024M -Djava.library.path=\"" + natives + "\" -Dfml.ignoreInvalidMinecraftCertificates=true",
-                "--version 1.6 --tweakClass cpw.mods.fml.common.launcher.FMLTweaker --username=ForgeDevName"
+                "--version 1.7 --tweakClass cpw.mods.fml.common.launcher.FMLTweaker --username=ForgeDevName --accessToken FML"
             },
             new String[]
             {
