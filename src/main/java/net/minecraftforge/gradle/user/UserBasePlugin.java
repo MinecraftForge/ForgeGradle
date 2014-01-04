@@ -260,6 +260,9 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         ExtractTask extractNatives = makeTask("extractNatives", ExtractTask.class);
         extractNatives.into(delayedFile(NATIVES_DIR));
         extractNatives.dependsOn("extractUserDev");
+        
+        // extra libs folder.
+        project.getDependencies().add("compile", project.fileTree("libs"));
     }
 
     protected void configureCompilation()
@@ -462,6 +465,9 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
                 }
             }
         });
+        
+        if (ideaConv.getWorkspace().getIws() == null)
+            return;
 
         ideaConv.getWorkspace().getIws().withXml(new Closure<Object>(this, null)
         {
@@ -698,9 +704,9 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
     protected void fixEclipseProject(String path)
     {
         File f = new File(path);
-        if (f.exists() && f.length() == 0)
+        if (f.exists())// && f.length() == 0)
         {
-            String projectDir = "URI//file:/" + project.getProjectDir().getAbsolutePath().replace('\\', '/');
+            String projectDir = "URI//" + project.getProjectDir().toURI().toString();
             try
             {
                 FileOutputStream fos = new FileOutputStream(f);

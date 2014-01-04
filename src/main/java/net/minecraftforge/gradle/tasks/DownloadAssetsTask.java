@@ -28,10 +28,11 @@ import com.google.common.io.Files;
 public class DownloadAssetsTask extends DefaultTask
 {
     DelayedFile                                assetsDir;
-    
+
     @Input
     Closure<AssetIndex>                        index;
 
+    private boolean                            errored      = false;
     private final ConcurrentLinkedQueue<Asset> filesLeft    = new ConcurrentLinkedQueue<Asset>();
     private final ArrayList<AssetsThread>      threads      = new ArrayList<AssetsThread>();
     private final File                         minecraftDir = new File(Constants.getMinecraftDirectory(), "assets/objects");
@@ -44,7 +45,7 @@ public class DownloadAssetsTask extends DefaultTask
     {
         File out = new File(getAssetsDir(), "objects");
         out.mkdirs();
-        
+
         AssetIndex index = getIndex();
 
         for (Entry<String, AssetEntry> e : index.objects.entrySet())
@@ -65,7 +66,12 @@ public class DownloadAssetsTask extends DefaultTask
         int max = filesLeft.size();
         getLogger().info("Files Missing: " + max + "/" + index.objects.size());
 
+        // get number of threads
         int threadNum = max / 100;
+        if (threadNum == 0 && max > 0)
+            threadNum++; // atleats 1 thread
+
+        // spawn threads
         for (int i = 0; i < threadNum; i++)
             spawnThread();
 
@@ -77,6 +83,12 @@ public class DownloadAssetsTask extends DefaultTask
             getLogger().lifecycle("Current status: " + done + "/" + max + "   " + (int) ((double) done / max * 100) + "%");
             spawnThread();
             Thread.sleep(1000);
+        }
+        
+        if (errored)
+        {
+            // CRASH!
+            throw new RuntimeException("Something went wrong with the Assets downloading!");
         }
     }
 
@@ -163,10 +175,10 @@ public class DownloadAssetsTask extends DefaultTask
                             file.getParentFile().mkdirs();
                             file.createNewFile();
                         }
-                        
+
                         File localMc = new File(minecraftDir, asset.path);
                         BufferedInputStream stream;
-                        
+
                         // check for local copy
                         if (localMc.exists() && Constants.hash(localMc, "SHA1").equals(asset.hash))
                             // if so, copy
@@ -174,7 +186,7 @@ public class DownloadAssetsTask extends DefaultTask
                         else
                             // otherwise download
                             stream = new BufferedInputStream(new URL(Constants.ASSETS_URL + "/" + asset.path).openStream());
-                        
+
                         Files.write(ByteStreams.toByteArray(stream), file);
                         stream.close();
 
@@ -192,6 +204,8 @@ public class DownloadAssetsTask extends DefaultTask
                     {
                         getLogger().error("Error downloading asset: " + asset.path);
                         e.printStackTrace();
+                        if (!errored)
+                            errored = true;
                     }
                 }
             }

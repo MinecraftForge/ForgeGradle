@@ -115,25 +115,25 @@ public class Constants
         }
         return list;
     }
-
+    
     public static File getMinecraftDirectory()
     {
         String userDir = System.getProperty("user.home");
 
         switch (OPERATING_SYSTEM)
-        {
-            case LINUX:
-                return new File(userDir, ".minecraft/");
-            case WINDOWS:
-                String appData = System.getenv("APPDATA");
-                String folder = appData != null ? appData : userDir;
-                return new File(folder, ".minecraft/");
-            case OSX:
-                return new File(userDir, "Library/Application Support/minecraft");
-            default:
-                return new File(userDir, "minecraft/");
-        }
-      }
+            {
+                case LINUX:
+                    return new File(userDir, ".minecraft/");
+                case WINDOWS:
+                    String appData = System.getenv("APPDATA");
+                    String folder = appData != null ? appData : userDir;
+                    return new File(folder, ".minecraft/");
+                case OSX:
+                    return new File(userDir, "Library/Application Support/minecraft");
+                default:
+                    return new File(userDir, "minecraft/");
+            }
+    }
 
     private static SystemArch getArch()
     {
@@ -223,3 +223,4 @@ public class Constants
         return NULL_OUT;
     }
 }
+
