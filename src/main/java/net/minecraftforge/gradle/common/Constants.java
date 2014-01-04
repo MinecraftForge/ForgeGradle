@@ -15,6 +15,7 @@ import java.util.List;
 
 import net.minecraftforge.gradle.StringUtils;
 import net.minecraftforge.gradle.dev.DevExtension;
+import net.minecraftforge.gradle.json.version.OS;
 
 import org.gradle.api.Project;
 
@@ -24,17 +25,6 @@ import com.google.common.base.Joiner;
 
 public class Constants
 {
-    // OS
-    public static enum OperatingSystem
-    {
-        WINDOWS, OSX, LINUX;
-
-        public String toString()
-        {
-            return StringUtils.lower(name());
-        }
-    }
-
     // OS
     public static enum SystemArch
     {
@@ -46,7 +36,7 @@ public class Constants
         }
     }
 
-    public static final OperatingSystem  OPERATING_SYSTEM = getOs();
+    public static final OS               OPERATING_SYSTEM = OS.CURRENT;
     public static final SystemArch       SYSTEM_ARCH      = getArch();
 
     // extension nam
@@ -124,27 +114,6 @@ public class Constants
             list.add(url.getPath());
         }
         return list;
-    }
-
-    private static OperatingSystem getOs()
-    {
-        String name = StringUtils.lower(System.getProperty("os.name"));
-        if (name.contains("windows"))
-        {
-            return OperatingSystem.WINDOWS;
-        }
-        else if (name.contains("mac") || name.contains("osx"))
-        {
-            return OperatingSystem.OSX;
-        }
-        else if (name.contains("linux") || name.contains("unix"))
-        {
-            return OperatingSystem.LINUX;
-        }
-        else
-        {
-            return null;
-        }
     }
 
     public static File getMinecraftDirectory()

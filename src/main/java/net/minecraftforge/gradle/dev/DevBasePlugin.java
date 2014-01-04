@@ -21,6 +21,7 @@ import java.util.zip.ZipOutputStream;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.json.version.Library;
+import net.minecraftforge.gradle.json.version.OS;
 import net.minecraftforge.gradle.delayed.DelayedBase;
 import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.tasks.CopyAssetsTask;
@@ -149,7 +150,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
         String command = delayedFile(DevConstants.LAUNCH4J_DIR).call().getAbsolutePath();
         command += "/launch4j";
 
-        if (Constants.OPERATING_SYSTEM == Constants.OperatingSystem.WINDOWS)
+        if (Constants.OPERATING_SYSTEM == OS.WINDOWS)
             command += "c.exe";
         else
         {
