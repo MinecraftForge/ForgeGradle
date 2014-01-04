@@ -15,11 +15,9 @@ import net.md_5.specialsource.provider.ClassLoaderProvider;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedThingy;
 import net.minecraftforge.gradle.extrastuff.ReobfExceptor;
 import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
-import net.minecraftforge.gradle.user.UserConstants;
 
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.artifacts.PublishArtifact;

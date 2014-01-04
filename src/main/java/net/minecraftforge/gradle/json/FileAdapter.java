@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.common.version.json;
+package net.minecraftforge.gradle.json;
 
 import java.io.File;
 import java.io.IOException;

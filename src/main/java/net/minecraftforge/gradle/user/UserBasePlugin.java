@@ -23,9 +23,9 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import net.minecraftforge.gradle.common.BasePlugin;
-import net.minecraftforge.gradle.common.version.json.JsonFactory;
 import net.minecraftforge.gradle.delayed.DelayedBase;
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.tasks.CopyAssetsTask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
@@ -154,7 +154,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             task.dependsOn("mergeJars");
         }
 
-        ProcessJarTask deobfBinJar = null;
         {
             ProcessJarTask task = makeTask("deobfBinJar", ProcessJarTask.class);
             task.setSrg         (df(DEOBF_MCP_SRG));
@@ -166,7 +165,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             task.setApplyMarkers(false);
             addATs(task);
             task.dependsOn("downloadMcpTools", "mergeJars", "genSrgs", "applyBinPatches");
-            deobfBinJar = task;
         }
 
         {
@@ -744,7 +742,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         // actual dependencies
         if (project.getConfigurations().getByName(depConfig).getState() == State.UNRESOLVED)
         {
-            for (net.minecraftforge.gradle.common.version.Library lib : version.getLibraries())
+            for (net.minecraftforge.gradle.json.version.Library lib : version.getLibraries())
             {
                 if (lib.natives == null)
                     handler.add(depConfig, lib.getArtifactName());
@@ -756,7 +754,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         // the natives
         if (project.getConfigurations().getByName(nativeConfig).getState() == State.UNRESOLVED)
         {
-            for (net.minecraftforge.gradle.common.version.Library lib : version.getLibraries())
+            for (net.minecraftforge.gradle.json.version.Library lib : version.getLibraries())
             {
                 if (lib.natives != null)
                     handler.add(nativeConfig, lib.getArtifactName());

@@ -1,7 +1,6 @@
-package net.minecraftforge.gradle.common.version.json;
+package net.minecraftforge.gradle.json;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Date;
@@ -9,8 +8,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import net.minecraftforge.gradle.common.version.AssetIndex;
-import net.minecraftforge.gradle.common.version.Version;
+import net.minecraftforge.gradle.json.version.AssetIndex;
+import net.minecraftforge.gradle.json.version.Version;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

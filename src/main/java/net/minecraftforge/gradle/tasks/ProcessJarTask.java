@@ -24,10 +24,10 @@ import net.md_5.specialsource.RemapperProcessor;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.common.version.json.JsonFactory;
-import net.minecraftforge.gradle.common.version.json.MCInjectorStruct;
-import net.minecraftforge.gradle.common.version.json.MCInjectorStruct.InnerClass;
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.json.JsonFactory;
+import net.minecraftforge.gradle.json.MCInjectorStruct;
+import net.minecraftforge.gradle.json.MCInjectorStruct.InnerClass;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
 import org.gradle.api.Nullable;

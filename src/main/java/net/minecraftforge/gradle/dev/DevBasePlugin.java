@@ -20,9 +20,9 @@ import java.util.zip.ZipOutputStream;
 
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.common.version.Library;
-import net.minecraftforge.gradle.common.version.json.JsonFactory;
+import net.minecraftforge.gradle.json.version.Library;
 import net.minecraftforge.gradle.delayed.DelayedBase;
+import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.tasks.CopyAssetsTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;

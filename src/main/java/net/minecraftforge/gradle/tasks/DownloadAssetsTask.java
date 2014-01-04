@@ -13,8 +13,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.xml.parsers.ParserConfigurationException;
 
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.common.version.AssetIndex;
-import net.minecraftforge.gradle.common.version.AssetIndex.AssetEntry;
+import net.minecraftforge.gradle.json.version.AssetIndex;
+import net.minecraftforge.gradle.json.version.AssetIndex.AssetEntry;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 
 import org.gradle.api.DefaultTask;

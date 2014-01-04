@@ -7,13 +7,13 @@ import java.io.IOException;
 import java.util.HashMap;
 
 import net.minecraftforge.gradle.FileLogListenner;
-import net.minecraftforge.gradle.common.version.AssetIndex;
-import net.minecraftforge.gradle.common.version.Version;
-import net.minecraftforge.gradle.common.version.json.JsonFactory;
+import net.minecraftforge.gradle.json.version.AssetIndex;
+import net.minecraftforge.gradle.json.version.Version;
 import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.delayed.DelayedString;
+import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.tasks.DownloadAssetsTask;
 import net.minecraftforge.gradle.tasks.ObtainFernFlowerTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DownloadTask;

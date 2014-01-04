@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.common.version;
+package net.minecraftforge.gradle.json.version;
 
 import java.util.List;
 import java.util.Map;

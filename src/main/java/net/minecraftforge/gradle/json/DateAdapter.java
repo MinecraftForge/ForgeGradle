@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.common.version.json;
+package net.minecraftforge.gradle.json;
 
 import java.lang.reflect.Type;
 import java.text.DateFormat;
