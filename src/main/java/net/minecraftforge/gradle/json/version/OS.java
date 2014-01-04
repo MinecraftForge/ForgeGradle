@@ -34,4 +34,10 @@ public enum OS
         }
         return UNKNOWN;
     }
+    
+    @Override
+    public String toString()
+    {
+        return name;
+    }
 }
