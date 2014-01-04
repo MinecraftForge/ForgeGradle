@@ -183,7 +183,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 
         {
             ReobfTask task = makeTask("reobf", ReobfTask.class);
-            task.setDeobfFile(deobfBinJar.getDelayedOutput());
             task.setExceptorCfg(delayedFile(PACKAGED_EXC));
             task.reobf(project.getTasks().getByName("jar"), new Action<ArtifactSpec>()
             {
@@ -223,7 +222,10 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             task.setAstyleConfig(delayedFile(ASTYLE_CFG));
             task.dependsOn("downloadMcpTools", "deobfuscateJar", "genSrgs");
         }
-
+     
+        // set the correct deobf thing
+        ((ReobfTask)project.getTasks().getByName("reobf")).setDeobfFile(deobf.getDelayedOutput());
+        
         doPostDecompTasks(clean, decompOut);
     }
 
