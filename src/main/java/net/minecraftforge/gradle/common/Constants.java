@@ -137,7 +137,7 @@ public class Constants
         {
             return OperatingSystem.OSX;
         }
-        else if (name.contains("linux") || name.contains("unix"))
+        else if (name.contains("linux") || name.contains("unix") || name.contains("bsd"))
         {
             return OperatingSystem.LINUX;
         }
