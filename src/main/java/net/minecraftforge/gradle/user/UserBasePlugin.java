@@ -222,7 +222,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         }
      
         // set the correct deobf thing
-        ((ReobfTask)project.getTasks().getByName("reobf")).setDeobfFile(deobf.getDelayedOutput());
+        ((ReobfTask)project.getTasks().getByName("reobf")).setDeobfFile(((ProcessJarTask)project.getTasks().getByName("deobfBinJar")).getDelayedOutput());
         
         doPostDecompTasks(clean, decompOut);
     }
