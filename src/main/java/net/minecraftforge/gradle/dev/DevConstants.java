@@ -42,10 +42,12 @@ final class DevConstants
     static final String MERGE_CFG           = "{FML_DIR}/mcp_merge.cfg";
 
     // jars.
-    static final String JAR_SRG_FORGE       = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/minecraft_srg_forge-{MC_VERSION}.jar";
     static final String JAR_SRG_FML         = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/minecraft_srg_fml-{MC_VERSION}.jar";
+    static final String JAR_SRG_FORGE       = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/minecraft_srg_forge-{MC_VERSION}.jar";
+    static final String JAR_SRG_MCPC        = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/minecraft_srg_mcpc-{MC_VERSION}.jar";
     static final String ZIP_DECOMP_FML      = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_decomp_fml-{MC_VERSION}.zip";
     static final String ZIP_DECOMP_FORGE    = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_decomp_forge-{MC_VERSION}.zip";
+    static final String ZIP_DECOMP_MCPC     = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_decomp_mcpc-{MC_VERSION}.zip";
     static final String LAUNCH4J            = "{CACHE_DIR}/minecraft/launch4j.zip";
 
     // fml intermediate jars
@@ -56,6 +58,13 @@ final class DevConstants
     static final String ZIP_INJECT_FORGE    = "{BUILD_DIR}/forgeTmp/minecraft_fmlinjected.zip";
     static final String ZIP_RENAMED_FORGE   = "{BUILD_DIR}/forgeTmp/minecraft_renamed.zip";
     static final String ZIP_PATCHED_FORGE   = "{BUILD_DIR}/forgeTmp/minecraft_patches.zip";
+    
+    // mcpc intermediate jars
+    static final String ZIP_FMLED_MCPC     = "{BUILD_DIR}/mcpcTmp/minecraft_fmlpatched.zip";
+    static final String ZIP_INJECT_MCPC    = "{BUILD_DIR}/mcpcTmp/minecraft_fmlinjected.zip";
+    static final String ZIP_RENAMED_MCPC   = "{BUILD_DIR}/mcpcTmp/minecraft_renamed.zip";
+    static final String ZIP_FORGED_MCPC    = "{BUILD_DIR}/mcpcTmp/minecraft_forged.zip";
+    static final String ZIP_PATCHED_MCPC   = "{BUILD_DIR}/mcpcTmp/minecraft_patched.zip";
 
     // other stuff
     static final String CHANGELOG           = "{BUILD_DIR}/distributions/{PROJECT}-{MC_VERSION}-{VERSION}-changelog.txt";
@@ -102,4 +111,10 @@ final class DevConstants
     static final String PAULSCODE_LISCENCE2 = "{FORGE_DIR}/Paulscode SoundSystem CodecIBXM License.txt";
     static final String FORGE_LOGO          = FORGE_RESOURCES + "/forge_logo.png";
     static final String FORGE_VERSION_JAVA  = FORGE_SOURCES + "/net/minecraftforge/common/ForgeVersion.java";
+    
+    // MCPC+ stuff only
+    static final String MCPC_PATCH_DIR      = "patches";
+    static final String MCPC_SOURCES        = "src/main/java";
+    static final String MCPC_RESOURCES      = "src/main/resources";
+    static final String MCPC_TEST_SOURCES   = "src/test/java";
 }
