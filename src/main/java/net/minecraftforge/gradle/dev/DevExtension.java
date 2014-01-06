@@ -7,6 +7,8 @@ import org.gradle.api.Project;
 public class DevExtension extends BaseExtension
 {
     private String fmlDir;
+    private String forgeDir;
+    private String bukkitDir;
     private String mainClass;
     private String tweakClass;
     private String installerVersion = "null";
@@ -24,6 +26,26 @@ public class DevExtension extends BaseExtension
     public void setFmlDir(String fmlDir)
     {
         this.fmlDir = fmlDir;
+    }
+    
+    public String getForgeDir()
+    {
+        return forgeDir == null ? project.getProjectDir().getPath().replace('\\', '/') : forgeDir.replace('\\', '/');
+    }
+
+    public void setForgeDir(String forgeDir)
+    {
+        this.forgeDir = forgeDir;
+    }
+    
+    public String getBukkitDir()
+    {
+        return bukkitDir == null ? project.getProjectDir().getPath().replace('\\', '/') : bukkitDir.replace('\\', '/');
+    }
+
+    public void setBukkitDir(String bukkitDir)
+    {
+        this.bukkitDir = bukkitDir;
     }
 
     public String getMainClass()
