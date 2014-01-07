@@ -111,7 +111,7 @@ public class DevExtension extends BaseExtension
     }
     
     @SuppressWarnings("rawtypes")
-    public void setCleanProject(Closure subprojects)
+    public void cleanProject(Closure subprojects)
     {
         this.cleanProject = new ClosureBackedAction<Project>(subprojects);
     }
@@ -127,7 +127,7 @@ public class DevExtension extends BaseExtension
     }
     
     @SuppressWarnings("rawtypes")
-    public void setDleanProject(Closure subprojects)
+    public void dirtyProject(Closure subprojects)
     {
         this.dirtyProject = new ClosureBackedAction<Project>(subprojects);
     }
