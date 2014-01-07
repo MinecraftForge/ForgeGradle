@@ -543,7 +543,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             add(child, "option", "name", "MAIN_CLASS_NAME", "value", data[1]);
             add(child, "option", "name", "VM_PARAMETERS", "value", data[2]);
             add(child, "option", "name", "PROGRAM_PARAMETERS", "value", data[3]);
-            add(child, "option", "name", "WORKING_DIRECTORY", "value", "file://" + delayedFile("{ASSETS_DIR}").call().getParentFile().getCanonicalPath().replace(module, "$PROJECT_DIR$"));
+            add(child, "option", "name", "WORKING_DIRECTORY", "value", "file://" + delayedFile("{ASSET_DIR}").call().getParentFile().getCanonicalPath().replace(module, "$PROJECT_DIR$"));
             add(child, "option", "name", "ALTERNATIVE_JRE_PATH_ENABLED", "value", "false");
             add(child, "option", "name", "ALTERNATIVE_JRE_PATH", "value", "");
             add(child, "option", "name", "ENABLE_SWING_INSPECTOR", "value", "false");
