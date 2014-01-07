@@ -39,7 +39,7 @@ public class McpcDevPlugin extends DevBasePlugin
     {
         super.applyPlugin();
 
-        // set fmlDir
+        // set folders
         getExtension().setFmlDir("forge/fml");
         getExtension().setForgeDir("forge");
         getExtension().setBukkitDir("bukkit");
@@ -53,7 +53,7 @@ public class McpcDevPlugin extends DevBasePlugin
 
         // the master setup task.
         Task task = makeTask("setupMcpc", DefaultTask.class);
-        task.dependsOn("extractForgeSources", "generateProjects", "eclipse", "copyAssets");
+        task.dependsOn("extractMcpcSources", "generateProjects", "eclipse", "copyAssets");
         task.setGroup("MCPC");
 
 //        // the master task.
@@ -92,7 +92,7 @@ public class McpcDevPlugin extends DevBasePlugin
             task4.setInJar(delayedFile(ZIP_DECOMP_MCPC));
             task4.setOutJar(delayedFile(ZIP_FMLED_MCPC));
             task4.setInPatches(delayedFile(FML_PATCH_DIR));
-            task4.setDoesCache(false);
+            task4.setDoesCache(true);
             task4.setMaxFuzz(2);
             task4.dependsOn("decompile");
         }
@@ -107,7 +107,7 @@ public class McpcDevPlugin extends DevBasePlugin
             task5.from(delayedFile(DEOBF_DATA));
             task5.from(delayedFile(FML_VERSIONF));
 
-            // see ZIP_INJECT_FORGE
+            // see ZIP_INJECT_MCPC
             task5.setArchiveName("minecraft_fmlinjected.zip");
             task5.setDestinationDir(delayedFile("{BUILD_DIR}/mcpcTmp").call());
 
@@ -125,15 +125,28 @@ public class McpcDevPlugin extends DevBasePlugin
             task6.setDoesJavadocs(false);
             task6.dependsOn("fmlInjectJar");
         }
+        
+        task5 = makeTask("forgeInjectJar", Zip.class);
+        {
+            task5.from(delayedFileTree(FORGE_SOURCES));
+            task5.from(delayedFileTree(FORGE_RESOURCES));
+            task5.from(delayedZipTree(ZIP_RENAMED_MCPC));
+
+            // see ZIP_FINJECT_MCPC
+            task5.setArchiveName("minecraft_forgeinjected.zip");
+            task5.setDestinationDir(delayedFile("{BUILD_DIR}/mcpcTmp").call());
+
+            task5.dependsOn("remapSourcesJar");
+        }
 
         task4 = makeTask("forgePatchJar", PatchJarTask.class);
         {
-            task4.setInJar(delayedFile(ZIP_RENAMED_MCPC));
+            task4.setInJar(delayedFile(ZIP_FINJECT_MCPC));
             task4.setOutJar(delayedFile(ZIP_FORGED_MCPC));
             task4.setInPatches(delayedFile(FORGE_PATCH_DIR));
             task4.setDoesCache(true);
             task4.setMaxFuzz(2);
-            task4.dependsOn("remapSourcesJar");
+            task4.dependsOn("forgeInjectJar");
         }
          
         task4 = makeTask("mcpcPatchJar", PatchJarTask.class);
@@ -155,7 +168,7 @@ public class McpcDevPlugin extends DevBasePlugin
             task.setIncludeEmptyDirs(false);
             task.from(delayedFile(ZIP_RENAMED_MCPC));
             task.into(delayedFile(ECLIPSE_CLEAN_RES));
-            task.dependsOn("extractWorkspace", "remapSourcesJar");
+            task.dependsOn("extractWorkspace", "forgePatchJar");
         }
 
         task = makeTask("extractCleanSource", ExtractTask.class);
@@ -171,15 +184,15 @@ public class McpcDevPlugin extends DevBasePlugin
         {
             task.exclude(JAVA_FILES);
             task.from(delayedFile(ZIP_PATCHED_MCPC));
-            task.into(delayedFile(ECLIPSE_FORGE_RES));
-            task.dependsOn("forgePatchJar", "extractWorkspace");
+            task.into(delayedFile(ECLIPSE_MCPC_RES));
+            task.dependsOn("mcpcPatchJar", "extractWorkspace");
         }
 
         task = makeTask("extractMcpcSources", ExtractTask.class);
         {
             task.include(JAVA_FILES);
             task.from(delayedFile(ZIP_PATCHED_MCPC));
-            task.into(delayedFile(ECLIPSE_FORGE_SRC));
+            task.into(delayedFile(ECLIPSE_MCPC_SRC));
             task.dependsOn("extractMcpcResources");
         }
     }
@@ -206,6 +219,13 @@ public class McpcDevPlugin extends DevBasePlugin
         {
             task.setTargetDir(delayedFile(ECLIPSE_CLEAN));
             task.setJson(delayedFile(JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
+            
+            task.addSource(delayedFile(ECLIPSE_CLEAN_SRC));
+            task.addSource(delayedFile(BUKKIT_SOURCES));
+            
+            task.addResource(delayedFile(ECLIPSE_CLEAN_RES));
+            task.addResource(delayedFile(BUKKIT_RESOURCES));
+            
             task.dependsOn("extractNatives");
         }
 
@@ -216,9 +236,11 @@ public class McpcDevPlugin extends DevBasePlugin
 
             task.addSource(delayedFile(ECLIPSE_MCPC_SRC));
             task.addSource(delayedFile(MCPC_SOURCES));
+            task.addSource(delayedFile(BUKKIT_SOURCES));
 
             task.addResource(delayedFile(ECLIPSE_MCPC_RES));
             task.addResource(delayedFile(MCPC_RESOURCES));
+            task.addResource(delayedFile(BUKKIT_RESOURCES));
 
             task.dependsOn("extractNatives","createVersionPropertiesFML");
         }

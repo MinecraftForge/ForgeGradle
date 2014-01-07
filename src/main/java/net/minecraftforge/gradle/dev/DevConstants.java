@@ -63,6 +63,7 @@ final class DevConstants
     static final String ZIP_FMLED_MCPC     = "{BUILD_DIR}/mcpcTmp/minecraft_fmlpatched.zip";
     static final String ZIP_INJECT_MCPC    = "{BUILD_DIR}/mcpcTmp/minecraft_fmlinjected.zip";
     static final String ZIP_RENAMED_MCPC   = "{BUILD_DIR}/mcpcTmp/minecraft_renamed.zip";
+    static final String ZIP_FINJECT_MCPC   = "{BUILD_DIR}/mcpcTmp/minecraft_forgeinjected.zip";
     static final String ZIP_FORGED_MCPC    = "{BUILD_DIR}/mcpcTmp/minecraft_forged.zip";
     static final String ZIP_PATCHED_MCPC   = "{BUILD_DIR}/mcpcTmp/minecraft_patched.zip";
 
@@ -120,4 +121,8 @@ final class DevConstants
     static final String MCPC_SOURCES        = "src/main/java";
     static final String MCPC_RESOURCES      = "src/main/resources";
     static final String MCPC_TEST_SOURCES   = "src/test/java";
+    
+    // USED ONLY FOR mcpc.. BUT ITS BUKKIT STUFF
+    static final String BUKKIT_SOURCES       = "{BUKKIT_DIR}/src/main/java";
+    static final String BUKKIT_RESOURCES     = "{BUKKIT_DIR}/src/main/resources";
 }
