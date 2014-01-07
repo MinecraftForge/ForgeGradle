@@ -86,6 +86,9 @@ final class DevConstants
     static final String ECLIPSE_FORGE       = WORKSPACE + "/Forge";
     static final String ECLIPSE_FORGE_SRC   = ECLIPSE_FORGE + "/src/main/java";
     static final String ECLIPSE_FORGE_RES   = ECLIPSE_FORGE + "/src/main/resources";
+    static final String ECLIPSE_MCPC       = WORKSPACE + "/MCPC";
+    static final String ECLIPSE_MCPC_SRC   = ECLIPSE_MCPC + "/src/main/java";
+    static final String ECLIPSE_MCPC_RES   = ECLIPSE_MCPC + "/src/main/resources";
     static final String ECLIPSE_RUN         = WORKSPACE + "/run";
     static final String ECLIPSE_NATIVES     = ECLIPSE_RUN + "/bin/natives";
     static final String ECLIPSE_ASSETS      = ECLIPSE_RUN + "/assets";
