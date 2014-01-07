@@ -8,6 +8,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 import net.md_5.specialsource.Jar;
 import net.md_5.specialsource.JarMapping;
@@ -19,6 +20,7 @@ import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.dev.FmlDevPlugin;
 import net.minecraftforge.gradle.extrastuff.ReobfExceptor;
 
+import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
@@ -35,6 +37,7 @@ public class ObfuscateTask extends DefaultTask
     private DelayedFile exc;
     private boolean     reverse;
     private DelayedFile buildFile;
+    private LinkedList<Action<Project>> configureProject = new LinkedList<Action<Project>>();
     private DelayedFile methodsCsv;
     private DelayedFile fieldsCsv;
 
@@ -43,6 +46,12 @@ public class ObfuscateTask extends DefaultTask
     {
         getLogger().debug("Building child project model...");
         Project childProj = FmlDevPlugin.getProject(getBuildFile(), getProject());
+        for (Action<Project> act : configureProject)
+        {
+            if (act != null)
+                act.execute(childProj);
+        }
+        
         AbstractTask compileTask = (AbstractTask) childProj.getTasks().getByName("compileJava");
         AbstractTask jarTask = (AbstractTask) childProj.getTasks().getByName("jar");
 
@@ -209,5 +218,10 @@ public class ObfuscateTask extends DefaultTask
     public void setFieldsCsv(DelayedFile fieldsCsv)
     {
         this.fieldsCsv = fieldsCsv;
+    }
+    
+    public void configureProject(Action<Project> action)
+    {
+        configureProject.add(action);
     }
 }
