@@ -542,7 +542,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             sub = doc.createElement("option");
             {
                 sub.setAttribute("name", "WORKING_DIRECTORY");
-                sub.setAttribute("value", "file://" + delayedFile("{ASSETS_DIR}").call().getParentFile().getCanonicalPath().replace(module, "$PROJECT_DIR$"));
+                sub.setAttribute("value", "file://" + delayedFile("{ASSET_DIR}").call().getParentFile().getCanonicalPath().replace(module, "$PROJECT_DIR$"));
                 child.appendChild(sub);
             }
 
@@ -646,7 +646,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             sub = doc.createElement("option");
             {
                 sub.setAttribute("name", "WORKING_DIRECTORY");
-                sub.setAttribute("value", "file://" + delayedFile("{ASSETS_DIR}").call().getParentFile().getCanonicalPath().replace(module, "$PROJECT_DIR$"));
+                sub.setAttribute("value", "file://" + delayedFile("{ASSET_DIR}").call().getParentFile().getCanonicalPath().replace(module, "$PROJECT_DIR$"));
                 child.appendChild(sub);
             }
 
