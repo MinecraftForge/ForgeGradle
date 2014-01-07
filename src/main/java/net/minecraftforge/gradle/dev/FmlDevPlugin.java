@@ -27,6 +27,7 @@ import net.minecraftforge.gradle.tasks.dev.GeneratePatches;
 import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
 import net.minecraftforge.gradle.tasks.dev.SubprojectTask;
 
+import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -196,6 +197,8 @@ public class FmlDevPlugin extends DevBasePlugin
         SubprojectTask task = makeTask("eclipseClean", SubprojectTask.class);
         {
             task.setBuildFile(delayedFile(DevConstants.ECLIPSE_CLEAN + "/build.gradle"));
+            task.configureProject(getExtension().getSubprojects());
+            task.configureProject(getExtension().getCleanProject());
             task.setTasks("eclipse");
             task.dependsOn("extractMcSource", "generateProjects");
         }
@@ -203,6 +206,8 @@ public class FmlDevPlugin extends DevBasePlugin
         task = makeTask("eclipseFML", SubprojectTask.class);
         {
             task.setBuildFile(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"));
+            task.configureProject(getExtension().getSubprojects());
+            task.configureProject(getExtension().getDirtyProject());
             task.setTasks("eclipse");
             task.dependsOn("extractFmlSources", "generateProjects");
         }
@@ -230,6 +235,9 @@ public class FmlDevPlugin extends DevBasePlugin
 
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
+            obf.configureProject(getExtension().getSubprojects());
+            obf.configureProject(getExtension().getDirtyProject());
+            
             obf.setSrg(delayedFile(DevConstants.JOINED_SRG));
             obf.setExc(delayedFile(DevConstants.JOINED_EXC));
             obf.setReverse(true);
@@ -363,16 +371,16 @@ public class FmlDevPlugin extends DevBasePlugin
         final SubprojectTask javadocJar = makeTask("genJavadocs", SubprojectTask.class);
         {
             javadocJar.setBuildFile(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"));
+            javadocJar.configureProject(getExtension().getSubprojects());
+            javadocJar.configureProject(getExtension().getDirtyProject());
             javadocJar.setTasks("jar");
-            javadocJar.setConfigureTask(new Closure<Object>(this, null) {
-                public Object call(Object obj)
+            javadocJar.setConfigureTask(new Action<Task>() {
+                public void execute(Task obj)
                 {
                     Jar task = (Jar) obj;
                     File file = delayedFile(DevConstants.JAVADOC_TMP).call();
                     task.setDestinationDir(file.getParentFile());
                     task.setArchiveName(file.getName());
-
-                    return null;
                 }
             });
         }

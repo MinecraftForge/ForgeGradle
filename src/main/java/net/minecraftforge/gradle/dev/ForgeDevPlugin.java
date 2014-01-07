@@ -232,6 +232,8 @@ public class ForgeDevPlugin extends DevBasePlugin
         SubprojectTask task = makeTask("eclipseClean", SubprojectTask.class);
         {
             task.setBuildFile(delayedFile(ECLIPSE_CLEAN + "/build.gradle"));
+            task.configureProject(getExtension().getSubprojects());
+            task.configureProject(getExtension().getCleanProject());
             task.setTasks("eclipse");
             task.dependsOn("extractMcSource", "generateProjects");
         }
@@ -239,6 +241,8 @@ public class ForgeDevPlugin extends DevBasePlugin
         task = makeTask("eclipseForge", SubprojectTask.class);
         {
             task.setBuildFile(delayedFile(ECLIPSE_FORGE + "/build.gradle"));
+            task.configureProject(getExtension().getSubprojects());
+            task.configureProject(getExtension().getDirtyProject());
             task.setTasks("eclipse");
             task.dependsOn("extractForgeSources", "generateProjects");
         }
@@ -267,6 +271,9 @@ public class ForgeDevPlugin extends DevBasePlugin
 
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
+            obf.configureProject(getExtension().getSubprojects());
+            obf.configureProject(getExtension().getDirtyProject());
+            
             obf.setSrg(delayedFile(MCP_2_NOTCH_SRG));
             obf.setExc(delayedFile(JOINED_EXC));
             obf.setReverse(false);
@@ -465,14 +472,15 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             javadocJar.dependsOn("replaceJavadocs");
             javadocJar.setBuildFile(delayedFile(ECLIPSE_FORGE + "/build.gradle"));
+            javadocJar.configureProject(getExtension().getSubprojects());
+            javadocJar.configureProject(getExtension().getDirtyProject());
             javadocJar.setTasks("javadoc");
-            javadocJar.setConfigureTask(new Closure<Object>(this, null) {
-                public Object call(Object obj)
+            javadocJar.setConfigureTask(new Action<Task>() {
+                public void execute(Task obj)
                 {
                     Javadoc task = (Javadoc)obj;
                     task.setSource(project.fileTree(javadocSource));
                     task.setDestinationDir(javadoc_temp);
-                    return null;
                 }
             });
         }
