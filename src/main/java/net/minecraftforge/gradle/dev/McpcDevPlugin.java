@@ -59,7 +59,8 @@ public class McpcDevPlugin extends DevBasePlugin
 
 //        // the master task.
         task = makeTask("buildPackages");
-        task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "genJavadocs");
+        //task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "genJavadocs");
+        task.dependsOn("launch4j", "packageUniversal", "packageInstaller", "genJavadocs");
         task.setGroup("MCPC");
     }
     
@@ -227,7 +228,7 @@ public class McpcDevPlugin extends DevBasePlugin
         GenDevProjectsTask task = makeTask("generateProjectClean", GenDevProjectsTask.class);
         {
             task.setTargetDir(delayedFile(ECLIPSE_CLEAN));
-            task.setJson(delayedFile(JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
+            task.setJson(delayedFile(MCPC_JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
             
             task.addSource(delayedFile(ECLIPSE_CLEAN_SRC));
             
@@ -238,7 +239,7 @@ public class McpcDevPlugin extends DevBasePlugin
 
         task = makeTask("generateProjectMcpc", GenDevProjectsTask.class);
         {
-            task.setJson(delayedFile(JSON_DEV));
+            task.setJson(delayedFile(MCPC_JSON_DEV));
             task.setTargetDir(delayedFile(ECLIPSE_MCPC));
 
             task.addSource(delayedFile(ECLIPSE_MCPC_SRC));
@@ -370,7 +371,7 @@ public class McpcDevPlugin extends DevBasePlugin
         final DelayedJar uni = makeTask("packageUniversal", DelayedJar.class);
         {
             uni.setClassifier("universal");
-            uni.getInputs().file(delayedFile(JSON_REL));
+            uni.getInputs().file(delayedFile(MCPC_JSON_REL));
             uni.getOutputs().upToDateWhen(Constants.CALL_FALSE);
             uni.from(delayedZipTree(BINPATCH_TMP));
             uni.from(delayedFileTree(FML_RESOURCES));
@@ -395,7 +396,7 @@ public class McpcDevPlugin extends DevBasePlugin
                     Manifest mani = (Manifest) getDelegate();
                     mani.getAttributes().put("Main-Class", delayedString("{MAIN_CLASS}").call());
                     mani.getAttributes().put("TweakClass", delayedString("{FML_TWEAK_CLASS}").call());
-                    mani.getAttributes().put("Class-Path", getServerClassPath(delayedFile(JSON_REL).call()));
+                    mani.getAttributes().put("Class-Path", getServerClassPath(delayedFile(MCPC_JSON_REL).call()));
                     return null;
                 }
             });
@@ -424,7 +425,7 @@ public class McpcDevPlugin extends DevBasePlugin
 
         FileFilterTask task = makeTask("generateInstallJson", FileFilterTask.class);
         {
-            task.setInputFile(delayedFile(JSON_REL));
+            task.setInputFile(delayedFile(MCPC_JSON_REL));
             task.setOutputFile(delayedFile(INSTALL_PROFILE));
             task.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
             task.addReplacement("@version@", delayedString("{VERSION}"));
