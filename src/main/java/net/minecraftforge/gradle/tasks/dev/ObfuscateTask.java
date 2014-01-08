@@ -42,6 +42,7 @@ public class ObfuscateTask extends DefaultTask
     private LinkedList<Action<Project>> configureProject = new LinkedList<Action<Project>>();
     private DelayedFile methodsCsv;
     private DelayedFile fieldsCsv;
+    private String subTask = "jar";
     private LinkedList<String> extraSrg = new LinkedList<String>();
 
     @TaskAction
@@ -56,10 +57,10 @@ public class ObfuscateTask extends DefaultTask
         }
         
         AbstractTask compileTask = (AbstractTask) childProj.getTasks().getByName("compileJava");
-        AbstractTask jarTask = (AbstractTask) childProj.getTasks().getByName("jar");
+        AbstractTask jarTask = (AbstractTask) childProj.getTasks().getByName(subTask);
 
         // executing jar task
-        getLogger().debug("Executing child Jar task...");
+        getLogger().debug("Executing child "+subTask+" task...");
         executeTask(jarTask);
         
         File inJar = (File)jarTask.property("archivePath");
@@ -246,5 +247,15 @@ public class ObfuscateTask extends DefaultTask
     public void setExtraSrg(LinkedList<String> extraSrg)
     {
         this.extraSrg = extraSrg;
+    }
+
+    public String getSubTask()
+    {
+        return subTask;
+    }
+
+    public void setSubTask(String subTask)
+    {
+        this.subTask = subTask;
     }
 }
