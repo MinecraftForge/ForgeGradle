@@ -168,7 +168,7 @@ public class McpcDevPlugin extends DevBasePlugin
         {
             task.exclude(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
-            task.from(delayedFile(ZIP_RENAMED_MCPC));
+            task.from(delayedFile(ZIP_FORGED_MCPC));
             task.into(delayedFile(ECLIPSE_CLEAN_RES));
             task.dependsOn("extractWorkspace", "forgePatchJar");
         }
@@ -177,7 +177,7 @@ public class McpcDevPlugin extends DevBasePlugin
         {
             task.include(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
-            task.from(delayedFile(ZIP_RENAMED_MCPC));
+            task.from(delayedFile(ZIP_FORGED_MCPC));
             task.into(delayedFile(ECLIPSE_CLEAN_SRC));
             task.dependsOn("extractCleanResources");
         }
