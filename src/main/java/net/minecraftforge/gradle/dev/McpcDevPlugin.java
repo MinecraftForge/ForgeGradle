@@ -130,6 +130,8 @@ public class McpcDevPlugin extends DevBasePlugin
         {
             task5.from(delayedFileTree(FORGE_SOURCES));
             task5.from(delayedFileTree(FORGE_RESOURCES));
+            task5.from(delayedFileTree(BUKKIT_SOURCES));
+            task5.from(delayedFileTree(BUKKIT_RESOURCES));
             task5.from(delayedZipTree(ZIP_RENAMED_MCPC));
 
             // see ZIP_FINJECT_MCPC
@@ -221,10 +223,8 @@ public class McpcDevPlugin extends DevBasePlugin
             task.setJson(delayedFile(JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
             
             task.addSource(delayedFile(ECLIPSE_CLEAN_SRC));
-            task.addSource(delayedFile(BUKKIT_SOURCES));
             
             task.addResource(delayedFile(ECLIPSE_CLEAN_RES));
-            task.addResource(delayedFile(BUKKIT_RESOURCES));
             
             task.dependsOn("extractNatives");
         }
@@ -236,11 +236,9 @@ public class McpcDevPlugin extends DevBasePlugin
 
             task.addSource(delayedFile(ECLIPSE_MCPC_SRC));
             task.addSource(delayedFile(MCPC_SOURCES));
-            task.addSource(delayedFile(BUKKIT_SOURCES));
 
             task.addResource(delayedFile(ECLIPSE_MCPC_RES));
             task.addResource(delayedFile(MCPC_RESOURCES));
-            task.addResource(delayedFile(BUKKIT_RESOURCES));
 
             task.dependsOn("extractNatives","createVersionPropertiesFML");
         }
