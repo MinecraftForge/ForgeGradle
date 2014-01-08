@@ -5,6 +5,7 @@ import groovy.lang.Closure;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedThingy;
@@ -21,6 +22,7 @@ import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.DefaultDomainObjectSet;
 import org.gradle.api.internal.file.collections.SimpleFileCollection;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
@@ -36,7 +38,9 @@ public class ReobfTask extends DefaultTask
 
     @InputFile
     private DelayedFile exceptorCfg;
-
+    
+    @Input
+    private LinkedList<String> extraSrg = new LinkedList<String>();
 
     @SuppressWarnings("serial")
     public ReobfTask()
@@ -340,6 +344,16 @@ public class ReobfTask extends DefaultTask
     public void setExceptorCfg(DelayedFile file)
     {
         this.exceptorCfg = file;
+    }
+    
+    public LinkedList<String> getExtraSrg()
+    {
+        return extraSrg;
+    }
+
+    public void setExtraSrg(LinkedList<String> extraSrg)
+    {
+        this.extraSrg = extraSrg;
     }
 
 }

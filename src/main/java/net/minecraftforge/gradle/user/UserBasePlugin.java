@@ -587,6 +587,9 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         // add src ATs
         ProcessJarTask binDeobf = (ProcessJarTask) project.getTasks().getByName("deobfBinJar");
         ProcessJarTask decompDeobf = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
+        
+        // add extraSRGs
+        ((ReobfTask)project.getTasks().getByName("reobf")).setExtraSrg(getExtension().getSrgExtra());
 
         // from the ExtensionObject
         binDeobf.addTransformer(getExtension().getAccessTransformers().toArray());

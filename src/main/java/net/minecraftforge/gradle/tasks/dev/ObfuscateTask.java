@@ -1,7 +1,9 @@
 package net.minecraftforge.gradle.tasks.dev;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -40,6 +42,7 @@ public class ObfuscateTask extends DefaultTask
     private LinkedList<Action<Project>> configureProject = new LinkedList<Action<Project>>();
     private DelayedFile methodsCsv;
     private DelayedFile fieldsCsv;
+    private LinkedList<String> extraSrg = new LinkedList<String>();
 
     @TaskAction
     public void doTask() throws IOException
@@ -79,6 +82,16 @@ public class ObfuscateTask extends DefaultTask
             
             srg = exceptor.outSrg;
         }
+        
+        // append SRG
+        BufferedWriter writer = new BufferedWriter(new FileWriter(srg, true));
+        for (String line : extraSrg)
+        {
+            writer.write(line);
+            writer.newLine();
+        }
+        writer.flush();
+        writer.close();
 
         getLogger().debug("Obfuscating jar...");
         obfuscate(inJar, (FileCollection)compileTask.property("classpath"), srg);
@@ -223,5 +236,15 @@ public class ObfuscateTask extends DefaultTask
     public void configureProject(Action<Project> action)
     {
         configureProject.add(action);
+    }
+
+    public LinkedList<String> getExtraSrg()
+    {
+        return extraSrg;
+    }
+
+    public void setExtraSrg(LinkedList<String> extraSrg)
+    {
+        this.extraSrg = extraSrg;
     }
 }

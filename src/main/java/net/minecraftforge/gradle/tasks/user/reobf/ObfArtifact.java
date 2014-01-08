@@ -2,7 +2,9 @@ package net.minecraftforge.gradle.tasks.user.reobf;
 
 import groovy.lang.Closure;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URLClassLoader;
 import java.nio.charset.Charset;
@@ -319,6 +321,16 @@ public class ObfArtifact extends AbstractPublishArtifact
         // copy input somewhere else...
         exc.toReobfJar = toObf;
         exc.buildSrg();
+        
+        // append SRG
+        BufferedWriter writer = new BufferedWriter(new FileWriter(exc.outSrg, true));
+        for (String line : caller.getExtraSrg())
+        {
+            writer.write(line);
+            writer.newLine();
+        }
+        writer.flush();
+        writer.close();
         
         // obfuscate!
         if (caller.getUseRetroGuard())
