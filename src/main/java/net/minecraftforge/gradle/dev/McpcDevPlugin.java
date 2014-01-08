@@ -475,9 +475,8 @@ public class McpcDevPlugin extends DevBasePlugin
         final File javadocSource = project.file(delayedFile("{BUILD_DIR}/tmp/javadocSource"));
         ReplaceJavadocsTask jdSource = makeTask("replaceJavadocs", ReplaceJavadocsTask.class);
         {
-            jdSource.from(delayedFile(FML_SOURCES));
-            jdSource.from(delayedFile(FORGE_SOURCES));
-            jdSource.from(delayedFile(ECLIPSE_FORGE_SRC));
+            jdSource.from(delayedFile(MCPC_SOURCES));
+            jdSource.from(delayedFile(ECLIPSE_MCPC_SRC));
             jdSource.setOutFile(delayedFile("{BUILD_DIR}/tmp/javadocSource"));
             jdSource.setMethodsCsv(delayedFile(METHODS_CSV));
             jdSource.setFieldsCsv(delayedFile(FIELDS_CSV));
@@ -487,7 +486,7 @@ public class McpcDevPlugin extends DevBasePlugin
         final SubprojectTask javadocJar = makeTask("genJavadocs", SubprojectTask.class);
         {
             javadocJar.dependsOn("replaceJavadocs");
-            javadocJar.setBuildFile(delayedFile(ECLIPSE_FORGE + "/build.gradle"));
+            javadocJar.setBuildFile(delayedFile(ECLIPSE_MCPC + "/build.gradle"));
             javadocJar.configureProject(getExtension().getSubprojects());
             javadocJar.configureProject(getExtension().getDirtyProject());
             javadocJar.setTasks("javadoc");
