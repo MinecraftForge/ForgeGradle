@@ -124,7 +124,9 @@ public class ProcessJarTask extends CachedTask
         Set<File> ats = new HashSet<File>();
         for (DelayedFile obj : this.ats)
         {
-            ats.add(getProject().file(obj).getCanonicalFile());
+            File at = getProject().file(obj).getCanonicalFile();
+            getLogger().lifecycle("Access Transformer found: "+at);
+            ats.add(at);
         }
 
         // deobf
