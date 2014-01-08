@@ -74,6 +74,9 @@ final class DevConstants
     static final String JSON_DEV            = "{FML_DIR}/jsons/{MC_VERSION}-dev.json";
     static final String JSON_REL            = "{FML_DIR}/jsons/{MC_VERSION}-rel.json";
     static final String JSON_BASE           = "{FML_DIR}/jsons/{MC_VERSION}.json";
+    static final String MCPC_JSON_DEV       = "jsons/{MC_VERSION}-dev.json";
+    static final String MCPC_JSON_REL       = "jsons/{MC_VERSION}-rel.json";
+    static final String MCPC_JSON_BASE      = "jsons/{MC_VERSION}.json";
 
     // eclipse folders      More stuff only for the Dev plugins
     static final String WORKSPACE_ZIP       = "eclipse-workspace-dev.zip";

@@ -9,6 +9,7 @@ import java.util.Date;
 
 import net.minecraftforge.gradle.CopyInto;
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.delayed.DelayedBase;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
@@ -60,6 +61,12 @@ public class McpcDevPlugin extends DevBasePlugin
         task = makeTask("buildPackages");
         task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "genJavadocs");
         task.setGroup("MCPC");
+    }
+    
+    @Override
+    protected final String getDevJson()
+    {
+        return DelayedBase.resolve(DevConstants.MCPC_JSON_DEV, project, this);
     }
     
     protected void createJarProcessTasks()

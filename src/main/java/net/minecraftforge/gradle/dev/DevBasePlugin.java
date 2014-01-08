@@ -203,7 +203,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
     }
 
     @Override
-    protected final String getDevJson()
+    protected String getDevJson()
     {
         return DelayedBase.resolve(DevConstants.JSON_DEV, project, this);
     }
