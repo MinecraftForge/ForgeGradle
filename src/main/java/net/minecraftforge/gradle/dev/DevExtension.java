@@ -95,7 +95,7 @@ public class DevExtension extends BaseExtension
     }
     
     @SuppressWarnings("rawtypes")
-    public void setSubprojects(Closure subprojects)
+    public void subprojects(Closure subprojects)
     {
         this.subprojects = new ClosureBackedAction<Project>(subprojects);
     }

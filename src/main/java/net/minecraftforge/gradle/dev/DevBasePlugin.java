@@ -219,7 +219,12 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
         // set obfuscate extras
         Task t = project.getTasks().getByName("obfuscateJar");
         if (t != null)
-            ((ObfuscateTask)t).setExtraSrg(getExtension().getSrgExtra());
+        {
+            ObfuscateTask obf = ((ObfuscateTask)t);
+            obf.setExtraSrg(getExtension().getSrgExtra());
+            obf.configureProject(getExtension().getSubprojects());
+            obf.configureProject(getExtension().getDirtyProject());
+        }
 
         try
         {

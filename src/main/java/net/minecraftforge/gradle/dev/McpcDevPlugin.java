@@ -259,8 +259,6 @@ public class McpcDevPlugin extends DevBasePlugin
         SubprojectTask task = makeTask("eclipseClean", SubprojectTask.class);
         {
             task.setBuildFile(delayedFile(ECLIPSE_CLEAN + "/build.gradle"));
-            task.configureProject(getExtension().getSubprojects());
-            task.configureProject(getExtension().getCleanProject());
             task.setTasks("eclipse");
             task.dependsOn("extractCleanSource", "generateProjects");
         }
@@ -268,8 +266,6 @@ public class McpcDevPlugin extends DevBasePlugin
         task = makeTask("eclipseMcpc", SubprojectTask.class);
         {
             task.setBuildFile(delayedFile(ECLIPSE_MCPC + "/build.gradle"));
-            task.configureProject(getExtension().getSubprojects());
-            task.configureProject(getExtension().getDirtyProject());
             task.setTasks("eclipse");
             task.dependsOn("extractMcpcSources", "generateProjects");
         }
@@ -298,9 +294,6 @@ public class McpcDevPlugin extends DevBasePlugin
 
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
-            obf.configureProject(getExtension().getSubprojects());
-            obf.configureProject(getExtension().getDirtyProject());
-            
             obf.setSrg(delayedFile(MCP_2_NOTCH_SRG));
             obf.setExc(delayedFile(JOINED_EXC));
             obf.setReverse(false);
@@ -499,5 +492,19 @@ public class McpcDevPlugin extends DevBasePlugin
                 }
             });
         }
+    }
+    
+    @Override
+    public void afterEvaluate()
+    {
+        super.afterEvaluate();
+        
+        SubprojectTask task = (SubprojectTask) project.getTasks().getByName("eclipseClean");
+        task.configureProject(getExtension().getSubprojects());
+        task.configureProject(getExtension().getCleanProject());
+        
+        task = (SubprojectTask) project.getTasks().getByName("eclipseMcpc");
+        task.configureProject(getExtension().getSubprojects());
+        task.configureProject(getExtension().getCleanProject()); 
     }
 }
