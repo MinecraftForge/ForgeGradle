@@ -605,6 +605,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             {
                 if (at.getName().toLowerCase().endsWith("_at.cfg"))
                 {
+                    project.getLogger().lifecycle("Found AccessTransformer in main resources: "+at.getName());
                     binDeobf.addTransformer(at);
                     decompDeobf.addTransformer(at);
                 }
@@ -614,6 +615,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             {
                 if (at.getName().toLowerCase().endsWith("_at.cfg"))
                 {
+                    project.getLogger().lifecycle("Found AccessTransformer in api resources: "+at.getName());
                     binDeobf.addTransformer(at);
                     decompDeobf.addTransformer(at);
                 }

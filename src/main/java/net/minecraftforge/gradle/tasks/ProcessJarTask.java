@@ -124,9 +124,7 @@ public class ProcessJarTask extends CachedTask
         Set<File> ats = new HashSet<File>();
         for (DelayedFile obj : this.ats)
         {
-            File at = getProject().file(obj).getCanonicalFile();
-            getLogger().lifecycle("Access Transformer found: "+at);
-            ats.add(at);
+            ats.add(getProject().file(obj).getCanonicalFile());
         }
 
         // deobf
@@ -263,6 +261,8 @@ public class ProcessJarTask extends CachedTask
             final Map<String, MCInjectorStruct> struct = JsonFactory.loadMCIJson(getJson);
             for (File at : ats)
             {
+                getLogger().info("loading AT: "+at.getCanonicalPath());
+                
                 Files.readLines(at, Charset.defaultCharset(), new LineProcessor<Object>()
                 {
                     @Override
