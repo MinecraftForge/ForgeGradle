@@ -224,6 +224,19 @@ public class McpcDevPlugin extends DevBasePlugin
             });
             sub.setOutputFile(delayedFile(FML_VERSIONF));
         }
+        
+        ExtractTask extract = makeTask("extractRes", ExtractTask.class);
+        {
+            extract.into(delayedFile(EXTRACTED_RES));
+            for (File f : delayedFile("src/main").call().listFiles())
+            {
+                if (f.isDirectory())
+                    continue;
+                String path = f.getAbsolutePath();
+                if (path.endsWith(".jar") || path.endsWith(".zip"))
+                    extract.from(delayedFile(path));
+            }
+        }
 
         GenDevProjectsTask task = makeTask("generateProjectClean", GenDevProjectsTask.class);
         {
@@ -247,8 +260,9 @@ public class McpcDevPlugin extends DevBasePlugin
 
             task.addResource(delayedFile(ECLIPSE_MCPC_RES));
             task.addResource(delayedFile(MCPC_RESOURCES));
+            task.addResource(delayedFile(EXTRACTED_RES));
 
-            task.dependsOn("extractNatives","createVersionPropertiesFML");
+            task.dependsOn("extractRes", "extractNatives","createVersionPropertiesFML");
         }
 
         makeTask("generateProjects").dependsOn("generateProjectClean", "generateProjectMcpc");

@@ -128,4 +128,5 @@ final class DevConstants
     // USED ONLY FOR mcpc.. BUT ITS BUKKIT STUFF
     static final String BUKKIT_SOURCES       = "{BUKKIT_DIR}/src/main/java";
     static final String BUKKIT_RESOURCES     = "{BUKKIT_DIR}/src/main/resources";
+    static final String EXTRACTED_RES        = "{BUILD_DIR}/extractedResources";
 }
