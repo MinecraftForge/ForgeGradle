@@ -384,6 +384,7 @@ public class McpcDevPlugin extends DevBasePlugin
             uni.from(delayedFileTree(FML_RESOURCES));
             uni.from(delayedFileTree(FORGE_RESOURCES));
             uni.from(delayedFileTree(MCPC_RESOURCES));
+            uni.from(delayedFileTree(EXTRACTED_RES));
             uni.from(delayedFile(FML_VERSIONF));
             uni.from(delayedFile(FML_LICENSE));
             uni.from(delayedFile(FML_CREDITS));
