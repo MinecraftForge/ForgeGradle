@@ -377,7 +377,7 @@ public class McpcDevPlugin extends DevBasePlugin
 
         final DelayedJar uni = makeTask("packageUniversal", DelayedJar.class);
         {
-            uni.setClassifier("universal");
+            uni.setClassifier(delayedString("B{BUILD_NUM}").call());
             uni.getInputs().file(delayedFile(MCPC_JSON_REL));
             uni.getOutputs().upToDateWhen(Constants.CALL_FALSE);
             uni.from(delayedZipTree(BINPATCH_TMP));
@@ -437,7 +437,7 @@ public class McpcDevPlugin extends DevBasePlugin
             task.setOutputFile(delayedFile(INSTALL_PROFILE));
             task.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
             task.addReplacement("@version@", delayedString("{VERSION}"));
-            task.addReplacement("@project@", delayedString("Forge"));
+            task.addReplacement("@project@", delayedString("mcpc-plus"));
             task.addReplacement("@artifact@", delayedString("net.minecraftforge:forge:{MC_VERSION}-{VERSION}"));
             task.addReplacement("@universal_jar@", new Closure<String>(project)
             {
