@@ -492,7 +492,7 @@ public class FmlDevPlugin extends DevBasePlugin
         task.configureProject(getExtension().getSubprojects());
         task.configureProject(getExtension().getCleanProject());
         
-        task = (SubprojectTask) project.getTasks().getByName("eclipseFml");
+        task = (SubprojectTask) project.getTasks().getByName("eclipseFML");
         task.configureProject(getExtension().getSubprojects());
         task.configureProject(getExtension().getCleanProject());
         
