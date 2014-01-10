@@ -364,8 +364,6 @@ public class FmlDevPlugin extends DevBasePlugin
         final SubprojectTask javadocJar = makeTask("genJavadocs", SubprojectTask.class);
         {
             javadocJar.setBuildFile(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"));
-            javadocJar.configureProject(getExtension().getSubprojects());
-            javadocJar.configureProject(getExtension().getDirtyProject());
             javadocJar.setTasks("jar");
             javadocJar.setConfigureTask(new Action<Task>() {
                 public void execute(Task obj)
@@ -496,6 +494,10 @@ public class FmlDevPlugin extends DevBasePlugin
         
         task = (SubprojectTask) project.getTasks().getByName("eclipseFml");
         task.configureProject(getExtension().getSubprojects());
-        task.configureProject(getExtension().getCleanProject()); 
+        task.configureProject(getExtension().getCleanProject());
+        
+        task = (SubprojectTask) project.getTasks().getByName("genJavadocs");
+        task.configureProject(getExtension().getSubprojects());
+        task.configureProject(getExtension().getCleanProject());
     }
 }

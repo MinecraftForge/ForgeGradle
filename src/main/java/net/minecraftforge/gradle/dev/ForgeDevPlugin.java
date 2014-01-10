@@ -465,8 +465,6 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             javadocJar.dependsOn("replaceJavadocs");
             javadocJar.setBuildFile(delayedFile(ECLIPSE_FORGE + "/build.gradle"));
-            javadocJar.configureProject(getExtension().getSubprojects());
-            javadocJar.configureProject(getExtension().getDirtyProject());
             javadocJar.setTasks("javadoc");
             javadocJar.setConfigureTask(new Action<Task>() {
                 public void execute(Task obj)
@@ -619,6 +617,10 @@ public class ForgeDevPlugin extends DevBasePlugin
         
         task = (SubprojectTask) project.getTasks().getByName("eclipseForge");
         task.configureProject(getExtension().getSubprojects());
-        task.configureProject(getExtension().getCleanProject()); 
+        task.configureProject(getExtension().getCleanProject());
+        
+        task = (SubprojectTask) project.getTasks().getByName("genJavadocs");
+        task.configureProject(getExtension().getSubprojects());
+        task.configureProject(getExtension().getCleanProject());
     }
 }

@@ -480,8 +480,6 @@ public class McpcDevPlugin extends DevBasePlugin
         {
             javadocJar.dependsOn("replaceJavadocs");
             javadocJar.setBuildFile(delayedFile(ECLIPSE_MCPC + "/build.gradle"));
-            javadocJar.configureProject(getExtension().getSubprojects());
-            javadocJar.configureProject(getExtension().getDirtyProject());
             javadocJar.setTasks("javadoc");
             javadocJar.setConfigureTask(new Action<Task>() {
                 public void execute(Task obj)
@@ -505,6 +503,10 @@ public class McpcDevPlugin extends DevBasePlugin
         
         task = (SubprojectTask) project.getTasks().getByName("eclipseMcpc");
         task.configureProject(getExtension().getSubprojects());
-        task.configureProject(getExtension().getCleanProject()); 
+        task.configureProject(getExtension().getCleanProject());
+        
+        task = (SubprojectTask) project.getTasks().getByName("genJavadocs");
+        task.configureProject(getExtension().getSubprojects());
+        task.configureProject(getExtension().getCleanProject());
     }
 }
