@@ -12,6 +12,7 @@ public class DevExtension extends BaseExtension
     private String fmlDir;
     private String forgeDir;
     private String bukkitDir;
+    private String apiDir;
     private String mainClass;
     private String tweakClass;
     private String installerVersion = "null";
@@ -57,6 +58,16 @@ public class DevExtension extends BaseExtension
     public String getMainClass()
     {
         return mainClass == null ? "" : mainClass;
+    }
+
+    public void setApiDir(String apiDir)
+    {
+        this.apiDir = apiDir;
+    }
+
+    public String getApiDir()
+    {
+        return apiDir == null ? project.getProjectDir().getPath().replace('\\', '/') : apiDir.replace('\\', '/');
     }
 
     public void setMainClass(String mainClass)

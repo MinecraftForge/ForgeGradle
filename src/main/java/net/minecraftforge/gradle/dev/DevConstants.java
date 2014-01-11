@@ -45,9 +45,11 @@ final class DevConstants
     static final String JAR_SRG_FML         = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/minecraft_srg_fml-{MC_VERSION}.jar";
     static final String JAR_SRG_FORGE       = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/minecraft_srg_forge-{MC_VERSION}.jar";
     static final String JAR_SRG_MCPC        = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/minecraft_srg_mcpc-{MC_VERSION}.jar";
+    static final String JAR_SRG_API         = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/minecraft_srg_api-{MC_VERSION}.jar";
     static final String ZIP_DECOMP_FML      = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_decomp_fml-{MC_VERSION}.zip";
     static final String ZIP_DECOMP_FORGE    = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_decomp_forge-{MC_VERSION}.zip";
     static final String ZIP_DECOMP_MCPC     = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_decomp_mcpc-{MC_VERSION}.zip";
+    static final String ZIP_DECOMP_API      = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_decomp_api-{MC_VERSION}.zip";
     static final String LAUNCH4J            = "{CACHE_DIR}/minecraft/launch4j.zip";
 
     // fml intermediate jars
@@ -67,6 +69,14 @@ final class DevConstants
     static final String ZIP_FORGED_MCPC    = "{BUILD_DIR}/mcpcTmp/minecraft_forged.zip";
     static final String ZIP_PATCHED_MCPC   = "{BUILD_DIR}/mcpcTmp/minecraft_patched.zip";
 
+    // api intermediate jars
+    static final String ZIP_FMLED_API      = "{BUILD_DIR}/apiTmp/minecraft_fmlpatched.zip";
+    static final String ZIP_INJECT_API     = "{BUILD_DIR}/apiTmp/minecraft_fmlinjected.zip";
+    static final String ZIP_RENAMED_API    = "{BUILD_DIR}/apiTmp/minecraft_renamed.zip";
+    static final String ZIP_FINJECT_API    = "{BUILD_DIR}/apiTmp/minecraft_forgeinjected.zip";
+    static final String ZIP_FORGED_API     = "{BUILD_DIR}/apiTmp/minecraft_forged.zip";
+    static final String ZIP_PATCHED_API    = "{BUILD_DIR}/apiTmp/minecraft_patched.zip";
+
     // other stuff
     static final String CHANGELOG           = "{BUILD_DIR}/distributions/{PROJECT}-{MC_VERSION}-{VERSION}-changelog.txt";
 
@@ -77,6 +87,9 @@ final class DevConstants
     static final String MCPC_JSON_DEV       = "jsons/{MC_VERSION}-dev.json";
     static final String MCPC_JSON_REL       = "jsons/{MC_VERSION}-rel.json";
     static final String MCPC_JSON_BASE      = "jsons/{MC_VERSION}.json";
+    static final String API_JSON_DEV        = "jsons/{MC_VERSION}-dev.json";
+    static final String API_JSON_REL        = "jsons/{MC_VERSION}-rel.json";
+    static final String API_JSON_BASE       = "jsons/{MC_VERSION}.json";
 
     // eclipse folders      More stuff only for the Dev plugins
     static final String WORKSPACE_ZIP       = "eclipse-workspace-dev.zip";
@@ -90,9 +103,12 @@ final class DevConstants
     static final String ECLIPSE_FORGE       = WORKSPACE + "/Forge";
     static final String ECLIPSE_FORGE_SRC   = ECLIPSE_FORGE + "/src/main/java";
     static final String ECLIPSE_FORGE_RES   = ECLIPSE_FORGE + "/src/main/resources";
-    static final String ECLIPSE_MCPC       = WORKSPACE + "/MCPC";
-    static final String ECLIPSE_MCPC_SRC   = ECLIPSE_MCPC + "/src/main/java";
-    static final String ECLIPSE_MCPC_RES   = ECLIPSE_MCPC + "/src/main/resources";
+    static final String ECLIPSE_MCPC        = WORKSPACE + "/MCPC";
+    static final String ECLIPSE_MCPC_SRC    = ECLIPSE_MCPC + "/src/main/java";
+    static final String ECLIPSE_MCPC_RES    = ECLIPSE_MCPC + "/src/main/resources";
+    static final String ECLIPSE_API         = WORKSPACE + "/API";
+    static final String ECLIPSE_API_SRC     = ECLIPSE_API + "/src/main/java";
+    static final String ECLIPSE_API_RES     = ECLIPSE_API + "/src/main/resources";
     static final String ECLIPSE_RUN         = WORKSPACE + "/run";
     static final String ECLIPSE_NATIVES     = ECLIPSE_RUN + "/bin/natives";
     static final String ECLIPSE_ASSETS      = ECLIPSE_RUN + "/assets";
@@ -129,4 +145,14 @@ final class DevConstants
     static final String BUKKIT_SOURCES       = "{BUKKIT_DIR}/src/main/java";
     static final String BUKKIT_RESOURCES     = "{BUKKIT_DIR}/src/main/resources";
     static final String EXTRACTED_RES        = "{BUILD_DIR}/extractedResources";
+
+    // API stuff only
+    static final String API_PATCH_DIR      = "patches";
+    static final String API_SOURCES        = "src/main/java";
+    static final String API_RESOURCES      = "src/main/resources";
+    static final String API_TEST_SOURCES   = "src/test/java";
+
+    // The api's api
+    static final String APIAPI_SOURCES       = "{API_DIR}/src/main/java";
+    static final String APIAPI_RESOURCES     = "{API_DIR}/src/main/resources";
 }
