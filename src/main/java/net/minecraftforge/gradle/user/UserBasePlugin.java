@@ -521,7 +521,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             {
                 "Minecraft Server",
                 "cpw.mods.fml.relauncher.ServerLaunchWrapper",
-                "-Xincgc -Dfml.ignoreInvalidMinecraftCertificates=true",
+                "-Xincgc -Xmx1024M -Xms1024M -Dfml.ignoreInvalidMinecraftCertificates=true",
                 ""
             }
         };
