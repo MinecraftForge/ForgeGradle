@@ -632,7 +632,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             sub = doc.createElement("option");
             {
                 sub.setAttribute("name", "VM_PARAMETERS");
-                sub.setAttribute("value", "-Xincgc -Dfml.ignoreInvalidMinecraftCertificates=true");
+                sub.setAttribute("value", "-Xincgc -Xmx1024M -Xms1024M -Dfml.ignoreInvalidMinecraftCertificates=true");
                 child.appendChild(sub);
             }
 
