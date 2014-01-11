@@ -56,11 +56,17 @@ public class McpcDevPlugin extends DevBasePlugin
         Task task = makeTask("setupMcpc", DefaultTask.class);
         task.dependsOn("extractMcpcSources", "generateProjects", "eclipse", "copyAssets");
         task.setGroup("MCPC");
+        
+        // clean packages
+        {
+            Delete del = makeTask("cleanPackages", Delete.class);
+            del.delete("build/distributions");
+        }
 
 //        // the master task.
         task = makeTask("buildPackages");
         //task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "genJavadocs");
-        task.dependsOn("packageUniversal", "packageInstaller", "genJavadocs");
+        task.dependsOn("cleanPackages", "packageUniversal", "packageInstaller", "genJavadocs");
         task.setGroup("MCPC");
     }
     
