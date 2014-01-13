@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.dev;
 
+import com.google.common.base.Strings;
 import groovy.lang.Closure;
 import net.minecraftforge.gradle.CopyInto;
 import net.minecraftforge.gradle.common.Constants;
@@ -50,7 +51,7 @@ public class ApiDevPlugin extends DevBasePlugin
         //        // the master task.
         task = makeTask("buildPackages");
         //task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "genJavadocs");
-        task.dependsOn("launch4j", "packageUniversal", "packageInstaller", "genJavadocs");
+        task.dependsOn("packageUniversal", "packageInstaller", "genJavadocs");
         task.setGroup("API");
     }
 
@@ -71,6 +72,8 @@ public class ApiDevPlugin extends DevBasePlugin
             task2.setExceptorJson(delayedFile(EXC_JSON));
             task2.addTransformerClean(delayedFile(FML_RESOURCES + "/fml_at.cfg"));
             task2.addTransformerClean(delayedFile(FORGE_RESOURCES + "/forge_at.cfg"));
+            if (!Strings.isNullOrEmpty(getExtension().getApiTransformer()))
+                task2.addTransformerClean(delayedFile(FORGE_RESOURCES + getExtension().getApiTransformer()));
             task2.setApplyMarkers(true);
             task2.dependsOn("downloadMcpTools", "mergeJars");
         }
