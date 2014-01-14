@@ -88,6 +88,10 @@ public class UserExtension extends BaseExtension
         
         version = matcher.group(1);
         apiVersion = matcher.group(0);
+        
+        // to stop some derps with ForgeGradle versions
+        if (!version.startsWith("1.6"))
+            throw new IllegalArgumentException("This version of ForgeGradle only works with Minecraft 1.6.4!");
     }
 
     public String getApiVersion()
