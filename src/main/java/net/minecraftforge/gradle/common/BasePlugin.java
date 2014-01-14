@@ -59,9 +59,14 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         project.getExtensions().create(Constants.EXT_NAME_JENKINS, JenkinsExtension.class, project);
 
         // repos
-        addMavenRepo("forge", "http://files.minecraftforge.net/maven");
-        project.getRepositories().mavenCentral();
-        addMavenRepo("minecraft", Constants.LIBRARY_URL);
+        project.allprojects(new Action<Project>() {
+            public void execute(Project proj)
+            {
+                addMavenRepo(proj, "forge", "http://files.minecraftforge.net/maven");
+                proj.getRepositories().mavenCentral();
+                addMavenRepo(proj, "minecraft", Constants.LIBRARY_URL);
+            }
+        });
 
         // after eval
         project.afterEvaluate(new Action<Project>() {
@@ -280,9 +285,9 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         project.apply(map);
     }
 
-    public void addMavenRepo(final String name, final String url)
+    public void addMavenRepo(Project proj, final String name, final String url)
     {
-        project.getRepositories().maven(new Action<MavenArtifactRepository>() {
+        proj.getRepositories().maven(new Action<MavenArtifactRepository>() {
             @Override
             public void execute(MavenArtifactRepository repo)
             {
