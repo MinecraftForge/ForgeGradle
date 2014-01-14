@@ -80,6 +80,7 @@ public class ProcessJarTask extends CachedTask
     @Cached
     private DelayedFile            outDirtyJar = new DelayedFile(getProject(), Constants.DEOBF_JAR); // dirty = has any other ATs
 
+    @InputFiles
     private ArrayList<DelayedFile> ats         = new ArrayList<DelayedFile>();
 
     private DelayedFile log;
@@ -475,7 +476,6 @@ public class ProcessJarTask extends CachedTask
         return isClean ? outCleanJar.call() : outDirtyJar.call();
     }
 
-    @InputFiles
     public FileCollection getAts()
     {
         return getProject().files(ats.toArray());
