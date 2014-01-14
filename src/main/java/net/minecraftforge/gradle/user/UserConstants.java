@@ -30,9 +30,13 @@ public final class UserConstants
            static final String REOBF_NOTCH_SRG = CONF_DIR + "/mcp-notch.srg";
 
            static final String MAPPINGS_DIR = PACK_DIR + "/mappings";
-    public static final String METHOD_CSV   = MAPPINGS_DIR + "/methods.csv";
-    public static final String FIELD_CSV    = MAPPINGS_DIR + "/fields.csv";
-           static final String PARAM_CSV    = MAPPINGS_DIR + "/params.csv";
+    public static final String METHOD_CSV_OLD   = MAPPINGS_DIR + "/methods.csv";
+    public static final String FIELD_CSV_OLD    = MAPPINGS_DIR + "/fields.csv";
+           static final String PARAM_CSV_OLD    = MAPPINGS_DIR + "/params.csv";
+           
+    public static final String METHOD_CSV   = CONF_DIR + "/methods.csv";
+    public static final String FIELD_CSV    = CONF_DIR + "/fields.csv";
+           static final String PARAM_CSV    = CONF_DIR + "/params.csv";
 
     static final String SRC_DIR  = PACK_DIR + "/src/main/java";
     static final String RES_DIR  = PACK_DIR + "/src/main/resources";

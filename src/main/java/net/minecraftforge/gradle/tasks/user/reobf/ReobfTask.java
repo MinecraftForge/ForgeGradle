@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
+import net.minecraftforge.gradle.delayed.DelayedAlternatorFile;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedThingy;
 import net.minecraftforge.gradle.extrastuff.ReobfExceptor;
@@ -242,8 +243,8 @@ public class ReobfTask extends DefaultTask
         exc.excConfig = getExceptorCfg();
         exc.inSrg = new DelayedFile(getProject(), UserConstants.REOBF_SRG).call();
         exc.outSrg = new File(getTemporaryDir(), "reobf.srg");
-        exc.fieldCSV = new DelayedFile(getProject(), UserConstants.FIELD_CSV).call();
-        exc.methodCSV = new DelayedFile(getProject(), UserConstants.METHOD_CSV).call();
+        exc.fieldCSV = new DelayedAlternatorFile(getProject(), UserConstants.FIELD_CSV).add(UserConstants.FIELD_CSV_OLD).call();
+        exc.methodCSV = new DelayedAlternatorFile(getProject(), UserConstants.METHOD_CSV).add(UserConstants.FIELD_CSV_OLD).call();
 
         exc.doFirstThings();
 

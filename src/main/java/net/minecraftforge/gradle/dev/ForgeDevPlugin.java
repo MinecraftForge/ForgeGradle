@@ -513,8 +513,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             userDev.from(delayedFileTree("{FML_DIR}/src"), new CopyInto("src"));
             userDev.from(delayedFileTree("src"), new CopyInto("src"));
             userDev.from(delayedFile(DEOBF_DATA), new CopyInto("src/main/resources/"));
-            userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "astyle.cfg", "exceptor.json"));
-            userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("mappings", "*.csv", "!packages.csv"));
+            userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "astyle.cfg", "exceptor.json", "*.csv", "!packages.csv"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}/patches"), new CopyInto("conf"));
             userDev.from(delayedFile(MERGE_CFG), new CopyInto("conf"));
             userDev.from(delayedFile(JOINED_SRG), new CopyInto("conf"));

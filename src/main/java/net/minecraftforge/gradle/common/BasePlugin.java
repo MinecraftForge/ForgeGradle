@@ -9,6 +9,7 @@ import java.util.HashMap;
 import net.minecraftforge.gradle.FileLogListenner;
 import net.minecraftforge.gradle.json.version.AssetIndex;
 import net.minecraftforge.gradle.json.version.Version;
+import net.minecraftforge.gradle.delayed.DelayedAlternatorFile;
 import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
@@ -313,6 +314,14 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     protected DelayedFile delayedFile(String path)
     {
         return new DelayedFile(project, path, this);
+    }
+    
+    protected DelayedAlternatorFile delayedFile(String path, String... alternates)
+    {
+        DelayedAlternatorFile delayed =  new DelayedAlternatorFile(project, path, this);
+        for (String pat : alternates)
+            delayed.add(pat);
+        return delayed;
     }
 
     protected DelayedFileTree delayedFileTree(String path)

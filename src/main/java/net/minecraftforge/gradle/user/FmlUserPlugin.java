@@ -102,9 +102,9 @@ public class FmlUserPlugin extends UserBasePlugin
             remap.dependsOn("addFmlSources");
             remap.setInJar(injected);
             remap.setOutJar(remapped);
-            remap.setFieldsCsv(delayedFile(FIELD_CSV));
-            remap.setMethodsCsv(delayedFile(METHOD_CSV));
-            remap.setParamsCsv(delayedFile(PARAM_CSV));
+            remap.setFieldsCsv(delayedFile(FIELD_CSV, FIELD_CSV_OLD));
+            remap.setMethodsCsv(delayedFile(METHOD_CSV, METHOD_CSV_OLD));
+            remap.setParamsCsv(delayedFile(PARAM_CSV, PARAM_CSV_OLD));
             remap.setDoesJavadocs(true);
         }
         

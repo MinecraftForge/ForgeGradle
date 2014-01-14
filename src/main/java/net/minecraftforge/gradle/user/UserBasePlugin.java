@@ -139,8 +139,8 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             task.setNotchToMcp(df(DEOBF_MCP_SRG));
             task.setMcpToSrg  (df(REOBF_SRG));
             task.setMcpToNotch(df(REOBF_NOTCH_SRG));
-            task.setMethodsCsv(df(METHOD_CSV));
-            task.setFieldsCsv (df(FIELD_CSV));
+            task.setMethodsCsv(df(METHOD_CSV, METHOD_CSV_OLD));
+            task.setFieldsCsv (df(FIELD_CSV, FIELD_CSV_OLD));
             task.dependsOn("extractUserDev");
         }
 
@@ -796,4 +796,5 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
     }
 
     private DelayedFile df(String file){ return delayedFile(file); }
+    private DelayedFile df(String file, String... alts){ return delayedFile(file, alts); }
 }

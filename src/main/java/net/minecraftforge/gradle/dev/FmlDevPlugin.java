@@ -400,8 +400,7 @@ public class FmlDevPlugin extends DevBasePlugin
             userDev.from(delayedFileTree("{FML_DIR}/src"), new CopyInto("src"));
             userDev.from(delayedFile(DevConstants.DEOBF_DATA), new CopyInto("src/main/resources/"));
             userDev.from(delayedFile(DevConstants.MERGE_CFG), new CopyInto("conf"));
-            userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "astyle.cfg", "exceptor.json"));
-            userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("mappings", "*.csv", "!packages.csv"));
+            userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "astyle.cfg", "exceptor.json", "*.csv", "!packages.csv"));
             userDev.from(delayedFile(DevConstants.JOINED_SRG), new CopyInto("conf"));
             userDev.from(delayedFile(DevConstants.JOINED_EXC), new CopyInto("conf"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}/patches"), new CopyInto("conf"));
