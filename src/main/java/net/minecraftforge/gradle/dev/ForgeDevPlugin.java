@@ -306,6 +306,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task5.setSubmodule(delayedFile("fml"));
             task5.setModuleName("FML");
             task5.setPrefix("MinecraftForge/FML");
+            task5.setOutputFile(project.file("changelog.txt"));
         }
     }
 
