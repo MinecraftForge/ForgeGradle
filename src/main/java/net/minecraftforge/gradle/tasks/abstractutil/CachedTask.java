@@ -134,7 +134,7 @@ public abstract class CachedTask extends DefaultTask
 
             private File getFile(Annotated field) throws IllegalAccessException, NoSuchFieldException, NoSuchMethodException, SecurityException, IllegalArgumentException, InvocationTargetException
             {
-                return getProject().file(field.getValue(this));
+                return getProject().file(field.getValue(getDelegate()));
             }
         });
     }
