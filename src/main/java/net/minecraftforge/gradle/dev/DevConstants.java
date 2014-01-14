@@ -102,6 +102,7 @@ final class DevConstants
     static final String FML_SOURCES         = "{FML_DIR}/src/main/java";
     static final String FML_RESOURCES       = "{FML_DIR}/src/main/resources";
     static final String FML_TEST_SOURCES    = "{FML_DIR}/src/test/java";
+    static final String FML_TEST_RES        = "{FML_DIR}/src/test/resources";
     static final String FML_VERSIONF        = "{FML_DIR}/build/tmp/fmlversion.properties";
     static final String FML_LICENSE         = "{FML_DIR}/LICENSE-fml.txt";
     static final String FML_CREDITS         = "{FML_DIR}/CREDITS-fml.txt";
@@ -112,6 +113,7 @@ final class DevConstants
     static final String FORGE_SOURCES       = "{FORGE_DIR}/src/main/java";
     static final String FORGE_RESOURCES     = "{FORGE_DIR}/src/main/resources";
     static final String FORGE_TEST_SOURCES  = "{FORGE_DIR}/src/test/java";
+    static final String FORGE_TEST_RES      = "{FORGE_DIR}/src/test/resources";
     static final String FORGE_LICENSE       = "{FORGE_DIR}/MinecraftForge-License.txt";
     static final String FORGE_CREDITS       = "{FORGE_DIR}/MinecraftForge-Credits.txt";
     static final String PAULSCODE_LISCENCE1 = "{FORGE_DIR}/Paulscode IBXM Library License.txt";
@@ -124,6 +126,7 @@ final class DevConstants
     static final String MCPC_SOURCES        = "src/main/java";
     static final String MCPC_RESOURCES      = "src/main/resources";
     static final String MCPC_TEST_SOURCES   = "src/test/java";
+    static final String MCPC_TEST_RES       = "src/test/resources";
     
     // USED ONLY FOR mcpc.. BUT ITS BUKKIT STUFF
     static final String BUKKIT_SOURCES       = "{BUKKIT_DIR}/src/main/java";

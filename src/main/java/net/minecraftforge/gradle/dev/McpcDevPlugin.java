@@ -263,10 +263,12 @@ public class McpcDevPlugin extends DevBasePlugin
 
             task.addSource(delayedFile(ECLIPSE_MCPC_SRC));
             task.addSource(delayedFile(MCPC_SOURCES));
+            task.addTestSource(delayedFile(MCPC_TEST_SOURCES));
 
             task.addResource(delayedFile(ECLIPSE_MCPC_RES));
             task.addResource(delayedFile(MCPC_RESOURCES));
             task.addResource(delayedFile(EXTRACTED_RES));
+            task.addTestSource(delayedFile(MCPC_TEST_SOURCES));
 
             task.dependsOn("extractRes", "extractNatives","createVersionPropertiesFML");
         }

@@ -31,6 +31,8 @@ public class GenDevProjectsTask extends DefaultTask
 
     private List<DelayedFile> sources = new ArrayList<DelayedFile>();
     private List<DelayedFile> resources = new ArrayList<DelayedFile>();
+    private List<DelayedFile> testSources = new ArrayList<DelayedFile>();
+    private List<DelayedFile> testResources = new ArrayList<DelayedFile>();
 
     private final ArrayList<String> deps = new ArrayList<String>();
 
@@ -118,7 +120,7 @@ public class GenDevProjectsTask extends DefaultTask
 
         URI base = targetDir.call().toURI();
 
-        if (resources.size() > 0 || sources.size() > 0)
+        if (resources.size() > 0 || sources.size() > 0 || testSources.size() > 0 || testResources.size() > 0)
         {
             a(o, "sourceSets");
             a(o, "{");
@@ -147,8 +149,72 @@ public class GenDevProjectsTask extends DefaultTask
                 a(o, "        }");
             }
             a(o, "    }");
+            a(o, "    test");
+            a(o, "    {");
+            if (testSources.size() > 0)
+            {
+                a(o, "        java");
+                a(o, "        {");
+                for (DelayedFile src : testSources)
+                {
+                    String relative = base.relativize(src.call().toURI()).getPath();
+                    o.append("            srcDir '").append(relative).append('\'').append(NEWLINE);
+                }
+                a(o, "        }");
+            }
+            if (testResources.size() > 0)
+            {
+                a(o, "        resources");
+                a(o, "        {");
+                for (DelayedFile src : testResources)
+                {
+                    String relative = base.relativize(src.call().toURI()).getPath();
+                    o.append("            srcDir '").append(relative).append('\'').append(NEWLINE);
+                }
+                a(o, "        }");
+            }
+            a(o, "    }");
             a(o, "}");
         }
+        
+        // and now eclipse hacking
+        a(o,
+                "def links = []",
+                "eclipse.project.file.withXml { provider ->",
+                "    def node = provider.asNode()",
+                "    node.linkedResources.link.each { child ->",
+                "        def path = child.location.text()",
+                "        def newName = path.split('/')[-2..-1].join('/')       ",
+                "        links += newName",
+                "        child.replaceNode {",
+                "            link{",
+                "                name(newName)",
+                "                type('2')",
+                "                location(path)",
+                "            }",
+                "        }",
+                "    }",
+                "}",
+                "",
+                "import groovy.xml.StreamingMarkupBuilder // to write it out",
+                "task fixClasspath(dependsOn: 'eclipseClasspath')",
+                "fixClasspath.doLast {",
+                "    def xml = project.file('.classpath')",
+                "    def root = new XmlSlurper().parseText(xml.text)",
+                "    root.classpathentry.findAll { it.@kind == 'src' && !it.@path.text().contains('/') }.each { node -> node.replaceNode {} }",
+                "    links.each { newPath ->",
+                "        root.appendNode {",
+                "            classpathentry(kind:'src', path:newPath)",
+                "        }",
+                "    }",
+                "    ",
+                "    // write",
+                "    def outputBuilder = new StreamingMarkupBuilder()",
+                "    String result = outputBuilder.bind{ mkp.yield root }",
+                "    xml.write result",
+                "}",
+                "tasks.eclipse.dependsOn 'fixClasspath'"
+        );
 
         Files.write(o.toString(), file, Charset.defaultCharset());
     }
@@ -200,6 +266,18 @@ public class GenDevProjectsTask extends DefaultTask
     public GenDevProjectsTask addResource(DelayedFile resource)
     {
         resources.add(resource);
+        return this;
+    }
+    
+    public GenDevProjectsTask addTestSource(DelayedFile source)
+    {
+        testSources.add(source);
+        return this;
+    }
+
+    public GenDevProjectsTask addTestResource(DelayedFile resource)
+    {
+        testResources.add(resource);
         return this;
     }
 

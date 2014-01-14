@@ -182,9 +182,11 @@ public class FmlDevPlugin extends DevBasePlugin
 
             task.addSource(delayedFile(DevConstants.ECLIPSE_FML_SRC));
             task.addSource(delayedFile(DevConstants.FML_SOURCES));
+            task.addTestSource(delayedFile(DevConstants.FML_TEST_SOURCES));
 
             task.addResource(delayedFile(DevConstants.ECLIPSE_FML_RES));
             task.addResource(delayedFile(DevConstants.FML_RESOURCES));
+            task.addTestResource(delayedFile(DevConstants.FML_TEST_RES));
 
             task.dependsOn("extractNatives","createVersionProperties");
         }
