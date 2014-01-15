@@ -160,8 +160,8 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             task.setOutDirtyJar (df(DEOBF_BIN_JAR));
             task.setExceptorJson(df(EXC_JSON));
             task.setExceptorCfg (df(PACKAGED_EXC));
-            task.setFieldCsv    (df(FIELD_CSV));
-            task.setMethodCsv   (df(METHOD_CSV));
+            task.setFieldCsv    (df(FIELD_CSV, FIELD_CSV_OLD));
+            task.setMethodCsv   (df(METHOD_CSV, FIELD_CSV_OLD));
             task.setApplyMarkers(false);
             addATs(task);
             task.dependsOn("downloadMcpTools", "mergeJars", "genSrgs", "applyBinPatches");

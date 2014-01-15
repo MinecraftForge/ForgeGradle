@@ -38,9 +38,6 @@ public class DelayedAlternatorFile extends DelayedFile
     @Override
     public File call()
     {
-        if (resolved != null)
-            return resolved;
-
         for (String pattern : patterns)
         {
             resolved = project.file(DelayedBase.resolve(pattern, project, resolvers));
@@ -48,6 +45,7 @@ public class DelayedAlternatorFile extends DelayedFile
             if (resolved.exists()) // else keep getting the next pattern.
                 break;
         }
+        
         return resolved;
     }
 }
