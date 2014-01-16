@@ -12,7 +12,6 @@ import net.minecraftforge.gradle.delayed.DelayedFile;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.process.ExecSpec;
 
@@ -20,7 +19,6 @@ import com.google.common.io.Files;
 
 public class SubmoduleChangelogTask extends DefaultTask
 {
-    @InputFile
     private DelayedFile submodule;
     @Input
     private String      moduleName;
