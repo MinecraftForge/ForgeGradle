@@ -221,7 +221,7 @@ public class ForgeDevPlugin extends DevBasePlugin
 
             task.addResource(delayedFile(ECLIPSE_FORGE_RES));
             task.addResource(delayedFile(FORGE_RESOURCES));
-            task.addTestSource(delayedFile(FORGE_TEST_SOURCES));
+            task.addTestResource(delayedFile(FORGE_TEST_RES));
 
             task.dependsOn("extractNatives","createVersionPropertiesFML");
         }

@@ -132,8 +132,7 @@ public class GenDevProjectsTask extends DefaultTask
                 a(o, "        {");
                 for (DelayedFile src : sources)
                 {
-                    String relative = base.relativize(src.call().toURI()).getPath();
-                    o.append("            srcDir '").append(relative).append('\'').append(NEWLINE);
+                    o.append("            srcDir '").append(relative(base, src)).append('\'').append(NEWLINE);
                 }
                 a(o, "        }");
             }
@@ -143,8 +142,7 @@ public class GenDevProjectsTask extends DefaultTask
                 a(o, "        {");
                 for (DelayedFile src : resources)
                 {
-                    String relative = base.relativize(src.call().toURI()).getPath();
-                    o.append("            srcDir '").append(relative).append('\'').append(NEWLINE);
+                    o.append("            srcDir '").append(relative(base, src)).append('\'').append(NEWLINE);
                 }
                 a(o, "        }");
             }
@@ -157,8 +155,7 @@ public class GenDevProjectsTask extends DefaultTask
                 a(o, "        {");
                 for (DelayedFile src : testSources)
                 {
-                    String relative = base.relativize(src.call().toURI()).getPath();
-                    o.append("            srcDir '").append(relative).append('\'').append(NEWLINE);
+                    o.append("            srcDir '").append(relative(base, src)).append('\'').append(NEWLINE);
                 }
                 a(o, "        }");
             }
@@ -168,8 +165,7 @@ public class GenDevProjectsTask extends DefaultTask
                 a(o, "        {");
                 for (DelayedFile src : testResources)
                 {
-                    String relative = base.relativize(src.call().toURI()).getPath();
-                    o.append("            srcDir '").append(relative).append('\'').append(NEWLINE);
+                    o.append("            srcDir '").append(relative(base, src)).append('\'').append(NEWLINE);
                 }
                 a(o, "        }");
             }
@@ -197,6 +193,7 @@ public class GenDevProjectsTask extends DefaultTask
                 "}",
                 "",
                 "import groovy.xml.StreamingMarkupBuilder // to write it out",
+                "import groovy.xml.XmlUtil //To prettify it",
                 "task fixClasspath(dependsOn: 'eclipseClasspath')",
                 "fixClasspath.doLast {",
                 "    def xml = project.file('.classpath')",
@@ -210,13 +207,20 @@ public class GenDevProjectsTask extends DefaultTask
                 "    ",
                 "    // write",
                 "    def outputBuilder = new StreamingMarkupBuilder()",
-                "    String result = outputBuilder.bind{ mkp.yield root }",
+                "    String result = XmlUtil.serialize(outputBuilder.bind{ mkp.yield root })",
                 "    xml.write result",
                 "}",
                 "tasks.eclipse.dependsOn 'fixClasspath'"
         );
 
         Files.write(o.toString(), file, Charset.defaultCharset());
+    }
+
+    private String relative(URI base, DelayedFile src)
+    {
+        String relative = base.relativize(src.call().toURI()).getPath().replace('\\', '/');
+        if (!relative.endsWith("/")) relative += "/";
+        return relative;
     }
 
     private void a(StringBuilder out, String... lines)
