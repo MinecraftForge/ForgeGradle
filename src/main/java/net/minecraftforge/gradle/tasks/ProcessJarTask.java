@@ -277,15 +277,17 @@ public class ProcessJarTask extends CachedTask
                         if (s.length == 2 && s[1].indexOf('$') > 0)
                         {
                              String parent = s[1].substring(0, s[1].indexOf('$'));
-                             MCInjectorStruct cls = struct.get(parent);
-                             if (cls != null && cls.innerClasses != null)
+                             for (MCInjectorStruct cls : new MCInjectorStruct[]{struct.get(parent), struct.get(s[1])})
                              {
-                                 for (InnerClass inner : cls.innerClasses)
+                                 if (cls != null && cls.innerClasses != null)
                                  {
-                                     if (inner.inner_class.equals(s[1]))
+                                     for (InnerClass inner : cls.innerClasses)
                                      {
-                                         int access = fixAccess(inner.getAccess(), s[0]);
-                                         inner.access = (access == 0 ? null : Integer.toHexString(access));
+                                         if (inner.inner_class.equals(s[1]))
+                                         {
+                                             int access = fixAccess(inner.getAccess(), s[0]);
+                                             inner.access = (access == 0 ? null : Integer.toHexString(access));
+                                         }
                                      }
                                  }
                              }
