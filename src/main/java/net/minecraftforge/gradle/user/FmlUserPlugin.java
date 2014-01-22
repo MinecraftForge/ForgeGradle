@@ -11,6 +11,8 @@ import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.user.RecompileTask;
 
+import org.gradle.api.Action;
+import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.tasks.bundling.Zip;
@@ -73,9 +75,14 @@ public class FmlUserPlugin extends UserBasePlugin
         return FML_CACHE;
     }
 
-    protected void createMcModuleDep(boolean isClean, DependencyHandler depHandler, String depConfig)
+    protected void createMcModuleDep(final boolean isClean, DependencyHandler depHandler, String depConfig)
     {
-        addFlatRepo(project, "fmlFlatRepo", delayedFile(isClean ? FML_CACHE : DIRTY_DIR).call());
+        project.allprojects(new Action<Project>() {
+            public void execute(Project proj)
+            {
+                addFlatRepo(project, "fmlFlatRepo", delayedFile(isClean ? FML_CACHE : DIRTY_DIR).call());
+            }
+        });
 
         final String prefix = isClean ? FML_CACHE : DIRTY_DIR;
 

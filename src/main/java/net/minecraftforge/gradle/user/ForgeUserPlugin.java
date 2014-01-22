@@ -11,6 +11,8 @@ import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.user.RecompileTask;
 
+import org.gradle.api.Action;
+import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.tasks.bundling.Zip;
@@ -75,9 +77,14 @@ public class ForgeUserPlugin extends UserBasePlugin
         return FORGE_CACHE;
     }
 
-    protected void createMcModuleDep(boolean isClean, DependencyHandler depHandler, String depConfig)
+    protected void createMcModuleDep(final boolean isClean, DependencyHandler depHandler, String depConfig)
     {
-        addFlatRepo(project, "forgeFlatRepo", delayedFile(isClean ? FORGE_CACHE : DIRTY_DIR).call().getAbsolutePath());
+        project.allprojects(new Action<Project>() {
+            public void execute(Project proj)
+            {
+                addFlatRepo(project, "forgeFlatRepo", delayedFile(isClean ? FORGE_CACHE : DIRTY_DIR).call().getAbsolutePath());
+            }
+        });
 
         if (getExtension().isDecomp)
             depHandler.add("compile", ImmutableMap.of("name", "forgeSrc", "version", getExtension().getApiVersion()));
