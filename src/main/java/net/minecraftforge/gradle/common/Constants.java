@@ -55,6 +55,7 @@ public class Constants
     public static final String MCP_URL          = "http://files.minecraftforge.net/fernflower_temporary.zip";
     public static final String ASSETS_URL       = "http://resources.download.minecraft.net";
     public static final String LIBRARY_URL      = "https://libraries.minecraft.net/";
+    public static final String FORGE_MAVEN      = "http://files.minecraftforge.net/maven";
     public static final String ASSETS_INDEX_URL = "https://s3.amazonaws.com/Minecraft.Download/indexes/{ASSET_INDEX}.json";
 
     public static final String LOG              = ".gradle/gradle.log";
@@ -67,16 +68,6 @@ public class Constants
     public static final String FERNFLOWER       = "{CACHE_DIR}/minecraft/fernflower.jar";
     public static final String EXCEPTOR         = "{CACHE_DIR}/minecraft/exceptor.jar";
     public static final String ASSETS           = "{CACHE_DIR}/minecraft/assets";
-
-    public static final String DEOBF_JAR              = "{BUILD_DIR}/deobfuscated.jar";
-    public static final String DEOBF_BIN_JAR          = "{BUILD_DIR}/deobfuscated-bin.jar";
-    public static final String DECOMP_JAR             = "{BUILD_DIR}/decompiled.jar";
-    public static final String DECOMP_FMLED           = "{BUILD_DIR}/decompiled-fmled.jar";
-    public static final String DECOMP_FMLINJECTED     = "{BUILD_DIR}/decompiled-fmlinjected.jar";
-    public static final String DECOMP_FORGEJAVADOCCED = "{BUILD_DIR}/decompiled-forged.jar";
-    public static final String DECOMP_FORGED          = "{BUILD_DIR}/decompiled-forged-nojd.jar";
-    public static final String DECOMP_FORGEINJECTED   = "{BUILD_DIR}/decompiled-forgeinjected.jar";
-    public static final String DECOMP_REMAPPED        = "{BUILD_DIR}/decompiled-remapped.jar";
 
     // util
     public static final String NEWLINE = System.getProperty("line.separator");

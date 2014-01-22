@@ -1,5 +1,10 @@
 package net.minecraftforge.gradle.tasks;
 
+import static org.objectweb.asm.Opcodes.ACC_FINAL;
+import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
+import static org.objectweb.asm.Opcodes.ACC_PROTECTED;
+import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -23,7 +28,6 @@ import net.md_5.specialsource.JarRemapper;
 import net.md_5.specialsource.RemapperProcessor;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
-import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.json.MCInjectorStruct;
@@ -40,13 +44,10 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 
-import com.google.common.io.ByteStreams;
-
-import static org.objectweb.asm.Opcodes.*;
-
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
 
@@ -78,7 +79,7 @@ public class ProcessJarTask extends CachedTask
 
     @OutputFile
     @Cached
-    private DelayedFile            outDirtyJar = new DelayedFile(getProject(), Constants.DEOBF_JAR); // dirty = has any other ATs
+    private DelayedFile outDirtyJar = new DelayedFile(getProject(), "{BUILD_DIR}/processed.jar"); // dirty = has any other ATs
 
     @InputFiles
     private ArrayList<DelayedFile> ats         = new ArrayList<DelayedFile>();

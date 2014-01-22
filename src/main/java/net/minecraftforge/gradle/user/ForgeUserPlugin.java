@@ -1,7 +1,6 @@
 package net.minecraftforge.gradle.user;
 
 import static net.minecraftforge.gradle.user.UserConstants.*;
-import static net.minecraftforge.gradle.common.Constants.*;
 import groovy.lang.Closure;
 
 import java.io.File;
@@ -10,9 +9,13 @@ import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
+import net.minecraftforge.gradle.tasks.user.RecompileTask;
 
 import org.gradle.api.Task;
+import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.tasks.bundling.Zip;
+
+import com.google.common.collect.ImmutableMap;
 
 public class ForgeUserPlugin extends UserBasePlugin
 {
@@ -23,25 +26,26 @@ public class ForgeUserPlugin extends UserBasePlugin
 
         ProcessJarTask procTask = (ProcessJarTask) project.getTasks().getByName("deobfBinJar");
         {
-            procTask.setInJar(delayedFile(FORGE_BINPATCHED));
-            procTask.setOutCleanJar(delayedFile(FORGE_DEOBF_MCP));
+            procTask.setInJar(delayedFile(FORGE_CACHE + FORGE_BINPATCHED));
+            procTask.setOutCleanJar(delayedFile(FORGE_CACHE + FORGE_DEOBF_MCP));
+            procTask.setOutDirtyJar(delayedFile(DIRTY_DIR + FORGE_DEOBF_MCP));
         }
 
         procTask = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
         {
-            procTask.setOutCleanJar(delayedFile(FORGE_DEOBF_SRG));
+            procTask.setOutCleanJar(delayedFile(FORGE_CACHE + FORGE_DEOBF_SRG));
+            procTask.setOutDirtyJar(delayedFile(DIRTY_DIR + FORGE_DEOBF_SRG));
         }
 
         Task task = project.getTasks().getByName("setupDecompWorkspace");
-        task.dependsOn("addForgeJavadoc");
+        task.dependsOn("genSrgs", "copyAssets", "extractNatives", "recompForge");
     }
 
     @Override
     public void afterEvaluate()
     {
         String depBase = "net.minecraftforge:forge:" + getExtension().getApiVersion();
-        project.getDependencies().add(CONFIG_USERDEV,      depBase + ":userdev");
-        project.getDependencies().add(CONFIG_API_JAVADOCS, depBase + ":javadoc@zip");
+        project.getDependencies().add(CONFIG_USERDEV, depBase + ":userdev@jar");
 
         super.afterEvaluate();
     }
@@ -56,23 +60,41 @@ public class ForgeUserPlugin extends UserBasePlugin
     @Override
     protected DelayedFile getBinPatchOut()
     {
-        return delayedFile(FORGE_BINPATCHED);
+        return delayedFile(FORGE_CACHE + FORGE_BINPATCHED);
     }
 
     @Override
-    protected DelayedFile getDecompOut()
+    protected String getDecompOut()
     {
-        return delayedFile(FORGE_DECOMP);
+        return FORGE_DECOMP;
+    }
+
+    @Override
+    protected String getCacheDir()
+    {
+        return FORGE_CACHE;
+    }
+
+    protected void createMcModuleDep(boolean isClean, DependencyHandler depHandler, String depConfig)
+    {
+        addFlatRepo(project, "forgeFlatRepo", delayedFile(isClean ? FORGE_CACHE : DIRTY_DIR).call().getAbsolutePath());
+
+        if (getExtension().isDecomp)
+            depHandler.add("compile", ImmutableMap.of("name", "forgeSrc", "version", getExtension().getApiVersion()));
+        else
+            depHandler.add("compile", ImmutableMap.of("name", "forgeBin", "version", getExtension().getApiVersion()));
     }
 
     @Override
     protected void doPostDecompTasks(boolean isClean, DelayedFile decompOut)
     {
-        DelayedFile fmled           = delayedFile(isClean ? FORGE_FMLED : DECOMP_FMLED);
-        DelayedFile fmlInjected     = delayedFile(isClean ? FORGE_FMLINJECTED : DECOMP_FMLINJECTED);
-        DelayedFile remapped        = delayedFile(isClean ? FORGE_REMAPPED : DECOMP_REMAPPED);
-        DelayedFile forged          = delayedFile(isClean ? FORGE_FORGED : DECOMP_FORGED);
-        DelayedFile forgeJavaDocced = delayedFile(isClean ? FORGE_FORGEJAVADOCCED : DECOMP_FORGEJAVADOCCED);
+        final String prefix = isClean ? FORGE_CACHE : DIRTY_DIR;
+        DelayedFile fmled = delayedFile(prefix + FORGE_FMLED);
+        DelayedFile fmlInjected = delayedFile(prefix + FORGE_FMLINJECTED);
+        DelayedFile remapped = delayedFile(prefix + FORGE_REMAPPED);
+        DelayedFile forged = delayedFile(prefix + FORGE_FORGED);
+        DelayedFile forgeJavaDocced = delayedFile(prefix + FORGE_JAVADOCED);
+        DelayedFile forgeRecomp = delayedFile(prefix + FORGE_RECOMP);
 
         PatchJarTask fmlPatches = makeTask("doFmlPatches", PatchJarTask.class);
         {
@@ -87,12 +109,13 @@ public class ForgeUserPlugin extends UserBasePlugin
             inject.getOutputs().upToDateWhen(new Closure<Boolean>(null)
             {
                 private static final long serialVersionUID = -8480140049890357630L;
+
                 public Boolean call(Object o)
                 {
                     return !inject.dependsOnTaskDidWork();
                 }
             });
-            inject.dependsOn("doFmlPatches");
+            inject.dependsOn(fmlPatches);
             inject.from(fmled.toZipTree());
             inject.from(delayedFile(SRC_DIR));
             inject.from(delayedFile(RES_DIR));
@@ -105,7 +128,7 @@ public class ForgeUserPlugin extends UserBasePlugin
         // Remap to MCP for forge patching -- no javadoc here
         RemapSourcesTask remap = makeTask("remapJar", RemapSourcesTask.class);
         {
-            remap.dependsOn("addFmlSources");
+            remap.dependsOn(inject);
             remap.setInJar(fmlInjected);
             remap.setOutJar(remapped);
             remap.setFieldsCsv(delayedFile(FIELD_CSV, FIELD_CSV_OLD));
@@ -116,7 +139,7 @@ public class ForgeUserPlugin extends UserBasePlugin
 
         PatchJarTask forgePatches = makeTask("doForgePatches", PatchJarTask.class);
         {
-            forgePatches.dependsOn("remapJar");
+            forgePatches.dependsOn(remap);
             forgePatches.setInJar(remapped);
             forgePatches.setOutJar(forged);
             forgePatches.setInPatches(delayedFile(FORGE_PATCHES_ZIP));
@@ -125,7 +148,7 @@ public class ForgeUserPlugin extends UserBasePlugin
         // Post-inject javadocs
         RemapSourcesTask javadocRemap = makeTask("addForgeJavadoc", RemapSourcesTask.class);
         {
-            javadocRemap.dependsOn("doForgePatches");
+            javadocRemap.dependsOn(forgePatches);
             javadocRemap.setInJar(forged);
             javadocRemap.setOutJar(forgeJavaDocced);
             javadocRemap.setFieldsCsv(delayedFile(FIELD_CSV, FIELD_CSV_OLD));
@@ -134,6 +157,12 @@ public class ForgeUserPlugin extends UserBasePlugin
             javadocRemap.setDoesJavadocs(true);
         }
 
-        project.getDependencies().add(CONFIG_API_SRC, project.files(forgeJavaDocced));
+        RecompileTask recomp = makeTask("recompForge", RecompileTask.class);
+        {
+            recomp.setConfig(CONFIG);
+            recomp.setInSrcJar(forgeJavaDocced);
+            recomp.setOutJar(forgeRecomp);
+            recomp.dependsOn(javadocRemap);
+        }
     }
 }

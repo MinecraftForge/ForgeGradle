@@ -24,6 +24,7 @@ public class UserExtension extends BaseExtension
     private ArrayList<Object> ats = new ArrayList<Object>();
     private HashMap<String, String> replacements = new HashMap<String, String>();
     private ArrayList<String> includes = new ArrayList<String>();
+    protected boolean isDecomp = false;
     
     public UserExtension(Project project)
     {
@@ -96,5 +97,10 @@ public class UserExtension extends BaseExtension
             throw new ProjectConfigurationException("You must set the Minecraft Version!", new NullPointerException());
         
         return apiVersion;
+    }
+
+    public boolean isDecomp()
+    {
+        return isDecomp;
     }
 }

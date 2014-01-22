@@ -306,7 +306,7 @@ public class ObfArtifact extends AbstractPublishArtifact
      * @throws IOException
      * @throws org.gradle.api.InvalidUserDataException if the there is insufficient information available to generate the signature.
      */
-    void generate(ReobfExceptor exc) throws IOException
+    void generate(ReobfExceptor exc, File srg) throws IOException
     {
         File toObf = getToObf();
         if (toObf == null)
@@ -319,24 +319,28 @@ public class ObfArtifact extends AbstractPublishArtifact
         Files.copy(toObf, excepted);
 
         // copy input somewhere else...
-        exc.toReobfJar = toObf;
-        exc.buildSrg();
-        
-        // append SRG
-        BufferedWriter writer = new BufferedWriter(new FileWriter(exc.outSrg, true));
-        for (String line : caller.getExtraSrg())
+        if (exc != null)
         {
-            writer.write(line);
-            writer.newLine();
+            exc.toReobfJar = toObf;
+            exc.buildSrg();
+            srg = exc.outSrg;
+            
+            // append SRG
+            BufferedWriter writer = new BufferedWriter(new FileWriter(srg, true));
+            for (String line : caller.getExtraSrg())
+            {
+                writer.write(line);
+                writer.newLine();
+            }
+            writer.flush();
+            writer.close();
         }
-        writer.flush();
-        writer.close();
         
         // obfuscate!
         if (caller.getUseRetroGuard())
-            applyRetroGuard(excepted, output, exc.outSrg);
+            applyRetroGuard(excepted, output, srg);
         else
-            applySpecialSource(excepted, output, exc.outSrg);
+            applySpecialSource(excepted, output, srg);
     }
     
     private void applySpecialSource(File input, File output, File srg) throws IOException
