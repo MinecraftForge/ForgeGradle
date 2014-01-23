@@ -158,6 +158,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             task.setFieldCsv(df(FIELD_CSV, FIELD_CSV_OLD));
             task.setMethodCsv(df(METHOD_CSV, FIELD_CSV_OLD));
             task.setApplyMarkers(false);
+            task.setDoesCache(true);
             addATs(task);
             task.dependsOn("downloadMcpTools", "mergeJars", "genSrgs", "applyBinPatches");
         }
@@ -169,6 +170,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             task.setExceptorJson(df(EXC_JSON));
             task.setExceptorCfg(df(PACKAGED_EXC));
             task.setApplyMarkers(true);
+            task.setDoesCache(true);
             addATs(task);
             task.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
         }

@@ -10,13 +10,15 @@ import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DownloadTask;
-import net.minecraftforge.gradle.tasks.user.RecompileTask;
+import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
+import org.gradle.api.tasks.compile.JavaCompile;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -41,7 +43,7 @@ public class ForgeUserPlugin extends UserBasePlugin
         }
 
         Task task = project.getTasks().getByName("setupDecompWorkspace");
-        task.dependsOn("genSrgs", "copyAssets", "extractNatives", "recompForge");
+        task.dependsOn("genSrgs", "copyAssets", "extractNatives", "repackForge");
     }
 
     @Override
@@ -104,6 +106,7 @@ public class ForgeUserPlugin extends UserBasePlugin
             depHandler.add("compile", ImmutableMap.of("name", "forgeBin", "version", getExtension().getApiVersion()));
     }
 
+    @SuppressWarnings({ "rawtypes", "serial"})
     @Override
     protected void doPostDecompTasks(boolean isClean, DelayedFile decompOut)
     {
@@ -114,6 +117,9 @@ public class ForgeUserPlugin extends UserBasePlugin
         DelayedFile forged = delayedFile(prefix + FORGE_FORGED);
         DelayedFile forgeJavaDocced = delayedFile(prefix + FORGE_JAVADOCED);
         DelayedFile forgeRecomp = delayedFile(prefix + FORGE_RECOMP);
+        
+        DelayedFile recompSrc = delayedFile(RECOMP_SRC_DIR);
+        DelayedFile recompCls = delayedFile(RECOMP_CLS_DIR);
 
         PatchJarTask fmlPatches = makeTask("doFmlPatches", PatchJarTask.class);
         {
@@ -176,12 +182,58 @@ public class ForgeUserPlugin extends UserBasePlugin
             javadocRemap.setDoesJavadocs(true);
         }
 
-        RecompileTask recomp = makeTask("recompForge", RecompileTask.class);
+        // recomp stuff
         {
-            recomp.setConfig(CONFIG);
-            recomp.setInSrcJar(forgeJavaDocced);
-            recomp.setOutJar(forgeRecomp);
-            recomp.dependsOn(javadocRemap);
+            ExtractTask extract = makeTask("extractForgeSrc", ExtractTask.class);
+            {
+                extract.from(forgeJavaDocced);
+                extract.into(recompSrc);
+                extract.setIncludeEmptyDirs(false);
+                extract.dependsOn(javadocRemap);
+                
+                extract.onlyIf(new Closure(this, this) {
+                    public Boolean call(Object obj)
+                    {
+                        return ((Task) obj).dependsOnTaskDidWork();
+                    }
+                });
+            }
+            
+            JavaCompile recompTask = makeTask("recompForge", JavaCompile.class);
+            {
+                recompTask.setSource(recompSrc);
+                recompTask.setDestinationDir(recompCls.call());
+                recompTask.setSourceCompatibility("1.6");
+                recompTask.setTargetCompatibility("1.6");
+                recompTask.setClasspath(project.getConfigurations().getByName(CONFIG));
+                recompTask.dependsOn(extract);
+                
+                recompTask.onlyIf(new Closure(this, this) {
+                    public Boolean call(Object obj)
+                    {
+                        return ((Task) obj).dependsOnTaskDidWork();
+                    }
+                });
+            }
+            
+            Jar repackageTask = makeTask("repackForge", Jar.class);
+            {
+                repackageTask.from(recompSrc);
+                repackageTask.from(recompCls);
+                repackageTask.exclude("*.java", "**/*.java", "**.java");
+                repackageTask.dependsOn(recompTask);
+                
+                File out = forgeRecomp.call();
+                repackageTask.setArchiveName(out.getName());
+                repackageTask.setDestinationDir(out.getParentFile());
+                
+                repackageTask.onlyIf(new Closure(this, this) {
+                    public Boolean call(Object obj)
+                    {
+                        return ((Task) obj).dependsOnTaskDidWork();
+                    }
+                });
+            }
         }
     }
 }

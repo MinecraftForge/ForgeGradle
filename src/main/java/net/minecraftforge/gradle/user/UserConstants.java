@@ -13,7 +13,6 @@ public final class UserConstants
     static final String CONFIG_NATIVES    = "minecraftNatives";
     static final String CONFIG            = "minecraft";
 
-    static final String DECOMP_FILE       = ".gradle/isDecomp";
     static final String FORGE_JAVADOC_URL = Constants.FORGE_MAVEN + "/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-javadoc.zip";
 
     static final String PACK_DIR          = "{BUILD_DIR}/unpacked";
@@ -47,6 +46,9 @@ public final class UserConstants
     static final String FORGE_AT          = RES_DIR + "/forge_at.cfg";
 
     static final String DIRTY_DIR         = "{BUILD_DIR}/dirtyArtifacts";
+    
+    static final String RECOMP_SRC_DIR    = "{BUILD_DIR}/tmp/recompSrc";
+    static final String RECOMP_CLS_DIR    = "{BUILD_DIR}/tmp/recompCls";
 
     static final String FORGE_CACHE       = "{CACHE_DIR}/minecraft/net/minecraftforge/forge/{API_VERSION}";
     // forge bin jars

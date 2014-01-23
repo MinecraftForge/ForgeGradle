@@ -9,13 +9,15 @@ import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
-import net.minecraftforge.gradle.tasks.user.RecompileTask;
+import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
+import org.gradle.api.tasks.compile.JavaCompile;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -40,7 +42,7 @@ public class FmlUserPlugin extends UserBasePlugin
         }
 
         Task task = project.getTasks().getByName("setupDecompWorkspace");
-        task.dependsOn("genSrgs", "copyAssets", "extractNatives", "recompFml");
+        task.dependsOn("genSrgs", "copyAssets", "extractNatives", "repackFml");
     }
 
     @Override
@@ -92,6 +94,7 @@ public class FmlUserPlugin extends UserBasePlugin
             depHandler.add("compile", project.files(delayedFile(prefix + FML_BINPATCHED)));
     }
 
+    @SuppressWarnings({ "rawtypes", "serial" })
     @Override
     protected void doPostDecompTasks(boolean isClean, DelayedFile decompOut)
     {
@@ -100,6 +103,9 @@ public class FmlUserPlugin extends UserBasePlugin
         DelayedFile injected = delayedFile(prefix + FML_INJECTED);
         DelayedFile remapped = delayedFile(prefix + FML_REMAPPED);
         DelayedFile recompJar = delayedFile(prefix + FML_RECOMP);
+        
+        DelayedFile recompSrc = delayedFile(RECOMP_SRC_DIR);
+        DelayedFile recompCls = delayedFile(RECOMP_CLS_DIR);
 
         PatchJarTask fmlPatches = makeTask("doFmlPatches", PatchJarTask.class);
         {
@@ -141,12 +147,56 @@ public class FmlUserPlugin extends UserBasePlugin
             remapTask.setDoesJavadocs(true);
         }
 
-        RecompileTask recomp = makeTask("recompFml", RecompileTask.class);
+        // recomp stuff
+        ExtractTask extract = makeTask("extractFmlSrc", ExtractTask.class);
         {
-            recomp.setConfig(CONFIG);
-            recomp.setInSrcJar(remapped);
-            recomp.setOutJar(recompJar);
-            recomp.dependsOn(remapTask);
+            extract.from(remapped);
+            extract.into(recompSrc);
+            extract.setIncludeEmptyDirs(false);
+            extract.dependsOn(remapTask);
+
+            extract.onlyIf(new Closure(this, this) {
+                public Boolean call(Object obj)
+                {
+                    return ((Task) obj).dependsOnTaskDidWork();
+                }
+            });
+        }
+
+        JavaCompile recompTask = makeTask("recompFml", JavaCompile.class);
+        {
+            recompTask.setSource(recompSrc);
+            recompTask.setDestinationDir(recompCls.call());
+            recompTask.setSourceCompatibility("1.6");
+            recompTask.setTargetCompatibility("1.6");
+            recompTask.setClasspath(project.getConfigurations().getByName(CONFIG));
+            recompTask.dependsOn(extract);
+
+            recompTask.onlyIf(new Closure(this, this) {
+                public Boolean call(Object obj)
+                {
+                    return ((Task) obj).dependsOnTaskDidWork();
+                }
+            });
+        }
+
+        Jar repackageTask = makeTask("repackFml", Jar.class);
+        {
+            repackageTask.from(recompSrc);
+            repackageTask.from(recompCls);
+            repackageTask.exclude("*.java", "**/*.java", "**.java");
+            repackageTask.dependsOn(recompTask);
+
+            File out = recompJar.call();
+            repackageTask.setArchiveName(out.getName());
+            repackageTask.setDestinationDir(out.getParentFile());
+
+            repackageTask.onlyIf(new Closure(this, this) {
+                public Boolean call(Object obj)
+                {
+                    return ((Task) obj).dependsOnTaskDidWork();
+                }
+            });
         }
     }
 }
