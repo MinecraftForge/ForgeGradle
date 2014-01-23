@@ -9,6 +9,7 @@ import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
+import net.minecraftforge.gradle.tasks.abstractutil.DownloadTask;
 import net.minecraftforge.gradle.tasks.user.RecompileTask;
 
 import org.gradle.api.Action;
@@ -50,6 +51,17 @@ public class ForgeUserPlugin extends UserBasePlugin
         project.getDependencies().add(CONFIG_USERDEV, depBase + ":userdev@jar");
 
         super.afterEvaluate();
+        
+        {
+            ProcessJarTask deobf = (ProcessJarTask) project.getTasks().getByName("deobfBinJar");
+            boolean clean = deobf.isClean();
+            
+            DownloadTask dl = makeTask("getJavadocs", DownloadTask.class);
+            dl.setUrl(delayedString(FORGE_JAVADOC_URL));
+            dl.setOutput(delayedFile((clean ? getCacheDir() : DIRTY_DIR) + FORGE_JAVADOC));
+            
+            deobf.dependsOn(dl);
+        }
     }
 
     @Override

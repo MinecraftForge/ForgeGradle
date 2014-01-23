@@ -31,7 +31,6 @@ import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
-import net.minecraftforge.gradle.tasks.abstractutil.DownloadTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.user.ApplyBinPatchesTask;
 import net.minecraftforge.gradle.tasks.user.SourceCopyTask;
@@ -127,7 +126,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             task.setServer(df(JAR_SERVER_FRESH));
             task.setOutJar(df(JAR_MERGED));
             task.setMergeCfg(df(MERGE_CFG));
-            task.dependsOn("extractUserDev", "downloadClient", "downloadServer", "getJavadocs");
+            task.dependsOn("extractUserDev", "downloadClient", "downloadServer");
         }
 
         {
@@ -219,12 +218,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             task.setPatch(delayedFile(MCP_PATCH_DIR));
             task.setAstyleConfig(delayedFile(ASTYLE_CFG));
             task.dependsOn("downloadMcpTools", "deobfuscateJar", "genSrgs");
-        }
-
-        {
-            DownloadTask dl = makeTask("getJavadocs", DownloadTask.class);
-            dl.setUrl(delayedString(FORGE_JAVADOC_URL));
-            dl.setOutput(delayedFile((clean ? getCacheDir() : DIRTY_DIR) + FORGE_JAVADOC));
         }
 
         doPostDecompTasks(clean, decompOut);
@@ -652,9 +645,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         {
             project.getTasks().getByName("compileJava").dependsOn("deobfBinJar");
             project.getTasks().getByName("compileApiJava").dependsOn("deobfBinJar");
-            
-            project.getTasks().getByName("eclipseClasspath").dependsOn("getJavadocs");
-            project.getTasks().getByName("ideaModule").dependsOn("getJavadocs");
         }
     }
 
