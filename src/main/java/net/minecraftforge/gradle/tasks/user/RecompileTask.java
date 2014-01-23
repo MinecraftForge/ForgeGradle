@@ -8,18 +8,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.jar.Attributes;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.file.FileTree;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
@@ -47,37 +47,40 @@ public class RecompileTask extends CachedTask
     {
         final File srcDir = new File(getTemporaryDir(), "sources");
         final File classDir = new File(getTemporaryDir(), "classes");
-        final HashMap<String, byte[]> resourceMap = new HashMap<String, byte[]>();
         Configuration config = getProject().getConfigurations().getByName(this.config);
 
         getLogger().lifecycle("extracting sources...");
         srcDir.mkdirs();
-        readInJar(getInSrcJar(), srcDir, resourceMap);
+        readInJar(getInSrcJar(), srcDir, classDir);
 
         getLogger().lifecycle("compiling sources...");
         classDir.mkdirs();
         compile(srcDir, classDir, config);
 
         getLogger().lifecycle("rebuilding jar...");
-        buildJar(getOutJar(), classDir, resourceMap);
+        buildJar(getOutJar(), classDir);
     }
 
-    private void readInJar(File inJar, File srcDir, HashMap<String, byte[]> resourceMap) throws IOException
+    private void readInJar(File inJar, File srcDir, File clsDir) throws IOException
     {
         // begin reading jar
         final ZipInputStream zin = new ZipInputStream(new FileInputStream(inJar));
         ZipEntry entry = null;
-
+        File out;
+        
         while ((entry = zin.getNextEntry()) != null)
         {
-            if (entry.isDirectory() || !entry.getName().endsWith(".java"))
-                resourceMap.put(entry.getName(), ByteStreams.toByteArray(zin));
-            else
+            if (!entry.isDirectory())
             {
-                File out = new File(srcDir, entry.getName());
+                if (entry.getName().endsWith(".java"))
+                    out = new File(srcDir, entry.getName());
+                else
+                    out = new File(clsDir, entry.getName());
+                
                 out.getParentFile().mkdirs();
                 if (!out.exists())
                     out.createNewFile();
+                
                 Files.write(ByteStreams.toByteArray(zin), out);
             }
         }
@@ -129,30 +132,39 @@ public class RecompileTask extends CachedTask
         stream.close();
     }
 
-    private void buildJar(File outJar, File classDir, HashMap<String, byte[]> resourceMap) throws IOException
+    private void buildJar(File outJar, File classDir) throws IOException
     {
-        ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(outJar));
-
-        // write in resources
-        for (Map.Entry<String, byte[]> entry : resourceMap.entrySet())
-        {
-            zout.putNextEntry(new ZipEntry(entry.getKey()));
-            zout.write(entry.getValue());
-            zout.closeEntry();
-        }
-
+        Manifest manifest = new Manifest();
+        manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+        
+        JarOutputStream jout = new JarOutputStream(new FileOutputStream(outJar), manifest);
+        
         // write in sources
-        FileTree tree = getProject().fileTree(classDir);
         int cut = classDir.getCanonicalPath().length() + 1;
-        for (File file : tree.getFiles())
-        {
-            zout.putNextEntry(new ZipEntry(file.getCanonicalPath().substring(cut)));
-            Files.copy(file, zout);
-            zout.closeEntry();
-        }
+        writeDir(classDir, cut, jout);
 
-        zout.flush();
-        zout.close();
+        jout.flush();
+        jout.close();
+    }
+    
+    private void writeDir(File dir, int cut, JarOutputStream jout) throws IOException
+    {
+        for (File file : dir.listFiles())
+        {
+            String name = file.getCanonicalPath().substring(cut).replace('\\', '/');
+            if (file.isDirectory())
+            {
+                jout.putNextEntry(new JarEntry(name + "/"));
+                jout.closeEntry();
+                writeDir(file, cut, jout);
+            }
+            else
+            {
+                jout.putNextEntry(new JarEntry(name));
+                Files.copy(file, jout);
+                jout.closeEntry();
+            }
+        }
     }
 
     public File getInSrcJar()
