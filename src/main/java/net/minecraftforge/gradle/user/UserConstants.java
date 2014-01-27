@@ -11,6 +11,7 @@ public final class UserConstants
 
     static final String CONFIG_USERDEV    = "userDevPackageDepConfig";
     static final String CONFIG_NATIVES    = "minecraftNatives";
+    static final String CONFIG_DEPS       = "minecraftDeps";
     static final String CONFIG            = "minecraft";
 
     static final String FORGE_JAVADOC_URL = Constants.FORGE_MAVEN + "/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-javadoc.zip";

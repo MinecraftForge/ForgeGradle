@@ -101,9 +101,9 @@ public class ForgeUserPlugin extends UserBasePlugin
         });
 
         if (getExtension().isDecomp)
-            depHandler.add("compile", ImmutableMap.of("name", "forgeSrc", "version", getExtension().getApiVersion()));
+            depHandler.add(depConfig, ImmutableMap.of("name", "forgeSrc", "version", getExtension().getApiVersion()));
         else
-            depHandler.add("compile", ImmutableMap.of("name", "forgeBin", "version", getExtension().getApiVersion()));
+            depHandler.add(depConfig, ImmutableMap.of("name", "forgeBin", "version", getExtension().getApiVersion()));
     }
 
     @SuppressWarnings({ "rawtypes", "serial"})
@@ -205,7 +205,7 @@ public class ForgeUserPlugin extends UserBasePlugin
                 recompTask.setDestinationDir(recompCls.call());
                 recompTask.setSourceCompatibility("1.6");
                 recompTask.setTargetCompatibility("1.6");
-                recompTask.setClasspath(project.getConfigurations().getByName(CONFIG));
+                recompTask.setClasspath(project.getConfigurations().getByName(CONFIG_DEPS));
                 recompTask.dependsOn(extract);
                 
                 recompTask.onlyIf(new Closure(this, this) {

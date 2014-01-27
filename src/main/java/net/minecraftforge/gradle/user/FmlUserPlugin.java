@@ -89,9 +89,9 @@ public class FmlUserPlugin extends UserBasePlugin
         final String prefix = isClean ? FML_CACHE : DIRTY_DIR;
 
         if (getExtension().isDecomp)
-            depHandler.add("compile", ImmutableMap.of("name", "fmlSrc", "version", getExtension().getApiVersion()));
+            depHandler.add(depConfig, ImmutableMap.of("name", "fmlSrc", "version", getExtension().getApiVersion()));
         else
-            depHandler.add("compile", project.files(delayedFile(prefix + FML_BINPATCHED)));
+            depHandler.add(depConfig, project.files(delayedFile(prefix + FML_BINPATCHED)));
     }
 
     @SuppressWarnings({ "rawtypes", "serial" })
@@ -169,7 +169,7 @@ public class FmlUserPlugin extends UserBasePlugin
             recompTask.setDestinationDir(recompCls.call());
             recompTask.setSourceCompatibility("1.6");
             recompTask.setTargetCompatibility("1.6");
-            recompTask.setClasspath(project.getConfigurations().getByName(CONFIG));
+            recompTask.setClasspath(project.getConfigurations().getByName(CONFIG_DEPS));
             recompTask.dependsOn(extract);
 
             recompTask.onlyIf(new Closure(this, this) {

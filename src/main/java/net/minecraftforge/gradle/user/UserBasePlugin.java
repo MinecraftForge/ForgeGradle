@@ -243,6 +243,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         // create configs
         project.getConfigurations().create(CONFIG_USERDEV);
         project.getConfigurations().create(CONFIG_NATIVES);
+        project.getConfigurations().create(CONFIG_DEPS);
         project.getConfigurations().create(CONFIG);
 
         // special userDev stuff
@@ -253,7 +254,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             @Override
             public void execute(Task arg0)
             {
-                readAndApplyJson(delayedFile(JSON).call(), CONFIG, CONFIG_NATIVES, arg0.getLogger());
+                readAndApplyJson(delayedFile(JSON).call(), CONFIG_DEPS, CONFIG_NATIVES, arg0.getLogger());
             }
         });
 
@@ -266,6 +267,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         project.getDependencies().add("compile", project.fileTree("libs"));
 
         // make MC dependencies into normal compile classpath
+        project.getDependencies().add("compile", project.getConfigurations().getByName(CONFIG_DEPS));
         project.getDependencies().add("compile", project.getConfigurations().getByName(CONFIG));
     }
 
@@ -572,7 +574,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         // grab the json && read dependencies
         if (delayedFile(JSON).call().exists())
         {
-            readAndApplyJson(delayedFile(JSON).call(), CONFIG, CONFIG_NATIVES, project.getLogger());
+            readAndApplyJson(delayedFile(JSON).call(), CONFIG_DEPS, CONFIG_NATIVES, project.getLogger());
         }
 
         // extract userdev
