@@ -98,8 +98,7 @@ public class ForgeUserPlugin extends UserBasePlugin
             public void execute(Project proj)
             {
                 addFlatRepo(project, "forgeFlatRepo", repoDir);
-                if (proj == proj.getRootProject())
-                    proj.getLogger().lifecycle("Adding local forge repo: "+repoDir);
+                proj.getLogger().lifecycle("Adding local forge repo: "+repoDir);
             }
         });
 
