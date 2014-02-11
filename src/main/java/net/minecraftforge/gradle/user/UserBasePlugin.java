@@ -107,12 +107,12 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         project.allprojects(new Action<Project>() {
             public void execute(Project p)
             {
-                project.afterEvaluate(new Action<Project>() {
+                p.afterEvaluate(new Action<Project>() {
                     public void execute(Project proj)
                     {
                         ProcessJarTask deobf = (ProcessJarTask) proj.getRootProject().getTasks().getByName("deobfuscateJar");
                         final String repoDir = delayedFile(deobf.isClean() ? getCacheDir() : DIRTY_DIR).call().getAbsolutePath();
-                        addFlatRepo(project, "forgeFlatRepo", repoDir);
+                        addFlatRepo(proj, "forgeFlatRepo", repoDir);
                         proj.getLogger().info("Adding repo to " + proj.getPath() + " >> " +repoDir);
                     }
                 });
