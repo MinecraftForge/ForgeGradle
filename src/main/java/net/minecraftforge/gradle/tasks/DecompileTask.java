@@ -147,7 +147,7 @@ public class DecompileTask extends CachedTask
         {
             return createLogger110();
         }
-        catch (Exception e)
+        catch (Throwable e)
         {
             try
             {
