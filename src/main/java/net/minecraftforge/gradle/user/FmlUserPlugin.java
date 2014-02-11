@@ -79,17 +79,6 @@ public class FmlUserPlugin extends UserBasePlugin
 
     protected void createMcModuleDep(final boolean isClean, DependencyHandler depHandler, String depConfig)
     {
-        final String repoDir = delayedFile(isClean ? FML_CACHE : DIRTY_DIR).call().getAbsolutePath();
-        // this project
-        addFlatRepo(project, "fmlFlatRepo", delayedFile(repoDir).call());
-        // sub projects
-        project.subprojects(new Action<Project>() {
-            public void execute(Project proj)
-            {
-                addFlatRepo(project, "fmlFlatRepo", delayedFile(repoDir).call());
-            }
-        });
-
         final String prefix = isClean ? FML_CACHE : DIRTY_DIR;
 
         if (getExtension().isDecomp)
