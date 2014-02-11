@@ -45,10 +45,10 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         project = arg;
 
         // logging
-        FileLogListenner listenner = new FileLogListenner(project.file(Constants.LOG));
-        project.getLogging().addStandardOutputListener(listenner);
-        project.getLogging().addStandardErrorListener(listenner);
-        project.getGradle().addBuildListener(listenner);
+        FileLogListenner listener = new FileLogListenner(project.file(Constants.LOG));
+        project.getLogging().addStandardOutputListener(listener);
+        project.getLogging().addStandardErrorListener(listener);
+        project.getGradle().addBuildListener(listener);
 
         if (project.getBuildDir().getAbsolutePath().contains("!"))
         {
