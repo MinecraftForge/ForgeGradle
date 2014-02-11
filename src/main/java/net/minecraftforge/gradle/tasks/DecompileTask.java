@@ -28,10 +28,12 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.internal.io.TextStream;
 import org.gradle.process.JavaExecSpec;
 import org.gradle.util.LineBufferingOutputStream;
 
 import java.io.*;
+import java.lang.reflect.Constructor;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -125,16 +127,7 @@ public class DecompileTask extends CachedTask
                 exec.setWorkingDir(fernFlower.getParentFile());
 
                 exec.classpath(Constants.getClassPath());
-                exec.setStandardOutput(new LineBufferingOutputStream(
-                    new Action<String>()
-                    {
-                        @Override
-                        public void execute(String line)
-                        {
-                            DecompileTask.this.getProject().getLogger().debug(line);
-                        }
-                    }
-                ));
+                exec.setStandardOutput(createLogger());
 
                 exec.setMaxHeapSize("2G");
 
@@ -146,6 +139,43 @@ public class DecompileTask extends CachedTask
                 return call();
             }
         });
+    }
+    
+    private OutputStream createLogger()
+    {
+        try
+        {
+            Constructor<LineBufferingOutputStream> ctr = LineBufferingOutputStream.class.getConstructor(TextStream.class); //Gradle 1.10
+            return ctr.newInstance(new TextStream()
+            {
+                @Override public void endOfStream(Throwable arg0){}
+                @Override
+                public void text(String line)
+                {
+                    DecompileTask.this.getProject().getLogger().debug(line);
+                }
+            });
+        }
+        catch (Exception e)
+        {
+            try
+            {
+                Constructor<LineBufferingOutputStream> ctr = LineBufferingOutputStream.class.getConstructor(Action.class); // Gradle 1.8
+                return ctr.newInstance(new Action<String>()
+                {
+                    @Override
+                    public void execute(String arg0)
+                    {
+                        DecompileTask.this.getProject().getLogger().debug(arg0);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                throw new RuntimeException(ex);
+            }
+                
+        }
     }
 
     private void readJarAndFix(final File jar) throws IOException
