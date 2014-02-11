@@ -22,12 +22,14 @@ import net.minecraftforge.gradle.patching.ContextualPatch;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 import static net.minecraftforge.gradle.patching.ContextualPatch.*;
 
+import org.gradle.api.Action;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.process.JavaExecSpec;
+import org.gradle.util.LineBufferingOutputStream;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -123,8 +125,18 @@ public class DecompileTask extends CachedTask
                 exec.setWorkingDir(fernFlower.getParentFile());
 
                 exec.classpath(Constants.getClassPath());
+                exec.setStandardOutput(new LineBufferingOutputStream(
+                    new Action<String>()
+                    {
+                        @Override
+                        public void execute(String line)
+                        {
+                            DecompileTask.this.getProject().getLogger().debug(line);
+                        }
+                    }
+                ));
 
-                exec.setStandardOutput(Constants.getNullStream());
+                exec.setMaxHeapSize("2G");
 
                 return exec;
             }
