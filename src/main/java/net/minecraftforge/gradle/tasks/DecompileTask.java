@@ -145,16 +145,7 @@ public class DecompileTask extends CachedTask
     {
         try
         {
-            Constructor<LineBufferingOutputStream> ctr = LineBufferingOutputStream.class.getConstructor(TextStream.class); //Gradle 1.10
-            return ctr.newInstance(new TextStream()
-            {
-                @Override public void endOfStream(Throwable arg0){}
-                @Override
-                public void text(String line)
-                {
-                    DecompileTask.this.getProject().getLogger().debug(line);
-                }
-            });
+            return createLogger110();
         }
         catch (Exception e)
         {
@@ -174,8 +165,21 @@ public class DecompileTask extends CachedTask
             {
                 throw new RuntimeException(ex);
             }
-                
         }
+    }
+
+    private OutputStream createLogger110() throws Exception
+    {
+        Constructor<LineBufferingOutputStream> ctr = LineBufferingOutputStream.class.getConstructor(TextStream.class); //Gradle 1.10
+        return ctr.newInstance(new TextStream()
+        {
+            @Override public void endOfStream(Throwable arg0){}
+            @Override
+            public void text(String line)
+            {
+                DecompileTask.this.getProject().getLogger().debug(line);
+            }
+        });
     }
 
     private void readJarAndFix(final File jar) throws IOException
