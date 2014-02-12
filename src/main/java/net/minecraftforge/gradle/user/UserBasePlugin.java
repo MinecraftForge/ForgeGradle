@@ -98,26 +98,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         task.setGroup("ForgeGradle");
 
         project.getTasks().getByName("reobf").dependsOn("genSrgs");
-        
-        // add flatfile repos
-        //final String repoDir = delayedFile(isClean ? FORGE_CACHE : DIRTY_DIR).call().getAbsolutePath();
-        // this project
-        //addFlatRepo(project, "forgeFlatRepo", repoDir);
-        // subProjects
-        project.allprojects(new Action<Project>() {
-            public void execute(Project p)
-            {
-                p.afterEvaluate(new Action<Project>() {
-                    public void execute(Project proj)
-                    {
-                        ProcessJarTask deobf = (ProcessJarTask) proj.getRootProject().getTasks().getByName("deobfuscateJar");
-                        final String repoDir = delayedFile(deobf.isClean() ? getCacheDir() : DIRTY_DIR).call().getAbsolutePath();
-                        addFlatRepo(proj, "forgeFlatRepo", repoDir);
-                        proj.getLogger().info("Adding repo to " + proj.getPath() + " >> " +repoDir);
-                    }
-                });
-            }
-        });
     }
 
     private void checkDecompStatus()

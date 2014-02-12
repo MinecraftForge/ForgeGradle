@@ -91,6 +91,15 @@ public class ForgeUserPlugin extends UserBasePlugin
 
     protected void createMcModuleDep(final boolean isClean, DependencyHandler depHandler, String depConfig)
     {
+        final String repoDir = delayedFile(isClean ? FORGE_CACHE : DIRTY_DIR).call().getAbsolutePath();
+        project.allprojects(new Action<Project>() {
+            public void execute(Project proj)
+            {
+                addFlatRepo(project, "forgeFlatRepo", repoDir);
+                proj.getLogger().info("Adding repo to " + proj.getPath() + " >> " +repoDir);
+            }
+        });
+
         if (getExtension().isDecomp)
             depHandler.add(depConfig, ImmutableMap.of("name", "forgeSrc", "version", getExtension().getApiVersion()));
         else
