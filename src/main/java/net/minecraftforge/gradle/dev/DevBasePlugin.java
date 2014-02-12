@@ -321,6 +321,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
         pattern = pattern.replace("{FML_DIR}", exten.getFmlDir());
         pattern = pattern.replace("{FORGE_DIR}", exten.getForgeDir());
         pattern = pattern.replace("{BUKKIT_DIR}", exten.getBukkitDir());
+        pattern = pattern.replace("{API_DIR}", exten.getApiDir());
         pattern = pattern.replace("{MAPPINGS_DIR}", exten.getFmlDir() + "/conf");
         return pattern;
     }
