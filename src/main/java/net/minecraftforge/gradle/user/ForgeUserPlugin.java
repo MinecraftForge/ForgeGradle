@@ -12,6 +12,8 @@ import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DownloadTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 
+import org.gradle.api.Action;
+import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.tasks.bundling.Jar;
@@ -95,7 +97,7 @@ public class ForgeUserPlugin extends UserBasePlugin
         project.allprojects(new Action<Project>() {
             public void execute(Project proj)
             {
-                addFlatRepo(project, "forgeFlatRepo", repoDir);
+                addFlatRepo(proj, "forgeFlatRepo", repoDir);
                 proj.getLogger().info("Adding repo to " + proj.getPath() + " >> " +repoDir);
             }
         });
