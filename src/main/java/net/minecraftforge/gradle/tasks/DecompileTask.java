@@ -129,7 +129,7 @@ public class DecompileTask extends CachedTask
                 exec.classpath(Constants.getClassPath());
                 exec.setStandardOutput(createLogger());
 
-                exec.setMaxHeapSize("2G");
+                exec.setMaxHeapSize("512M");
 
                 return exec;
             }
