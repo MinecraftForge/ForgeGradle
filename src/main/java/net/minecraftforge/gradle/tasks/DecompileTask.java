@@ -22,14 +22,18 @@ import net.minecraftforge.gradle.patching.ContextualPatch;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 import static net.minecraftforge.gradle.patching.ContextualPatch.*;
 
+import org.gradle.api.Action;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.internal.io.TextStream;
 import org.gradle.process.JavaExecSpec;
+import org.gradle.util.LineBufferingOutputStream;
 
 import java.io.*;
+import java.lang.reflect.Constructor;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -123,8 +127,9 @@ public class DecompileTask extends CachedTask
                 exec.setWorkingDir(fernFlower.getParentFile());
 
                 exec.classpath(Constants.getClassPath());
+                exec.setStandardOutput(createLogger());
 
-                exec.setStandardOutput(Constants.getNullStream());
+                exec.setMaxHeapSize("512M");
 
                 return exec;
             }
@@ -132,6 +137,47 @@ public class DecompileTask extends CachedTask
             public JavaExecSpec call(Object obj)
             {
                 return call();
+            }
+        });
+    }
+    
+    private OutputStream createLogger()
+    {
+        try
+        {
+            return createLogger110();
+        }
+        catch (Throwable e)
+        {
+            try
+            {
+                Constructor<LineBufferingOutputStream> ctr = LineBufferingOutputStream.class.getConstructor(Action.class); // Gradle 1.8
+                return ctr.newInstance(new Action<String>()
+                {
+                    @Override
+                    public void execute(String arg0)
+                    {
+                        DecompileTask.this.getProject().getLogger().debug(arg0);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                throw new RuntimeException(ex);
+            }
+        }
+    }
+
+    private OutputStream createLogger110() throws Exception
+    {
+        Constructor<LineBufferingOutputStream> ctr = LineBufferingOutputStream.class.getConstructor(TextStream.class); //Gradle 1.10
+        return ctr.newInstance(new TextStream()
+        {
+            @Override public void endOfStream(Throwable arg0){}
+            @Override
+            public void text(String line)
+            {
+                DecompileTask.this.getProject().getLogger().debug(line);
             }
         });
     }

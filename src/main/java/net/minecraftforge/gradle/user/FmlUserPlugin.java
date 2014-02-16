@@ -79,10 +79,12 @@ public class FmlUserPlugin extends UserBasePlugin
 
     protected void createMcModuleDep(final boolean isClean, DependencyHandler depHandler, String depConfig)
     {
+        final String repoDir = delayedFile(isClean ? FML_CACHE : DIRTY_DIR).call().getAbsolutePath();
         project.allprojects(new Action<Project>() {
             public void execute(Project proj)
             {
-                addFlatRepo(project, "fmlFlatRepo", delayedFile(isClean ? FML_CACHE : DIRTY_DIR).call());
+                addFlatRepo(proj, "fmlFlatRepo", repoDir);
+                proj.getLogger().info("Adding repo to " + proj.getPath() + " >> " +repoDir);
             }
         });
 
@@ -103,7 +105,7 @@ public class FmlUserPlugin extends UserBasePlugin
         DelayedFile injected = delayedFile(prefix + FML_INJECTED);
         DelayedFile remapped = delayedFile(prefix + FML_REMAPPED);
         DelayedFile recompJar = delayedFile(prefix + FML_RECOMP);
-        
+
         DelayedFile recompSrc = delayedFile(RECOMP_SRC_DIR);
         DelayedFile recompCls = delayedFile(RECOMP_CLS_DIR);
 

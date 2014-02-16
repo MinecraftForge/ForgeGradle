@@ -97,7 +97,7 @@ public class ForgeUserPlugin extends UserBasePlugin
         project.allprojects(new Action<Project>() {
             public void execute(Project proj)
             {
-                addFlatRepo(project, "forgeFlatRepo", repoDir);
+                addFlatRepo(proj, "forgeFlatRepo", repoDir);
                 proj.getLogger().info("Adding repo to " + proj.getPath() + " >> " +repoDir);
             }
         });
