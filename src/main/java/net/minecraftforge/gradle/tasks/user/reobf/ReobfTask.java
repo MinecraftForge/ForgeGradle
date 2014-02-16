@@ -216,10 +216,10 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Generates the signature files.
-     * @throws IOException 
+     * @throws Exception 
      */
     @TaskAction
-    public void generate() throws IOException
+    public void generate() throws Exception
     {
         for (ObfArtifact obf : getObfuscated())
             obf.generate();
