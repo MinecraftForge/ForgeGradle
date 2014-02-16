@@ -22,7 +22,6 @@ import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
 import net.minecraftforge.gradle.user.UserConstants;
 
 import org.gradle.api.InvalidUserDataException;
-import org.gradle.api.Task;
 import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.artifacts.publish.AbstractPublishArtifact;
@@ -368,6 +367,9 @@ public class ObfArtifact extends AbstractPublishArtifact
         if (classpath != null)
         {
             loader = new URLClassLoader(ObfuscateTask.toUrls(classpath), BasePlugin.class.getClassLoader());
+            caller.getLogger().debug("Reobf classpath ----- ");
+            for (File f : classpath.getFiles())
+                caller.getLogger().debug(""+f);
         }
         
         // the name provider
