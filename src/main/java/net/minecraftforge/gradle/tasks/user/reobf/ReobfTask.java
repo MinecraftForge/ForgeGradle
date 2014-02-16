@@ -239,10 +239,10 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Generates the signature files.
-     * @throws IOException
+     * @throws Exception 
      */
     @TaskAction
-    public void generate() throws IOException
+    public void generate() throws Exception
     {
         // do stuff.
         ReobfExceptor exc = null;
