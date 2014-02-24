@@ -744,6 +744,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
                 {
                     binDeobf.addTransformer(at);
                     decompDeobf.addTransformer(at);
+                    project.getLogger().lifecycle("AT found: "+at);
                 }
             }
 
@@ -753,6 +754,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
                 {
                     binDeobf.addTransformer(at);
                     decompDeobf.addTransformer(at);
+                    project.getLogger().lifecycle("AT found: "+at);
                 }
             }
         }
