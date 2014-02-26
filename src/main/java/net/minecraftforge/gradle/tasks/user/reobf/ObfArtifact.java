@@ -314,7 +314,7 @@ public class ObfArtifact extends AbstractPublishArtifact
         }
 
         File output = getFile();
-        File excepted = new File(caller.getTemporaryDir(), "excepted.jar");
+        File excepted = File.createTempFile("reobfed", ".jar", caller.getTemporaryDir());
         Files.copy(toObf, excepted);
 
         // copy input somewhere else...
@@ -340,6 +340,8 @@ public class ObfArtifact extends AbstractPublishArtifact
             applyRetroGuard(excepted, output, srg);
         else
             applySpecialSource(excepted, output, srg);
+
+        excepted.delete(); // Delete temporary file
     }
     
     private void applySpecialSource(File input, File output, File srg) throws IOException
