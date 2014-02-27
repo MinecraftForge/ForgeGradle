@@ -199,7 +199,7 @@ public class ArtifactSpec
             obj = ((Closure<Object>) obj).call();
         
         if (obj == null)
-            return null;
+            return "";
 
         if (isString)
             obj = obj.toString();
