@@ -48,6 +48,7 @@ import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.GroovySourceSet;
+import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.ScalaSourceSet;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.GroovyCompile;
@@ -224,6 +225,30 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 
         doPostDecompTasks(clean, decompOut);
         createMcModuleDep(clean, project.getDependencies(), CONFIG);
+        
+        JavaExec exec = makeTask("runClient", JavaExec.class);
+        {
+        	exec.classpath(project.getConfigurations().getByName("runtime").getFiles().toArray());
+        	exec.setMain("net.minecraft.launchwrapper.Launch");
+        	exec.jvmArgs("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
+        	project.getLogger().lifecycle(delayedFile(NATIVES_DIR).call().getAbsolutePath());
+        	exec.jvmArgs("-Djava.library.path=" + delayedFile(NATIVES_DIR).call().getAbsolutePath());
+        	exec.args("--version 1.7", "--tweakClass", "cpw.mods.fml.common.launcher.FMLTweaker", "--username=ForgeDevName", "--accessToken", "FML");
+        	exec.setWorkingDir(delayedFile("{ASSET_DIR}").call().getParentFile());
+        	exec.setStandardOutput(System.out);
+        	exec.setErrorOutput(System.err);
+        }
+        
+        exec = makeTask("runServer", JavaExec.class);
+        {
+        	exec.classpath(project.getConfigurations().getByName("runtime").getFiles().toArray());
+        	exec.setMain("cpw.mods.fml.relauncher.ServerLaunchWrapper");
+        	exec.jvmArgs("-Xincgc", "-Dfml.ignoreInvalidMinecraftCertificates=true");
+        	exec.setWorkingDir(delayedFile("{ASSET_DIR}").call().getParentFile());
+        	exec.setStandardOutput(System.out);
+        	exec.setStandardInput(System.in);
+        	exec.setErrorOutput(System.err);
+        }
     }
 
     protected abstract void doPostDecompTasks(boolean isClean, DelayedFile decompOut);
