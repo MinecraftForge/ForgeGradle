@@ -228,7 +228,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         
         JavaExec exec = makeTask("runClient", JavaExec.class);
         {
-        	exec.classpath(project.getConfigurations().getByName("runtime").getFiles().toArray());
+        	exec.classpath(project.getConfigurations().getByName("runtime"));
         	exec.setMain("net.minecraft.launchwrapper.Launch");
         	exec.jvmArgs("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
         	project.getLogger().lifecycle(delayedFile(NATIVES_DIR).call().getAbsolutePath());
@@ -241,7 +241,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         
         exec = makeTask("runServer", JavaExec.class);
         {
-        	exec.classpath(project.getConfigurations().getByName("runtime").getFiles().toArray());
+        	exec.classpath(project.getConfigurations().getByName("runtime"));
         	exec.setMain("cpw.mods.fml.relauncher.ServerLaunchWrapper");
         	exec.jvmArgs("-Xincgc", "-Dfml.ignoreInvalidMinecraftCertificates=true");
         	exec.setWorkingDir(delayedFile("{ASSET_DIR}").call().getParentFile());
