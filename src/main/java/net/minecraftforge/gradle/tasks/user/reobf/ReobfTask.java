@@ -101,8 +101,8 @@ public class ReobfTask extends DefaultTask
                 throw new InvalidUserDataException("You cannot reobfuscate tasks that are not 'archive' tasks, such as 'jar', 'zip' etc. (you tried to sign $task)");
             }
 
-            dependsOn((AbstractArchiveTask) task);
-            addArtifact(new ObfArtifact(new DelayedThingy(task), new ArtifactSpec(getProject()), this));
+            dependsOn(task);
+            addArtifact(new ObfArtifact(new DelayedThingy(task), new ArtifactSpec((AbstractArchiveTask) task), this));
         }
     }
 
@@ -239,10 +239,10 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Generates the signature files.
-     * @throws IOException
+     * @throws Exception 
      */
     @TaskAction
-    public void generate() throws IOException
+    public void generate() throws Exception
     {
         // do stuff.
         ReobfExceptor exc = null;

@@ -16,6 +16,7 @@ import net.md_5.specialsource.JarRemapper;
 import net.md_5.specialsource.provider.ClassLoaderProvider;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
+import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedThingy;
 import net.minecraftforge.gradle.extrastuff.ReobfExceptor;
@@ -26,8 +27,6 @@ import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.artifacts.publish.AbstractPublishArtifact;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
-
-import COM.rl.NameProvider;
 
 import com.google.common.base.Joiner;
 import com.google.common.io.Files;
@@ -306,7 +305,7 @@ public class ObfArtifact extends AbstractPublishArtifact
      * @throws IOException
      * @throws org.gradle.api.InvalidUserDataException if the there is insufficient information available to generate the signature.
      */
-    void generate(ReobfExceptor exc, File srg) throws IOException
+    void generate(ReobfExceptor exc, File srg) throws Exception
     {
         File toObf = getToObf();
         if (toObf == null)
@@ -315,7 +314,7 @@ public class ObfArtifact extends AbstractPublishArtifact
         }
 
         File output = getFile();
-        File excepted = new File(caller.getTemporaryDir(), "excepted.jar");
+        File excepted = File.createTempFile("reobfed", ".jar", caller.getTemporaryDir());
         Files.copy(toObf, excepted);
 
         // copy input somewhere else...
@@ -341,6 +340,8 @@ public class ObfArtifact extends AbstractPublishArtifact
             applyRetroGuard(excepted, output, srg);
         else
             applySpecialSource(excepted, output, srg);
+
+        excepted.delete(); // Delete temporary file
     }
     
     private void applySpecialSource(File input, File output, File srg) throws IOException
@@ -366,31 +367,45 @@ public class ObfArtifact extends AbstractPublishArtifact
         remapper.remapJar(inputJar, output);
     }
     
-    private void applyRetroGuard(File input, File output, File srg) throws IOException
+    @SuppressWarnings({ "rawtypes", "unchecked", "static-access" })
+    private void applyRetroGuard(File input, File output, File srg) throws Exception
     {
-        File cfg = new File(caller.getTemporaryDir(), "retroguard.cfg");
-        generateRgConfig(cfg, input, output, srg);
+        File cfg =    new File(caller.getTemporaryDir(), "retroguard.cfg");
+        File log =    new File(caller.getTemporaryDir(), "retroguard.log");
+        File script = new File(caller.getTemporaryDir(), "retroguard.script");
+        
+        generateRgConfig(cfg, script, srg);
         
         String[] args = new String[] {
                 "-notch",
                 cfg.getCanonicalPath()
         };
         
-        NameProvider.parseCommandLine(args);
+        // load in classpath... ewww
+        ClassLoader loader = BasePlugin.class.getClassLoader(); // dunno.. maybe this will load the classes??
+        if (classpath != null)
+        {
+            loader = new URLClassLoader(ObfuscateTask.toUrls(classpath), BasePlugin.class.getClassLoader());
+        }
+        
+        // the name provider
+        Class clazz = getClass().forName("COM.rl.NameProvider", true, loader);
+        clazz.getMethod("parseCommandLine", String[].class).invoke(null, new Object[] { args });
+        
+        // actual retroguard
+        clazz = getClass().forName("COM.rl.obf.RetroGuardImpl", true, loader);
+        clazz.getMethod("obfuscate", File.class, File.class, File.class, File.class).invoke(null, input, output, script, log);
+        
+        loader = null; // if we are lucky.. this will be dropped...
+        System.gc(); // clean anything out.. I hope..
     }
     
-    private void generateRgConfig(File config, File in, File out, File srg) throws IOException
+    private void generateRgConfig(File config, File script, File srg) throws IOException
     {
-        String log = new File(caller.getTemporaryDir(), "retroguard.log").getCanonicalPath();
-        File script = new File(caller.getTemporaryDir(), "retroguard.script");
-        
         // the config
         String[] lines = new String[] {
-                "reobinput = "+in.getCanonicalPath(),
-                "reoboutput = "+out.getCanonicalPath(),
                 "reobf = "+srg.getCanonicalPath(),
                 "script = "+script.getCanonicalPath(),
-                "log = "+log,
                 "verbose = 0",
                 "quiet = 1",
                 "fullmap = 0",
