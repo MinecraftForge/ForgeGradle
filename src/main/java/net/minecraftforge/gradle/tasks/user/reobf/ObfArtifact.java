@@ -318,9 +318,11 @@ public class ObfArtifact extends AbstractPublishArtifact
 
         // ready Srg
         File srg = (File) (spec.srg == null ? caller.getSrg() : spec.srg);
+        boolean isTemp = false;
         if (exc != null)
         {
             File tempSrg = File.createTempFile("reobf", ".srg", caller.getTemporaryDir());
+            isTemp = true;
             
             if (!srg.equals(caller.getSrg()))
                 exc = caller.prepareSrg(srg, tempSrg);
@@ -339,7 +341,8 @@ public class ObfArtifact extends AbstractPublishArtifact
 
         // delete temporary files
         excepted.delete();
-        srg.delete();
+        if (isTemp)
+            srg.delete();
     }
     
     private void applySpecialSource(File input, File output, File srg, File extraSrg) throws IOException
