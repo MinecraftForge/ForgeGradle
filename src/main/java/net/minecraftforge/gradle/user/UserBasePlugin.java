@@ -89,13 +89,16 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 
         Task task = makeTask("setupCIWorkspace", DefaultTask.class);
         task.dependsOn("genSrgs", "deobfBinJar");
+        task.setDescription("Sets up the bare minimum to build a minecraft mod. Idea for CI servers");
         task.setGroup("ForgeGradle");
 
         task = makeTask("setupDevWorkspace", DefaultTask.class);
         task.dependsOn("genSrgs", "deobfBinJar", "copyAssets", "extractNatives");
+        task.setDescription("CIWorkspace + natives and assets to run and test Minecraft");
         task.setGroup("ForgeGradle");
 
         task = makeTask("setupDecompWorkspace", DefaultTask.class);
+        task.setDescription("DevWorkspace + the deobfuscated Minecraft source linked as a source jar.");
         task.setGroup("ForgeGradle");
 
         project.getTasks().getByName("reobf").dependsOn("genSrgs");
