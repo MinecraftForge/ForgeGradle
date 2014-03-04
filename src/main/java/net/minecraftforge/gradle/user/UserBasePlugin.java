@@ -182,7 +182,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         {
             ReobfTask task = makeTask("reobf", ReobfTask.class);
             task.setExceptorCfg(delayedFile(PACKAGED_EXC));
-            task.setInSrg(delayedFile(REOBF_SRG));
+            task.setSrg(delayedFile(REOBF_SRG));
             task.reobf(project.getTasks().getByName("jar"), new Action<ArtifactSpec>()
             {
                 @Override

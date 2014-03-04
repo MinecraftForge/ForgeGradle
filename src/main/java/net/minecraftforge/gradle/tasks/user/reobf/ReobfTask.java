@@ -13,6 +13,7 @@ import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedThingy;
 import net.minecraftforge.gradle.extrastuff.ReobfExceptor;
+import net.minecraftforge.gradle.user.UserConstants;
 import net.minecraftforge.gradle.user.UserExtension;
 
 import org.gradle.api.Action;
@@ -30,8 +31,6 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 
-import com.google.common.io.Files;
-
 public class ReobfTask extends DefaultTask
 {
     final private DefaultDomainObjectSet<ObfArtifact> obfOutput     = new DefaultDomainObjectSet<ObfArtifact>(ObfArtifact.class);
@@ -40,7 +39,7 @@ public class ReobfTask extends DefaultTask
     private boolean                                   useRetroGuard = false;
 
     @InputFile
-    private DelayedFile                               inSrg;
+    private DelayedFile                               srg;
     
     private DelayedFile                               fieldCsv;
     private DelayedFile                               methodCsv;
@@ -242,32 +241,27 @@ public class ReobfTask extends DefaultTask
      * @throws Exception 
      */
     @TaskAction
-    public void generate() throws Exception
+    public void doTask() throws Exception
     {
         // do stuff.
         ReobfExceptor exc = null;
         File srg = new File(getTemporaryDir(), "reobf.srg");
+        File extraSrg = new File(getTemporaryDir(), "extra.srg");
 
         UserExtension ext = (UserExtension) getProject().getExtensions().getByName(Constants.EXT_NAME_MC);
 
         if (ext.isDecomp())
+            exc = prepareSrg(getSrg(), srg);
+        
+        // generate extraSrg
         {
-            exc = new ReobfExceptor();
-            exc.deobfJar = getDeobfFile();
-            exc.excConfig = getExceptorCfg();
-            exc.inSrg = getInSrg();
-            exc.outSrg = srg;
-            exc.fieldCSV = getFieldCsv();
-            exc.methodCSV = getMethodCsv();
-
-            exc.doFirstThings();
-        }
-        else
-        {
-            Files.copy(getInSrg(), srg);
-
-            // append SRG
-            BufferedWriter writer = new BufferedWriter(new FileWriter(srg, true));
+            if (!extraSrg.exists())
+            {
+                extraSrg.getParentFile().mkdirs();
+                extraSrg.createNewFile();
+            }
+            
+            BufferedWriter writer = new BufferedWriter(new FileWriter(extraSrg));
             for (String line : getExtraSrg())
             {
                 writer.write(line);
@@ -278,7 +272,22 @@ public class ReobfTask extends DefaultTask
         }
 
         for (ObfArtifact obf : getObfuscated())
-            obf.generate(exc, srg);
+            obf.generate(exc, extraSrg);
+    }
+    
+    protected ReobfExceptor prepareSrg(File inSrg, File outSrg) throws IOException
+    {
+        ReobfExceptor exc = new ReobfExceptor();
+        exc.deobfJar = getDeobfFile();
+        exc.excConfig = getExceptorCfg();
+        exc.inSrg = inSrg;
+        exc.outSrg = outSrg;
+        exc.fieldCSV = getFieldCsv();
+        exc.methodCSV = getMethodCsv();
+
+        exc.doFirstThings();
+        
+        return exc;
     }
 
     private void addArtifact(ObfArtifact artifact)
@@ -387,14 +396,29 @@ public class ReobfTask extends DefaultTask
         this.extraSrg = extraSrg;
     }
 
-    public File getInSrg()
+    public File getSrg()
     {
-        return inSrg.call();
+        return srg.call();
     }
 
-    public void setInSrg(DelayedFile inSrg)
+    public void setSrg(DelayedFile srg)
     {
-        this.inSrg = inSrg;
+        this.srg = srg;
+    }
+    
+    public void setSrg(String srg)
+    {
+        this.srg = new DelayedFile(getProject(), srg);
+    }
+    
+    public void setSrgSrg()
+    {
+        this.srg = new DelayedFile(getProject(), UserConstants.REOBF_SRG);
+    }
+    
+    public void setSrgMcp()
+    {
+        this.srg = new DelayedFile(getProject(), UserConstants.REOBF_NOTCH_SRG);
     }
 
     public File getFieldCsv()

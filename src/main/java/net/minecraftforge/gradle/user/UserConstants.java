@@ -29,8 +29,8 @@ public final class UserConstants
     static final String EXC_JSON          = CONF_DIR + "/exceptor.json";
 
     static final String DEOBF_MCP_SRG     = CONF_DIR + "/notch-mcp.srg";
-    static final String REOBF_SRG         = CONF_DIR + "/mcp-srg.srg";
-    static final String REOBF_NOTCH_SRG   = CONF_DIR + "/mcp-notch.srg";
+    public static final String REOBF_SRG         = CONF_DIR + "/mcp-srg.srg";
+    public static final String REOBF_NOTCH_SRG   = CONF_DIR + "/mcp-notch.srg";
 
     static final String MAPPINGS_DIR      = PACK_DIR + "/mappings";
     static final String METHOD_CSV_OLD    = MAPPINGS_DIR + "/methods.csv";
