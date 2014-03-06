@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.MessageDigest;
@@ -17,7 +18,11 @@ import net.minecraftforge.gradle.StringUtils;
 import net.minecraftforge.gradle.dev.DevExtension;
 import net.minecraftforge.gradle.json.version.OS;
 
+import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.logging.Logger;
+import org.gradle.internal.io.TextStream;
+import org.gradle.util.LineBufferingOutputStream;
 
 import argo.jdom.JdomParser;
 
@@ -212,6 +217,47 @@ public class Constants
     public static OutputStream getNullStream()
     {
         return NULL_OUT;
+    }
+    
+    public static OutputStream createLogger(final Logger logger)
+    {
+        try
+        {
+            return createLogger110(logger);
+        }
+        catch (Throwable e)
+        {
+            try
+            {
+                Constructor<LineBufferingOutputStream> ctr = LineBufferingOutputStream.class.getConstructor(Action.class); // Gradle 1.8
+                return ctr.newInstance(new Action<String>()
+                {
+                    @Override
+                    public void execute(String arg0)
+                    {
+                        logger.debug(arg0);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                throw new RuntimeException(ex);
+            }
+        }
+    }
+
+    private static OutputStream createLogger110(final Logger logger) throws Exception
+    {
+        Constructor<LineBufferingOutputStream> ctr = LineBufferingOutputStream.class.getConstructor(TextStream.class); //Gradle 1.10
+        return ctr.newInstance(new TextStream()
+        {
+            @Override public void endOfStream(Throwable arg0){}
+            @Override
+            public void text(String line)
+            {
+                logger.debug(line);
+            }
+        });
     }
 }
 
