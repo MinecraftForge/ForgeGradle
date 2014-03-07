@@ -6,11 +6,8 @@ import java.io.PrintStream;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.srg2source.RangeApplier;
 import net.minecraftforge.srg2source.ast.RangeExtractor;
-import net.minecraftforge.srg2source.rangeapplier.RangeMap;
-import net.minecraftforge.srg2source.rangeapplier.RenameMap;
-import net.minecraftforge.srg2source.rangeapplier.SrgContainer;
+import net.minecraftforge.srg2source.rangeapplier.RangeApplier;
 import net.minecraftforge.srg2source.util.io.FolderSupplier;
 import net.minecraftforge.srg2source.util.io.InputSupplier;
 import net.minecraftforge.srg2source.util.io.OutputSupplier;
@@ -28,13 +25,13 @@ public class ApplySrg2Source extends DefaultTask
 {
     @InputFile
     private DelayedFile rangeMap;
+    private DelayedFile srg;
     
     @InputFiles
     private FileCollection libs;
     
     private DelayedFile in;
     private DelayedFile out;
-    private DelayedFile srg;
     
     @TaskAction
     public void doTask() throws IOException
@@ -71,7 +68,7 @@ public class ApplySrg2Source extends DefaultTask
         }
         
         generateRangeMap(inSup, rangemap);
-        
+        applyRangeMap(inSup, outSup, srg, rangemap);
         
         
         inSup.close();
@@ -88,19 +85,20 @@ public class ApplySrg2Source extends DefaultTask
         
         boolean worked = extractor.generateRangeMap(rangeMap);
         
+        stream.close();
+        
         if (!worked)
             throw new RuntimeException("RangeMap generation Failed!!!");
     }
     
-    public void applyRangeMap(InputSupplier inSup, OutputSupplier outSup, File srg, File rangemap)
+    public void applyRangeMap(InputSupplier inSup, OutputSupplier outSup, File srg, File rangeMap) throws IOException
     {
-        // this API needs a  HUUUGE revamp.
-//        RangeMap rangeMap = new RangeMap().read(rangemap);
-//        RenameMap renameMap = new RenameMap();
-//        renameMap.readSrg(new SrgContainer().readSrg(srg));
-//        
-//        for (String key : rangeMap.keySet())
-//            RangeApplier.processJavaSourceFile(inSup, outSup, key, rangeMap.get(key), renameMap.maps, renameMap.imports, false, false, true);
+        RangeApplier app = new RangeApplier().readSrg(srg);
+        
+        PrintStream stream = new PrintStream(Constants.createLogger(getLogger()));
+        app.setOutLogger(stream);
+        
+        app.remapSources(inSup, outSup, rangeMap, false);
     }
 
     public File getRangeMap()
