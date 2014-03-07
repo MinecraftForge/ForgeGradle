@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 
+import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.srg2source.ast.RangeExtractor;
@@ -15,7 +16,9 @@ import net.minecraftforge.srg2source.util.io.ZipInputSupplier;
 import net.minecraftforge.srg2source.util.io.ZipOutputSupplier;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFiles;
@@ -24,11 +27,12 @@ import org.gradle.api.tasks.TaskAction;
 public class ApplySrg2Source extends DefaultTask
 {
     @InputFile
-    private DelayedFile rangeMap;
     private DelayedFile srg;
     
     @InputFiles
     private FileCollection libs;
+    private DelayedFile projectFile; // to get classpath from a subproject
+    private String projectConfig; // Also for a subProject
     
     private DelayedFile in;
     private DelayedFile out;
@@ -38,7 +42,7 @@ public class ApplySrg2Source extends DefaultTask
     {
         File in = getIn();
         File out = this.out == null ? in : getOut();
-        File rangemap = File.createTempFile("", "rangemap", this.getTemporaryDir());
+        File rangemap = File.createTempFile("rangemap", "tmp", this.getTemporaryDir());
         File srg = getSrg();
         
         InputSupplier inSup;
@@ -75,12 +79,12 @@ public class ApplySrg2Source extends DefaultTask
         outSup.close();
     }
     
-    public void generateRangeMap(InputSupplier inSup, File rangeMap)
+    private void generateRangeMap(InputSupplier inSup, File rangeMap)
     {
         RangeExtractor extractor = new RangeExtractor();
         extractor.addLibs(getLibs().getAsPath()).setSrc(inSup);
         
-        PrintStream stream = new PrintStream(Constants.createLogger(getLogger()));
+        PrintStream stream = new PrintStream(Constants.createLogger(getLogger(), LogLevel.DEBUG));
         extractor.setOutLogger(stream);
         
         boolean worked = extractor.generateRangeMap(rangeMap);
@@ -91,24 +95,14 @@ public class ApplySrg2Source extends DefaultTask
             throw new RuntimeException("RangeMap generation Failed!!!");
     }
     
-    public void applyRangeMap(InputSupplier inSup, OutputSupplier outSup, File srg, File rangeMap) throws IOException
+    private void applyRangeMap(InputSupplier inSup, OutputSupplier outSup, File srg, File rangeMap) throws IOException
     {
         RangeApplier app = new RangeApplier().readSrg(srg);
         
-        PrintStream stream = new PrintStream(Constants.createLogger(getLogger()));
+        PrintStream stream = new PrintStream(Constants.createLogger(getLogger(), LogLevel.DEBUG));
         app.setOutLogger(stream);
         
         app.remapSources(inSup, outSup, rangeMap, false);
-    }
-
-    public File getRangeMap()
-    {
-        return rangeMap.call();
-    }
-
-    public void setRangeMap(DelayedFile rangeMap)
-    {
-        this.rangeMap = rangeMap;
     }
 
     @InputFiles
@@ -156,12 +150,24 @@ public class ApplySrg2Source extends DefaultTask
 
     public FileCollection getLibs()
     {
+        if (projectFile != null && libs == null) // libs == null to avoid doing this any more than necessary..
+        {
+            Project proj = BasePlugin.getProject(projectFile.call(), getProject());
+            libs = proj.getConfigurations().getByName(projectConfig);
+        }
+        
         return libs;
     }
 
     public void setLibs(FileCollection libs)
     {
         this.libs = libs;
+    }
+    
+    public void setLibsFromProject(DelayedFile buildscript, String config)
+    {
+        this.projectFile = buildscript;
+        this.projectConfig = config;
     }
     
     public File getSrg()

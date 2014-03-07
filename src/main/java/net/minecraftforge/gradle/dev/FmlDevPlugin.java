@@ -13,6 +13,7 @@ import net.minecraftforge.gradle.CopyInto;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedBase;
+import net.minecraftforge.gradle.tasks.ApplySrg2Source;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
@@ -112,14 +113,24 @@ public class FmlDevPlugin extends DevBasePlugin
 
     private void createSourceCopyTasks()
     {
+        // COPY NECESSARY STUFF
+        ExtractTask task = makeTask("extractPatchClean", ExtractTask.class);
+        {
+            task.include(JAVA_FILES);
+            task.setIncludeEmptyDirs(false);
+            task.from(delayedFile(DevConstants.ZIP_DECOMP_FML));
+            task.into(delayedFile(DevConstants.PATCH_CLEAN));
+            task.dependsOn("decompile");
+        }
 
-        ExtractTask task = makeTask("extractMcResources", ExtractTask.class);
+        // COPY CLEAN STUFF
+        task = makeTask("extractMcResources", ExtractTask.class);
         {
             task.exclude(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
             task.from(delayedFile(DevConstants.ZIP_DECOMP_FML));
             task.into(delayedFile(DevConstants.ECLIPSE_CLEAN_RES));
-            task.dependsOn("extractWorkspace", "decompile");
+            task.dependsOn("extractWorkspace", "decompile", "extractPatchClean");
         }
 
         Copy copy = makeTask("copyStart", Copy.class);
@@ -138,6 +149,8 @@ public class FmlDevPlugin extends DevBasePlugin
             task.into(delayedFile(DevConstants.ECLIPSE_CLEAN_SRC));
             task.dependsOn("copyStart");
         }
+        
+        // COPY FML STUFF
 
         task = makeTask("extractFmlResources", ExtractTask.class);
         {
@@ -215,14 +228,24 @@ public class FmlDevPlugin extends DevBasePlugin
 
     private void createMiscTasks()
     {
+        ApplySrg2Source task = makeTask("retroMapSources", ApplySrg2Source.class);
+        {
+            task.setLibsFromProject(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"), "compile");
+            task.setIn(delayedFile(DevConstants.ECLIPSE_FML_SRC));
+            task.setOut(delayedFile(DevConstants.PATCH_DIRTY));
+            task.setSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
+            task.dependsOn("genSrgs");
+        }
+        
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
         {
             task2.setPatchDir(delayedFile(DevConstants.FML_PATCH_DIR));
             task2.setOriginalDir(delayedFile(DevConstants.ECLIPSE_CLEAN_SRC));
-            task2.setChangedDir(delayedFile(DevConstants.ECLIPSE_FML_SRC));
+            task2.setChangedDir(delayedFile(DevConstants.PATCH_DIRTY));
             task2.setOriginalPrefix("../src-base/minecraft");
             task2.setChangedPrefix("../src-work/minecraft");
             task2.setGroup("FML");
+            task2.dependsOn("retroMapSources");
         }
 
         Delete clean = makeTask("cleanFml", Delete.class);

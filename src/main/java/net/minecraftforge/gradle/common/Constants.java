@@ -20,6 +20,7 @@ import net.minecraftforge.gradle.json.version.OS;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.logging.LogLevel;
 import org.gradle.api.logging.Logger;
 import org.gradle.internal.io.TextStream;
 import org.gradle.util.LineBufferingOutputStream;
@@ -219,11 +220,11 @@ public class Constants
         return NULL_OUT;
     }
     
-    public static OutputStream createLogger(final Logger logger)
+    public static OutputStream createLogger(final Logger logger, final LogLevel level)
     {
         try
         {
-            return createLogger110(logger);
+            return createLogger110(logger, level);
         }
         catch (Throwable e)
         {
@@ -235,7 +236,7 @@ public class Constants
                     @Override
                     public void execute(String arg0)
                     {
-                        logger.debug(arg0);
+                        logger.log(level, arg0);
                     }
                 });
             }
@@ -246,7 +247,7 @@ public class Constants
         }
     }
 
-    private static OutputStream createLogger110(final Logger logger) throws Exception
+    private static OutputStream createLogger110(final Logger logger, final LogLevel level) throws Exception
     {
         Constructor<LineBufferingOutputStream> ctr = LineBufferingOutputStream.class.getConstructor(TextStream.class); //Gradle 1.10
         return ctr.newInstance(new TextStream()
@@ -255,7 +256,7 @@ public class Constants
             @Override
             public void text(String line)
             {
-                logger.debug(line);
+                logger.log(level, line);
             }
         });
     }

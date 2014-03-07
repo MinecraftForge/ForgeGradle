@@ -68,7 +68,11 @@ final class DevConstants
     static final String ZIP_PATCHED_MCPC   = "{BUILD_DIR}/mcpcTmp/minecraft_patched.zip";
 
     // other stuff
-    static final String CHANGELOG           = "{BUILD_DIR}/distributions/{PROJECT}-{MC_VERSION}-{VERSION}-changelog.txt";
+    static final String CHANGELOG          = "{BUILD_DIR}/distributions/{PROJECT}-{MC_VERSION}-{VERSION}-changelog.txt";
+    
+    // necesary for patch generation
+    static final String PATCH_CLEAN        = "{BUILD_DIR}/patchNeeded/clean";
+    static final String PATCH_DIRTY        = "{BUILD_DIR}/patchNeeded/dirty";
 
     // jsons
     static final String JSON_DEV            = "{FML_DIR}/jsons/{MC_VERSION}-dev.json";
