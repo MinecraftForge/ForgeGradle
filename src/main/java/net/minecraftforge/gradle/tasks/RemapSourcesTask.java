@@ -37,6 +37,7 @@ public class RemapSourcesTask extends EditJarTask
     private DelayedFile                            paramsCsv;
     
     private boolean doesJavadocs = false;
+    private boolean noJavadocs = false;
 
     private final Map<String, Map<String, String>> methods    = new HashMap<String, Map<String, String>>();
     private final Map<String, Map<String, String>> fields     = new HashMap<String, Map<String, String>>();
@@ -59,6 +60,13 @@ public class RemapSourcesTask extends EditJarTask
         ArrayList<String> newLines = new ArrayList<String>();
         for (String line : StringUtils.lines(text))
         {
+            if (noJavadocs) // noajavadocs? dont bothe with the rest of this crap...
+            {
+                newLines.add(replaceInLine(line));
+                continue;
+            }
+            
+            
             matcher = METHOD.matcher(line);
             if (matcher.find())
             {
@@ -364,6 +372,11 @@ public class RemapSourcesTask extends EditJarTask
     public void setDoesJavadocs(boolean javadoc)
     {
         this.doesJavadocs = javadoc;
+    }
+    
+    public void setNoJavadocs()
+    {
+        noJavadocs = true;
     }
 
     @Override

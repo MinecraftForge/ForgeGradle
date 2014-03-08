@@ -73,6 +73,8 @@ final class DevConstants
     // necesary for patch generation
     static final String PATCH_CLEAN        = "{BUILD_DIR}/patchNeeded/clean";
     static final String PATCH_DIRTY        = "{BUILD_DIR}/patchNeeded/dirty";
+    static final String REMAPPED_CLEAN     = "{BUILD_DIR}/tmp/clean.jar";
+    static final String REMAPPED_DIRTY     = "{BUILD_DIR}/tmp/dirty.jar";
 
     // jsons
     static final String JSON_DEV            = "{FML_DIR}/jsons/{MC_VERSION}-dev.json";

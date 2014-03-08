@@ -1,8 +1,6 @@
 package net.minecraftforge.gradle.dev;
 
 //import edu.sc.seis.launch4j.Launch4jPluginExtension;
-import static net.minecraftforge.gradle.dev.DevConstants.FIELDS_CSV;
-import static net.minecraftforge.gradle.dev.DevConstants.METHODS_CSV;
 import groovy.lang.Closure;
 
 import java.io.File;
@@ -17,6 +15,7 @@ import net.minecraftforge.gradle.tasks.ApplySrg2Source;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
+import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DelayedJar;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.abstractutil.FileFilterTask;
@@ -99,15 +98,39 @@ public class FmlDevPlugin extends DevBasePlugin
             task3.setAstyleConfig(delayedFile(DevConstants.ASTYLE_CFG));
             task3.dependsOn("downloadMcpTools", "deobfuscateJar");
         }
-
-        PatchJarTask task4 = makeTask("fmlPatchJar", PatchJarTask.class);
+        
+        RemapSourcesTask task4 = makeTask("remapCleanJar", RemapSourcesTask.class);
         {
             task4.setInJar(delayedFile(DevConstants.ZIP_DECOMP_FML));
-            task4.setOutJar(delayedFile(DevConstants.ZIP_PATCHED_FML));
-            task4.setInPatches(delayedFile(DevConstants.FML_PATCH_DIR));
+            task4.setOutJar(delayedFile(DevConstants.REMAPPED_CLEAN));
+            task4.setMethodsCsv(delayedFile(DevConstants.METHODS_CSV));
+            task4.setFieldsCsv(delayedFile(DevConstants.FIELDS_CSV));
+            task4.setParamsCsv(delayedFile(DevConstants.PARAMS_CSV));
             task4.setDoesCache(false);
-            task4.setMaxFuzz(2);
+            task4.setNoJavadocs();
             task4.dependsOn("decompile");
+        }
+
+        PatchJarTask task5 = makeTask("fmlPatchJar", PatchJarTask.class);
+        {
+            task5.setInJar(delayedFile(DevConstants.ZIP_DECOMP_FML));
+            task5.setOutJar(delayedFile(DevConstants.ZIP_PATCHED_FML));
+            task5.setInPatches(delayedFile(DevConstants.FML_PATCH_DIR));
+            task5.setDoesCache(false);
+            task5.setMaxFuzz(2);
+            task5.dependsOn("decompile");
+        }
+        
+        RemapSourcesTask task6 = makeTask("remapDirtyJar", RemapSourcesTask.class);
+        {
+            task6.setInJar(delayedFile(DevConstants.ZIP_PATCHED_FML));
+            task6.setOutJar(delayedFile(DevConstants.REMAPPED_DIRTY));
+            task6.setMethodsCsv(delayedFile(DevConstants.METHODS_CSV));
+            task6.setFieldsCsv(delayedFile(DevConstants.FIELDS_CSV));
+            task6.setParamsCsv(delayedFile(DevConstants.PARAMS_CSV));
+            task6.setDoesCache(false);
+            task6.setNoJavadocs();
+            task6.dependsOn("fmlPatchJar");
         }
     }
 
@@ -128,9 +151,9 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             task.exclude(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
-            task.from(delayedFile(DevConstants.ZIP_DECOMP_FML));
+            task.from(delayedFile(DevConstants.REMAPPED_CLEAN));
             task.into(delayedFile(DevConstants.ECLIPSE_CLEAN_RES));
-            task.dependsOn("extractWorkspace", "decompile", "extractPatchClean");
+            task.dependsOn("extractWorkspace", "remapCleanJar", "extractPatchClean");
         }
 
         Copy copy = makeTask("copyStart", Copy.class);
@@ -145,19 +168,18 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             task.include(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
-            task.from(delayedFile(DevConstants.ZIP_DECOMP_FML));
+            task.from(delayedFile(DevConstants.REMAPPED_CLEAN));
             task.into(delayedFile(DevConstants.ECLIPSE_CLEAN_SRC));
             task.dependsOn("copyStart");
         }
         
         // COPY FML STUFF
-
         task = makeTask("extractFmlResources", ExtractTask.class);
         {
             task.exclude(JAVA_FILES);
-            task.from(delayedFile(DevConstants.ZIP_PATCHED_FML));
+            task.from(delayedFile(DevConstants.REMAPPED_DIRTY));
             task.into(delayedFile(DevConstants.ECLIPSE_FML_RES));
-            task.dependsOn("fmlPatchJar", "extractWorkspace");
+            task.dependsOn("remapDirtyJar", "extractWorkspace");
         }
 
         copy = makeTask("copyDeobfData", Copy.class);
@@ -172,11 +194,10 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             task.include(JAVA_FILES);
             task.exclude("cpw/**");
-            task.from(delayedFile(DevConstants.ZIP_PATCHED_FML));
+            task.from(delayedFile(DevConstants.REMAPPED_DIRTY));
             task.into(delayedFile(DevConstants.ECLIPSE_FML_SRC));
             task.dependsOn("copyDeobfData");
         }
-
     }
 
     private void createProjectTasks()
@@ -234,13 +255,14 @@ public class FmlDevPlugin extends DevBasePlugin
             task.setIn(delayedFile(DevConstants.ECLIPSE_FML_SRC));
             task.setOut(delayedFile(DevConstants.PATCH_DIRTY));
             task.setSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
+            task.setExc(delayedFile(DevConstants.JOINED_EXC));
             task.dependsOn("genSrgs");
         }
         
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
         {
             task2.setPatchDir(delayedFile(DevConstants.FML_PATCH_DIR));
-            task2.setOriginalDir(delayedFile(DevConstants.ECLIPSE_CLEAN_SRC));
+            task2.setOriginalDir(delayedFile(DevConstants.PATCH_CLEAN));
             task2.setChangedDir(delayedFile(DevConstants.PATCH_DIRTY));
             task2.setOriginalPrefix("../src-base/minecraft");
             task2.setChangedPrefix("../src-work/minecraft");
@@ -262,8 +284,8 @@ public class FmlDevPlugin extends DevBasePlugin
             obf.setPreFFJar(delayedFile(DevConstants.JAR_SRG_FML));
             obf.setOutJar(delayedFile(DevConstants.REOBF_TMP));
             obf.setBuildFile(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"));
-            obf.setMethodsCsv(delayedFile(METHODS_CSV));
-            obf.setFieldsCsv(delayedFile(FIELDS_CSV));
+            obf.setMethodsCsv(delayedFile(DevConstants.METHODS_CSV));
+            obf.setFieldsCsv(delayedFile(DevConstants.FIELDS_CSV));
             obf.dependsOn("generateProjects", "extractFmlSources");
         }
 

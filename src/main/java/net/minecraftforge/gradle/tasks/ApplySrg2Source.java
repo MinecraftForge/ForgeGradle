@@ -21,6 +21,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFiles;
 import org.gradle.api.tasks.TaskAction;
 
@@ -29,11 +30,16 @@ public class ApplySrg2Source extends DefaultTask
     @InputFile
     private DelayedFile srg;
     
+    @Optional
+    @InputFile
+    private DelayedFile exc;
+    
     @InputFiles
     private FileCollection libs;
     private DelayedFile projectFile; // to get classpath from a subproject
     private String projectConfig; // Also for a subProject
     
+    // stuff defined on the tasks..
     private DelayedFile in;
     private DelayedFile out;
     
@@ -71,7 +77,10 @@ public class ApplySrg2Source extends DefaultTask
                 outSup = new FolderSupplier(out);
         }
         
+        getLogger().lifecycle("generating rangemap...");
         generateRangeMap(inSup, rangemap);
+        
+        getLogger().lifecycle("remapping source...");
         applyRangeMap(inSup, outSup, srg, rangemap);
         
         
@@ -101,6 +110,14 @@ public class ApplySrg2Source extends DefaultTask
         
         PrintStream stream = new PrintStream(Constants.createLogger(getLogger(), LogLevel.DEBUG));
         app.setOutLogger(stream);
+        
+        if (exc != null)
+        {
+            app.readParamMap(getExc(), null);
+        }
+        
+        // for debugging.
+        app.dumpRenameMap();
         
         app.remapSources(inSup, outSup, rangeMap, false);
     }
@@ -178,5 +195,15 @@ public class ApplySrg2Source extends DefaultTask
     public void setSrg(DelayedFile srg)
     {
         this.srg = srg;
+    }
+    
+    public File getExc()
+    {
+        return exc.call();
+    }
+
+    public void setExc(DelayedFile exc)
+    {
+        this.exc = exc;
     }
 }
