@@ -48,7 +48,8 @@ public class ApplySrg2Source extends DefaultTask
     {
         File in = getIn();
         File out = this.out == null ? in : getOut();
-        File rangemap = File.createTempFile("rangemap", "tmp", this.getTemporaryDir());
+        File rangemap = File.createTempFile("rangemap", ".txt", this.getTemporaryDir());
+        File rangelog = File.createTempFile("rangelog", ".txt", this.getTemporaryDir());
         File srg = getSrg();
         
         InputSupplier inSup;
@@ -81,7 +82,7 @@ public class ApplySrg2Source extends DefaultTask
         generateRangeMap(inSup, rangemap);
         
         getLogger().lifecycle("remapping source...");
-        applyRangeMap(inSup, outSup, srg, rangemap);
+        applyRangeMap(inSup, outSup, srg, rangemap, rangelog);
         
         
         inSup.close();
@@ -104,11 +105,20 @@ public class ApplySrg2Source extends DefaultTask
             throw new RuntimeException("RangeMap generation Failed!!!");
     }
     
-    private void applyRangeMap(InputSupplier inSup, OutputSupplier outSup, File srg, File rangeMap) throws IOException
+    private void applyRangeMap(InputSupplier inSup, OutputSupplier outSup, File srg, File rangeMap, File rangeLog) throws IOException
     {
         RangeApplier app = new RangeApplier().readSrg(srg);
         
-        PrintStream stream = new PrintStream(Constants.createLogger(getLogger(), LogLevel.DEBUG));
+        final PrintStream debug = new PrintStream(Constants.createLogger(getLogger(), LogLevel.DEBUG));
+        final PrintStream stream = new PrintStream(rangeLog)
+        {
+            @Override
+            public void println(String line)
+            {
+                debug.println(line);
+                super.println(line);
+            }
+        };
         app.setOutLogger(stream);
         
         if (exc != null)
