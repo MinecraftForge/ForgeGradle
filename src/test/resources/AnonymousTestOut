@@ -34,11 +34,43 @@ public class AnonymousTest
             
             par1 += k + "" + j;
         }
+        
+        public void emptyMethod() {}
     };
+    
+    public static void methodWithInnerClass()
+    {
+        ITestInterface thingy = new ITestInterface() {
+            public void someMethod()
+            {
+                int i = 123;
+                int j = 456;
+                int k = 123+456;
+                
+                i++;
+                j = k+i;
+            }
+            
+            public void someMethodWithParams(String par1, float par2, int par3, double par4)
+            {
+                float f1 = (float) (par2 + par4);
+                int j = 456;
+                int k = par3 + j;
+                
+                f1++;
+                j = (int) (k+f1);
+                
+                par1 += k + "" + j;
+            }
+            
+            public void emptyMethod() {}
+        };
+    }
     
     private static interface ITestInterface
     {
         public void someMethod();
         public void someMethodWithParams(String par1, float par2, int par3, double par4);
+        public void emptyMethod();
     }
 }
