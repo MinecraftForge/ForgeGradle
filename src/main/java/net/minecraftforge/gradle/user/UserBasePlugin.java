@@ -1,7 +1,36 @@
 package net.minecraftforge.gradle.user;
 
-import static net.minecraftforge.gradle.common.Constants.*;
-import static net.minecraftforge.gradle.user.UserConstants.*;
+import static net.minecraftforge.gradle.common.Constants.ASSETS;
+import static net.minecraftforge.gradle.common.Constants.FERNFLOWER;
+import static net.minecraftforge.gradle.common.Constants.JAR_CLIENT_FRESH;
+import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
+import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_FRESH;
+import static net.minecraftforge.gradle.user.UserConstants.ASTYLE_CFG;
+import static net.minecraftforge.gradle.user.UserConstants.BINARIES_JAR;
+import static net.minecraftforge.gradle.user.UserConstants.BINPATCHES;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_DEPS;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_NATIVES;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_USERDEV;
+import static net.minecraftforge.gradle.user.UserConstants.DEOBF_MCP_SRG;
+import static net.minecraftforge.gradle.user.UserConstants.DIRTY_DIR;
+import static net.minecraftforge.gradle.user.UserConstants.ECLIPSE_LOCATION;
+import static net.minecraftforge.gradle.user.UserConstants.EXC_JSON;
+import static net.minecraftforge.gradle.user.UserConstants.FIELD_CSV;
+import static net.minecraftforge.gradle.user.UserConstants.FIELD_CSV_OLD;
+import static net.minecraftforge.gradle.user.UserConstants.JSON;
+import static net.minecraftforge.gradle.user.UserConstants.MCP_PATCH_DIR;
+import static net.minecraftforge.gradle.user.UserConstants.MERGE_CFG;
+import static net.minecraftforge.gradle.user.UserConstants.METHOD_CSV;
+import static net.minecraftforge.gradle.user.UserConstants.METHOD_CSV_OLD;
+import static net.minecraftforge.gradle.user.UserConstants.NATIVES_DIR;
+import static net.minecraftforge.gradle.user.UserConstants.PACKAGED_EXC;
+import static net.minecraftforge.gradle.user.UserConstants.PACKAGED_SRG;
+import static net.minecraftforge.gradle.user.UserConstants.PACK_DIR;
+import static net.minecraftforge.gradle.user.UserConstants.REOBF_NOTCH_SRG;
+import static net.minecraftforge.gradle.user.UserConstants.REOBF_SRG;
+import static net.minecraftforge.gradle.user.UserConstants.RES_DIR;
+import static net.minecraftforge.gradle.user.UserConstants.SOURCES_DIR;
 import groovy.lang.Closure;
 import groovy.util.Node;
 import groovy.util.XmlParser;
@@ -39,11 +68,13 @@ import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.GradleScriptException;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.XmlProvider;
 import org.gradle.api.artifacts.Configuration.State;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.execution.TaskExecutionGraph;
 import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -72,6 +103,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 {
     private boolean hasApplied = false;
 
+    @SuppressWarnings("serial")
     @Override
     public void applyPlugin()
     {
@@ -102,6 +134,36 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         task.setGroup("ForgeGradle");
 
         project.getTasks().getByName("reobf").dependsOn("genSrgs");
+        
+        // stop people screwing stuff up.
+        project.getGradle().getTaskGraph().whenReady(new Closure<Object>(this, null) {
+            @Override
+            public Object call()
+            {
+                TaskExecutionGraph graph = project.getGradle().getTaskGraph();
+                String path = project.getPath();
+                
+                boolean hasSetup = graph.hasTask(path + "setupCIWorkspace") || graph.hasTask(path + "setupDecompWorkspace") || graph.hasTask(path + "setupDevWorkspace"); 
+                boolean hasBuild = graph.hasTask(path + "eclipse") || graph.hasTask(path + "ideaModule"); 
+                
+                if (hasSetup && hasBuild)
+                    throw new RuntimeException("Your doing it wrong. You are running a stup task and an IDE task in the same command.");
+                
+                return null;
+            }
+            
+            @Override
+            public Object call(Object obj)
+            {
+                return call();
+            }
+            
+            @Override
+            public Object call(Object... obj)
+            {
+                return call();
+            }
+        });
     }
 
     private void checkDecompStatus()
