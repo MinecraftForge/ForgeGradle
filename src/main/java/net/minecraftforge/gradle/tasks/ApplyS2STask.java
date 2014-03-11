@@ -6,10 +6,8 @@ import java.io.PrintStream;
 import java.util.LinkedList;
 import java.util.List;
 
-import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.srg2source.ast.RangeExtractor;
 import net.minecraftforge.srg2source.rangeapplier.RangeApplier;
 import net.minecraftforge.srg2source.util.io.FolderSupplier;
 import net.minecraftforge.srg2source.util.io.InputSupplier;
@@ -18,15 +16,15 @@ import net.minecraftforge.srg2source.util.io.ZipInputSupplier;
 import net.minecraftforge.srg2source.util.io.ZipOutputSupplier;
 
 import org.gradle.api.DefaultTask;
-import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.logging.LogLevel;
+import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFiles;
 import org.gradle.api.tasks.TaskAction;
 
-public class ApplySrg2Source extends DefaultTask
+public class ApplyS2STask extends DefaultTask
 {
     @InputFiles
     private final List<Object> srg = new LinkedList<Object>();
@@ -35,10 +33,8 @@ public class ApplySrg2Source extends DefaultTask
     @InputFiles
     private final List<Object> exc = new LinkedList<Object>();
     
-    @InputFiles
-    private FileCollection libs;
-    private DelayedFile projectFile; // to get classpath from a subproject
-    private String projectConfig; // Also for a subProject
+    @InputFile
+    private DelayedFile rangeMap;
     
     // stuff defined on the tasks..
     private DelayedFile in;
@@ -49,7 +45,7 @@ public class ApplySrg2Source extends DefaultTask
     {
         File in = getIn();
         File out = this.out == null ? in : getOut();
-        File rangemap = File.createTempFile("rangemap", ".txt", this.getTemporaryDir());
+        File rangemap = getRangeMap();
         File rangelog = File.createTempFile("rangelog", ".txt", this.getTemporaryDir());
         FileCollection srg = getSrgs();
         FileCollection exc = getExcs();
@@ -80,31 +76,12 @@ public class ApplySrg2Source extends DefaultTask
                 outSup = new FolderSupplier(out);
         }
         
-        getLogger().lifecycle("generating rangemap...");
-        generateRangeMap(inSup, rangemap);
-        
         getLogger().lifecycle("remapping source...");
         applyRangeMap(inSup, outSup, srg, exc, rangemap, rangelog);
         
         
         inSup.close();
         outSup.close();
-    }
-    
-    private void generateRangeMap(InputSupplier inSup, File rangeMap)
-    {
-        RangeExtractor extractor = new RangeExtractor();
-        extractor.addLibs(getLibs().getAsPath()).setSrc(inSup);
-        
-        PrintStream stream = new PrintStream(Constants.createLogger(getLogger(), LogLevel.DEBUG));
-        extractor.setOutLogger(stream);
-        
-        boolean worked = extractor.generateRangeMap(rangeMap);
-        
-        stream.close();
-        
-        if (!worked)
-            throw new RuntimeException("RangeMap generation Failed!!!");
     }
     
     private void applyRangeMap(InputSupplier inSup, OutputSupplier outSup, FileCollection srg, FileCollection exc, File rangeMap, File rangeLog) throws IOException
@@ -176,28 +153,6 @@ public class ApplySrg2Source extends DefaultTask
     {
         this.out = out;
     }
-
-    public FileCollection getLibs()
-    {
-        if (projectFile != null && libs == null) // libs == null to avoid doing this any more than necessary..
-        {
-            Project proj = BasePlugin.getProject(projectFile.call(), getProject());
-            libs = proj.getConfigurations().getByName(projectConfig);
-        }
-        
-        return libs;
-    }
-
-    public void setLibs(FileCollection libs)
-    {
-        this.libs = libs;
-    }
-    
-    public void setLibsFromProject(DelayedFile buildscript, String config)
-    {
-        this.projectFile = buildscript;
-        this.projectConfig = config;
-    }
     
     public FileCollection getSrgs()
     {
@@ -237,5 +192,15 @@ public class ApplySrg2Source extends DefaultTask
     public void addExc(File exc)
     {
         this.exc.add(exc);
+    }
+
+    public File getRangeMap()
+    {
+        return rangeMap.call();
+    }
+
+    public void setRangeMap(DelayedFile rangeMap)
+    {
+        this.rangeMap = rangeMap;
     }
 }

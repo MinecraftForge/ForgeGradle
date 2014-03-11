@@ -11,8 +11,10 @@ import net.minecraftforge.gradle.CopyInto;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedBase;
-import net.minecraftforge.gradle.tasks.ApplySrg2Source;
+import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
+import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
@@ -251,18 +253,27 @@ public class FmlDevPlugin extends DevBasePlugin
 
     private void createMiscTasks()
     {
-        ApplySrg2Source task = makeTask("retroMapSources", ApplySrg2Source.class);
+        DelayedFile rangeMap = delayedFile("{BUILD_DIR}/tmp/rangemap.txt");
+        
+        ExtractS2SRangeTask task = makeTask("extractRange", ExtractS2SRangeTask.class);
         {
             task.setLibsFromProject(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"), "compile");
             task.setIn(delayedFile(DevConstants.ECLIPSE_FML_SRC));
-            task.setOut(delayedFile(DevConstants.PATCH_DIRTY));
-            task.addSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
-            task.addExc(delayedFile(DevConstants.JOINED_EXC));
-            task.dependsOn("genSrgs");
+            task.setRangeMap(rangeMap);
+        }
+        
+        ApplyS2STask task4 = makeTask("retroMapSources", ApplyS2STask.class);
+        {
+            task4.setIn(delayedFile(DevConstants.ECLIPSE_FML_SRC));
+            task4.setOut(delayedFile(DevConstants.PATCH_DIRTY));
+            task4.addSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
+            task4.addExc(delayedFile(DevConstants.JOINED_EXC));
+            task4.setRangeMap(rangeMap);
+            task4.dependsOn("genSrgs", task);
             
             // find all the exc files in the resources.
             for (File f : project.fileTree(ImmutableMap.of( "dir", delayedFile(DevConstants.FML_RESOURCES).call(), "include", "**/*.exc")).getFiles())
-                task.addExc(f);
+                task4.addExc(f);
         }
         
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
