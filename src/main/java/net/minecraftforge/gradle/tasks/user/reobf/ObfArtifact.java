@@ -343,6 +343,8 @@ public class ObfArtifact extends AbstractPublishArtifact
         excepted.delete();
         if (isTemp)
             srg.delete();
+        
+        System.gc(); // clean anything out.. I hope..
     }
     
     private void applySpecialSource(File input, File output, File srg, File extraSrg) throws IOException
@@ -399,7 +401,6 @@ public class ObfArtifact extends AbstractPublishArtifact
         clazz.getMethod("obfuscate", File.class, File.class, File.class, File.class).invoke(null, input, output, script, log);
         
         loader = null; // if we are lucky.. this will be dropped...
-        System.gc(); // clean anything out.. I hope..
     }
     
     private void generateRgConfig(File config, File script, File srg, File extraSrg) throws IOException
