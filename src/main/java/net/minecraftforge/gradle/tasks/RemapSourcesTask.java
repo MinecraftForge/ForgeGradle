@@ -43,7 +43,7 @@ public class RemapSourcesTask extends EditJarTask
     private final Map<String, Map<String, String>> fields     = new HashMap<String, Map<String, String>>();
     private final Map<String, String>              params     = new HashMap<String, String>();
 
-    private static final Pattern                   SRG_FINDER = Pattern.compile("func_[0-9]+_[a-zA-Z_]+|field_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_");
+    private static final Pattern                   SRG_FINDER = Pattern.compile("(func_[0-9]+_[a-zA-Z_]+|field_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_)([^\\w\\$])");
     private static final Pattern                   METHOD     = Pattern.compile("^((?: {4})+|\\t+)(?:[\\w$.\\[\\]]+ )+(func_[0-9]+_[a-zA-Z_]+)\\(");
     private static final Pattern                   FIELD      = Pattern.compile("^((?: {4})+|\\t+)(?:[\\w$.\\[\\]]+ )+(field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
 
@@ -158,7 +158,7 @@ public class RemapSourcesTask extends EditJarTask
         Matcher matcher = SRG_FINDER.matcher(line);
         while (matcher.find())
         {
-            String find = matcher.group();
+            String find = matcher.group(1);
             
             if (find.startsWith("p_"))
                 find = params.get(find);
@@ -168,9 +168,10 @@ public class RemapSourcesTask extends EditJarTask
                 find = stupidMacro(fields, find);
             
             if (find == null)
-                find = matcher.group();
+                find = matcher.group(1);
             
             matcher.appendReplacement(buf, find);
+            buf.append(matcher.group(2));
         }
         matcher.appendTail(buf);
         return buf.toString();
