@@ -122,7 +122,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
                 boolean hasBuild = graph.hasTask(path + "eclipse") || graph.hasTask(path + "ideaModule"); 
                 
                 if (hasSetup && hasBuild)
-                    throw new RuntimeException("Your doing it wrong. You are running a stup task and an IDE task in the same command.");
+                    throw new RuntimeException("You're doing it wrong. You are running a setup task and an IDE task in the same command.");
                 
                 return null;
             }
