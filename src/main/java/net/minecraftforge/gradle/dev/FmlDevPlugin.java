@@ -37,6 +37,8 @@ import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
 
+import com.google.common.collect.ImmutableMap;
+
 public class FmlDevPlugin extends DevBasePlugin
 {
     @Override
@@ -254,9 +256,13 @@ public class FmlDevPlugin extends DevBasePlugin
             task.setLibsFromProject(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"), "compile");
             task.setIn(delayedFile(DevConstants.ECLIPSE_FML_SRC));
             task.setOut(delayedFile(DevConstants.PATCH_DIRTY));
-            task.setSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
-            task.setExc(delayedFile(DevConstants.JOINED_EXC));
+            task.addSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
+            task.addExc(delayedFile(DevConstants.JOINED_EXC));
             task.dependsOn("genSrgs");
+            
+            // find all the exc files in the resources.
+            for (File f : project.fileTree(ImmutableMap.of( "dir", delayedFile(DevConstants.FML_RESOURCES).call(), "include", "**/*.exc")).getFiles())
+                task.addExc(f);
         }
         
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);

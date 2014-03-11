@@ -3,6 +3,8 @@ package net.minecraftforge.gradle.tasks;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.LinkedList;
+import java.util.List;
 
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
@@ -19,7 +21,6 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.logging.LogLevel;
-import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFiles;
@@ -27,12 +28,12 @@ import org.gradle.api.tasks.TaskAction;
 
 public class ApplySrg2Source extends DefaultTask
 {
-    @InputFile
-    private DelayedFile srg;
-    
+    @InputFiles
+    private final List<Object> srg = new LinkedList<Object>();
+
     @Optional
-    @InputFile
-    private DelayedFile exc;
+    @InputFiles
+    private final List<Object> exc = new LinkedList<Object>();
     
     @InputFiles
     private FileCollection libs;
@@ -50,7 +51,8 @@ public class ApplySrg2Source extends DefaultTask
         File out = this.out == null ? in : getOut();
         File rangemap = File.createTempFile("rangemap", ".txt", this.getTemporaryDir());
         File rangelog = File.createTempFile("rangelog", ".txt", this.getTemporaryDir());
-        File srg = getSrg();
+        FileCollection srg = getSrgs();
+        FileCollection exc = getExcs();
         
         InputSupplier inSup;
         OutputSupplier outSup;
@@ -82,7 +84,7 @@ public class ApplySrg2Source extends DefaultTask
         generateRangeMap(inSup, rangemap);
         
         getLogger().lifecycle("remapping source...");
-        applyRangeMap(inSup, outSup, srg, rangemap, rangelog);
+        applyRangeMap(inSup, outSup, srg, exc, rangemap, rangelog);
         
         
         inSup.close();
@@ -105,9 +107,9 @@ public class ApplySrg2Source extends DefaultTask
             throw new RuntimeException("RangeMap generation Failed!!!");
     }
     
-    private void applyRangeMap(InputSupplier inSup, OutputSupplier outSup, File srg, File rangeMap, File rangeLog) throws IOException
+    private void applyRangeMap(InputSupplier inSup, OutputSupplier outSup, FileCollection srg, FileCollection exc, File rangeMap, File rangeLog) throws IOException
     {
-        RangeApplier app = new RangeApplier().readSrg(srg);
+        RangeApplier app = new RangeApplier().readSrg(srg.getFiles());
         
         final PrintStream debug = new PrintStream(Constants.createLogger(getLogger(), LogLevel.DEBUG));
         final PrintStream stream = new PrintStream(rangeLog)
@@ -121,9 +123,9 @@ public class ApplySrg2Source extends DefaultTask
         };
         app.setOutLogger(stream);
         
-        if (exc != null)
+        if (!exc.isEmpty())
         {
-            app.readParamMap(getExc(), null);
+            app.readParamMap(exc);
         }
         
         // for debugging.
@@ -197,23 +199,43 @@ public class ApplySrg2Source extends DefaultTask
         this.projectConfig = config;
     }
     
-    public File getSrg()
+    public FileCollection getSrgs()
     {
-        return srg.call();
+        return getProject().files(srg);
     }
 
-    public void setSrg(DelayedFile srg)
+    public void addSrg(DelayedFile srg)
     {
-        this.srg = srg;
+        this.srg.add(srg);
     }
     
-    public File getExc()
+    public void addSrg(String srg)
     {
-        return exc.call();
+        this.srg.add(srg);
     }
-
-    public void setExc(DelayedFile exc)
+    
+    public void addSrg(File srg)
     {
-        this.exc = exc;
+        this.srg.add(srg);
+    }
+    
+    public FileCollection getExcs()
+    {
+        return getProject().files(exc);
+    }
+    
+    public void addExc(DelayedFile exc)
+    {
+        this.exc.add(exc);
+    }
+    
+    public void addExc(String exc)
+    {
+        this.exc.add(exc);
+    }
+    
+    public void addExc(File exc)
+    {
+        this.exc.add(exc);
     }
 }
