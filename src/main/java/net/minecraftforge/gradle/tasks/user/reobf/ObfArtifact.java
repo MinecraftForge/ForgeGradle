@@ -316,13 +316,15 @@ public class ObfArtifact extends AbstractPublishArtifact
         File srg = new DelayedFile(caller.getProject(), UserConstants.REOBF_SRG).call();
 
         // obfuscate here
-        File inTemp = new File(caller.getTemporaryDir(), "jarIn.jar");
+        File inTemp = File.createTempFile("JarIn", ".jar", caller.getTemporaryDir());
         Files.copy(toObf, inTemp);
         
         if (caller.getUseRetroGuard())
             applyRetroGuard(inTemp, output, srg);
         else
             applySpecialSource(inTemp, output, srg);
+        
+        System.gc(); // clean anything out.. I hope..
     }
     
     private void applySpecialSource(File input, File output, File srg) throws IOException
@@ -381,7 +383,6 @@ public class ObfArtifact extends AbstractPublishArtifact
         clazz.getMethod("obfuscate", File.class, File.class, File.class, File.class).invoke(null, input, output, script, log);
         
         loader = null; // if we are lucky.. this will be dropped...
-        System.gc(); // clean anything out.. I hope..
     }
     
     private void generateRgConfig(File config, File script, File srg) throws IOException
