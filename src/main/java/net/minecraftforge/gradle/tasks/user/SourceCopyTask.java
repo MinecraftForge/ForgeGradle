@@ -1,5 +1,7 @@
 package net.minecraftforge.gradle.tasks.user;
 
+import groovy.lang.Closure;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,7 +33,7 @@ public class SourceCopyTask extends DefaultTask
     SourceDirectorySet      source;
 
     @Input
-    HashMap<String, String> replacements = new HashMap<String, String>();
+    HashMap<String, Object> replacements = new HashMap<String, Object>();
 
     @Input
     ArrayList<String>       includes     = new ArrayList<String>();
@@ -39,12 +41,12 @@ public class SourceCopyTask extends DefaultTask
     @OutputDirectory
     DelayedFile             output;
 
+    @SuppressWarnings("unchecked")
     @TaskAction
     public void doTask() throws IOException
     {
         getLogger().info("INPUTS >> " + source);
         getLogger().info("OUTPUTS >> " + getOutput());
-        getLogger().info("REPLACE >> " + replacements);
 
         // get the include/exclude patterns from the source (this is different than what's returned by getFilter)
         PatternSet patterns = new PatternSet();
@@ -58,7 +60,20 @@ public class SourceCopyTask extends DefaultTask
 
         out.mkdirs();
         out = out.getCanonicalFile();
-
+        
+        // resolve replacements
+        HashMap<String, String> repl = new HashMap<String, String>(replacements.size());
+        for (Entry<String, Object> e : replacements.entrySet())
+        {
+            Object val = e.getValue();
+            while (val instanceof Closure)
+                val = ((Closure<Object>) val).call();
+            
+            repl.put(e.getKey(), val.toString());
+        }
+        
+        getLogger().info("REPLACE >> " + repl);
+        
         // start traversing tree
         for (DirectoryTree dirTree : source.getSrcDirTrees())
         {
@@ -86,7 +101,7 @@ public class SourceCopyTask extends DefaultTask
                     getLogger().debug("PARSING FILE IN >> " + file);
                     String text = Files.toString(file, Charsets.UTF_8);
 
-                    for (Entry<String, String> entry : replacements.entrySet())
+                    for (Entry<String, String> entry : repl.entrySet())
                         text = text.replaceAll(entry.getKey(), entry.getValue());
 
                     getLogger().debug("PARSING FILE OUT >> " + dest);
@@ -164,20 +179,20 @@ public class SourceCopyTask extends DefaultTask
         return source;
     }
 
-    public void replace(String key, String val)
+    public void replace(String key, Object val)
     {
         replacements.put(key, val);
     }
 
-    public void replace(Map<String, String> map)
+    public void replace(Map<String, Object> map)
     {
-        for (Entry<String, String> e : map.entrySet())
+        for (Entry<String, Object> e : map.entrySet())
         {
             replace(Pattern.quote(e.getKey()), e.getValue());
         }
     }
 
-    public HashMap<String, String> getReplacements()
+    public HashMap<String, Object> getReplacements()
     {
         return replacements;
     }
