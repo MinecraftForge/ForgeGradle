@@ -271,9 +271,14 @@ public class FmlDevPlugin extends DevBasePlugin
             task4.setRangeMap(rangeMap);
             task4.dependsOn("genSrgs", task);
             
-            // find all the exc files in the resources.
-            for (File f : project.fileTree(ImmutableMap.of( "dir", delayedFile(DevConstants.FML_RESOURCES).call(), "include", "**/*.exc")).getFiles())
-                task4.addExc(f);
+            // find all the exc & srg files in the resources.
+            for (File f : project.fileTree(delayedFile(DevConstants.FML_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    task4.addExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    task4.addSrg(f);
+            }
         }
         
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
