@@ -2,7 +2,6 @@ package net.minecraftforge.gradle.tasks.dev;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -22,6 +21,7 @@ import org.gradle.api.tasks.TaskAction;
 import com.cloudbees.diff.Diff;
 import com.cloudbees.diff.Hunk;
 import com.cloudbees.diff.PatchException;
+import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
 
@@ -139,14 +139,14 @@ public class GeneratePatches extends DefaultTask
 
         if (!diff.isEmpty())
         {
-            String unidiff = diff.toUnifiedDiff(originalPrefix + relative, changedPrefix + relative, Files.newReader(file, Charset.defaultCharset()), Files.newReader(changedFile, Charset.defaultCharset()), 3);
+            String unidiff = diff.toUnifiedDiff(originalPrefix + relative, changedPrefix + relative, Files.newReader(file, Charsets.UTF_8), Files.newReader(changedFile, Charsets.UTF_8), 3);
             unidiff = unidiff.replace("\r\n", "\n"); //Normalize lines
             unidiff = unidiff.replace("\n" + Hunk.ENDING_NEWLINE + "\n", "\n"); //We give 0 shits about this.
 
             String olddiff = "";
             if (patchFile.exists())
             {
-                olddiff = Files.toString(patchFile, Charset.defaultCharset());
+                olddiff = Files.toString(patchFile, Charsets.UTF_8);
             }
 
             if (!olddiff.equals(unidiff))
@@ -154,7 +154,7 @@ public class GeneratePatches extends DefaultTask
                 getLogger().debug("Writing patch: " + patchFile);
                 patchFile.getParentFile().mkdirs();
                 Files.touch(patchFile);
-                Files.write(unidiff, patchFile, Charset.defaultCharset());
+                Files.write(unidiff, patchFile, Charsets.UTF_8);
             }
             else
             {
