@@ -78,7 +78,7 @@ public class MultiDirSupplierTest
      */
     private String getRelative(File root, File child) throws IOException
     {
-        return child.getCanonicalPath().substring(root.getCanonicalPath().length());
+        return child.getCanonicalPath().substring(root.getCanonicalPath().length() + 1); // + 1 for the slash
     }
     
     @Test
