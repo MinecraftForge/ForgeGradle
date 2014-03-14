@@ -71,8 +71,8 @@ final class DevConstants
     static final String CHANGELOG          = "{BUILD_DIR}/distributions/{PROJECT}-{MC_VERSION}-{VERSION}-changelog.txt";
     
     // necesary for patch generation
-    static final String PATCH_CLEAN        = "{BUILD_DIR}/patchNeeded/clean";
-    static final String PATCH_DIRTY        = "{BUILD_DIR}/patchNeeded/dirty";
+    //static final String PATCH_CLEAN        = "{BUILD_DIR}/patchNeeded/clean";
+    static final String PATCH_DIRTY        = "{BUILD_DIR}/tmp/dirty-patch-base.zip";
     static final String REMAPPED_CLEAN     = "{BUILD_DIR}/tmp/clean.jar";
     static final String REMAPPED_DIRTY     = "{BUILD_DIR}/tmp/dirty.jar";
 

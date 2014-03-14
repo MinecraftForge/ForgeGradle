@@ -39,8 +39,6 @@ import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
 
-import com.google.common.collect.ImmutableMap;
-
 public class FmlDevPlugin extends DevBasePlugin
 {
     @Override
@@ -140,24 +138,14 @@ public class FmlDevPlugin extends DevBasePlugin
 
     private void createSourceCopyTasks()
     {
-        // COPY NECESSARY STUFF
-        ExtractTask task = makeTask("extractPatchClean", ExtractTask.class);
-        {
-            task.include(JAVA_FILES);
-            task.setIncludeEmptyDirs(false);
-            task.from(delayedFile(DevConstants.ZIP_DECOMP_FML));
-            task.into(delayedFile(DevConstants.PATCH_CLEAN));
-            task.dependsOn("decompile");
-        }
-
         // COPY CLEAN STUFF
-        task = makeTask("extractMcResources", ExtractTask.class);
+        ExtractTask task = makeTask("extractMcResources", ExtractTask.class);
         {
             task.exclude(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
             task.from(delayedFile(DevConstants.REMAPPED_CLEAN));
             task.into(delayedFile(DevConstants.ECLIPSE_CLEAN_RES));
-            task.dependsOn("extractWorkspace", "remapCleanJar", "extractPatchClean");
+            task.dependsOn("extractWorkspace", "remapCleanJar");
         }
 
         Copy copy = makeTask("copyStart", Copy.class);
@@ -284,8 +272,8 @@ public class FmlDevPlugin extends DevBasePlugin
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
         {
             task2.setPatchDir(delayedFile(DevConstants.FML_PATCH_DIR));
-            task2.setOriginalDir(delayedFile(DevConstants.PATCH_CLEAN));
-            task2.setChangedDir(delayedFile(DevConstants.PATCH_DIRTY));
+            task2.setOriginal(delayedFile(DevConstants.ZIP_DECOMP_FML));
+            task2.setChanged(delayedFile(DevConstants.PATCH_DIRTY));
             task2.setOriginalPrefix("../src-base/minecraft");
             task2.setChangedPrefix("../src-work/minecraft");
             task2.setGroup("FML");

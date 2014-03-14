@@ -300,8 +300,8 @@ public class McpcDevPlugin extends DevBasePlugin
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
         {
             task2.setPatchDir(delayedFile(MCPC_PATCH_DIR));
-            task2.setOriginalDir(delayedFile(ECLIPSE_CLEAN_SRC));
-            task2.setChangedDir(delayedFile(ECLIPSE_MCPC_SRC));
+            task2.setOriginal(delayedFile(ECLIPSE_CLEAN_SRC));
+            task2.setChanged(delayedFile(ECLIPSE_MCPC_SRC));
             task2.setOriginalPrefix("../src-base/minecraft");
             task2.setChangedPrefix("../src-work/minecraft");
             task2.setGroup("MCPC");

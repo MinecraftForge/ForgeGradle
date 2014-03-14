@@ -253,8 +253,8 @@ public class ForgeDevPlugin extends DevBasePlugin
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
         {
             task2.setPatchDir(delayedFile(FORGE_PATCH_DIR));
-            task2.setOriginalDir(delayedFile(ECLIPSE_CLEAN_SRC));
-            task2.setChangedDir(delayedFile(ECLIPSE_FORGE_SRC));
+            task2.setOriginal(delayedFile(ECLIPSE_CLEAN_SRC));
+            task2.setChanged(delayedFile(ECLIPSE_FORGE_SRC));
             task2.setOriginalPrefix("../src-base/minecraft");
             task2.setChangedPrefix("../src-work/minecraft");
             task2.setGroup("Forge");

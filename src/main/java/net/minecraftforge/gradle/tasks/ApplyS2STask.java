@@ -52,28 +52,23 @@ public class ApplyS2STask extends DefaultTask
         
         InputSupplier inSup;
         OutputSupplier outSup;
-        
-        boolean isJar = in.getPath().endsWith(".jar") || in.getPath().endsWith(".zip");
-        
-        if (isJar)
+
+        if (in.getPath().endsWith(".jar") || in.getPath().endsWith(".zip"))
         {
-            // setup input
             inSup = new ZipInputSupplier();
-            ((ZipInputSupplier) inSup).readZip(in);
-            
-            // setup output
+            ((ZipInputSupplier)inSup).readZip(in);
+        }
+        else
+        {
+            inSup = new FolderSupplier(in);
+        }
+        if (out.getPath().endsWith(".jar") || out.getPath().endsWith(".zip"))
+        {
             outSup = new ZipOutputSupplier(out);
         }
-        else // folder!
+        else
         {
-            @SuppressWarnings("resource")
-            FolderSupplier fSup = new FolderSupplier(in);
-            
-            inSup = fSup;
-            if (in == out)
-                outSup = fSup;
-            else
-                outSup = new FolderSupplier(out);
+            outSup = new FolderSupplier(in);
         }
         
         getLogger().lifecycle("remapping source...");
