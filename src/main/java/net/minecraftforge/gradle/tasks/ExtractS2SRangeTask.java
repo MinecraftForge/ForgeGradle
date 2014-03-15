@@ -3,7 +3,10 @@ package net.minecraftforge.gradle.tasks;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.LinkedList;
+import java.util.List;
 
+import net.minecraftforge.gradle.SequencedInputSupplier;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
@@ -28,7 +31,7 @@ public class ExtractS2SRangeTask extends DefaultTask
     private String projectConfig; // Also for a subProject
     
     // stuff defined on the tasks..
-    private DelayedFile in;
+    private final List<DelayedFile> in = new LinkedList<DelayedFile>();
     
     @OutputFile
     private DelayedFile rangeMap;
@@ -36,22 +39,24 @@ public class ExtractS2SRangeTask extends DefaultTask
     @TaskAction
     public void doTask() throws IOException
     {
-        File in = getIn();
+        List<File> ins = getIn();
         File rangemap = getRangeMap();
         
         InputSupplier inSup;
         
-        boolean isJar = in.getPath().endsWith(".jar") || in.getPath().endsWith(".zip");
-        
-        if (isJar)
+        if (ins.size() == 0)
+            return; // no input.
+        else if (ins.size() == 1)
         {
-            // setup input
-            inSup = new ZipInputSupplier();
-            ((ZipInputSupplier) inSup).readZip(in);
+            // just 1 supplier.
+            inSup = getInput(ins.get(0));
         }
-        else // folder!
+        else
         {
-            inSup = new FolderSupplier(in);
+            // multinput
+            inSup = new SequencedInputSupplier();
+            for (File f : ins)
+                ((SequencedInputSupplier) inSup).add(getInput(f));
         }
         
         generateRangeMap(inSup, rangemap);
@@ -73,6 +78,20 @@ public class ExtractS2SRangeTask extends DefaultTask
             throw new RuntimeException("RangeMap generation Failed!!!");
     }
     
+    private InputSupplier getInput(File f) throws IOException
+    {
+        if (f.isDirectory())
+            return new FolderSupplier(f);
+        else if (f.getPath().endsWith(".jar") || f.getPath().endsWith(".zip"))
+        {
+            ZipInputSupplier supp = new ZipInputSupplier();
+            supp.readZip(f);
+            return supp;
+        }
+        else
+            throw new IllegalArgumentException("Can only make suppliers out of directories and zips right now!");
+    }
+    
     public File getRangeMap()
     {
         return rangeMap.call();
@@ -86,21 +105,20 @@ public class ExtractS2SRangeTask extends DefaultTask
     @InputFiles
     public FileCollection getIns()
     {
-        File inFile = getIn();
-        if (inFile.isDirectory())
-            return getProject().fileTree(inFile);
-        else
-            return getProject().files(inFile);
+        return getProject().files(in);
     }
     
-    public File getIn()
+    public List<File> getIn()
     {
-        return in.call();
+        List<File> files = new LinkedList<File>();
+        for (DelayedFile f : in)
+            files.add(f.call());
+        return files;
     }
 
-    public void setIn(DelayedFile in)
+    public void addIn(DelayedFile in)
     {
-        this.in = in;
+        this.in.add(in);
     }
     
     public FileCollection getLibs()
