@@ -68,7 +68,7 @@ public class ApplyS2STask extends DefaultTask
         }
         else
         {
-            outSup = new FolderSupplier(in);
+            outSup = new FolderSupplier(out);
         }
         
         getLogger().lifecycle("remapping source...");
