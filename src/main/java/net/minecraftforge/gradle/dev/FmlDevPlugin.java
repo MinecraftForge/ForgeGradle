@@ -245,9 +245,9 @@ public class FmlDevPlugin extends DevBasePlugin
         
         ExtractS2SRangeTask task = makeTask("extractRange", ExtractS2SRangeTask.class);
         {
-            task.setLibsFromProject(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"), "compile", false);
+            task.setLibsFromProject(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"), "compile", true);
             task.addIn(delayedFile(DevConstants.ECLIPSE_FML_SRC));
-            task.addIn(delayedFile(DevConstants.FML_SOURCES));
+            //task.addIn(delayedFile(DevConstants.FML_SOURCES));
             task.setRangeMap(rangeMap);
         }
         
