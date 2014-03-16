@@ -60,7 +60,7 @@ public class GeneratePatches extends DefaultTask
         getPatchDir().mkdirs();
 
         // fix and create patches.
-        processFiles(getSupplier(changed.call()), getSupplier(original.call()));
+        processFiles(getSupplier(original.call()), getSupplier(changed.call()));
         
         removeOld(getPatchDir());
     }
