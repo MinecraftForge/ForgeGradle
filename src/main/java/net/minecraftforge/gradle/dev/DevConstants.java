@@ -27,6 +27,7 @@ final class DevConstants
     static final String BINPATCH_TMP        = "{BUILD_DIR}/tmp/bin_patches.jar";
     static final String LAUNCH4J_DIR        = "{BUILD_DIR}/launch4j_exec";
     static final String VERSION_JSON        = "{BUILD_DIR}/tmp/version.json";
+    static final String USERDEV_RANGEMAP    = "{BUILD_DIR}/tmp/user_dev_range.txt";
 
     // mappings
     static final String METHODS_CSV         = "{MAPPINGS_DIR}/methods.csv";
@@ -69,6 +70,7 @@ final class DevConstants
 
     // other stuff
     static final String CHANGELOG          = "{BUILD_DIR}/distributions/{PROJECT}-{MC_VERSION}-{VERSION}-changelog.txt";
+    static final String USERDEV_SRG_SRC    = "{BUILD_DIR}/tmp/user_dev_srg_src.zip";
     
     // necesary for patch generation
     //static final String PATCH_CLEAN        = "{BUILD_DIR}/patchNeeded/clean";

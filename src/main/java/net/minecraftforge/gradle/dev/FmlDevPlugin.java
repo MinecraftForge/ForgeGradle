@@ -245,7 +245,7 @@ public class FmlDevPlugin extends DevBasePlugin
         
         ExtractS2SRangeTask task = makeTask("extractRange", ExtractS2SRangeTask.class);
         {
-            task.setLibsFromProject(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"), "compile");
+            task.setLibsFromProject(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"), "compile", false);
             task.addIn(delayedFile(DevConstants.ECLIPSE_FML_SRC));
             task.addIn(delayedFile(DevConstants.FML_SOURCES));
             task.setRangeMap(rangeMap);
@@ -434,6 +434,33 @@ public class FmlDevPlugin extends DevBasePlugin
             });
         }
 
+        ExtractS2SRangeTask range = makeTask("userDevExtractRange", ExtractS2SRangeTask.class);
+        {
+            range.setLibsFromProject(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"), "compile", true);
+            range.addIn(delayedFile(DevConstants.FML_SOURCES));
+            range.setRangeMap(delayedFile(DevConstants.USERDEV_RANGEMAP));
+        }
+        
+        ApplyS2STask s2s = makeTask("userDevSrgSrc", ApplyS2STask.class);
+        {
+            s2s.setIn(delayedFile(DevConstants.FML_SOURCES));
+            s2s.setOut(delayedFile(DevConstants.USERDEV_SRG_SRC));
+            s2s.addSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
+            s2s.addExc(delayedFile(DevConstants.JOINED_EXC));
+            s2s.setRangeMap(delayedFile(DevConstants.USERDEV_RANGEMAP));
+            s2s.dependsOn("genSrgs", range);
+            s2s.getOutputs().upToDateWhen(Constants.CALL_FALSE); //Fucking caching.
+            
+            // find all the exc & srg files in the resources.
+            for (File f : project.fileTree(delayedFile(DevConstants.FML_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    s2s.addExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    s2s.addSrg(f);
+            }
+        }
+        
         Zip userDev = makeTask("packageUserDev", Zip.class);
         {
             userDev.setClassifier("userdev");
@@ -453,7 +480,8 @@ public class FmlDevPlugin extends DevBasePlugin
             });
             userDev.from(delayedFile(DevConstants.CHANGELOG));
             userDev.from(delayedZipTree(DevConstants.BINPATCH_TMP), new CopyInto("", "devbinpatches.pack.lzma"));
-            userDev.from(delayedFileTree("{FML_DIR}/src"), new CopyInto("src"));
+            userDev.from(delayedFileTree("{FML_DIR}/src/main/resources"), new CopyInto("src/main/resources"));
+            userDev.from(delayedZipTree(DevConstants.USERDEV_SRG_SRC), new CopyInto("src/main/java"));
             userDev.from(delayedFile(DevConstants.DEOBF_DATA), new CopyInto("src/main/resources/"));
             userDev.from(delayedFile(DevConstants.MERGE_CFG), new CopyInto("conf"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "astyle.cfg", "exceptor.json", "*.csv", "!packages.csv"));
@@ -464,7 +492,7 @@ public class FmlDevPlugin extends DevBasePlugin
             userDev.rename(".+?\\.srg", "packaged.srg");
             userDev.rename(".+?\\.exc", "packaged.exc");
             userDev.setIncludeEmptyDirs(false);
-            userDev.dependsOn("packageUniversal", "zipPatches", "jarClasses");
+            userDev.dependsOn("packageUniversal", "zipPatches", "jarClasses", s2s);
             userDev.setExtension("jar");
         }
         project.getArtifacts().add("archives", userDev);

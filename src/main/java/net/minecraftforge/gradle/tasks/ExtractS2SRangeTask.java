@@ -18,6 +18,7 @@ import net.minecraftforge.srg2source.util.io.ZipInputSupplier;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.internal.AbstractTask;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
@@ -29,6 +30,7 @@ public class ExtractS2SRangeTask extends DefaultTask
     private FileCollection libs;
     private DelayedFile projectFile; // to get classpath from a subproject
     private String projectConfig; // Also for a subProject
+    private boolean includeJar = false; //Include the 'jar' task for subproject.
     
     // stuff defined on the tasks..
     private final List<DelayedFile> in = new LinkedList<DelayedFile>();
@@ -127,6 +129,13 @@ public class ExtractS2SRangeTask extends DefaultTask
         {
             Project proj = BasePlugin.getProject(projectFile.call(), getProject());
             libs = proj.getConfigurations().getByName(projectConfig);
+
+            if (includeJar)
+            {
+                AbstractTask jarTask = (AbstractTask)proj.getTasks().getByName("jar");
+                File compiled = (File)jarTask.property("archivePath");
+                libs = getProject().files(compiled, libs);
+            }
         }
         
         return libs;
@@ -137,9 +146,10 @@ public class ExtractS2SRangeTask extends DefaultTask
         this.libs = libs;
     }
     
-    public void setLibsFromProject(DelayedFile buildscript, String config)
+    public void setLibsFromProject(DelayedFile buildscript, String config, boolean includeJar)
     {
         this.projectFile = buildscript;
         this.projectConfig = config;
+        this.includeJar = includeJar;
     }
 }
