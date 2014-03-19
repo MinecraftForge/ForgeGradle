@@ -12,8 +12,11 @@ import java.util.List;
 import net.minecraftforge.gradle.CopyInto;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedBase;
+import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
+import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
+import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
@@ -250,13 +253,51 @@ public class ForgeDevPlugin extends DevBasePlugin
 
     private void createMiscTasks()
     {
+        DelayedFile rangeMap = delayedFile("{BUILD_DIR}/tmp/rangemap.txt");
+        
+        ExtractS2SRangeTask task = makeTask("extractRange", ExtractS2SRangeTask.class);
+        {
+            task.setLibsFromProject(delayedFile(ECLIPSE_FORGE + "/build.gradle"), "compile", true);
+            task.addIn(delayedFile(ECLIPSE_FORGE_SRC));
+            task.setRangeMap(rangeMap);
+        }
+        
+        ApplyS2STask task6 = makeTask("retroMapSources", ApplyS2STask.class);
+        {
+            task6.setIn(delayedFile(ECLIPSE_FORGE_SRC));
+            task6.setOut(delayedFile(PATCH_DIRTY));
+            task6.addSrg(delayedFile(MCP_2_SRG_SRG));
+            task6.addExc(delayedFile(JOINED_EXC));
+            task6.setRangeMap(rangeMap);
+            task6.dependsOn("genSrgs", task);
+            
+            // find all the exc & srg files in the FML resources.
+            for (File f : project.fileTree(delayedFile(FML_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    task6.addExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    task6.addSrg(f);
+            }
+            
+            // find all the exc & srg files in the FORGE resources.
+            for (File f : project.fileTree(delayedFile(FORGE_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    task6.addExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    task6.addSrg(f);
+            }
+        }
+        
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
         {
             task2.setPatchDir(delayedFile(FORGE_PATCH_DIR));
-            task2.setOriginal(delayedFile(ECLIPSE_CLEAN_SRC));
-            task2.setChanged(delayedFile(ECLIPSE_FORGE_SRC));
+            task2.setOriginal(delayedFile(ZIP_INJECT_FORGE)); // was ECLIPSE_CLEAN_SRC
+            task2.setChanged(delayedFile(PATCH_DIRTY)); // ECLIPSE_FORGE_SRC
             task2.setOriginalPrefix("../src-base/minecraft");
             task2.setChangedPrefix("../src-work/minecraft");
+            task2.dependsOn("retroMapSources");
             task2.setGroup("Forge");
         }
 
