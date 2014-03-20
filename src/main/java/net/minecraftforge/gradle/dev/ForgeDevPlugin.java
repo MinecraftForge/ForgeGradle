@@ -253,51 +253,87 @@ public class ForgeDevPlugin extends DevBasePlugin
 
     private void createMiscTasks()
     {
-        DelayedFile rangeMap = delayedFile("{BUILD_DIR}/tmp/rangemap.txt");
+        DelayedFile rangeMapClean = delayedFile("{BUILD_DIR}/tmp/rangemapCLEAN.txt");
+        DelayedFile rangeMapDirty = delayedFile("{BUILD_DIR}/tmp/rangemapDIRTY.txt");
         
-        ExtractS2SRangeTask task = makeTask("extractRange", ExtractS2SRangeTask.class);
+        ExtractS2SRangeTask extractRange = makeTask("extractRangeForge", ExtractS2SRangeTask.class);
         {
-            task.setLibsFromProject(delayedFile(ECLIPSE_FORGE + "/build.gradle"), "compile", true);
-            task.addIn(delayedFile(ECLIPSE_FORGE_SRC));
-            task.setRangeMap(rangeMap);
+            extractRange.setLibsFromProject(delayedFile(ECLIPSE_FORGE + "/build.gradle"), "compile", true);
+            extractRange.addIn(delayedFile(ECLIPSE_FORGE_SRC));
+            extractRange.setRangeMap(rangeMapDirty);
         }
         
-        ApplyS2STask task6 = makeTask("retroMapSources", ApplyS2STask.class);
+        ApplyS2STask applyS2S = makeTask("retroMapForge", ApplyS2STask.class);
         {
-            task6.setIn(delayedFile(ECLIPSE_FORGE_SRC));
-            task6.setOut(delayedFile(PATCH_DIRTY));
-            task6.addSrg(delayedFile(MCP_2_SRG_SRG));
-            task6.addExc(delayedFile(JOINED_EXC));
-            task6.setRangeMap(rangeMap);
-            task6.dependsOn("genSrgs", task);
+            applyS2S.setIn(delayedFile(ECLIPSE_FORGE_SRC));
+            applyS2S.setOut(delayedFile(PATCH_DIRTY));
+            applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
+            applyS2S.addExc(delayedFile(JOINED_EXC));
+            applyS2S.setRangeMap(rangeMapDirty);
+            applyS2S.dependsOn("genSrgs", extractRange);
             
             // find all the exc & srg files in the FML resources.
             for (File f : project.fileTree(delayedFile(FML_RESOURCES).call()).getFiles())
             {
                 if(f.getPath().endsWith(".exc"))
-                    task6.addExc(f);
+                    applyS2S.addExc(f);
                 else if(f.getPath().endsWith(".srg"))
-                    task6.addSrg(f);
+                    applyS2S.addSrg(f);
             }
             
             // find all the exc & srg files in the FORGE resources.
             for (File f : project.fileTree(delayedFile(FORGE_RESOURCES).call()).getFiles())
             {
                 if(f.getPath().endsWith(".exc"))
-                    task6.addExc(f);
+                    applyS2S.addExc(f);
                 else if(f.getPath().endsWith(".srg"))
-                    task6.addSrg(f);
+                    applyS2S.addSrg(f);
+            }
+        }
+        
+        extractRange = makeTask("extractRangeClean", ExtractS2SRangeTask.class);
+        {
+            extractRange.setLibsFromProject(delayedFile(ECLIPSE_CLEAN + "/build.gradle"), "compile", true);
+            extractRange.addIn(delayedFile(ECLIPSE_CLEAN_SRC));
+            extractRange.setRangeMap(rangeMapClean);
+        }
+        
+        applyS2S = makeTask("retroMapClean", ApplyS2STask.class);
+        {
+            applyS2S.setIn(delayedFile(ZIP_RENAMED_FORGE));
+            applyS2S.setOut(delayedFile(PATCH_CLEAN));
+            applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
+            applyS2S.addExc(delayedFile(JOINED_EXC));
+            applyS2S.setRangeMap(rangeMapClean);
+            applyS2S.dependsOn("genSrgs", extractRange);
+            
+            // find all the exc & srg files in the FML resources.
+            for (File f : project.fileTree(delayedFile(FML_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    applyS2S.addExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    applyS2S.addSrg(f);
+            }
+            
+            // find all the exc & srg files in the FORGE resources.
+            for (File f : project.fileTree(delayedFile(FORGE_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    applyS2S.addExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    applyS2S.addSrg(f);
             }
         }
         
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
         {
             task2.setPatchDir(delayedFile(FORGE_PATCH_DIR));
-            task2.setOriginal(delayedFile(ZIP_INJECT_FORGE)); // was ECLIPSE_CLEAN_SRC
+            task2.setOriginal(delayedFile(PATCH_CLEAN)); // was ECLIPSE_CLEAN_SRC
             task2.setChanged(delayedFile(PATCH_DIRTY)); // ECLIPSE_FORGE_SRC
             task2.setOriginalPrefix("../src-base/minecraft");
             task2.setChangedPrefix("../src-work/minecraft");
-            task2.dependsOn("retroMapSources");
+            task2.dependsOn("retroMapForge", "retroMapClean");
             task2.setGroup("Forge");
         }
 

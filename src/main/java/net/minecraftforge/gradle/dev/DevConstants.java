@@ -73,7 +73,7 @@ final class DevConstants
     static final String USERDEV_SRG_SRC    = "{BUILD_DIR}/tmp/user_dev_srg_src.zip";
     
     // necesary for patch generation
-    //static final String PATCH_CLEAN        = "{BUILD_DIR}/patchNeeded/clean";
+    static final String PATCH_CLEAN        = "{BUILD_DIR}/tmp/clean-path-base.zip";
     static final String PATCH_DIRTY        = "{BUILD_DIR}/tmp/dirty-patch-base.zip";
     static final String REMAPPED_CLEAN     = "{BUILD_DIR}/tmp/clean.jar";
     static final String REMAPPED_DIRTY     = "{BUILD_DIR}/tmp/dirty.jar";
