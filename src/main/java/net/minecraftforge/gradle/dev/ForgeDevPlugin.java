@@ -127,26 +127,26 @@ public class ForgeDevPlugin extends DevBasePlugin
             task5.dependsOn("fmlPatchJar", "compressDeobfData", "createVersionPropertiesFML");
         }
 
+        task4 = makeTask("forgePatchJar", PatchJarTask.class);
+        {
+            task4.setInJar(delayedFile(ZIP_INJECT_FORGE));
+            task4.setOutJar(delayedFile(ZIP_PATCHED_FORGE));
+            task4.setInPatches(delayedFile(FORGE_PATCH_DIR));
+            task4.setDoesCache(false);
+            task4.setMaxFuzz(2);
+            task4.dependsOn("fmlInjectJar");
+        }
+        
         RemapSourcesTask task6 = makeTask("remapSourcesJar", RemapSourcesTask.class);
         {
-            task6.setInJar(delayedFile(ZIP_INJECT_FORGE));
+            task6.setInJar(delayedFile(ZIP_PATCHED_FORGE));
             task6.setOutJar(delayedFile(ZIP_RENAMED_FORGE));
             task6.setMethodsCsv(delayedFile(METHODS_CSV));
             task6.setFieldsCsv(delayedFile(FIELDS_CSV));
             task6.setParamsCsv(delayedFile(PARAMS_CSV));
             task6.setDoesCache(false);
-            task6.setDoesJavadocs(false);
-            task6.dependsOn("fmlInjectJar");
-        }
-
-        task4 = makeTask("forgePatchJar", PatchJarTask.class);
-        {
-            task4.setInJar(delayedFile(ZIP_RENAMED_FORGE));
-            task4.setOutJar(delayedFile(ZIP_PATCHED_FORGE));
-            task4.setInPatches(delayedFile(FORGE_PATCH_DIR));
-            task4.setDoesCache(false);
-            task4.setMaxFuzz(2);
-            task4.dependsOn("remapSourcesJar");
+            task6.setNoJavadocs();
+            task6.dependsOn("forgePatchJar");
         }
     }
 
@@ -173,7 +173,7 @@ public class ForgeDevPlugin extends DevBasePlugin
         task = makeTask("extractForgeResources", ExtractTask.class);
         {
             task.exclude(JAVA_FILES);
-            task.from(delayedFile(ZIP_PATCHED_FORGE));
+            task.from(delayedFile(ZIP_RENAMED_FORGE));
             task.into(delayedFile(ECLIPSE_FORGE_RES));
             task.dependsOn("forgePatchJar", "extractWorkspace");
         }
@@ -181,7 +181,7 @@ public class ForgeDevPlugin extends DevBasePlugin
         task = makeTask("extractForgeSources", ExtractTask.class);
         {
             task.include(JAVA_FILES);
-            task.from(delayedFile(ZIP_PATCHED_FORGE));
+            task.from(delayedFile(ZIP_RENAMED_FORGE));
             task.into(delayedFile(ECLIPSE_FORGE_SRC));
             task.dependsOn("extractForgeResources");
         }
@@ -294,7 +294,7 @@ public class ForgeDevPlugin extends DevBasePlugin
         extractRange = makeTask("extractRangeClean", ExtractS2SRangeTask.class);
         {
             extractRange.setLibsFromProject(delayedFile(ECLIPSE_CLEAN + "/build.gradle"), "compile", true);
-            extractRange.addIn(delayedFile(ECLIPSE_CLEAN_SRC));
+            extractRange.addIn(delayedFile(ZIP_RENAMED_FORGE));
             extractRange.setRangeMap(rangeMapClean);
         }
         
