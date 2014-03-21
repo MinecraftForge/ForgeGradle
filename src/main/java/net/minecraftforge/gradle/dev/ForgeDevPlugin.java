@@ -126,6 +126,18 @@ public class ForgeDevPlugin extends DevBasePlugin
 
             task5.dependsOn("fmlPatchJar", "compressDeobfData", "createVersionPropertiesFML");
         }
+        
+        RemapSourcesTask remapTask = makeTask("remapCleanJar", RemapSourcesTask.class);
+        {
+            remapTask.setInJar(delayedFile(ZIP_INJECT_FORGE));
+            remapTask.setOutJar(delayedFile(REMAPPED_CLEAN));
+            remapTask.setMethodsCsv(delayedFile(DevConstants.METHODS_CSV));
+            remapTask.setFieldsCsv(delayedFile(DevConstants.FIELDS_CSV));
+            remapTask.setParamsCsv(delayedFile(DevConstants.PARAMS_CSV));
+            remapTask.setDoesCache(false);
+            remapTask.setNoJavadocs();
+            remapTask.dependsOn("fmlInjectJar");
+        }
 
         task4 = makeTask("forgePatchJar", PatchJarTask.class);
         {
@@ -137,16 +149,16 @@ public class ForgeDevPlugin extends DevBasePlugin
             task4.dependsOn("fmlInjectJar");
         }
         
-        RemapSourcesTask task6 = makeTask("remapSourcesJar", RemapSourcesTask.class);
+        remapTask = makeTask("remapSourcesJar", RemapSourcesTask.class);
         {
-            task6.setInJar(delayedFile(ZIP_PATCHED_FORGE));
-            task6.setOutJar(delayedFile(ZIP_RENAMED_FORGE));
-            task6.setMethodsCsv(delayedFile(METHODS_CSV));
-            task6.setFieldsCsv(delayedFile(FIELDS_CSV));
-            task6.setParamsCsv(delayedFile(PARAMS_CSV));
-            task6.setDoesCache(false);
-            task6.setNoJavadocs();
-            task6.dependsOn("forgePatchJar");
+            remapTask.setInJar(delayedFile(ZIP_PATCHED_FORGE));
+            remapTask.setOutJar(delayedFile(ZIP_RENAMED_FORGE));
+            remapTask.setMethodsCsv(delayedFile(METHODS_CSV));
+            remapTask.setFieldsCsv(delayedFile(FIELDS_CSV));
+            remapTask.setParamsCsv(delayedFile(PARAMS_CSV));
+            remapTask.setDoesCache(false);
+            remapTask.setNoJavadocs();
+            remapTask.dependsOn("forgePatchJar");
         }
     }
 
@@ -156,16 +168,16 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             task.exclude(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
-            task.from(delayedFile(ZIP_RENAMED_FORGE));
+            task.from(delayedFile(REMAPPED_CLEAN));
             task.into(delayedFile(ECLIPSE_CLEAN_RES));
-            task.dependsOn("extractWorkspace", "remapSourcesJar");
+            task.dependsOn("extractWorkspace", "remapCleanJar");
         }
 
         task = makeTask("extractMcSource", ExtractTask.class);
         {
             task.include(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
-            task.from(delayedFile(ZIP_RENAMED_FORGE));
+            task.from(delayedFile(REMAPPED_CLEAN));
             task.into(delayedFile(ECLIPSE_CLEAN_SRC));
             task.dependsOn("extractMcResources");
         }
@@ -175,7 +187,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task.exclude(JAVA_FILES);
             task.from(delayedFile(ZIP_RENAMED_FORGE));
             task.into(delayedFile(ECLIPSE_FORGE_RES));
-            task.dependsOn("forgePatchJar", "extractWorkspace");
+            task.dependsOn("remapSourcesJar", "extractWorkspace");
         }
 
         task = makeTask("extractForgeSources", ExtractTask.class);
@@ -294,13 +306,13 @@ public class ForgeDevPlugin extends DevBasePlugin
         extractRange = makeTask("extractRangeClean", ExtractS2SRangeTask.class);
         {
             extractRange.setLibsFromProject(delayedFile(ECLIPSE_CLEAN + "/build.gradle"), "compile", true);
-            extractRange.addIn(delayedFile(ZIP_RENAMED_FORGE));
+            extractRange.addIn(delayedFile(REMAPPED_CLEAN));
             extractRange.setRangeMap(rangeMapClean);
         }
         
         applyS2S = makeTask("retroMapClean", ApplyS2STask.class);
         {
-            applyS2S.addIn(delayedFile(ZIP_RENAMED_FORGE));
+            applyS2S.addIn(delayedFile(REMAPPED_CLEAN));
             applyS2S.setOut(delayedFile(PATCH_CLEAN));
             applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
             applyS2S.addExc(delayedFile(JOINED_EXC));

@@ -101,16 +101,16 @@ public class FmlDevPlugin extends DevBasePlugin
             task3.dependsOn("downloadMcpTools", "deobfuscateJar");
         }
         
-        RemapSourcesTask task4 = makeTask("remapCleanJar", RemapSourcesTask.class);
+        RemapSourcesTask remapTask = makeTask("remapCleanJar", RemapSourcesTask.class);
         {
-            task4.setInJar(delayedFile(DevConstants.ZIP_DECOMP_FML));
-            task4.setOutJar(delayedFile(DevConstants.REMAPPED_CLEAN));
-            task4.setMethodsCsv(delayedFile(DevConstants.METHODS_CSV));
-            task4.setFieldsCsv(delayedFile(DevConstants.FIELDS_CSV));
-            task4.setParamsCsv(delayedFile(DevConstants.PARAMS_CSV));
-            task4.setDoesCache(false);
-            task4.setNoJavadocs();
-            task4.dependsOn("decompile");
+            remapTask.setInJar(delayedFile(DevConstants.ZIP_DECOMP_FML));
+            remapTask.setOutJar(delayedFile(DevConstants.REMAPPED_CLEAN));
+            remapTask.setMethodsCsv(delayedFile(DevConstants.METHODS_CSV));
+            remapTask.setFieldsCsv(delayedFile(DevConstants.FIELDS_CSV));
+            remapTask.setParamsCsv(delayedFile(DevConstants.PARAMS_CSV));
+            remapTask.setDoesCache(false);
+            remapTask.setNoJavadocs();
+            remapTask.dependsOn("decompile");
         }
 
         PatchJarTask task5 = makeTask("fmlPatchJar", PatchJarTask.class);
@@ -123,16 +123,16 @@ public class FmlDevPlugin extends DevBasePlugin
             task5.dependsOn("decompile");
         }
         
-        RemapSourcesTask task6 = makeTask("remapDirtyJar", RemapSourcesTask.class);
+        remapTask = makeTask("remapDirtyJar", RemapSourcesTask.class);
         {
-            task6.setInJar(delayedFile(DevConstants.ZIP_PATCHED_FML));
-            task6.setOutJar(delayedFile(DevConstants.REMAPPED_DIRTY));
-            task6.setMethodsCsv(delayedFile(DevConstants.METHODS_CSV));
-            task6.setFieldsCsv(delayedFile(DevConstants.FIELDS_CSV));
-            task6.setParamsCsv(delayedFile(DevConstants.PARAMS_CSV));
-            task6.setDoesCache(false);
-            task6.setNoJavadocs();
-            task6.dependsOn("fmlPatchJar");
+            remapTask.setInJar(delayedFile(DevConstants.ZIP_PATCHED_FML));
+            remapTask.setOutJar(delayedFile(DevConstants.REMAPPED_DIRTY));
+            remapTask.setMethodsCsv(delayedFile(DevConstants.METHODS_CSV));
+            remapTask.setFieldsCsv(delayedFile(DevConstants.FIELDS_CSV));
+            remapTask.setParamsCsv(delayedFile(DevConstants.PARAMS_CSV));
+            remapTask.setDoesCache(false);
+            remapTask.setNoJavadocs();
+            remapTask.dependsOn("fmlPatchJar");
         }
     }
 
