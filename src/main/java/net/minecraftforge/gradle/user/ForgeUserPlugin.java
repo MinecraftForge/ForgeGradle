@@ -114,7 +114,7 @@ public class ForgeUserPlugin extends UserBasePlugin
     {
         final String prefix = isClean ? FORGE_CACHE : DIRTY_DIR;
         DelayedFile fmled = delayedFile(prefix + FORGE_FMLED);
-        DelayedFile fmlInjected = delayedFile(prefix + FORGE_FMLINJECTED);
+        DelayedFile injected = delayedFile(prefix + FORGE_FMLINJECTED);
         DelayedFile remapped = delayedFile(prefix + FORGE_REMAPPED);
         DelayedFile forged = delayedFile(prefix + FORGE_FORGED);
         DelayedFile forgeJavaDocced = delayedFile(prefix + FORGE_JAVADOCED);
@@ -131,7 +131,7 @@ public class ForgeUserPlugin extends UserBasePlugin
             fmlPatches.setInPatches(delayedFile(FML_PATCHES_ZIP));
         }
 
-        final Zip inject = makeTask("addFmlSources", Zip.class);
+        final Zip inject = makeTask("addSources", Zip.class);
         {
             inject.getOutputs().upToDateWhen(new Closure<Boolean>(null)
             {
@@ -147,29 +147,29 @@ public class ForgeUserPlugin extends UserBasePlugin
             inject.from(delayedFile(SRC_DIR));
             inject.from(delayedFile(RES_DIR));
 
-            File injectFile = fmlInjected.call();
+            File injectFile = injected.call();
             inject.setDestinationDir(injectFile.getParentFile());
             inject.setArchiveName(injectFile.getName());
+        }
+        
+        PatchJarTask forgePatches = makeTask("doForgePatches", PatchJarTask.class);
+        {
+            forgePatches.dependsOn(inject);
+            forgePatches.setInJar(injected);
+            forgePatches.setOutJar(forged);
+            forgePatches.setInPatches(delayedFile(FORGE_PATCHES_ZIP));
         }
 
         // Remap to MCP for forge patching -- no javadoc here
         RemapSourcesTask remap = makeTask("remapJar", RemapSourcesTask.class);
         {
             remap.dependsOn(inject);
-            remap.setInJar(fmlInjected);
+            remap.setInJar(forged);
             remap.setOutJar(remapped);
             remap.setFieldsCsv(delayedFile(FIELD_CSV, FIELD_CSV_OLD));
             remap.setMethodsCsv(delayedFile(METHOD_CSV, METHOD_CSV_OLD));
             remap.setParamsCsv(delayedFile(PARAM_CSV, PARAM_CSV_OLD));
-            remap.setDoesJavadocs(false);
-        }
-
-        PatchJarTask forgePatches = makeTask("doForgePatches", PatchJarTask.class);
-        {
-            forgePatches.dependsOn(remap);
-            forgePatches.setInJar(remapped);
-            forgePatches.setOutJar(forged);
-            forgePatches.setInPatches(delayedFile(FORGE_PATCHES_ZIP));
+            remap.setDoesJavadocs(true);
         }
 
         // Post-inject javadocs
