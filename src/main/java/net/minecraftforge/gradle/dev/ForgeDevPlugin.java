@@ -265,7 +265,7 @@ public class ForgeDevPlugin extends DevBasePlugin
         
         ApplyS2STask applyS2S = makeTask("retroMapForge", ApplyS2STask.class);
         {
-            applyS2S.setIn(delayedFile(ECLIPSE_FORGE_SRC));
+            applyS2S.addIn(delayedFile(ECLIPSE_FORGE_SRC));
             applyS2S.setOut(delayedFile(PATCH_DIRTY));
             applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
             applyS2S.addExc(delayedFile(JOINED_EXC));
@@ -300,7 +300,7 @@ public class ForgeDevPlugin extends DevBasePlugin
         
         applyS2S = makeTask("retroMapClean", ApplyS2STask.class);
         {
-            applyS2S.setIn(delayedFile(ZIP_RENAMED_FORGE));
+            applyS2S.addIn(delayedFile(ZIP_RENAMED_FORGE));
             applyS2S.setOut(delayedFile(PATCH_CLEAN));
             applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
             applyS2S.addExc(delayedFile(JOINED_EXC));
@@ -563,6 +563,44 @@ public class ForgeDevPlugin extends DevBasePlugin
             javadoc.dependsOn("genJavadocs");
         }
         project.getArtifacts().add("archives", javadoc);
+        
+        ExtractS2SRangeTask range = makeTask("userDevExtractRange", ExtractS2SRangeTask.class);
+        {
+            range.setLibsFromProject(delayedFile(DevConstants.ECLIPSE_FORGE + "/build.gradle"), "compile", true);
+            range.addIn(delayedFile(DevConstants.FML_SOURCES));
+            range.addIn(delayedFile(DevConstants.FORGE_SOURCES));
+            range.setRangeMap(delayedFile(DevConstants.USERDEV_RANGEMAP));
+        }
+        
+        ApplyS2STask s2s = makeTask("userDevSrgSrc", ApplyS2STask.class);
+        {
+            s2s.addIn(delayedFile(DevConstants.FORGE_SOURCES));
+            s2s.addIn(delayedFile(DevConstants.FML_SOURCES));
+            s2s.setOut(delayedFile(DevConstants.USERDEV_SRG_SRC));
+            s2s.addSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
+            s2s.addExc(delayedFile(DevConstants.JOINED_EXC));
+            s2s.setRangeMap(delayedFile(DevConstants.USERDEV_RANGEMAP));
+            s2s.dependsOn("genSrgs", range);
+            s2s.getOutputs().upToDateWhen(Constants.CALL_FALSE); //Fucking caching.
+            
+            // find all the exc & srg files in the resources.
+            for (File f : project.fileTree(delayedFile(DevConstants.FML_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    s2s.addExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    s2s.addSrg(f);
+            }
+            
+            // find all the exc & srg files in the resources.
+            for (File f : project.fileTree(delayedFile(DevConstants.FORGE_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    s2s.addExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    s2s.addSrg(f);
+            }
+        }
 
         Zip userDev = makeTask("packageUserDev", Zip.class);
         {
@@ -588,8 +626,9 @@ public class ForgeDevPlugin extends DevBasePlugin
             });
             userDev.from(delayedFile(CHANGELOG));
             userDev.from(delayedZipTree(BINPATCH_TMP), new CopyInto("", "devbinpatches.pack.lzma"));
-            userDev.from(delayedFileTree("{FML_DIR}/src"), new CopyInto("src"));
-            userDev.from(delayedFileTree("src"), new CopyInto("src"));
+            userDev.from(delayedFileTree("{FML_DIR}/src/main/resources"), new CopyInto("src/main/resources"));
+            userDev.from(delayedFileTree("src/main/resources"), new CopyInto("src/main/resources"));
+            userDev.from(delayedZipTree(DevConstants.USERDEV_SRG_SRC), new CopyInto("src/main/java"));
             userDev.from(delayedFile(DEOBF_DATA), new CopyInto("src/main/resources/"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "astyle.cfg", "exceptor.json", "*.csv", "!packages.csv"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}/patches"), new CopyInto("conf"));
@@ -601,7 +640,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             userDev.rename(".+?\\.srg", "packaged.srg");
             userDev.rename(".+?\\.exc", "packaged.exc");
             userDev.setIncludeEmptyDirs(false);
-            userDev.dependsOn("packageUniversal", "zipFmlPatches", "zipForgePatches", "jarClasses", "createVersionPropertiesFML");
+            userDev.dependsOn("packageUniversal", "zipFmlPatches", "zipForgePatches", "jarClasses", "createVersionPropertiesFML", s2s);
             userDev.setExtension("jar");
         }
         project.getArtifacts().add("archives", userDev);

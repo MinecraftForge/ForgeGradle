@@ -253,7 +253,7 @@ public class FmlDevPlugin extends DevBasePlugin
         
         ApplyS2STask task4 = makeTask("retroMapSources", ApplyS2STask.class);
         {
-            task4.setIn(delayedFile(DevConstants.ECLIPSE_FML_SRC));
+            task4.addIn(delayedFile(DevConstants.ECLIPSE_FML_SRC));
             task4.setOut(delayedFile(DevConstants.PATCH_DIRTY));
             task4.addSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
             task4.addExc(delayedFile(DevConstants.JOINED_EXC));
@@ -443,7 +443,7 @@ public class FmlDevPlugin extends DevBasePlugin
         
         ApplyS2STask s2s = makeTask("userDevSrgSrc", ApplyS2STask.class);
         {
-            s2s.setIn(delayedFile(DevConstants.FML_SOURCES));
+            s2s.addIn(delayedFile(DevConstants.FML_SOURCES));
             s2s.setOut(delayedFile(DevConstants.USERDEV_SRG_SRC));
             s2s.addSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
             s2s.addExc(delayedFile(DevConstants.JOINED_EXC));

@@ -6,6 +6,7 @@ import java.io.PrintStream;
 import java.util.LinkedList;
 import java.util.List;
 
+import net.minecraftforge.gradle.SequencedInputSupplier;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.srg2source.rangeapplier.RangeApplier;
@@ -37,39 +38,41 @@ public class ApplyS2STask extends DefaultTask
     private DelayedFile rangeMap;
     
     // stuff defined on the tasks..
-    private DelayedFile in;
+    private final List<DelayedFile> in = new LinkedList<DelayedFile>();
     private DelayedFile out;
     
     @TaskAction
     public void doTask() throws IOException
     {
-        File in = getIn();
-        File out = this.out == null ? in : getOut();
+        List<File> ins = getIn();
+        File out = getOut();
         File rangemap = getRangeMap();
         File rangelog = File.createTempFile("rangelog", ".txt", this.getTemporaryDir());
         FileCollection srg = getSrgs();
         FileCollection exc = getExcs();
         
         InputSupplier inSup;
+        
+        if (ins.size() == 0)
+            return; // no input.
+        else if (ins.size() == 1)
+        {
+            // just 1 supplier.
+            inSup = getInput(ins.get(0));
+        }
+        else
+        {
+            // multinput
+            inSup = new SequencedInputSupplier();
+            for (File f : ins)
+                ((SequencedInputSupplier) inSup).add(getInput(f));
+        }
+        
         OutputSupplier outSup;
-
-        if (in.getPath().endsWith(".jar") || in.getPath().endsWith(".zip"))
-        {
-            inSup = new ZipInputSupplier();
-            ((ZipInputSupplier)inSup).readZip(in);
-        }
+        if (ins.size() == 1 && ins.get(0).equals(out) && ins instanceof FolderSupplier)
+            outSup = (OutputSupplier) inSup;
         else
-        {
-            inSup = new FolderSupplier(in);
-        }
-        if (out.getPath().endsWith(".jar") || out.getPath().endsWith(".zip"))
-        {
-            outSup = new ZipOutputSupplier(out);
-        }
-        else
-        {
-            outSup = new FolderSupplier(out);
-        }
+            outSup = getOutput(out);
         
         getLogger().lifecycle("remapping source...");
         applyRangeMap(inSup, outSup, srg, exc, rangemap, rangelog);
@@ -77,6 +80,32 @@ public class ApplyS2STask extends DefaultTask
         
         inSup.close();
         outSup.close();
+    }
+    
+    private InputSupplier getInput(File f) throws IOException
+    {
+        if (f.isDirectory())
+            return new FolderSupplier(f);
+        else if (f.getPath().endsWith(".jar") || f.getPath().endsWith(".zip"))
+        {
+            ZipInputSupplier supp = new ZipInputSupplier();
+            supp.readZip(f);
+            return supp;
+        }
+        else
+            throw new IllegalArgumentException("Can only make suppliers out of directories and zips right now!");
+    }
+    
+    private OutputSupplier getOutput(File f) throws IOException
+    {
+        if (f.isDirectory())
+            return new FolderSupplier(f);
+        else if (f.getPath().endsWith(".jar") || f.getPath().endsWith(".zip"))
+        {
+            return new ZipOutputSupplier(f);
+        }
+        else
+            throw new IllegalArgumentException("Can only make suppliers out of directories and zips right now!");
     }
     
     private void applyRangeMap(InputSupplier inSup, OutputSupplier outSup, FileCollection srg, FileCollection exc, File rangeMap, File rangeLog) throws IOException
@@ -105,25 +134,24 @@ public class ApplyS2STask extends DefaultTask
         
         app.remapSources(inSup, outSup, rangeMap, false);
     }
-
+    
     @InputFiles
     public FileCollection getIns()
     {
-        File inFile = getIn();
-        if (inFile.isDirectory())
-            return getProject().fileTree(inFile);
-        else
-            return getProject().files(inFile);
+        return getProject().files(in);
     }
     
-    public File getIn()
+    public List<File> getIn()
     {
-        return in.call();
+        List<File> files = new LinkedList<File>();
+        for (DelayedFile f : in)
+            files.add(f.call());
+        return files;
     }
 
-    public void setIn(DelayedFile in)
+    public void addIn(DelayedFile in)
     {
-        this.in = in;
+        this.in.add(in);
     }
     
     @OutputFiles
@@ -138,10 +166,7 @@ public class ApplyS2STask extends DefaultTask
 
     public File getOut()
     {
-        if (out == null)
-            return getIn();
-        else
-            return out.call();
+        return out.call();
     }
 
     public void setOut(DelayedFile out)
