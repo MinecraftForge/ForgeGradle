@@ -5,10 +5,13 @@ import groovy.lang.Closure;
 import java.io.File;
 
 import joptsimple.internal.Strings;
+import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.user.UserConstants;
 
 import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.Project;
+
 import com.google.common.io.Files;
 
 public class ArtifactSpec
@@ -20,6 +23,8 @@ public class ArtifactSpec
     private Object  extension;
     private Object  archiveName;
     private Object  classpath;
+    
+    protected Object  srg = null;
 
     private Project project;
 
@@ -146,16 +151,37 @@ public class ArtifactSpec
         this.archiveName = archiveName;
         archiveSet = true;
     }
+    
+    public Object getSrg()
+    {
+        return srg;
+    }
+    
+    public void setSrg(Object srg)
+    {
+        this.srg = srg;
+    }
+    
+    public void setSrgSrg()
+    {
+        this.srg = new DelayedFile(project, UserConstants.REOBF_SRG);
+    }
+    
+    public void setSrgMcp()
+    {
+        this.srg = new DelayedFile(project, UserConstants.REOBF_NOTCH_SRG);
+    }
 
     protected void resolve()
     {
 
         // resolve fields
-        baseName = resolve(baseName, true);
-        appendix = resolve(appendix, true);
-        version = resolve(version, true);
-        classifier = resolve(classifier, true);
-        extension = resolve(extension, true);
+        baseName = resolveString(baseName);
+        appendix = resolveString(appendix);
+        version = resolveString(version);
+        classifier = resolveString(classifier);
+        extension = resolveString(extension);
+        srg = resolveFile(srg);
 
         // resolve classpath
         if (classpath != null)
@@ -193,17 +219,21 @@ public class ArtifactSpec
     }
 
     @SuppressWarnings("unchecked")
-    private Object resolve(Object obj, boolean isString)
+    private Object resolveString(Object obj)
     {
-        if (obj instanceof Closure)
-            obj = ((Closure<Object>) obj).call();
-        
         if (obj == null)
             return "";
-
-        if (isString)
-            obj = obj.toString();
-
-        return obj;
+        else if (obj instanceof Closure)
+            return resolveString(((Closure<Object>) obj).call());
+        else
+            return obj.toString();
+    }
+    
+    private Object resolveFile(Object obj)
+    {
+        if (obj == null)
+            return null;
+        else
+            return project.file(obj);
     }
 }

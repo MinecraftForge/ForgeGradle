@@ -113,7 +113,7 @@ public abstract class CachedTask extends DefaultTask
 
                         if (!calcMD5.equals(foundMD5))
                         {
-                            getProject().getLogger().error(" Corrupted Cache!");
+                            getProject().getLogger().info(" Corrupted Cache!");
                             file.delete();
                             getHashFile(file).delete();
                             return true;

@@ -88,7 +88,9 @@ public class DownloadAssetsTask extends DefaultTask
         if (errored)
         {
             // CRASH!
-            throw new RuntimeException("Something went wrong with the Assets downloading!");
+            getLogger().error("Something went wrong with the assets downloading!");
+            this.setDidWork(false);
+            return;
         }
     }
 

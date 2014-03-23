@@ -188,6 +188,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         Delete clearCache = makeTask("cleanCache", Delete.class);
         {
             clearCache.delete(delayedFile("{CACHE_DIR}/minecraft"));
+            clearCache.setGroup("ForgeGradle");
+            clearCache.setDescription("Cleares the ForgeGradle cache. DONT RUN THIS unless you want a fresh start, or the dev tells you to.");
         }
     }
 

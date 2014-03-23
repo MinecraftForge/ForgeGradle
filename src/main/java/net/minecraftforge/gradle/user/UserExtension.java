@@ -22,7 +22,7 @@ public class UserExtension extends BaseExtension
     
     private String apiVersion;
     private ArrayList<Object> ats = new ArrayList<Object>();
-    private HashMap<String, String> replacements = new HashMap<String, String>();
+    private HashMap<String, Object> replacements = new HashMap<String, Object>();
     private ArrayList<String> includes = new ArrayList<String>();
     protected boolean isDecomp = false;
     
@@ -54,7 +54,7 @@ public class UserExtension extends BaseExtension
     
     public void replace(Object token, Object replacement)
     {
-        replacements.put(token.toString(), replacement.toString());
+        replacements.put(token.toString(), replacement);
     }
     
     public void replace(Map<Object, Object> map)
@@ -65,7 +65,7 @@ public class UserExtension extends BaseExtension
         }
     }
     
-    public Map<String, String> getReplacements()
+    public Map<String, Object> getReplacements()
     {
         return replacements;
     }

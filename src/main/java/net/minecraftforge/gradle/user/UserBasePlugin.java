@@ -1,7 +1,12 @@
 package net.minecraftforge.gradle.user;
 
-import static net.minecraftforge.gradle.common.Constants.*;
+import static net.minecraftforge.gradle.common.Constants.ASSETS;
+import static net.minecraftforge.gradle.common.Constants.FERNFLOWER;
+import static net.minecraftforge.gradle.common.Constants.JAR_CLIENT_FRESH;
+import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
+import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_FRESH;
 import static net.minecraftforge.gradle.user.UserConstants.*;
+
 import groovy.lang.Closure;
 import groovy.util.Node;
 import groovy.util.XmlParser;
@@ -44,6 +49,7 @@ import org.gradle.api.Task;
 import org.gradle.api.XmlProvider;
 import org.gradle.api.artifacts.Configuration.State;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.execution.TaskExecutionGraph;
 import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -72,6 +78,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 {
     private boolean hasApplied = false;
 
+    @SuppressWarnings("serial")
     @Override
     public void applyPlugin()
     {
@@ -89,16 +96,49 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 
         Task task = makeTask("setupCIWorkspace", DefaultTask.class);
         task.dependsOn("genSrgs", "deobfBinJar");
+        task.setDescription("Sets up the bare minimum to build a minecraft mod. Idea for CI servers");
         task.setGroup("ForgeGradle");
 
         task = makeTask("setupDevWorkspace", DefaultTask.class);
         task.dependsOn("genSrgs", "deobfBinJar", "copyAssets", "extractNatives");
+        task.setDescription("CIWorkspace + natives and assets to run and test Minecraft");
         task.setGroup("ForgeGradle");
 
         task = makeTask("setupDecompWorkspace", DefaultTask.class);
+        task.setDescription("DevWorkspace + the deobfuscated Minecraft source linked as a source jar.");
         task.setGroup("ForgeGradle");
 
         project.getTasks().getByName("reobf").dependsOn("genSrgs");
+        
+        // stop people screwing stuff up.
+        project.getGradle().getTaskGraph().whenReady(new Closure<Object>(this, null) {
+            @Override
+            public Object call()
+            {
+                TaskExecutionGraph graph = project.getGradle().getTaskGraph();
+                String path = project.getPath();
+                
+                boolean hasSetup = graph.hasTask(path + "setupCIWorkspace") || graph.hasTask(path + "setupDecompWorkspace") || graph.hasTask(path + "setupDevWorkspace"); 
+                boolean hasBuild = graph.hasTask(path + "eclipse") || graph.hasTask(path + "ideaModule"); 
+                
+                if (hasSetup && hasBuild)
+                    throw new RuntimeException("You're doing it wrong. You are running a setup task and an IDE task in the same command.");
+                
+                return null;
+            }
+            
+            @Override
+            public Object call(Object obj)
+            {
+                return call();
+            }
+            
+            @Override
+            public Object call(Object... obj)
+            {
+                return call();
+            }
+        });
     }
 
     private void checkDecompStatus()
@@ -179,7 +219,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         {
             ReobfTask task = makeTask("reobf", ReobfTask.class);
             task.setExceptorCfg(delayedFile(PACKAGED_EXC));
-            task.setInSrg(delayedFile(REOBF_SRG));
+            task.setSrg(delayedFile(REOBF_SRG));
             task.reobf(project.getTasks().getByName("jar"), new Action<ArtifactSpec>()
             {
                 @Override
@@ -226,28 +266,41 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         doPostDecompTasks(clean, decompOut);
         createMcModuleDep(clean, project.getDependencies(), CONFIG);
         
+        // get sourceSet
+        JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+        SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        
         JavaExec exec = makeTask("runClient", JavaExec.class);
         {
-        	exec.classpath(project.getConfigurations().getByName("runtime"));
+        	exec.classpath(main.getRuntimeClasspath());
+        	exec.classpath(main.getOutput());
         	exec.setMain("net.minecraft.launchwrapper.Launch");
         	exec.jvmArgs("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
-        	project.getLogger().lifecycle(delayedFile(NATIVES_DIR).call().getAbsolutePath());
         	exec.jvmArgs("-Djava.library.path=" + delayedFile(NATIVES_DIR).call().getAbsolutePath());
         	exec.args("--version 1.7", "--tweakClass", "cpw.mods.fml.common.launcher.FMLTweaker", "--username=ForgeDevName", "--accessToken", "FML");
         	exec.setWorkingDir(delayedFile("{ASSET_DIR}").call().getParentFile());
         	exec.setStandardOutput(System.out);
         	exec.setErrorOutput(System.err);
+        	
+        	exec.dependsOn("compileJava");
+        	if (project.getPlugins().hasPlugin("scala"))
+        	    exec.dependsOn("compileScala");
         }
         
         exec = makeTask("runServer", JavaExec.class);
         {
-        	exec.classpath(project.getConfigurations().getByName("runtime"));
+            exec.classpath(main.getRuntimeClasspath());
+            exec.classpath(main.getOutput());
         	exec.setMain("cpw.mods.fml.relauncher.ServerLaunchWrapper");
         	exec.jvmArgs("-Xincgc", "-Dfml.ignoreInvalidMinecraftCertificates=true");
         	exec.setWorkingDir(delayedFile("{ASSET_DIR}").call().getParentFile());
         	exec.setStandardOutput(System.out);
         	exec.setStandardInput(System.in);
         	exec.setErrorOutput(System.err);
+        	
+            exec.dependsOn("compileJava");
+            if (project.getPlugins().hasPlugin("scala"))
+                exec.dependsOn("compileScala");
         }
     }
 
