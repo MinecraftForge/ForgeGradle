@@ -115,9 +115,8 @@ public class ForgeUserPlugin extends UserBasePlugin
         final String prefix = isClean ? FORGE_CACHE : DIRTY_DIR;
         final DelayedFile fmled = delayedFile(prefix + FORGE_FMLED);
         final DelayedFile injected = delayedFile(prefix + FORGE_FMLINJECTED);
-        final DelayedFile remapped = delayedFile(prefix + FORGE_REMAPPED);
         final DelayedFile forged = delayedFile(prefix + FORGE_FORGED);
-        final DelayedFile forgeJavaDocced = delayedFile(prefix + FORGE_JAVADOCED);
+        final DelayedFile remapped = delayedFile(prefix + FORGE_REMAPPED);
         final DelayedFile forgeRecomp = delayedFile(prefix + FORGE_RECOMP);
         
         DelayedFile recompSrc = delayedFile(RECOMP_SRC_DIR);
@@ -156,7 +155,7 @@ public class ForgeUserPlugin extends UserBasePlugin
                 public boolean isSatisfiedBy(Object o)
                 {
                     boolean didWork = fmlPatches.getDidWork();
-                    boolean exists = fmlInjected.call().exists();
+                    boolean exists = injected.call().exists();
                     if (!exists)
                         return true;
                     else
@@ -177,7 +176,7 @@ public class ForgeUserPlugin extends UserBasePlugin
             forgePatches.setInPatches(delayedFile(FORGE_PATCHES_ZIP));
         }
 
-        // Remap to MCP for forge patching -- no javadoc here
+        // Remap to MCP names
         RemapSourcesTask remap = makeTask("remapJar", RemapSourcesTask.class);
         {
             remap.dependsOn(inject);
@@ -189,26 +188,14 @@ public class ForgeUserPlugin extends UserBasePlugin
             remap.setDoesJavadocs(true);
         }
 
-        // Post-inject javadocs
-        RemapSourcesTask javadocRemap = makeTask("addForgeJavadoc", RemapSourcesTask.class);
-        {
-            javadocRemap.dependsOn(forgePatches);
-            javadocRemap.setInJar(forged);
-            javadocRemap.setOutJar(forgeJavaDocced);
-            javadocRemap.setFieldsCsv(delayedFile(FIELD_CSV, FIELD_CSV_OLD));
-            javadocRemap.setMethodsCsv(delayedFile(METHOD_CSV, METHOD_CSV_OLD));
-            javadocRemap.setParamsCsv(delayedFile(PARAM_CSV, PARAM_CSV_OLD));
-            javadocRemap.setDoesJavadocs(true);
-        }
-
         // recomp stuff
         {
             ExtractTask extract = makeTask("extractForgeSrc", ExtractTask.class);
             {
-                extract.from(forgeJavaDocced);
+                extract.from(remapped);
                 extract.into(recompSrc);
                 extract.setIncludeEmptyDirs(false);
-                extract.dependsOn(javadocRemap);
+                extract.dependsOn(remap);
                 
                 extract.onlyIf(onlyIfCheck);
             }
