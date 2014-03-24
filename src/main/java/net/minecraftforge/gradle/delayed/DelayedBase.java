@@ -74,6 +74,12 @@ public abstract class DelayedBase<V> extends Closure<V>
         {
             version = version.substring(exten.getVersion().length() + 1);
         }
+        
+        // resolvers first
+        for (IDelayedResolver r : resolvers)
+        {
+            patern = r.resolve(patern, project, exten);
+        }
 
         patern = patern.replace("{MC_VERSION}", exten.getVersion());
         patern = patern.replace("{MCP_VERSION}", exten.getMcpVersion());
@@ -88,11 +94,6 @@ public abstract class DelayedBase<V> extends Closure<V>
         patern = patern.replace("{JENKINS_JOB}",           jenk.getJob());
         patern = patern.replace("{JENKINS_AUTH_NAME}",     jenk.getAuthName());
         patern = patern.replace("{JENKINS_AUTH_PASSWORD}", jenk.getAuthPassword());
-
-        for (IDelayedResolver r : resolvers)
-        {
-            patern = r.resolve(patern, project, exten);
-        }
 
         project.getLogger().info("Resolved:  " + patern);
         return patern;

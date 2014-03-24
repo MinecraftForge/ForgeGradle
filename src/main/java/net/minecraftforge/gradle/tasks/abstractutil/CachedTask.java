@@ -1,20 +1,6 @@
 package net.minecraftforge.gradle.tasks.abstractutil;
 
-import com.google.common.base.Joiner;
-import com.google.common.io.Files;
-
 import groovy.lang.Closure;
-import net.minecraftforge.gradle.common.Constants;
-
-import org.gradle.api.Action;
-import org.gradle.api.DefaultTask;
-import org.gradle.api.Task;
-import org.gradle.api.file.FileCollection;
-import org.gradle.api.specs.Spec;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.Optional;
 
 import java.io.File;
 import java.lang.annotation.ElementType;
@@ -29,14 +15,31 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+
+import net.minecraftforge.gradle.common.Constants;
+
+import org.gradle.api.Action;
+import org.gradle.api.DefaultTask;
+import org.gradle.api.Task;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.specs.Spec;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
+
+import com.google.common.base.Joiner;
+import com.google.common.io.Files;
 
 /**
  * This class offers some extra helper methods for caching files.
  */
 public abstract class CachedTask extends DefaultTask
 {
-    private boolean                    doesCache  = true;
+    private boolean                    doesCache  = defaultCache();
     private final ArrayList<Annotated> cachedList = new ArrayList<Annotated>();
     private final ArrayList<Annotated> inputList  = new ArrayList<Annotated>();
 
@@ -60,6 +63,7 @@ public abstract class CachedTask extends DefaultTask
                         (
                         f.isAnnotationPresent(InputFile.class) ||
                         f.isAnnotationPresent(InputFiles.class) ||
+                        f.isAnnotationPresent(InputDirectory.class) ||
                         f.isAnnotationPresent(Input.class)
                         ))
                 {
@@ -112,7 +116,7 @@ public abstract class CachedTask extends DefaultTask
 
                         if (!calcMD5.equals(foundMD5))
                         {
-                            getProject().getLogger().info(" Corrupted Cache!");
+                            getProject().getLogger().lifecycle(" Corrupted Cache!");
                             file.delete();
                             getHashFile(file).delete();
                             return true;
@@ -165,15 +169,18 @@ public abstract class CachedTask extends DefaultTask
 
     private File getHashFile(File file)
     {
-        return new File(file.getParentFile(), file.getName() + ".md5");
+        if (file.isDirectory())
+            return new File(file, ".cache");
+        else
+            return new File(file.getParentFile(), file.getName() + ".md5");
     }
 
     @SuppressWarnings("rawtypes")
     private String getHashes(Annotated output, List<Annotated> inputs, Object instance) throws NoSuchFieldException, IllegalAccessException, NoSuchAlgorithmException, NoSuchMethodException, SecurityException, IllegalArgumentException, InvocationTargetException
     {
-        ArrayList<String> hashes = new ArrayList<String>();
+        LinkedList<String> hashes = new LinkedList<String>();
 
-        hashes.add(Constants.hash(getProject().file(output.getValue(instance))));
+        hashes.addAll(Constants.hashAll(getProject().file(output.getValue(instance))));
 
         for (Annotated input : inputs)
         {
@@ -188,6 +195,11 @@ public abstract class CachedTask extends DefaultTask
             {
                 hashes.add(Constants.hash(getProject().file(input.getValue(instance))));
                 getLogger().info(Constants.hash(getProject().file(input.getValue(instance))) + " " + input.getValue(instance));
+            }
+            else if (f.isAnnotationPresent(InputDirectory.class))
+            {
+                File dir = (File) input.getValue(instance);
+                hashes.addAll(Constants.hashAll(dir));
             }
             else if (f.isAnnotationPresent(InputFiles.class))
             {
@@ -279,6 +291,11 @@ public abstract class CachedTask extends DefaultTask
             
             return method.invoke(instance, new Object[0]);
         }
+    }
+    
+    protected boolean defaultCache()
+    {
+        return true;
     }
 
     public boolean doesCache()

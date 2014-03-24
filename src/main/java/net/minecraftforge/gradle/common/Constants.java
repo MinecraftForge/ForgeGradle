@@ -12,6 +12,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import net.minecraftforge.gradle.StringUtils;
@@ -148,6 +149,21 @@ public class Constants
     public static String hash(File file)
     {
         return hash(file, "MD5");
+    }
+    
+    public static List<String> hashAll(File file)
+    {
+        LinkedList<String> list = new LinkedList<String>();
+        
+        if (file.isDirectory())
+        {
+            for (File f : file.listFiles())
+                hashAll(f);
+        }
+        else
+            list.add(hash(file));
+        
+        return list;
     }
 
     public static String hash(File file, String function)

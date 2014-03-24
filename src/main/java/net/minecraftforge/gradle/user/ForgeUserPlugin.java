@@ -182,9 +182,9 @@ public class ForgeUserPlugin extends UserBasePlugin
             remap.dependsOn(inject);
             remap.setInJar(forged);
             remap.setOutJar(remapped);
-            remap.setFieldsCsv(delayedFile(FIELD_CSV, FIELD_CSV_OLD));
-            remap.setMethodsCsv(delayedFile(METHOD_CSV, METHOD_CSV_OLD));
-            remap.setParamsCsv(delayedFile(PARAM_CSV, PARAM_CSV_OLD));
+            remap.setFieldsCsv(delayedFile(FIELD_CSV));
+            remap.setMethodsCsv(delayedFile(METHOD_CSV));
+            remap.setParamsCsv(delayedFile(PARAM_CSV));
             remap.setDoesJavadocs(true);
         }
 

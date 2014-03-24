@@ -176,8 +176,8 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             task.setNotchToMcp(df(DEOBF_MCP_SRG));
             task.setMcpToSrg(df(REOBF_SRG));
             task.setMcpToNotch(df(REOBF_NOTCH_SRG));
-            task.setMethodsCsv(df(METHOD_CSV, METHOD_CSV_OLD));
-            task.setFieldsCsv(df(FIELD_CSV, FIELD_CSV_OLD));
+            task.setMethodsCsv(df(METHOD_CSV));
+            task.setFieldsCsv(df(FIELD_CSV));
             task.dependsOn("extractUserDev");
         }
 
@@ -196,8 +196,8 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             task.setSrg(df(DEOBF_MCP_SRG));
             task.setExceptorJson(df(EXC_JSON));
             task.setExceptorCfg(df(PACKAGED_EXC));
-            task.setFieldCsv(df(FIELD_CSV, FIELD_CSV_OLD));
-            task.setMethodCsv(df(METHOD_CSV, FIELD_CSV_OLD));
+            task.setFieldCsv(df(FIELD_CSV));
+            task.setMethodCsv(df(METHOD_CSV));
             task.setApplyMarkers(false);
             task.setDoesCache(true);
             addATs(task);
@@ -233,8 +233,8 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             project.getTasks().getByName("assemble").dependsOn(task);
             if (getExtension().isDecomp())
             {
-                task.setFieldCsv(delayedFile(FIELD_CSV, FIELD_CSV_OLD));
-                task.setFieldCsv(delayedFile(METHOD_CSV, METHOD_CSV_OLD));
+                task.setFieldCsv(delayedFile(FIELD_CSV));
+                task.setFieldCsv(delayedFile(METHOD_CSV));
             }
         }
 
@@ -327,6 +327,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         // special userDev stuff
         ExtractTask extractUserDev = makeTask("extractUserDev", ExtractTask.class);
         extractUserDev.into(delayedFile(PACK_DIR));
+        extractUserDev.setDoesCache(true);
         extractUserDev.doLast(new Action<Task>()
         {
             @Override
@@ -817,6 +818,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
     @Override
     public String resolve(String pattern, Project project, UserExtension exten)
     {
+        pattern = pattern.replace("{API_CACHE_DIR}", this.getCacheDir());
         pattern = super.resolve(pattern, project, exten);
         pattern = pattern.replace("{API_VERSION}", exten.getApiVersion());
         return pattern;
@@ -825,10 +827,5 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
     private DelayedFile df(String file)
     {
         return delayedFile(file);
-    }
-
-    private DelayedFile df(String file, String... alts)
-    {
-        return delayedFile(file, alts);
     }
 }

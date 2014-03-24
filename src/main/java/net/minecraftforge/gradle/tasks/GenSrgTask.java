@@ -8,8 +8,8 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
-import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -18,7 +18,7 @@ import au.com.bytecode.opencsv.CSVReader;
 
 import com.google.common.io.Files;
 
-public class GenSrgTask extends DefaultTask
+public class GenSrgTask extends CachedTask
 {
 
     @InputFile
@@ -30,12 +30,15 @@ public class GenSrgTask extends DefaultTask
     @InputFile
     private DelayedFile fieldsCsv;
 
+    @Cached
     @OutputFile
     private DelayedFile notchToMcp;
 
+    @Cached
     @OutputFile
     private DelayedFile mcpToSrg;
     
+    @Cached
     @OutputFile
     private DelayedFile mcpToNotch;
     

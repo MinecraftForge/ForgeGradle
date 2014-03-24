@@ -134,6 +134,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
             task6.setMcpToNotch(delayedFile(DevConstants.MCP_2_NOTCH_SRG));
             task6.setMethodsCsv(delayedFile(DevConstants.METHODS_CSV));
             task6.setFieldsCsv(delayedFile(DevConstants.FIELDS_CSV));
+            task6.setDoesCache(false);
         }
     }
 

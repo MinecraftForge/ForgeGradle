@@ -16,7 +16,7 @@ public final class UserConstants
 
     static final String FORGE_JAVADOC_URL = Constants.FORGE_MAVEN + "/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-javadoc.zip";
 
-    static final String PACK_DIR          = "{BUILD_DIR}/unpacked";
+    static final String PACK_DIR          = "{API_CACHE_DIR}/unpacked";
     static final String NATIVES_DIR       = "{BUILD_DIR}/natives";
     static final String SOURCES_DIR       = "{BUILD_DIR}/sources";
 
@@ -28,14 +28,9 @@ public final class UserConstants
     static final String PACKAGED_EXC      = CONF_DIR + "/packaged.exc";
     static final String EXC_JSON          = CONF_DIR + "/exceptor.json";
 
-    static final String DEOBF_MCP_SRG     = CONF_DIR + "/notch-mcp.srg";
-    public static final String REOBF_SRG         = CONF_DIR + "/mcp-srg.srg";
-    public static final String REOBF_NOTCH_SRG   = CONF_DIR + "/mcp-notch.srg";
-
-    static final String MAPPINGS_DIR      = PACK_DIR + "/mappings";
-    static final String METHOD_CSV_OLD    = MAPPINGS_DIR + "/methods.csv";
-    static final String FIELD_CSV_OLD     = MAPPINGS_DIR + "/fields.csv";
-    static final String PARAM_CSV_OLD     = MAPPINGS_DIR + "/params.csv";
+    public static final String DEOBF_MCP_SRG     = "{API_CACHE_DIR}/srgs/notch-mcp.srg";
+    public static final String REOBF_SRG         = "{API_CACHE_DIR}/srgs/mcp-srg.srg";
+    public static final String REOBF_NOTCH_SRG   = "{API_CACHE_DIR}/srgs/mcp-notch.srg";
 
     static final String METHOD_CSV        = CONF_DIR + "/methods.csv";
     static final String FIELD_CSV         = CONF_DIR + "/fields.csv";
@@ -57,15 +52,14 @@ public final class UserConstants
     static final String FORGE_JAVADOC     = "/forgeBin-{API_VERSION}-javadoc.jar";
     // frge src jars
     static final String FORGE_RECOMP      = "/forgeSrc-{API_VERSION}.jar";
-    static final String FORGE_JAVADOCED   = "/forgeSrc-{API_VERSION}-sources.jar";
+    static final String FORGE_REMAPPED   = "/forgeSrc-{API_VERSION}-sources.jar";
     // intermediate jars
     static final String FORGE_BINPATCHED  = "/forge-{API_VERSION}-binPatched.jar";
     static final String FORGE_DEOBF_SRG   = "/forge-{API_VERSION}-srg.jar";
     static final String FORGE_DECOMP      = "/forge-{API_VERSION}-decomp.jar";
     static final String FORGE_FMLED       = "/forge-{API_VERSION}-fmled.jar";
     static final String FORGE_FMLINJECTED = "/forge-{API_VERSION}-fmlinjected.jar";
-    static final String FORGE_REMAPPED    = "/forge-{API_VERSION}-mcped.jar";
-    static final String FORGE_FORGED      = "/forge-{API_VERSION}-src-nojd.jar";
+    static final String FORGE_FORGED      = "/forge-{API_VERSION}-forged.jar";
     
 
     static final String FML_CACHE         = "{CACHE_DIR}/minecraft/cpw/mods/fml/{API_VERSION}";
