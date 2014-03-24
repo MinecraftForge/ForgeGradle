@@ -1,7 +1,6 @@
 package net.minecraftforge.gradle.user;
 
 import static net.minecraftforge.gradle.user.UserConstants.*;
-import groovy.lang.Closure;
 
 import java.io.File;
 
@@ -15,6 +14,7 @@ import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.api.tasks.compile.JavaCompile;
@@ -96,20 +96,33 @@ public class FmlUserPlugin extends UserBasePlugin
             depHandler.add(depConfig, project.files(delayedFile(prefix + FML_BINPATCHED)));
     }
 
-    @SuppressWarnings({ "rawtypes", "serial" })
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     protected void doPostDecompTasks(boolean isClean, DelayedFile decompOut)
     {
         final String prefix = isClean ? FML_CACHE : DIRTY_DIR;
-        DelayedFile fmled = delayedFile(prefix + FML_FMLED);
-        DelayedFile injected = delayedFile(prefix + FML_INJECTED);
-        DelayedFile remapped = delayedFile(prefix + FML_REMAPPED);
-        DelayedFile recompJar = delayedFile(prefix + FML_RECOMP);
+        final DelayedFile fmled = delayedFile(prefix + FML_FMLED);
+        final DelayedFile injected = delayedFile(prefix + FML_INJECTED);
+        final DelayedFile remapped = delayedFile(prefix + FML_REMAPPED);
+        final DelayedFile recompJar = delayedFile(prefix + FML_RECOMP);
 
-        DelayedFile recompSrc = delayedFile(RECOMP_SRC_DIR);
-        DelayedFile recompCls = delayedFile(RECOMP_CLS_DIR);
+        final DelayedFile recompSrc = delayedFile(RECOMP_SRC_DIR);
+        final DelayedFile recompCls = delayedFile(RECOMP_CLS_DIR);
+        
+        Spec onlyIfCheck = new Spec() {
+            @Override
+            public boolean isSatisfiedBy(Object obj)
+            {
+                boolean didWork = ((Task) obj).dependsOnTaskDidWork();
+                boolean exists = recompJar.call().exists();
+                if (!exists)
+                    return true;
+                else
+                    return didWork;
+            }
+        };
 
-        PatchJarTask fmlPatches = makeTask("doFmlPatches", PatchJarTask.class);
+        final PatchJarTask fmlPatches = makeTask("doFmlPatches", PatchJarTask.class);
         {
             fmlPatches.dependsOn("decompile");
             fmlPatches.setInJar(decompOut);
@@ -119,15 +132,19 @@ public class FmlUserPlugin extends UserBasePlugin
 
         final Zip inject = makeTask("addFmlSources", Zip.class);
         {
-            inject.getOutputs().upToDateWhen(new Closure<Boolean>(null)
+            inject.onlyIf(new Spec()
             {
-                private static final long serialVersionUID = -8480140049890357630L;
-
-                public Boolean call(Object o)
+                public boolean isSatisfiedBy(Object o)
                 {
-                    return !inject.dependsOnTaskDidWork();
+                    boolean didWork = fmlPatches.getDidWork();
+                    boolean exists = injected.call().exists();
+                    if (!exists)
+                        return true;
+                    else
+                        return didWork;
                 }
             });
+            
             inject.dependsOn("doFmlPatches");
             inject.from(fmled.toZipTree());
             inject.from(delayedFile(SRC_DIR));
@@ -157,12 +174,7 @@ public class FmlUserPlugin extends UserBasePlugin
             extract.setIncludeEmptyDirs(false);
             extract.dependsOn(remapTask);
 
-            extract.onlyIf(new Closure(this, this) {
-                public Boolean call(Object obj)
-                {
-                    return ((Task) obj).dependsOnTaskDidWork();
-                }
-            });
+            extract.onlyIf(onlyIfCheck);
         }
 
         JavaCompile recompTask = makeTask("recompFml", JavaCompile.class);
@@ -174,12 +186,7 @@ public class FmlUserPlugin extends UserBasePlugin
             recompTask.setClasspath(project.getConfigurations().getByName(CONFIG_DEPS));
             recompTask.dependsOn(extract);
 
-            recompTask.onlyIf(new Closure(this, this) {
-                public Boolean call(Object obj)
-                {
-                    return ((Task) obj).dependsOnTaskDidWork();
-                }
-            });
+            recompTask.onlyIf(onlyIfCheck);
         }
 
         Jar repackageTask = makeTask("repackFml", Jar.class);
@@ -193,12 +200,7 @@ public class FmlUserPlugin extends UserBasePlugin
             repackageTask.setArchiveName(out.getName());
             repackageTask.setDestinationDir(out.getParentFile());
 
-            repackageTask.onlyIf(new Closure(this, this) {
-                public Boolean call(Object obj)
-                {
-                    return ((Task) obj).dependsOnTaskDidWork();
-                }
-            });
+            repackageTask.onlyIf(onlyIfCheck);
         }
     }
 }

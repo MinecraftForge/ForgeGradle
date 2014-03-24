@@ -34,10 +34,11 @@ import net.minecraftforge.gradle.json.MCInjectorStruct;
 import net.minecraftforge.gradle.json.MCInjectorStruct.InnerClass;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
-import org.gradle.api.Nullable;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.objectweb.asm.ClassReader;
@@ -55,7 +56,11 @@ import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
 
 public class ProcessJarTask extends CachedTask
 {
+    @InputFile
+    @Optional
     private DelayedFile            fieldCsv;
+    @InputFile
+    @Optional
     private DelayedFile            methodCsv;
 
     @InputFile
@@ -67,10 +72,10 @@ public class ProcessJarTask extends CachedTask
     @InputFile
     private DelayedFile            exceptorCfg;
 
-    @Nullable
     @InputFile
     private DelayedFile exceptorJson;
 
+    @Input
     private boolean applyMarkers = false;
 
     @OutputFile
@@ -318,7 +323,7 @@ public class ProcessJarTask extends CachedTask
                 null,
                 0,
                 json,
-                getApplyMarkers());
+                isApplyMarkers());
     }
 
     private void injectSourceInfo(File inJar, File outJar) throws IOException
@@ -393,8 +398,8 @@ public class ProcessJarTask extends CachedTask
     {
         this.exceptorJson = exceptorJson;
     }
-
-    public boolean getApplyMarkers()
+    
+    public boolean isApplyMarkers()
     {
         return applyMarkers;
     }

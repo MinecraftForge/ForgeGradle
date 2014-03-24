@@ -10,9 +10,11 @@ import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
 
 import java.io.File;
 import java.lang.annotation.ElementType;
@@ -38,7 +40,7 @@ public abstract class CachedTask extends DefaultTask
     private final ArrayList<Annotated> cachedList = new ArrayList<Annotated>();
     private final ArrayList<Annotated> inputList  = new ArrayList<Annotated>();
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public CachedTask()
     {
         super();
@@ -68,16 +70,13 @@ public abstract class CachedTask extends DefaultTask
             clazz = (Class<? extends Task>) clazz.getSuperclass();
         }
 
-        this.onlyIf(new Closure<Boolean>(this, this)
+        this.onlyIf(new Spec()
         {
-            /**
-             * 
-             */
-            private static final long serialVersionUID = -1685502083302238195L;
-
             @Override
-            public Boolean call(Object... objects)
+            public boolean isSatisfiedBy(Object obj)
             {
+                Task task = (Task) obj;
+                
                 if (!doesCache())
                     return true;
 
@@ -89,7 +88,7 @@ public abstract class CachedTask extends DefaultTask
 
                     try
                     {
-                        File file = getFile(field);
+                        File file = getProject().file(field.getValue(task));
 
                         // not there? do the task.
                         if (!file.exists())
@@ -105,7 +104,7 @@ public abstract class CachedTask extends DefaultTask
                         }
 
                         String foundMD5 = Files.toString(getHashFile(file), Charset.defaultCharset());
-                        String calcMD5 = getHashes(field, inputList, getDelegate());
+                        String calcMD5 = getHashes(field, inputList, task);
 
                         getProject().getLogger().info("Cached file found: " + file);
                         getProject().getLogger().info("Checksums found: " + foundMD5);
@@ -130,11 +129,6 @@ public abstract class CachedTask extends DefaultTask
 
                 // no problems? all of em are here? skip the task.
                 return false;
-            }
-
-            private File getFile(Annotated field) throws IllegalAccessException, NoSuchFieldException, NoSuchMethodException, SecurityException, IllegalArgumentException, InvocationTargetException
-            {
-                return getProject().file(field.getValue(getDelegate()));
             }
         });
     }
@@ -184,8 +178,13 @@ public abstract class CachedTask extends DefaultTask
         for (Annotated input : inputs)
         {
             Field f = input.getField();
-
-            if (f.isAnnotationPresent(InputFile.class))
+            Object val = input.getValue(instance);
+            
+            if (val == null && f.isAnnotationPresent(Optional.class))
+            {
+                hashes.add("null");
+            }
+            else if (f.isAnnotationPresent(InputFile.class))
             {
                 hashes.add(Constants.hash(getProject().file(input.getValue(instance))));
                 getLogger().info(Constants.hash(getProject().file(input.getValue(instance))) + " " + input.getValue(instance));
