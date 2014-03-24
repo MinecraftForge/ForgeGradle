@@ -1,7 +1,6 @@
 package net.minecraftforge.gradle.user;
 
 import static net.minecraftforge.gradle.user.UserConstants.*;
-import groovy.lang.Closure;
 
 import java.io.File;
 
@@ -16,6 +15,7 @@ import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.api.tasks.compile.JavaCompile;
@@ -108,22 +108,35 @@ public class ForgeUserPlugin extends UserBasePlugin
             depHandler.add(depConfig, ImmutableMap.of("name", "forgeBin", "version", getExtension().getApiVersion()));
     }
 
-    @SuppressWarnings({ "rawtypes", "serial"})
+    @SuppressWarnings({ "rawtypes", "unchecked"})
     @Override
     protected void doPostDecompTasks(boolean isClean, DelayedFile decompOut)
     {
         final String prefix = isClean ? FORGE_CACHE : DIRTY_DIR;
-        DelayedFile fmled = delayedFile(prefix + FORGE_FMLED);
-        DelayedFile injected = delayedFile(prefix + FORGE_FMLINJECTED);
-        DelayedFile remapped = delayedFile(prefix + FORGE_REMAPPED);
-        DelayedFile forged = delayedFile(prefix + FORGE_FORGED);
-        DelayedFile forgeJavaDocced = delayedFile(prefix + FORGE_JAVADOCED);
-        DelayedFile forgeRecomp = delayedFile(prefix + FORGE_RECOMP);
+        final DelayedFile fmled = delayedFile(prefix + FORGE_FMLED);
+        final DelayedFile injected = delayedFile(prefix + FORGE_FMLINJECTED);
+        final DelayedFile remapped = delayedFile(prefix + FORGE_REMAPPED);
+        final DelayedFile forged = delayedFile(prefix + FORGE_FORGED);
+        final DelayedFile forgeJavaDocced = delayedFile(prefix + FORGE_JAVADOCED);
+        final DelayedFile forgeRecomp = delayedFile(prefix + FORGE_RECOMP);
         
         DelayedFile recompSrc = delayedFile(RECOMP_SRC_DIR);
         DelayedFile recompCls = delayedFile(RECOMP_CLS_DIR);
+        
+        Spec onlyIfCheck = new Spec() {
+            @Override
+            public boolean isSatisfiedBy(Object obj)
+            {
+                boolean didWork = ((Task) obj).dependsOnTaskDidWork();
+                boolean exists = forgeRecomp.call().exists();
+                if (!exists)
+                    return true;
+                else
+                    return didWork;
+            }
+        };
 
-        PatchJarTask fmlPatches = makeTask("doFmlPatches", PatchJarTask.class);
+        final PatchJarTask fmlPatches = makeTask("doFmlPatches", PatchJarTask.class);
         {
             fmlPatches.dependsOn("decompile");
             fmlPatches.setInJar(decompOut);
@@ -133,19 +146,23 @@ public class ForgeUserPlugin extends UserBasePlugin
 
         final Zip inject = makeTask("addSources", Zip.class);
         {
-            inject.getOutputs().upToDateWhen(new Closure<Boolean>(null)
-            {
-                private static final long serialVersionUID = -8480140049890357630L;
-
-                public Boolean call(Object o)
-                {
-                    return !inject.dependsOnTaskDidWork();
-                }
-            });
             inject.dependsOn(fmlPatches);
             inject.from(fmled.toZipTree());
             inject.from(delayedFile(SRC_DIR));
             inject.from(delayedFile(RES_DIR));
+            
+            inject.onlyIf(new Spec()
+            {
+                public boolean isSatisfiedBy(Object o)
+                {
+                    boolean didWork = fmlPatches.getDidWork();
+                    boolean exists = fmlInjected.call().exists();
+                    if (!exists)
+                        return true;
+                    else
+                        return didWork;
+                }
+            });
 
             File injectFile = injected.call();
             inject.setDestinationDir(injectFile.getParentFile());
@@ -193,12 +210,7 @@ public class ForgeUserPlugin extends UserBasePlugin
                 extract.setIncludeEmptyDirs(false);
                 extract.dependsOn(javadocRemap);
                 
-                extract.onlyIf(new Closure(this, this) {
-                    public Boolean call(Object obj)
-                    {
-                        return ((Task) obj).dependsOnTaskDidWork();
-                    }
-                });
+                extract.onlyIf(onlyIfCheck);
             }
             
             JavaCompile recompTask = makeTask("recompForge", JavaCompile.class);
@@ -210,12 +222,7 @@ public class ForgeUserPlugin extends UserBasePlugin
                 recompTask.setClasspath(project.getConfigurations().getByName(CONFIG_DEPS));
                 recompTask.dependsOn(extract);
                 
-                recompTask.onlyIf(new Closure(this, this) {
-                    public Boolean call(Object obj)
-                    {
-                        return ((Task) obj).dependsOnTaskDidWork();
-                    }
-                });
+                recompTask.onlyIf(onlyIfCheck);
             }
             
             Jar repackageTask = makeTask("repackForge", Jar.class);
@@ -229,12 +236,7 @@ public class ForgeUserPlugin extends UserBasePlugin
                 repackageTask.setArchiveName(out.getName());
                 repackageTask.setDestinationDir(out.getParentFile());
                 
-                repackageTask.onlyIf(new Closure(this, this) {
-                    public Boolean call(Object obj)
-                    {
-                        return ((Task) obj).dependsOnTaskDidWork();
-                    }
-                });
+                repackageTask.onlyIf(onlyIfCheck);
             }
         }
     }
