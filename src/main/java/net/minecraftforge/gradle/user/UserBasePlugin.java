@@ -6,7 +6,6 @@ import static net.minecraftforge.gradle.common.Constants.JAR_CLIENT_FRESH;
 import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
 import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_FRESH;
 import static net.minecraftforge.gradle.user.UserConstants.*;
-
 import groovy.lang.Closure;
 import groovy.util.Node;
 import groovy.util.XmlParser;
@@ -119,7 +118,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
                 String path = project.getPath();
                 
                 boolean hasSetup = graph.hasTask(path + "setupCIWorkspace") || graph.hasTask(path + "setupDecompWorkspace") || graph.hasTask(path + "setupDevWorkspace"); 
-                boolean hasBuild = graph.hasTask(path + "eclipse") || graph.hasTask(path + "ideaModule"); 
+                boolean hasBuild = graph.hasTask(path + "eclipse") || graph.hasTask(path + "ideaModule") || graph.hasTask(path + "build"); 
                 
                 if (hasSetup && hasBuild)
                     throw new RuntimeException("You're doing it wrong. You are running a setup task and an IDE task in the same command.");

@@ -440,4 +440,10 @@ public class ProcessJarTask extends CachedTask
     {
         this.methodCsv = methodCsv;
     }
+
+    @Override
+    protected boolean defaultCache()
+    {
+        return isClean();
+    }
 }
