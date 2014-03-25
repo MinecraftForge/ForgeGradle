@@ -56,6 +56,7 @@ import org.gradle.api.tasks.GroovySourceSet;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.ScalaSourceSet;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.compile.GroovyCompile;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.scala.ScalaCompile;
@@ -266,13 +267,12 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         createMcModuleDep(clean, project.getDependencies(), CONFIG);
         
         // get sourceSet
-        JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
-        SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        Jar jarTask = (Jar) project.getTasks().getByName("jar");
         
         JavaExec exec = makeTask("runClient", JavaExec.class);
         {
-        	exec.classpath(main.getRuntimeClasspath());
-        	exec.classpath(main.getOutput());
+        	exec.classpath(project.getConfigurations().getByName("runtime"));
+        	exec.classpath(jarTask.getArchivePath());
         	exec.setMain("net.minecraft.launchwrapper.Launch");
         	exec.jvmArgs("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
         	exec.jvmArgs("-Djava.library.path=" + delayedFile(NATIVES_DIR).call().getAbsolutePath());
@@ -281,15 +281,13 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         	exec.setStandardOutput(System.out);
         	exec.setErrorOutput(System.err);
         	
-        	exec.dependsOn("compileJava");
-        	if (project.getPlugins().hasPlugin("scala"))
-        	    exec.dependsOn("compileScala");
+        	exec.dependsOn(jarTask);
         }
         
         exec = makeTask("runServer", JavaExec.class);
         {
-            exec.classpath(main.getRuntimeClasspath());
-            exec.classpath(main.getOutput());
+            exec.classpath(project.getConfigurations().getByName("runtime"));
+            exec.classpath(jarTask.getArchivePath());
         	exec.setMain("cpw.mods.fml.relauncher.ServerLaunchWrapper");
         	exec.jvmArgs("-Xincgc", "-Dfml.ignoreInvalidMinecraftCertificates=true");
         	exec.setWorkingDir(delayedFile("{ASSET_DIR}").call().getParentFile());
@@ -297,9 +295,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         	exec.setStandardInput(System.in);
         	exec.setErrorOutput(System.err);
         	
-            exec.dependsOn("compileJava");
-            if (project.getPlugins().hasPlugin("scala"))
-                exec.dependsOn("compileScala");
+        	exec.dependsOn(jarTask);
         }
     }
 
