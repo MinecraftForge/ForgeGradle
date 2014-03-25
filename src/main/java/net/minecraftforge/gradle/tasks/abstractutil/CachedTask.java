@@ -7,6 +7,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -51,12 +52,11 @@ public abstract class CachedTask extends DefaultTask
         Class<? extends Task> clazz = this.getClass();
         while (clazz != null)
         {
-            Field[] fields = clazz.getDeclaredFields();
-            for (Field f : fields)
+            for (Field f : clazz.getDeclaredFields())
             {
                 if (f.isAnnotationPresent(Cached.class))
                 {
-                    addCachedField(new Annotated(clazz, f.getName()));
+                    addCachedOutput(new Annotated(clazz, f.getName()));
                 }
 
                 if (!f.isAnnotationPresent(Excluded.class) &&
@@ -68,6 +68,25 @@ public abstract class CachedTask extends DefaultTask
                         ))
                 {
                     inputList.add(new Annotated(clazz, f.getName()));
+                }
+            }
+            
+            for (Method m : clazz.getDeclaredMethods())
+            {
+                if (m.isAnnotationPresent(Cached.class))
+                {
+                    addCachedOutput(new Annotated(clazz, m.getName(), true));
+                }
+
+                if (!m.isAnnotationPresent(Excluded.class) &&
+                        (
+                        m.isAnnotationPresent(InputFile.class) ||
+                        m.isAnnotationPresent(InputFiles.class) ||
+                        m.isAnnotationPresent(InputDirectory.class) ||
+                        m.isAnnotationPresent(Input.class)
+                        ))
+                {
+                    inputList.add(new Annotated(clazz, m.getName(), true));
                 }
             }
 
@@ -110,13 +129,11 @@ public abstract class CachedTask extends DefaultTask
                         String foundMD5 = Files.toString(getHashFile(file), Charset.defaultCharset());
                         String calcMD5 = getHashes(field, inputList, task);
 
-                        getProject().getLogger().info("Cached file found: " + file);
-                        getProject().getLogger().info("Checksums found: " + foundMD5);
-                        getProject().getLogger().info("Checksums calculated: " + calcMD5);
-
                         if (!calcMD5.equals(foundMD5))
                         {
                             getProject().getLogger().lifecycle(" Corrupted Cache!");
+                            getProject().getLogger().lifecycle("Checksums found: " + foundMD5);
+                            getProject().getLogger().lifecycle("Checksums calculated: " + calcMD5);
                             file.delete();
                             getHashFile(file).delete();
                             return true;
@@ -137,7 +154,7 @@ public abstract class CachedTask extends DefaultTask
         });
     }
 
-    private void addCachedField(final Annotated annot)
+    private void addCachedOutput(final Annotated annot)
     {
         cachedList.add(annot);
 
@@ -184,24 +201,24 @@ public abstract class CachedTask extends DefaultTask
 
         for (Annotated input : inputs)
         {
-            Field f = input.getField();
+            AnnotatedElement m = input.getElement();
             Object val = input.getValue(instance);
             
-            if (val == null && f.isAnnotationPresent(Optional.class))
+            if (val == null && m.isAnnotationPresent(Optional.class))
             {
                 hashes.add("null");
             }
-            else if (f.isAnnotationPresent(InputFile.class))
+            else if (m.isAnnotationPresent(InputFile.class))
             {
                 hashes.add(Constants.hash(getProject().file(input.getValue(instance))));
                 getLogger().info(Constants.hash(getProject().file(input.getValue(instance))) + " " + input.getValue(instance));
             }
-            else if (f.isAnnotationPresent(InputDirectory.class))
+            else if (m.isAnnotationPresent(InputDirectory.class))
             {
                 File dir = (File) input.getValue(instance);
                 hashes.addAll(Constants.hashAll(dir));
             }
-            else if (f.isAnnotationPresent(InputFiles.class))
+            else if (m.isAnnotationPresent(InputFiles.class))
             {
                 FileCollection files = (FileCollection) input.getValue(instance);
                 for (File file : files.getFiles())
@@ -249,7 +266,7 @@ public abstract class CachedTask extends DefaultTask
         return Joiner.on(Constants.NEWLINE).join(hashes);
     }
 
-    @Target(ElementType.FIELD)
+    @Target( { ElementType.FIELD, ElementType.METHOD })
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Cached
     {
@@ -261,33 +278,60 @@ public abstract class CachedTask extends DefaultTask
     {
     }
 
-    private class Annotated
+    private static class Annotated
     {
         private final Class<? extends Task> taskClass;
-        private final String                fieldName;
+        private final String                symbolName;
+        private final boolean               isMethod;
 
+        private Annotated(Class<? extends Task> taskClass, String symbolName, boolean isMethod)
+        {
+            this.taskClass = taskClass;
+            this.symbolName = symbolName;
+            this.isMethod = isMethod;
+        }
+        
         private Annotated(Class<? extends Task> taskClass, String fieldName)
         {
             this.taskClass = taskClass;
-            this.fieldName = fieldName;
+            this.symbolName = fieldName;
+            isMethod = false;
+        }
+        
+        private AnnotatedElement getElement() throws NoSuchMethodException, SecurityException, NoSuchFieldException
+        {
+            if (isMethod)
+                return taskClass.getDeclaredMethod(symbolName);
+            else
+                return taskClass.getDeclaredField(symbolName);
         }
 
-        protected Field getField() throws NoSuchFieldException
+        protected Object getValue(Object instance) throws NoSuchMethodException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, InvocationTargetException
         {
-            return taskClass.getDeclaredField(fieldName);
-        }
-
-        protected Object getValue(Object instance) throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException, SecurityException, IllegalArgumentException, InvocationTargetException
-        {
-            // finds the getter, and uses that if possible.
-            Field f = getField();
-            String methodName = f.getType().equals(boolean.class) ? "is" : "get";
+            Method method;
             
-            char[] name = fieldName.toCharArray();
-            name[0] = Character.toUpperCase(name[0]);
-            methodName += new String(name);
-            
-            Method method = taskClass.getMethod(methodName, new Class[0]);
+            if (isMethod)
+                method = taskClass.getDeclaredMethod(symbolName);
+            else
+            {
+                // finds the getter, and uses that if possible.
+                Field f = taskClass.getDeclaredField(symbolName);
+                String methodName = f.getType().equals(boolean.class) ? "is" : "get";
+                
+                char[] name = symbolName.toCharArray();
+                name[0] = Character.toUpperCase(name[0]);
+                methodName += new String(name);
+                
+                try {
+                    method = taskClass.getMethod(methodName, new Class[0]);
+                }
+                catch (NoSuchMethodException e)
+                {
+                    // method not found. Grab the field via reflection
+                    f.setAccessible(true);
+                    return f.get(instance);
+                }
+            }
             
             return method.invoke(instance, new Object[0]);
         }

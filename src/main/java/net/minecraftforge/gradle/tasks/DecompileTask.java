@@ -34,9 +34,10 @@ import net.minecraftforge.gradle.patching.ContextualPatch.PatchReport;
 import net.minecraftforge.gradle.patching.ContextualPatch.PatchStatus;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.logging.LogLevel;
-import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.process.JavaExecSpec;
@@ -60,7 +61,6 @@ public class DecompileTask extends CachedTask
     @InputFile
     private DelayedFile fernFlower;
 
-    @Input
     private DelayedFile patch;
 
     @InputFile
@@ -396,6 +396,16 @@ public class DecompileTask extends CachedTask
         this.outJar = outJar;
     }
 
+    @InputFiles
+    public FileCollection getPatches()
+    {
+         File patches = patch.call();
+         if (patches.isDirectory())
+             return getProject().fileTree(patches);
+         else
+             return getProject().files(patches);
+    }
+    
     public File getPatch()
     {
         return patch.call();

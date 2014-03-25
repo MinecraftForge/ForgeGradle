@@ -5,22 +5,15 @@ import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PROTECTED;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
 
-import joptsimple.internal.Strings;
 import net.md_5.specialsource.AccessMap;
 import net.md_5.specialsource.Jar;
 import net.md_5.specialsource.JarMapping;
@@ -41,14 +34,10 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.tree.ClassNode;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
-import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
 
@@ -78,12 +67,7 @@ public class ProcessJarTask extends CachedTask
     @Input
     private boolean applyMarkers = false;
 
-    @OutputFile
-    @Cached
     private DelayedFile outCleanJar; // clean = pure forge, or pure FML
-
-    @OutputFile
-    @Cached
     private DelayedFile outDirtyJar = new DelayedFile(getProject(), "{BUILD_DIR}/processed.jar"); // dirty = has any other ATs
 
     @InputFiles
@@ -125,7 +109,8 @@ public class ProcessJarTask extends CachedTask
     {
         // make stuff into files.
         File tempObfJar = new File(getTemporaryDir(), "deobfed.jar"); // courtesy of gradle temp dir.
-        File tempExcJar = new File(getTemporaryDir(), "excepted.jar"); // courtesy of gradle temp dir.
+        File out = isClean ? getOutCleanJar() : getOutDirtyJar();
+        //File tempExcJar = new File(getTemporaryDir(), "excepted.jar"); // courtesy of gradle temp dir.
 
         // make the ATs list.. its a Set to avoid duplication.
         Set<File> ats = new HashSet<File>();
@@ -144,12 +129,7 @@ public class ProcessJarTask extends CachedTask
 
         // apply exceptor
         getLogger().lifecycle("Applying Exceptor...");
-        applyExceptor(tempObfJar, tempExcJar, getExceptorCfg(), log, ats);
-
-        File out = isClean ? getOutCleanJar() : getOutDirtyJar();
-
-        getLogger().lifecycle("Injecting source info...");
-        injectSourceInfo(tempExcJar, out);
+        applyExceptor(tempObfJar, out, getExceptorCfg(), log, ats);
     }
 
     private void deobfJar(File inJar, File outJar, File srg, Collection<File> ats) throws IOException
@@ -326,56 +306,6 @@ public class ProcessJarTask extends CachedTask
                 isApplyMarkers());
     }
 
-    private void injectSourceInfo(File inJar, File outJar) throws IOException
-    {
-        ZipFile in = new ZipFile(inJar);
-        final ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(outJar)));
-
-        for (ZipEntry e : Collections.list(in.entries()))
-        {
-            if (e.getName().contains("META-INF"))
-                continue;
-
-            if (e.isDirectory())
-            {
-                out.putNextEntry(e);
-            }
-            else
-            {
-                ZipEntry n = new ZipEntry(e.getName());
-                n.setTime(e.getTime());
-                out.putNextEntry(n);
-
-                byte[] data = ByteStreams.toByteArray(in.getInputStream(e));
-
-                // correct source name
-                if (e.getName().endsWith(".class"))
-                    data = correctSourceName(e.getName(), data);
-
-                out.write(data);
-            }
-        }
-
-        out.flush();
-        out.close();
-        in.close();
-    }
-
-    private byte[] correctSourceName(String name, byte[] data)
-    {
-        ClassReader reader = new ClassReader(data);
-        ClassNode node = new ClassNode();
-
-        reader.accept(node, 0);
-
-        if (Strings.isNullOrEmpty(node.sourceFile) || !node.sourceFile.endsWith(".java"))
-            node.sourceFile = name.substring(name.lastIndexOf('/') + 1).replace(".class", ".java");
-
-        ClassWriter writer = new ClassWriter(0);
-        node.accept(writer);
-        return writer.toByteArray();
-    }
-
     public File getExceptorCfg()
     {
         return exceptorCfg.call();
@@ -479,6 +409,8 @@ public class ProcessJarTask extends CachedTask
     /**
      * returns the actual output file depending on Clean status
      */
+    @Cached
+    @OutputFile
     public File getOutJar()
     {
         return isClean ? outCleanJar.call() : outDirtyJar.call();
