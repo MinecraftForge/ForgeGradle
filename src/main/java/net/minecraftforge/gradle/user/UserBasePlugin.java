@@ -173,11 +173,15 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         {
             GenSrgTask task = makeTask("genSrgs", GenSrgTask.class);
             task.setInSrg(df(PACKAGED_SRG));
+            task.setInExc(df(PACKAGED_EXC));
+            task.setMethodsCsv(df(METHOD_CSV));
+            task.setFieldsCsv(df(FIELD_CSV));
+            task.setNotchToSrg(df(DEOBF_SRG_SRG));
             task.setNotchToMcp(df(DEOBF_MCP_SRG));
             task.setMcpToSrg(df(REOBF_SRG));
             task.setMcpToNotch(df(REOBF_NOTCH_SRG));
-            task.setMethodsCsv(df(METHOD_CSV));
-            task.setFieldsCsv(df(FIELD_CSV));
+            task.setSrgExc(df(EXC_SRG));
+            task.setMcpExc(df(EXC_MCP));
             task.dependsOn("extractUserDev");
         }
 
@@ -195,7 +199,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             ProcessJarTask task = makeTask("deobfBinJar", ProcessJarTask.class);
             task.setSrg(df(DEOBF_MCP_SRG));
             task.setExceptorJson(df(EXC_JSON));
-            task.setExceptorCfg(df(PACKAGED_EXC));
+            task.setExceptorCfg(df(EXC_MCP));
             task.setFieldCsv(df(FIELD_CSV));
             task.setMethodCsv(df(METHOD_CSV));
             task.setApplyMarkers(false);
@@ -206,10 +210,10 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 
         {
             ProcessJarTask task = makeTask("deobfuscateJar", ProcessJarTask.class);
-            task.setSrg(df(PACKAGED_SRG));
+            task.setSrg(df(DEOBF_SRG_SRG));
             task.setInJar(df(JAR_MERGED));
             task.setExceptorJson(df(EXC_JSON));
-            task.setExceptorCfg(df(PACKAGED_EXC));
+            task.setExceptorCfg(df(EXC_SRG));
             task.setApplyMarkers(true);
             task.setDoesCache(true);
             addATs(task);
@@ -218,7 +222,8 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 
         {
             ReobfTask task = makeTask("reobf", ReobfTask.class);
-            task.setExceptorCfg(delayedFile(PACKAGED_EXC));
+            task.dependsOn("genSrgs");
+            task.setExceptorCfg(delayedFile(EXC_SRG));
             task.setSrg(delayedFile(REOBF_SRG));
             task.reobf(project.getTasks().getByName("jar"), new Action<ArtifactSpec>()
             {

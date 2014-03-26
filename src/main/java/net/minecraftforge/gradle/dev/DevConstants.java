@@ -23,6 +23,9 @@ final class DevConstants
     static final String MCP_2_SRG_SRG       = "{BUILD_DIR}/tmp/mcp2srg.srg";
     static final String MCP_2_NOTCH_SRG     = "{BUILD_DIR}/tmp/mcp2notch.srg";
     static final String NOTCH_2_MCP_SRG     = "{BUILD_DIR}/tmp/notch2mcp.srg";
+    static final String NOTCH_2_SRG_SRG     = "{BUILD_DIR}/tmp/notch2srg.srg";
+    static final String SRG_EXC             = "{BUILD_DIR}/tmp/srg.exc";
+    static final String MCP_EXC             = "{BUILD_DIR}/tmp/mcp.exc";
     static final String JAVADOC_TMP         = "{BUILD_DIR}/tmp/javadoc";
     static final String BINPATCH_TMP        = "{BUILD_DIR}/tmp/bin_patches.jar";
     static final String LAUNCH4J_DIR        = "{BUILD_DIR}/launch4j_exec";

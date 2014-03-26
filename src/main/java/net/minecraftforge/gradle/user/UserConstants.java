@@ -28,9 +28,12 @@ public final class UserConstants
     static final String PACKAGED_EXC      = CONF_DIR + "/packaged.exc";
     static final String EXC_JSON          = CONF_DIR + "/exceptor.json";
 
+    public static final String DEOBF_SRG_SRG     = "{API_CACHE_DIR}/srgs/notch-srg.srg";
     public static final String DEOBF_MCP_SRG     = "{API_CACHE_DIR}/srgs/notch-mcp.srg";
     public static final String REOBF_SRG         = "{API_CACHE_DIR}/srgs/mcp-srg.srg";
     public static final String REOBF_NOTCH_SRG   = "{API_CACHE_DIR}/srgs/mcp-notch.srg";
+    public static final String EXC_SRG           = "{API_CACHE_DIR}/srgs/srg.exc";
+    public static final String EXC_MCP           = "{API_CACHE_DIR}/srgs/mcp.srg";
 
     static final String METHOD_CSV        = CONF_DIR + "/methods.csv";
     static final String FIELD_CSV         = CONF_DIR + "/fields.csv";

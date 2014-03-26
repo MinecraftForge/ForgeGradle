@@ -17,6 +17,7 @@ import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
+import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
@@ -56,6 +57,27 @@ public class ForgeDevPlugin extends DevBasePlugin
 
         // set fmlDir
         getExtension().setFmlDir("fml");
+        
+        // configure genSrg task.
+        GenSrgTask genSrgTask = (GenSrgTask) project.getTasks().getByName("genSrgs");
+        {
+            // find all the exc & srg files in the resources.
+            for (File f : project.fileTree(delayedFile(DevConstants.FML_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    genSrgTask.addExtraExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    genSrgTask.addExtraSrg(f);
+            }
+            
+            for (File f : project.fileTree(delayedFile(DevConstants.FORGE_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    genSrgTask.addExtraExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    genSrgTask.addExtraSrg(f);
+            }
+        }
 
         createJarProcessTasks();
         createProjectTasks();
@@ -81,13 +103,13 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             task2.setInJar(delayedFile(Constants.JAR_MERGED));
             task2.setOutCleanJar(delayedFile(JAR_SRG_FORGE));
-            task2.setSrg(delayedFile(JOINED_SRG));
+            task2.setSrg(delayedFile(NOTCH_2_SRG_SRG));
             task2.setExceptorCfg(delayedFile(JOINED_EXC));
             task2.setExceptorJson(delayedFile(EXC_JSON));
             task2.addTransformerClean(delayedFile(FML_RESOURCES + "/fml_at.cfg"));
             task2.addTransformerClean(delayedFile(FORGE_RESOURCES + "/forge_at.cfg"));
             task2.setApplyMarkers(true);
-            task2.dependsOn("downloadMcpTools", "mergeJars");
+            task2.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
         }
 
         DecompileTask task3 = makeTask("decompile", DecompileTask.class);
@@ -280,27 +302,10 @@ public class ForgeDevPlugin extends DevBasePlugin
             applyS2S.addIn(delayedFile(ECLIPSE_FORGE_SRC));
             applyS2S.setOut(delayedFile(PATCH_DIRTY));
             applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
-            applyS2S.addExc(delayedFile(JOINED_EXC));
+            applyS2S.addExc(delayedFile(MCP_EXC));
+            applyS2S.addExc(delayedFile(SRG_EXC)); // just in case
             applyS2S.setRangeMap(rangeMapDirty);
             applyS2S.dependsOn("genSrgs", extractRange);
-            
-            // find all the exc & srg files in the FML resources.
-            for (File f : project.fileTree(delayedFile(FML_RESOURCES).call()).getFiles())
-            {
-                if(f.getPath().endsWith(".exc"))
-                    applyS2S.addExc(f);
-                else if(f.getPath().endsWith(".srg"))
-                    applyS2S.addSrg(f);
-            }
-            
-            // find all the exc & srg files in the FORGE resources.
-            for (File f : project.fileTree(delayedFile(FORGE_RESOURCES).call()).getFiles())
-            {
-                if(f.getPath().endsWith(".exc"))
-                    applyS2S.addExc(f);
-                else if(f.getPath().endsWith(".srg"))
-                    applyS2S.addSrg(f);
-            }
         }
         
         extractRange = makeTask("extractRangeClean", ExtractS2SRangeTask.class);
@@ -315,27 +320,10 @@ public class ForgeDevPlugin extends DevBasePlugin
             applyS2S.addIn(delayedFile(REMAPPED_CLEAN));
             applyS2S.setOut(delayedFile(PATCH_CLEAN));
             applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
-            applyS2S.addExc(delayedFile(JOINED_EXC));
+            applyS2S.addExc(delayedFile(MCP_EXC));
+            applyS2S.addExc(delayedFile(SRG_EXC)); // just in case
             applyS2S.setRangeMap(rangeMapClean);
             applyS2S.dependsOn("genSrgs", extractRange);
-            
-            // find all the exc & srg files in the FML resources.
-            for (File f : project.fileTree(delayedFile(FML_RESOURCES).call()).getFiles())
-            {
-                if(f.getPath().endsWith(".exc"))
-                    applyS2S.addExc(f);
-                else if(f.getPath().endsWith(".srg"))
-                    applyS2S.addSrg(f);
-            }
-            
-            // find all the exc & srg files in the FORGE resources.
-            for (File f : project.fileTree(delayedFile(FORGE_RESOURCES).call()).getFiles())
-            {
-                if(f.getPath().endsWith(".exc"))
-                    applyS2S.addExc(f);
-                else if(f.getPath().endsWith(".srg"))
-                    applyS2S.addSrg(f);
-            }
         }
         
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
@@ -377,7 +365,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task3.setDirtyJar(delayedFile(REOBF_TMP));
             task3.setDeobfDataLzma(delayedFile(DEOBF_DATA));
             task3.setOutJar(delayedFile(BINPATCH_TMP));
-            task3.setSrg(delayedFile(JOINED_SRG));
+            task3.setSrg(delayedFile(NOTCH_2_SRG_SRG));
             task3.addPatchList(delayedFileTree(FORGE_PATCH_DIR));
             task3.addPatchList(delayedFileTree(FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData");
@@ -645,8 +633,8 @@ public class ForgeDevPlugin extends DevBasePlugin
             userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "astyle.cfg", "exceptor.json", "*.csv", "!packages.csv"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}/patches"), new CopyInto("conf"));
             userDev.from(delayedFile(MERGE_CFG), new CopyInto("conf"));
-            userDev.from(delayedFile(JOINED_SRG), new CopyInto("conf"));
-            userDev.from(delayedFile(JOINED_EXC), new CopyInto("conf"));
+            userDev.from(delayedFile(NOTCH_2_SRG_SRG), new CopyInto("conf"));
+            userDev.from(delayedFile(SRG_EXC), new CopyInto("conf"));
             userDev.from(delayedFile(FML_VERSIONF), new CopyInto("src/main/resources"));
             userDev.rename("[\\d.]+?-dev\\.json", "dev.json");
             userDev.rename(".+?\\.srg", "packaged.srg");

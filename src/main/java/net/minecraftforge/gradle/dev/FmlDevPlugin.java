@@ -15,6 +15,7 @@ import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
+import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
@@ -48,6 +49,19 @@ public class FmlDevPlugin extends DevBasePlugin
 
         // set fmlDir
         getExtension().setFmlDir(".");
+        
+        // configure genSrg task.
+        GenSrgTask genSrgTask = (GenSrgTask) project.getTasks().getByName("genSrgs");
+        {
+            // find all the exc & srg files in the resources.
+            for (File f : project.fileTree(delayedFile(DevConstants.FML_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    genSrgTask.addExtraExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    genSrgTask.addExtraSrg(f);
+            }
+        }
 
         //configureLaunch4J();
         createJarProcessTasks();
@@ -83,12 +97,12 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             task2.setInJar(delayedFile(Constants.JAR_MERGED));
             task2.setOutCleanJar(delayedFile(DevConstants.JAR_SRG_FML));
-            task2.setSrg(delayedFile(DevConstants.JOINED_SRG));
+            task2.setSrg(delayedFile(DevConstants.NOTCH_2_SRG_SRG));
             task2.setExceptorCfg(delayedFile(DevConstants.JOINED_EXC));
             task2.setExceptorJson(delayedFile(DevConstants.EXC_JSON));
             task2.addTransformerClean(delayedFile(DevConstants.FML_RESOURCES + "/fml_at.cfg"));
             task2.setApplyMarkers(true);
-            task2.dependsOn("downloadMcpTools", "mergeJars");
+            task2.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
         }
 
         DecompileTask task3 = makeTask("decompile", DecompileTask.class);
@@ -256,18 +270,10 @@ public class FmlDevPlugin extends DevBasePlugin
             task4.addIn(delayedFile(DevConstants.ECLIPSE_FML_SRC));
             task4.setOut(delayedFile(DevConstants.PATCH_DIRTY));
             task4.addSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
-            task4.addExc(delayedFile(DevConstants.JOINED_EXC));
+            task4.addExc(delayedFile(DevConstants.MCP_EXC));
+            task4.addExc(delayedFile(DevConstants.SRG_EXC)); // both EXCs just in case.
             task4.setRangeMap(rangeMap);
             task4.dependsOn("genSrgs", task);
-            
-            // find all the exc & srg files in the resources.
-            for (File f : project.fileTree(delayedFile(DevConstants.FML_RESOURCES).call()).getFiles())
-            {
-                if(f.getPath().endsWith(".exc"))
-                    task4.addExc(f);
-                else if(f.getPath().endsWith(".srg"))
-                    task4.addSrg(f);
-            }
         }
         
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
@@ -289,15 +295,15 @@ public class FmlDevPlugin extends DevBasePlugin
 
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
-            obf.setSrg(delayedFile(DevConstants.JOINED_SRG));
-            obf.setExc(delayedFile(DevConstants.JOINED_EXC));
+            obf.setSrg(delayedFile(DevConstants.NOTCH_2_SRG_SRG));
+            obf.setExc(delayedFile(DevConstants.SRG_EXC));
             obf.setReverse(true);
             obf.setPreFFJar(delayedFile(DevConstants.JAR_SRG_FML));
             obf.setOutJar(delayedFile(DevConstants.REOBF_TMP));
             obf.setBuildFile(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"));
             obf.setMethodsCsv(delayedFile(DevConstants.METHODS_CSV));
             obf.setFieldsCsv(delayedFile(DevConstants.FIELDS_CSV));
-            obf.dependsOn("generateProjects", "extractFmlSources");
+            obf.dependsOn("generateProjects", "extractFmlSources", "genSrgs");
         }
 
         GenBinaryPatches task3 = makeTask("genBinPatches", GenBinaryPatches.class);
@@ -308,7 +314,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task3.setDirtyJar(delayedFile(DevConstants.REOBF_TMP));
             task3.setDeobfDataLzma(delayedFile(DevConstants.DEOBF_DATA));
             task3.setOutJar(delayedFile(DevConstants.BINPATCH_TMP));
-            task3.setSrg(delayedFile(DevConstants.JOINED_SRG));
+            task3.setSrg(delayedFile(DevConstants.NOTCH_2_SRG_SRG));
             task3.addPatchList(delayedFileTree(DevConstants.FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData");
         }
@@ -485,8 +491,8 @@ public class FmlDevPlugin extends DevBasePlugin
             userDev.from(delayedFile(DevConstants.DEOBF_DATA), new CopyInto("src/main/resources/"));
             userDev.from(delayedFile(DevConstants.MERGE_CFG), new CopyInto("conf"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "astyle.cfg", "exceptor.json", "*.csv", "!packages.csv"));
-            userDev.from(delayedFile(DevConstants.JOINED_SRG), new CopyInto("conf"));
-            userDev.from(delayedFile(DevConstants.JOINED_EXC), new CopyInto("conf"));
+            userDev.from(delayedFile(DevConstants.NOTCH_2_SRG_SRG), new CopyInto("conf"));
+            userDev.from(delayedFile(DevConstants.SRG_EXC), new CopyInto("conf"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}/patches"), new CopyInto("conf"));
             userDev.rename("[\\d.]+?-dev\\.json", "dev.json");
             userDev.rename(".+?\\.srg", "packaged.srg");
