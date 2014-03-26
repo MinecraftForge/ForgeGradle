@@ -9,7 +9,7 @@ public class BaseExtension
     protected Project project;
     protected String version = "null";
     protected String mcpVersion = "unknown";
-    protected String assetDir = "eclipse/assets";
+    protected String assetDir = "run/assets";
     private LinkedList<String> srgExtra = new LinkedList<String>();
 
     public BaseExtension(Project project)
