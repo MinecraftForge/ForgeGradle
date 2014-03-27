@@ -295,6 +295,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             extractRange.setLibsFromProject(delayedFile(ECLIPSE_FORGE + "/build.gradle"), "compile", true);
             extractRange.addIn(delayedFile(ECLIPSE_FORGE_SRC));
             extractRange.setRangeMap(rangeMapDirty);
+            extractRange.dependsOn("extractForgeSources", "generateProjects");
         }
         
         ApplyS2STask applyS2S = makeTask("retroMapForge", ApplyS2STask.class);
@@ -313,6 +314,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             extractRange.setLibsFromProject(delayedFile(ECLIPSE_CLEAN + "/build.gradle"), "compile", true);
             extractRange.addIn(delayedFile(REMAPPED_CLEAN));
             extractRange.setRangeMap(rangeMapClean);
+            extractRange.dependsOn("remapCleanJar", "generateProjects");
         }
         
         applyS2S = makeTask("retroMapClean", ApplyS2STask.class);
@@ -554,6 +556,7 @@ public class ForgeDevPlugin extends DevBasePlugin
                     task.setDestinationDir(javadoc_temp);
                 }
             });
+            javadocJar.dependsOn("generateProjects", "extractForgeSources");
         }
 
         final Zip javadoc = makeTask("packageJavadoc", Zip.class);
@@ -570,6 +573,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             range.addIn(delayedFile(DevConstants.FML_SOURCES));
             range.addIn(delayedFile(DevConstants.FORGE_SOURCES));
             range.setRangeMap(delayedFile(DevConstants.USERDEV_RANGEMAP));
+            range.dependsOn("extractForgeSources", "generateProjects");
         }
         
         ApplyS2STask s2s = makeTask("userDevSrgSrc", ApplyS2STask.class);

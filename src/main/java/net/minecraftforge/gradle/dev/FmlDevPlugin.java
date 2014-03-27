@@ -263,6 +263,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task.addIn(delayedFile(DevConstants.ECLIPSE_FML_SRC));
             //task.addIn(delayedFile(DevConstants.FML_SOURCES));
             task.setRangeMap(rangeMap);
+            task.dependsOn("generateProjects", "extractFmlSources");
         }
         
         ApplyS2STask task4 = makeTask("retroMapSources", ApplyS2STask.class);
@@ -438,6 +439,7 @@ public class FmlDevPlugin extends DevBasePlugin
                     task.setArchiveName(file.getName());
                 }
             });
+            javadocJar.dependsOn("generateProjects", "extractFmlSources");
         }
 
         ExtractS2SRangeTask range = makeTask("userDevExtractRange", ExtractS2SRangeTask.class);
@@ -445,6 +447,7 @@ public class FmlDevPlugin extends DevBasePlugin
             range.setLibsFromProject(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"), "compile", true);
             range.addIn(delayedFile(DevConstants.FML_SOURCES));
             range.setRangeMap(delayedFile(DevConstants.USERDEV_RANGEMAP));
+            range.dependsOn("generateProjects", "extractFmlSources");
         }
         
         ApplyS2STask s2s = makeTask("userDevSrgSrc", ApplyS2STask.class);
