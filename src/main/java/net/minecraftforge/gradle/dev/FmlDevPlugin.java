@@ -263,7 +263,6 @@ public class FmlDevPlugin extends DevBasePlugin
             task.addIn(delayedFile(DevConstants.ECLIPSE_FML_SRC));
             //task.addIn(delayedFile(DevConstants.FML_SOURCES));
             task.setRangeMap(rangeMap);
-            task.dependsOn("generateProjects", "extractFmlSources");
         }
         
         ApplyS2STask task4 = makeTask("retroMapSources", ApplyS2STask.class);
