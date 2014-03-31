@@ -40,7 +40,8 @@ import com.google.common.io.Files;
  */
 public abstract class CachedTask extends DefaultTask
 {
-    private boolean                    doesCache  = defaultCache();
+    private boolean                    doesCache  = true;
+    private boolean                    cacheSet   = false;
     private final ArrayList<Annotated> cachedList = new ArrayList<Annotated>();
     private final ArrayList<Annotated> inputList  = new ArrayList<Annotated>();
 
@@ -344,11 +345,15 @@ public abstract class CachedTask extends DefaultTask
 
     public boolean doesCache()
     {
-        return doesCache;
+        if (cacheSet)
+            return doesCache;
+        else
+            return defaultCache();
     }
 
     public void setDoesCache(boolean cacheStuff)
     {
+        this.cacheSet = true;
         this.doesCache = cacheStuff;
     }
 }
