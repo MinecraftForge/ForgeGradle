@@ -11,7 +11,10 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import net.minecraftforge.gradle.StringUtils;
 import net.minecraftforge.gradle.dev.DevExtension;
@@ -22,6 +25,7 @@ import org.gradle.api.Project;
 import argo.jdom.JdomParser;
 
 import com.google.common.base.Joiner;
+import com.google.common.io.ByteStreams;
 
 public class Constants
 {
@@ -141,32 +145,72 @@ public class Constants
 
     public static String hash(File file)
     {
-        return hash(file, "MD5");
+        if (file.getPath().endsWith(".zip") || file.getPath().endsWith(".jar"))
+            return hashZip(file, "MD5");
+        else
+            return hash(file, "MD5");
+    }
+    
+    public static List<String> hashAll(File file)
+    {
+        LinkedList<String> list = new LinkedList<String>();
+        
+        if (file.isDirectory())
+        {
+            for (File f : file.listFiles())
+                hashAll(f);
+        }
+        else
+            list.add(hash(file));
+        
+        return list;
     }
 
     public static String hash(File file, String function)
     {
         try
         {
-
+            MessageDigest hasher = MessageDigest.getInstance(function);
+            
             InputStream fis = new FileInputStream(file);
-
-            byte[] buffer = new byte[1024];
-            MessageDigest complete = MessageDigest.getInstance(function);
-            int numRead;
-
-            do
-            {
-                numRead = fis.read(buffer);
-                if (numRead > 0)
-                {
-                    complete.update(buffer, 0, numRead);
-                }
-            } while (numRead != -1);
-
+            hasher.update(ByteStreams.toByteArray(fis));
             fis.close();
-            byte[] hash = complete.digest();
+            
+            byte[] hash = hasher.digest();
 
+            // convert to string
+            String result = "";
+            for (int i = 0; i < hash.length; i++)
+                result += Integer.toString((hash[i] & 0xff) + 0x100, 16).substring(1);
+            return result;
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+    
+    public static String hashZip(File file, String function)
+    {
+        try
+        {
+            MessageDigest hasher = MessageDigest.getInstance(function);
+
+            ZipInputStream zin = new ZipInputStream(new FileInputStream(file));
+            ZipEntry entry = null;
+            while ((entry = zin.getNextEntry()) != null)
+            {
+                hasher.update(entry.getName().getBytes());
+                hasher.update(ByteStreams.toByteArray(zin));
+            }
+            zin.close();
+            
+            byte[] hash = hasher.digest();
+
+            
+            // convert to string
             String result = "";
 
             for (int i = 0; i < hash.length; i++)
