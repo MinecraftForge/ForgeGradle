@@ -66,6 +66,7 @@ public class ArtifactSpec
         version = new Closure(null) { public Object call() {return task.getVersion();} };
         classifier = new Closure(null) { public Object call() {return task.getClassifier();} };
         extension = new Closure(null) { public Object call() {return task.getExtension();} };
+        archiveName = new Closure(null) { public Object call() {return task.getArchiveName();} };
         classpath = new Closure(null) { public Object call() {return task.getSource();} };
     }
 
@@ -188,8 +189,16 @@ public class ArtifactSpec
             classpath = project.files(classpath);
 
         // skip if its already been set by the user.
-        if (archiveSet)
+        if (archiveSet && archiveName != null)
             return;
+        else
+        {
+            archiveName = resolveString(archiveName);
+            if (archiveName != null) // the jar set it.. we dont need to reset this stuff.
+            {
+                return;
+            }
+        }
 
         StringBuilder builder = new StringBuilder();
         builder.append(baseName);
@@ -222,7 +231,7 @@ public class ArtifactSpec
     private Object resolveString(Object obj)
     {
         if (obj == null)
-            return "";
+            return null;
         else if (obj instanceof Closure)
             return resolveString(((Closure<Object>) obj).call());
         else
