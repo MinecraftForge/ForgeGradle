@@ -49,8 +49,12 @@ public class ForgeUserPlugin extends UserBasePlugin
     @Override
     public void afterEvaluate()
     {
-        String depBase = "net.minecraftforge:forge:" + getExtension().getApiVersion();
-        project.getDependencies().add(CONFIG_USERDEV, depBase + ":userdev@jar");
+        String apiVersion = getExtension().getApiVersion();
+        int buildNumber = Integer.parseInt(apiVersion.substring(apiVersion.lastIndexOf('.') + 1));
+        if (buildNumber < 967 || buildNumber > 1047)
+            throw new IllegalArgumentException("ForgeGradle 1.1 only works for Forge versions 10.12.0.967 - 10.12.0.1047");
+        
+        project.getDependencies().add(CONFIG_USERDEV, "net.minecraftforge:forge:" + apiVersion + ":userdev@jar");
 
         super.afterEvaluate();
         

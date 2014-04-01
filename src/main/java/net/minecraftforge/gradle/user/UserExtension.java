@@ -89,6 +89,9 @@ public class UserExtension extends BaseExtension
         
         version = matcher.group(1);
         apiVersion = matcher.group(0);
+        
+        if (!version.equals("1.7.2"))
+            throw new  IllegalArgumentException("ForgeGradle 1.1 will only work for Minecraft 1.7.2");
     }
 
     public String getApiVersion()
