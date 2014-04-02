@@ -9,6 +9,7 @@ import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
+import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
@@ -99,6 +100,18 @@ public class FmlUserPlugin extends UserBasePlugin
             depHandler.add(depConfig, ImmutableMap.of("name", "fmlSrc", "version", getExtension().getApiVersion()));
         else
             depHandler.add(depConfig, project.files(delayedFile(prefix + FML_BINPATCHED)));
+    }
+    
+    @Override
+    public void finalCall()
+    {
+        super.finalCall();
+        
+        if (getExtension().isDecomp)
+        {
+            boolean isClean = ((ProcessJarTask) project.getTasks().getByName("deobfuscateJar")).isClean();
+            ((ReobfTask) project.getTasks().getByName("reobf")).setRecompFile(delayedFile((isClean ? FML_CACHE : DIRTY_DIR) + FML_RECOMP));
+        }
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

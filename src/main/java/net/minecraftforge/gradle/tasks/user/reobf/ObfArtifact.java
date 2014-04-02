@@ -303,7 +303,7 @@ public class ObfArtifact extends AbstractPublishArtifact
      * @throws IOException
      * @throws org.gradle.api.InvalidUserDataException if the there is insufficient information available to generate the signature.
      */
-    void generate(ReobfExceptor exc, File extraSrg) throws Exception
+    void generate(ReobfExceptor exc, File defaultSrg, File extraSrg) throws Exception
     {
         File toObf = getToObf();
         if (toObf == null)
@@ -313,35 +313,31 @@ public class ObfArtifact extends AbstractPublishArtifact
 
         // ready artifacts
         File output = getFile();
-        File excepted = File.createTempFile("reobfed", ".jar", caller.getTemporaryDir());
-        Files.copy(toObf, excepted);
+        File toObfTemp = File.createTempFile("reobfed", ".jar", caller.getTemporaryDir());
+        Files.copy(toObf, toObfTemp);
 
         // ready Srg
-        File srg = (File) (spec.srg == null ? caller.getSrg() : spec.srg);
-        boolean isTemp = false;
-        if (exc != null)
+        File srg = (File) (spec.srg == null ? defaultSrg : spec.srg);
+        boolean isTempSrg = false;
+        if (exc != null && srg != defaultSrg) // defualt SRG is already passed through this.
         {
             File tempSrg = File.createTempFile("reobf", ".srg", caller.getTemporaryDir());
-            isTemp = true;
+            isTempSrg = true;
             
-            if (!srg.equals(caller.getSrg()))
-                exc = caller.prepareSrg(srg, tempSrg);
-            
-            exc.toReobfJar = toObf;
-            exc.buildSrg();
-            srg = exc.outSrg;
+            exc.buildSrg(srg, tempSrg);
+            srg = tempSrg;
             
         }
         
         // obfuscate!
         if (caller.getUseRetroGuard())
-            applyRetroGuard(excepted, output, srg, extraSrg);
+            applyRetroGuard(toObfTemp, output, srg, extraSrg);
         else
-            applySpecialSource(excepted, output, srg, extraSrg);
+            applySpecialSource(toObfTemp, output, srg, extraSrg);
 
         // delete temporary files
-        excepted.delete();
-        if (isTemp)
+        toObfTemp.delete();
+        if (isTempSrg)
             srg.delete();
         
         System.gc(); // clean anything out.. I hope..

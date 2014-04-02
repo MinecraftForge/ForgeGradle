@@ -72,16 +72,16 @@ public class ObfuscateTask extends DefaultTask
             ReobfExceptor exceptor = new ReobfExceptor();
             exceptor.toReobfJar = inJar;
             exceptor.deobfJar = getPreFFJar();
-            exceptor.inSrg = srg;
-            exceptor.outSrg = new File(this.getTemporaryDir(), "reobf_cls.srg");
             exceptor.excConfig = getExc();
             exceptor.fieldCSV = getFieldsCsv();
             exceptor.methodCSV = getMethodsCsv();
             
-            exceptor.doFirstThings();
-            exceptor.buildSrg();
+            File outSrg =  new File(this.getTemporaryDir(), "reobf_cls.srg");
             
-            srg = exceptor.outSrg;
+            exceptor.doFirstThings();
+            exceptor.buildSrg(srg, outSrg);
+            
+            srg = outSrg;
         }
         
         // append SRG
