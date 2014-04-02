@@ -391,7 +391,6 @@ public class ReobfTask extends DefaultTask
 
     public void setDeobfFile(DelayedFile deobfFile)
     {
-        System.out.println("DEOBF IS SET!");
         this.deobfFile = deobfFile;
     }
     
