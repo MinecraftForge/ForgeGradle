@@ -143,12 +143,12 @@ public class RemapSourcesTask extends EditJarTask
     
     private void insetAboveAnnotations(List<String> list, String line)
     {
-        int x = list.size() - 1;
-        while (list.get(x).trim().startsWith("@"))
+        int back = 0;
+        while (list.get(list.size() - 1 - back).trim().startsWith("@"))
         {
-            x--;
+            back++;
         }
-        list.add(x + 1, line);
+        list.add(list.size() - back, line);
     }
     
     private String replaceInLine(String line)
@@ -237,7 +237,7 @@ public class RemapSourcesTask extends EditJarTask
 
             builder.append(indent);
             builder.append(" */");
-            builder.append(Constants.NEWLINE);
+            //builder.append(Constants.NEWLINE);
 
         }
         // one line
@@ -247,7 +247,7 @@ public class RemapSourcesTask extends EditJarTask
             builder.append("/** ");
             builder.append(javadoc);
             builder.append(" */");
-            builder.append(Constants.NEWLINE);
+            //builder.append(Constants.NEWLINE);
         }
 
         return builder.toString().replace(indent, indent);
