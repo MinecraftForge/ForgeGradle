@@ -28,8 +28,11 @@ import org.gradle.api.internal.DefaultDomainObjectSet;
 import org.gradle.api.internal.file.collections.SimpleFileCollection;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
+
+import com.google.common.io.Files;
 
 public class ReobfTask extends DefaultTask
 {
@@ -41,10 +44,21 @@ public class ReobfTask extends DefaultTask
     @InputFile
     private DelayedFile                               srg;
     
+    @Optional
+    @InputFile
     private DelayedFile                               fieldCsv;
+    @Optional
+    @InputFile
     private DelayedFile                               methodCsv;
+    @Optional
+    @InputFile
     private DelayedFile                               exceptorCfg;
+    @Optional
+    @InputFile
     private DelayedFile                               deobfFile;
+    @Optional
+    @InputFile
+    private DelayedFile                               recompFile;
 
     @Input
     private LinkedList<String>                        extraSrg      = new LinkedList<String>();
@@ -245,13 +259,18 @@ public class ReobfTask extends DefaultTask
     {
         // do stuff.
         ReobfExceptor exc = null;
-        File srg = new File(getTemporaryDir(), "reobf.srg");
-        File extraSrg = new File(getTemporaryDir(), "extra.srg");
+        File srg = File.createTempFile("reobf-default", ".srg", getTemporaryDir());
+        File extraSrg = File.createTempFile("reobf-extra", ".srg", getTemporaryDir());;
 
         UserExtension ext = (UserExtension) getProject().getExtensions().getByName(Constants.EXT_NAME_MC);
 
         if (ext.isDecomp())
-            exc = prepareSrg(getSrg(), srg);
+        {
+            exc = getExceptor();
+            exc.buildSrg(getSrg(), srg);
+        }
+        else
+            Files.copy(getSrg(), srg);
         
         // generate extraSrg
         {
@@ -272,16 +291,15 @@ public class ReobfTask extends DefaultTask
         }
 
         for (ObfArtifact obf : getObfuscated())
-            obf.generate(exc, extraSrg);
+            obf.generate(exc, srg, extraSrg);
     }
     
-    protected ReobfExceptor prepareSrg(File inSrg, File outSrg) throws IOException
+    private ReobfExceptor getExceptor() throws IOException
     {
         ReobfExceptor exc = new ReobfExceptor();
         exc.deobfJar = getDeobfFile();
+        exc.toReobfJar = getRecompFile();
         exc.excConfig = getExceptorCfg();
-        exc.inSrg = inSrg;
-        exc.outSrg = outSrg;
         exc.fieldCSV = getFieldCsv();
         exc.methodCSV = getMethodCsv();
 
@@ -374,6 +392,16 @@ public class ReobfTask extends DefaultTask
     public void setDeobfFile(DelayedFile deobfFile)
     {
         this.deobfFile = deobfFile;
+    }
+    
+    public File getRecompFile()
+    {
+        return recompFile == null ? null : recompFile.call();
+    }
+
+    public void setRecompFile(DelayedFile recompFile)
+    {
+        this.recompFile = recompFile;
     }
 
     public File getExceptorCfg()

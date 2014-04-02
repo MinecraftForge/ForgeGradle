@@ -10,6 +10,7 @@ import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DownloadTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
+import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
@@ -107,8 +108,20 @@ public class ForgeUserPlugin extends UserBasePlugin
         else
             depHandler.add(depConfig, ImmutableMap.of("name", "forgeBin", "version", getExtension().getApiVersion()));
     }
+    
+    @Override
+    public void finalCall()
+    {
+        super.finalCall();
+        
+        if (getExtension().isDecomp)
+        {
+            boolean isClean = ((ProcessJarTask) project.getTasks().getByName("deobfuscateJar")).isClean();
+            ((ReobfTask) project.getTasks().getByName("reobf")).setRecompFile(delayedFile((isClean ? FORGE_CACHE : DIRTY_DIR) + FORGE_RECOMP));
+        }
+    }
 
-    @SuppressWarnings({ "rawtypes", "unchecked"})
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     protected void doPostDecompTasks(boolean isClean, DelayedFile decompOut)
     {
