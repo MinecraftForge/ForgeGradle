@@ -297,6 +297,37 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         	
         	exec.dependsOn(jarTask);
         }
+        
+        exec = makeTask("debugClient", JavaExec.class);
+        {
+            exec.classpath(project.getConfigurations().getByName("runtime"));
+            exec.classpath(jarTask.getArchivePath());
+            exec.setMain("net.minecraft.launchwrapper.Launch");
+            exec.jvmArgs("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
+            exec.jvmArgs("-Djava.library.path=" + delayedFile(NATIVES_DIR).call().getAbsolutePath());
+            exec.args("--version 1.7", "--tweakClass", "cpw.mods.fml.common.launcher.FMLTweaker", "--username=ForgeDevName", "--accessToken", "FML");
+            exec.setWorkingDir(delayedFile("{ASSET_DIR}").call().getParentFile());
+            exec.setStandardOutput(System.out);
+            exec.setErrorOutput(System.err);
+            exec.setDebug(true);
+            
+            exec.dependsOn(jarTask);
+        }
+        
+        exec = makeTask("debugServer", JavaExec.class);
+        {
+            exec.classpath(project.getConfigurations().getByName("runtime"));
+            exec.classpath(jarTask.getArchivePath());
+            exec.setMain("cpw.mods.fml.relauncher.ServerLaunchWrapper");
+            exec.jvmArgs("-Xincgc", "-Dfml.ignoreInvalidMinecraftCertificates=true");
+            exec.setWorkingDir(delayedFile("{ASSET_DIR}").call().getParentFile());
+            exec.setStandardOutput(System.out);
+            exec.setStandardInput(System.in);
+            exec.setErrorOutput(System.err);
+            exec.setDebug(true);
+            
+            exec.dependsOn(jarTask);
+        }
     }
 
     protected abstract void doPostDecompTasks(boolean isClean, DelayedFile decompOut);
