@@ -49,7 +49,12 @@ public class FmlUserPlugin extends UserBasePlugin
     @Override
     public void afterEvaluate()
     {
-        project.getDependencies().add(CONFIG_USERDEV, "cpw.mods:fml:" + getExtension().getApiVersion() + ":userdev");
+        String apiVersion = getExtension().getApiVersion();
+        int buildNumber = Integer.parseInt(apiVersion.substring(apiVersion.lastIndexOf('.') + 1));
+        if (buildNumber < 883)
+            throw new IllegalArgumentException("ForgeGradle 1.2 only works for FML versions 7.2.132.882+");
+        
+        project.getDependencies().add(CONFIG_USERDEV, "cpw.mods:fml:" + apiVersion + ":userdev");
 
         super.afterEvaluate();
     }
