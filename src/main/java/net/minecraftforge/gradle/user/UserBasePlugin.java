@@ -118,11 +118,15 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
                 TaskExecutionGraph graph = project.getGradle().getTaskGraph();
                 String path = project.getPath();
                 
-                boolean hasSetup = graph.hasTask(path + "setupCIWorkspace") || graph.hasTask(path + "setupDecompWorkspace") || graph.hasTask(path + "setupDevWorkspace"); 
-                boolean hasBuild = graph.hasTask(path + "eclipse") || graph.hasTask(path + "ideaModule"); 
+                boolean hasSetupDecomp = graph.hasTask(path + "setupDecompWorkspace"); 
+                boolean hasBuild = graph.hasTask(path + "eclipse") || graph.hasTask(path + "ideaModule") || graph.hasTask(path + "build");
+                boolean isJava7 = System.getProperty("java.version").startsWith("1.7");
                 
-                if (hasSetup && hasBuild)
-                    throw new RuntimeException("You're doing it wrong. You are running a setup task and an IDE task in the same command.");
+                if (hasSetupDecomp)
+                    if (hasBuild)
+                        throw new RuntimeException("You're doing it wrong. You are running the setupDecompWorkspace task and an IDE/build task in the same command!");
+                    else if (!isJava7)
+                        throw new RuntimeException("The setupDecompWorkspace will only work with Java 7! This is fixed in ForgeGradle 1.2");
                 
                 return null;
             }
