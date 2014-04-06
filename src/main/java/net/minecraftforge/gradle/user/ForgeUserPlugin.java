@@ -191,6 +191,9 @@ public class ForgeUserPlugin extends UserBasePlugin
             forgePatches.setInJar(injected);
             forgePatches.setOutJar(forged);
             forgePatches.setInPatches(delayedFile(FORGE_PATCHES_ZIP));
+            
+            // source transformers
+            forgePatches.addSourceTransformers(getExtension().sourceTransformers);
         }
 
         // Remap to MCP names

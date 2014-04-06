@@ -1,5 +1,7 @@
 package net.minecraftforge.gradle.tasks.user;
 
+import groovy.lang.Closure;
+
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -30,14 +32,18 @@ import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteStreams;
 import com.nothome.delta.GDiffPatcher;
@@ -59,6 +65,10 @@ public class ApplyBinPatchesTask extends CachedTask
 
     @InputFiles
     DelayedFileTree resources;
+    
+    @Optional
+    @Input
+    private final Multimap<String, Closure<byte[]>> binaryTransformers = HashMultimap.create();
 
     private HashMap<String, ClassPatch> patchlist = Maps.newHashMap();
     private GDiffPatcher patcher = new GDiffPatcher();
@@ -112,6 +122,11 @@ public class ApplyBinPatchesTask extends CachedTask
                         {
                             data = patcher.patch(data, patch.patch);
                         }
+                    }
+                    
+                    for (Closure<byte[]> c : binaryTransformers.get(e.getName()))
+                    {
+                        data = c.call(data);
                     }
     
                     out.write(data);
@@ -321,5 +336,20 @@ public class ApplyBinPatchesTask extends CachedTask
     public void setResources(DelayedFileTree resources)
     {
         this.resources = resources;
+    }
+
+    public Multimap<String, Closure<byte[]>> getBinaryTransformers()
+    {
+        return binaryTransformers;
+    }
+    
+    public void addBinaryTransformers(Multimap<String, Closure<byte[]>> inputs)
+    {
+        binaryTransformers.putAll(inputs);
+    }
+    
+    public void addBinaryTransformer(String className, Closure<byte[]> transformer)
+    {
+        binaryTransformers.put(className, transformer);
     }
 }
