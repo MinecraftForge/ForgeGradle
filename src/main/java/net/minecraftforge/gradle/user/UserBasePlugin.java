@@ -203,6 +203,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             task.setFieldCsv(df(FIELD_CSV));
             task.setMethodCsv(df(METHOD_CSV));
             task.setApplyMarkers(false);
+            task.setStripSynthetics(true);
             addATs(task);
             task.dependsOn("downloadMcpTools", "mergeJars", "genSrgs", "applyBinPatches");
         }

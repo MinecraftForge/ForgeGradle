@@ -261,6 +261,11 @@ public abstract class CachedTask extends DefaultTask
                         getLogger().info(Constants.hash(file) + " " + file);
                     }
                 }
+                else
+                {
+                    hashes.add(obj.toString());
+                }
+                    
             }
         }
 
