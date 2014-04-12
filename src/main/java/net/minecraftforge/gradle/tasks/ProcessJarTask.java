@@ -485,11 +485,6 @@ public class ProcessJarTask extends CachedTask
     {
         return isClean;
     }
-    
-    public void setDirty()
-    {
-        isClean = false;
-    }
 
     /**
      * returns the actual output DelayedFile depending on Clean status

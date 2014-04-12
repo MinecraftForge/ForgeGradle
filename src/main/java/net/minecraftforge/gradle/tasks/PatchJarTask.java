@@ -1,7 +1,5 @@
 package net.minecraftforge.gradle.tasks;
 
-import groovy.lang.Closure;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -19,12 +17,9 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.Optional;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
 
 public class PatchJarTask extends EditJarTask
@@ -34,10 +29,6 @@ public class PatchJarTask extends EditJarTask
     
     @Input
     private int maxFuzz = 0;
-    
-    @Optional
-    @Input
-    private final Multimap<String, Closure<String>> sourceTransformers = HashMultimap.create();
 
     private ContextProvider PROVIDER;
 
@@ -140,19 +131,6 @@ public class PatchJarTask extends EditJarTask
 //        {
 //            throw failure;
 //        }
-        
-        for (String key : sourceTransformers.keySet())
-        {
-            if (!sourceMap.containsKey(key))
-                continue;
-            
-            String file = sourceMap.get(key);
-            
-            for (Closure<String> val : sourceTransformers.get(key))
-                file = val.call(file);
-            
-            sourceMap.put(key, file);
-        }
     }
 
     private ArrayList<PatchedFile> readPatches(FileCollection patchFiles) throws IOException
@@ -276,20 +254,5 @@ public class PatchJarTask extends EditJarTask
     public void setMaxFuzz(int maxFuzz)
     {
         this.maxFuzz = maxFuzz;
-    }
-    
-    public Multimap<String, Closure<String>> getSourceTransformers()
-    {
-        return sourceTransformers;
-    }
-    
-    public void addSourceTransformers(Multimap<String, Closure<String>> inputs)
-    {
-        sourceTransformers.putAll(inputs);
-    }
-    
-    public void addSourceTransformer(String className, Closure<String> transformer)
-    {
-        sourceTransformers.put(className, transformer);
     }
 }

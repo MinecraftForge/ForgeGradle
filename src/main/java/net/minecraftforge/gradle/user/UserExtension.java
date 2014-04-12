@@ -1,7 +1,5 @@
 package net.minecraftforge.gradle.user;
 
-import groovy.lang.Closure;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,11 +14,6 @@ import net.minecraftforge.gradle.delayed.DelayedObject;
 import org.gradle.api.Project;
 import org.gradle.api.ProjectConfigurationException;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-
 public class UserExtension extends BaseExtension
 {
     // groups:  mcVersion  forgeVersion
@@ -28,11 +21,9 @@ public class UserExtension extends BaseExtension
     private static final Pattern VERSION_CHECK = Pattern.compile("([\\d.]+)-([\\w\\d.]+)(?:-[\\w\\d.]+)?");
     
     private String apiVersion;
-    private final ArrayList<Object> ats = Lists.newArrayList();
-    private final HashMap<String, Object> replacements = Maps.newHashMap();
-    private final ArrayList<String> includes = Lists.newArrayList();
-    protected final Multimap<String, Closure<byte[]>> binaryTransformers = HashMultimap.create();
-    protected final Multimap<String, Closure<String>> sourceTransformers = HashMultimap.create();
+    private ArrayList<Object> ats = new ArrayList<Object>();
+    private HashMap<String, Object> replacements = new HashMap<String, Object>();
+    private ArrayList<String> includes = new ArrayList<String>();
     protected boolean isDecomp = false;
     
     public UserExtension(Project project)
@@ -87,41 +78,6 @@ public class UserExtension extends BaseExtension
     public void replaceIn(String path)
     {
         includes.add(path);
-    }
-    
-    @SuppressWarnings("unchecked")
-    public void transform(Map<String, Object> inputs)
-    {
-        if (inputs.size() < 2)
-            throw new IllegalArgumentException("Must specify atleast entires!");
-        
-        if (!inputs.containsKey("className"))
-            throw new IllegalArgumentException("Must specify the 'className' entry.");
-        
-        String key = inputs.get("className").toString().replace('.', '/').replace('\\', '/');
-        
-        boolean oneSet = false;
-        
-        if (inputs.containsKey("source"))
-        {
-            Object obj = inputs.get("source");
-            if (!(obj instanceof Closure))
-                throw new IllegalArgumentException("Source entry must be a Closure!");
-            sourceTransformers.put(key + ".java", (Closure<String>)obj);
-            oneSet = true;
-        }
-        
-        if (inputs.containsKey("binary"))
-        {
-            Object obj = inputs.get("binary");
-            if (!(obj instanceof Closure))
-                throw new IllegalArgumentException("Binary entry must be a Closure!");
-            binaryTransformers.put(key + ".class", (Closure<byte[]>)obj);
-            oneSet = true;
-        }
-        
-        if (!oneSet)
-            throw new IllegalArgumentException("Either the 'source' or 'binary' entries must be added");
     }
     
     public void setVersion(String str)

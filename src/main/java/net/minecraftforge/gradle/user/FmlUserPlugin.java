@@ -146,9 +146,6 @@ public class FmlUserPlugin extends UserBasePlugin
             fmlPatches.setInJar(decompOut);
             fmlPatches.setOutJar(fmled);
             fmlPatches.setInPatches(delayedFile(FML_PATCHES_ZIP));
-            
-            // source transformers
-            fmlPatches.addSourceTransformers(getExtension().sourceTransformers);
         }
 
         final Zip inject = makeTask("addFmlSources", Zip.class);

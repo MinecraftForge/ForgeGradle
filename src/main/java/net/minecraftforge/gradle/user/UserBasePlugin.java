@@ -730,13 +730,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             }
         }
         
-        // unsure clean or dirty...
-        if (!getExtension().binaryTransformers.isEmpty() || !getExtension().sourceTransformers.isEmpty())
-        {
-            binDeobf.setDirty();
-            decompDeobf.setDirty();
-        }
-        
         // check for decompilation status.. has decompiled or not etc
         checkDecompStatus();
 
@@ -745,9 +738,6 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 
         // configure source replacement
         doSourceReplacement();
-        
-        // add in binary transformers
-        ((ApplyBinPatchesTask)project.getTasks().getByName("applyBinPatches")).addBinaryTransformers(getExtension().binaryTransformers);
 
         // fix eclipse project location...
         fixEclipseProject(ECLIPSE_LOCATION);
