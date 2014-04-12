@@ -162,6 +162,8 @@ public class ForgeUserPlugin extends UserBasePlugin
 
         final Zip inject = makeTask("addSources", Zip.class);
         {
+            inject.getInputs().file(fmled);
+            
             inject.dependsOn(fmlPatches);
             inject.from(fmled.toZipTree());
             inject.from(delayedFile(SRC_DIR));

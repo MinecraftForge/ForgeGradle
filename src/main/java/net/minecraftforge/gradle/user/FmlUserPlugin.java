@@ -150,6 +150,8 @@ public class FmlUserPlugin extends UserBasePlugin
 
         final Zip inject = makeTask("addFmlSources", Zip.class);
         {
+            inject.getInputs().file(fmled);
+            
             inject.onlyIf(new Spec()
             {
                 public boolean isSatisfiedBy(Object o)
