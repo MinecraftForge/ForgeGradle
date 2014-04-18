@@ -249,6 +249,60 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             task.setAssetIndex(getAssetIndexClosure());
             task.dependsOn("getAssets");
         }
+       
+        JavaExec exec = makeTask("runClient", JavaExec.class);
+        {
+            exec.setMain("net.minecraft.launchwrapper.Launch");
+            exec.jvmArgs("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
+            exec.args("--version 1.7", "--tweakClass", "cpw.mods.fml.common.launcher.FMLTweaker", "--username=ForgeDevName", "--accessToken", "FML");
+            exec.workingDir(delayedFile("{ASSET_DIR}/.."));
+            exec.setStandardOutput(System.out);
+            exec.setErrorOutput(System.err);
+            
+            exec.setGroup("ForgeGradle");
+            exec.setDescription("Runs the Minecraft client");
+        }
+        
+        exec = makeTask("runServer", JavaExec.class);
+        {
+            exec.setMain("cpw.mods.fml.relauncher.ServerLaunchWrapper");
+            exec.jvmArgs("-Xincgc", "-Dfml.ignoreInvalidMinecraftCertificates=true");
+            exec.workingDir(delayedFile("{ASSET_DIR}/.."));
+            exec.setStandardOutput(System.out);
+            exec.setStandardInput(System.in);
+            exec.setErrorOutput(System.err);
+            
+            exec.setGroup("ForgeGradle");
+            exec.setDescription("Runs the Minecraft Server");
+        }
+        
+        exec = makeTask("debugClient", JavaExec.class);
+        {
+            exec.setMain("net.minecraft.launchwrapper.Launch");
+            exec.jvmArgs("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
+            exec.args("--version 1.7", "--tweakClass", "cpw.mods.fml.common.launcher.FMLTweaker", "--username=ForgeDevName", "--accessToken", "FML");
+            exec.workingDir(delayedFile("{ASSET_DIR}/.."));
+            exec.setStandardOutput(System.out);
+            exec.setErrorOutput(System.err);
+            exec.setDebug(true);
+            
+            exec.setGroup("ForgeGradle");
+            exec.setDescription("Runs the Minecraft client in debug mode");
+        }
+        
+        exec = makeTask("debugServer", JavaExec.class);
+        {
+            exec.setMain("cpw.mods.fml.relauncher.ServerLaunchWrapper");
+            exec.jvmArgs("-Xincgc", "-Dfml.ignoreInvalidMinecraftCertificates=true");
+            exec.workingDir(delayedFile("{ASSET_DIR}/.."));
+            exec.setStandardOutput(System.out);
+            exec.setStandardInput(System.in);
+            exec.setErrorOutput(System.err);
+            exec.setDebug(true);
+            
+            exec.setGroup("ForgeGradle");
+            exec.setDescription("Runs the Minecraft serevr in debug mode");
+        }
     }
 
     private void delayedTasks()
@@ -270,66 +324,39 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         doPostDecompTasks(clean, decompOut);
         createMcModuleDep(clean, project.getDependencies(), CONFIG);
         
-        // get sourceSet
-        Jar jarTask = (Jar) project.getTasks().getByName("jar");
         
-        JavaExec exec = makeTask("runClient", JavaExec.class);
+        // Add the mod and stuff to the classpath!
+        
+        // get sourceSet
+        final Jar jarTask = (Jar) project.getTasks().getByName("jar");
+        
+        JavaExec exec = (JavaExec) project.getTasks().getByName("runClient");
         {
+            exec.jvmArgs("-Djava.library.path=" + delayedFile(NATIVES_DIR).call().getAbsolutePath());
         	exec.classpath(project.getConfigurations().getByName("runtime"));
         	exec.classpath(jarTask.getArchivePath());
-        	exec.setMain("net.minecraft.launchwrapper.Launch");
-        	exec.jvmArgs("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
-        	exec.jvmArgs("-Djava.library.path=" + delayedFile(NATIVES_DIR).call().getAbsolutePath());
-        	exec.args("--version 1.7", "--tweakClass", "cpw.mods.fml.common.launcher.FMLTweaker", "--username=ForgeDevName", "--accessToken", "FML");
-        	exec.setWorkingDir(delayedFile("{ASSET_DIR}").call().getParentFile());
-        	exec.setStandardOutput(System.out);
-        	exec.setErrorOutput(System.err);
-        	
         	exec.dependsOn(jarTask);
         }
         
-        exec = makeTask("runServer", JavaExec.class);
+        exec = (JavaExec) project.getTasks().getByName("runServer");
         {
             exec.classpath(project.getConfigurations().getByName("runtime"));
             exec.classpath(jarTask.getArchivePath());
-        	exec.setMain("cpw.mods.fml.relauncher.ServerLaunchWrapper");
-        	exec.jvmArgs("-Xincgc", "-Dfml.ignoreInvalidMinecraftCertificates=true");
-        	exec.setWorkingDir(delayedFile("{ASSET_DIR}").call().getParentFile());
-        	exec.setStandardOutput(System.out);
-        	exec.setStandardInput(System.in);
-        	exec.setErrorOutput(System.err);
-        	
         	exec.dependsOn(jarTask);
         }
         
-        exec = makeTask("debugClient", JavaExec.class);
+        exec = (JavaExec) project.getTasks().getByName("debugClient");
         {
-            exec.classpath(project.getConfigurations().getByName("runtime"));
-            exec.classpath(jarTask.getArchivePath());
-            exec.setMain("net.minecraft.launchwrapper.Launch");
-            exec.jvmArgs("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
             exec.jvmArgs("-Djava.library.path=" + delayedFile(NATIVES_DIR).call().getAbsolutePath());
-            exec.args("--version 1.7", "--tweakClass", "cpw.mods.fml.common.launcher.FMLTweaker", "--username=ForgeDevName", "--accessToken", "FML");
-            exec.setWorkingDir(delayedFile("{ASSET_DIR}").call().getParentFile());
-            exec.setStandardOutput(System.out);
-            exec.setErrorOutput(System.err);
-            exec.setDebug(true);
-            
+            exec.classpath(project.getConfigurations().getByName("runtime"));
+            exec.classpath(jarTask.getArchivePath());
             exec.dependsOn(jarTask);
         }
         
-        exec = makeTask("debugServer", JavaExec.class);
+        exec = (JavaExec) project.getTasks().getByName("debugServer");
         {
             exec.classpath(project.getConfigurations().getByName("runtime"));
             exec.classpath(jarTask.getArchivePath());
-            exec.setMain("cpw.mods.fml.relauncher.ServerLaunchWrapper");
-            exec.jvmArgs("-Xincgc", "-Dfml.ignoreInvalidMinecraftCertificates=true");
-            exec.setWorkingDir(delayedFile("{ASSET_DIR}").call().getParentFile());
-            exec.setStandardOutput(System.out);
-            exec.setStandardInput(System.in);
-            exec.setErrorOutput(System.err);
-            exec.setDebug(true);
-            
             exec.dependsOn(jarTask);
         }
     }
