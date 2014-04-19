@@ -18,7 +18,7 @@ import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
-import net.minecraftforge.gradle.tasks.PatchJarTask;
+import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.ReplaceJavadocsTask;
@@ -122,53 +122,36 @@ public class ForgeDevPlugin extends DevBasePlugin
             task3.dependsOn("downloadMcpTools", "deobfuscateJar");
         }
 
-        PatchJarTask task4 = makeTask("fmlPatchJar", PatchJarTask.class);
+        ProcessSrcJarTask task4 = makeTask("fmlPatchJar", ProcessSrcJarTask.class);
         {
             task4.setInJar(delayedFile(ZIP_DECOMP_FORGE));
             task4.setOutJar(delayedFile(ZIP_FMLED_FORGE));
-            task4.setInPatches(delayedFile(FML_PATCH_DIR));
+            task4.addStage("fml", delayedFile(FML_PATCH_DIR), delayedFile(FML_SOURCES), delayedFile(FML_RESOURCES), delayedFile("{MAPPINGS_DIR}/patches/Start.java"));
             task4.setDoesCache(false);
             task4.setMaxFuzz(2);
-            task4.dependsOn("decompile");
-        }
-
-        // add fml sources
-        Zip task5 = makeTask("fmlInjectJar", Zip.class);
-        {
-            task5.from(delayedFileTree(FML_SOURCES));
-            task5.from(delayedFileTree(FML_RESOURCES));
-            task5.from(delayedZipTree(ZIP_FMLED_FORGE));
-            task5.from(delayedFile("{MAPPINGS_DIR}/patches"), new CopyInto("", "Start.java"));
-            task5.from(delayedFile(DEOBF_DATA));
-            task5.from(delayedFile(FML_VERSIONF));
-
-            // see ZIP_INJECT_FORGE
-            task5.setArchiveName("minecraft_fmlinjected.zip");
-            task5.setDestinationDir(delayedFile("{BUILD_DIR}/forgeTmp").call());
-
-            task5.dependsOn("fmlPatchJar", "compressDeobfData", "createVersionPropertiesFML");
+            task4.dependsOn("decompile", "compressDeobfData", "createVersionPropertiesFML");
         }
         
         RemapSourcesTask remapTask = makeTask("remapCleanJar", RemapSourcesTask.class);
         {
-            remapTask.setInJar(delayedFile(ZIP_INJECT_FORGE));
+            remapTask.setInJar(delayedFile(ZIP_FMLED_FORGE));
             remapTask.setOutJar(delayedFile(REMAPPED_CLEAN));
             remapTask.setMethodsCsv(delayedFile(DevConstants.METHODS_CSV));
             remapTask.setFieldsCsv(delayedFile(DevConstants.FIELDS_CSV));
             remapTask.setParamsCsv(delayedFile(DevConstants.PARAMS_CSV));
             remapTask.setDoesCache(false);
             remapTask.setNoJavadocs();
-            remapTask.dependsOn("fmlInjectJar");
+            remapTask.dependsOn("fmlPatchJar");
         }
 
-        task4 = makeTask("forgePatchJar", PatchJarTask.class);
+        task4 = makeTask("forgePatchJar", ProcessSrcJarTask.class);
         {
-            task4.setInJar(delayedFile(ZIP_INJECT_FORGE));
+            task4.setInJar(delayedFile(ZIP_FMLED_FORGE));
             task4.setOutJar(delayedFile(ZIP_PATCHED_FORGE));
-            task4.setInPatches(delayedFile(FORGE_PATCH_DIR));
+            task4.addStage("forge", delayedFile(FORGE_PATCH_DIR));
             task4.setDoesCache(false);
             task4.setMaxFuzz(2);
-            task4.dependsOn("fmlInjectJar");
+            task4.dependsOn("fmlPatchJar");
         }
         
         remapTask = makeTask("remapSourcesJar", RemapSourcesTask.class);

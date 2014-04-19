@@ -5,7 +5,7 @@ import static net.minecraftforge.gradle.user.UserConstants.*;
 import java.io.File;
 
 import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.tasks.PatchJarTask;
+import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
@@ -17,7 +17,6 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.bundling.Jar;
-import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.api.tasks.compile.JavaCompile;
 
 import com.google.common.collect.ImmutableMap;
@@ -120,7 +119,6 @@ public class FmlUserPlugin extends UserBasePlugin
     {
         final String prefix = isClean ? FML_CACHE : DIRTY_DIR;
         final DelayedFile fmled = delayedFile(prefix + FML_FMLED);
-        final DelayedFile injected = delayedFile(prefix + FML_INJECTED);
         final DelayedFile remapped = delayedFile(prefix + FML_REMAPPED);
         final DelayedFile recompJar = delayedFile(prefix + FML_RECOMP);
 
@@ -140,45 +138,18 @@ public class FmlUserPlugin extends UserBasePlugin
             }
         };
 
-        final PatchJarTask fmlPatches = makeTask("doFmlPatches", PatchJarTask.class);
+        final ProcessSrcJarTask fmlPatches = makeTask("doFmlPatches", ProcessSrcJarTask.class);
         {
             fmlPatches.dependsOn("decompile");
             fmlPatches.setInJar(decompOut);
             fmlPatches.setOutJar(fmled);
-            fmlPatches.setInPatches(delayedFile(FML_PATCHES_ZIP));
-        }
-
-        final Zip inject = makeTask("addFmlSources", Zip.class);
-        {
-            inject.getInputs().file(fmled);
-            
-            inject.onlyIf(new Spec()
-            {
-                public boolean isSatisfiedBy(Object o)
-                {
-                    boolean didWork = fmlPatches.getDidWork();
-                    boolean exists = injected.call().exists();
-                    if (!exists)
-                        return true;
-                    else
-                        return didWork;
-                }
-            });
-            
-            inject.dependsOn("doFmlPatches");
-            inject.from(fmled.toZipTree());
-            inject.from(delayedFile(SRC_DIR));
-            inject.from(delayedFile(RES_DIR));
-
-            File injectFile = injected.call();
-            inject.setDestinationDir(injectFile.getParentFile());
-            inject.setArchiveName(injectFile.getName());
+            fmlPatches.addStage("fml", delayedFile(FML_PATCHES_ZIP), delayedFile(SRC_DIR), delayedFile(RES_DIR));
         }
 
         RemapSourcesTask remapTask = makeTask("remapJar", RemapSourcesTask.class);
         {
-            remapTask.dependsOn("addFmlSources");
-            remapTask.setInJar(injected);
+            remapTask.dependsOn("doFmlPatches");
+            remapTask.setInJar(fmled);
             remapTask.setOutJar(remapped);
             remapTask.setFieldsCsv(delayedFile(FIELD_CSV));
             remapTask.setMethodsCsv(delayedFile(METHOD_CSV));

@@ -5,7 +5,7 @@ import static net.minecraftforge.gradle.user.UserConstants.*;
 import java.io.File;
 
 import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.tasks.PatchJarTask;
+import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DownloadTask;
@@ -18,7 +18,6 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.bundling.Jar;
-import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.api.tasks.compile.JavaCompile;
 
 import com.google.common.collect.ImmutableMap;
@@ -130,8 +129,6 @@ public class ForgeUserPlugin extends UserBasePlugin
     protected void doPostDecompTasks(boolean isClean, DelayedFile decompOut)
     {
         final String prefix = isClean ? FORGE_CACHE : DIRTY_DIR;
-        final DelayedFile fmled = delayedFile(prefix + FORGE_FMLED);
-        final DelayedFile injected = delayedFile(prefix + FORGE_FMLINJECTED);
         final DelayedFile forged = delayedFile(prefix + FORGE_FORGED);
         final DelayedFile remapped = delayedFile(prefix + FORGE_REMAPPED);
         final DelayedFile forgeRecomp = delayedFile(prefix + FORGE_RECOMP);
@@ -152,53 +149,19 @@ public class ForgeUserPlugin extends UserBasePlugin
             }
         };
 
-        final PatchJarTask fmlPatches = makeTask("doFmlPatches", PatchJarTask.class);
+        final ProcessSrcJarTask patch = makeTask("processSources", ProcessSrcJarTask.class);
         {
-            fmlPatches.dependsOn("decompile");
-            fmlPatches.setInJar(decompOut);
-            fmlPatches.setOutJar(fmled);
-            fmlPatches.setInPatches(delayedFile(FML_PATCHES_ZIP));
-        }
-
-        final Zip inject = makeTask("addSources", Zip.class);
-        {
-            inject.getInputs().file(fmled);
-            
-            inject.dependsOn(fmlPatches);
-            inject.from(fmled.toZipTree());
-            inject.from(delayedFile(SRC_DIR));
-            inject.from(delayedFile(RES_DIR));
-            
-            inject.onlyIf(new Spec()
-            {
-                public boolean isSatisfiedBy(Object o)
-                {
-                    boolean didWork = fmlPatches.getDidWork();
-                    boolean exists = injected.call().exists();
-                    if (!exists)
-                        return true;
-                    else
-                        return didWork;
-                }
-            });
-
-            File injectFile = injected.call();
-            inject.setDestinationDir(injectFile.getParentFile());
-            inject.setArchiveName(injectFile.getName());
-        }
-        
-        PatchJarTask forgePatches = makeTask("doForgePatches", PatchJarTask.class);
-        {
-            forgePatches.dependsOn(inject);
-            forgePatches.setInJar(injected);
-            forgePatches.setOutJar(forged);
-            forgePatches.setInPatches(delayedFile(FORGE_PATCHES_ZIP));
+            patch.dependsOn("decompile");
+            patch.setInJar(decompOut);
+            patch.setOutJar(forged);
+            patch.addStage("fml", delayedFile(FML_PATCHES_ZIP), delayedFile(SRC_DIR), delayedFile(RES_DIR));
+            patch.addStage("forge", delayedFile(FORGE_PATCHES_ZIP));
         }
 
         // Remap to MCP names
         RemapSourcesTask remap = makeTask("remapJar", RemapSourcesTask.class);
         {
-            remap.dependsOn(forgePatches);
+            remap.dependsOn(patch);
             remap.setInJar(forged);
             remap.setOutJar(remapped);
             remap.setFieldsCsv(delayedFile(FIELD_CSV));

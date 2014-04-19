@@ -11,7 +11,7 @@ import net.minecraftforge.gradle.CopyInto;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedBase;
 import net.minecraftforge.gradle.tasks.DecompileTask;
-import net.minecraftforge.gradle.tasks.PatchJarTask;
+import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.ReplaceJavadocsTask;
@@ -100,32 +100,15 @@ public class McpcDevPlugin extends DevBasePlugin
             task3.setAstyleConfig(delayedFile(ASTYLE_CFG));
             task3.dependsOn("downloadMcpTools", "deobfuscateJar");
         }
-
-        PatchJarTask task4 = makeTask("fmlPatchJar", PatchJarTask.class);
+        
+        ProcessSrcJarTask task4 = makeTask("fmlPatchJar", ProcessSrcJarTask.class);
         {
-            task4.setInJar(delayedFile(ZIP_DECOMP_MCPC));
-            task4.setOutJar(delayedFile(ZIP_FMLED_MCPC));
-            task4.setInPatches(delayedFile(FML_PATCH_DIR));
-            task4.setDoesCache(true);
+            task4.setInJar(delayedFile(ZIP_DECOMP_FORGE));
+            task4.setOutJar(delayedFile(ZIP_FMLED_FORGE));
+            task4.addStage("fml", delayedFile(FML_PATCH_DIR), delayedFile(FML_SOURCES), delayedFile(FML_RESOURCES), delayedFile("{MAPPINGS_DIR}/patches/Start.java"));
+            task4.setDoesCache(false);
             task4.setMaxFuzz(2);
-            task4.dependsOn("decompile");
-        }
-
-        // add fml sources
-        Zip task5 = makeTask("fmlInjectJar", Zip.class);
-        {
-            task5.from(delayedFileTree(FML_SOURCES));
-            task5.from(delayedFileTree(FML_RESOURCES));
-            task5.from(delayedZipTree(ZIP_FMLED_MCPC));
-            task5.from(delayedFile("{MAPPINGS_DIR}/patches"), new CopyInto("", "Start.java"));
-            task5.from(delayedFile(DEOBF_DATA));
-            task5.from(delayedFile(FML_VERSIONF));
-
-            // see ZIP_INJECT_MCPC
-            task5.setArchiveName("minecraft_fmlinjected.zip");
-            task5.setDestinationDir(delayedFile("{BUILD_DIR}/mcpcTmp").call());
-
-            task5.dependsOn("fmlPatchJar", "compressDeobfData", "createVersionPropertiesFML");
+            task4.dependsOn("decompile", "compressDeobfData", "createVersionPropertiesFML");
         }
 
         RemapSourcesTask task6 = makeTask("remapSourcesJar", RemapSourcesTask.class);
@@ -137,10 +120,10 @@ public class McpcDevPlugin extends DevBasePlugin
             task6.setParamsCsv(delayedFile(PARAMS_CSV));
             task6.setDoesCache(true);
             task6.setDoesJavadocs(false);
-            task6.dependsOn("fmlInjectJar");
+            task6.dependsOn("fmlPatchJar");
         }
         
-        task5 = makeTask("forgeInjectJar", Zip.class);
+        Zip task5 = makeTask("forgeInjectJar", Zip.class);
         {
             task5.from(delayedFileTree(FORGE_SOURCES));
             task5.from(delayedFileTree(FORGE_RESOURCES));
@@ -155,21 +138,21 @@ public class McpcDevPlugin extends DevBasePlugin
             task5.dependsOn("remapSourcesJar");
         }
 
-        task4 = makeTask("forgePatchJar", PatchJarTask.class);
+        task4 = makeTask("forgePatchJar", ProcessSrcJarTask.class);
         {
             task4.setInJar(delayedFile(ZIP_FINJECT_MCPC));
             task4.setOutJar(delayedFile(ZIP_FORGED_MCPC));
-            task4.setInPatches(delayedFile(FORGE_PATCH_DIR));
+            task4.addStage("forge", delayedFile(FORGE_PATCH_DIR));
             task4.setDoesCache(true);
             task4.setMaxFuzz(2);
             task4.dependsOn("forgeInjectJar");
         }
          
-        task4 = makeTask("mcpcPatchJar", PatchJarTask.class);
+        task4 = makeTask("mcpcPatchJar", ProcessSrcJarTask.class);
         {
             task4.setInJar(delayedFile(ZIP_FORGED_MCPC));
             task4.setOutJar(delayedFile(ZIP_PATCHED_MCPC));
-            task4.setInPatches(delayedFile(MCPC_PATCH_DIR));
+            task4.addStage("MCPC", delayedFile(MCPC_PATCH_DIR));
             task4.setDoesCache(false);
             task4.setMaxFuzz(2);
             task4.dependsOn("forgePatchJar");

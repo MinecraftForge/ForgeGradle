@@ -60,8 +60,6 @@ public final class UserConstants
     static final String FORGE_BINPATCHED  = "/forge-{API_VERSION}-binPatched.jar";
     static final String FORGE_DEOBF_SRG   = "/forge-{API_VERSION}-srg.jar";
     static final String FORGE_DECOMP      = "/forge-{API_VERSION}-decomp.jar";
-    static final String FORGE_FMLED       = "/forge-{API_VERSION}-fmled.jar";
-    static final String FORGE_FMLINJECTED = "/forge-{API_VERSION}-fmlinjected.jar";
     static final String FORGE_FORGED      = "/forge-{API_VERSION}-forged.jar";
     
 
@@ -76,7 +74,6 @@ public final class UserConstants
     static final String FML_DEOBF_SRG     = "/fml-{API_VERSION}-srg.jar";
     static final String FML_DECOMP        = "/fml-{API_VERSION}-decomp.jar";
     static final String FML_FMLED         = "/fml-{API_VERSION}-fmled.jar";
-    static final String FML_INJECTED      = "/fml-{API_VERSION}-src-injected.jar";
 
     static final String FML_PATCHES_ZIP   = PACK_DIR + "/fmlpatches.zip";
     static final String FORGE_PATCHES_ZIP = PACK_DIR + "/forgepatches.zip";
