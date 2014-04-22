@@ -55,7 +55,7 @@ public final class UserConstants
     // forge bin jars
     static final String FORGE_DEOBF_MCP   = "/forgeBin-{API_VERSION}.jar";
     static final String FORGE_JAVADOC     = "/forgeBin-{API_VERSION}-javadoc.jar";
-    // frge src jars
+    // forge src jars
     static final String FORGE_RECOMP      = "/forgeSrc-{API_VERSION}.jar";
     static final String FORGE_JAVADOCED   = "/forgeSrc-{API_VERSION}-sources.jar";
     // intermediate jars

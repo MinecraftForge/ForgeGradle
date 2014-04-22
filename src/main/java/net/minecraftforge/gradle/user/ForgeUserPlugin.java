@@ -96,21 +96,38 @@ public class ForgeUserPlugin extends UserBasePlugin
         return FORGE_CACHE;
     }
 
-    protected void createMcModuleDep(final boolean isClean, DependencyHandler depHandler, String depConfig)
+    protected void createMcModuleDep(final boolean isClean, DependencyHandler depHandler, String depConfig, boolean remove)
     {
-        final String repoDir = delayedFile(isClean ? FORGE_CACHE : DIRTY_DIR).call().getAbsolutePath();
-        project.allprojects(new Action<Project>() {
-            public void execute(Project proj)
-            {
-                addFlatRepo(proj, "forgeFlatRepo", repoDir);
-                proj.getLogger().info("Adding repo to " + proj.getPath() + " >> " +repoDir);
-            }
-        });
+        if (!remove)
+        {
+            final String repoDir = delayedFile(isClean ? FORGE_CACHE : DIRTY_DIR).call().getAbsolutePath();
+            project.allprojects(new Action<Project>() {
+                public void execute(Project proj)
+                {
+                    addFlatRepo(proj, "forgeFlatRepo", repoDir);
+                    proj.getLogger().info("Adding repo to " + proj.getPath() + " >> " + repoDir);
+                }
+            });
+        }
 
         if (getExtension().isDecomp)
+        {
             depHandler.add(depConfig, ImmutableMap.of("name", "forgeSrc", "version", getExtension().getApiVersion()));
+            if (remove)
+            {
+                System.out.println("removing forgeBin");
+                project.getConfigurations().getByName(depConfig).exclude(ImmutableMap.of("module", "forgeBin"));
+            }
+        }
         else
+        {
             depHandler.add(depConfig, ImmutableMap.of("name", "forgeBin", "version", getExtension().getApiVersion()));
+            if (remove)
+            {
+                System.out.println("removing forgeSrc");
+                project.getConfigurations().getByName(depConfig).exclude(ImmutableMap.of("module", "forgeSrc"));
+            }
+        }
     }
     
     @Override

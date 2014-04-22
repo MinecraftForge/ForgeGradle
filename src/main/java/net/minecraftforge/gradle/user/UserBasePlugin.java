@@ -118,16 +118,17 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
                 TaskExecutionGraph graph = project.getGradle().getTaskGraph();
                 String path = project.getPath();
                 
-                boolean hasSetupDecomp = graph.hasTask(path + "setupDecompWorkspace"); 
-                boolean hasBuild = graph.hasTask(path + "eclipse") || graph.hasTask(path + "ideaModule") || graph.hasTask(path + "build");
-                boolean isJava7 = System.getProperty("java.version").startsWith("1.7");
-                
-                if (hasSetupDecomp)
-                    if (hasBuild)
-                        throw new RuntimeException("You're doing it wrong. You are running the setupDecompWorkspace task and an IDE/build task in the same command!");
-                    else if (!isJava7)
+                if (graph.hasTask(path + "setupDecompWorkspace"))
+                {
+                    if (System.getProperty("java.version").startsWith("1.7"))
+                    {
                         throw new RuntimeException("The setupDecompWorkspace will only work with Java 7! This is fixed in ForgeGradle 1.2");
-                
+                    }
+                    
+                    getExtension().isDecomp = true;
+                    boolean clean = ((ProcessJarTask) project.getTasks().getByName("deobfuscateJar")).isClean();
+                    createMcModuleDep(clean, project.getDependencies(), CONFIG, true);
+                }
                 return null;
             }
             
@@ -268,7 +269,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         }
 
         doPostDecompTasks(clean, decompOut);
-        createMcModuleDep(clean, project.getDependencies(), CONFIG);
+        createMcModuleDep(clean, project.getDependencies(), CONFIG, false);
         
         // get sourceSet
         Jar jarTask = (Jar) project.getTasks().getByName("jar");
@@ -344,7 +345,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 
     protected abstract void addATs(ProcessJarTask task);
 
-    protected abstract void createMcModuleDep(boolean isClean, DependencyHandler depHandler, String depConfig);
+    protected abstract void createMcModuleDep(boolean isClean, DependencyHandler depHandler, String depConfig, boolean remove);
 
     private void configureDeps()
     {
