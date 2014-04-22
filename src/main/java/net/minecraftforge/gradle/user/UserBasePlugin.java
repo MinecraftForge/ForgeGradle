@@ -118,12 +118,12 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
                 TaskExecutionGraph graph = project.getGradle().getTaskGraph();
                 String path = project.getPath();
                 
-                boolean hasSetup = graph.hasTask(path + "setupDecompWorkspace"); 
-                boolean hasBuild = graph.hasTask(path + "eclipse") || graph.hasTask(path + "ideaModule") || graph.hasTask(path + "build"); 
-                
-                if (hasSetup && hasBuild)
-                    throw new RuntimeException("You are running the setupDecompWorkspace task and an IDE/build task in the same command. Do them seperately.");
-                
+                if (graph.hasTask(path + "setupDecompWorkspace"))
+                {
+                    getExtension().isDecomp = true;
+                    boolean clean = ((ProcessJarTask) project.getTasks().getByName("deobfuscateJar")).isClean();
+                    createMcModuleDep(clean, project.getDependencies(), CONFIG, true);
+                }
                 return null;
             }
             
@@ -322,7 +322,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         }
 
         doPostDecompTasks(clean, decompOut);
-        createMcModuleDep(clean, project.getDependencies(), CONFIG);
+        createMcModuleDep(clean, project.getDependencies(), CONFIG, false);
         
         
         // Add the mod and stuff to the classpath!
@@ -371,7 +371,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 
     protected abstract void addATs(ProcessJarTask task);
 
-    protected abstract void createMcModuleDep(boolean isClean, DependencyHandler depHandler, String depConfig);
+    protected abstract void createMcModuleDep(boolean isClean, DependencyHandler depHandler, String depConfig, boolean remove);
 
     private void configureDeps()
     {

@@ -55,7 +55,7 @@ public final class UserConstants
     static final String FORGE_JAVADOC     = "/forgeBin-{API_VERSION}-javadoc.jar";
     // frge src jars
     static final String FORGE_RECOMP      = "/forgeSrc-{API_VERSION}.jar";
-    static final String FORGE_REMAPPED   = "/forgeSrc-{API_VERSION}-sources.jar";
+    static final String FORGE_REMAPPED    = "/forgeSrc-{API_VERSION}-sources.jar";
     // intermediate jars
     static final String FORGE_BINPATCHED  = "/forge-{API_VERSION}-binPatched.jar";
     static final String FORGE_DEOBF_SRG   = "/forge-{API_VERSION}-srg.jar";

@@ -82,23 +82,36 @@ public class FmlUserPlugin extends UserBasePlugin
         return FML_CACHE;
     }
 
-    protected void createMcModuleDep(final boolean isClean, DependencyHandler depHandler, String depConfig)
+    protected void createMcModuleDep(final boolean isClean, DependencyHandler depHandler, String depConfig, boolean remove)
     {
-        final String repoDir = delayedFile(isClean ? FML_CACHE : DIRTY_DIR).call().getAbsolutePath();
-        project.allprojects(new Action<Project>() {
-            public void execute(Project proj)
-            {
-                addFlatRepo(proj, "fmlFlatRepo", repoDir);
-                proj.getLogger().info("Adding repo to " + proj.getPath() + " >> " +repoDir);
-            }
-        });
-
-        final String prefix = isClean ? FML_CACHE : DIRTY_DIR;
+        if (!remove)
+        {
+            final String repoDir = delayedFile(isClean ? FML_CACHE : DIRTY_DIR).call().getAbsolutePath();
+            project.allprojects(new Action<Project>() {
+                public void execute(Project proj)
+                {
+                    addFlatRepo(proj, "fmlFlatRepo", repoDir);
+                    proj.getLogger().info("Adding repo to " + proj.getPath() + " >> " + repoDir);
+                }
+            });
+        }
 
         if (getExtension().isDecomp)
+        {
             depHandler.add(depConfig, ImmutableMap.of("name", "fmlSrc", "version", getExtension().getApiVersion()));
+            if (remove)
+            {
+                project.getConfigurations().getByName(depConfig).exclude(ImmutableMap.of("module", "fmlBin"));
+            }
+        }
         else
-            depHandler.add(depConfig, project.files(delayedFile(prefix + FML_BINPATCHED)));
+        {
+            depHandler.add(depConfig, ImmutableMap.of("name", "fmlBin", "version", getExtension().getApiVersion()));
+            if (remove)
+            {
+                project.getConfigurations().getByName(depConfig).exclude(ImmutableMap.of("module", "fmlSrc"));
+            }
+        }
     }
     
     @Override
