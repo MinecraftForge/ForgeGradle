@@ -60,7 +60,7 @@ public class ProcessSrcJarTask extends EditJarTask
 
                 if (relative.endsWith(".java"))
                 {
-                    sourceMap.put(relative, Files.toString(rel.file, Charsets.UTF_8));
+                    sourceMap.put(relative, Files.toString(rel.file, Charset.defaultCharset()));
                 }
                 else
                 {
