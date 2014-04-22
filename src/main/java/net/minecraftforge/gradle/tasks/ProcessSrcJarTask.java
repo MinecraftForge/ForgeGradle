@@ -380,7 +380,7 @@ public class ProcessSrcJarTask extends EditJarTask
 
         public String getRelative()
         {
-            return file.getAbsolutePath().substring(root.getAbsolutePath().length() + 1);
+            return file.getAbsolutePath().substring(root.getAbsolutePath().length() + 1).replace('\\', '/');
         }
     }
 }
