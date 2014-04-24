@@ -9,7 +9,7 @@ import java.util.Date;
 
 import net.minecraftforge.gradle.CopyInto;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.delayed.DelayedBase;
+import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
@@ -71,9 +71,9 @@ public class McpcDevPlugin extends DevBasePlugin
     }
     
     @Override
-    protected final String getDevJson()
+    protected final DelayedFile getDevJson()
     {
-        return DelayedBase.resolve(DevConstants.MCPC_JSON_DEV, project, this);
+        return delayedFile(DevConstants.MCPC_JSON_DEV);
     }
     
     protected void createJarProcessTasks()

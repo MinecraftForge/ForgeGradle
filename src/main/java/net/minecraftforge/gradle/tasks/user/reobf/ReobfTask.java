@@ -47,15 +47,19 @@ public class ReobfTask extends DefaultTask
     @Optional
     @InputFile
     private DelayedFile                               fieldCsv;
+    
     @Optional
     @InputFile
     private DelayedFile                               methodCsv;
+    
     @Optional
     @InputFile
     private DelayedFile                               exceptorCfg;
+    
     @Optional
     @InputFile
     private DelayedFile                               deobfFile;
+    
     @Optional
     @InputFile
     private DelayedFile                               recompFile;

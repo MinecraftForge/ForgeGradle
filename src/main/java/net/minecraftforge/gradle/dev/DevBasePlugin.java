@@ -22,7 +22,7 @@ import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.json.version.Library;
 import net.minecraftforge.gradle.json.version.OS;
-import net.minecraftforge.gradle.delayed.DelayedBase;
+import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.tasks.CopyAssetsTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
@@ -210,9 +210,9 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
     }
 
     @Override
-    protected String getDevJson()
+    protected DelayedFile getDevJson()
     {
-        return DelayedBase.resolve(DevConstants.JSON_DEV, project, this);
+        return delayedFile(DevConstants.JSON_DEV);
     }
 
     @Override
@@ -241,7 +241,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
                 copyTask.dependsOn("extractWorkspace");
             }
 
-            String devJson = getDevJson();
+            DelayedFile devJson = getDevJson();
             if (devJson == null)
             {
                 project.getLogger().info("Dev json not set, could not create native downloads tasks");
@@ -250,7 +250,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
 
             if (version == null)
             {
-                File jsonFile = delayedFile(devJson).call().getAbsoluteFile();
+                File jsonFile = devJson.call().getAbsoluteFile();
                 try
                 {
                     version = JsonFactory.loadVersion(jsonFile);
