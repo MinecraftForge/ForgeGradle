@@ -244,7 +244,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPackExtensi
     @Override
     protected String getApiCacheDir(UserPackExtension exten)
     {
-        return "{CACHE_DIR}/minecraft/{API_NAME}/"+getApiGroup().replace('.', '/') + "/{API_NAME}/{API_VERSION}";
+        return "{CACHE_DIR}/minecraft/"+getApiGroup().replace('.', '/') + "/{API_NAME}/{API_VERSION}";
     }
 
     @Override
