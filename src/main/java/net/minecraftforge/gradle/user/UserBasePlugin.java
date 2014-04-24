@@ -87,6 +87,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         configureDeps();
         configureCompilation();
         fixEclipseNatives();
+        configureIntellij();
         
         // create basic tasks.
         tasks();
