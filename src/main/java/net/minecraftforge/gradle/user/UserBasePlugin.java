@@ -475,7 +475,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                         "Minecraft Server",
                         getServerRunClass(),
                         "-Xincgc -Dfml.ignoreInvalidMinecraftCertificates=true",
-                        Joiner.on(' ').join(getClientRunArgs())
+                        Joiner.on(' ').join(getServerRunArgs())
                 }
         };
 
