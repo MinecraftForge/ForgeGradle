@@ -280,7 +280,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPackExtensi
     @Override
     protected Iterable<String> getClientRunArgs()
     {
-        return ImmutableList.of("--version", "1.7", "--tweakClass", "cpw.mods.fml.common.launcher.FMLTweaker", "--username=ForgeDevName", "--accessToken FML");
+        return ImmutableList.of("--version", "1.7", "--tweakClass", "cpw.mods.fml.common.launcher.FMLTweaker", "--username=ForgeDevName", "--accessToken", "FML");
     }
 
     @Override
