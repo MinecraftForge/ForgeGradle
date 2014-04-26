@@ -283,13 +283,13 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     @Override
     protected String getSrgCacheDir(UserPatchExtension exten)
     {
-        return "{API_CACHE_DIR}/unpacked";
+        return "{API_CACHE_DIR}/srgs";
     }
 
     @Override
     protected String getUserDevCacheDir(UserPatchExtension exten)
     {
-        return "{API_CACHE_DIR}/srgs";
+        return "{API_CACHE_DIR}/unpacked";
     }
 
     @Override

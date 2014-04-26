@@ -195,8 +195,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     @Override
     public String resolve(String pattern, Project project, T exten)
     {
-        pattern = pattern.replace("{USER_DEV}", this.getApiCacheDir(exten));
-        pattern = pattern.replace("{SRG_DIR}", this.getApiCacheDir(exten));
+        pattern = pattern.replace("{USER_DEV}", this.getUserDevCacheDir(exten));
+        pattern = pattern.replace("{SRG_DIR}", this.getSrgCacheDir(exten));
         pattern = pattern.replace("{API_CACHE_DIR}", this.getApiCacheDir(exten));
         pattern = pattern.replace("{MC_VERSION}", getMcVersion(exten));
         pattern = super.resolve(pattern, project, exten);
