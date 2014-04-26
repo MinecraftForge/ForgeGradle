@@ -5,6 +5,8 @@ import groovy.lang.Closure;
 import java.io.File;
 
 import joptsimple.internal.Strings;
+import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.user.UserConstants;
 
@@ -165,12 +167,12 @@ public class ArtifactSpec
     
     public void setSrgSrg()
     {
-        this.srg = new DelayedFile(project, UserConstants.REOBF_SRG);
+        this.srg = new DelayedFile(project, UserConstants.REOBF_SRG, (IDelayedResolver[]) project.getExtensions().getByName(Constants.EXT_NAME_MC));
     }
     
     public void setSrgMcp()
     {
-        this.srg = new DelayedFile(project, UserConstants.REOBF_NOTCH_SRG);
+        this.srg = new DelayedFile(project, UserConstants.REOBF_NOTCH_SRG, (IDelayedResolver[]) project.getExtensions().getByName(Constants.EXT_NAME_MC));
     }
 
     protected void resolve()

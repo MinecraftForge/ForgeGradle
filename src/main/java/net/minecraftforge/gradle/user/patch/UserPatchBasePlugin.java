@@ -27,7 +27,7 @@ import org.gradle.api.tasks.SourceSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPackExtension>
+public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtension>
 {
     @SuppressWarnings({ "serial", "unchecked", "rawtypes" })
     @Override
@@ -242,7 +242,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPackExtensi
     }
 
     @Override
-    protected String getApiCacheDir(UserPackExtension exten)
+    protected String getApiCacheDir(UserPatchExtension exten)
     {
         return "{CACHE_DIR}/minecraft/"+getApiGroup().replace('.', '/') + "/{API_NAME}/{API_VERSION}";
     }
@@ -254,19 +254,19 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPackExtensi
     }
 
     @Override
-    protected Class<UserPackExtension> getExtensionClass()
+    protected Class<UserPatchExtension> getExtensionClass()
     {
-        return UserPackExtension.class;
+        return UserPatchExtension.class;
     }
 
     @Override
-    protected String getApiVersion(UserPackExtension exten)
+    protected String getApiVersion(UserPatchExtension exten)
     {
         return exten.getApiVersion();
     }
 
     @Override
-    protected String getMcVersion(UserPackExtension exten)
+    protected String getMcVersion(UserPatchExtension exten)
     {
         return exten.getVersion();
     }

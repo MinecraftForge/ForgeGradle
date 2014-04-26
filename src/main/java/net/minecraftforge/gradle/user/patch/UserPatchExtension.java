@@ -5,13 +5,12 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.gradle.api.Project;
-import org.gradle.api.ProjectConfigurationException;
-
 import net.minecraftforge.gradle.delayed.DelayedObject;
 import net.minecraftforge.gradle.user.UserExtension;
 
-public class UserPackExtension extends UserExtension
+import org.gradle.api.ProjectConfigurationException;
+
+public class UserPatchExtension extends UserExtension
 {
     // groups:  mcVersion  forgeVersion
     //private static final Pattern VERSION_CHECK = Pattern.compile("(?:[\\w\\d.-]+):(?:[\\w\\d-]+):([\\d.]+)-([\\d.]+)-(?:[\\w\\d.]+)");
@@ -20,9 +19,9 @@ public class UserPackExtension extends UserExtension
     private String apiVersion;
     private ArrayList<Object> ats = new ArrayList<Object>();
 
-    public UserPackExtension(Project project)
+    public UserPatchExtension(UserPatchBasePlugin plugin)
     {
-        super(project);
+        super(plugin);
     }
     
     public void accessT(Object obj) { at(obj); }

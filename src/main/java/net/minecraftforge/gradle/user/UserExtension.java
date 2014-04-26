@@ -8,17 +8,17 @@ import java.util.Map.Entry;
 
 import net.minecraftforge.gradle.common.BaseExtension;
 
-import org.gradle.api.Project;
-
 public class UserExtension extends BaseExtension
 {
+    public UserBasePlugin<? extends UserExtension> plugin;
     private HashMap<String, Object> replacements = new HashMap<String, Object>();
     private ArrayList<String> includes = new ArrayList<String>();
     private boolean isDecomp = false;
 
-    public UserExtension(Project project)
+    public UserExtension(UserBasePlugin<? extends UserExtension> plugin)
     {
-        super(project);
+        super(plugin);
+        this.plugin = plugin;
     }
     
     public void replace(Object token, Object replacement)

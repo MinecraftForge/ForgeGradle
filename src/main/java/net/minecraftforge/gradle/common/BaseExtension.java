@@ -12,9 +12,9 @@ public class BaseExtension
     protected String assetDir = "run/assets";
     private LinkedList<String> srgExtra = new LinkedList<String>();
 
-    public BaseExtension(Project project)
+    public BaseExtension(BasePlugin<? extends BaseExtension> plugin)
     {
-        this.project = project;
+        this.project = plugin.project;
     }
 
     public String getVersion()
