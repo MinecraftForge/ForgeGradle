@@ -16,8 +16,6 @@ public class UserPatchConstants
     static final String JSON               = PACK_DIR + "/dev.json";
     static final String ECLIPSE_LOCATION   = "eclipse/.metadata/.plugins/org.eclipse.core.resources/.projects/Minecraft/.location";
 
-    static final String FORGE_CACHE        = "{CACHE_DIR}/minecraft/net/minecraftforge/forge/{API_VERSION}";
-
     static final String JAR_BINPATCHED     = "{API_CACHE_DIR}/{API_NAME}-binpatched-{API_VERSION}.jar";
 
     static final String CLASSIFIER_PATCHED = "patched";

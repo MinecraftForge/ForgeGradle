@@ -120,7 +120,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     /**
      * may not include delayed tokens.
      */
-    protected abstract String getApiName();
+    public abstract String getApiName();
     /**
      * Name of the source dependency.  eg: forgeSrc
      * may not include delayed tokens.
@@ -154,6 +154,18 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
      */
     protected abstract String getApiCacheDir(T exten);
     /**
+     * May invoke the extension object, or be hardcoded.
+     * This unlike the others, is evaluated as a delayed file, and may contain various tokens including:
+     * {API_NAME} {API_VERSION} {MC_VERSION}
+     */
+    protected abstract String getSrgCacheDir(T exten);
+    /**
+     * May invoke the extension object, or be hardcoded.
+     * This unlike the others, is evaluated as a delayed file, and may contain various tokens including:
+     * {API_NAME} {API_VERSION} {MC_VERSION}
+     */
+    protected abstract String getUserDevCacheDir(T exten);
+    /**
      * This unlike the others, is evaluated as a delayed string, and may contain various tokens including:
      * {API_NAME} {API_VERSION} {MC_VERSION}
      */
@@ -183,6 +195,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     @Override
     public String resolve(String pattern, Project project, T exten)
     {
+        pattern = pattern.replace("{USER_DEV}", this.getApiCacheDir(exten));
+        pattern = pattern.replace("{SRG_DIR}", this.getApiCacheDir(exten));
         pattern = pattern.replace("{API_CACHE_DIR}", this.getApiCacheDir(exten));
         pattern = pattern.replace("{MC_VERSION}", getMcVersion(exten));
         pattern = super.resolve(pattern, project, exten);
@@ -202,7 +216,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         // special userDev stuff
         ExtractTask extractUserDev = makeTask("extractUserDev", ExtractTask.class);
-        extractUserDev.into(delayedFile(PACK_DIR));
+        extractUserDev.into(delayedFile("{USER_DEV}"));
         extractUserDev.setDoesCache(true);
         extractUserDev.doLast(new Action<Task>()
         {
@@ -570,7 +584,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.setApplyMarkers(false);
             task.setStripSynthetics(true);
             configureDeobfuscation(task);
-            task.dependsOn("downloadMcpTools", "mergeJars", "genSrgs", "applyBinPatches");
+            task.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
         }
 
         {
@@ -817,10 +831,11 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         super.afterEvaluate();
         
         {
-            // version checks
-            String apiVersion = getApiVersion(getExtension());
-            int buildNumber = Integer.parseInt(apiVersion.substring(apiVersion.lastIndexOf('.') + 1));
-            doVersionChecks(buildNumber);
+            String version = getMcVersion(getExtension());
+            if (hasApiVersion())
+                version = getApiVersion(getExtension());
+            
+            doVersionChecks(version);
         }
         
         // ensure plugin application sequence.. groovy or scala or wtvr first, then the forge/fml/liteloader plugins
@@ -937,7 +952,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
      */
     protected abstract void configureDeobfuscation(ProcessJarTask task);
     
-    protected abstract void doVersionChecks(int buildNumber);
+    protected abstract void doVersionChecks(String version);
     
     /**
      * Returns a file in the DirtyDir if the deobfusctaion task is dirty. Otherwise returns the cached one.
@@ -970,5 +985,15 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 return super.call();
             }
         };
+    }
+    
+    /**
+     * This extension object will have the name "minecraft"
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    protected Class<T> getExtensionClass()
+    {
+        return (Class<T>) UserExtension.class;
     }
 }

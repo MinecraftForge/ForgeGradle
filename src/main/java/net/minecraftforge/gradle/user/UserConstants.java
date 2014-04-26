@@ -16,11 +16,10 @@ public final class UserConstants
 
     static final String        FORGE_JAVADOC_URL     = Constants.FORGE_MAVEN + "/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-javadoc.zip";
 
-    static final String        PACK_DIR              = "{API_CACHE_DIR}/unpacked";
     static final String        NATIVES_DIR           = "{BUILD_DIR}/natives";
     static final String        SOURCES_DIR           = "{BUILD_DIR}/sources";
 
-    static final String        CONF_DIR              = PACK_DIR + "/conf";
+    static final String        CONF_DIR              = "{USER_DEV}/conf";
     static final String        MERGE_CFG             = CONF_DIR + "/mcp_merge.cfg";
     static final String        MCP_PATCH_DIR         = CONF_DIR + "/minecraft_ff";
     static final String        ASTYLE_CFG            = CONF_DIR + "/astyle.cfg";
@@ -28,12 +27,12 @@ public final class UserConstants
     static final String        PACKAGED_EXC          = CONF_DIR + "/packaged.exc";
     static final String        EXC_JSON              = CONF_DIR + "/exceptor.json";
 
-    public static final String DEOBF_SRG_SRG         = "{API_CACHE_DIR}/srgs/notch-srg.srg";
-    public static final String DEOBF_MCP_SRG         = "{API_CACHE_DIR}/srgs/notch-mcp.srg";
-    public static final String REOBF_SRG             = "{API_CACHE_DIR}/srgs/mcp-srg.srg";
-    public static final String REOBF_NOTCH_SRG       = "{API_CACHE_DIR}/srgs/mcp-notch.srg";
-    public static final String EXC_SRG               = "{API_CACHE_DIR}/srgs/srg.exc";
-    public static final String EXC_MCP               = "{API_CACHE_DIR}/srgs/mcp.srg";
+    public static final String DEOBF_SRG_SRG         = "{SRG_DIR}/srgs/notch-srg.srg";
+    public static final String DEOBF_MCP_SRG         = "{SRG_DIR}/notch-mcp.srg";
+    public static final String REOBF_SRG             = "{SRG_DIR}/mcp-srg.srg";
+    public static final String REOBF_NOTCH_SRG       = "{SRG_DIR}/mcp-notch.srg";
+    public static final String EXC_SRG               = "{SRG_DIR}/srg.exc";
+    public static final String EXC_MCP               = "{SRG_DIR}/mcp.srg";
 
     public static final String METHOD_CSV            = CONF_DIR + "/methods.csv";
     public static final String FIELD_CSV             = CONF_DIR + "/fields.csv";

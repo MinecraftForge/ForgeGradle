@@ -165,11 +165,17 @@ public class ArtifactSpec
         this.srg = srg;
     }
     
+    /**
+     * sets it to SRG names.
+     */
     public void setSrgSrg()
     {
         this.srg = new DelayedFile(project, UserConstants.REOBF_SRG, ((UserExtension)project.getExtensions().getByName(Constants.EXT_NAME_MC)).plugin);
     }
     
+    /**
+     * Sets it to noth names.
+     */
     public void setSrgMcp()
     {
         this.srg = new DelayedFile(project, UserConstants.REOBF_NOTCH_SRG, ((UserExtension)project.getExtensions().getByName(Constants.EXT_NAME_MC)).plugin);

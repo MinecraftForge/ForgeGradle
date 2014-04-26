@@ -142,6 +142,18 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
             task6.setDoesCache(false);
         }
     }
+    
+    @Override
+    public final void applyOverlayPlugin()
+    {
+        // nothing.
+    }
+
+    @Override
+    public final boolean canOverlayPlugin()
+    {
+        return false;
+    }
 
     private void configureLaunch4J()
     {
@@ -290,6 +302,12 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
     protected Class<DevExtension> getExtensionClass()
     {
         return DevExtension.class;
+    }
+    
+    protected DevExtension getOverlayExtension()
+    {
+        // never happens.
+        return null;
     }
 
     protected String getServerClassPath(File json)

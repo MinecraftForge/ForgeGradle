@@ -35,13 +35,36 @@ import com.google.gson.JsonSyntaxException;
 public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Project>, IDelayedResolver<K>
 {
     public Project    project;
+    @SuppressWarnings("rawtypes")
+    public BasePlugin otherPlugin;
     public Version    version;
     public AssetIndex assetIndex;
 
+    @SuppressWarnings("rawtypes")
     @Override
     public final void apply(Project arg)
     {
         project = arg;
+
+        // search for overlays..
+        for (Plugin p : project.getPlugins())
+        {
+            if (p instanceof BasePlugin && p != this)
+            {
+                if (canOverlayPlugin())
+                {
+                    // found another BasePlugin thats already applied.
+                    // do only overlay stuff and return;
+                    otherPlugin = (BasePlugin) p;
+                    applyOverlayPlugin();
+                    return;
+                }
+                else
+                {
+                    throw new RuntimeException("Seems you are trying to apply 2 ForgeGradle plugins that are not designed to overlay... Fix your buildscripts.");
+                }
+            }
+        }
 
         // logging
         FileLogListenner listener = new FileLogListenner(project.file(Constants.LOG));
@@ -102,6 +125,13 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     }
 
     public abstract void applyPlugin();
+
+    public abstract void applyOverlayPlugin();
+
+    /**
+     * return true if this plugin can be applied over another BasePlugin.
+     */
+    public abstract boolean canOverlayPlugin();
 
     protected abstract DelayedFile getDevJson();
 
@@ -230,8 +260,17 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     @SuppressWarnings("unchecked")
     public final K getExtension()
     {
-        return (K) project.getExtensions().getByName(Constants.EXT_NAME_MC);
+        if (otherPlugin != null && canOverlayPlugin())
+            return getOverlayExtension();
+        else
+            return (K) project.getExtensions().getByName(Constants.EXT_NAME_MC);
     }
+    
+    /**
+     * @return the extension object with name EXT_NAME_MC
+     * @see Constants.EXT_NAME_MC
+     */
+    protected abstract K getOverlayExtension();
 
     public DefaultTask makeTask(String name)
     {

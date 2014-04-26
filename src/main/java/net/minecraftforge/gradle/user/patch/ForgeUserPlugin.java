@@ -7,7 +7,7 @@ import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 public class ForgeUserPlugin extends UserPatchBasePlugin
 {
     @Override
-    protected String getApiName()
+    public String getApiName()
     {
         return "forge";
     }

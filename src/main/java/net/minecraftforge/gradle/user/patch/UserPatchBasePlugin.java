@@ -3,7 +3,13 @@ package net.minecraftforge.gradle.user.patch;
 import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
 import static net.minecraftforge.gradle.user.UserConstants.CLASSIFIER_DECOMPILED;
 import static net.minecraftforge.gradle.user.UserConstants.CONFIG_MC;
-import static net.minecraftforge.gradle.user.patch.UserPatchConstants.*;
+import static net.minecraftforge.gradle.user.patch.UserPatchConstants.BINARIES_JAR;
+import static net.minecraftforge.gradle.user.patch.UserPatchConstants.BINPATCHES;
+import static net.minecraftforge.gradle.user.patch.UserPatchConstants.CLASSIFIER_PATCHED;
+import static net.minecraftforge.gradle.user.patch.UserPatchConstants.ECLIPSE_LOCATION;
+import static net.minecraftforge.gradle.user.patch.UserPatchConstants.JAR_BINPATCHED;
+import static net.minecraftforge.gradle.user.patch.UserPatchConstants.JSON;
+import static net.minecraftforge.gradle.user.patch.UserPatchConstants.RES_DIR;
 import groovy.lang.Closure;
 
 import java.io.File;
@@ -130,6 +136,24 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
             
         });
     }
+    
+    @Override
+    public final void applyOverlayPlugin()
+    {
+        // nothing.
+    }
+
+    @Override
+    public final boolean canOverlayPlugin()
+    {
+        return false;
+    }
+    
+    @Override
+    public final UserPatchExtension getOverlayExtension()
+    {
+        return null; // nope.
+    }
 
     /**
      * Allows for the configuration of tasks in AfterEvaluate
@@ -218,6 +242,15 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     }
     
     @Override
+    protected void doVersionChecks(String version)
+    {
+        int buildNumber = Integer.parseInt(version.substring(version.lastIndexOf('.') + 1));
+        doVersionChecks(buildNumber);
+    }
+    
+    protected abstract void doVersionChecks(int buildNumber);
+
+    @Override
     protected DelayedFile getDevJson()
     {
         return delayedFile(JSON);
@@ -245,6 +278,18 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     protected String getApiCacheDir(UserPatchExtension exten)
     {
         return "{CACHE_DIR}/minecraft/"+getApiGroup().replace('.', '/') + "/{API_NAME}/{API_VERSION}";
+    }
+
+    @Override
+    protected String getSrgCacheDir(UserPatchExtension exten)
+    {
+        return "{API_CACHE_DIR}/unpacked";
+    }
+
+    @Override
+    protected String getUserDevCacheDir(UserPatchExtension exten)
+    {
+        return "{API_CACHE_DIR}/srgs";
     }
 
     @Override

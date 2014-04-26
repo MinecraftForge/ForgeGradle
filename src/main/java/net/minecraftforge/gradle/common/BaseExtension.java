@@ -56,4 +56,17 @@ public class BaseExtension
     {
         srgExtra.add(in);
     }
+    
+    public void copyFrom(BaseExtension ext)
+    {
+        if ("null".equals(version))
+        {
+            setVersion(ext.getVersion());
+        }
+        
+        if ("unknown".equals(mcpVersion))
+        {
+            setMcpVersion(ext.getMcpVersion());
+        }
+    }
 }

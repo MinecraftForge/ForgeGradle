@@ -7,7 +7,7 @@ import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 public class FmlUserPlugin extends UserPatchBasePlugin
 {
     @Override
-    protected String getApiName()
+    public String getApiName()
     {
         return "fml";
     }
@@ -15,7 +15,7 @@ public class FmlUserPlugin extends UserPatchBasePlugin
     @Override
     protected String getApiGroup()
     {
-        return "com.cpw";
+        return "cpw.mods";
     }
 
     @Override
