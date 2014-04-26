@@ -605,7 +605,10 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 }
 
             });
+            
+            task.mustRunAfter("test");
             project.getTasks().getByName("assemble").dependsOn(task);
+            project.getTasks().getByName("uploadArchives").dependsOn(task);
         }
         
         createPostDecompTasks();
