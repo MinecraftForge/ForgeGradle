@@ -12,7 +12,6 @@ import java.util.LinkedList;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedThingy;
-import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.extrastuff.ReobfExceptor;
 import net.minecraftforge.gradle.user.UserConstants;
 import net.minecraftforge.gradle.user.UserExtension;
@@ -446,12 +445,12 @@ public class ReobfTask extends DefaultTask
     
     public void setSrgSrg()
     {
-        this.srg = new DelayedFile(getProject(), UserConstants.REOBF_SRG, (IDelayedResolver[]) getProject().getExtensions().getByName(Constants.EXT_NAME_MC));
+        this.srg = new DelayedFile(getProject(), UserConstants.REOBF_SRG, ((UserExtension)getProject().getExtensions().getByName(Constants.EXT_NAME_MC)).plugin);
     }
     
     public void setSrgMcp()
     {
-        this.srg = new DelayedFile(getProject(), UserConstants.REOBF_NOTCH_SRG, (IDelayedResolver[]) getProject().getExtensions().getByName(Constants.EXT_NAME_MC));
+        this.srg = new DelayedFile(getProject(), UserConstants.REOBF_NOTCH_SRG, ((UserExtension)getProject().getExtensions().getByName(Constants.EXT_NAME_MC)).plugin);
     }
 
     public File getFieldCsv()
