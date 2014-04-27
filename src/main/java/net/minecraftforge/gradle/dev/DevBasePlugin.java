@@ -105,8 +105,9 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
 
         CompressLZMA task3 = makeTask("compressDeobfData", CompressLZMA.class);
         {
-            task3.setInputFile(delayedFile(DevConstants.JOINED_SRG));
+            task3.setInputFile(delayedFile(DevConstants.NOTCH_2_SRG_SRG));
             task3.setOutputFile(delayedFile(DevConstants.DEOBF_DATA));
+            task3.dependsOn("genSrgs");
         }
 
         MergeJarsTask task4 = makeTask("mergeJars", MergeJarsTask.class);
@@ -129,11 +130,16 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
         GenSrgTask task6 = makeTask("genSrgs", GenSrgTask.class);
         {
             task6.setInSrg(delayedFile(DevConstants.JOINED_SRG));
+            task6.setInExc(delayedFile(DevConstants.JOINED_EXC));
+            task6.setMethodsCsv(delayedFile(DevConstants.METHODS_CSV));
+            task6.setFieldsCsv(delayedFile(DevConstants.FIELDS_CSV));
+            task6.setNotchToSrg(delayedFile(DevConstants.NOTCH_2_SRG_SRG));
             task6.setNotchToMcp(delayedFile(DevConstants.NOTCH_2_MCP_SRG));
             task6.setMcpToSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
             task6.setMcpToNotch(delayedFile(DevConstants.MCP_2_NOTCH_SRG));
-            task6.setMethodsCsv(delayedFile(DevConstants.METHODS_CSV));
-            task6.setFieldsCsv(delayedFile(DevConstants.FIELDS_CSV));
+            task6.setSrgExc(delayedFile(DevConstants.SRG_EXC));
+            task6.setMcpExc(delayedFile(DevConstants.MCP_EXC));
+            task6.setDoesCache(false);
         }
     }
 

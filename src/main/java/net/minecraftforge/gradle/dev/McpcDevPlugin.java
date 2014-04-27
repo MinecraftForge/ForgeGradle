@@ -56,11 +56,17 @@ public class McpcDevPlugin extends DevBasePlugin
         Task task = makeTask("setupMcpc", DefaultTask.class);
         task.dependsOn("extractMcpcSources", "generateProjects", "eclipse", "copyAssets");
         task.setGroup("MCPC");
+        
+        // clean packages
+        {
+            Delete del = makeTask("cleanPackages", Delete.class);
+            del.delete("build/distributions");
+        }
 
 //        // the master task.
         task = makeTask("buildPackages");
         //task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "genJavadocs");
-        task.dependsOn("packageUniversal", "packageInstaller", "genJavadocs");
+        task.dependsOn("cleanPackages", "packageUniversal", "packageInstaller", "genJavadocs");
         task.setGroup("MCPC");
     }
     
@@ -257,10 +263,12 @@ public class McpcDevPlugin extends DevBasePlugin
 
             task.addSource(delayedFile(ECLIPSE_MCPC_SRC));
             task.addSource(delayedFile(MCPC_SOURCES));
+            task.addTestSource(delayedFile(MCPC_TEST_SOURCES));
 
             task.addResource(delayedFile(ECLIPSE_MCPC_RES));
             task.addResource(delayedFile(MCPC_RESOURCES));
             task.addResource(delayedFile(EXTRACTED_RES));
+            task.addTestSource(delayedFile(MCPC_TEST_SOURCES));
 
             task.dependsOn("extractRes", "extractNatives","createVersionPropertiesFML");
         }
@@ -292,8 +300,8 @@ public class McpcDevPlugin extends DevBasePlugin
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
         {
             task2.setPatchDir(delayedFile(MCPC_PATCH_DIR));
-            task2.setOriginalDir(delayedFile(ECLIPSE_CLEAN_SRC));
-            task2.setChangedDir(delayedFile(ECLIPSE_MCPC_SRC));
+            task2.setOriginal(delayedFile(ECLIPSE_CLEAN_SRC));
+            task2.setChanged(delayedFile(ECLIPSE_MCPC_SRC));
             task2.setOriginalPrefix("../src-base/minecraft");
             task2.setChangedPrefix("../src-work/minecraft");
             task2.setGroup("MCPC");

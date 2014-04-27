@@ -16,7 +16,6 @@ import java.util.zip.ZipFile;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 
 import org.apache.shiro.util.AntPathMatcher;
-import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
@@ -25,9 +24,9 @@ import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.io.ByteStreams;
 
-public class ExtractTask extends DefaultTask
+public class ExtractTask extends CachedTask
 {
-    private AntPathMatcher antMatcher = new AntPathMatcher();
+    private final AntPathMatcher antMatcher = new AntPathMatcher();
     
     @InputFiles
     private LinkedHashSet<DelayedFile> sourcePaths = new LinkedHashSet<DelayedFile>();
@@ -44,15 +43,16 @@ public class ExtractTask extends DefaultTask
     @Input
     private boolean includeEmptyDirs = true;
     
+    @Cached
     @OutputDirectory
-    private DelayedFile destDir = null;
+    private DelayedFile destinationDir = null;
 
     @TaskAction
     public void doTask() throws IOException
     {
-        if (!destDir.call().exists())
+        if (!destinationDir.call().exists())
         {
-            destDir.call().mkdirs();
+            destinationDir.call().mkdirs();
         }
 
         for (DelayedFile source : sourcePaths)
@@ -69,7 +69,7 @@ public class ExtractTask extends DefaultTask
                     ZipEntry entry = itr.nextElement();
                     if (shouldExtract(entry.getName()))
                     {
-                        File out = new File(destDir.call(), entry.getName());
+                        File out = new File(destinationDir.call(), entry.getName());
                         getLogger().debug("  " + out);
                         if (entry.isDirectory())
                         {
@@ -144,21 +144,26 @@ public class ExtractTask extends DefaultTask
 
     public ExtractTask into(DelayedFile target)
     {
-        destDir = target;
+        destinationDir = target;
         return this;
     }
     
     public ExtractTask setDestinationDir(DelayedFile target)
     {
-        destDir = target;
+        destinationDir = target;
         return this;
     }
     
     public File getDestinationDir()
     {
-        return destDir.call();
+        return destinationDir.call();
     }
 
+    public List<String> getIncludes()
+    {
+        return includes;
+    }
+    
     public ExtractTask include(String... paterns)
     {
         for (String patern : paterns)
@@ -166,6 +171,11 @@ public class ExtractTask extends DefaultTask
             includes.add(patern);
         }
         return this;
+    }
+    
+    public List<String> getExcludes()
+    {
+        return excludes;
     }
 
     public ExtractTask exclude(String... paterns)
@@ -175,6 +185,11 @@ public class ExtractTask extends DefaultTask
             excludes.add(patern);
         }
         return this;
+    }
+    
+    public List<Closure<Boolean>> getExcludeCalls()
+    {
+        return excludeCalls;
     }
     
     public void exclude(Closure<Boolean> c)
@@ -200,5 +215,10 @@ public class ExtractTask extends DefaultTask
     public void setIncludeEmptyDirs(boolean includeEmptyDirs)
     {
         this.includeEmptyDirs = includeEmptyDirs;
+    }
+    
+    protected boolean defaultCache()
+    {
+        return false;
     }
 }

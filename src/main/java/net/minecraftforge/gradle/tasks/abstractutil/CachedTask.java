@@ -1,40 +1,51 @@
 package net.minecraftforge.gradle.tasks.abstractutil;
 
-import com.google.common.base.Joiner;
-import com.google.common.io.Files;
-
 import groovy.lang.Closure;
-import net.minecraftforge.gradle.common.Constants;
-
-import org.gradle.api.Action;
-import org.gradle.api.DefaultTask;
-import org.gradle.api.Task;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFile;
 
 import java.io.File;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+
+import net.minecraftforge.gradle.common.Constants;
+
+import org.gradle.api.Action;
+import org.gradle.api.DefaultTask;
+import org.gradle.api.Task;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.specs.Spec;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
+
+import com.google.common.base.Joiner;
+import com.google.common.io.Files;
 
 /**
  * This class offers some extra helper methods for caching files.
  */
 public abstract class CachedTask extends DefaultTask
 {
-    private boolean doesCache = true;
+    private boolean                    doesCache  = true;
+    private boolean                    cacheSet   = false;
     private final ArrayList<Annotated> cachedList = new ArrayList<Annotated>();
     private final ArrayList<Annotated> inputList  = new ArrayList<Annotated>();
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public CachedTask()
     {
         super();
@@ -42,45 +53,66 @@ public abstract class CachedTask extends DefaultTask
         Class<? extends Task> clazz = this.getClass();
         while (clazz != null)
         {
-            Field[] fields = clazz.getDeclaredFields();
-            for (Field f : fields)
+            for (Field f : clazz.getDeclaredFields())
             {
                 if (f.isAnnotationPresent(Cached.class))
                 {
-                    addCachedField(new Annotated(clazz, f.getName()));
+                    addCachedOutput(new Annotated(clazz, f.getName()));
                 }
 
-                if (f.isAnnotationPresent(InputFile.class) || f.isAnnotationPresent(Input.class))
+                if (!f.isAnnotationPresent(Excluded.class) &&
+                        (
+                        f.isAnnotationPresent(InputFile.class) ||
+                        f.isAnnotationPresent(InputFiles.class) ||
+                        f.isAnnotationPresent(InputDirectory.class) ||
+                        f.isAnnotationPresent(Input.class)
+                        ))
                 {
                     inputList.add(new Annotated(clazz, f.getName()));
+                }
+            }
+            
+            for (Method m : clazz.getDeclaredMethods())
+            {
+                if (m.isAnnotationPresent(Cached.class))
+                {
+                    addCachedOutput(new Annotated(clazz, m.getName(), true));
+                }
+
+                if (!m.isAnnotationPresent(Excluded.class) &&
+                        (
+                        m.isAnnotationPresent(InputFile.class) ||
+                        m.isAnnotationPresent(InputFiles.class) ||
+                        m.isAnnotationPresent(InputDirectory.class) ||
+                        m.isAnnotationPresent(Input.class)
+                        ))
+                {
+                    inputList.add(new Annotated(clazz, m.getName(), true));
                 }
             }
 
             clazz = (Class<? extends Task>) clazz.getSuperclass();
         }
 
-        this.onlyIf(new Closure<Boolean>(this, this)
+        this.onlyIf(new Spec()
         {
-            /**
-             * 
-             */
-            private static final long serialVersionUID = -1685502083302238195L;
-
             @Override
-            public Boolean call(Object...objects)
+            public boolean isSatisfiedBy(Object obj)
             {
+                Task task = (Task) obj;
+                
                 if (!doesCache())
                     return true;
-                
+
                 if (cachedList.isEmpty())
                     return true;
-                
+
                 for (Annotated field : cachedList)
                 {
 
                     try
                     {
-                        File file = getFile(field);
+                        File file = getProject().file(field.getValue(task));
 
                         // not there? do the task.
                         if (!file.exists())
@@ -96,15 +128,13 @@ public abstract class CachedTask extends DefaultTask
                         }
 
                         String foundMD5 = Files.toString(getHashFile(file), Charset.defaultCharset());
-                        String calcMD5 = getHashes(field, inputList, getDelegate());
-
-                        getProject().getLogger().info("Cached file found: " + file);
-                        getProject().getLogger().info("Checksums found: " + foundMD5);
-                        getProject().getLogger().info("Checksums calculated: " + calcMD5);
+                        String calcMD5 = getHashes(field, inputList, task);
 
                         if (!calcMD5.equals(foundMD5))
                         {
-                            getProject().getLogger().error(" Corrupted Cache!");
+                            getProject().getLogger().info(" Corrupted Cache!");
+                            getProject().getLogger().info("Checksums found: " + foundMD5);
+                            getProject().getLogger().info("Checksums calculated: " + calcMD5);
                             file.delete();
                             getHashFile(file).delete();
                             return true;
@@ -122,17 +152,10 @@ public abstract class CachedTask extends DefaultTask
                 // no problems? all of em are here? skip the task.
                 return false;
             }
-
-            private File getFile(Annotated field) throws IllegalAccessException, NoSuchFieldException
-            {
-                Field f = field.taskClass.getDeclaredField(field.fieldName);
-                f.setAccessible(true);
-                return getProject().file(f.get(getDelegate()));
-            }
         });
     }
 
-    private void addCachedField(final Annotated annot)
+    private void addCachedOutput(final Annotated annot)
     {
         cachedList.add(annot);
 
@@ -143,7 +166,7 @@ public abstract class CachedTask extends DefaultTask
             {
                 if (!doesCache())
                     return;
-                
+
                 try
                 {
                     File outFile = getProject().file(annot.getValue(task));
@@ -164,32 +187,56 @@ public abstract class CachedTask extends DefaultTask
 
     private File getHashFile(File file)
     {
-        return new File(file.getParentFile(), file.getName() + ".md5");
+        if (file.isDirectory())
+            return new File(file, ".cache");
+        else
+            return new File(file.getParentFile(), file.getName() + ".md5");
     }
 
     @SuppressWarnings("rawtypes")
-    private String getHashes(Annotated output, List<Annotated> inputs, Object instance) throws NoSuchFieldException, IllegalAccessException, NoSuchAlgorithmException
+    private String getHashes(Annotated output, List<Annotated> inputs, Object instance) throws NoSuchFieldException, IllegalAccessException, NoSuchAlgorithmException, NoSuchMethodException, SecurityException, IllegalArgumentException, InvocationTargetException
     {
-        ArrayList<String> hashes = new ArrayList<String>();
+        LinkedList<String> hashes = new LinkedList<String>();
 
-        hashes.add(Constants.hash(getProject().file(output.getValue(instance))));
+        hashes.addAll(Constants.hashAll(getProject().file(output.getValue(instance))));
 
         for (Annotated input : inputs)
         {
-            Field f = input.getField();
-
-            if (f.isAnnotationPresent(InputFile.class))
+            AnnotatedElement m = input.getElement();
+            Object val = input.getValue(instance);
+            
+            if (val == null && m.isAnnotationPresent(Optional.class))
+            {
+                hashes.add("null");
+            }
+            else if (m.isAnnotationPresent(InputFile.class))
             {
                 hashes.add(Constants.hash(getProject().file(input.getValue(instance))));
                 getLogger().info(Constants.hash(getProject().file(input.getValue(instance))) + " " + input.getValue(instance));
             }
+            else if (m.isAnnotationPresent(InputDirectory.class))
+            {
+                File dir = (File) input.getValue(instance);
+                hashes.addAll(Constants.hashAll(dir));
+            }
+            else if (m.isAnnotationPresent(InputFiles.class))
+            {
+                FileCollection files = (FileCollection) input.getValue(instance);
+                for (File file : files.getFiles())
+                {
+                    String hash = Constants.hash(file);
+                    hashes.add(hash);
+                    getLogger().info(hash + " " + input.getValue(instance));
+                }
+            }
             else
+            // just @Input
             {
                 Object obj = input.getValue(instance);
 
-                if (obj instanceof Closure)
+                while (obj instanceof Closure)
                     obj = ((Closure) obj).call();
-                
+
                 if (obj instanceof String)
                 {
                     hashes.add(Constants.hash((String) obj));
@@ -197,7 +244,7 @@ public abstract class CachedTask extends DefaultTask
                 }
                 else if (obj instanceof File)
                 {
-                    File file = (File)obj;
+                    File file = (File) obj;
                     if (file.isDirectory())
                     {
                         List<File> files = Arrays.asList(file.listFiles());
@@ -210,7 +257,7 @@ public abstract class CachedTask extends DefaultTask
                     }
                     else
                     {
-                        hashes.add(Constants.hash(file));   
+                        hashes.add(Constants.hash(file));
                         getLogger().info(Constants.hash(file) + " " + file);
                     }
                 }
@@ -220,43 +267,93 @@ public abstract class CachedTask extends DefaultTask
         return Joiner.on(Constants.NEWLINE).join(hashes);
     }
 
-    @Target(ElementType.FIELD)
+    @Target( { ElementType.FIELD, ElementType.METHOD })
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Cached
     {
     }
 
-    private class Annotated
+    @Target(ElementType.FIELD)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface Excluded
+    {
+    }
+
+    private static class Annotated
     {
         private final Class<? extends Task> taskClass;
-        private final String                fieldName;
+        private final String                symbolName;
+        private final boolean               isMethod;
 
+        private Annotated(Class<? extends Task> taskClass, String symbolName, boolean isMethod)
+        {
+            this.taskClass = taskClass;
+            this.symbolName = symbolName;
+            this.isMethod = isMethod;
+        }
+        
         private Annotated(Class<? extends Task> taskClass, String fieldName)
         {
             this.taskClass = taskClass;
-            this.fieldName = fieldName;
+            this.symbolName = fieldName;
+            isMethod = false;
+        }
+        
+        private AnnotatedElement getElement() throws NoSuchMethodException, SecurityException, NoSuchFieldException
+        {
+            if (isMethod)
+                return taskClass.getDeclaredMethod(symbolName);
+            else
+                return taskClass.getDeclaredField(symbolName);
         }
 
-        protected Field getField() throws NoSuchFieldException
+        protected Object getValue(Object instance) throws NoSuchMethodException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, InvocationTargetException
         {
-            return taskClass.getDeclaredField(fieldName);
+            Method method;
+            
+            if (isMethod)
+                method = taskClass.getDeclaredMethod(symbolName);
+            else
+            {
+                // finds the getter, and uses that if possible.
+                Field f = taskClass.getDeclaredField(symbolName);
+                String methodName = f.getType().equals(boolean.class) ? "is" : "get";
+                
+                char[] name = symbolName.toCharArray();
+                name[0] = Character.toUpperCase(name[0]);
+                methodName += new String(name);
+                
+                try {
+                    method = taskClass.getMethod(methodName, new Class[0]);
+                }
+                catch (NoSuchMethodException e)
+                {
+                    // method not found. Grab the field via reflection
+                    f.setAccessible(true);
+                    return f.get(instance);
+                }
+            }
+            
+            return method.invoke(instance, new Object[0]);
         }
-
-        protected Object getValue(Object instance) throws NoSuchFieldException, IllegalAccessException
-        {
-            Field f = getField();
-            f.setAccessible(true);
-            return f.get(instance);
-        }
+    }
+    
+    protected boolean defaultCache()
+    {
+        return true;
     }
 
     public boolean doesCache()
     {
-        return doesCache;
+        if (cacheSet)
+            return doesCache;
+        else
+            return defaultCache();
     }
 
     public void setDoesCache(boolean cacheStuff)
     {
+        this.cacheSet = true;
         this.doesCache = cacheStuff;
     }
 }

@@ -1,0 +1,76 @@
+public class AnonymousTest
+{
+    private static final String randomField = "lalalaSomeField";
+    
+    public void testMethod()
+    {
+        int var1 = 123;
+        int var2 = 456;
+        int var3 = 123+456;
+
+        var1++;
+        var2 = var3+var1;
+    }
+    
+    private static final ITestInterface TEST_FIELD = new ITestInterface() {
+        public void someMethod()
+        {
+            int var1 = 123;
+            int var2 = 456;
+            int var3 = 123+456;
+            
+            var1++;
+            var2 = var3+var1;
+        }
+        
+        public void someMethodWithParams(String par1, float par2, int par3, double par4)
+        {
+            float var1 = (float) (par2 + par4);
+            int var2 = 456;
+            int var3 = par3 + var2;
+            
+            var1++;
+            var2 = (int) (var3+var1);
+            
+            par1 += var3 + "" + var2;
+        }
+        
+        public void emptyMethod() {}
+    };
+    
+    public static void methodWithInnerClass()
+    {
+        ITestInterface thingy = new ITestInterface() {
+            public void someMethod()
+            {
+                int var1 = 123;
+                int var2 = 456;
+                int var3 = 123+456;
+                
+                var1++;
+                var2 = var3+var1;
+            }
+            
+            public void someMethodWithParams(String par1, float par2, int par3, double par4)
+            {
+                float var1 = (float) (par2 + par4);
+                int var2 = 456;
+                int var3 = par3 + var2;
+                
+                var1++;
+                var2 = (int) (var3+var1);
+                
+                par1 += var3 + "" + var2;
+            }
+            
+            public void emptyMethod() {}
+        };
+    }
+    
+    private static interface ITestInterface
+    {
+        public void someMethod();
+        public void someMethodWithParams(String par1, float par2, int par3, double par4);
+        public void emptyMethod();
+    }
+}

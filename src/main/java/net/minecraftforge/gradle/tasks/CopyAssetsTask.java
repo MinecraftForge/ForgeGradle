@@ -3,7 +3,6 @@ package net.minecraftforge.gradle.tasks;
 import groovy.lang.Closure;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Map.Entry;
 
 import net.minecraftforge.gradle.json.version.AssetIndex;
@@ -28,28 +27,38 @@ public class CopyAssetsTask extends DefaultTask
     DelayedFile   outputDir;
 
     @TaskAction
-    public void doTask() throws IOException
+    public void doTask()
     {
-        AssetIndex index = getAssetIndex();
-        File assetsDir = new File(getAssetsDir(), "objects");
-        File outputDir = getOutputDir();
-
-        if (!index.virtual)
-            return; // shrug
-
-        for (Entry<String, AssetEntry> e : index.objects.entrySet())
+        try
         {
-            File in = getHashedPath(assetsDir, e.getValue().hash);
-            File out = new File(outputDir, e.getKey());
+            AssetIndex index = getAssetIndex();
+            File assetsDir = new File(getAssetsDir(), "objects");
+            File outputDir = getOutputDir();
 
-            // check existing
-            if (out.exists() && out.length() == e.getValue().size)
-                continue;
-            else
+            if (!index.virtual)
+                return; // shrug
+
+            for (Entry<String, AssetEntry> e : index.objects.entrySet())
             {
-                out.getParentFile().mkdirs();
-                Files.copy(in, out);
+                File in = getHashedPath(assetsDir, e.getValue().hash);
+                File out = new File(outputDir, e.getKey());
+
+                // check existing
+                if (out.exists() && out.length() == e.getValue().size)
+                    continue;
+                else
+                {
+                    out.getParentFile().mkdirs();
+                    Files.copy(in, out);
+                }
             }
+        }
+        catch (Throwable t)
+        {
+            // CRASH!
+            getLogger().error("Something went wrong with the assets copying");
+            this.setDidWork(false);
+            return;
         }
     }
 

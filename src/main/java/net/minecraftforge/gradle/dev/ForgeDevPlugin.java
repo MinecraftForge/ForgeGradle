@@ -12,8 +12,12 @@ import java.util.List;
 import net.minecraftforge.gradle.CopyInto;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedBase;
+import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
+import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
+import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
+import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.PatchJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
@@ -53,6 +57,27 @@ public class ForgeDevPlugin extends DevBasePlugin
 
         // set fmlDir
         getExtension().setFmlDir("fml");
+        
+        // configure genSrg task.
+        GenSrgTask genSrgTask = (GenSrgTask) project.getTasks().getByName("genSrgs");
+        {
+            // find all the exc & srg files in the resources.
+            for (File f : project.fileTree(delayedFile(DevConstants.FML_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    genSrgTask.addExtraExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    genSrgTask.addExtraSrg(f);
+            }
+            
+            for (File f : project.fileTree(delayedFile(DevConstants.FORGE_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    genSrgTask.addExtraExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    genSrgTask.addExtraSrg(f);
+            }
+        }
 
         createJarProcessTasks();
         createProjectTasks();
@@ -78,13 +103,13 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             task2.setInJar(delayedFile(Constants.JAR_MERGED));
             task2.setOutCleanJar(delayedFile(JAR_SRG_FORGE));
-            task2.setSrg(delayedFile(JOINED_SRG));
+            task2.setSrg(delayedFile(NOTCH_2_SRG_SRG));
             task2.setExceptorCfg(delayedFile(JOINED_EXC));
             task2.setExceptorJson(delayedFile(EXC_JSON));
             task2.addTransformerClean(delayedFile(FML_RESOURCES + "/fml_at.cfg"));
             task2.addTransformerClean(delayedFile(FORGE_RESOURCES + "/forge_at.cfg"));
             task2.setApplyMarkers(true);
-            task2.dependsOn("downloadMcpTools", "mergeJars");
+            task2.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
         }
 
         DecompileTask task3 = makeTask("decompile", DecompileTask.class);
@@ -123,27 +148,39 @@ public class ForgeDevPlugin extends DevBasePlugin
 
             task5.dependsOn("fmlPatchJar", "compressDeobfData", "createVersionPropertiesFML");
         }
-
-        RemapSourcesTask task6 = makeTask("remapSourcesJar", RemapSourcesTask.class);
+        
+        RemapSourcesTask remapTask = makeTask("remapCleanJar", RemapSourcesTask.class);
         {
-            task6.setInJar(delayedFile(ZIP_INJECT_FORGE));
-            task6.setOutJar(delayedFile(ZIP_RENAMED_FORGE));
-            task6.setMethodsCsv(delayedFile(METHODS_CSV));
-            task6.setFieldsCsv(delayedFile(FIELDS_CSV));
-            task6.setParamsCsv(delayedFile(PARAMS_CSV));
-            task6.setDoesCache(false);
-            task6.setDoesJavadocs(false);
-            task6.dependsOn("fmlInjectJar");
+            remapTask.setInJar(delayedFile(ZIP_INJECT_FORGE));
+            remapTask.setOutJar(delayedFile(REMAPPED_CLEAN));
+            remapTask.setMethodsCsv(delayedFile(DevConstants.METHODS_CSV));
+            remapTask.setFieldsCsv(delayedFile(DevConstants.FIELDS_CSV));
+            remapTask.setParamsCsv(delayedFile(DevConstants.PARAMS_CSV));
+            remapTask.setDoesCache(false);
+            remapTask.setNoJavadocs();
+            remapTask.dependsOn("fmlInjectJar");
         }
 
         task4 = makeTask("forgePatchJar", PatchJarTask.class);
         {
-            task4.setInJar(delayedFile(ZIP_RENAMED_FORGE));
+            task4.setInJar(delayedFile(ZIP_INJECT_FORGE));
             task4.setOutJar(delayedFile(ZIP_PATCHED_FORGE));
             task4.setInPatches(delayedFile(FORGE_PATCH_DIR));
             task4.setDoesCache(false);
             task4.setMaxFuzz(2);
-            task4.dependsOn("remapSourcesJar");
+            task4.dependsOn("fmlInjectJar");
+        }
+        
+        remapTask = makeTask("remapSourcesJar", RemapSourcesTask.class);
+        {
+            remapTask.setInJar(delayedFile(ZIP_PATCHED_FORGE));
+            remapTask.setOutJar(delayedFile(ZIP_RENAMED_FORGE));
+            remapTask.setMethodsCsv(delayedFile(METHODS_CSV));
+            remapTask.setFieldsCsv(delayedFile(FIELDS_CSV));
+            remapTask.setParamsCsv(delayedFile(PARAMS_CSV));
+            remapTask.setDoesCache(false);
+            remapTask.setNoJavadocs();
+            remapTask.dependsOn("forgePatchJar");
         }
     }
 
@@ -153,16 +190,16 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             task.exclude(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
-            task.from(delayedFile(ZIP_RENAMED_FORGE));
+            task.from(delayedFile(REMAPPED_CLEAN));
             task.into(delayedFile(ECLIPSE_CLEAN_RES));
-            task.dependsOn("extractWorkspace", "remapSourcesJar");
+            task.dependsOn("extractWorkspace", "remapCleanJar");
         }
 
         task = makeTask("extractMcSource", ExtractTask.class);
         {
             task.include(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
-            task.from(delayedFile(ZIP_RENAMED_FORGE));
+            task.from(delayedFile(REMAPPED_CLEAN));
             task.into(delayedFile(ECLIPSE_CLEAN_SRC));
             task.dependsOn("extractMcResources");
         }
@@ -170,15 +207,15 @@ public class ForgeDevPlugin extends DevBasePlugin
         task = makeTask("extractForgeResources", ExtractTask.class);
         {
             task.exclude(JAVA_FILES);
-            task.from(delayedFile(ZIP_PATCHED_FORGE));
+            task.from(delayedFile(ZIP_RENAMED_FORGE));
             task.into(delayedFile(ECLIPSE_FORGE_RES));
-            task.dependsOn("forgePatchJar", "extractWorkspace");
+            task.dependsOn("remapSourcesJar", "extractWorkspace");
         }
 
         task = makeTask("extractForgeSources", ExtractTask.class);
         {
             task.include(JAVA_FILES);
-            task.from(delayedFile(ZIP_PATCHED_FORGE));
+            task.from(delayedFile(ZIP_RENAMED_FORGE));
             task.into(delayedFile(ECLIPSE_FORGE_SRC));
             task.dependsOn("extractForgeResources");
         }
@@ -217,9 +254,11 @@ public class ForgeDevPlugin extends DevBasePlugin
 
             task.addSource(delayedFile(ECLIPSE_FORGE_SRC));
             task.addSource(delayedFile(FORGE_SOURCES));
+            task.addTestSource(delayedFile(FORGE_TEST_SOURCES));
 
             task.addResource(delayedFile(ECLIPSE_FORGE_RES));
             task.addResource(delayedFile(FORGE_RESOURCES));
+            task.addTestResource(delayedFile(FORGE_TEST_RES));
 
             task.dependsOn("extractNatives","createVersionPropertiesFML");
         }
@@ -248,13 +287,53 @@ public class ForgeDevPlugin extends DevBasePlugin
 
     private void createMiscTasks()
     {
+        DelayedFile rangeMapClean = delayedFile("{BUILD_DIR}/tmp/rangemapCLEAN.txt");
+        DelayedFile rangeMapDirty = delayedFile("{BUILD_DIR}/tmp/rangemapDIRTY.txt");
+        
+        ExtractS2SRangeTask extractRange = makeTask("extractRangeForge", ExtractS2SRangeTask.class);
+        {
+            extractRange.setLibsFromProject(delayedFile(ECLIPSE_FORGE + "/build.gradle"), "compile", true);
+            extractRange.addIn(delayedFile(ECLIPSE_FORGE_SRC));
+            extractRange.setRangeMap(rangeMapDirty);
+        }
+        
+        ApplyS2STask applyS2S = makeTask("retroMapForge", ApplyS2STask.class);
+        {
+            applyS2S.addIn(delayedFile(ECLIPSE_FORGE_SRC));
+            applyS2S.setOut(delayedFile(PATCH_DIRTY));
+            applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
+            applyS2S.addExc(delayedFile(MCP_EXC));
+            applyS2S.addExc(delayedFile(SRG_EXC)); // just in case
+            applyS2S.setRangeMap(rangeMapDirty);
+            applyS2S.dependsOn("genSrgs", extractRange);
+        }
+        
+        extractRange = makeTask("extractRangeClean", ExtractS2SRangeTask.class);
+        {
+            extractRange.setLibsFromProject(delayedFile(ECLIPSE_CLEAN + "/build.gradle"), "compile", true);
+            extractRange.addIn(delayedFile(REMAPPED_CLEAN));
+            extractRange.setRangeMap(rangeMapClean);
+        }
+        
+        applyS2S = makeTask("retroMapClean", ApplyS2STask.class);
+        {
+            applyS2S.addIn(delayedFile(REMAPPED_CLEAN));
+            applyS2S.setOut(delayedFile(PATCH_CLEAN));
+            applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
+            applyS2S.addExc(delayedFile(MCP_EXC));
+            applyS2S.addExc(delayedFile(SRG_EXC)); // just in case
+            applyS2S.setRangeMap(rangeMapClean);
+            applyS2S.dependsOn("genSrgs", extractRange);
+        }
+        
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
         {
             task2.setPatchDir(delayedFile(FORGE_PATCH_DIR));
-            task2.setOriginalDir(delayedFile(ECLIPSE_CLEAN_SRC));
-            task2.setChangedDir(delayedFile(ECLIPSE_FORGE_SRC));
+            task2.setOriginal(delayedFile(PATCH_CLEAN)); // was ECLIPSE_CLEAN_SRC
+            task2.setChanged(delayedFile(PATCH_DIRTY)); // ECLIPSE_FORGE_SRC
             task2.setOriginalPrefix("../src-base/minecraft");
             task2.setChangedPrefix("../src-work/minecraft");
+            task2.dependsOn("retroMapForge", "retroMapClean");
             task2.setGroup("Forge");
         }
 
@@ -286,7 +365,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task3.setDirtyJar(delayedFile(REOBF_TMP));
             task3.setDeobfDataLzma(delayedFile(DEOBF_DATA));
             task3.setOutJar(delayedFile(BINPATCH_TMP));
-            task3.setSrg(delayedFile(JOINED_SRG));
+            task3.setSrg(delayedFile(NOTCH_2_SRG_SRG));
             task3.addPatchList(delayedFileTree(FORGE_PATCH_DIR));
             task3.addPatchList(delayedFileTree(FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData");
@@ -304,6 +383,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task5.setSubmodule(delayedFile("fml"));
             task5.setModuleName("FML");
             task5.setPrefix("MinecraftForge/FML");
+            task5.setOutputFile(project.file("changelog.txt"));
         }
     }
 
@@ -474,6 +554,7 @@ public class ForgeDevPlugin extends DevBasePlugin
                     task.setDestinationDir(javadoc_temp);
                 }
             });
+            javadocJar.dependsOn("generateProjects", "extractForgeSources");
         }
 
         final Zip javadoc = makeTask("packageJavadoc", Zip.class);
@@ -483,6 +564,45 @@ public class ForgeDevPlugin extends DevBasePlugin
             javadoc.dependsOn("genJavadocs");
         }
         project.getArtifacts().add("archives", javadoc);
+        
+        ExtractS2SRangeTask range = makeTask("userDevExtractRange", ExtractS2SRangeTask.class);
+        {
+            range.setLibsFromProject(delayedFile(DevConstants.ECLIPSE_FORGE + "/build.gradle"), "compile", true);
+            range.addIn(delayedFile(DevConstants.FML_SOURCES));
+            range.addIn(delayedFile(DevConstants.FORGE_SOURCES));
+            range.setRangeMap(delayedFile(DevConstants.USERDEV_RANGEMAP));
+            range.dependsOn("extractForgeSources", "generateProjects");
+        }
+        
+        ApplyS2STask s2s = makeTask("userDevSrgSrc", ApplyS2STask.class);
+        {
+            s2s.addIn(delayedFile(DevConstants.FORGE_SOURCES));
+            s2s.addIn(delayedFile(DevConstants.FML_SOURCES));
+            s2s.setOut(delayedFile(DevConstants.USERDEV_SRG_SRC));
+            s2s.addSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
+            s2s.addExc(delayedFile(DevConstants.JOINED_EXC));
+            s2s.setRangeMap(delayedFile(DevConstants.USERDEV_RANGEMAP));
+            s2s.dependsOn("genSrgs", range);
+            s2s.getOutputs().upToDateWhen(Constants.CALL_FALSE); //Fucking caching.
+            
+            // find all the exc & srg files in the resources.
+            for (File f : project.fileTree(delayedFile(DevConstants.FML_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    s2s.addExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    s2s.addSrg(f);
+            }
+            
+            // find all the exc & srg files in the resources.
+            for (File f : project.fileTree(delayedFile(DevConstants.FORGE_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    s2s.addExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    s2s.addSrg(f);
+            }
+        }
 
         Zip userDev = makeTask("packageUserDev", Zip.class);
         {
@@ -508,21 +628,21 @@ public class ForgeDevPlugin extends DevBasePlugin
             });
             userDev.from(delayedFile(CHANGELOG));
             userDev.from(delayedZipTree(BINPATCH_TMP), new CopyInto("", "devbinpatches.pack.lzma"));
-            userDev.from(delayedFileTree("{FML_DIR}/src"), new CopyInto("src"));
-            userDev.from(delayedFileTree("src"), new CopyInto("src"));
+            userDev.from(delayedFileTree("{FML_DIR}/src/main/resources"), new CopyInto("src/main/resources"));
+            userDev.from(delayedFileTree("src/main/resources"), new CopyInto("src/main/resources"));
+            userDev.from(delayedZipTree(DevConstants.USERDEV_SRG_SRC), new CopyInto("src/main/java"));
             userDev.from(delayedFile(DEOBF_DATA), new CopyInto("src/main/resources/"));
-            userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "astyle.cfg", "exceptor.json"));
-            userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("mappings", "*.csv", "!packages.csv"));
+            userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "astyle.cfg", "exceptor.json", "*.csv", "!packages.csv"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}/patches"), new CopyInto("conf"));
             userDev.from(delayedFile(MERGE_CFG), new CopyInto("conf"));
-            userDev.from(delayedFile(JOINED_SRG), new CopyInto("conf"));
-            userDev.from(delayedFile(JOINED_EXC), new CopyInto("conf"));
+            userDev.from(delayedFile(NOTCH_2_SRG_SRG), new CopyInto("conf"));
+            userDev.from(delayedFile(SRG_EXC), new CopyInto("conf"));
             userDev.from(delayedFile(FML_VERSIONF), new CopyInto("src/main/resources"));
             userDev.rename("[\\d.]+?-dev\\.json", "dev.json");
             userDev.rename(".+?\\.srg", "packaged.srg");
             userDev.rename(".+?\\.exc", "packaged.exc");
             userDev.setIncludeEmptyDirs(false);
-            userDev.dependsOn("packageUniversal", "zipFmlPatches", "zipForgePatches", "jarClasses", "createVersionPropertiesFML");
+            userDev.dependsOn("packageUniversal", "zipFmlPatches", "zipForgePatches", "jarClasses", "createVersionPropertiesFML", s2s);
             userDev.setExtension("jar");
         }
         project.getArtifacts().add("archives", userDev);

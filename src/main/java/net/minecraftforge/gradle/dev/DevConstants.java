@@ -23,10 +23,14 @@ final class DevConstants
     static final String MCP_2_SRG_SRG       = "{BUILD_DIR}/tmp/mcp2srg.srg";
     static final String MCP_2_NOTCH_SRG     = "{BUILD_DIR}/tmp/mcp2notch.srg";
     static final String NOTCH_2_MCP_SRG     = "{BUILD_DIR}/tmp/notch2mcp.srg";
+    static final String NOTCH_2_SRG_SRG     = "{BUILD_DIR}/tmp/notch2srg.srg";
+    static final String SRG_EXC             = "{BUILD_DIR}/tmp/srg.exc";
+    static final String MCP_EXC             = "{BUILD_DIR}/tmp/mcp.exc";
     static final String JAVADOC_TMP         = "{BUILD_DIR}/tmp/javadoc";
     static final String BINPATCH_TMP        = "{BUILD_DIR}/tmp/bin_patches.jar";
     static final String LAUNCH4J_DIR        = "{BUILD_DIR}/launch4j_exec";
     static final String VERSION_JSON        = "{BUILD_DIR}/tmp/version.json";
+    static final String USERDEV_RANGEMAP    = "{BUILD_DIR}/tmp/user_dev_range.txt";
 
     // mappings
     static final String METHODS_CSV         = "{MAPPINGS_DIR}/methods.csv";
@@ -68,7 +72,14 @@ final class DevConstants
     static final String ZIP_PATCHED_MCPC   = "{BUILD_DIR}/mcpcTmp/minecraft_patched.zip";
 
     // other stuff
-    static final String CHANGELOG           = "{BUILD_DIR}/distributions/{PROJECT}-{MC_VERSION}-{VERSION}-changelog.txt";
+    static final String CHANGELOG          = "{BUILD_DIR}/distributions/{PROJECT}-{MC_VERSION}-{VERSION}-changelog.txt";
+    static final String USERDEV_SRG_SRC    = "{BUILD_DIR}/tmp/user_dev_srg_src.zip";
+    
+    // necesary for patch generation
+    static final String PATCH_CLEAN        = "{BUILD_DIR}/tmp/clean-path-base.zip";
+    static final String PATCH_DIRTY        = "{BUILD_DIR}/tmp/dirty-patch-base.zip";
+    static final String REMAPPED_CLEAN     = "{BUILD_DIR}/tmp/clean.jar";
+    static final String REMAPPED_DIRTY     = "{BUILD_DIR}/tmp/dirty.jar";
 
     // jsons
     static final String JSON_DEV            = "{FML_DIR}/jsons/{MC_VERSION}-dev.json";
@@ -102,6 +113,7 @@ final class DevConstants
     static final String FML_SOURCES         = "{FML_DIR}/src/main/java";
     static final String FML_RESOURCES       = "{FML_DIR}/src/main/resources";
     static final String FML_TEST_SOURCES    = "{FML_DIR}/src/test/java";
+    static final String FML_TEST_RES        = "{FML_DIR}/src/test/resources";
     static final String FML_VERSIONF        = "{FML_DIR}/build/tmp/fmlversion.properties";
     static final String FML_LICENSE         = "{FML_DIR}/LICENSE-fml.txt";
     static final String FML_CREDITS         = "{FML_DIR}/CREDITS-fml.txt";
@@ -112,6 +124,7 @@ final class DevConstants
     static final String FORGE_SOURCES       = "{FORGE_DIR}/src/main/java";
     static final String FORGE_RESOURCES     = "{FORGE_DIR}/src/main/resources";
     static final String FORGE_TEST_SOURCES  = "{FORGE_DIR}/src/test/java";
+    static final String FORGE_TEST_RES      = "{FORGE_DIR}/src/test/resources";
     static final String FORGE_LICENSE       = "{FORGE_DIR}/MinecraftForge-License.txt";
     static final String FORGE_CREDITS       = "{FORGE_DIR}/MinecraftForge-Credits.txt";
     static final String PAULSCODE_LISCENCE1 = "{FORGE_DIR}/Paulscode IBXM Library License.txt";
@@ -124,6 +137,7 @@ final class DevConstants
     static final String MCPC_SOURCES        = "src/main/java";
     static final String MCPC_RESOURCES      = "src/main/resources";
     static final String MCPC_TEST_SOURCES   = "src/test/java";
+    static final String MCPC_TEST_RES       = "src/test/resources";
     
     // USED ONLY FOR mcpc.. BUT ITS BUKKIT STUFF
     static final String BUKKIT_SOURCES       = "{BUKKIT_DIR}/src/main/java";

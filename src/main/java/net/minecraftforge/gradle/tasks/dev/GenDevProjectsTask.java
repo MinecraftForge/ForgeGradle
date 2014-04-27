@@ -31,6 +31,8 @@ public class GenDevProjectsTask extends DefaultTask
 
     private List<DelayedFile> sources = new ArrayList<DelayedFile>();
     private List<DelayedFile> resources = new ArrayList<DelayedFile>();
+    private List<DelayedFile> testSources = new ArrayList<DelayedFile>();
+    private List<DelayedFile> testResources = new ArrayList<DelayedFile>();
 
     private final ArrayList<String> deps = new ArrayList<String>();
 
@@ -118,7 +120,7 @@ public class GenDevProjectsTask extends DefaultTask
 
         URI base = targetDir.call().toURI();
 
-        if (resources.size() > 0 || sources.size() > 0)
+        if (resources.size() > 0 || sources.size() > 0 || testSources.size() > 0 || testResources.size() > 0)
         {
             a(o, "sourceSets");
             a(o, "{");
@@ -130,8 +132,7 @@ public class GenDevProjectsTask extends DefaultTask
                 a(o, "        {");
                 for (DelayedFile src : sources)
                 {
-                    String relative = base.relativize(src.call().toURI()).getPath();
-                    o.append("            srcDir '").append(relative).append('\'').append(NEWLINE);
+                    o.append("            srcDir '").append(relative(base, src)).append('\'').append(NEWLINE);
                 }
                 a(o, "        }");
             }
@@ -141,16 +142,83 @@ public class GenDevProjectsTask extends DefaultTask
                 a(o, "        {");
                 for (DelayedFile src : resources)
                 {
-                    String relative = base.relativize(src.call().toURI()).getPath();
-                    o.append("            srcDir '").append(relative).append('\'').append(NEWLINE);
+                    o.append("            srcDir '").append(relative(base, src)).append('\'').append(NEWLINE);
+                }
+                a(o, "        }");
+            }
+            a(o, "    }");
+            a(o, "    test");
+            a(o, "    {");
+            if (testSources.size() > 0)
+            {
+                a(o, "        java");
+                a(o, "        {");
+                for (DelayedFile src : testSources)
+                {
+                    o.append("            srcDir '").append(relative(base, src)).append('\'').append(NEWLINE);
+                }
+                a(o, "        }");
+            }
+            if (testResources.size() > 0)
+            {
+                a(o, "        resources");
+                a(o, "        {");
+                for (DelayedFile src : testResources)
+                {
+                    o.append("            srcDir '").append(relative(base, src)).append('\'').append(NEWLINE);
                 }
                 a(o, "        }");
             }
             a(o, "    }");
             a(o, "}");
         }
+        
+        // and now eclipse hacking
+        a(o,
+                "def links = []",
+                "def dupes = []",
+                "eclipse.project.file.withXml { provider ->",
+                "    def node = provider.asNode()",
+                "    links = []",
+                "    dupes = []",
+                "    node.linkedResources.link.each { child ->",
+                "        def path = child.location.text()",
+                "        if (path in dupes) {",
+                "            child.replaceNode {}",
+                "        } else {",
+                "            dupes.add(path)",
+                "            def newName = path.split('/')[-2..-1].join('/')",
+                "            links += newName",
+                "            child.replaceNode {",
+                "                link{",
+                "                    name(newName)",
+                "                    type('2')",
+                "                    location(path)",
+                "                }",
+                "            }",
+                "        }",
+                "    }",
+                "}",
+                "",
+                "eclipse.classpath.file.withXml {",
+                "    def node = it.asNode()",
+                "    node.classpathentry.each { child -> ",
+                "        if (child.@kind == 'src' && !child.@path.contains('/')) child.replaceNode {}",
+                "        if (child.@path in links) links.remove(child.@path)",
+                "    }",
+                "    links.each { link -> node.appendNode('classpathentry', [kind:'src', path:link]) }",
+                "}",
+                "tasks.eclipseClasspath.dependsOn 'eclipseProject' //Make them run in correct order"
+        );
 
         Files.write(o.toString(), file, Charset.defaultCharset());
+    }
+
+    private String relative(URI base, DelayedFile src)
+    {
+        String relative = base.relativize(src.call().toURI()).getPath().replace('\\', '/');
+        if (!relative.endsWith("/")) relative += "/";
+        return relative;
     }
 
     private void a(StringBuilder out, String... lines)
@@ -200,6 +268,18 @@ public class GenDevProjectsTask extends DefaultTask
     public GenDevProjectsTask addResource(DelayedFile resource)
     {
         resources.add(resource);
+        return this;
+    }
+    
+    public GenDevProjectsTask addTestSource(DelayedFile source)
+    {
+        testSources.add(source);
+        return this;
+    }
+
+    public GenDevProjectsTask addTestResource(DelayedFile resource)
+    {
+        testResources.add(resource);
         return this;
     }
 

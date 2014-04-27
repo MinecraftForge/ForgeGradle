@@ -36,7 +36,7 @@ public class Launch4jPluginExtension implements Serializable
     private String  opt            = "";
 	
 	private String bundledJrePath;
-	private String jreMinVersion;
+	private String jreMinVersion = "1.6.0";
 	private String jreMaxVersion;
 	
 	private String mutexName;

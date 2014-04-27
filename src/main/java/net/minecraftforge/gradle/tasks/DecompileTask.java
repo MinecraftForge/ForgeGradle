@@ -1,35 +1,15 @@
 package net.minecraftforge.gradle.tasks;
 
-import argo.saj.InvalidSyntaxException;
-
-import com.github.abrarsyed.jastyle.ASFormatter;
-import com.github.abrarsyed.jastyle.FileWildcardFilter;
-import com.github.abrarsyed.jastyle.OptParser;
-import com.google.common.base.Joiner;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.io.ByteStreams;
-import com.google.common.io.Files;
-
 import groovy.lang.Closure;
-import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.extrastuff.FFPatcher;
-import net.minecraftforge.gradle.extrastuff.FmlCleanup;
-import net.minecraftforge.gradle.extrastuff.GLConstantFixer;
-import net.minecraftforge.gradle.extrastuff.McpCleanup;
-import net.minecraftforge.gradle.patching.ContextualPatch;
-import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
-import static net.minecraftforge.gradle.patching.ContextualPatch.*;
 
-import org.gradle.api.logging.LogLevel;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.OutputFile;
-import org.gradle.api.tasks.TaskAction;
-import org.gradle.process.JavaExecSpec;
-
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,6 +22,37 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.extrastuff.FFPatcher;
+import net.minecraftforge.gradle.extrastuff.FmlCleanup;
+import net.minecraftforge.gradle.extrastuff.GLConstantFixer;
+import net.minecraftforge.gradle.extrastuff.McpCleanup;
+import net.minecraftforge.gradle.patching.ContextualPatch;
+import net.minecraftforge.gradle.patching.ContextualPatch.HunkReport;
+import net.minecraftforge.gradle.patching.ContextualPatch.PatchReport;
+import net.minecraftforge.gradle.patching.ContextualPatch.PatchStatus;
+import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
+
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.logging.LogLevel;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.TaskAction;
+import org.gradle.process.JavaExecSpec;
+
+import argo.saj.InvalidSyntaxException;
+
+import com.github.abrarsyed.jastyle.ASFormatter;
+import com.github.abrarsyed.jastyle.FileWildcardFilter;
+import com.github.abrarsyed.jastyle.OptParser;
+import com.google.common.base.Joiner;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.io.ByteStreams;
+import com.google.common.io.Files;
+
 public class DecompileTask extends CachedTask
 {
     @InputFile
@@ -50,7 +61,6 @@ public class DecompileTask extends CachedTask
     @InputFile
     private DelayedFile fernFlower;
 
-    @Input
     private DelayedFile patch;
 
     @InputFile
@@ -123,8 +133,9 @@ public class DecompileTask extends CachedTask
                 exec.setWorkingDir(fernFlower.getParentFile());
 
                 exec.classpath(Constants.getClassPath());
+                exec.setStandardOutput(Constants.createLogger(getLogger(), LogLevel.DEBUG));
 
-                exec.setStandardOutput(Constants.getNullStream());
+                exec.setMaxHeapSize("512M");
 
                 return exec;
             }
@@ -385,6 +396,16 @@ public class DecompileTask extends CachedTask
         this.outJar = outJar;
     }
 
+    @InputFiles
+    public FileCollection getPatches()
+    {
+         File patches = patch.call();
+         if (patches.isDirectory())
+             return getProject().fileTree(patches);
+         else
+             return getProject().files(patches);
+    }
+    
     public File getPatch()
     {
         return patch.call();

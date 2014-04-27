@@ -71,7 +71,9 @@ public class FmlCleanup
                         method.parent.children.remove(method);
                     }
                     method = method.parent;
-                    output.add(line);
+                    
+                    if (method == null) // dont output if there is a parent method.
+                        output.add(line);
                 }
             }
             else if (method != null && method.ENDING.equals(line))

@@ -1,40 +1,49 @@
 package net.minecraftforge.gradle.tasks.dev;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.srg2source.util.io.FolderSupplier;
+import net.minecraftforge.srg2source.util.io.InputSupplier;
+import net.minecraftforge.srg2source.util.io.ZipInputSupplier;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
 import com.cloudbees.diff.Diff;
 import com.cloudbees.diff.Hunk;
 import com.cloudbees.diff.PatchException;
+import com.google.common.base.Charsets;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
-
 
 public class GeneratePatches extends DefaultTask
 {
-    @InputDirectory
+    @OutputDirectory
     DelayedFile patchDir;
 
-    @InputDirectory
-    DelayedFile changedDir;
+    @InputFiles
+    DelayedFile changed;
 
-    @InputDirectory
-    DelayedFile originalDir;
+    @InputFiles
+    DelayedFile original;
 
     @Input
     String originalPrefix = "";
@@ -51,9 +60,19 @@ public class GeneratePatches extends DefaultTask
         getPatchDir().mkdirs();
 
         // fix and create patches.
-        processDir(getOriginalDir());
+        processFiles(getSupplier(original.call()), getSupplier(changed.call()));
         
         removeOld(getPatchDir());
+    }
+
+    private InputSupplier getSupplier(File file) throws IOException
+    {
+        if (file.isDirectory())
+            return new FolderSupplier(file);
+
+        ZipInputSupplier ret = new ZipInputSupplier();
+        ret.readZip(file);
+        return ret;
     }
 
     private void removeOld(File dir) throws IOException
@@ -104,49 +123,58 @@ public class GeneratePatches extends DefaultTask
         }
     }
 
-    public void processDir(File dir) throws IOException
+    public void processFiles(InputSupplier original, InputSupplier changed) throws IOException
     {
-        for (File file : dir.listFiles())
+        List<String> paths = original.gatherAll("");
+        for (String path : paths)
         {
-            if (file.isDirectory())
+            InputStream o = original.getInput(path);
+            InputStream c = changed.getInput(path);
+            try
             {
-                processDir(file);
+                processFile(path, o, c);
             }
-            else if (file.getPath().endsWith(".java"))
+            finally
             {
-                processFile(file);
+                if (o != null) o.close();
+                if (c != null) c.close();
             }
         }
     }
 
-    public void processFile(File file) throws IOException
+    public void processFile(String relative, InputStream original, InputStream changed) throws IOException
     {
-        getLogger().debug("Original File: " + file);
-        String relative = file.getAbsolutePath().substring(getOriginalDir().getAbsolutePath().length()).replace('\\', '/');
+        getLogger().debug("Diffing: " + relative);
 
         File patchFile = new File(getPatchDir(), relative + ".patch");
-        File changedFile = new File(getChangedDir(), relative);
 
-        getLogger().debug("Changed File: " + changedFile);
-
-        if (!changedFile.exists())
+        if (changed == null)
         {
-            getLogger().debug("Changed File does not exist");
+            getLogger().debug("    Changed File does not exist");
             return;
         }
 
-        Diff diff = Diff.diff(file, changedFile, false);
+        // We have to cache the bytes because diff reads the stream twice.. why.. who knows.
+        byte[] oData = ByteStreams.toByteArray(original);
+        byte[] cData = ByteStreams.toByteArray(changed);
+
+        Diff diff = Diff.diff(new InputStreamReader(new ByteArrayInputStream(oData), Charsets.UTF_8), new InputStreamReader(new ByteArrayInputStream(cData), Charsets.UTF_8), false);
+
+        if (!relative.startsWith("/"))
+            relative = "/" + relative;
 
         if (!diff.isEmpty())
         {
-            String unidiff = diff.toUnifiedDiff(originalPrefix + relative, changedPrefix + relative, Files.newReader(file, Charset.defaultCharset()), Files.newReader(changedFile, Charset.defaultCharset()), 3);
+            String unidiff = diff.toUnifiedDiff(originalPrefix + relative, changedPrefix + relative, 
+                    new InputStreamReader(new ByteArrayInputStream(oData), Charsets.UTF_8), 
+                    new InputStreamReader(new ByteArrayInputStream(cData), Charsets.UTF_8), 3);
             unidiff = unidiff.replace("\r\n", "\n"); //Normalize lines
             unidiff = unidiff.replace("\n" + Hunk.ENDING_NEWLINE + "\n", "\n"); //We give 0 shits about this.
 
             String olddiff = "";
             if (patchFile.exists())
             {
-                olddiff = Files.toString(patchFile, Charset.defaultCharset());
+                olddiff = Files.toString(patchFile, Charsets.UTF_8);
             }
 
             if (!olddiff.equals(unidiff))
@@ -154,7 +182,7 @@ public class GeneratePatches extends DefaultTask
                 getLogger().debug("Writing patch: " + patchFile);
                 patchFile.getParentFile().mkdirs();
                 Files.touch(patchFile);
-                Files.write(unidiff, patchFile, Charset.defaultCharset());
+                Files.write(unidiff, patchFile, Charsets.UTF_8);
             }
             else
             {
@@ -164,24 +192,32 @@ public class GeneratePatches extends DefaultTask
         }
     }
 
-    public File getChangedDir()
+    public FileCollection getChanged()
     {
-        return changedDir.call();
+        File f = changed.call();
+        if (f.isDirectory())
+            return getProject().fileTree(f);
+        else
+            return getProject().files(f);
     }
 
-    public void setChangedDir(DelayedFile changedDir)
+    public void setChanged(DelayedFile changed)
     {
-        this.changedDir = changedDir;
+        this.changed = changed;
     }
 
-    public File getOriginalDir()
+    public FileCollection getOriginal()
     {
-        return originalDir.call();
+        File f = original.call();
+        if (f.isDirectory())
+            return getProject().fileTree(f);
+        else
+            return getProject().files(f);
     }
 
-    public void setOriginalDir(DelayedFile originalDir)
+    public void setOriginal(DelayedFile original)
     {
-        this.originalDir = originalDir;
+        this.original = original;
     }
 
     public File getPatchDir()
