@@ -841,8 +841,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             
             task = makeTask("sourceMainJava", SourceCopyTask.class);
             task.setSource(main.getJava());
-            task.replace(getExtension().getReplacements());
-            task.include(getExtension().getIncludes());
             task.setOutput(dir);
 
             JavaCompile compile = (JavaCompile) project.getTasks().getByName(main.getCompileJavaTaskName());
@@ -858,8 +856,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
             task = makeTask("sourceMainScala", SourceCopyTask.class);
             task.setSource(set.getScala());
-            task.replace(getExtension().getReplacements());
-            task.include(getExtension().getIncludes());
             task.setOutput(dir);
 
             ScalaCompile compile = (ScalaCompile) project.getTasks().getByName(main.getCompileTaskName("scala"));
@@ -875,8 +871,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
             task = makeTask("sourceMainGroovy", SourceCopyTask.class);
             task.setSource(set.getGroovy());
-            task.replace(getExtension().getReplacements());
-            task.include(getExtension().getIncludes());
             task.setOutput(dir);
 
             GroovyCompile compile = (GroovyCompile) project.getTasks().getByName(main.getCompileTaskName("groovy"));
@@ -996,6 +990,13 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             exec.classpath(project.getConfigurations().getByName("runtime"));
             exec.classpath(jarTask.getArchivePath());
             exec.dependsOn(jarTask);
+        }
+        
+        // configure source replacement.
+        for (SourceCopyTask t : project.getTasks().withType(SourceCopyTask.class))
+        {
+            t.replace(getExtension().getReplacements());
+            t.include(getExtension().getIncludes());
         }
     }
     
