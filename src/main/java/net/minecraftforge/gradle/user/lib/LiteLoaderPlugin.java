@@ -41,7 +41,7 @@ public class LiteLoaderPlugin extends UserLibBasePlugin
         project.allprojects(new Action<Project>() {
             public void execute(Project proj)
             {
-                addIvyRepo(proj, "liteloaderRepo", "http://dl.liteloader.com/versions/");
+                addMavenRepo(proj, "liteloaderRepo", "http://dl.liteloader.com/versions/");
             }
         });
         

@@ -40,7 +40,7 @@ public class LiteLoaderJson
         
         public String getMcpDepString()
         {
-            return group + ":" + version + ":" + "mcpnames"; 
+            return group + ":" + version + "-mcpnames"; 
         }
     }
     

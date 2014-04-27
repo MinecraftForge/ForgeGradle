@@ -24,7 +24,6 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.repositories.FlatDirectoryArtifactRepository;
-import org.gradle.api.artifacts.repositories.IvyArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.tasks.Delete;
 import org.gradle.testfixtures.ProjectBuilder;
@@ -340,19 +339,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             {
                 repo.setName(name);
                 repo.setUrl(url);
-            }
-        });
-    }
-    
-    public IvyArtifactRepository addIvyRepo(Project proj, final String name, final String url)
-    {
-        return proj.getRepositories().ivy(new Action<IvyArtifactRepository>() {
-            @Override
-            public void execute(IvyArtifactRepository repo)
-            {
-                repo.setName(name);
-                repo.setUrl(url);
-                repo.layout("maven");
             }
         });
     }
