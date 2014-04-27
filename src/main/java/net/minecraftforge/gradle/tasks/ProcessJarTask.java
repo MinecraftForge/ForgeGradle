@@ -288,6 +288,11 @@ public class ProcessJarTask extends CachedTask
     {
         return isClean ? outCleanJar.call() : outDirtyJar.call();
     }
+    
+    public void setDirty()
+    {
+        isClean = false;
+    }
 
     @InputFiles
     public FileCollection getAts()
