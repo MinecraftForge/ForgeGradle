@@ -325,13 +325,13 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
     @Override
     protected String getSrgCacheDir(UserExtension exten)
     {
-        return getFmlCacheDir() + "/unpacked";
+        return getFmlCacheDir() + "/srgs";
     }
 
     @Override
     protected String getUserDevCacheDir(UserExtension exten)
     {
-        return getFmlCacheDir() + "/srgs";
+        return getFmlCacheDir() + "/unpacked";
     }
 
     private final String getFmlCacheDir()

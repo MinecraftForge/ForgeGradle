@@ -5,7 +5,33 @@ import static net.minecraftforge.gradle.common.Constants.FERNFLOWER;
 import static net.minecraftforge.gradle.common.Constants.JAR_CLIENT_FRESH;
 import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
 import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_FRESH;
-import static net.minecraftforge.gradle.user.UserConstants.*;
+import static net.minecraftforge.gradle.user.UserConstants.ASTYLE_CFG;
+import static net.minecraftforge.gradle.user.UserConstants.CLASSIFIER_DECOMPILED;
+import static net.minecraftforge.gradle.user.UserConstants.CLASSIFIER_DEOBF_SRG;
+import static net.minecraftforge.gradle.user.UserConstants.CLASSIFIER_SOURCES;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_DEPS;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_MC;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_NATIVES;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_USERDEV;
+import static net.minecraftforge.gradle.user.UserConstants.DEOBF_MCP_SRG;
+import static net.minecraftforge.gradle.user.UserConstants.DEOBF_SRG_SRG;
+import static net.minecraftforge.gradle.user.UserConstants.DIRTY_DIR;
+import static net.minecraftforge.gradle.user.UserConstants.EXC_JSON;
+import static net.minecraftforge.gradle.user.UserConstants.EXC_MCP;
+import static net.minecraftforge.gradle.user.UserConstants.EXC_SRG;
+import static net.minecraftforge.gradle.user.UserConstants.FIELD_CSV;
+import static net.minecraftforge.gradle.user.UserConstants.MCP_PATCH_DIR;
+import static net.minecraftforge.gradle.user.UserConstants.MERGE_CFG;
+import static net.minecraftforge.gradle.user.UserConstants.METHOD_CSV;
+import static net.minecraftforge.gradle.user.UserConstants.NATIVES_DIR;
+import static net.minecraftforge.gradle.user.UserConstants.PACKAGED_EXC;
+import static net.minecraftforge.gradle.user.UserConstants.PACKAGED_SRG;
+import static net.minecraftforge.gradle.user.UserConstants.PARAM_CSV;
+import static net.minecraftforge.gradle.user.UserConstants.RECOMP_CLS_DIR;
+import static net.minecraftforge.gradle.user.UserConstants.RECOMP_SRC_DIR;
+import static net.minecraftforge.gradle.user.UserConstants.REOBF_NOTCH_SRG;
+import static net.minecraftforge.gradle.user.UserConstants.REOBF_SRG;
+import static net.minecraftforge.gradle.user.UserConstants.SOURCES_DIR;
 import groovy.lang.Closure;
 import groovy.util.Node;
 import groovy.util.XmlParser;
@@ -47,6 +73,7 @@ import org.gradle.api.Task;
 import org.gradle.api.XmlProvider;
 import org.gradle.api.artifacts.Configuration.State;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.execution.TaskExecutionGraph;
 import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -60,7 +87,10 @@ import org.gradle.api.tasks.compile.GroovyCompile;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.scala.ScalaCompile;
 import org.gradle.listener.ActionBroadcast;
-import org.gradle.plugins.ide.eclipse.model.*;
+import org.gradle.plugins.ide.eclipse.model.Classpath;
+import org.gradle.plugins.ide.eclipse.model.ClasspathEntry;
+import org.gradle.plugins.ide.eclipse.model.EclipseModel;
+import org.gradle.plugins.ide.eclipse.model.Library;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
@@ -69,10 +99,12 @@ import org.w3c.dom.NodeList;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 
 public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin<T>
 {
+    @SuppressWarnings("serial")
     @Override
     public void applyPlugin()
     {
@@ -111,6 +143,34 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         task.setDescription("DevWorkspace + the deobfuscated Minecraft source linked as a source jar.");
         task.setGroup("ForgeGradle");
         //configureDecompSetup(task);
+        
+        project.getGradle().getTaskGraph().whenReady(new Closure<Object>(this, null) {
+            @Override
+            public Object call()
+            {
+                TaskExecutionGraph graph = project.getGradle().getTaskGraph();
+                String path = project.getPath();
+                
+                if (graph.hasTask(path + "setupDecompWorkspace"))
+                {
+                    getExtension().setDecomp();
+                    setMinecraftDeps(true, false);
+                }
+                return null;
+            }
+            
+            @Override
+            public Object call(Object obj)
+            {
+                return call();
+            }
+            
+            @Override
+            public Object call(Object... obj)
+            {
+                return call();
+            }
+        });
     }
     
     private boolean hasAppliedJson = false;
@@ -854,6 +914,16 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         
         delayedTaskConfig();
         
+        // add MC repo.
+        final String repoDir = delayedDirtyFile("this", "doesnt", "matter").call().getParentFile().getAbsolutePath();
+        project.allprojects(new Action<Project>() {
+            public void execute(Project proj)
+            {
+                addFlatRepo(proj, getApiName()+"FlatRepo", repoDir);
+                proj.getLogger().info("Adding repo to " + proj.getPath() + " >> " + repoDir);
+            }
+        });
+        
         // check for decompilation status.. has decompiled or not etc
         final File decompFile = delayedDirtyFile(getSrcDepName(), CLASSIFIER_SOURCES, "jar").call();
         if (decompFile.exists())
@@ -943,6 +1013,33 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         {
             (project.getTasks().getByName("compileJava")).dependsOn("deobfBinJar");
             (project.getTasks().getByName("compileApiJava")).dependsOn("deobfBinJar");
+        }
+        
+        setMinecraftDeps(decomp, false);
+    }
+    
+    protected void setMinecraftDeps(boolean decomp, boolean remove)
+    {
+        String version = getMcVersion(getExtension());
+        if (hasApiVersion())
+            version = getApiVersion(getExtension());
+        
+        
+        if (decomp)
+        {
+            project.getDependencies().add(CONFIG_MC, ImmutableMap.of("name", getSrcDepName(), "version", version));
+            if (remove)
+            {
+                project.getConfigurations().getByName(CONFIG_MC).exclude(ImmutableMap.of("module", getBinDepName()));
+            }
+        }
+        else
+        {
+            project.getDependencies().add(CONFIG_MC, ImmutableMap.of("name", getBinDepName(), "version", version));
+            if (remove)
+            {
+                project.getConfigurations().getByName(CONFIG_MC).exclude(ImmutableMap.of("module", getSrcDepName()));
+            }
         }
     }
     

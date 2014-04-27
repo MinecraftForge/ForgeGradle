@@ -41,7 +41,7 @@ public class LiteLoaderPlugin extends UserLibBasePlugin
         project.allprojects(new Action<Project>() {
             public void execute(Project proj)
             {
-                addMavenRepo(proj, "liteloader", "http://dl.liteloader.com/versions/");
+                addIvyRepo(proj, "liteloaderRepo", "http://dl.liteloader.com/versions/");
             }
         });
         
@@ -117,6 +117,7 @@ public class LiteLoaderPlugin extends UserLibBasePlugin
         llArtifact = obj.latest;
 
         // add the dependency.
+        project.getLogger().info("LiteLoader dep: "+llArtifact.getMcpDepString());
         project.getDependencies().add(actualApiName(), llArtifact.getMcpDepString());
     }
 

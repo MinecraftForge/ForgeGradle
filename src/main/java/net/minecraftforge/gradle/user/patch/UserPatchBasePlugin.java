@@ -2,7 +2,6 @@ package net.minecraftforge.gradle.user.patch;
 
 import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
 import static net.minecraftforge.gradle.user.UserConstants.CLASSIFIER_DECOMPILED;
-import static net.minecraftforge.gradle.user.UserConstants.CONFIG_MC;
 import static net.minecraftforge.gradle.user.patch.UserPatchConstants.BINARIES_JAR;
 import static net.minecraftforge.gradle.user.patch.UserPatchConstants.BINPATCHES;
 import static net.minecraftforge.gradle.user.patch.UserPatchConstants.CLASSIFIER_PATCHED;
@@ -10,7 +9,6 @@ import static net.minecraftforge.gradle.user.patch.UserPatchConstants.ECLIPSE_LO
 import static net.minecraftforge.gradle.user.patch.UserPatchConstants.JAR_BINPATCHED;
 import static net.minecraftforge.gradle.user.patch.UserPatchConstants.JSON;
 import static net.minecraftforge.gradle.user.patch.UserPatchConstants.RES_DIR;
-import groovy.lang.Closure;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -25,17 +23,14 @@ import net.minecraftforge.gradle.tasks.user.ApplyBinPatchesTask;
 import net.minecraftforge.gradle.user.UserBasePlugin;
 
 import org.gradle.api.Action;
-import org.gradle.api.Project;
-import org.gradle.api.execution.TaskExecutionGraph;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtension>
 {
-    @SuppressWarnings({ "serial", "unchecked", "rawtypes" })
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public void applyPlugin()
     {
@@ -73,36 +68,6 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
             remap.setInJar(processed);
             remap.dependsOn(patch);
         }
-        
-        // add special handling here.
-        // stop people screwing stuff up.
-        project.getGradle().getTaskGraph().whenReady(new Closure<Object>(this, null) {
-            @Override
-            public Object call()
-            {
-                TaskExecutionGraph graph = project.getGradle().getTaskGraph();
-                String path = project.getPath();
-                
-                if (graph.hasTask(path + "setupDecompWorkspace"))
-                {
-                    getExtension().setDecomp();
-                    setMinecraftDeps(true, false);
-                }
-                return null;
-            }
-            
-            @Override
-            public Object call(Object obj)
-            {
-                return call();
-            }
-            
-            @Override
-            public Object call(Object... obj)
-            {
-                return call();
-            }
-        });
         
         // configure eclipse task to do extra stuff.
         project.getTasks().getByName("eclipse").doLast(new Action() {
@@ -198,47 +163,6 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
         }
 
         super.delayedTaskConfig();
-        
-        // add MC repo.
-        final String repoDir = delayedDirtyFile("this", "doesnt", "matter").call().getParentFile().getAbsolutePath();
-        project.allprojects(new Action<Project>() {
-            public void execute(Project proj)
-            {
-                addFlatRepo(proj, getApiName()+"FlatRepo", repoDir);
-                proj.getLogger().info("Adding repo to " + proj.getPath() + " >> " + repoDir);
-            }
-        });
-    }
-    
-    @Override
-    protected void configurePostDecomp(boolean decomp)
-    {
-        super.configurePostDecomp(decomp);
-        
-        // set MC deps
-        setMinecraftDeps(decomp, false);
-    }
-    
-    private final void setMinecraftDeps(boolean decomp, boolean remove)
-    {
-        String version = getApiVersion(getExtension());
-        
-        if (decomp)
-        {
-            project.getDependencies().add(CONFIG_MC, ImmutableMap.of("name", getSrcDepName(), "version", version));
-            if (remove)
-            {
-                project.getConfigurations().getByName(CONFIG_MC).exclude(ImmutableMap.of("module", getBinDepName()));
-            }
-        }
-        else
-        {
-            project.getDependencies().add(CONFIG_MC, ImmutableMap.of("name", getBinDepName(), "version", version));
-            if (remove)
-            {
-                project.getConfigurations().getByName(CONFIG_MC).exclude(ImmutableMap.of("module", getSrcDepName()));
-            }
-        }
     }
     
     @Override
