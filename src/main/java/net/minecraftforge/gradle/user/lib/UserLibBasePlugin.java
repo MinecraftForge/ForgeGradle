@@ -47,6 +47,10 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
         // ensure that this lib goes everywhere MC goes. its a required lib after all.
         Configuration config = project.getConfigurations().create(actualApiName());
         project.getConfigurations().getByName(UserConstants.CONFIG_MC).extendsFrom(config);
+        
+        // for special packaging.
+        // make jar end with .litemod for litemod, and who knows what else for other things.
+        ((Jar) project.getTasks().getByName("jar")).setExtension(getJarExtension());
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -90,7 +94,7 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
         Jar jarTask = makeTask("jar" + cappedApiName, Jar.class);
         jarTask.from(javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput());
         jarTask.setClassifier(actualApiName());
-        jarTask.setExtension("litemod");
+        jarTask.setExtension(getJarExtension());
 
         // configure otherPlugin task to have a classifier
         ((Jar) project.getTasks().getByName("jar")).setClassifier(((UserBasePlugin) otherPlugin).getApiName());
@@ -355,6 +359,11 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
     protected final void configureDeobfuscation(ProcessJarTask task)
     {
         // no access transformers...
+    }
+    
+    protected String getJarExtension()
+    {
+        return "jar";
     }
 
     @Override

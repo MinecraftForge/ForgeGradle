@@ -152,9 +152,15 @@ public class LiteLoaderPlugin extends UserLibBasePlugin
     }
 
     @Override
+    protected String getJarExtension()
+    {
+        return "litemod";
+    }
+
+    @Override
     public boolean shouldOverrideRunConfigs()
     {
-        return true; // TODO: talk to mumfrey
+        return true;
     }
 
 }
