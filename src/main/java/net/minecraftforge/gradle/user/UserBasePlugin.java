@@ -1,6 +1,28 @@
 package net.minecraftforge.gradle.user;
 
-import static net.minecraftforge.gradle.user.UserConstants.*;
+import static net.minecraftforge.gradle.user.UserConstants.ASTYLE_CFG;
+import static net.minecraftforge.gradle.user.UserConstants.BINARIES_JAR;
+import static net.minecraftforge.gradle.user.UserConstants.BINPATCHES;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_API_JAVADOCS;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_API_SRC;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_NATIVES;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_USERDEV;
+import static net.minecraftforge.gradle.user.UserConstants.DEOBF_MCP_SRG;
+import static net.minecraftforge.gradle.user.UserConstants.ECLIPSE_LOCATION;
+import static net.minecraftforge.gradle.user.UserConstants.FIELD_CSV;
+import static net.minecraftforge.gradle.user.UserConstants.JSON;
+import static net.minecraftforge.gradle.user.UserConstants.MCP_PATCH;
+import static net.minecraftforge.gradle.user.UserConstants.MERGE_CFG;
+import static net.minecraftforge.gradle.user.UserConstants.METHOD_CSV;
+import static net.minecraftforge.gradle.user.UserConstants.NATIVES_DIR;
+import static net.minecraftforge.gradle.user.UserConstants.PACKAGED_EXC;
+import static net.minecraftforge.gradle.user.UserConstants.PACKAGED_SRG;
+import static net.minecraftforge.gradle.user.UserConstants.PACK_DIR;
+import static net.minecraftforge.gradle.user.UserConstants.REOBF_NOTCH_SRG;
+import static net.minecraftforge.gradle.user.UserConstants.REOBF_SRG;
+import static net.minecraftforge.gradle.user.UserConstants.RES_DIR;
+import static net.minecraftforge.gradle.user.UserConstants.SOURCES_DIR;
 import groovy.lang.Closure;
 import groovy.util.Node;
 import groovy.util.XmlParser;
@@ -45,6 +67,7 @@ import org.gradle.api.XmlProvider;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Configuration.State;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.execution.TaskExecutionGraph;
 import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -78,6 +101,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 {
     private boolean hasApplied = false;
 
+    @SuppressWarnings("serial")
     @Override
     public void applyPlugin()
     {
@@ -110,6 +134,37 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         project.getTasks().getByName("reobf").dependsOn("genSrgs");
         project.getTasks().getByName("compileJava").dependsOn("deobfBinJar");
         project.getTasks().getByName("compileApiJava").dependsOn("deobfBinJar");
+        
+        // stop people screwing stuff up.
+        project.getGradle().getTaskGraph().whenReady(new Closure<Object>(this, null) {
+            @Override
+            public Object call()
+            {
+                TaskExecutionGraph graph = project.getGradle().getTaskGraph();
+                String path = project.getPath();
+                
+                if (graph.hasTask(path + "setupDecompWorkspace"))
+                {
+                    if (!System.getProperty("java.version").startsWith("1.7"))
+                    {
+                        throw new RuntimeException("The setupDecompWorkspace will only work with Java 7! This is fixed in ForgeGradle 1.2");
+                    }
+                }
+                return null;
+            }
+            
+            @Override
+            public Object call(Object obj)
+            {
+                return call();
+            }
+            
+            @Override
+            public Object call(Object... obj)
+            {
+                return call();
+            }
+        });
     }
 
     protected Class<UserExtension> getExtensionClass()
