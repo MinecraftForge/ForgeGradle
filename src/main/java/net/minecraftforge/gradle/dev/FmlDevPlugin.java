@@ -16,7 +16,7 @@ import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
-import net.minecraftforge.gradle.tasks.PatchJarTask;
+import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DelayedJar;
@@ -127,11 +127,11 @@ public class FmlDevPlugin extends DevBasePlugin
             remapTask.dependsOn("decompile");
         }
 
-        PatchJarTask task5 = makeTask("fmlPatchJar", PatchJarTask.class);
+        ProcessSrcJarTask task5 = makeTask("fmlPatchJar", ProcessSrcJarTask.class);
         {
             task5.setInJar(delayedFile(DevConstants.ZIP_DECOMP_FML));
             task5.setOutJar(delayedFile(DevConstants.ZIP_PATCHED_FML));
-            task5.setInPatches(delayedFile(DevConstants.FML_PATCH_DIR));
+            task5.addStage("fml", delayedFile(DevConstants.FML_PATCH_DIR));
             task5.setDoesCache(false);
             task5.setMaxFuzz(2);
             task5.dependsOn("decompile");

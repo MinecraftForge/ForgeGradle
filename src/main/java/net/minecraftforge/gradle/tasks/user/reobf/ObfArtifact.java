@@ -3,10 +3,17 @@ package net.minecraftforge.gradle.tasks.user.reobf;
 import groovy.lang.Closure;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URLClassLoader;
 import java.nio.charset.Charset;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import net.md_5.specialsource.Jar;
 import net.md_5.specialsource.JarMapping;
@@ -26,7 +33,12 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.artifacts.publish.AbstractPublishArtifact;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 
+import COM.rl.NameProvider;
+import COM.rl.obf.RetroGuardImpl;
+
 import com.google.common.base.Joiner;
+import com.google.common.collect.Sets;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
 public class ObfArtifact extends AbstractPublishArtifact
@@ -303,7 +315,7 @@ public class ObfArtifact extends AbstractPublishArtifact
      * @throws IOException
      * @throws org.gradle.api.InvalidUserDataException if the there is insufficient information available to generate the signature.
      */
-    void generate(ReobfExceptor exc, File extraSrg) throws Exception
+    void generate(ReobfExceptor exc, File defaultSrg, File extraSrg) throws Exception
     {
         File toObf = getToObf();
         if (toObf == null)
@@ -313,35 +325,31 @@ public class ObfArtifact extends AbstractPublishArtifact
 
         // ready artifacts
         File output = getFile();
-        File excepted = File.createTempFile("reobfed", ".jar", caller.getTemporaryDir());
-        Files.copy(toObf, excepted);
+        File toObfTemp = File.createTempFile("reobfed", ".jar", caller.getTemporaryDir());
+        Files.copy(toObf, toObfTemp);
 
         // ready Srg
-        File srg = (File) (spec.srg == null ? caller.getSrg() : spec.srg);
-        boolean isTemp = false;
-        if (exc != null)
+        File srg = (File) (spec.srg == null ? defaultSrg : spec.srg);
+        boolean isTempSrg = false;
+        if (exc != null && srg != defaultSrg) // defualt SRG is already passed through this.
         {
             File tempSrg = File.createTempFile("reobf", ".srg", caller.getTemporaryDir());
-            isTemp = true;
+            isTempSrg = true;
             
-            if (!srg.equals(caller.getSrg()))
-                exc = caller.prepareSrg(srg, tempSrg);
-            
-            exc.toReobfJar = toObf;
-            exc.buildSrg();
-            srg = exc.outSrg;
+            exc.buildSrg(srg, tempSrg);
+            srg = tempSrg;
             
         }
         
         // obfuscate!
         if (caller.getUseRetroGuard())
-            applyRetroGuard(excepted, output, srg, extraSrg);
+            applyRetroGuard(toObfTemp, output, srg, extraSrg);
         else
-            applySpecialSource(excepted, output, srg, extraSrg);
+            applySpecialSource(toObfTemp, output, srg, extraSrg);
 
         // delete temporary files
-        excepted.delete();
-        if (isTemp)
+        toObfTemp.delete();
+        if (isTempSrg)
             srg.delete();
         
         System.gc(); // clean anything out.. I hope..
@@ -377,6 +385,77 @@ public class ObfArtifact extends AbstractPublishArtifact
         File cfg =    new File(caller.getTemporaryDir(), "retroguard.cfg");
         File log =    new File(caller.getTemporaryDir(), "retroguard.log");
         File script = new File(caller.getTemporaryDir(), "retroguard.script");
+        File packedJar = new File(caller.getTemporaryDir(), "rgPackaged.jar");
+        File outPackedJar = new File(caller.getTemporaryDir(), "rgOutPackaged.jar");
+        
+        HashSet<String> modFiles = Sets.newHashSet();
+        { // pack in classPath
+            ZipOutputStream out = new ZipOutputStream(new FileOutputStream(packedJar));
+            ZipEntry entry = null;
+            
+            // pack input jar
+            ZipInputStream in = new ZipInputStream(new FileInputStream(input));
+            while ((entry = in.getNextEntry()) != null)
+            {
+                modFiles.add(entry.getName());
+                out.putNextEntry(entry);
+                ByteStreams.copy(in, out);
+                in.closeEntry();
+                out.closeEntry();
+            }
+            in.close();
+            
+            HashSet<String> antiDuplicate = Sets.newHashSet();
+            for (File f : classpath)
+            {
+                if (f.isDirectory())
+                {
+                    LinkedList<File> dirStack = new LinkedList<File>();
+                    dirStack.push(f);
+                    String root = f.getCanonicalPath();
+                    
+                    while (!dirStack.isEmpty())
+                    {
+                        File dir = dirStack.pop();
+                        for (File file : dir.listFiles())
+                        {
+                            if (f.isDirectory())
+                            {
+                                dirStack.push(file);
+                            }
+                            else
+                            {
+                                String relPath = file.getCanonicalPath().replace(root, "");
+                                if (antiDuplicate.contains(relPath) || modFiles.contains(relPath))
+                                    continue;
+                                FileInputStream inStream = new FileInputStream(f);
+                                antiDuplicate.add(relPath);
+                                out.putNextEntry(new ZipEntry(relPath));
+                                ByteStreams.copy(inStream, out);
+                                out.closeEntry();
+                                inStream.close();
+                            }
+                        }
+                    }
+                }
+                else if (f.getName().endsWith("jar") || f.getName().endsWith("zip"))
+                {
+                    in = new ZipInputStream(new FileInputStream(f));
+                    while ((entry = in.getNextEntry()) != null)
+                    {
+                        if (antiDuplicate.contains(entry.getName()) || modFiles.contains(entry.getName()))
+                            continue;
+                        antiDuplicate.add(entry.getName());
+                        out.putNextEntry(new ZipEntry(entry.getName()));
+                        ByteStreams.copy(in, out);
+                        out.closeEntry();
+                    }
+                    in.close();
+                }
+            }
+            
+            out.close();
+        }
         
         generateRgConfig(cfg, script, srg, extraSrg);
         
@@ -393,14 +472,37 @@ public class ObfArtifact extends AbstractPublishArtifact
         }
         
         // the name provider
-        Class clazz = getClass().forName("COM.rl.NameProvider", true, loader);
-        clazz.getMethod("parseCommandLine", String[].class).invoke(null, new Object[] { args });
+//        Class clazz = getClass().forName("COM.rl.NameProvider", true, loader);
+//        clazz.getMethod("parseCommandLine", String[].class).invoke(null, new Object[] { args });
+        NameProvider.parseCommandLine(args);
         
         // actual retroguard
-        clazz = getClass().forName("COM.rl.obf.RetroGuardImpl", true, loader);
-        clazz.getMethod("obfuscate", File.class, File.class, File.class, File.class).invoke(null, input, output, script, log);
+//        clazz = getClass().forName("COM.rl.obf.RetroGuardImpl", true, loader);
+//        clazz.getMethod("obfuscate", File.class, File.class, File.class, File.class).invoke(null, packedJar, outPackedJar, script, log);
+        RetroGuardImpl.obfuscate(packedJar, outPackedJar, script, log);
         
         loader = null; // if we are lucky.. this will be dropped...
+        
+        // unpack jar.
+        {
+            ZipOutputStream out = new ZipOutputStream(new FileOutputStream(output));
+            ZipEntry entry = null;
+            
+            // pack input jar
+            ZipInputStream in = new ZipInputStream(new FileInputStream(outPackedJar));
+            while ((entry = in.getNextEntry()) != null)
+            {
+                if (modFiles.contains(entry.getName()))
+                {
+                    out.putNextEntry(entry);
+                    ByteStreams.copy(in, out);
+                    in.closeEntry();
+                    out.closeEntry();
+                }
+            }
+            in.close();
+            out.close();
+        }
     }
     
     private void generateRgConfig(File config, File script, File srg, File extraSrg) throws IOException

@@ -12,9 +12,9 @@ public class BaseExtension
     protected String assetDir = "run/assets";
     private LinkedList<String> srgExtra = new LinkedList<String>();
 
-    public BaseExtension(Project project)
+    public BaseExtension(BasePlugin<? extends BaseExtension> plugin)
     {
-        this.project = project;
+        this.project = plugin.project;
     }
 
     public String getVersion()
@@ -55,5 +55,18 @@ public class BaseExtension
     public void srgExtra(String in)
     {
         srgExtra.add(in);
+    }
+    
+    public void copyFrom(BaseExtension ext)
+    {
+        if ("null".equals(version))
+        {
+            setVersion(ext.getVersion());
+        }
+        
+        if ("unknown".equals(mcpVersion))
+        {
+            setMcpVersion(ext.getMcpVersion());
+        }
     }
 }
