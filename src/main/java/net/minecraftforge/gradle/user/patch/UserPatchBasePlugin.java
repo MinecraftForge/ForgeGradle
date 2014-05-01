@@ -161,6 +161,10 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
                 }
             }
         }
+        
+        // configure fuzzing.
+        ProcessSrcJarTask patch = (ProcessSrcJarTask) project.getTasks().getByName("processSources");
+        patch.setMaxFuzz(getExtension().getMaxFuzz());
 
         super.delayedTaskConfig();
     }

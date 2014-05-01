@@ -16,6 +16,8 @@ public class UserPatchExtension extends UserExtension
     //private static final Pattern VERSION_CHECK = Pattern.compile("(?:[\\w\\d.-]+):(?:[\\w\\d-]+):([\\d.]+)-([\\d.]+)-(?:[\\w\\d.]+)");
     private static final Pattern VERSION_CHECK = Pattern.compile("([\\d.]+)-([\\w\\d.]+)(?:-[\\w\\d.]+)?");
     
+    private int maxFuzz = 0;
+
     private String apiVersion;
     private ArrayList<Object> ats = new ArrayList<Object>();
 
@@ -62,5 +64,15 @@ public class UserPatchExtension extends UserExtension
             throw new ProjectConfigurationException("You must set the Minecraft Version!", new NullPointerException());
         
         return apiVersion;
+    }
+    
+    public int getMaxFuzz()
+    {
+        return maxFuzz;
+    }
+
+    public void setMaxFuzz(int fuzz)
+    {
+        this.maxFuzz = fuzz;
     }
 }

@@ -139,6 +139,9 @@ public abstract class CachedTask extends DefaultTask
                             getHashFile(file).delete();
                             return true;
                         }
+                        
+                        getProject().getLogger().info("Checksums found: " + foundMD5);
+                        getProject().getLogger().info("Checksums calculated: " + calcMD5);
 
                     }
                     // error? spit it and do the task.
