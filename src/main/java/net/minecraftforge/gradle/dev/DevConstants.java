@@ -59,27 +59,23 @@ final class DevConstants
 
     // forge intermediate jars
     static final String ZIP_FMLED_FORGE     = "{BUILD_DIR}/forgeTmp/minecraft_fmlpatched.zip";
-    static final String ZIP_INJECT_FORGE    = "{BUILD_DIR}/forgeTmp/minecraft_fmlinjected.zip";
-    static final String ZIP_RENAMED_FORGE   = "{BUILD_DIR}/forgeTmp/minecraft_renamed.zip";
     static final String ZIP_PATCHED_FORGE   = "{BUILD_DIR}/forgeTmp/minecraft_patches.zip";
+    static final String ZIP_RENAMED_FORGE   = "{BUILD_DIR}/forgeTmp/minecraft_renamed.zip";
     
     // mcpc intermediate jars
-    static final String ZIP_FMLED_MCPC     = "{BUILD_DIR}/mcpcTmp/minecraft_fmlpatched.zip";
-    static final String ZIP_INJECT_MCPC    = "{BUILD_DIR}/mcpcTmp/minecraft_fmlinjected.zip";
-    static final String ZIP_RENAMED_MCPC   = "{BUILD_DIR}/mcpcTmp/minecraft_renamed.zip";
-    static final String ZIP_FINJECT_MCPC   = "{BUILD_DIR}/mcpcTmp/minecraft_forgeinjected.zip";
-    static final String ZIP_FORGED_MCPC    = "{BUILD_DIR}/mcpcTmp/minecraft_forged.zip";
-    static final String ZIP_PATCHED_MCPC   = "{BUILD_DIR}/mcpcTmp/minecraft_patched.zip";
+    static final String ZIP_FORGED_MCPC     = "{BUILD_DIR}/mcpcTmp/minecraft_fmlpatched.zip";
+    static final String ZIP_PATCHED_MCPC    = "{BUILD_DIR}/mcpcTmp/minecraft_patched.zip";
+    static final String ZIP_RENAMED_MCPC    = "{BUILD_DIR}/mcpcTmp/minecraft_renamed.zip";
 
     // other stuff
-    static final String CHANGELOG          = "{BUILD_DIR}/distributions/{PROJECT}-{MC_VERSION}-{VERSION}-changelog.txt";
-    static final String USERDEV_SRG_SRC    = "{BUILD_DIR}/tmp/user_dev_srg_src.zip";
+    static final String CHANGELOG           = "{BUILD_DIR}/distributions/{PROJECT}-{MC_VERSION}-{VERSION}-changelog.txt";
+    static final String USERDEV_SRG_SRC     = "{BUILD_DIR}/tmp/user_dev_srg_src.zip";
     
     // necesary for patch generation
-    static final String PATCH_CLEAN        = "{BUILD_DIR}/tmp/clean-path-base.zip";
-    static final String PATCH_DIRTY        = "{BUILD_DIR}/tmp/dirty-patch-base.zip";
-    static final String REMAPPED_CLEAN     = "{BUILD_DIR}/tmp/clean.jar";
-    static final String REMAPPED_DIRTY     = "{BUILD_DIR}/tmp/dirty.jar";
+    static final String PATCH_CLEAN         = "{BUILD_DIR}/tmp/clean-path-base.zip";
+    static final String PATCH_DIRTY         = "{BUILD_DIR}/tmp/dirty-patch-base.zip";
+    static final String REMAPPED_CLEAN      = "{BUILD_DIR}/tmp/clean.jar";
+    static final String REMAPPED_DIRTY      = "{BUILD_DIR}/tmp/dirty.jar";
 
     // jsons
     static final String JSON_DEV            = "{FML_DIR}/jsons/{MC_VERSION}-dev.json";
@@ -141,6 +137,5 @@ final class DevConstants
     
     // USED ONLY FOR mcpc.. BUT ITS BUKKIT STUFF
     static final String BUKKIT_SOURCES       = "{BUKKIT_DIR}/src/main/java";
-    static final String BUKKIT_RESOURCES     = "{BUKKIT_DIR}/src/main/resources";
     static final String EXTRACTED_RES        = "{BUILD_DIR}/extractedResources";
 }

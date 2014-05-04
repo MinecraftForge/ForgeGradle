@@ -50,26 +50,32 @@ public class ProcessSrcJarTask extends EditJarTask
     {
         for (ResourceHolder stage : stages)
         {
-            getLogger().lifecycle("Injecting {} files", stage.name);
-            for (RelFile rel : stage.getRelInjects())
+            if (!stage.srcDirs.isEmpty())
             {
-                String relative = rel.getRelative();
-
-                if (sourceMap.containsKey(relative) || resourceMap.containsKey("relative"))
-                    continue; //ignore duplicates. 
-
-                if (relative.endsWith(".java"))
+                getLogger().lifecycle("Injecting {} files", stage.name);
+                for (RelFile rel : stage.getRelInjects())
                 {
-                    sourceMap.put(relative, Files.toString(rel.file, Charset.defaultCharset()));
-                }
-                else
-                {
-                    resourceMap.put(relative, Files.asByteSource(rel.file).read());
+                    String relative = rel.getRelative();
+
+                    if (sourceMap.containsKey(relative) || resourceMap.containsKey("relative"))
+                        continue; //ignore duplicates. 
+
+                    if (relative.endsWith(".java"))
+                    {
+                        sourceMap.put(relative, Files.toString(rel.file, Charset.defaultCharset()));
+                    }
+                    else
+                    {
+                        resourceMap.put(relative, Files.asByteSource(rel.file).read());
+                    }
                 }
             }
             
-            getLogger().lifecycle("Applying {} patches", stage.name);
-            applyPatchStage(stage.name, stage.getPatchFiles());
+            if (stage.patchDir != null)
+            {
+                getLogger().lifecycle("Applying {} patches", stage.name);
+                applyPatchStage(stage.name, stage.getPatchFiles());
+            }
         }
     }
 
@@ -185,10 +191,14 @@ public class ProcessSrcJarTask extends EditJarTask
         FileCollection col = null;
 
         for (ResourceHolder holder : stages)
-            if (col == null)
+        {
+            if (holder.patchDir == null)
+                continue;
+            else if (col == null)
                 col = holder.getPatchFiles();
             else
                 col = getProject().files(col, holder.getPatchFiles());
+        }
 
         return col;
     }

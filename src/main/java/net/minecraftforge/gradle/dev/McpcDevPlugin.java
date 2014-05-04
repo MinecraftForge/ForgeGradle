@@ -10,7 +10,10 @@ import java.util.Date;
 import net.minecraftforge.gradle.CopyInto;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
+import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
+import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
@@ -44,6 +47,35 @@ public class McpcDevPlugin extends DevBasePlugin
         getExtension().setFmlDir("forge/fml");
         getExtension().setForgeDir("forge");
         getExtension().setBukkitDir("bukkit");
+        
+        // configure genSrg task.
+        GenSrgTask genSrgTask = (GenSrgTask) project.getTasks().getByName("genSrgs");
+        {
+            // find all the exc & srg files in the resources.
+            for (File f : project.fileTree(delayedFile(DevConstants.FML_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    genSrgTask.addExtraExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    genSrgTask.addExtraSrg(f);
+            }
+            
+            for (File f : project.fileTree(delayedFile(DevConstants.FORGE_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    genSrgTask.addExtraExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    genSrgTask.addExtraSrg(f);
+            }
+            
+            for (File f : project.fileTree(delayedFile(DevConstants.MCPC_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    genSrgTask.addExtraExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    genSrgTask.addExtraSrg(f);
+            }
+        }
         
         createJarProcessTasks();
         createProjectTasks();
@@ -101,61 +133,51 @@ public class McpcDevPlugin extends DevBasePlugin
             task3.dependsOn("downloadMcpTools", "deobfuscateJar");
         }
         
-        ProcessSrcJarTask task4 = makeTask("fmlPatchJar", ProcessSrcJarTask.class);
+        ProcessSrcJarTask task4 = makeTask("forgePatchJar", ProcessSrcJarTask.class);
         {
-            task4.setInJar(delayedFile(ZIP_DECOMP_FORGE));
-            task4.setOutJar(delayedFile(ZIP_FMLED_FORGE));
+            task4.setInJar(delayedFile(ZIP_DECOMP_MCPC));
+            task4.setOutJar(delayedFile(ZIP_FORGED_MCPC));
             task4.addStage("fml", delayedFile(FML_PATCH_DIR), delayedFile(FML_SOURCES), delayedFile(FML_RESOURCES), delayedFile("{MAPPINGS_DIR}/patches/Start.java"));
+            task4.addStage("forge", delayedFile(FORGE_PATCH_DIR), delayedFile(FORGE_SOURCES), delayedFile(FORGE_RESOURCES));
+            task4.addStage("bukkit", null, delayedFile(BUKKIT_SOURCES));
             task4.setDoesCache(false);
             task4.setMaxFuzz(2);
             task4.dependsOn("decompile", "compressDeobfData", "createVersionPropertiesFML");
         }
 
-        RemapSourcesTask task6 = makeTask("remapSourcesJar", RemapSourcesTask.class);
+        RemapSourcesTask task6 = makeTask("remapCleanJar", RemapSourcesTask.class);
         {
-            task6.setInJar(delayedFile(ZIP_INJECT_MCPC));
-            task6.setOutJar(delayedFile(ZIP_RENAMED_MCPC));
+            task6.setInJar(delayedFile(ZIP_FORGED_MCPC));
+            task6.setOutJar(delayedFile(REMAPPED_CLEAN));
             task6.setMethodsCsv(delayedFile(METHODS_CSV));
             task6.setFieldsCsv(delayedFile(FIELDS_CSV));
             task6.setParamsCsv(delayedFile(PARAMS_CSV));
             task6.setDoesCache(true);
-            task6.setDoesJavadocs(false);
-            task6.dependsOn("fmlPatchJar");
-        }
-        
-        Zip task5 = makeTask("forgeInjectJar", Zip.class);
-        {
-            task5.from(delayedFileTree(FORGE_SOURCES));
-            task5.from(delayedFileTree(FORGE_RESOURCES));
-            task5.from(delayedFileTree(BUKKIT_SOURCES));
-            task5.from(delayedFileTree(BUKKIT_RESOURCES));
-            task5.from(delayedZipTree(ZIP_RENAMED_MCPC));
-
-            // see ZIP_FINJECT_MCPC
-            task5.setArchiveName("minecraft_forgeinjected.zip");
-            task5.setDestinationDir(delayedFile("{BUILD_DIR}/mcpcTmp").call());
-
-            task5.dependsOn("remapSourcesJar");
-        }
-
-        task4 = makeTask("forgePatchJar", ProcessSrcJarTask.class);
-        {
-            task4.setInJar(delayedFile(ZIP_FINJECT_MCPC));
-            task4.setOutJar(delayedFile(ZIP_FORGED_MCPC));
-            task4.addStage("forge", delayedFile(FORGE_PATCH_DIR));
-            task4.setDoesCache(true);
-            task4.setMaxFuzz(2);
-            task4.dependsOn("forgeInjectJar");
+            task6.setNoJavadocs();
+            task6.dependsOn("forgePatchJar");
         }
          
         task4 = makeTask("mcpcPatchJar", ProcessSrcJarTask.class);
         {
-            task4.setInJar(delayedFile(ZIP_FORGED_MCPC));
+            //task4.setInJar(delayedFile(ZIP_FORGED_MCPC)); UNCOMMENT FOR SRG NAMES
+            task4.setInJar(delayedFile(REMAPPED_CLEAN));
             task4.setOutJar(delayedFile(ZIP_PATCHED_MCPC));
             task4.addStage("MCPC", delayedFile(MCPC_PATCH_DIR));
             task4.setDoesCache(false);
             task4.setMaxFuzz(2);
             task4.dependsOn("forgePatchJar");
+        }
+        
+        task6 = makeTask("remapMcpcJar", RemapSourcesTask.class);
+        {
+            task6.setInJar(delayedFile(ZIP_PATCHED_MCPC));
+            task6.setOutJar(delayedFile(ZIP_RENAMED_MCPC));
+            task6.setMethodsCsv(delayedFile(METHODS_CSV));
+            task6.setFieldsCsv(delayedFile(FIELDS_CSV));
+            task6.setParamsCsv(delayedFile(PARAMS_CSV));
+            task6.setDoesCache(true);
+            task6.setNoJavadocs();
+            task6.dependsOn("mcpcPatchJar");
         }
     }
     
@@ -165,16 +187,16 @@ public class McpcDevPlugin extends DevBasePlugin
         {
             task.exclude(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
-            task.from(delayedFile(ZIP_FORGED_MCPC));
+            task.from(delayedFile(REMAPPED_CLEAN));
             task.into(delayedFile(ECLIPSE_CLEAN_RES));
-            task.dependsOn("extractWorkspace", "forgePatchJar");
+            task.dependsOn("extractWorkspace", "remapCleanJar");
         }
 
         task = makeTask("extractCleanSource", ExtractTask.class);
         {
             task.include(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
-            task.from(delayedFile(ZIP_FORGED_MCPC));
+            task.from(delayedFile(REMAPPED_CLEAN));
             task.into(delayedFile(ECLIPSE_CLEAN_SRC));
             task.dependsOn("extractCleanResources");
         }
@@ -182,15 +204,15 @@ public class McpcDevPlugin extends DevBasePlugin
         task = makeTask("extractMcpcResources", ExtractTask.class);
         {
             task.exclude(JAVA_FILES);
-            task.from(delayedFile(ZIP_PATCHED_MCPC));
+            task.from(delayedFile(ZIP_RENAMED_MCPC));
             task.into(delayedFile(ECLIPSE_MCPC_RES));
-            task.dependsOn("mcpcPatchJar", "extractWorkspace");
+            task.dependsOn("remapMcpcJar", "extractWorkspace");
         }
 
         task = makeTask("extractMcpcSources", ExtractTask.class);
         {
             task.include(JAVA_FILES);
-            task.from(delayedFile(ZIP_PATCHED_MCPC));
+            task.from(delayedFile(ZIP_RENAMED_MCPC));
             task.into(delayedFile(ECLIPSE_MCPC_SRC));
             task.dependsOn("extractMcpcResources");
         }
@@ -278,8 +300,48 @@ public class McpcDevPlugin extends DevBasePlugin
         makeTask("eclipse").dependsOn("eclipseClean", "eclipseMcpc");
     }
     
+    @SuppressWarnings("unused")
     private void createMiscTasks()
     {
+        DelayedFile rangeMapClean = delayedFile("{BUILD_DIR}/tmp/rangemapCLEAN.txt");
+        DelayedFile rangeMapDirty = delayedFile("{BUILD_DIR}/tmp/rangemapDIRTY.txt");
+        
+        ExtractS2SRangeTask extractRange = makeTask("extractRangeMcpc", ExtractS2SRangeTask.class);
+        {
+            extractRange.setLibsFromProject(delayedFile(ECLIPSE_MCPC + "/build.gradle"), "compile", true);
+            extractRange.addIn(delayedFile(ECLIPSE_MCPC_SRC));
+            extractRange.setRangeMap(rangeMapDirty);
+        }
+        
+        ApplyS2STask applyS2S = makeTask("retroMapMcpc", ApplyS2STask.class);
+        {
+            applyS2S.addIn(delayedFile(ECLIPSE_MCPC_SRC));
+            applyS2S.setOut(delayedFile(PATCH_DIRTY));
+            applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
+            applyS2S.addExc(delayedFile(MCP_EXC));
+            applyS2S.addExc(delayedFile(SRG_EXC)); // just in case
+            applyS2S.setRangeMap(rangeMapDirty);
+            applyS2S.dependsOn("genSrgs", extractRange);
+        }
+        
+        extractRange = makeTask("extractRangeClean", ExtractS2SRangeTask.class);
+        {
+            extractRange.setLibsFromProject(delayedFile(ECLIPSE_CLEAN + "/build.gradle"), "compile", true);
+            extractRange.addIn(delayedFile(REMAPPED_CLEAN));
+            extractRange.setRangeMap(rangeMapClean);
+        }
+        
+        applyS2S = makeTask("retroMapClean", ApplyS2STask.class);
+        {
+            applyS2S.addIn(delayedFile(REMAPPED_CLEAN));
+            applyS2S.setOut(delayedFile(PATCH_CLEAN));
+            applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
+            applyS2S.addExc(delayedFile(MCP_EXC));
+            applyS2S.addExc(delayedFile(SRG_EXC)); // just in case
+            applyS2S.setRangeMap(rangeMapClean);
+            applyS2S.dependsOn("genSrgs", extractRange);
+        }
+        
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
         {
             task2.setPatchDir(delayedFile(MCPC_PATCH_DIR));
@@ -287,6 +349,18 @@ public class McpcDevPlugin extends DevBasePlugin
             task2.setChanged(delayedFile(ECLIPSE_MCPC_SRC));
             task2.setOriginalPrefix("../src-base/minecraft");
             task2.setChangedPrefix("../src-work/minecraft");
+            task2.getTaskDependencies().getDependencies(task2).clear(); // remove all the old dependants.
+            task2.setGroup("MCPC");
+        }
+        
+        if (false) // COMMENT OUT SRG PATCHES!
+        {
+            task2.setPatchDir(delayedFile(MCPC_PATCH_DIR));
+            task2.setOriginal(delayedFile(PATCH_CLEAN)); // was ECLIPSE_CLEAN_SRC
+            task2.setChanged(delayedFile(PATCH_DIRTY)); // ECLIPSE_FORGE_SRC
+            task2.setOriginalPrefix("../src-base/minecraft");
+            task2.setChangedPrefix("../src-work/minecraft");
+            task2.dependsOn("retroMapMcpc", "retroMapClean");
             task2.setGroup("MCPC");
         }
 
@@ -295,7 +369,7 @@ public class McpcDevPlugin extends DevBasePlugin
             clean.delete("eclipse");
             clean.setGroup("Clean");
         }
-        (project.getTasksByName("clean", false).toArray(new Task[0])[0]).dependsOn("cleanMcpc");
+        project.getTasks().getByName("clean").dependsOn("cleanMcpc");
 
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
