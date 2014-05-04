@@ -128,6 +128,7 @@ public class GeneratePatches extends DefaultTask
         List<String> paths = original.gatherAll("");
         for (String path : paths)
         {
+            path = path.replace('\\', '/');
             InputStream o = original.getInput(path);
             InputStream c = changed.getInput(path);
             try
