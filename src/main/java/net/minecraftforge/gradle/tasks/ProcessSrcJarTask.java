@@ -388,9 +388,9 @@ public class ProcessSrcJarTask extends EditJarTask
             this.root = root;
         }
 
-        public String getRelative()
+        public String getRelative() throws IOException
         {
-            return file.getAbsolutePath().substring(root.getAbsolutePath().length() + 1).replace('\\', '/');
+            return file.getCanonicalPath().substring(root.getCanonicalPath().length() + 1).replace('\\', '/');
         }
     }
 }

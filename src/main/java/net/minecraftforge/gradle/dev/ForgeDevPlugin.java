@@ -126,7 +126,7 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             task4.setInJar(delayedFile(ZIP_DECOMP_FORGE));
             task4.setOutJar(delayedFile(ZIP_FMLED_FORGE));
-            task4.addStage("fml", delayedFile(FML_PATCH_DIR), delayedFile(FML_SOURCES), delayedFile(FML_RESOURCES), delayedFile("{MAPPINGS_DIR}/patches/Start.java"));
+            task4.addStage("fml", delayedFile(FML_PATCH_DIR), delayedFile(FML_SOURCES), delayedFile(FML_RESOURCES), delayedFile("{MAPPINGS_DIR}/patches/Start.java"), delayedFile(DEOBF_DATA), delayedFile(FML_VERSIONF));
             task4.setDoesCache(false);
             task4.setMaxFuzz(2);
             task4.dependsOn("decompile", "compressDeobfData", "createVersionPropertiesFML");
