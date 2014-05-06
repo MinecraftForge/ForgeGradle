@@ -31,7 +31,10 @@ import net.minecraftforge.gradle.tasks.dev.SubprojectTask;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;
+import org.gradle.api.file.ConfigurableFileTree;
+import org.gradle.api.file.FileTree;
 import org.gradle.api.java.archives.Manifest;
+import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.api.tasks.javadoc.Javadoc;
@@ -86,7 +89,7 @@ public class McpcDevPlugin extends DevBasePlugin
 
         // the master setup task.
         Task task = makeTask("setupMcpc", DefaultTask.class);
-        task.dependsOn("extractMcpcSources", "generateProjects", "eclipse", "copyAssets");
+        task.dependsOn("clean", "extractMcpcSources", "generateProjects", "eclipse", "copyAssets");
         task.setGroup("MCPC");
         
         // clean packages
@@ -181,6 +184,7 @@ public class McpcDevPlugin extends DevBasePlugin
         }
     }
     
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private void createSourceCopyTasks()
     {
         ExtractTask task = makeTask("extractCleanResources", ExtractTask.class);
@@ -207,6 +211,22 @@ public class McpcDevPlugin extends DevBasePlugin
             task.from(delayedFile(ZIP_RENAMED_MCPC));
             task.into(delayedFile(ECLIPSE_MCPC_RES));
             task.dependsOn("remapMcpcJar", "extractWorkspace");
+            task.onlyIf(new Spec() {
+
+                @Override
+                public boolean isSatisfiedBy(Object arg0)
+                {
+                    File dir = delayedFile(ECLIPSE_MCPC_RES).call();
+                    if (!dir.exists())
+                        return true;
+                    
+                    ConfigurableFileTree tree = project.fileTree(dir);
+                    tree.include("**/*.java");
+                    
+                    return !tree.isEmpty();
+                }
+                
+            });
         }
 
         task = makeTask("extractMcpcSources", ExtractTask.class);
@@ -215,6 +235,22 @@ public class McpcDevPlugin extends DevBasePlugin
             task.from(delayedFile(ZIP_RENAMED_MCPC));
             task.into(delayedFile(ECLIPSE_MCPC_SRC));
             task.dependsOn("extractMcpcResources");
+            task.onlyIf(new Spec() {
+
+                @Override
+                public boolean isSatisfiedBy(Object arg0)
+                {
+                    File dir = delayedFile(ECLIPSE_MCPC_SRC).call();
+                    if (!dir.exists())
+                        return true;
+                    
+                    ConfigurableFileTree tree = project.fileTree(dir);
+                    tree.include("**/*.java");
+                    
+                    return !tree.isEmpty();
+                }
+                
+            });
         }
     }
     
