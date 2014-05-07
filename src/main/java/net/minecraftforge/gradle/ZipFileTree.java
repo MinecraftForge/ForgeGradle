@@ -35,6 +35,7 @@ import org.gradle.api.file.FileVisitor;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.file.AbstractFileTreeElement;
 import org.gradle.api.internal.file.collections.MinimalFileTree;
+import org.gradle.internal.nativeplatform.services.FileSystems;
 import org.gradle.util.DeprecationLogger;
 
 public class ZipFileTree implements MinimalFileTree
@@ -115,6 +116,7 @@ public class ZipFileTree implements MinimalFileTree
 
         public DetailsImpl(ZipEntry entry, ZipFile zip, AtomicBoolean stopFlag)
         {
+            super(FileSystems.getDefault());
             this.entry = entry;
             this.zip = zip;
             this.stopFlag = stopFlag;
