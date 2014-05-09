@@ -14,10 +14,9 @@ import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
-import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
+import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
-import net.minecraftforge.gradle.tasks.ReplaceJavadocsTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DelayedJar;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.abstractutil.FileFilterTask;
@@ -28,16 +27,14 @@ import net.minecraftforge.gradle.tasks.dev.GeneratePatches;
 import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
 import net.minecraftforge.gradle.tasks.dev.SubprojectTask;
 
-import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;
 import org.gradle.api.file.ConfigurableFileTree;
-import org.gradle.api.file.FileTree;
+import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.java.archives.Manifest;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.bundling.Zip;
-import org.gradle.api.tasks.javadoc.Javadoc;
 
 public class McpcDevPlugin extends DevBasePlugin
 {
@@ -89,7 +86,7 @@ public class McpcDevPlugin extends DevBasePlugin
 
         // the master setup task.
         Task task = makeTask("setupMcpc", DefaultTask.class);
-        task.dependsOn("clean", "extractMcpcSources", "generateProjects", "eclipse", "copyAssets");
+        task.dependsOn("extractMcpcSources", "generateProjects", "eclipse", "copyAssets");
         task.setGroup("MCPC");
         
         // clean packages
@@ -101,7 +98,7 @@ public class McpcDevPlugin extends DevBasePlugin
 //        // the master task.
         task = makeTask("buildPackages");
         //task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "genJavadocs");
-        task.dependsOn("cleanPackages", "packageUniversal", "packageInstaller", "genJavadocs");
+        task.dependsOn("cleanPackages", "packageUniversal", "packageInstaller");
         task.setGroup("MCPC");
     }
     
@@ -417,7 +414,7 @@ public class McpcDevPlugin extends DevBasePlugin
             obf.setBuildFile(delayedFile(ECLIPSE_MCPC + "/build.gradle"));
             obf.setMethodsCsv(delayedFile(METHODS_CSV));
             obf.setFieldsCsv(delayedFile(FIELDS_CSV));
-            obf.dependsOn("generateProjects", "extractMcpcSources", "genSrgs");
+            obf.dependsOn("genSrgs");
         }
 
         GenBinaryPatches task3 = makeTask("genBinPatches", GenBinaryPatches.class);
@@ -497,6 +494,7 @@ public class McpcDevPlugin extends DevBasePlugin
             uni.from(delayedFile(CHANGELOG));
             uni.from(delayedFile(VERSION_JSON));
             uni.exclude("devbinpatches.pack.lzma");
+            uni.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
             uni.setIncludeEmptyDirs(false);
             uni.setManifest(new Closure<Object>(project)
             {
@@ -580,32 +578,6 @@ public class McpcDevPlugin extends DevBasePlugin
             inst.setExtension("jar");
         }
         project.getArtifacts().add("archives", inst);
-
-        final File javadocSource = project.file(delayedFile("{BUILD_DIR}/tmp/javadocSource"));
-        ReplaceJavadocsTask jdSource = makeTask("replaceJavadocs", ReplaceJavadocsTask.class);
-        {
-            jdSource.from(delayedFile(MCPC_SOURCES));
-            jdSource.from(delayedFile(ECLIPSE_MCPC_SRC));
-            jdSource.setOutFile(delayedFile("{BUILD_DIR}/tmp/javadocSource"));
-            jdSource.setMethodsCsv(delayedFile(METHODS_CSV));
-            jdSource.setFieldsCsv(delayedFile(FIELDS_CSV));
-        }
-
-        final File javadoc_temp = project.file(delayedFile("{BUILD_DIR}/tmp/javadoc"));
-        final SubprojectTask javadocJar = makeTask("genJavadocs", SubprojectTask.class);
-        {
-            javadocJar.dependsOn("replaceJavadocs");
-            javadocJar.setBuildFile(delayedFile(ECLIPSE_MCPC + "/build.gradle"));
-            javadocJar.setTasks("javadoc");
-            javadocJar.setConfigureTask(new Action<Task>() {
-                public void execute(Task obj)
-                {
-                    Javadoc task = (Javadoc)obj;
-                    task.setSource(project.fileTree(javadocSource));
-                    task.setDestinationDir(javadoc_temp);
-                }
-            });
-        }
     }
     
     @Override
@@ -618,10 +590,6 @@ public class McpcDevPlugin extends DevBasePlugin
         task.configureProject(getExtension().getCleanProject());
         
         task = (SubprojectTask) project.getTasks().getByName("eclipseMcpc");
-        task.configureProject(getExtension().getSubprojects());
-        task.configureProject(getExtension().getCleanProject());
-        
-        task = (SubprojectTask) project.getTasks().getByName("genJavadocs");
         task.configureProject(getExtension().getSubprojects());
         task.configureProject(getExtension().getCleanProject());
     }
