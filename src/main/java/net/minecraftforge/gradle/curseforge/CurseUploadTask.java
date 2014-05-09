@@ -237,9 +237,17 @@ public class CurseUploadTask extends DefaultTask
         return tVersions;
     }
 
-    public void setGameVersion(Object gameVersion)
+    public void addGameVersion(Object gameVersion)
     {
         this.gameVersions.add(gameVersion);
+    }
+    
+    public void addGameVersion(Object... gameVersions)
+    {
+        for (Object o : gameVersions)
+        {
+            this.gameVersions.add(o);
+        }
     }
 
     public String getReleaseType()

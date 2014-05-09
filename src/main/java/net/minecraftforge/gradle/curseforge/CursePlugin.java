@@ -39,7 +39,7 @@ public class CursePlugin implements Plugin<Project>
             public void execute(Object arg0)
             {
                 UserBasePlugin plugin = userPluginApplied(project);
-                upload.setGameVersion(plugin.getExtension().getVersion());
+                upload.addGameVersion(plugin.getExtension().getVersion());
                 
                 upload.dependsOn("reobf");
             }
