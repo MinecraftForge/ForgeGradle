@@ -479,9 +479,9 @@ public class McpcDevPlugin extends DevBasePlugin
             uni.getInputs().file(delayedFile(MCPC_JSON_REL));
             uni.getOutputs().upToDateWhen(Constants.CALL_FALSE);
             uni.from(delayedZipTree(BINPATCH_TMP));
-            uni.from(delayedFileTree(FML_RESOURCES));
-            uni.from(delayedFileTree(FORGE_RESOURCES));
             uni.from(delayedFileTree(MCPC_RESOURCES));
+            uni.from(delayedFileTree(FORGE_RESOURCES));
+            uni.from(delayedFileTree(FML_RESOURCES));
             uni.from(delayedFileTree(EXTRACTED_RES));
             uni.from(delayedFile(FML_VERSIONF));
             uni.from(delayedFile(FML_LICENSE));
