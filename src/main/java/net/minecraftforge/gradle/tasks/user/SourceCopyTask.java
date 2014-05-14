@@ -69,7 +69,7 @@ public class SourceCopyTask extends DefaultTask
             while (val instanceof Closure)
                 val = ((Closure<Object>) val).call();
             
-            repl.put(e.getKey(), val.toString());
+            repl.put(Pattern.quote(e.getKey()), val.toString());
         }
         
         getLogger().info("REPLACE >> " + repl);
@@ -186,10 +186,7 @@ public class SourceCopyTask extends DefaultTask
 
     public void replace(Map<String, Object> map)
     {
-        for (Entry<String, Object> e : map.entrySet())
-        {
-            replace(Pattern.quote(e.getKey()), e.getValue());
-        }
+        replacements.putAll(map);
     }
 
     public HashMap<String, Object> getReplacements()
