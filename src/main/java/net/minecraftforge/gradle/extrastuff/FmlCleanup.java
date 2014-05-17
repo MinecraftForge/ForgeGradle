@@ -265,6 +265,10 @@ public class FmlCleanup
         {
             index = findtype;
         }
+        else if (last.containsKey(StringUtils.lower(findtype)))
+        {
+            index = StringUtils.lower(findtype);
+        }
         else if (remap.containsKey(type))
         {
             index = remap.get(type);
@@ -292,8 +296,8 @@ public class FmlCleanup
                 name = name.replace("[]", "").replace("...", "");
             }
 
-            last.put(type, new Holder(0, skip_zero, name));
-            index = type;
+            last.put(StringUtils.lower(type), new Holder(0, skip_zero, name));
+            index = StringUtils.lower(type);
         }
 
         if (Strings.isNullOrEmpty(index))
