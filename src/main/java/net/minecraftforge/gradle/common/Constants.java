@@ -48,6 +48,7 @@ public class Constants
 
     public static final OS               OPERATING_SYSTEM = OS.CURRENT;
     public static final SystemArch       SYSTEM_ARCH      = getArch();
+    public static final String           HASH_FUNC        = "MD5";
 
     // extension nam
     public static final String EXT_NAME_MC      = "minecraft";
@@ -152,9 +153,9 @@ public class Constants
     public static String hash(File file)
     {
         if (file.getPath().endsWith(".zip") || file.getPath().endsWith(".jar"))
-            return hashZip(file, "MD5");
+            return hashZip(file, HASH_FUNC);
         else
-            return hash(file, "MD5");
+            return hash(file, HASH_FUNC);
     }
     
     public static List<String> hashAll(File file)
@@ -174,21 +175,14 @@ public class Constants
 
     public static String hash(File file, String function)
     {
+        
         try
         {
-            MessageDigest hasher = MessageDigest.getInstance(function);
-            
             InputStream fis = new FileInputStream(file);
-            hasher.update(ByteStreams.toByteArray(fis));
+            byte[] array = ByteStreams.toByteArray(fis);
             fis.close();
             
-            byte[] hash = hasher.digest();
-
-            // convert to string
-            String result = "";
-            for (int i = 0; i < hash.length; i++)
-                result += Integer.toString((hash[i] & 0xff) + 0x100, 16).substring(1);
-            return result;
+            return hash(array, function);
         }
         catch (Exception e)
         {
@@ -235,10 +229,20 @@ public class Constants
 
     public static String hash(String str)
     {
+        return hash(str.getBytes());
+    }
+    
+    public static String hash(byte[] bytes)
+    {
+        return hash(bytes, HASH_FUNC);
+    }
+    
+    public static String hash(byte[] bytes, String function)
+    {
         try
         {
-            MessageDigest complete = MessageDigest.getInstance("MD5");
-            byte[] hash = complete.digest(str.getBytes());
+            MessageDigest complete = MessageDigest.getInstance(HASH_FUNC);
+            byte[] hash = complete.digest(bytes);
 
             String result = "";
 
