@@ -241,7 +241,7 @@ public class Constants
     {
         try
         {
-            MessageDigest complete = MessageDigest.getInstance(HASH_FUNC);
+            MessageDigest complete = MessageDigest.getInstance(function);
             byte[] hash = complete.digest(bytes);
 
             String result = "";
