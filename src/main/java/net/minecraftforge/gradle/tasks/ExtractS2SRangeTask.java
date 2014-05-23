@@ -149,9 +149,8 @@ public class ExtractS2SRangeTask extends DefaultTask
         for (String rel : strings)
         {
             File root = new File(input.getRoot(rel)).getCanonicalFile();
-            File tempFile = new File(root, rel).getCanonicalFile();
             
-            InputStream fis = new FileInputStream(tempFile);
+            InputStream fis = input.getInput(rel);
             byte[] array = ByteStreams.toByteArray(fis);
             fis.close();
             
