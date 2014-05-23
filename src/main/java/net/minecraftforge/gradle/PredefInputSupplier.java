@@ -16,7 +16,7 @@ import com.google.common.collect.Maps;
 public class PredefInputSupplier implements InputSupplier
 {
     private final Map<String, byte[]> fileMap = Maps.newHashMap();
-    private final Map<String, File>   rootMap = Maps.newHashMap();
+    private final Map<String, String> rootMap = Maps.newHashMap();
 
     @Override
     public void close() throws IOException
@@ -27,13 +27,13 @@ public class PredefInputSupplier implements InputSupplier
     @Override
     public String getRoot(String resource)
     {
-        return rootMap.get(sanitize(resource)).getAbsolutePath();
+        return rootMap.get(sanitize(resource));
     }
 
     @Override
     public InputStream getInput(String relPath)
     {
-        return new ByteArrayInputStream(fileMap.get(relPath));
+        return new ByteArrayInputStream(fileMap.get(sanitize(relPath)));
     }
 
     @Override
@@ -53,14 +53,24 @@ public class PredefInputSupplier implements InputSupplier
 
     public void addFile(String path, File root, byte[] data) throws IOException
     {
-        root = root.getCanonicalFile();
+        path = sanitize(path);
         fileMap.put(path, data);
-        rootMap.put(path, root);
+        rootMap.put(path, sanitize(root.getCanonicalPath()));
     }
 
     private String sanitize(String in)
     {
-        return in.replace('\\', '/');
+        if (in == null)
+        {
+            return null;
+        }
+        
+        in = in.replace('\\', '/');
+
+        if (in.endsWith("/"))
+            in = in.substring(0, in.length() - 1);
+
+        return in;
     }
 
     public boolean isEmpty()

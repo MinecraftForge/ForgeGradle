@@ -2,7 +2,6 @@ package net.minecraftforge.gradle.tasks;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -76,7 +75,9 @@ public class ExtractS2SRangeTask extends DefaultTask
             // multinput
             inSup = new SequencedInputSupplier();
             for (File f : ins)
+            {
                 ((SequencedInputSupplier) inSup).add(getInput(f));
+            }
         }
         
         // cache
@@ -138,6 +139,8 @@ public class ExtractS2SRangeTask extends DefaultTask
     
     private InputSupplier cacheInputs(InputSupplier input, File out) throws IOException
     {
+        boolean outExists = out.exists();
+        
         // read the cache
         File cacheFile = new File(out + ".inputCache");
         HashSet<CacheEntry> cache = readCache(cacheFile);
@@ -157,7 +160,7 @@ public class ExtractS2SRangeTask extends DefaultTask
             CacheEntry entry = new CacheEntry(rel, root, Constants.hash(array));
             genCache.add(entry);
             
-            if (!cache.contains(entry))
+            if (!outExists || !cache.contains(entry))
             {
                 predef.addFile(rel, root, array);
             }
