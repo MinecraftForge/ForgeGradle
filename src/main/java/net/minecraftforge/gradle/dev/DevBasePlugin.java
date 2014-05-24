@@ -339,6 +339,15 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
     public String resolve(String pattern, Project project, DevExtension exten)
     {
         pattern = super.resolve(pattern, project, exten);
+
+        // For simplicities sake, if the version is in the standard format of {MC_VERSION}-{realVersion}
+        // lets trim the MC version from the replacement string.
+        String version = project.getVersion().toString();
+        if (version.startsWith(exten.getVersion() + "-"))
+        {
+            version = version.substring(exten.getVersion().length() + 1);
+        }
+        pattern = pattern.replace("{VERSION}", version);
         pattern = pattern.replace("{MAIN_CLASS}", exten.getMainClass());
         pattern = pattern.replace("{FML_TWEAK_CLASS}", exten.getTweakClass());
         pattern = pattern.replace("{INSTALLER_VERSION}", exten.getInstallerVersion());
