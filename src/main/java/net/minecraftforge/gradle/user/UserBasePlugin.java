@@ -57,6 +57,7 @@ import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.tasks.CopyAssetsTask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
+import net.minecraftforge.gradle.tasks.ExtractConfigTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
@@ -275,8 +276,9 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         project.getConfigurations().create(CONFIG_MC);
 
         // special userDev stuff
-        ExtractTask extractUserDev = makeTask("extractUserDev", ExtractTask.class);
-        extractUserDev.into(delayedFile("{USER_DEV}"));
+        ExtractConfigTask extractUserDev = makeTask("extractUserDev", ExtractConfigTask.class);
+        extractUserDev.setOut(delayedFile("{USER_DEV}"));
+        extractUserDev.setConfig(CONFIG_USERDEV);
         extractUserDev.setDoesCache(true);
         extractUserDev.doLast(new Action<Task>()
         {
@@ -286,10 +288,13 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 readAndApplyJson(getDevJson().call(), CONFIG_DEPS, CONFIG_NATIVES, arg0.getLogger());
             }
         });
+        project.getTasks().findByName("getAssetsIndex").dependsOn("extractUserDev");
 
         // special native stuff
-        ExtractTask extractNatives = makeTask("extractNatives", ExtractTask.class);
-        extractNatives.into(delayedFile(NATIVES_DIR));
+        ExtractConfigTask extractNatives = makeTask("extractNatives", ExtractConfigTask.class);
+        extractNatives.setOut(delayedFile(NATIVES_DIR));
+        extractNatives.setConfig(CONFIG_NATIVES);
+        extractNatives.exclude("META-INF/**", "META-INF/**");
         extractNatives.dependsOn("extractUserDev");
 
         // extra libs folder.
@@ -369,16 +374,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             log.info("RESOLVED: " + nativeConfig);
 
         hasAppliedJson = true;
-
-        // add stuff to the natives task thing..
-        // extract natives
-        ExtractTask task = (ExtractTask) project.getTasks().findByName("extractNatives");
-        for (File dep : project.getConfigurations().getByName(CONFIG_NATIVES).getFiles())
-        {
-            log.info("ADDING NATIVE: " + dep.getPath());
-            task.from(delayedFile(dep.getAbsolutePath()));
-            task.exclude("META-INF/**", "META-INF/**");
-        }
     }
 
     @SuppressWarnings({ "unchecked" })
@@ -934,11 +929,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
      */
     protected void delayedTaskConfig()
     {
-        // configure userDev extraction
-        // extract userdev
-        ((ExtractTask) project.getTasks().findByName("extractUserDev")).from(delayedFile(project.getConfigurations().getByName(CONFIG_USERDEV).getSingleFile().getAbsolutePath()));
-        project.getTasks().findByName("getAssetsIndex").dependsOn("extractUserDev");
-
         // add extraSRG lines to reobf task
         ((ReobfTask) project.getTasks().getByName("reobf")).setExtraSrg(getExtension().getSrgExtra());
         

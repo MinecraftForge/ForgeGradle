@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.tasks.abstractutil;
+package net.minecraftforge.gradle.tasks;
 
 import groovy.lang.Closure;
 
@@ -7,29 +7,31 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
 import org.apache.shiro.util.AntPathMatcher;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.io.ByteStreams;
 
-public class ExtractTask extends CachedTask
+public class ExtractConfigTask extends CachedTask
 {
     private final AntPathMatcher antMatcher = new AntPathMatcher();
     
-    @InputFiles
-    private LinkedHashSet<DelayedFile> sourcePaths = new LinkedHashSet<DelayedFile>();
+    @Input
+    private String config;
     
     @Input
     private List<String> excludes = new LinkedList<String>();
@@ -40,26 +42,20 @@ public class ExtractTask extends CachedTask
     @Input
     private List<String> includes = new LinkedList<String>();
     
-    @Input
-    private boolean includeEmptyDirs = true;
-    
-    @Cached
     @OutputDirectory
-    private DelayedFile destinationDir = null;
-
+    private DelayedFile out;
+    
     @TaskAction
-    public void doTask() throws IOException
+    public void doTask() throws ZipException, IOException
     {
-        if (!destinationDir.call().exists())
-        {
-            destinationDir.call().mkdirs();
-        }
-
-        for (DelayedFile source : sourcePaths)
+        File outDir = getOut();
+        outDir.mkdirs();
+        
+        for (File source : getConfigFiles())
         {
             getLogger().debug("Extracting: " + source);
 
-            ZipFile input = new ZipFile(source.call());
+            ZipFile input = new ZipFile(source);
             try
             {
                 Enumeration<? extends ZipEntry> itr = input.entries();
@@ -69,24 +65,17 @@ public class ExtractTask extends CachedTask
                     ZipEntry entry = itr.nextElement();
                     if (shouldExtract(entry.getName()))
                     {
-                        File out = new File(destinationDir.call(), entry.getName());
-                        getLogger().debug("  " + out);
-                        if (entry.isDirectory())
+                        File outFile = new File(outDir, entry.getName());
+                        getLogger().debug("  " + outFile);
+                        if (!entry.isDirectory())
                         {
-                            if (includeEmptyDirs && !out.exists())
-                            {
-                                out.mkdirs();
-                            }
-                        }
-                        else
-                        {
-                            File outParent = out.getParentFile();
+                            File outParent = outFile.getParentFile();
                             if (!outParent.exists())
                             {
                                 outParent.mkdirs();
                             }
     
-                            FileOutputStream fos = new FileOutputStream(out);
+                            FileOutputStream fos = new FileOutputStream(outFile);
                             InputStream ins = input.getInputStream(entry);
     
                             ByteStreams.copy(ins, fos);
@@ -103,7 +92,7 @@ public class ExtractTask extends CachedTask
             }
         }
     }
-
+    
     private boolean shouldExtract(String path)
     {
         for (String exclude : excludes)
@@ -133,38 +122,39 @@ public class ExtractTask extends CachedTask
         return includes.size() == 0; //If it gets to here, then it matches nothing. default to true, if no includes were specified
     }
 
-    public ExtractTask from(DelayedFile... paths)
+    public String getConfig()
     {
-        for (DelayedFile path : paths)
-        {
-            sourcePaths.add(path);
-        }
-        return this;
+        return config;
     }
 
-    public ExtractTask into(DelayedFile target)
+    public void setConfig(String config)
     {
-        destinationDir = target;
-        return this;
+        this.config = config;
     }
     
-    public ExtractTask setDestinationDir(DelayedFile target)
+    @Optional
+    @InputFiles
+    public FileCollection getConfigFiles()
     {
-        destinationDir = target;
-        return this;
-    }
-    
-    public File getDestinationDir()
-    {
-        return destinationDir.call();
+        return getProject().getConfigurations().getByName(config);
     }
 
+    public File getOut()
+    {
+        return out.call();
+    }
+
+    public void setOut(DelayedFile out)
+    {
+        this.out = out;
+    }
+    
     public List<String> getIncludes()
     {
         return includes;
     }
     
-    public ExtractTask include(String... paterns)
+    public ExtractConfigTask include(String... paterns)
     {
         for (String patern : paterns)
         {
@@ -178,7 +168,7 @@ public class ExtractTask extends CachedTask
         return excludes;
     }
 
-    public ExtractTask exclude(String... paterns)
+    public ExtractConfigTask exclude(String... paterns)
     {
         for (String patern : paterns)
         {
@@ -195,26 +185,6 @@ public class ExtractTask extends CachedTask
     public void exclude(Closure<Boolean> c)
     {
         excludeCalls.add(c);
-    }
-    
-    public FileCollection getSourcePaths()
-    {
-        FileCollection collection = getProject().files(new Object[] {});
-        
-        for (DelayedFile file : sourcePaths)
-            collection = collection.plus(getProject().files(file));
-                
-        return collection;
-    }
-
-    public boolean isIncludeEmptyDirs()
-    {
-        return includeEmptyDirs;
-    }
-
-    public void setIncludeEmptyDirs(boolean includeEmptyDirs)
-    {
-        this.includeEmptyDirs = includeEmptyDirs;
     }
     
     @Override
