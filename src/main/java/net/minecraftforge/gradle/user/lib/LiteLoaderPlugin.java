@@ -15,6 +15,7 @@ import org.gradle.api.Action;
 import org.gradle.api.Project;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 
 public class LiteLoaderPlugin extends UserLibBasePlugin
 {
@@ -132,7 +133,11 @@ public class LiteLoaderPlugin extends UserLibBasePlugin
     {
         return new ArrayList<String>(0);
     }
-
+    @Override
+    protected Iterable<String> getClientVMArgs()
+    {
+        return ImmutableList.of("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
+    }
     @Override
     protected String getServerRunClass()
     {
@@ -145,6 +150,11 @@ public class LiteLoaderPlugin extends UserLibBasePlugin
         return new ArrayList<String>(0);
     }
 
+    @Override
+    protected Iterable<String> getServerVMArgs()
+    {
+        return ImmutableList.of("-Xincgc", "-Dfml.ignoreInvalidMinecraftCertificates=true");
+    }
     @Override
     String actualApiName()
     {
