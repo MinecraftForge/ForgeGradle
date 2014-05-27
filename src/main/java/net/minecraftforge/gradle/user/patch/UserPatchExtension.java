@@ -20,6 +20,8 @@ public class UserPatchExtension extends UserExtension
 
     private String apiVersion;
     private ArrayList<Object> ats = new ArrayList<Object>();
+    private ArrayList<String> coreMods=new ArrayList<String>();
+
 
     public UserPatchExtension(UserPatchBasePlugin plugin)
     {
@@ -46,7 +48,23 @@ public class UserPatchExtension extends UserExtension
     {
         return ats;
     }
-    
+
+    public void coreMod(String obj)
+    {
+        coreMods.add(obj);
+    }
+
+    public void coreMods(String... obj)
+    {
+        for (String object : obj)
+            coreMods.add(object);
+    }
+
+    public List<String> getCoreMods()
+    {
+        return coreMods;
+    }
+
     public void setVersion(String str)
     {
         Matcher matcher = VERSION_CHECK.matcher(str);

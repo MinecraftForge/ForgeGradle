@@ -13,6 +13,7 @@ import static net.minecraftforge.gradle.user.patch.UserPatchConstants.RES_DIR;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 import net.minecraftforge.gradle.delayed.DelayedFile;
@@ -257,6 +258,18 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     }
 
     @Override
+    protected Iterable<String> getClientVMArgs()
+    {
+        ArrayList<String> coreMods=new ArrayList<String>();
+        for(String mod:getExtension().getCoreMods())
+        {
+            coreMods.add("-Dfml.coreMods.load="+mod);
+        }
+
+        return new ImmutableList.Builder<String>().addAll(ImmutableList.of("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true")).addAll(coreMods).build();
+    }
+
+    @Override
     protected String getServerRunClass()
     {
         return "cpw.mods.fml.relauncher.ServerLaunchWrapper";
@@ -268,6 +281,16 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
         return new ArrayList<String>(0);
     }
 
+    @Override
+    protected Iterable<String> getServerVMArgs()
+    {
+        ArrayList<String> coreMods=new ArrayList<String>();
+        for(String mod:getExtension().getCoreMods())
+        {
+            coreMods.add("-Dfml.coreMods.load="+mod);
+        }
+        return new ImmutableList.Builder<String>().addAll(ImmutableList.of("-Xincgc", "-Dfml.ignoreInvalidMinecraftCertificates=true")).addAll(coreMods).build();
+    }
     /**
      * Add in the desired patching stages.
      * This happens during normal evaluation, and NOT AfterEvaluate.
