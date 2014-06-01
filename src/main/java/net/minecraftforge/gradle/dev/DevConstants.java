@@ -63,7 +63,7 @@ final class DevConstants
     static final String ZIP_RENAMED_FORGE   = "{BUILD_DIR}/forgeTmp/minecraft_renamed.zip";
     
     //Cauldron  intermediate jars
-    static final String ZIP_FORGED_CDN     = "{BUILD_DIR}/cauldonTmp/minecraft_fmlpatched.zip";
+    static final String ZIP_FORGED_CDN     = "{BUILD_DIR}/cauldronTmp/minecraft_fmlpatched.zip";
     static final String ZIP_PATCHED_CDN    = "{BUILD_DIR}/cauldronTmp/minecraft_patched.zip";
     static final String ZIP_RENAMED_CDN    = "{BUILD_DIR}/cauldronTmp/minecraft_renamed.zip";
 
