@@ -535,6 +535,11 @@ public class ProcessJarTask extends CachedTask
     {
         return isClean();
     }
+    
+    public void setDirty()
+    {
+        isClean = false;
+    }
 
     public boolean getStripSynthetics()
     {
