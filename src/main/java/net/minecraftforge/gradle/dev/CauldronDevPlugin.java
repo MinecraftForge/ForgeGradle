@@ -157,7 +157,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             task6.dependsOn("forgePatchJar");
         }
          
-        task4 = makeTask("CauldronPatchJar", ProcessSrcJarTask.class);
+        task4 = makeTask("cauldronPatchJar", ProcessSrcJarTask.class);
         {
             //task4.setInJar(delayedFile(ZIP_FORGED_CDN)); UNCOMMENT FOR SRG NAMES
             task4.setInJar(delayedFile(REMAPPED_CLEAN));
@@ -165,7 +165,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             task4.addStage("Cauldron", delayedFile(CDN_PATCH_DIR));
             task4.setDoesCache(false);
             task4.setMaxFuzz(2);
-            task4.dependsOn("forgePatchJar");
+            task4.dependsOn("forgePatchJar", "remapCleanJar");
         }
         
         task6 = makeTask("remapCauldronJar", RemapSourcesTask.class);
@@ -177,7 +177,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             task6.setParamsCsv(delayedFile(PARAMS_CSV));
             task6.setDoesCache(true);
             task6.setNoJavadocs();
-            task6.dependsOn("CauldronPatchJar");
+            task6.dependsOn("cauldronPatchJar");
         }
     }
     
