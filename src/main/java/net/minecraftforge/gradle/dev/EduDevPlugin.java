@@ -138,7 +138,6 @@ public class EduDevPlugin extends DevBasePlugin
             task4.setOutJar(delayedFile(ZIP_FORGED_CDN));
             task4.addStage("fml", delayedFile(FML_PATCH_DIR), delayedFile(FML_SOURCES), delayedFile(FML_RESOURCES), delayedFile("{MAPPINGS_DIR}/patches/Start.java"), delayedFile(DEOBF_DATA), delayedFile(FML_VERSIONF));
             task4.addStage("forge", delayedFile(FORGE_PATCH_DIR), delayedFile(FORGE_SOURCES), delayedFile(FORGE_RESOURCES));
-            task4.addStage("bukkit", null, delayedFile(BUKKIT_SOURCES));
             task4.setDoesCache(false);
             task4.setMaxFuzz(2);
             task4.dependsOn("decompile", "compressDeobfData", "createVersionPropertiesFML");
