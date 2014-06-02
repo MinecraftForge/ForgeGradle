@@ -36,7 +36,7 @@ import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.bundling.Zip;
 
-public class CauldronDevPlugin extends DevBasePlugin
+public class EduDevPlugin extends DevBasePlugin
 {
     @Override
     public void applyPlugin()
@@ -46,7 +46,6 @@ public class CauldronDevPlugin extends DevBasePlugin
         // set folders
         getExtension().setFmlDir("forge/fml");
         getExtension().setForgeDir("forge");
-        getExtension().setBukkitDir("bukkit");
         
         // configure genSrg task.
         GenSrgTask genSrgTask = (GenSrgTask) project.getTasks().getByName("genSrgs");
@@ -85,9 +84,9 @@ public class CauldronDevPlugin extends DevBasePlugin
         createPackageTasks();
 
         // the master setup task.
-        Task task = makeTask("setupCauldron", DefaultTask.class);
-        task.dependsOn("extractCauldronSources", "generateProjects", "eclipse", "copyAssets");
-        task.setGroup("Cauldron");
+        Task task = makeTask("setupMcEdu", DefaultTask.class);
+        task.dependsOn("extractMcEduSources", "generateProjects", "eclipse", "copyAssets");
+        task.setGroup("McEdu");
         
         // clean packages
         {
@@ -99,7 +98,7 @@ public class CauldronDevPlugin extends DevBasePlugin
         task = makeTask("buildPackages");
         //task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "genJavadocs");
         task.dependsOn("cleanPackages", "packageUniversal", "packageInstaller");
-        task.setGroup("Cauldron");
+        task.setGroup("McEdu");
     }
     
     @Override
@@ -157,18 +156,18 @@ public class CauldronDevPlugin extends DevBasePlugin
             task6.dependsOn("forgePatchJar");
         }
          
-        task4 = makeTask("cauldronPatchJar", ProcessSrcJarTask.class);
+        task4 = makeTask("eduPatchJar", ProcessSrcJarTask.class);
         {
             //task4.setInJar(delayedFile(ZIP_FORGED_CDN)); UNCOMMENT FOR SRG NAMES
             task4.setInJar(delayedFile(REMAPPED_CLEAN));
             task4.setOutJar(delayedFile(ZIP_PATCHED_CDN));
-            task4.addStage("Cauldron", delayedFile(EXTRA_PATCH_DIR));
+            task4.addStage("McEdu", delayedFile(EXTRA_PATCH_DIR));
             task4.setDoesCache(false);
             task4.setMaxFuzz(2);
             task4.dependsOn("forgePatchJar", "remapCleanJar");
         }
         
-        task6 = makeTask("remapCauldronJar", RemapSourcesTask.class);
+        task6 = makeTask("remapMcEduJar", RemapSourcesTask.class);
         {
             task6.setInJar(delayedFile(ZIP_PATCHED_CDN));
             task6.setOutJar(delayedFile(ZIP_RENAMED_CDN));
@@ -177,7 +176,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             task6.setParamsCsv(delayedFile(PARAMS_CSV));
             task6.setDoesCache(true);
             task6.setNoJavadocs();
-            task6.dependsOn("cauldronPatchJar");
+            task6.dependsOn("eduPatchJar");
         }
     }
     
@@ -202,12 +201,12 @@ public class CauldronDevPlugin extends DevBasePlugin
             task.dependsOn("extractCleanResources");
         }
 
-        task = makeTask("extractCauldronResources", ExtractTask.class);
+        task = makeTask("extractMcEduResources", ExtractTask.class);
         {
             task.exclude(JAVA_FILES);
             task.from(delayedFile(ZIP_RENAMED_CDN));
             task.into(delayedFile(ECLIPSE_CDN_RES));
-            task.dependsOn("remapCauldronJar", "extractWorkspace");
+            task.dependsOn("remapMcEduJar", "extractWorkspace");
             task.onlyIf(new Spec() {
 
                 @Override
@@ -226,12 +225,12 @@ public class CauldronDevPlugin extends DevBasePlugin
             });
         }
 
-        task = makeTask("extractCauldronSources", ExtractTask.class);
+        task = makeTask("extractMcEduSources", ExtractTask.class);
         {
             task.include(JAVA_FILES);
             task.from(delayedFile(ZIP_RENAMED_CDN));
             task.into(delayedFile(ECLIPSE_CDN_SRC));
-            task.dependsOn("extractCauldronResources");
+            task.dependsOn("extractMcEduResources");
             task.onlyIf(new Spec() {
 
                 @Override
@@ -294,7 +293,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             task.dependsOn("extractNatives");
         }
 
-        task = makeTask("generateProjectCauldron", GenDevProjectsTask.class);
+        task = makeTask("generateProjectMcEdu", GenDevProjectsTask.class);
         {
             task.setJson(delayedFile(EXTRA_JSON_DEV));
             task.setTargetDir(delayedFile(ECLIPSE_CDN));
@@ -311,7 +310,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             task.dependsOn("extractRes", "extractNatives","createVersionPropertiesFML");
         }
 
-        makeTask("generateProjects").dependsOn("generateProjectClean", "generateProjectCauldron");
+        makeTask("generateProjects").dependsOn("generateProjectClean", "generateProjectMcEdu");
     }
     
     private void createEclipseTasks()
@@ -323,14 +322,14 @@ public class CauldronDevPlugin extends DevBasePlugin
             task.dependsOn("extractCleanSource", "generateProjects");
         }
 
-        task = makeTask("eclipseCauldron", SubprojectTask.class);
+        task = makeTask("eclipseMcEdu", SubprojectTask.class);
         {
             task.setBuildFile(delayedFile(ECLIPSE_CDN + "/build.gradle"));
             task.setTasks("eclipse");
-            task.dependsOn("extractCauldronSources", "generateProjects");
+            task.dependsOn("extractMcEduSources", "generateProjects");
         }
 
-        makeTask("eclipse").dependsOn("eclipseClean", "eclipseCauldron");
+        makeTask("eclipse").dependsOn("eclipseClean", "eclipseMcEdu");
     }
     
     @SuppressWarnings("unused")
@@ -339,14 +338,14 @@ public class CauldronDevPlugin extends DevBasePlugin
         DelayedFile rangeMapClean = delayedFile("{BUILD_DIR}/tmp/rangemapCLEAN.txt");
         DelayedFile rangeMapDirty = delayedFile("{BUILD_DIR}/tmp/rangemapDIRTY.txt");
         
-        ExtractS2SRangeTask extractRange = makeTask("extractRangeCauldron", ExtractS2SRangeTask.class);
+        ExtractS2SRangeTask extractRange = makeTask("extractRangeMcEdu", ExtractS2SRangeTask.class);
         {
             extractRange.setLibsFromProject(delayedFile(ECLIPSE_CDN + "/build.gradle"), "compile", true);
             extractRange.addIn(delayedFile(ECLIPSE_CDN_SRC));
             extractRange.setRangeMap(rangeMapDirty);
         }
         
-        ApplyS2STask applyS2S = makeTask("retroMapCauldron", ApplyS2STask.class);
+        ApplyS2STask applyS2S = makeTask("retroMapMcEdu", ApplyS2STask.class);
         {
             applyS2S.addIn(delayedFile(ECLIPSE_CDN_SRC));
             applyS2S.setOut(delayedFile(PATCH_DIRTY));
@@ -383,7 +382,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             task2.setOriginalPrefix("../src-base/minecraft");
             task2.setChangedPrefix("../src-work/minecraft");
             task2.getTaskDependencies().getDependencies(task2).clear(); // remove all the old dependants.
-            task2.setGroup("Cauldron");
+            task2.setGroup("McEdu");
         }
         
         if (false) // COMMENT OUT SRG PATCHES!
@@ -393,16 +392,16 @@ public class CauldronDevPlugin extends DevBasePlugin
             task2.setChanged(delayedFile(PATCH_DIRTY)); // ECLIPSE_FORGE_SRC
             task2.setOriginalPrefix("../src-base/minecraft");
             task2.setChangedPrefix("../src-work/minecraft");
-            task2.dependsOn("retroMapCauldron", "retroMapClean");
-            task2.setGroup("Cauldron");
+            task2.dependsOn("retroMapMcEdu", "retroMapClean");
+            task2.setGroup("McEdu");
         }
 
-        Delete clean = makeTask("cleanCauldron", Delete.class);
+        Delete clean = makeTask("cleanMcEdu", Delete.class);
         {
             clean.delete("eclipse");
             clean.setGroup("Clean");
         }
-        project.getTasks().getByName("clean").dependsOn("cleanCauldron");
+        project.getTasks().getByName("clean").dependsOn("cleanMcEdu");
 
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
@@ -536,7 +535,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             task.setOutputFile(delayedFile(INSTALL_PROFILE));
             task.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
             task.addReplacement("@version@", delayedString("{VERSION}"));
-            task.addReplacement("@project@", delayedString("cauldron"));
+            task.addReplacement("@project@", delayedString("minecraft-edu"));
             task.addReplacement("@artifact@", delayedString("net.minecraftforge:forge:{MC_VERSION}-{VERSION}"));
             task.addReplacement("@universal_jar@", new Closure<String>(project)
             {
@@ -589,7 +588,7 @@ public class CauldronDevPlugin extends DevBasePlugin
         task.configureProject(getExtension().getSubprojects());
         task.configureProject(getExtension().getCleanProject());
         
-        task = (SubprojectTask) project.getTasks().getByName("eclipseCauldron");
+        task = (SubprojectTask) project.getTasks().getByName("eclipseMcEdu");
         task.configureProject(getExtension().getSubprojects());
         task.configureProject(getExtension().getCleanProject());
     }
