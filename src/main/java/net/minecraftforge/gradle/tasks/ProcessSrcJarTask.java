@@ -179,9 +179,9 @@ public class ProcessSrcJarTask extends EditJarTask
         return patches;
     }
 
-    public PatchedFile readPatch(File file) throws IOException
+    private PatchedFile readPatch(File file) throws IOException
     {
-        getLogger().debug("Reading patch file: {}");
+        getLogger().debug("Reading patch file: {}", file);
         return new PatchedFile(file);
     }
 
