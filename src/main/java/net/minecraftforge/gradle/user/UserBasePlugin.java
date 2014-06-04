@@ -84,6 +84,7 @@ import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.ScalaSourceSet;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.Jar;
+import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.api.tasks.compile.GroovyCompile;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.scala.ScalaCompile;
@@ -874,6 +875,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         }
     }
     
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public final void afterEvaluate()
     {
@@ -922,6 +924,21 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         
         // post decompile status thing.
         configurePostDecomp(getExtension().isDecomp());
+        
+        {
+            // stop getting empty dirs
+            Action act = new Action() {
+                @Override
+                public void execute(Object arg0)
+                {
+                    Zip task = (Zip) arg0;
+                    task.setIncludeEmptyDirs(false);
+                }
+            };
+
+            project.getTasks().withType(Jar.class, act);
+            project.getTasks().withType(Zip.class, act);
+        }
     }
     
     /**
