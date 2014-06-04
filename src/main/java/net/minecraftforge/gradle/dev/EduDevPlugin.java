@@ -400,7 +400,6 @@ public class EduDevPlugin extends DevBasePlugin
             clean.delete("eclipse");
             clean.setGroup("Clean");
         }
-        project.getTasks().getByName("clean").dependsOn("cleanMcEdu");
 
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
@@ -450,6 +449,8 @@ public class EduDevPlugin extends DevBasePlugin
     @SuppressWarnings("serial")
     private void createPackageTasks()
     {
+        project.getConfigurations().maybeCreate("archives");
+        
         /*
         ChangelogTask log = makeTask("createChangelog", ChangelogTask.class);
         {

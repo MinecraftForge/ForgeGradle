@@ -62,7 +62,10 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
         // apply L4J
         this.applyExternalPlugin("launch4j");
 
-        project.getTasks().getByName("uploadArchives").dependsOn("launch4j");
+        if (project.getTasks().findByName("uploadArchives") != null)
+        {
+            project.getTasks().getByName("uploadArchives").dependsOn("launch4j");
+        }
 
         ExtractTask task = makeTask("extractWorkspace", ExtractTask.class);
         {
