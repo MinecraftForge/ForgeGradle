@@ -1,5 +1,7 @@
 package net.minecraftforge.gradle.common;
 
+import java.util.LinkedList;
+
 import org.gradle.api.Project;
 
 public class BaseExtension
@@ -8,6 +10,7 @@ public class BaseExtension
     protected String version = "null";
     protected String mcpVersion = "unknown";
     protected String assetDir = "eclipse/assets";
+    private LinkedList<String> srgExtra = new LinkedList<String>();
 
     public BaseExtension(Project project)
     {
@@ -42,5 +45,15 @@ public class BaseExtension
     public String getAssetDir()
     {
         return this.assetDir;
+    }
+
+    public LinkedList<String> getSrgExtra()
+    {
+        return srgExtra;
+    }
+    
+    public void srgExtra(String in)
+    {
+        srgExtra.add(in);
     }
 }

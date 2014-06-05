@@ -30,6 +30,7 @@ import net.minecraftforge.gradle.tasks.abstractutil.DownloadTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.dev.CompressLZMA;
 import net.minecraftforge.gradle.tasks.dev.MergeMappingsTask;
+import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
 
 import org.apache.shiro.util.AntPathMatcher;
 import org.gradle.api.Action;
@@ -220,6 +221,16 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
         super.afterEvaluate();
         
         configureLaunch4J();
+        
+        // set obfuscate extras
+        Task t = project.getTasks().getByName("obfuscateJar");
+        if (t != null)
+        {
+            ObfuscateTask obf = ((ObfuscateTask)t);
+            obf.setExtraSrg(getExtension().getSrgExtra());
+            obf.configureProject(getExtension().getSubprojects());
+            obf.configureProject(getExtension().getDirtyProject());
+        }
         
         try
         {

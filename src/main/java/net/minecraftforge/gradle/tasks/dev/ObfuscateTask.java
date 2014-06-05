@@ -1,13 +1,16 @@
 package net.minecraftforge.gradle.tasks.dev;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 import net.md_5.specialsource.Jar;
 import net.md_5.specialsource.JarMapping;
@@ -18,6 +21,7 @@ import net.md_5.specialsource.provider.JointProvider;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.dev.FmlDevPlugin;
 
+import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
@@ -33,21 +37,44 @@ public class ObfuscateTask extends DefaultTask
     private DelayedFile srg;
     private boolean     reverse;
     private DelayedFile buildFile;
+    private LinkedList<Action<Project>> configureProject = new LinkedList<Action<Project>>();
+    private LinkedList<String> extraSrg = new LinkedList<String>();
 
     @TaskAction
     public void doTask() throws IOException
     {
         getLogger().debug("Building child project model...");
         Project childProj = FmlDevPlugin.getProject(getBuildFile(), getProject());
+        for (Action<Project> act : configureProject)
+        {
+            if (act != null)
+                act.execute(childProj);
+        }
+        
         AbstractTask compileTask = (AbstractTask) childProj.getTasks().getByName("compileJava");
         AbstractTask jarTask = (AbstractTask) childProj.getTasks().getByName("jar");
 
         // executing jar task
         getLogger().debug("Executing child Jar task...");
         executeTask(jarTask);
+        
+        // copy srg
+        File tempSrg = File.createTempFile("obf", ".srg", this.getTemporaryDir());
+        Files.copy(getSrg(), tempSrg);
+        
+        // append SRG
+        BufferedWriter writer = new BufferedWriter(new FileWriter(tempSrg, true));
+        for (String line : extraSrg)
+        {
+            writer.write(line);
+            writer.newLine();
+        }
+        writer.flush();
+        writer.close();
+        
 
         getLogger().debug("Obfuscating jar...");
-        obfuscate((File)jarTask.property("archivePath"), (FileCollection)compileTask.property("classpath"));
+        obfuscate((File)jarTask.property("archivePath"),tempSrg,  (FileCollection)compileTask.property("classpath"));
     }
     
     private void executeTask(AbstractTask task)
@@ -64,11 +91,11 @@ public class ObfuscateTask extends DefaultTask
         }
     }
 
-    private void obfuscate(File inJar, FileCollection classpath) throws FileNotFoundException, IOException
+    private void obfuscate(File inJar, File srg, FileCollection classpath) throws FileNotFoundException, IOException
     {
         // load mapping
         JarMapping mapping = new JarMapping();
-        mapping.loadMappings(Files.newReader(getSrg(), Charset.defaultCharset()), null, null, reverse);
+        mapping.loadMappings(Files.newReader(srg, Charset.defaultCharset()), null, null, reverse);
 
         // make remapper
         JarRemapper remapper = new JarRemapper(null, mapping);
@@ -143,6 +170,21 @@ public class ObfuscateTask extends DefaultTask
     public void setReverse(boolean reverse)
     {
         this.reverse = reverse;
+    }
+    
+    public void configureProject(Action<Project> action)
+    {
+        configureProject.add(action);
+    }
+    
+    public LinkedList<String> getExtraSrg()
+    {
+        return extraSrg;
+    }
+
+    public void setExtraSrg(LinkedList<String> extraSrg)
+    {
+        this.extraSrg = extraSrg;
     }
 
     public File getBuildFile()
