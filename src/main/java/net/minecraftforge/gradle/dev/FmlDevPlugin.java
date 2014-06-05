@@ -25,6 +25,7 @@ import net.minecraftforge.gradle.tasks.dev.GeneratePatches;
 import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
 import net.minecraftforge.gradle.tasks.dev.SubprojectTask;
 
+import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -347,15 +348,14 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             javadocJar.setBuildFile(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"));
             javadocJar.setTasks("jar");
-            javadocJar.setConfigureTask(new Closure<Object>(this, null) {
-                public Object call(Object obj)
+            javadocJar.setConfigureTask(new Action<Task>() {
+                @Override
+                public void execute(Task obj)
                 {
                     Jar task = (Jar) obj;
                     File file = delayedFile(DevConstants.JAVADOC_TMP).call();
                     task.setDestinationDir(file.getParentFile());
                     task.setArchiveName(file.getName());
-
-                    return null;
                 }
             });
         }

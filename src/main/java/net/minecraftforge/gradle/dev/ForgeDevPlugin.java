@@ -38,8 +38,8 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.java.archives.Manifest;
 import org.gradle.api.tasks.Delete;
+import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
-import org.gradle.api.tasks.javadoc.Javadoc;
 
 import com.google.common.base.Throwables;
 
@@ -446,12 +446,14 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             javadocJar.setBuildFile(delayedFile(ECLIPSE_FORGE + "/build.gradle"));
             javadocJar.setTasks("javadoc");
-            javadocJar.setConfigureTask(new Closure<Object>(this, null) {
-                public Object call(Object obj)
+            javadocJar.setConfigureTask(new Action<Task>() {
+                @Override
+                public void execute(Task obj)
                 {
-                    Javadoc task = (Javadoc)obj;
-                    task.setDestinationDir(javadoc_temp);
-                    return null;
+                    Jar task = (Jar) obj;
+                    File file = delayedFile(DevConstants.JAVADOC_TMP).call();
+                    task.setDestinationDir(file.getParentFile());
+                    task.setArchiveName(file.getName());
                 }
             });
         }

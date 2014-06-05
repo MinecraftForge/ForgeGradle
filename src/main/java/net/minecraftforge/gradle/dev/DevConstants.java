@@ -4,10 +4,7 @@ import net.minecraftforge.gradle.common.Constants;
 
 final class DevConstants
 {
-    private DevConstants()
-    {
-
-    }
+    private DevConstants() { }
 
     static final String INSTALLER_URL       = "http://files.minecraftforge.net/installer/forge-installer-{INSTALLER_VERSION}-shrunk.jar";
     static final String LAUNCH4J_URL        = "http://files.minecraftforge.net/launch4j/launch4j-3.0.0-"+Constants.OPERATING_SYSTEM+"-"+Constants.SYSTEM_ARCH+".zip";
@@ -86,14 +83,40 @@ final class DevConstants
     static final String FML_LOGO            = "{FML_DIR}/jsons/big_logo.png";
 
     // Forge stuff only
-    static final String FORGE_PATCH_DIR     = "patches/minecraft";
-    static final String FORGE_SOURCES       = "src/main/java";
-    static final String FORGE_RESOURCES     = "src/main/resources";
-    static final String FORGE_TEST_SOURCES  = "src/test/java";
-    static final String FORGE_LICENSE       = "MinecraftForge-License.txt";
-    static final String FORGE_CREDITS       = "MinecraftForge-Credits.txt";
-    static final String PAULSCODE_LISCENCE1 = "Paulscode IBXM Library License.txt";
-    static final String PAULSCODE_LISCENCE2 = "Paulscode SoundSystem CodecIBXM License.txt";
+    static final String FORGE_PATCH_DIR     = "{FORGE_DIR}/patches/minecraft";
+    static final String FORGE_SOURCES       = "{FORGE_DIR}/src/main/java";
+    static final String FORGE_RESOURCES     = "{FORGE_DIR}/src/main/resources";
+    static final String FORGE_TEST_SOURCES  = "{FORGE_DIR}/src/test/java";
+    static final String FORGE_LICENSE       = "{FORGE_DIR}/MinecraftForge-License.txt";
+    static final String FORGE_CREDITS       = "{FORGE_DIR}/MinecraftForge-Credits.txt";
+    static final String PAULSCODE_LISCENCE1 = "{FORGE_DIR}/Paulscode IBXM Library License.txt";
+    static final String PAULSCODE_LISCENCE2 = "{FORGE_DIR}/Paulscode SoundSystem CodecIBXM License.txt";
     static final String FORGE_LOGO          = FORGE_RESOURCES + "/forge_logo.png";
     static final String FORGE_VERSION_JAVA  = FORGE_SOURCES + "/net/minecraftforge/common/ForgeVersion.java";
+
+    // Cauldron intermediate jars
+    static final String JAR_SRG_CDN         = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/minecraft_srg_cdn-{MC_VERSION}.jar";
+    static final String ZIP_DECOMP_CDN      = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_decomp_cdn-{MC_VERSION}.zip";
+    static final String ZIP_FMLED_CDN       = "{BUILD_DIR}/cdnTmp/minecraft_fmlpatched.zip";
+    static final String ZIP_INJECT_CDN      = "{BUILD_DIR}/cdnTmp/minecraft_fmlinjected.zip";
+    static final String ZIP_RENAMED_CDN     = "{BUILD_DIR}/cdnTmp/minecraft_renamed.zip";
+    static final String ZIP_FINJECT_CDN     = "{BUILD_DIR}/cdnTmp/minecraft_forgeinjected.zip";
+    static final String ZIP_FORGED_CDN      = "{BUILD_DIR}/cdnTmp/minecraft_forged.zip";
+    static final String ZIP_PATCHED_CDN     = "{BUILD_DIR}/cdnTmp/minecraft_patched.zip";
+    static final String CDN_JSON_DEV        = "jsons/{MC_VERSION}-dev.json";
+    static final String CDN_JSON_REL        = "jsons/{MC_VERSION}-rel.json";
+    static final String CDN_JSON_BASE       = "jsons/{MC_VERSION}.json";
+    static final String ECLIPSE_CLEAN_SRC   = ECLIPSE_CLEAN + "/src/main/java";
+    static final String ECLIPSE_CLEAN_RES   = ECLIPSE_CLEAN + "/src/main/resources";
+    static final String ECLIPSE_CDN         = WORKSPACE + "/Cauldron";
+    static final String ECLIPSE_CDN_SRC     = ECLIPSE_CDN + "/src/main/java";
+    static final String ECLIPSE_CDN_RES     = ECLIPSE_CDN + "/src/main/resources";
+    static final String CDN_PATCH_DIR       = "patches";
+    static final String CDN_SOURCES         = "src/main/java";
+    static final String CDN_RESOURCES       = "src/main/resources";
+    static final String CDN_TEST_SOURCES    = "src/test/java";
+    static final String CDN_TEST_RES        = "src/test/resources";
+    static final String BUKKIT_SOURCES      = "{BUKKIT_DIR}/src/main/java";
+    static final String BUKKIT_RESOURCES    = "{BUKKIT_DIR}/src/main/resources";
+    static final String EXTRACTED_RES       = "{BUILD_DIR}/extractedResources";
 }
