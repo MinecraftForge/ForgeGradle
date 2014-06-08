@@ -87,6 +87,8 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         this.applyExternalPlugin("eclipse");
         this.applyExternalPlugin("idea");
 
+        addGitIgnore(); //Morons -.-
+
         configureDeps();
         configureCompilation();
         configureEclipse();
@@ -861,5 +863,19 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
     private DelayedFile df(String file, String... alts)
     {
         return delayedFile(file, alts);
+    }
+
+    private void addGitIgnore()
+    {
+        File git = new File(project.getBuildDir(), ".gitignore");
+        if (!git.exists())
+        {
+            git.mkdir();
+            try
+            {
+                Files.write("#Seriously guys, stop commiting this to your git repo!\r\n*".getBytes(), git);
+            }
+            catch (IOException e){}
+        }
     }
 }
