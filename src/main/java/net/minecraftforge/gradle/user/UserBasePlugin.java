@@ -118,6 +118,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         hasScalaBefore = project.getPlugins().hasPlugin("scala");
         hasGroovyBefore = project.getPlugins().hasPlugin("groovy");
         
+        addGitIgnore(); //Morons -.-
+        
         configureDeps();
         configureCompilation();
         fixEclipseNatives();
@@ -1100,5 +1102,19 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     protected Class<T> getExtensionClass()
     {
         return (Class<T>) UserExtension.class;
+    }
+
+    private void addGitIgnore()
+    {
+        File git = new File(project.getBuildDir(), ".gitignore");
+        if (!git.exists())
+        {
+            git.mkdir();
+            try
+            {
+                Files.write("#Seriously guys, stop commiting this to your git repo!\r\n*".getBytes(), git);
+            }
+            catch (IOException e){}
+        }
     }
 }
