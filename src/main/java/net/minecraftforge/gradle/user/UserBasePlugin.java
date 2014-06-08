@@ -1109,7 +1109,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         File git = new File(project.getBuildDir(), ".gitignore");
         if (!git.exists())
         {
-            git.mkdir();
+            git.getParentFile().mkdir();
             try
             {
                 Files.write("#Seriously guys, stop commiting this to your git repo!\r\n*".getBytes(), git);
