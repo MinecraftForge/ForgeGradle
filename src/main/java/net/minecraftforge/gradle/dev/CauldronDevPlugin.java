@@ -26,6 +26,7 @@ import net.minecraftforge.gradle.tasks.dev.SubprojectTask;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;
+import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.java.archives.Manifest;
 import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.bundling.Zip;
@@ -375,10 +376,10 @@ public class CauldronDevPlugin extends DevBasePlugin
             uni.getInputs().file(delayedFile(CDN_JSON_REL));
             uni.getOutputs().upToDateWhen(Constants.CALL_FALSE);
             uni.from(delayedZipTree(BINPATCH_TMP));
-            uni.from(delayedFileTree(FML_RESOURCES));
-            uni.from(delayedFileTree(FORGE_RESOURCES));
             uni.from(delayedFileTree(CDN_RESOURCES));
             uni.from(delayedFileTree(EXTRACTED_RES));
+            uni.from(delayedFileTree(FML_RESOURCES));
+            uni.from(delayedFileTree(FORGE_RESOURCES));
             uni.from(delayedFile(FML_VERSIONF));
             uni.from(delayedFile(FML_LICENSE));
             uni.from(delayedFile(FML_CREDITS));
@@ -390,6 +391,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             uni.from(delayedFile(CHANGELOG));
             uni.from(delayedFile(VERSION_JSON));
             uni.exclude("devbinpatches.pack.lzma");
+            uni.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
             uni.setIncludeEmptyDirs(false);
             uni.setManifest(new Closure<Object>(project)
             {
