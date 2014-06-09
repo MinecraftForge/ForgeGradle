@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.tasks.dev;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -64,11 +65,19 @@ public class ObfuscateTask extends DefaultTask
         
         // append SRG
         BufferedWriter writer = new BufferedWriter(new FileWriter(tempSrg, true));
-        for (String line : extraSrg)
+        BufferedReader reader = Files.newReader(getSrg(), Charset.defaultCharset());
+        for (String line1 : extraSrg)
+        {
+            writer.write(line1);
+            writer.newLine();
+        }
+        String line;
+        while ((line = reader.readLine()) != null)
         {
             writer.write(line);
             writer.newLine();
         }
+        reader.close();
         writer.flush();
         writer.close();
         
