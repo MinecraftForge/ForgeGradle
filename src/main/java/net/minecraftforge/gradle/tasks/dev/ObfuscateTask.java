@@ -61,10 +61,9 @@ public class ObfuscateTask extends DefaultTask
         
         // copy srg
         File tempSrg = File.createTempFile("obf", ".srg", this.getTemporaryDir());
-        Files.copy(getSrg(), tempSrg);
         
         // append SRG
-        BufferedWriter writer = new BufferedWriter(new FileWriter(tempSrg, true));
+        BufferedWriter writer = Files.newWriter(tempSrg, Charset.defaultCharset());
         BufferedReader reader = Files.newReader(getSrg(), Charset.defaultCharset());
         for (String line1 : extraSrg)
         {
