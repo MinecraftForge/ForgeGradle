@@ -25,11 +25,15 @@ public class FMLVersionPropTask extends DefaultTask
     @TaskAction
     public void doTask() throws IOException
     {
-        String[] v;
+        String fullVersion;
         if (this.version == null)
-            v = ((String)getProject().getVersion()).split("-")[1].split("\\.");
+            fullVersion = (String)getProject().getVersion();
         else
-            v = this.version.call().split("-")[1].split("\\.");
+            fullVersion = this.version.call();
+
+        String mcVersion = new DelayedString(getProject(), "{MC_VERSION}").call();
+        fullVersion = fullVersion.substring(mcVersion.length());
+        String[] v =fullVersion.split("-")[1].split("\\.");
         String data =
         "fmlbuild.major.number="    + v[0] + "\n" +
         "fmlbuild.minor.number="    + v[1] + "\n" +
