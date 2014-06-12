@@ -76,7 +76,7 @@ public class CauldronDevPlugin extends DevBasePlugin
     
     protected void createJarProcessTasks()
     {
-        ProcessJarTask task2 = makeTask("deobfuscateJar", ProcessJarTask.class);
+        ProcessJarTask task2 = makeTask("deobfBinJar", ProcessJarTask.class);
         {
             task2.setInJar(delayedFile(Constants.JAR_MERGED));
             task2.setOutCleanJar(delayedFile(JAR_SRG_CDN));
@@ -86,7 +86,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             task2.addTransformer(delayedFile(FORGE_RESOURCES + "/forge_at.cfg"));
             task2.dependsOn("downloadMcpTools", "fixMappings", "mergeJars");
         }
-
+        
         DecompileTask task3 = makeTask("decompile", DecompileTask.class);
         {
             task3.setInJar(delayedFile(JAR_SRG_CDN));
@@ -94,7 +94,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             task3.setFernFlower(delayedFile(Constants.FERNFLOWER));
             task3.setPatch(delayedFile(PACKAGED_PATCH));
             task3.setAstyleConfig(delayedFile(ASTYLE_CFG));
-            task3.dependsOn("downloadMcpTools", "deobfuscateJar");
+            task3.dependsOn("downloadMcpTools", "deobfBinJar");
         }
 
         PatchJarTask task4 = makeTask("fmlPatchJar", PatchJarTask.class);
@@ -308,6 +308,7 @@ public class CauldronDevPlugin extends DevBasePlugin
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
             obf.setSrg(delayedFile(MCP_2_NOTCH_SRG));
+            obf.setReverse(false);
             obf.setPreFFJar(delayedFile(JAR_SRG_CDN));
             obf.setOutJar(delayedFile(REOBF_TMP));
             obf.setBuildFile(delayedFile(ECLIPSE_CDN + "/build.gradle"));
@@ -326,7 +327,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             task3.addPatchList(delayedFileTree(CDN_PATCH_DIR));
             task3.addPatchList(delayedFileTree(FORGE_PATCH_DIR));
             task3.addPatchList(delayedFileTree(FML_PATCH_DIR));
-            task3.dependsOn("obfuscateJar", "compressDeobfData");
+            task3.dependsOn("obfuscateJar", "compressDeobfData", "fixMappings");
         }
 
         /*
