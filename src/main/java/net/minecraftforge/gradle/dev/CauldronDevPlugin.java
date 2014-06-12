@@ -400,7 +400,6 @@ public class CauldronDevPlugin extends DevBasePlugin
                 {
                     Manifest mani = (Manifest) getDelegate();
                     mani.getAttributes().put("Main-Class", delayedString("{MAIN_CLASS}").call());
-                    mani.getAttributes().put("TweakClass", delayedString("{FML_TWEAK_CLASS}").call());
                     mani.getAttributes().put("Class-Path", getServerClassPath(delayedFile(CDN_JSON_REL).call()));
                     return null;
                 }
@@ -435,7 +434,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             task.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
             task.addReplacement("@version@", delayedString("{VERSION}"));
             task.addReplacement("@project@", delayedString("cauldron"));
-            task.addReplacement("@artifact@", delayedString("net.minecraftforge:forge:{MC_VERSION}-{VERSION}"));
+            task.addReplacement("@artifact@", delayedString("net.minecraftforge:cauldron:{MC_VERSION}-{VERSION}"));
             task.addReplacement("@universal_jar@", new Closure<String>(project)
             {
                 public String call()
