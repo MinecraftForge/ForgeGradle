@@ -75,6 +75,7 @@ import org.gradle.api.XmlProvider;
 import org.gradle.api.artifacts.Configuration.State;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.execution.TaskExecutionGraph;
+import org.gradle.api.internal.ConventionTask;
 import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -883,6 +884,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     {
         super.afterEvaluate();
         
+        // version checks
         {
             String version = getMcVersion(getExtension());
             if (hasApiVersion())
@@ -929,7 +931,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         
         {
             // stop getting empty dirs
-            Action act = new Action() {
+            Action<ConventionTask> act = new Action() {
                 @Override
                 public void execute(Object arg0)
                 {
@@ -946,6 +948,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     /**
      * Allows for the configuration of tasks in AfterEvaluate
      */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     protected void delayedTaskConfig()
     {
         // add extraSRG lines to reobf task
@@ -1007,6 +1010,15 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             t.replace(getExtension().getReplacements());
             t.include(getExtension().getIncludes());
         }
+        
+        // use zinc for scala compilation
+        project.getTasks().withType(ScalaCompile.class, new Action() {
+            @Override
+            public void execute(Object arg0)
+            {
+                ((ScalaCompile) arg0).getScalaCompileOptions().setUseAnt(false);
+            }
+        });
     }
     
     /**
