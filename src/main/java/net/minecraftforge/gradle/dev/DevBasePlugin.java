@@ -310,7 +310,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
                     buf.append(String.format("libraries/%s/%s/%s/%s-%s.jar ", pts[0].replace('.', '/'), pts[1], pts[2], pts[1], pts[2]));
                 }
             }
-            buf.append(delayedString("minecraft_server.{MC_VERSION}").call());
+            buf.append(delayedString("minecraft_server.{MC_VERSION}.jar").call());
             return buf.toString();
         }
         catch (Exception e)
