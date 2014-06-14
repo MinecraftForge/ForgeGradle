@@ -17,6 +17,7 @@ import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DelayedJar;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.abstractutil.FileFilterTask;
+import net.minecraftforge.gradle.tasks.dev.ChangelogTask;
 import net.minecraftforge.gradle.tasks.dev.FMLVersionPropTask;
 import net.minecraftforge.gradle.tasks.dev.GenBinaryPatches;
 import net.minecraftforge.gradle.tasks.dev.GenDevProjectsTask;
@@ -350,7 +351,7 @@ public class CauldronDevPlugin extends DevBasePlugin
     @SuppressWarnings("serial")
     private void createPackageTasks()
     {
-        /*
+        
         ChangelogTask log = makeTask("createChangelog", ChangelogTask.class);
         {
             log.getOutputs().upToDateWhen(Constants.CALL_FALSE);
@@ -362,7 +363,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             log.setOutput(delayedFile(CHANGELOG));
         }
         
-
+        /*
         VersionJsonTask vjson = makeTask("generateVersionJson", VersionJsonTask.class);
         {
             vjson.setInput(delayedFile(INSTALL_PROFILE));
@@ -423,7 +424,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             
             uni.setDestinationDir(delayedFile("{BUILD_DIR}/distributions").call());
             //uni.dependsOn("genBinPatches", "createChangelog", "createVersionPropertiesFML", "generateVersionJson");
-            uni.dependsOn("genBinPatches", "createVersionPropertiesFML");
+            uni.dependsOn("genBinPatches", "createVersionPropertiesFML", "createChangelog");
         }
         project.getArtifacts().add("archives", uni);
 
