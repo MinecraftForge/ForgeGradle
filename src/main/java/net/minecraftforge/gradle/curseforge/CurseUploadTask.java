@@ -41,6 +41,7 @@ public class CurseUploadTask extends DefaultTask
     Set<Object>          gameVersions  = new TreeSet<Object>();
     String               releaseType;
     String               changelog;
+    int                  fileID;
 
     private final String UPLOAD_URL    = "http://minecraft.curseforge.com/api/projects/%s/upload-file";
     private final String VERSION_URL   = "http://minecraft.curseforge.com/api/game/versions";
@@ -90,6 +91,7 @@ public class CurseUploadTask extends DefaultTask
 
         InputStreamReader stream = new InputStreamReader(response.getEntity().getContent());
         int fileID = JsonFactory.GSON.fromJson(stream, CurseReply.class).id;
+        this.fileID = fileID;
         stream.close();
         getLogger().lifecycle("File uploaded to CurseForge succcesfully with ID {}", fileID);
     }
@@ -281,5 +283,13 @@ public class CurseUploadTask extends DefaultTask
     public void setArtifact(Object artifact)
     {
         this.artifact = artifact;
+    }
+
+    public int getFileID() {
+        return fileID;
+    }
+
+    public void setFileID(int fileID) {
+        this.fileID = fileID;
     }
 }
