@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.tasks;
 
+import static net.minecraftforge.gradle.common.Constants.EXT_NAME_MC;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PROTECTED;
@@ -28,6 +29,7 @@ import net.md_5.specialsource.JarRemapper;
 import net.md_5.specialsource.RemapperProcessor;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
+import net.minecraftforge.gradle.common.BaseExtension;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.json.MCInjectorStruct;
@@ -315,11 +317,14 @@ public class ProcessJarTask extends CachedTask
             Files.write(JsonFactory.GSON.toJson(struct).getBytes(), jsonTmp);
         }
 
+        BaseExtension exten = (BaseExtension)getProject().getExtensions().getByName(EXT_NAME_MC);
+        boolean genParams = !exten.getVersion().equals("1.7.2");
         getLogger().debug("INPUT: " + inJar);
         getLogger().debug("OUTPUT: " + outJar);
         getLogger().debug("CONFIG: " + config);
         getLogger().debug("JSON: " + json);
         getLogger().debug("LOG: " + log);
+        getLogger().debug("PARAMS: " + genParams);
 
         MCInjectorImpl.process(inJar.getCanonicalPath(),
                 outJar.getCanonicalPath(),
@@ -328,7 +333,8 @@ public class ProcessJarTask extends CachedTask
                 null,
                 0,
                 json,
-                isApplyMarkers());
+                isApplyMarkers(),
+                genParams);
     }
     
     private void stripSynthetics(File inJar, File outJar) throws IOException

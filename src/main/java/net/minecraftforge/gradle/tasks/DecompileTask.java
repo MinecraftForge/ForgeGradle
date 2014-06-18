@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.tasks;
 
+import static net.minecraftforge.gradle.common.Constants.EXT_NAME_MC;
 import groovy.lang.Closure;
 
 import java.io.File;
@@ -22,6 +23,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import net.minecraftforge.gradle.common.BaseExtension;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.extrastuff.FFPatcher;
@@ -154,6 +156,9 @@ public class DecompileTask extends CachedTask
         ZipEntry entry = null;
         String fileStr;
 
+        BaseExtension exten = (BaseExtension)getProject().getExtensions().getByName(EXT_NAME_MC);
+        boolean fixInterfaces = !exten.getVersion().equals("1.7.2");
+
         while ((entry = zin.getNextEntry()) != null)
         {
             // no META or dirs. wel take care of dirs later.
@@ -173,7 +178,7 @@ public class DecompileTask extends CachedTask
                 fileStr = new String(ByteStreams.toByteArray(zin), Charset.defaultCharset());
 
                 // fix
-                fileStr = FFPatcher.processFile(new File(entry.getName()).getName(), fileStr);
+                fileStr = FFPatcher.processFile(new File(entry.getName()).getName(), fileStr, fixInterfaces);
 
                 sourceMap.put(entry.getName(), fileStr);
             }

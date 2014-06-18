@@ -19,6 +19,7 @@ public class FFPatcher
 
     private static final Pattern SYNTHETICS = Pattern.compile("(?m)(\\s*// \\$FF: (synthetic|bridge) method(\\r\\n|\\n|\\r)){1,2}\\s*(?<modifiers>(?:(?:" + MODIFIERS + ") )*)(?<return>.+?) (?<method>.+?)\\((?<arguments>.*)\\)\\s*\\{(\\r\\n|\\n|\\r)\\s*return this\\.(?<method2>.+?)\\((?<arguments2>.*)\\);(\\r\\n|\\n|\\r)\\s*\\}");
     //private static final Pattern TYPECAST = Pattern.compile("\\([\\w\\.]+\\)");
+    private static final Pattern ABSTRACT = Pattern.compile("(?m)^(?<indent>[ \\t\\f\\v]*)(?<modifiers>(?:(?:" + MODIFIERS + ") )*)(?<return>[^ ]+) (?<method>func_(?<number>\\d+)_[a-zA-Z_]+)\\((?<arguments>([^ ,]+ var\\d+,? ?)*)\\)(?: throws (?:[\\w$.]+,? ?)+)?;$");
 
     // Remove TRAILING whitespace
     private static final String TRAILING = "(?m)[ \\t]+$";
@@ -39,7 +40,7 @@ public class FFPatcher
     private static final String CONSTRUCTOR_CALL_REGEX = "(?<name>this|super)\\((?<body>.*?)\\)(?<end>;)";
     private static final String VALUE_FIELD_REGEX = "private static final %s\\[\\] [$\\w\\d]+ = new %s\\[\\]\\{.*?\\};";
 
-    public static String processFile(String fileName, String text) throws IOException
+    public static String processFile(String fileName, String text, boolean fixInterfaces) throws IOException
     {
         StringBuffer out = new StringBuffer();
         Matcher m = SYNTHETICS.matcher(text);
@@ -62,6 +63,18 @@ public class FFPatcher
 
         text = text.replaceAll(NEWLINES, Constants.NEWLINE);
         text = text.replaceAll(EMPTY_SUPER, "");
+        
+        if (fixInterfaces)
+        {
+            out = new StringBuffer();
+            m = ABSTRACT.matcher(text);
+            while (m.find())
+            {
+                m.appendReplacement(out, abstract_replacement(m).replace("$", "\\$"));
+            }
+            m.appendTail(out);
+            text = out.toString();
+        }
         
         return text;
     }
@@ -250,5 +263,26 @@ public class FFPatcher
             return "";
         
         return match.group();
+    }
+
+    private static String abstract_replacement(Matcher match)
+    {
+        String orig = match.group("arguments");
+        String number = match.group("number");
+
+        if (Strings.isNullOrEmpty(orig))
+            return match.group();
+        
+        String[] args = orig.split(", ");
+        StringBuilder fixed = new StringBuilder();
+        for (int x = 0; x < args.length; x++)
+        {
+            String[] p = args[x].split(" ");
+            fixed.append(p[0]).append(" p_").append(number).append('_').append(p[1].substring(3)).append('_');
+            if (x != args.length - 1)
+                fixed.append(", ");
+        }
+
+        return match.group().replace(orig, fixed.toString());
     }
 }
