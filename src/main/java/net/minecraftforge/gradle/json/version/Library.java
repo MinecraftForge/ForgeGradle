@@ -112,6 +112,10 @@ public class Library
         public String getPath(){ return getPath(classifier); }
         public String getPath(String classifier)
         {
+            if (classifier.indexOf('$') > -1)
+            {
+                classifier = classifier.replace("${arch}", Constants.SYSTEM_ARCH.toString());
+            }
             String ret = String.format("%s/%s/%s/%s-%s", domain.replace('.', '/'), name, version, name, version);
             if (classifier != null) ret += "-" + classifier;
             return ret + "." + ext;
