@@ -159,7 +159,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 if (graph.hasTask(path + "setupDecompWorkspace"))
                 {
                     getExtension().setDecomp();
-                    setMinecraftDeps(true, false);
+                    setMinecraftDeps(true, true);
                 }
                 return null;
             }
