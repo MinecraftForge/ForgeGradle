@@ -57,7 +57,7 @@ public class ProcessSrcJarTask extends EditJarTask
                 {
                     String relative = rel.getRelative();
 
-                    if (sourceMap.containsKey(relative) || resourceMap.containsKey("relative"))
+                    if (sourceMap.containsKey(relative) || resourceMap.containsKey(relative))
                         continue; //ignore duplicates. 
 
                     if (relative.endsWith(".java"))
