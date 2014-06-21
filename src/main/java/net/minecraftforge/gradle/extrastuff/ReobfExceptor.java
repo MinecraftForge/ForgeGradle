@@ -16,6 +16,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -118,11 +119,13 @@ public class ReobfExceptor
     
     private void renameAccess(Map<String, AccessInfo> data, Map<String, String> csvData) throws IOException
     {
-        for (Entry<String, AccessInfo> e : data.entrySet())
+        for (AccessInfo info : data.values())
         {
-            AccessInfo i = e.getValue();
-            String tmp = csvData.get(i.target_name);
-            i.target_name = tmp == null ? i.target_name : tmp;
+            for (Insn i : info.insns)
+            {
+                String tmp = csvData.get(i.name);
+                i.name = tmp == null ? i.name : tmp;
+            }
         }
     }
     
@@ -346,6 +349,10 @@ public class ReobfExceptor
         {
             if (name.equals("__OBFID"))
             {
+                if (!className.startsWith("net/minecraft/"))
+                {
+                    throw new RuntimeException("Modder stupidity detected, DO NOT USE __OBFID, Copy pasting code you don't understand is bad: " + className);
+                }
                 map.put(String.valueOf(value) + "_", className);
                 //System.out.println("  Marker:    " + String.valueOf(value));
             }
@@ -368,13 +375,13 @@ public class ReobfExceptor
                     @Override
                     public void visitFieldInsn(int opcode, String owner, String name, String desc)
                     {
-                        info.set(opcode, owner, name, desc);
+                        info.add(opcode, owner, name, desc);
                     }
 
                     // INVOKEVIRTUAL, INVOKESPECIAL, INVOKESTATIC or INVOKEINTERFACE.
                     public void visitMethodInsn(int opcode, String owner, String name, String desc)
                     {
-                        info.set(opcode, owner, name, desc);
+                        info.add(opcode, owner, name, desc);
                     }
                 };
             }
@@ -388,12 +395,9 @@ public class ReobfExceptor
         public String owner;
         public String name;
         public String desc;
-        
-        public int opcode;
         public int access;
-        public String target_owner;
-        public String target_name;
-        public String target_desc;
+        public List<Insn> insns = new ArrayList<Insn>();
+        private String cache = null;
         
         public AccessInfo(String owner, String name, String desc)
         {
@@ -402,13 +406,47 @@ public class ReobfExceptor
             this.desc = desc;
         }
 
-        public void set(int opcode, String owner, String name, String desc)
+        public void add(int opcode, String owner, String name, String desc)
         {
-            if (this.opcode != 0) throw new RuntimeException();
+            insns.add(new Insn(opcode, owner, name, desc));
+            cache = null;
+        }
+
+
+        @Override
+        public String toString()
+        {
+            if (cache == null)
+            {
+                StringBuilder buf = new StringBuilder();
+                buf.append('[').append(insns.get(0));
+                for (int x = 1; x < insns.size(); x++)
+                    buf.append(", ").append(insns.get(x));
+                buf.append(']');
+                cache = buf.toString();
+            }
+            return cache;
+        }
+
+        public boolean targetEquals(AccessInfo o)
+        {
+            return toString().equals(o.toString());
+        }
+    }
+    
+    private static class Insn
+    {   
+        public int opcode;
+        public String owner;
+        public String name;
+        public String desc;
+
+        Insn(int opcode, String owner, String name, String desc)
+        {
             this.opcode = opcode;
-            this.target_owner = owner;
-            this.target_name = name;
-            this.target_desc = desc;
+            this.owner = owner;
+            this.name = name;
+            this.desc = desc;
         }
 
         @Override
@@ -426,12 +464,7 @@ public class ReobfExceptor
                 case INVOKESTATIC:    op = "INVOKESTATIC";    break;
                 case INVOKEINTERFACE: op = "INVOKEINTERFACE"; break;
             }
-            return op + " " + target_owner + "/" + target_name + " " + target_desc;
-        }
-        
-        public boolean targetEquals(AccessInfo o)
-        {
-            return toString().equals(o.toString());
+            return op + " " + owner + "/" + name + " " + desc;
         }
     }
 }
