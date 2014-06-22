@@ -14,7 +14,7 @@ public class UserPatchExtension extends UserExtension
 {
     // groups:  mcVersion  forgeVersion
     //private static final Pattern VERSION_CHECK = Pattern.compile("(?:[\\w\\d.-]+):(?:[\\w\\d-]+):([\\d.]+)-([\\d.]+)-(?:[\\w\\d.]+)");
-    private static final Pattern VERSION_CHECK = Pattern.compile("([\\d.]+)-([\\w\\d.]+)(?:-[\\w\\d.]+)?");
+    private static final Pattern VERSION_CHECK = Pattern.compile("([\\d._pre]+)-([\\w\\d.]+)(?:-[\\w\\d.]+)?");
     
     private int maxFuzz = 0;
 
