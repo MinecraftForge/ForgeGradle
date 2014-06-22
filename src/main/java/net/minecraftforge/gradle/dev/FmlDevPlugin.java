@@ -295,7 +295,7 @@ public class FmlDevPlugin extends DevBasePlugin
 
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
-            obf.setSrg(delayedFile(DevConstants.NOTCH_2_SRG_SRG));
+            obf.setSrg(delayedFile(DevConstants.MCP_2_NOTCH_SRG));
             obf.setExc(delayedFile(DevConstants.SRG_EXC));
             obf.setReverse(true);
             obf.setPreFFJar(delayedFile(DevConstants.JAR_SRG_FML));
