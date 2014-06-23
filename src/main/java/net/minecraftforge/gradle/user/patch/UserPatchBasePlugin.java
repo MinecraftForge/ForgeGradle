@@ -176,9 +176,9 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
         int buildNumber;
         
         if (isPre)
-            buildNumber = Integer.parseInt(version.substring(version.lastIndexOf('.'), version.indexOf('_')));
+            buildNumber = Integer.parseInt(version.substring(version.lastIndexOf('.') + 1, version.indexOf('_')));
         else
-            buildNumber = Integer.parseInt(version.substring(version.lastIndexOf('.')));
+            buildNumber = Integer.parseInt(version.substring(version.lastIndexOf('.') + 1));
         
         doVersionChecks(buildNumber);
     }
