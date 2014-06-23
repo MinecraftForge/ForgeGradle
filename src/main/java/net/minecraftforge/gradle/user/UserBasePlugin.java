@@ -1071,6 +1071,10 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
      */
     protected abstract void configureDeobfuscation(ProcessJarTask task);
     
+    /**
+     * 
+     * @param version may have pre-release suffix _pre#
+     */
     protected abstract void doVersionChecks(String version);
     
     /**

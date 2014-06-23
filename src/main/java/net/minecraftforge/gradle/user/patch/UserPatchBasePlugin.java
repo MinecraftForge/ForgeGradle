@@ -172,7 +172,14 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     @Override
     protected void doVersionChecks(String version)
     {
-        int buildNumber = Integer.parseInt(version.substring(version.lastIndexOf('.') + 1));
+        boolean isPre = version.indexOf('_') > 0;
+        int buildNumber;
+        
+        if (isPre)
+            buildNumber = Integer.parseInt(version.substring(version.lastIndexOf('.'), version.indexOf('_')));
+        else
+            buildNumber = Integer.parseInt(version.substring(version.lastIndexOf('.')));
+        
         doVersionChecks(buildNumber);
     }
     
