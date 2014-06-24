@@ -54,7 +54,7 @@ public class UserPatchExtension extends UserExtension
         if (!matcher.matches())
             throw new IllegalArgumentException(str + " is not in the form 'MCVersion-apiVersion-branch'!");
         
-        version = matcher.group(1);
+        version = matcher.group(1).replace('_', '-');
         apiVersion = matcher.group(0);
     }
 
