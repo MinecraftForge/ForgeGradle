@@ -34,14 +34,18 @@ public class CopyAssetsTask extends DefaultTask
             AssetIndex index = getAssetIndex();
             File assetsDir = new File(getAssetsDir(), "objects");
             File outputDir = getOutputDir();
-
-            if (!index.virtual)
-                return; // shrug
+            
+            //if (!index.virtual)
+            //    return; // shrug
+            
+            int count = 0;
 
             for (Entry<String, AssetEntry> e : index.objects.entrySet())
             {
                 File in = getHashedPath(assetsDir, e.getValue().hash);
                 File out = new File(outputDir, e.getKey());
+                
+                count++;
 
                 // check existing
                 if (out.exists() && out.length() == e.getValue().size)
@@ -52,6 +56,8 @@ public class CopyAssetsTask extends DefaultTask
                     Files.copy(in, out);
                 }
             }
+            
+           getLogger().info("Copied "+count+" assets");
         }
         catch (Throwable t)
         {
