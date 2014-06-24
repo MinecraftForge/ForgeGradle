@@ -376,7 +376,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
             task.addReplacement("@version@", delayedString("{VERSION}"));
             task.addReplacement("@project@", delayedString("FML"));
-            task.addReplacement("@artifact@", delayedString("cpw.mods:fml:{MC_VERSION}-{VERSION}"));
+            task.addReplacement("@artifact@", delayedString("cpw.mods:fml:{MC_VERSION_SAFE}-{VERSION}"));
             task.addReplacement("@universal_jar@", new Closure<String>(project)
             {
                 public String call()
@@ -496,7 +496,7 @@ public class FmlDevPlugin extends DevBasePlugin
             userDev.from(delayedFile(DevConstants.NOTCH_2_SRG_SRG), new CopyInto("conf"));
             userDev.from(delayedFile(DevConstants.SRG_EXC), new CopyInto("conf"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}/patches"), new CopyInto("conf"));
-            userDev.rename("[\\d.]+?-dev\\.json", "dev.json");
+            userDev.rename(".+-dev\\.json", "dev.json");
             userDev.rename(".+?\\.srg", "packaged.srg");
             userDev.rename(".+?\\.exc", "packaged.exc");
             userDev.setIncludeEmptyDirs(false);
@@ -512,7 +512,7 @@ public class FmlDevPlugin extends DevBasePlugin
             src.from(delayedFile(DevConstants.FML_LICENSE));
             src.from(delayedFile(DevConstants.FML_CREDITS));
             src.from(delayedFile("{FML_DIR}/install"), new CopyInto(null, "!*.gradle"));
-            src.from(delayedFile("{FML_DIR}/install"), (new CopyInto(null, "*.gradle")).addExpand("version", delayedString("{MC_VERSION}-{VERSION}")).addExpand("name", "fml"));
+            src.from(delayedFile("{FML_DIR}/install"), (new CopyInto(null, "*.gradle")).addExpand("version", delayedString("{MC_VERSION_SAFE}-{VERSION}")).addExpand("name", "fml"));
             src.from(delayedFile("{FML_DIR}/gradlew"));
             src.from(delayedFile("{FML_DIR}/gradlew.bat"));
             src.from(delayedFile("{FML_DIR}/gradle/wrapper"), new CopyInto("gradle/wrapper"));

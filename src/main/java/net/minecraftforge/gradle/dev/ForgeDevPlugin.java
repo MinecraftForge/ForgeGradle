@@ -449,7 +449,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
             task.addReplacement("@version@", delayedString("{VERSION}"));
             task.addReplacement("@project@", delayedString("Forge"));
-            task.addReplacement("@artifact@", delayedString("net.minecraftforge:forge:{MC_VERSION}-{VERSION}"));
+            task.addReplacement("@artifact@", delayedString("net.minecraftforge:forge:{MC_VERSION_SAFE}-{VERSION}"));
             task.addReplacement("@universal_jar@", new Closure<String>(project)
             {
                 public String call()
@@ -621,7 +621,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             userDev.from(delayedFile(NOTCH_2_SRG_SRG), new CopyInto("conf"));
             userDev.from(delayedFile(SRG_EXC), new CopyInto("conf"));
             userDev.from(delayedFile(FML_VERSIONF), new CopyInto("src/main/resources"));
-            userDev.rename("[\\d.]+?-dev\\.json", "dev.json");
+            userDev.rename(".+-dev\\.json", "dev.json");
             userDev.rename(".+?\\.srg", "packaged.srg");
             userDev.rename(".+?\\.exc", "packaged.exc");
             userDev.setIncludeEmptyDirs(false);
@@ -639,7 +639,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             src.from(delayedFile(FORGE_LICENSE));
             src.from(delayedFile(FORGE_CREDITS));
             src.from(delayedFile("{FML_DIR}/install"), new CopyInto(null, "!*.gradle"));
-            src.from(delayedFile("{FML_DIR}/install"), (new CopyInto(null, "*.gradle")).addExpand("version", delayedString("{MC_VERSION}-{VERSION}")).addExpand("name", "forge"));
+            src.from(delayedFile("{FML_DIR}/install"), (new CopyInto(null, "*.gradle")).addExpand("version", delayedString("{MC_VERSION_SAFE}-{VERSION}")).addExpand("name", "forge"));
             src.from(delayedFile("{FML_DIR}/gradlew"));
             src.from(delayedFile("{FML_DIR}/gradlew.bat"));
             src.from(delayedFile("{FML_DIR}/gradle/wrapper"), new CopyInto("gradle/wrapper"));

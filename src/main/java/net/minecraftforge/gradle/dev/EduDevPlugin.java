@@ -536,7 +536,7 @@ public class EduDevPlugin extends DevBasePlugin
             task.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
             task.addReplacement("@version@", delayedString("{VERSION}"));
             task.addReplacement("@project@", delayedString("minecraft-edu"));
-            task.addReplacement("@artifact@", delayedString("net.minecraftforge:forge:{MC_VERSION}-{VERSION}"));
+            task.addReplacement("@artifact@", delayedString("net.minecraftforge:forge:{MC_VERSION_SAFE}-{VERSION}"));
             task.addReplacement("@universal_jar@", new Closure<String>(project)
             {
                 public String call()

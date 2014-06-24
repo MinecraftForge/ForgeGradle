@@ -172,13 +172,9 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     @Override
     protected void doVersionChecks(String version)
     {
-        boolean isPre = version.indexOf('_') > 0;
-        int buildNumber;
-        
-        if (isPre)
-            buildNumber = Integer.parseInt(version.substring(version.lastIndexOf('.') + 1, version.indexOf('_')));
-        else
-            buildNumber = Integer.parseInt(version.substring(version.lastIndexOf('.') + 1));
+        if (version.indexOf('-') > 0)
+            version = version.split("-")[1]; // We get passed the full version, including MC ver and branch, we only want api's version.
+        int buildNumber = Integer.parseInt(version.substring(version.lastIndexOf('.') + 1));
         
         doVersionChecks(buildNumber);
     }

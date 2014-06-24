@@ -75,7 +75,7 @@ final class DevConstants
     static final String ZIP_RENAMED_EDU    = "{BUILD_DIR}/eduTmp/minecraft_renamed.zip";
 
     // other stuff
-    static final String CHANGELOG           = "{BUILD_DIR}/distributions/{PROJECT}-{MC_VERSION}-{VERSION}-changelog.txt";
+    static final String CHANGELOG           = "{BUILD_DIR}/distributions/{PROJECT}-{MC_VERSION_SAFE}-{VERSION}-changelog.txt";
     static final String USERDEV_SRG_SRC     = "{BUILD_DIR}/tmp/user_dev_srg_src.zip";
     
     // necesary for patch generation

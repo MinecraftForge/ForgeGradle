@@ -346,9 +346,10 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
         // For simplicities sake, if the version is in the standard format of {MC_VERSION}-{realVersion}
         // lets trim the MC version from the replacement string.
         String version = project.getVersion().toString();
-        if (version.startsWith(exten.getVersion() + "-"))
+        String mcSafe = exten.getVersion().replace('-', '_');
+        if (version.startsWith(mcSafe + "-"))
         {
-            version = version.substring(exten.getVersion().length() + 1);
+            version = version.substring(mcSafe.length() + 1);
         }
         pattern = pattern.replace("{VERSION}", version);
         pattern = pattern.replace("{MAIN_CLASS}", exten.getMainClass());
