@@ -4,10 +4,7 @@ import static net.minecraftforge.gradle.dev.DevConstants.*;
 import groovy.lang.Closure;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
-import net.minecraftforge.gradle.CopyInto;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.ApplyS2STask;
@@ -19,7 +16,6 @@ import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DelayedJar;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
-import net.minecraftforge.gradle.tasks.abstractutil.FileFilterTask;
 import net.minecraftforge.gradle.tasks.dev.FMLVersionPropTask;
 import net.minecraftforge.gradle.tasks.dev.GenBinaryPatches;
 import net.minecraftforge.gradle.tasks.dev.GenDevProjectsTask;
@@ -34,7 +30,6 @@ import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.java.archives.Manifest;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Delete;
-import org.gradle.api.tasks.bundling.Zip;
 
 public class EduDevPlugin extends DevBasePlugin
 {
@@ -97,7 +92,7 @@ public class EduDevPlugin extends DevBasePlugin
 //        // the master task.
         task = makeTask("buildPackages");
         //task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "genJavadocs");
-        task.dependsOn("cleanPackages", "packageUniversal", "packageInstaller");
+        task.dependsOn("cleanPackages", "packageUniversal");
         task.setGroup("McEdu");
     }
     
@@ -112,7 +107,7 @@ public class EduDevPlugin extends DevBasePlugin
         ProcessJarTask task2 = makeTask("deobfuscateJar", ProcessJarTask.class);
         {
             task2.setInJar(delayedFile(Constants.JAR_MERGED));
-            task2.setOutCleanJar(delayedFile(JAR_SRG_CDN));
+            task2.setOutCleanJar(delayedFile(JAR_SRG_EDU));
             task2.setSrg(delayedFile(JOINED_SRG));
             task2.setExceptorCfg(delayedFile(JOINED_EXC));
             task2.setExceptorJson(delayedFile(EXC_JSON));
@@ -124,8 +119,8 @@ public class EduDevPlugin extends DevBasePlugin
 
         DecompileTask task3 = makeTask("decompile", DecompileTask.class);
         {
-            task3.setInJar(delayedFile(JAR_SRG_CDN));
-            task3.setOutJar(delayedFile(ZIP_DECOMP_CDN));
+            task3.setInJar(delayedFile(JAR_SRG_EDU));
+            task3.setOutJar(delayedFile(ZIP_DECOMP_EDU));
             task3.setFernFlower(delayedFile(Constants.FERNFLOWER));
             task3.setPatch(delayedFile(MCP_PATCH_DIR));
             task3.setAstyleConfig(delayedFile(ASTYLE_CFG));
@@ -134,8 +129,8 @@ public class EduDevPlugin extends DevBasePlugin
         
         ProcessSrcJarTask task4 = makeTask("forgePatchJar", ProcessSrcJarTask.class);
         {
-            task4.setInJar(delayedFile(ZIP_DECOMP_CDN));
-            task4.setOutJar(delayedFile(ZIP_FORGED_CDN));
+            task4.setInJar(delayedFile(ZIP_DECOMP_EDU));
+            task4.setOutJar(delayedFile(ZIP_FORGED_EDU));
             task4.addStage("fml", delayedFile(FML_PATCH_DIR), delayedFile(FML_SOURCES), delayedFile(FML_RESOURCES), delayedFile("{MAPPINGS_DIR}/patches/Start.java"), delayedFile(DEOBF_DATA), delayedFile(FML_VERSIONF));
             task4.addStage("forge", delayedFile(FORGE_PATCH_DIR), delayedFile(FORGE_SOURCES), delayedFile(FORGE_RESOURCES));
             task4.setDoesCache(false);
@@ -145,7 +140,7 @@ public class EduDevPlugin extends DevBasePlugin
 
         RemapSourcesTask task6 = makeTask("remapCleanJar", RemapSourcesTask.class);
         {
-            task6.setInJar(delayedFile(ZIP_FORGED_CDN));
+            task6.setInJar(delayedFile(ZIP_FORGED_EDU));
             task6.setOutJar(delayedFile(REMAPPED_CLEAN));
             task6.setMethodsCsv(delayedFile(METHODS_CSV));
             task6.setFieldsCsv(delayedFile(FIELDS_CSV));
@@ -157,9 +152,9 @@ public class EduDevPlugin extends DevBasePlugin
          
         task4 = makeTask("eduPatchJar", ProcessSrcJarTask.class);
         {
-            //task4.setInJar(delayedFile(ZIP_FORGED_CDN)); UNCOMMENT FOR SRG NAMES
+            //task4.setInJar(delayedFile(ZIP_FORGED_EDU)); UNCOMMENT FOR SRG NAMES
             task4.setInJar(delayedFile(REMAPPED_CLEAN));
-            task4.setOutJar(delayedFile(ZIP_PATCHED_CDN));
+            task4.setOutJar(delayedFile(ZIP_PATCHED_EDU));
             task4.addStage("McEdu", delayedFile(EXTRA_PATCH_DIR));
             task4.setDoesCache(false);
             task4.setMaxFuzz(2);
@@ -168,8 +163,8 @@ public class EduDevPlugin extends DevBasePlugin
         
         task6 = makeTask("remapMcEduJar", RemapSourcesTask.class);
         {
-            task6.setInJar(delayedFile(ZIP_PATCHED_CDN));
-            task6.setOutJar(delayedFile(ZIP_RENAMED_CDN));
+            task6.setInJar(delayedFile(ZIP_PATCHED_EDU));
+            task6.setOutJar(delayedFile(ZIP_RENAMED_EDU));
             task6.setMethodsCsv(delayedFile(METHODS_CSV));
             task6.setFieldsCsv(delayedFile(FIELDS_CSV));
             task6.setParamsCsv(delayedFile(PARAMS_CSV));
@@ -203,15 +198,15 @@ public class EduDevPlugin extends DevBasePlugin
         task = makeTask("extractMcEduResources", ExtractTask.class);
         {
             task.exclude(JAVA_FILES);
-            task.from(delayedFile(ZIP_RENAMED_CDN));
-            task.into(delayedFile(ECLIPSE_CDN_RES));
+            task.from(delayedFile(ZIP_RENAMED_EDU));
+            task.into(delayedFile(ECLIPSE_EDU_RES));
             task.dependsOn("remapMcEduJar", "extractWorkspace");
             task.onlyIf(new Spec() {
 
                 @Override
                 public boolean isSatisfiedBy(Object arg0)
                 {
-                    File dir = delayedFile(ECLIPSE_CDN_RES).call();
+                    File dir = delayedFile(ECLIPSE_EDU_RES).call();
                     if (!dir.exists())
                         return true;
                     
@@ -227,15 +222,15 @@ public class EduDevPlugin extends DevBasePlugin
         task = makeTask("extractMcEduSources", ExtractTask.class);
         {
             task.include(JAVA_FILES);
-            task.from(delayedFile(ZIP_RENAMED_CDN));
-            task.into(delayedFile(ECLIPSE_CDN_SRC));
+            task.from(delayedFile(ZIP_RENAMED_EDU));
+            task.into(delayedFile(ECLIPSE_EDU_SRC));
             task.dependsOn("extractMcEduResources");
             task.onlyIf(new Spec() {
 
                 @Override
                 public boolean isSatisfiedBy(Object arg0)
                 {
-                    File dir = delayedFile(ECLIPSE_CDN_SRC).call();
+                    File dir = delayedFile(ECLIPSE_EDU_SRC).call();
                     if (!dir.exists())
                         return true;
                     
@@ -266,19 +261,6 @@ public class EduDevPlugin extends DevBasePlugin
             });
             sub.setOutputFile(delayedFile(FML_VERSIONF));
         }
-        
-        ExtractTask extract = makeTask("extractRes", ExtractTask.class);
-        {
-            extract.into(delayedFile(EXTRACTED_RES));
-            for (File f : delayedFile("src/main").call().listFiles())
-            {
-                if (f.isDirectory())
-                    continue;
-                String path = f.getAbsolutePath();
-                if (path.endsWith(".jar") || path.endsWith(".zip"))
-                    extract.from(delayedFile(path));
-            }
-        }
 
         GenDevProjectsTask task = makeTask("generateProjectClean", GenDevProjectsTask.class);
         {
@@ -295,18 +277,18 @@ public class EduDevPlugin extends DevBasePlugin
         task = makeTask("generateProjectMcEdu", GenDevProjectsTask.class);
         {
             task.setJson(delayedFile(EXTRA_JSON_DEV));
-            task.setTargetDir(delayedFile(ECLIPSE_CDN));
+            task.setTargetDir(delayedFile(ECLIPSE_EDU));
 
-            task.addSource(delayedFile(ECLIPSE_CDN_SRC));
+            task.addSource(delayedFile(ECLIPSE_EDU_SRC));
             task.addSource(delayedFile(EXTRA_SOURCES));
             task.addTestSource(delayedFile(EXTRA_TEST_SOURCES));
 
-            task.addResource(delayedFile(ECLIPSE_CDN_RES));
+            task.addResource(delayedFile(ECLIPSE_EDU_RES));
             task.addResource(delayedFile(EXTRA_RESOURCES));
             task.addResource(delayedFile(EXTRACTED_RES));
             task.addTestSource(delayedFile(EXTRA_TEST_SOURCES));
 
-            task.dependsOn("extractRes", "extractNatives","createVersionPropertiesFML");
+            task.dependsOn("extractNatives","createVersionPropertiesFML");
         }
 
         makeTask("generateProjects").dependsOn("generateProjectClean", "generateProjectMcEdu");
@@ -323,7 +305,7 @@ public class EduDevPlugin extends DevBasePlugin
 
         task = makeTask("eclipseMcEdu", SubprojectTask.class);
         {
-            task.setBuildFile(delayedFile(ECLIPSE_CDN + "/build.gradle"));
+            task.setBuildFile(delayedFile(ECLIPSE_EDU + "/build.gradle"));
             task.setTasks("eclipse");
             task.dependsOn("extractMcEduSources", "generateProjects");
         }
@@ -339,14 +321,14 @@ public class EduDevPlugin extends DevBasePlugin
         
         ExtractS2SRangeTask extractRange = makeTask("extractRangeMcEdu", ExtractS2SRangeTask.class);
         {
-            extractRange.setLibsFromProject(delayedFile(ECLIPSE_CDN + "/build.gradle"), "compile", true);
-            extractRange.addIn(delayedFile(ECLIPSE_CDN_SRC));
+            extractRange.setLibsFromProject(delayedFile(ECLIPSE_EDU + "/build.gradle"), "compile", true);
+            extractRange.addIn(delayedFile(ECLIPSE_EDU_SRC));
             extractRange.setRangeMap(rangeMapDirty);
         }
         
         ApplyS2STask applyS2S = makeTask("retroMapMcEdu", ApplyS2STask.class);
         {
-            applyS2S.addIn(delayedFile(ECLIPSE_CDN_SRC));
+            applyS2S.addIn(delayedFile(ECLIPSE_EDU_SRC));
             applyS2S.setOut(delayedFile(PATCH_DIRTY));
             applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
             applyS2S.addExc(delayedFile(MCP_EXC));
@@ -377,7 +359,7 @@ public class EduDevPlugin extends DevBasePlugin
         {
             task2.setPatchDir(delayedFile(EXTRA_PATCH_DIR));
             task2.setOriginal(delayedFile(ECLIPSE_CLEAN_SRC));
-            task2.setChanged(delayedFile(ECLIPSE_CDN_SRC));
+            task2.setChanged(delayedFile(ECLIPSE_EDU_SRC));
             task2.setOriginalPrefix("../src-base/minecraft");
             task2.setChangedPrefix("../src-work/minecraft");
             task2.getTaskDependencies().getDependencies(task2).clear(); // remove all the old dependants.
@@ -406,9 +388,9 @@ public class EduDevPlugin extends DevBasePlugin
             obf.setSrg(delayedFile(MCP_2_NOTCH_SRG));
             obf.setExc(delayedFile(JOINED_EXC));
             obf.setReverse(false);
-            obf.setPreFFJar(delayedFile(JAR_SRG_CDN));
+            obf.setPreFFJar(delayedFile(JAR_SRG_EDU));
             obf.setOutJar(delayedFile(REOBF_TMP));
-            obf.setBuildFile(delayedFile(ECLIPSE_CDN + "/build.gradle"));
+            obf.setBuildFile(delayedFile(ECLIPSE_EDU + "/build.gradle"));
             obf.setMethodsCsv(delayedFile(METHODS_CSV));
             obf.setFieldsCsv(delayedFile(FIELDS_CSV));
             obf.dependsOn("genSrgs");
@@ -428,22 +410,6 @@ public class EduDevPlugin extends DevBasePlugin
             task3.addPatchList(delayedFileTree(FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData");
         }
-
-        /*
-        ForgeVersionReplaceTask task4 = makeTask("ciWriteBuildNumber", ForgeVersionReplaceTask.class);
-        {
-            task4.getOutputs().upToDateWhen(Constants.CALL_FALSE);
-            task4.setOutputFile(delayedFile(FORGE_VERSION_JAVA));
-            task4.setReplacement(delayedString("{BUILD_NUM}"));
-        }
-
-        SubmoduleChangelogTask task5 = makeTask("fmlChangelog", SubmoduleChangelogTask.class);
-        {
-            task5.setSubmodule(delayedFile("fml"));
-            task5.setModuleName("FML");
-            task5.setPrefix("MinecraftForge/FML");
-        }
-        */
     }
     
     @SuppressWarnings("serial")
@@ -529,54 +495,6 @@ public class EduDevPlugin extends DevBasePlugin
         }
         project.getArtifacts().add("archives", uni);
 
-        FileFilterTask task = makeTask("generateInstallJson", FileFilterTask.class);
-        {
-            task.setInputFile(delayedFile(EXTRA_JSON_REL));
-            task.setOutputFile(delayedFile(INSTALL_PROFILE));
-            task.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
-            task.addReplacement("@version@", delayedString("{VERSION}"));
-            task.addReplacement("@project@", delayedString("minecraft-edu"));
-            task.addReplacement("@artifact@", delayedString("net.minecraftforge:forge:{MC_VERSION_SAFE}-{VERSION}"));
-            task.addReplacement("@universal_jar@", new Closure<String>(project)
-            {
-                public String call()
-                {
-                    return uni.getArchiveName();
-                }
-            });
-            task.addReplacement("@timestamp@", new Closure<String>(project)
-            {
-                public String call()
-                {
-                    return (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")).format(new Date());
-                }
-            });
-        }
-
-        Zip inst = makeTask("packageInstaller", Zip.class);
-        {
-            inst.setClassifier("installer");
-            inst.from(new Closure<File>(project) {
-                public File call()
-                {
-                    return uni.getArchivePath();
-                }
-            });
-            inst.from(delayedFile(INSTALL_PROFILE));
-            inst.from(delayedFile(CHANGELOG));
-            inst.from(delayedFile(FML_LICENSE));
-            inst.from(delayedFile(FML_CREDITS));
-            inst.from(delayedFile(FORGE_LICENSE));
-            inst.from(delayedFile(FORGE_CREDITS));
-            inst.from(delayedFile(PAULSCODE_LISCENCE1));
-            inst.from(delayedFile(PAULSCODE_LISCENCE2));
-            inst.from(delayedFile(FORGE_LOGO));
-            inst.from(delayedZipTree(INSTALLER_BASE), new CopyInto("", "!*.json", "!*.png"));
-            inst.dependsOn("packageUniversal", "downloadBaseInstaller", "generateInstallJson");
-            inst.rename("forge_logo\\.png", "big_logo.png");
-            inst.setExtension("jar");
-        }
-        project.getArtifacts().add("archives", inst);
     }
     
     @Override
@@ -591,5 +509,11 @@ public class EduDevPlugin extends DevBasePlugin
         task = (SubprojectTask) project.getTasks().getByName("eclipseMcEdu");
         task.configureProject(getExtension().getSubprojects());
         task.configureProject(getExtension().getCleanProject());
+    }
+    
+    @Override
+    protected boolean hasInstaller()
+    {
+        return false;
     }
 }

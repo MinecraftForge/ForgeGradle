@@ -107,7 +107,7 @@ final class DevConstants
     static final String ECLIPSE_CDN         = WORKSPACE + "/cauldron";
     static final String ECLIPSE_CDN_SRC     = ECLIPSE_CDN + "/src/main/java";
     static final String ECLIPSE_CDN_RES     = ECLIPSE_CDN + "/src/main/resources";
-    static final String ECLIPSE_EDU         = WORKSPACE + "/edu";
+    static final String ECLIPSE_EDU         = WORKSPACE + "/McEdu";
     static final String ECLIPSE_EDU_SRC     = ECLIPSE_EDU + "/src/main/java";
     static final String ECLIPSE_EDU_RES     = ECLIPSE_EDU + "/src/main/resources";
     static final String ECLIPSE_RUN         = WORKSPACE + "/run";

@@ -59,14 +59,6 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
     @Override
     public void applyPlugin()
     {
-        // apply L4J
-        this.applyExternalPlugin("launch4j");
-
-        if (project.getTasks().findByName("uploadArchives") != null)
-        {
-            project.getTasks().getByName("uploadArchives").dependsOn("launch4j");
-        }
-
         ExtractTask task = makeTask("extractWorkspace", ExtractTask.class);
         {
             task.getOutputs().upToDateWhen(new Closure<Boolean>(null) {
@@ -80,16 +72,35 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
             task.into(delayedFile(DevConstants.WORKSPACE));
         }
 
-        DownloadTask task1 = makeTask("downloadBaseInstaller", DownloadTask.class);
+        DownloadTask task1;
+        if (hasInstaller())
         {
-            task1.setOutput(delayedFile(DevConstants.INSTALLER_BASE));
-            task1.setUrl(delayedString(DevConstants.INSTALLER_URL));
-        }
+            // apply L4J
+            this.applyExternalPlugin("launch4j");
 
-        task1 = makeTask("downloadL4J", DownloadTask.class);
-        {
-            task1.setOutput(delayedFile(DevConstants.LAUNCH4J));
-            task1.setUrl(delayedString(DevConstants.LAUNCH4J_URL));
+            if (project.getTasks().findByName("uploadArchives") != null)
+            {
+                project.getTasks().getByName("uploadArchives").dependsOn("launch4j");
+            }
+            
+            task1 = makeTask("downloadBaseInstaller", DownloadTask.class);
+            {
+                task1.setOutput(delayedFile(DevConstants.INSTALLER_BASE));
+                task1.setUrl(delayedString(DevConstants.INSTALLER_URL));
+            }
+            
+            task1 = makeTask("downloadL4J", DownloadTask.class);
+            {
+                task1.setOutput(delayedFile(DevConstants.LAUNCH4J));
+                task1.setUrl(delayedString(DevConstants.LAUNCH4J_URL));
+            }
+            
+            task = makeTask("extractL4J", ExtractTask.class);
+            {
+                task.dependsOn("downloadL4J");
+                task.from(delayedFile(DevConstants.LAUNCH4J));
+                task.into(delayedFile(DevConstants.LAUNCH4J_DIR));
+            }
         }
 
         task1 = makeTask("updateJson", DownloadTask.class);
@@ -97,13 +108,6 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
             task1.setUrl(delayedString(DevConstants.MC_JSON_URL));
             task1.setOutput(delayedFile(DevConstants.JSON_BASE));
             task1.setDoesCache(false);
-        }
-
-        task = makeTask("extractL4J", ExtractTask.class);
-        {
-            task.dependsOn("downloadL4J");
-            task.from(delayedFile(DevConstants.LAUNCH4J));
-            task.into(delayedFile(DevConstants.LAUNCH4J_DIR));
         }
 
         CompressLZMA task3 = makeTask("compressDeobfData", CompressLZMA.class);
@@ -160,6 +164,9 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
 
     private void configureLaunch4J()
     {
+        if (!hasInstaller())
+            return;
+        
         final File installer = ((Zip) project.getTasks().getByName("packageInstaller")).getArchivePath();
 
         File output = new File(installer.getParentFile(), installer.getName().replace(".jar", "-win.exe"));
@@ -489,5 +496,10 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
         }
         out.close();
         signed.delete();
+    }
+    
+    protected boolean hasInstaller()
+    {
+        return true;
     }
 }
