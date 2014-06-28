@@ -41,11 +41,13 @@ import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.bundling.Zip;
+import org.gradle.process.ExecResult;
 import org.gradle.process.ExecSpec;
 
 import argo.jdom.JsonNode;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
@@ -372,8 +374,11 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
     @SuppressWarnings("serial")
     protected static String runGit(final Project project, final File workDir, final String... args)
     {
+        if(!isGitOnPath()) // Check if git is installed
+            return null;
+
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
-        project.exec(new Closure<ExecSpec>(project, project)
+        ExecResult result = project.exec(new Closure<ExecSpec>(project, project)
         {
             @Override
             public ExecSpec call()
@@ -382,12 +387,46 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
                 exec.setExecutable("git");
                 exec.args((Object[]) args);
                 exec.setStandardOutput(out);
+                exec.setErrorOutput(out);
                 exec.setWorkingDir(workDir);
+                exec.setIgnoreExitValue(true);
                 return exec;
             }
         });
+        // Handle non-zero exit codes
+        if(result.getExitValue() != 0)
+        {
+            StringBuilder sb = new StringBuilder("git");
+            for(String arg : args)
+                sb.append(' ').append(arg);
+            System.out.println(String.format("Command '%s' returned non-zero exit code: %s", sb.toString(), result.getExitValue()));
+            System.out.println("> " + out.toString().trim());
+            return null;
+        }
 
         return out.toString().trim();
+    }
+
+    private static boolean isGitOnPath()
+    {
+        List<String> list = Lists.newArrayList();
+        for(String s : System.getenv("PATH").split(File.pathSeparator))
+        {
+            list.addAll(shallowListFiles(new File(s)));
+        }
+        return list.contains("git") || list.contains("git.exe");
+    }
+
+    private static List<String> shallowListFiles(File f)
+    {
+        List<String> list = Lists.newArrayList();
+        if(f.isFile()) // It's a file.  Add it.
+            list.add(f.getName());
+        else if (f.isDirectory()) // It's a directory. Only add children that are files.
+            for(File f1 : f.listFiles())
+                if(f1.isFile())
+                    list.add(f1.getName());
+        return list;
     }
 
     private boolean shouldSign(String path, List<String> includes, List<String> excludes)
