@@ -260,7 +260,7 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
                 continue;
             }
 
-            NodeList list2 = root.getElementsByTagName("option");
+            NodeList list2 = e.getElementsByTagName("option");
             for (int j = 0; j < list2.getLength(); j++)
             {
                 Element e2 = (Element) list2.item(j);
