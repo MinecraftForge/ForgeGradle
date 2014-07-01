@@ -202,7 +202,7 @@ public class ArtifactSpec
         else
         {
             archiveName = resolveString(archiveName);
-            if (archiveName != null) // the jar set it.. we dont need to reset this stuff.
+            if (!Strings.isNullOrEmpty((String)archiveName)) // the jar set it.. we dont need to reset this stuff.
             {
                 return;
             }
@@ -239,7 +239,7 @@ public class ArtifactSpec
     private Object resolveString(Object obj)
     {
         if (obj == null)
-            return null;
+            return "";
         else if (obj instanceof Closure)
             return resolveString(((Closure<Object>) obj).call());
         else
