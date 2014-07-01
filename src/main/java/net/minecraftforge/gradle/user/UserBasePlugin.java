@@ -462,7 +462,22 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                     String module = task.getProject().getProjectDir().getCanonicalPath();
                     File file = project.file(".idea/workspace.xml");
                     if (!file.exists())
-                        throw new RuntimeException("Only run this task after importing a build.gradle file into intellij!");
+                    {
+                        file = null;
+                        // find iws file
+                        for (File f : project.getProjectDir().listFiles())
+                        {
+                            if (f.isFile() && f.getName().endsWith(".iws"))
+                            {
+                                file = f;
+                            }
+                        }
+
+                        if (file == null)
+                        {
+                            throw new RuntimeException("Only run this task after importing a build.gradle file into intellij!");
+                        }
+                    }
 
                     DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
                     DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
