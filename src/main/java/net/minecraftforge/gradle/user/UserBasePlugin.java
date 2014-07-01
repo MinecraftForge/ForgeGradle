@@ -247,11 +247,19 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     /**
      * For run configurations
      */
+    protected abstract Iterable<String> getClientVMArgs();
+    /**
+     * For run configurations
+     */
     protected abstract String getServerRunClass();
     /**
      * For run configurations
      */
     protected abstract Iterable<String> getServerRunArgs();
+    /**
+     * For run configurations
+     */
+    protected abstract Iterable<String> getServerVMArgs();
     
 //    protected abstract void configureCISetup(Task task);
 //    protected abstract void configureDevSetup(Task task);
@@ -555,14 +563,14 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 {
                         "Minecraft Client",
                         getClientRunClass(),
-                        "-Xincgc -Xmx1024M -Xms1024M -Djava.library.path=\"" + natives + "\" -Dfml.ignoreInvalidMinecraftCertificates=true",
+                        Joiner.on(' ').join(getClientVMArgs())+" -Djava.library.path=\"" + natives + "\"",
                         Joiner.on(' ').join(getClientRunArgs())
                 },
                 new String[]
                 {
                         "Minecraft Server",
                         getServerRunClass(),
-                        "-Xincgc -Dfml.ignoreInvalidMinecraftCertificates=true",
+                        Joiner.on(' ').join(getServerVMArgs()),
                         Joiner.on(' ').join(getServerRunArgs())
                 }
         };
@@ -787,7 +795,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         JavaExec exec = makeTask("runClient", JavaExec.class);
         {
             exec.setMain(getClientRunClass());
-            exec.jvmArgs("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
+            exec.jvmArgs(getClientVMArgs());
             exec.args(getClientRunArgs());
             exec.workingDir(delayedFile("{ASSET_DIR}/.."));
             exec.setStandardOutput(System.out);
@@ -800,7 +808,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         exec = makeTask("runServer", JavaExec.class);
         {
             exec.setMain(getServerRunClass());
-            exec.jvmArgs("-Xincgc", "-Dfml.ignoreInvalidMinecraftCertificates=true");
+            exec.jvmArgs(getServerVMArgs());
             exec.workingDir(delayedFile("{ASSET_DIR}/.."));
             exec.args(getServerRunArgs());
             exec.setStandardOutput(System.out);
@@ -814,7 +822,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         exec = makeTask("debugClient", JavaExec.class);
         {
             exec.setMain(getClientRunClass());
-            exec.jvmArgs("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
+            exec.jvmArgs(getClientVMArgs());
             exec.args(getClientRunArgs());
             exec.workingDir(delayedFile("{ASSET_DIR}/.."));
             exec.setStandardOutput(System.out);
@@ -828,7 +836,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         exec = makeTask("debugServer", JavaExec.class);
         {
             exec.setMain(getServerRunClass());
-            exec.jvmArgs("-Xincgc", "-Dfml.ignoreInvalidMinecraftCertificates=true");
+            exec.jvmArgs(getServerVMArgs());
             exec.workingDir(delayedFile("{ASSET_DIR}/.."));
             exec.args(getServerRunArgs());
             exec.setStandardOutput(System.out);
