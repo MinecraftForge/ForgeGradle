@@ -39,8 +39,8 @@ public class CurseUploadTask extends DefaultTask
     Object               artifact;
     String               apiKey;
     Set<Object>          gameVersions  = new TreeSet<Object>();
-    String               releaseType;
-    String               changelog;
+    Object               releaseType;
+    Object               changelog;
     int                  fileID;
 
     private final String UPLOAD_URL    = "http://minecraft.curseforge.com/api/projects/%s/upload-file";
@@ -254,7 +254,7 @@ public class CurseUploadTask extends DefaultTask
 
     public String getReleaseType()
     {
-        return releaseType;
+        return (String) (releaseType = resolveString(releaseType));
     }
 
     public void setReleaseType(Object releaseType)
@@ -267,7 +267,7 @@ public class CurseUploadTask extends DefaultTask
 
     public String getChangelog()
     {
-        return changelog;
+        return (String) (changelog = resolveString(changelog));
     }
 
     public void setChangelog(String changeLog)
