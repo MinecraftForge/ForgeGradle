@@ -787,7 +787,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         JavaExec exec = makeTask("runClient", JavaExec.class);
         {
             exec.setMain(getClientRunClass());
-            exec.jvmArgs("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
+            //exec.jvmArgs("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
             exec.args(getClientRunArgs());
             exec.workingDir(delayedFile("{ASSET_DIR}/.."));
             exec.setStandardOutput(System.out);

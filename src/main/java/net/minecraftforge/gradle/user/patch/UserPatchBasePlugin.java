@@ -2,31 +2,32 @@ package net.minecraftforge.gradle.user.patch;
 
 import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
 import static net.minecraftforge.gradle.user.UserConstants.CLASSIFIER_DECOMPILED;
-import static net.minecraftforge.gradle.user.patch.UserPatchConstants.BINARIES_JAR;
-import static net.minecraftforge.gradle.user.patch.UserPatchConstants.BINPATCHES;
-import static net.minecraftforge.gradle.user.patch.UserPatchConstants.CLASSIFIER_PATCHED;
-import static net.minecraftforge.gradle.user.patch.UserPatchConstants.ECLIPSE_LOCATION;
-import static net.minecraftforge.gradle.user.patch.UserPatchConstants.JAR_BINPATCHED;
-import static net.minecraftforge.gradle.user.patch.UserPatchConstants.JSON;
-import static net.minecraftforge.gradle.user.patch.UserPatchConstants.RES_DIR;
+import static net.minecraftforge.gradle.user.patch.UserPatchConstants.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import groovy.lang.Closure;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.user.ApplyBinPatchesTask;
+import net.minecraftforge.gradle.tasks.user.CreateStartTask;
 import net.minecraftforge.gradle.user.UserBasePlugin;
 
+import net.minecraftforge.gradle.user.UserConstants;
 import org.gradle.api.Action;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
 
 import com.google.common.collect.ImmutableList;
+import org.gradle.process.ExecSpec;
 
 public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtension>
 {
@@ -100,13 +101,37 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
             }
             
         });
+
+        // create start task and add it to the classpath and stuff
+        {
+            // create task
+            CreateStartTask task =  makeTask("makeStart", CreateStartTask.class);
+            {
+                task.setAssetIndex(delayedString("{ASSET_INDEX}"));
+                task.setAssetsDir(delayedFile("{CACHE_DIR}/minecraft/assets"));
+                task.setVersion(delayedString("{MC_VERSION}"));
+                task.setTweaker(delayedString("cpw.mods.fml.common.launcher.FMLTweaker"));
+                task.setOutputFile(delayedFile(STARTCLASS));
+                task.mustRunAfter("extractUserDev"); // just so it doesnt happen too early.
+            }
+
+            // setup dependency
+            Configuration config = project.getConfigurations().create(CONFIG_START);
+            project.getDependencies().add(CONFIG_START, project.files(delayedFile(STARTCLASSDIR)).builtBy(task));
+            project.getConfigurations().getByName(UserConstants.CONFIG_DEPS).extendsFrom(config);
+
+            // task dependencies
+            //((JavaExec) project.getTasks().getByName("runClient")).classpath(config);
+            project.getTasks().getByName("runClient").dependsOn(task);
+            //((JavaExec) project.getTasks().getByName("runServer")).classpath(config);
+            project.getTasks().getByName("runServer").dependsOn(task);
+            project.getTasks().getByName("setupDevWorkspace").dependsOn(task);
+            project.getTasks().getByName("setupDecompWorkspace").dependsOn(task);
+        }
     }
     
     @Override
-    public final void applyOverlayPlugin()
-    {
-        // nothing.
-    }
+    public final void applyOverlayPlugin() { }
 
     @Override
     public final boolean canOverlayPlugin()
@@ -250,25 +275,25 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     @Override
     protected String getClientRunClass()
     {
-        return "net.minecraft.launchwrapper.Launch";
+        return "GradleStart"; //return "net.minecraft.launchwrapper.Launch";
     }
 
     @Override
     protected Iterable<String> getClientRunArgs()
     {
-        return ImmutableList.of("--version", "1.7", "--tweakClass", "cpw.mods.fml.common.launcher.FMLTweaker", "--username=ForgeDevName", "--accessToken", "FML", "--userProperties={}");
+        return new ArrayList<String>(0); //return ImmutableList.of("--version", "1.7", "--tweakClass", "cpw.mods.fml.common.launcher.FMLTweaker", "--username=ForgeDevName", "--accessToken", "FML", "--userProperties={}");
     }
 
     @Override
     protected String getServerRunClass()
     {
-        return "cpw.mods.fml.relauncher.ServerLaunchWrapper";
+        return "GradleStart"; //"cpw.mods.fml.relauncher.ServerLaunchWrapper";
     }
 
     @Override
     protected Iterable<String> getServerRunArgs()
     {
-        return new ArrayList<String>(0);
+        return ImmutableList.of("--server");
     }
 
     /**

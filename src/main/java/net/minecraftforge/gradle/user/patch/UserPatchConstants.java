@@ -21,4 +21,8 @@ public class UserPatchConstants
 
     static final String FML_PATCHES_ZIP    = "{USER_DEV}/fmlpatches.zip";
     static final String FORGE_PATCHES_ZIP  = "{USER_DEV}/forgepatches.zip";
+
+    static final String CONFIG_START       = "forgeGradleStartClass";
+    static final String STARTCLASSDIR      = "{API_CACHE_DIR}/start";
+    static final String STARTCLASS         = STARTCLASSDIR+"/GradleStart.class";
 }
