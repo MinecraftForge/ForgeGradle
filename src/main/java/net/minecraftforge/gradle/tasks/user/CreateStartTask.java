@@ -42,7 +42,7 @@ public class CreateStartTask extends CachedTask
         String file = theResource;
         file = file.replace("@@MCVERSION@@", getVersion());
         file = file.replace("@@ASSETINDEX@@", getAssetIndex());
-        file = file.replace("@@ASSETSDIR@@", getAssetsDir());
+        file = file.replace("@@ASSETSDIR@@", getAssetsDir()).replace("\\", "/");
         file = file.replace("@@TWEAKER@@", getTweaker());
 
         File tempSrc = new File(getTemporaryDir(), "GradleStart.java");
