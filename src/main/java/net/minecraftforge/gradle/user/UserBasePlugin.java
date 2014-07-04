@@ -782,8 +782,9 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             repackageTask.onlyIf(onlyIfCheck);
         }
     }
-    
-    private final void createExecTasks()
+
+    @SuppressWarnings("unchecked")
+    private void createExecTasks()
     {
         JavaExec exec = makeTask("runClient", JavaExec.class);
         {
@@ -814,6 +815,19 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         exec = makeTask("debugClient", JavaExec.class);
         {
+            exec.doFirst( new Action() {
+                @Override public void execute(Object o)
+                {
+                    project.getLogger().error("");
+                    project.getLogger().error("THIS TASK WILL BE DEP RECATED SOON!");
+                    project.getLogger().error("Instead use the runClient task, with the --debug-jvm option");
+                    if (!project.getGradle().getGradleVersion().equals("1.12"))
+                    {
+                        project.getLogger().error("You may have to update to Gradle 1.12");
+                    }
+                    project.getLogger().error("");
+                }
+            });
             exec.setMain(getClientRunClass());
             exec.jvmArgs("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
             exec.args(getClientRunArgs());
@@ -828,6 +842,19 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         exec = makeTask("debugServer", JavaExec.class);
         {
+            exec.doFirst( new Action() {
+                @Override public void execute(Object o)
+                {
+                    project.getLogger().error("");
+                    project.getLogger().error("THIS TASK WILL BE DEPRECATED SOON!");
+                    project.getLogger().error("Instead use the runServer task, with the --debug-jvm option");
+                    if (!project.getGradle().getGradleVersion().equals("1.12"))
+                    {
+                        project.getLogger().error("You may have to update to Gradle 1.12");
+                    }
+                    project.getLogger().error("");
+                }
+            });
             exec.setMain(getServerRunClass());
             exec.jvmArgs("-Xincgc", "-Dfml.ignoreInvalidMinecraftCertificates=true");
             exec.workingDir(delayedFile("{ASSET_DIR}/.."));
