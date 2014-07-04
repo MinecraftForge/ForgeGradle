@@ -753,6 +753,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             extract.from(remapped);
             extract.into(recompSrc);
             extract.setIncludeEmptyDirs(false);
+            extract.setClean(true);
             extract.dependsOn(remap);
 
             extract.onlyIf(onlyIfCheck);

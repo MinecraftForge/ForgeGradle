@@ -17,10 +17,7 @@ import net.minecraftforge.gradle.delayed.DelayedFile;
 
 import org.apache.shiro.util.AntPathMatcher;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.OutputDirectory;
-import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.*;
 
 import com.google.common.io.ByteStreams;
 
@@ -42,6 +39,10 @@ public class ExtractTask extends CachedTask
     
     @Input
     private boolean includeEmptyDirs = true;
+
+    @Input
+    @Optional
+    private boolean clean = false;
     
     @Cached
     @OutputDirectory
@@ -50,10 +51,14 @@ public class ExtractTask extends CachedTask
     @TaskAction
     public void doTask() throws IOException
     {
-        if (!destinationDir.call().exists())
+        File dest = destinationDir.call();
+
+        if (shouldClean())
         {
-            destinationDir.call().mkdirs();
+            delete(dest);
         }
+
+        dest.mkdirs();
 
         for (DelayedFile source : sourcePaths)
         {
@@ -69,7 +74,7 @@ public class ExtractTask extends CachedTask
                     ZipEntry entry = itr.nextElement();
                     if (shouldExtract(entry.getName()))
                     {
-                        File out = new File(destinationDir.call(), entry.getName());
+                        File out = new File(dest, entry.getName());
                         getLogger().debug("  " + out);
                         if (entry.isDirectory())
                         {
@@ -103,6 +108,16 @@ public class ExtractTask extends CachedTask
             }
         }
     }
+
+    private void delete(File f) throws IOException
+    {
+        if (f.isDirectory()) {
+            for (File c : f.listFiles())
+                delete(c);
+        }
+        f.delete();
+    }
+
 
     private boolean shouldExtract(String path)
     {
@@ -221,5 +236,15 @@ public class ExtractTask extends CachedTask
     protected boolean defaultCache()
     {
         return false;
+    }
+
+    public boolean shouldClean()
+    {
+        return clean;
+    }
+
+    public void setClean(boolean clean)
+    {
+        this.clean = clean;
     }
 }
