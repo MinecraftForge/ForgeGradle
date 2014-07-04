@@ -38,18 +38,19 @@ public class CreateStartTask extends CachedTask
     @TaskAction
     public void doTask() throws IOException
     {
-        getLogger().lifecycle("extracting resaource");
         String file = theResource;
         file = file.replace("@@MCVERSION@@", getVersion());
         file = file.replace("@@ASSETINDEX@@", getAssetIndex());
         file = file.replace("@@ASSETSDIR@@", getAssetsDir()).replace("\\", "/");
         file = file.replace("@@TWEAKER@@", getTweaker());
 
+        // because there are different versions of authlib
+        file = file.replace("@@USERTYPE@@", "1.7.2".equals(getVersion()) ? "" : "auth.getUserType().getName();");
+
         File tempSrc = new File(getTemporaryDir(), "GradleStart.java");
         tempSrc.getParentFile().mkdirs();
         Files.write(file, tempSrc, Charsets.UTF_8);
 
-        getLogger().lifecycle("compiling");
         getProject().exec(new Closure<ExecSpec>(this)
         {
             private static final long serialVersionUID = 4608694547855396167L;
@@ -77,7 +78,6 @@ public class CreateStartTask extends CachedTask
             }
         });
 
-        getLogger().lifecycle("copying to cache");
         Files.copy(new File(getTemporaryDir(), "GradleStart.class"), getOutputFile());
     }
 

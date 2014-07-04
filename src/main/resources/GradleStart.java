@@ -98,8 +98,8 @@ public class GradleStart
         LOGGER.info("Login Succesful!");
         args.accessToken = auth.getAuthenticatedToken();
         args.uuid = auth.getUserID();
-        args.userType = auth.getUserType().getName();
-        args.userProperties = auth.getUserProperties().toString();
+        @@USERTYPE@@
+                args.userProperties = auth.getUserProperties().toString();
     }
 
 
