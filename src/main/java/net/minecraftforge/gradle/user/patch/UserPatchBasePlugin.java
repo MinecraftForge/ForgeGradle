@@ -9,25 +9,19 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import groovy.lang.Closure;
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.tasks.CreateStartTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.user.ApplyBinPatchesTask;
-import net.minecraftforge.gradle.tasks.user.CreateStartTask;
 import net.minecraftforge.gradle.user.UserBasePlugin;
-
 import net.minecraftforge.gradle.user.UserConstants;
+
 import org.gradle.api.Action;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.JavaPluginConvention;
-import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
-
-import com.google.common.collect.ImmutableList;
-import org.gradle.process.ExecSpec;
 
 public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtension>
 {
@@ -111,19 +105,21 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
                 task.setAssetsDir(delayedFile("{CACHE_DIR}/minecraft/assets"));
                 task.setVersion(delayedString("{MC_VERSION}"));
                 task.setTweaker(delayedString("cpw.mods.fml.common.launcher.FMLTweaker"));
-                task.setOutputFile(delayedFile(STARTCLASS));
-                task.mustRunAfter("extractUserDev"); // just so it doesnt happen too early.
+                task.setServerBounce(delayedString("cpw.mods.fml.relauncher.ServerLaunchWrapper"));
+                task.setClientBounce(delayedString("net.minecraft.launchwrapper.Launch"));
+                task.setServerOut(delayedFile(START_SERVER));
+                task.setClientOut(delayedFile(START_CLIENT));
+                
+                task.dependsOn("extractUserDev", "extractNatives");
             }
 
             // setup dependency
             Configuration config = project.getConfigurations().create(CONFIG_START);
-            project.getDependencies().add(CONFIG_START, project.files(delayedFile(STARTCLASSDIR)).builtBy(task));
-            project.getConfigurations().getByName(UserConstants.CONFIG_DEPS).extendsFrom(config);
+            project.getDependencies().add(CONFIG_START, project.files(delayedFile(START_DIR)).builtBy(task));
+            project.getConfigurations().getByName(UserConstants.CONFIG_MC).extendsFrom(config);
 
             // task dependencies
-            //((JavaExec) project.getTasks().getByName("runClient")).classpath(config);
             project.getTasks().getByName("runClient").dependsOn(task);
-            //((JavaExec) project.getTasks().getByName("runServer")).classpath(config);
             project.getTasks().getByName("runServer").dependsOn(task);
             project.getTasks().getByName("setupDevWorkspace").dependsOn(task);
             project.getTasks().getByName("setupDecompWorkspace").dependsOn(task);
@@ -287,13 +283,13 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     @Override
     protected String getServerRunClass()
     {
-        return "GradleStart"; //"cpw.mods.fml.relauncher.ServerLaunchWrapper";
+        return "GradleStartServer"; //"cpw.mods.fml.relauncher.ServerLaunchWrapper";
     }
 
     @Override
     protected Iterable<String> getServerRunArgs()
     {
-        return ImmutableList.of("--server");
+        return new ArrayList<String>(0); //ImmutableList.of("--server");
     }
 
     /**

@@ -23,6 +23,7 @@ public class UserPatchConstants
     static final String FORGE_PATCHES_ZIP  = "{USER_DEV}/forgepatches.zip";
 
     static final String CONFIG_START       = "forgeGradleStartClass";
-    static final String STARTCLASSDIR      = "{API_CACHE_DIR}/start";
-    static final String STARTCLASS         = STARTCLASSDIR+"/GradleStart.class";
+    static final String START_DIR          = "{API_CACHE_DIR}/start";
+    static final String START_CLIENT       = START_DIR+"/GradleStart.class";
+    static final String START_SERVER       = START_DIR+"/GradleStartServer.class";
 }

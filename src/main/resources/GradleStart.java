@@ -37,17 +37,11 @@ public class GradleStart
         // check the server
         if ("server".equalsIgnoreCase(args[0]) || "--server".equalsIgnoreCase(args[0])) // cant be 0, so it must be atleast 1 right?
         {
-            startServer(Arrays.copyOfRange(args, 1, args.length));
+            throw new IllegalArgumentException("If you want to run a server, use GradleStartServer as your main class");
         }
 
         // not server, but has args? its client.
         startClient(args);
-    }
-
-    private static void startServer(String[] args)
-    {
-        // no defaults here.. so.. uh,... yeah...
-        bounce("cpw.mods.fml.relauncher.ServerLaunchWrapper", args);
     }
 
     private static void startClient(String[] args)
@@ -65,7 +59,7 @@ public class GradleStart
 
         System.gc(); // why not? itl clean stuff up before starting MC.
         LOGGER.info("Running with arguments: "+Arrays.toString(args));
-        bounce("net.minecraft.launchwrapper.Launch", args);
+        bounce("@@BOUNCERCLIENT@@", args);
     }
 
     private static void bounce(String mainClass, String[] args)
@@ -99,7 +93,7 @@ public class GradleStart
         args.accessToken = auth.getAuthenticatedToken();
         args.uuid = auth.getUserID();
         @@USERTYPE@@
-                args.userProperties = auth.getUserProperties().toString();
+        args.userProperties = auth.getUserProperties().toString();
     }
 
 
