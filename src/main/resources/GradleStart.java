@@ -20,7 +20,7 @@ import java.util.List;
 
 public class GradleStart
 {
-    private static final Logger LOGGER =LogManager.getLogger();
+    private static final Logger LOGGER = LogManager.getLogger();
 
     public static void main(String[] args)
     {
@@ -146,12 +146,14 @@ public class GradleStart
         final OptionParser parser = new OptionParser();
         parser.allowsUnrecognizedOptions();
 
+        final OptionSpec<String> versionOpt = parser.accepts("version", "the profile name").withRequiredArg().ofType(String.class).defaultsTo(version);
         final OptionSpec<String> usernameOpt = parser.accepts("username", "the username").withRequiredArg().ofType(String.class).defaultsTo(username);
         final OptionSpec<String> passwordOpt = parser.accepts("password", "the password").withRequiredArg().ofType(String.class);
         final NonOptionArgumentSpec<String> nonOption = parser.nonOptions();
 
         final OptionSet options = parser.parse(args);
 
+        version = versionOpt.value(options);
         username = usernameOpt.value(options);
         password = passwordOpt.value(options);
         extras = nonOption.values(options);
