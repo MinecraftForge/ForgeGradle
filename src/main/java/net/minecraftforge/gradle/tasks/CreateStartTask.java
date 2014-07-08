@@ -32,7 +32,8 @@ import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
-import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.api.tasks.OutputFiles;
 import org.gradle.api.tasks.compile.JavaCompile;
 
 import com.google.common.base.Charsets;
@@ -55,27 +56,24 @@ public class CreateStartTask extends JavaCompile
     private DelayedString serverBounce;
     @Input
     private DelayedString clientBounce;
-    
+
     @Input
     private String clientResource = getResource("GradleStart.java");
     @Input
     private String serverResource = getResource("GradleStartServer.java");
 
-    @OutputFile
+    @OutputDirectory
     @Cached
-    private DelayedFile serverOut;
-    @OutputFile
-    @Cached
-    private DelayedFile clientOut;
+    private DelayedFile startOut;
 
     @SuppressWarnings({ "unchecked", "rawtypes", "serial" })
     public CreateStartTask() throws IOException
     {
         super();
-        
+
         final File clientJava = new File(getTemporaryDir(), "GradleStart.java");
         final File serverJava = new File(getTemporaryDir(), "GradleStartServer.java");
-        
+
         Closure clientClosure = new Closure<File>(null, null) {
 
             @Override
@@ -110,9 +108,9 @@ public class CreateStartTask extends JavaCompile
                 return null;
             }
         };
-        
+
         //this.getInputs().source(paramObject)
-        
+
         // configure compilation
         this.source(clientClosure, serverClosure);
         this.setClasspath(getProject().getConfigurations().getByName(UserConstants.CONFIG_DEPS));
@@ -120,7 +118,7 @@ public class CreateStartTask extends JavaCompile
         this.setSourceCompatibility("1.6");
         this.setTargetCompatibility("1.6");
         this.getOptions().setEncoding("UTF-8");
-        
+
         // copy the stuff to the cache
         this.doLast(new Action() {
 
@@ -129,8 +127,13 @@ public class CreateStartTask extends JavaCompile
             {
                 try
                 {
-                    Files.copy(new File(getTemporaryDir(), "GradleStart.class"), getClientOut());
-                    Files.copy(new File(getTemporaryDir(), "GradleStartServer.class"), getServerOut());
+                    for (File f : getTemporaryDir().listFiles())
+                    {
+                        if (f.isFile() && f.getName().endsWith(".class"))
+                        {
+                            Files.copy(f, new File(getStartOut(), f.getName()));
+                        }
+                    }
                 }
                 catch (IOException e)
                 {
@@ -139,7 +142,7 @@ public class CreateStartTask extends JavaCompile
             }
 
         });
-        
+
         // do the caching stuff
         // do this last, so it adds its stuff first.
         cachedStuff();
@@ -158,12 +161,12 @@ public class CreateStartTask extends JavaCompile
         }
 
     }
-    
+
     private void replaceResource(String resource, File out) throws IOException
     {
         resource = resource.replace("@@MCVERSION@@", getVersion());
         resource = resource.replace("@@ASSETINDEX@@", getAssetIndex());
-        resource = resource.replace("@@ASSETSDIR@@", getAssetsDir()).replace("\\", "/");
+        resource = resource.replace("@@ASSETSDIR@@", getAssetsDir().replace("\\", "/"));
         resource = resource.replace("@@TWEAKER@@", getTweaker());
         resource = resource.replace("@@BOUNCERSERVER@@", getServerBounce());
         resource = resource.replace("@@BOUNCERCLIENT@@", getClientBounce());
@@ -499,7 +502,7 @@ public class CreateStartTask extends JavaCompile
     {
         this.tweaker = version;
     }
-    
+
     public String getServerBounce()
     {
         return serverBounce.call();
@@ -509,7 +512,7 @@ public class CreateStartTask extends JavaCompile
     {
         this.serverBounce = version;
     }
-    
+
     public String getClientBounce()
     {
         return clientBounce.call();
@@ -520,23 +523,16 @@ public class CreateStartTask extends JavaCompile
         this.clientBounce = version;
     }
 
-    public File getServerOut()
+    public File getStartOut()
     {
-        return serverOut.call();
+        File dir = startOut.call();
+        if (!dir.exists())
+            dir.mkdirs();
+        return startOut.call();
     }
 
-    public void setServerOut(DelayedFile outputFile)
+    public void setStartOut(DelayedFile outputFile)
     {
-        this.serverOut = outputFile;
-    }
-    
-    public File getClientOut()
-    {
-        return clientOut.call();
-    }
-
-    public void setClientOut(DelayedFile outputFile)
-    {
-        this.clientOut = outputFile;
+        this.startOut = outputFile;
     }
 }

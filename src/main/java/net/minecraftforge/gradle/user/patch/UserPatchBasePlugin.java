@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.CreateStartTask;
@@ -18,10 +20,15 @@ import net.minecraftforge.gradle.tasks.user.ApplyBinPatchesTask;
 import net.minecraftforge.gradle.user.UserBasePlugin;
 import net.minecraftforge.gradle.user.UserConstants;
 
+import org.apache.tools.ant.types.Commandline;
 import org.gradle.api.Action;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
+
+import aQute.lib.getopt.CommandLine;
+
+import com.google.common.collect.ImmutableList;
 
 public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtension>
 {
@@ -42,7 +49,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
             task.dependsOn("mergeJars");
 
             project.getTasks().getByName("deobfBinJar").dependsOn(task);
-            
+
             ProcessJarTask deobf = (ProcessJarTask) project.getTasks().getByName("deobfBinJar").dependsOn(task);;
             deobf.setInJar(delayedFile(JAR_BINPATCHED));
             deobf.dependsOn(task);
@@ -63,7 +70,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
             remap.setInJar(processed);
             remap.dependsOn(patch);
         }
-        
+
         // configure eclipse task to do extra stuff.
         project.getTasks().getByName("eclipse").doLast(new Action() {
 
@@ -78,7 +85,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
                     {
                         byte[] LOCATION_BEFORE = new byte[] { 0x40, (byte) 0xB1, (byte) 0x8B, (byte) 0x81, 0x23, (byte) 0xBC, 0x00, 0x14, 0x1A, 0x25, (byte) 0x96, (byte) 0xE7, (byte) 0xA3, (byte) 0x93, (byte) 0xBE, 0x1E };
                         byte[] LOCATION_AFTER  = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0xC0, 0x58, (byte) 0xFB, (byte) 0xF3, 0x23, (byte) 0xBC, 0x00, 0x14, 0x1A, 0x51, (byte) 0xF3, (byte) 0x8C, 0x7B, (byte) 0xBB, 0x77, (byte) 0xC6 };
-                        
+
                         FileOutputStream fos = new FileOutputStream(f);
                         fos.write(LOCATION_BEFORE); //Unknown but w/e
                         fos.write((byte) ((projectDir.length() & 0xFF) >> 8));
@@ -93,7 +100,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
                     }
                 }
             }
-            
+
         });
 
         // create start task and add it to the classpath and stuff
@@ -107,9 +114,8 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
                 task.setTweaker(delayedString("cpw.mods.fml.common.launcher.FMLTweaker"));
                 task.setServerBounce(delayedString("cpw.mods.fml.relauncher.ServerLaunchWrapper"));
                 task.setClientBounce(delayedString("net.minecraft.launchwrapper.Launch"));
-                task.setServerOut(delayedFile(START_SERVER));
-                task.setClientOut(delayedFile(START_CLIENT));
-                
+                task.setStartOut(delayedFile(START_DIR));
+
                 task.dependsOn("extractUserDev", "extractNatives");
             }
 
@@ -125,7 +131,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
             project.getTasks().getByName("setupDecompWorkspace").dependsOn(task);
         }
     }
-    
+
     @Override
     public final void applyOverlayPlugin() { }
 
@@ -134,7 +140,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     {
         return false;
     }
-    
+
     @Override
     public final UserPatchExtension getOverlayExtension()
     {
@@ -182,24 +188,24 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
                 }
             }
         }
-        
+
         // configure fuzzing.
         ProcessSrcJarTask patch = (ProcessSrcJarTask) project.getTasks().getByName("processSources");
         patch.setMaxFuzz(getExtension().getMaxFuzz());
 
         super.delayedTaskConfig();
     }
-    
+
     @Override
     protected void doVersionChecks(String version)
     {
         if (version.indexOf('-') > 0)
             version = version.split("-")[1]; // We get passed the full version, including MC ver and branch, we only want api's version.
         int buildNumber = Integer.parseInt(version.substring(version.lastIndexOf('.') + 1));
-        
+
         doVersionChecks(buildNumber);
     }
-    
+
     protected abstract void doVersionChecks(int buildNumber);
 
     @Override
@@ -277,7 +283,18 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     @Override
     protected Iterable<String> getClientRunArgs()
     {
-        return new ArrayList<String>(0); //return ImmutableList.of("--version", "1.7", "--tweakClass", "cpw.mods.fml.common.launcher.FMLTweaker", "--username=ForgeDevName", "--accessToken", "FML", "--userProperties={}");
+        return getRunArgsFromProperty();
+        //return ImmutableList.of("--version", "1.7", "--tweakClass", "cpw.mods.fml.common.launcher.FMLTweaker", "--username=ForgeDevName", "--accessToken", "FML", "--userProperties={}");
+    }
+    private Iterable<String> getRunArgsFromProperty()
+    {
+        List<String> ret = new ArrayList<String>();
+        String arg = (String)project.getProperties().get("runArgs");
+        if (arg != null)
+        {
+            ret.addAll(Arrays.asList(Commandline.translateCommandline(arg)));
+        }
+        return ret;
     }
 
     @Override
@@ -289,7 +306,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     @Override
     protected Iterable<String> getServerRunArgs()
     {
-        return new ArrayList<String>(0); //ImmutableList.of("--server");
+        return getRunArgsFromProperty();
     }
 
     /**
@@ -298,7 +315,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
      * @param patch
      */
     protected abstract void configurePatching(ProcessSrcJarTask patch);
-    
+
     /**
      * Should be with seperate with periods.
      */
