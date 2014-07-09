@@ -74,6 +74,9 @@ dependencies {
 
     // stupid maven
     deployerJars "org.apache.maven.wagon:wagon-ssh:2.2"
+    
+    //Stuff used in the GradleStart classes
+    compile 'com.mojang:authlib:1.5.16'
 }
 
 artifacts { archives jar }
