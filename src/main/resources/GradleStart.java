@@ -113,6 +113,7 @@ public class GradleStart
         catch (AuthenticationException e)
         {
             LOGGER.error("-- Login failed!  " + e.getMessage());
+            Throwables.propagate(e);
             return; // dont set other variables
         }
 
