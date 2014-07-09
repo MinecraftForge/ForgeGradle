@@ -13,9 +13,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.xml.parsers.ParserConfigurationException;
 
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.delayed.DelayedString;
 import net.minecraftforge.gradle.json.version.AssetIndex;
 import net.minecraftforge.gradle.json.version.AssetIndex.AssetEntry;
-import net.minecraftforge.gradle.delayed.DelayedFile;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
@@ -31,8 +32,12 @@ public class DownloadAssetsTask extends DefaultTask
 
     @Input
     Closure<AssetIndex>                        index;
+    
+    @Input
+    DelayedString                              indexName;
 
     private boolean                            errored      = false;
+    private File                               virtualRoot  = null;
     private final ConcurrentLinkedQueue<Asset> filesLeft    = new ConcurrentLinkedQueue<Asset>();
     private final ArrayList<AssetsThread>      threads      = new ArrayList<AssetsThread>();
     private final File                         minecraftDir = new File(Constants.getMinecraftDirectory(), "assets/objects");
@@ -47,18 +52,26 @@ public class DownloadAssetsTask extends DefaultTask
         out.mkdirs();
 
         AssetIndex index = getIndex();
+        
+        // check virtual
+        if (index.virtual)
+        {
+            virtualRoot = new File(getAssetsDir(), "virtual/" + getIndexName());
+            virtualRoot.mkdirs();
+        }
 
         for (Entry<String, AssetEntry> e : index.objects.entrySet())
         {
-            Asset asset = new Asset(e.getValue().hash, e.getValue().size);
+            Asset asset = new Asset(e.getKey(), e.getValue().hash, e.getValue().size);
             File file = new File(out, asset.path);
+            File virtual = new File(virtualRoot, asset.name);
 
             // exists but not the right size?? delete
             if (file.exists() && file.length() != asset.size)
                 file.delete();
 
-            // does the file exist (still) ??
-            if (!file.exists())
+            // File or virtual doesnt exist? add to the list.
+            if (!file.exists() || !virtual.exists())
                 filesLeft.offer(asset);
         }
 
@@ -137,15 +150,27 @@ public class DownloadAssetsTask extends DefaultTask
     {
         this.index = index;
     }
+    
+    public String getIndexName()
+    {
+        return indexName.call();
+    }
+
+    public void setIndexName(DelayedString indexName)
+    {
+        this.indexName = indexName;
+    }
 
     private static class Asset
     {
+        public final String name;
         public final String path;
         public final String hash;
         public final long   size;
 
-        Asset(String hash, long size)
+        Asset(String name, String hash, long size)
         {
+            this.name = name;
             this.path = hash.substring(0, 2) + "/" + hash;
             this.hash = hash.toLowerCase();
             this.size = size;
@@ -171,7 +196,7 @@ public class DownloadAssetsTask extends DefaultTask
                     {
                         File file = new File(getAssetsDir(), "objects/" + asset.path);
 
-                        // does exist? create
+                        // doesnt exist? create
                         if (!file.exists())
                         {
                             file.getParentFile().mkdirs();
@@ -191,11 +216,23 @@ public class DownloadAssetsTask extends DefaultTask
 
                         Files.write(ByteStreams.toByteArray(stream), file);
                         stream.close();
+                        
+                        // copy to virtual
+                        if (virtualRoot != null)
+                        {
+                            File virtual = new File(virtualRoot, asset.name);
+                            virtual.getParentFile().mkdirs();
+                            
+                            Files.copy(file, virtual);
+                            
+                        }
 
                         // check hash...
                         String hash = Constants.hash(file, "SHA1");
                         if (asset.hash.equals(hash))
+                        {
                             break; // hashes are fine;
+                        }
                         else
                         {
                             file.delete();
@@ -207,7 +244,9 @@ public class DownloadAssetsTask extends DefaultTask
                         getLogger().error("Error downloading asset: " + asset.path);
                         e.printStackTrace();
                         if (!errored)
+                        {
                             errored = true;
+                        }
                     }
                 }
             }

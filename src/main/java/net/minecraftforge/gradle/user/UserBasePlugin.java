@@ -1,37 +1,10 @@
 package net.minecraftforge.gradle.user;
 
-import static net.minecraftforge.gradle.common.Constants.ASSETS;
 import static net.minecraftforge.gradle.common.Constants.FERNFLOWER;
 import static net.minecraftforge.gradle.common.Constants.JAR_CLIENT_FRESH;
 import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
 import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_FRESH;
-import static net.minecraftforge.gradle.user.UserConstants.ASTYLE_CFG;
-import static net.minecraftforge.gradle.user.UserConstants.CLASSIFIER_DECOMPILED;
-import static net.minecraftforge.gradle.user.UserConstants.CLASSIFIER_DEOBF_SRG;
-import static net.minecraftforge.gradle.user.UserConstants.CLASSIFIER_SOURCES;
-import static net.minecraftforge.gradle.user.UserConstants.CONFIG_DEPS;
-import static net.minecraftforge.gradle.user.UserConstants.CONFIG_MC;
-import static net.minecraftforge.gradle.user.UserConstants.CONFIG_NATIVES;
-import static net.minecraftforge.gradle.user.UserConstants.CONFIG_USERDEV;
-import static net.minecraftforge.gradle.user.UserConstants.DEOBF_MCP_SRG;
-import static net.minecraftforge.gradle.user.UserConstants.DEOBF_SRG_SRG;
-import static net.minecraftforge.gradle.user.UserConstants.DIRTY_DIR;
-import static net.minecraftforge.gradle.user.UserConstants.EXC_JSON;
-import static net.minecraftforge.gradle.user.UserConstants.EXC_MCP;
-import static net.minecraftforge.gradle.user.UserConstants.EXC_SRG;
-import static net.minecraftforge.gradle.user.UserConstants.FIELD_CSV;
-import static net.minecraftforge.gradle.user.UserConstants.MCP_PATCH_DIR;
-import static net.minecraftforge.gradle.user.UserConstants.MERGE_CFG;
-import static net.minecraftforge.gradle.user.UserConstants.METHOD_CSV;
-import static net.minecraftforge.gradle.user.UserConstants.NATIVES_DIR;
-import static net.minecraftforge.gradle.user.UserConstants.PACKAGED_EXC;
-import static net.minecraftforge.gradle.user.UserConstants.PACKAGED_SRG;
-import static net.minecraftforge.gradle.user.UserConstants.PARAM_CSV;
-import static net.minecraftforge.gradle.user.UserConstants.RECOMP_CLS_DIR;
-import static net.minecraftforge.gradle.user.UserConstants.RECOMP_SRC_DIR;
-import static net.minecraftforge.gradle.user.UserConstants.REOBF_NOTCH_SRG;
-import static net.minecraftforge.gradle.user.UserConstants.REOBF_SRG;
-import static net.minecraftforge.gradle.user.UserConstants.SOURCES_DIR;
+import static net.minecraftforge.gradle.user.UserConstants.*;
 import groovy.lang.Closure;
 import groovy.util.Node;
 import groovy.util.XmlParser;
@@ -55,7 +28,6 @@ import joptsimple.internal.Strings;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.json.JsonFactory;
-import net.minecraftforge.gradle.tasks.CopyAssetsTask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractConfigTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
@@ -138,13 +110,13 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         //configureCISetup(task);
 
         task = makeTask("setupDevWorkspace", DefaultTask.class);
-        task.dependsOn("genSrgs", "deobfBinJar", "copyAssets", "extractNatives");
+        task.dependsOn("genSrgs", "deobfBinJar", "getAssets", "extractNatives");
         task.setDescription("CIWorkspace + natives and assets to run and test Minecraft");
         task.setGroup("ForgeGradle");
         //configureDevSetup(task);
 
         task = makeTask("setupDecompWorkspace", DefaultTask.class);
-        task.dependsOn("genSrgs", "copyAssets", "extractNatives", "repackMinecraft");
+        task.dependsOn("genSrgs", "getAssets", "extractNatives", "repackMinecraft");
         task.setDescription("DevWorkspace + the deobfuscated Minecraft source linked as a source jar.");
         task.setGroup("ForgeGradle");
         //configureDecompSetup(task);
@@ -612,14 +584,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     private void tasks()
     {
         {
-            CopyAssetsTask task = makeTask("copyAssets", CopyAssetsTask.class);
-            task.setAssetsDir(delayedFile(ASSETS));
-            task.setOutputDir(delayedFile("{RUN_DIR}/assets"));
-            task.setAssetIndex(getAssetIndexClosure());
-            task.dependsOn("getAssets");
-        }
-        
-        {
             GenSrgTask task = makeTask("genSrgs", GenSrgTask.class);
             task.setInSrg(delayedFile(PACKAGED_SRG));
             task.setInExc(delayedFile(PACKAGED_EXC));
@@ -783,7 +747,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private void createExecTasks()
     {
         JavaExec exec = makeTask("runClient", JavaExec.class);

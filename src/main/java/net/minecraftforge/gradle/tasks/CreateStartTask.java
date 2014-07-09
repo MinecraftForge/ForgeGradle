@@ -19,6 +19,7 @@ import java.util.List;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedString;
+import net.minecraftforge.gradle.json.version.AssetIndex;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask.Cached;
 import net.minecraftforge.gradle.user.UserConstants;
@@ -33,7 +34,6 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
-import org.gradle.api.tasks.OutputFiles;
 import org.gradle.api.tasks.compile.JavaCompile;
 
 import com.google.common.base.Charsets;
@@ -44,6 +44,8 @@ import com.google.common.io.Resources;
 
 public class CreateStartTask extends JavaCompile
 {
+    @Input
+    private Closure<AssetIndex> assetsJson;
     @Input
     private DelayedString assetIndex;
     @Input
@@ -108,9 +110,7 @@ public class CreateStartTask extends JavaCompile
                 return null;
             }
         };
-
-        //this.getInputs().source(paramObject)
-
+        
         // configure compilation
         this.source(clientClosure, serverClosure);
         this.setClasspath(getProject().getConfigurations().getByName(UserConstants.CONFIG_DEPS));
@@ -164,9 +164,16 @@ public class CreateStartTask extends JavaCompile
 
     private void replaceResource(String resource, File out) throws IOException
     {
+        String assetsDir = getAssetsDir().replace("\\", "/");
+        AssetIndex json = getAssetsJson(); 
+        if (json != null && json.virtual)
+        {
+            assetsDir += "/virtual/" + getAssetIndex();
+        }
+        
         resource = resource.replace("@@MCVERSION@@", getVersion());
         resource = resource.replace("@@ASSETINDEX@@", getAssetIndex());
-        resource = resource.replace("@@ASSETSDIR@@", getAssetsDir().replace("\\", "/"));
+        resource = resource.replace("@@ASSETSDIR@@", assetsDir);
         resource = resource.replace("@@TWEAKER@@", getTweaker());
         resource = resource.replace("@@BOUNCERSERVER@@", getServerBounce());
         resource = resource.replace("@@BOUNCERCLIENT@@", getClientBounce());
@@ -534,5 +541,15 @@ public class CreateStartTask extends JavaCompile
     public void setStartOut(DelayedFile outputFile)
     {
         this.startOut = outputFile;
+    }
+
+    public AssetIndex getAssetsJson()
+    {
+        return assetsJson.call();
+    }
+
+    public void setAssetsJson(Closure<AssetIndex> assetsJson)
+    {
+        this.assetsJson = assetsJson;
     }
 }

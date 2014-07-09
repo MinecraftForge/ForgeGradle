@@ -124,8 +124,10 @@ public class GradleStart
     }
 
 
-    // THIS EHRE ACTUAL CLASS
-    List<String> extras;
+    // THIS HERE IS THE ACTUAL CLASS
+    // ----------------------------------------------
+    private List<String> extras;
+    private Map<String, String> values = new HashMap<String, String>();
 
     String[] getArgs()
     {
@@ -149,7 +151,6 @@ public class GradleStart
         return list.toArray(new String[0]);
     }
 
-    private Map<String, String> values = new HashMap<String, String>();
     void parseArgs(String[] args)
     {
         values = new HashMap<String, String>();

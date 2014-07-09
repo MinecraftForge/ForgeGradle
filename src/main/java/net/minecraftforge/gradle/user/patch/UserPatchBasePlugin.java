@@ -26,10 +26,6 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 
-import aQute.lib.getopt.CommandLine;
-
-import com.google.common.collect.ImmutableList;
-
 public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtension>
 {
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -109,6 +105,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
             CreateStartTask task =  makeTask("makeStart", CreateStartTask.class);
             {
                 task.setAssetIndex(delayedString("{ASSET_INDEX}"));
+                task.setAssetsJson(getAssetIndexClosure());
                 task.setAssetsDir(delayedFile("{CACHE_DIR}/minecraft/assets"));
                 task.setVersion(delayedString("{MC_VERSION}"));
                 task.setTweaker(delayedString("cpw.mods.fml.common.launcher.FMLTweaker"));

@@ -70,7 +70,6 @@ public class Constants
     public static final String ASSETS_INDEX_URL = "https://s3.amazonaws.com/Minecraft.Download/indexes/{ASSET_INDEX}.json";
 
     public static final String LOG              = ".gradle/gradle.log";
-    public static final String ASSETS_INDEX     =  "legacy";
 
     // things in the cache dir.
     public static final String JAR_CLIENT_FRESH = "{CACHE_DIR}/minecraft/net/minecraft/minecraft/{MC_VERSION}/minecraft-{MC_VERSION}.jar";

@@ -213,6 +213,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         {
             assets.setAssetsDir(delayedFile(Constants.ASSETS));
             assets.setIndex(getAssetIndexClosure());
+            assets.setIndexName(delayedString("{ASSET_INDEX}"));
             assets.dependsOn("getAssetsIndex");
         }
 
