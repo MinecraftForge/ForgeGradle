@@ -113,13 +113,13 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
                 task.setClientBounce(delayedString("net.minecraft.launchwrapper.Launch"));
                 task.setStartOut(delayedFile(START_DIR));
 
-                task.dependsOn("extractUserDev", "extractNatives");
+                task.dependsOn("extractUserDev", "getAssets", "getAssetsIndex");
             }
 
             // setup dependency
             Configuration config = project.getConfigurations().create(CONFIG_START);
             project.getDependencies().add(CONFIG_START, project.files(delayedFile(START_DIR)).builtBy(task));
-            project.getConfigurations().getByName(UserConstants.CONFIG_MC).extendsFrom(config);
+            project.getConfigurations().getByName("runtime").extendsFrom(config);
 
             // task dependencies
             project.getTasks().getByName("runClient").dependsOn(task);

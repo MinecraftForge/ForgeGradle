@@ -50,8 +50,8 @@ public class BaseExtension
     @Deprecated
     public void setAssetDir(String value)
     {
-        project.getLogger().lifecycle("The assetDir is deprecated!  Use runDir instead!");
         runDir = value + "/..";
+        project.getLogger().lifecycle("The assetDir is deprecated!  Use runDir instead! runDir set to "+runDir);
     }
 
     public LinkedList<String> getSrgExtra()
