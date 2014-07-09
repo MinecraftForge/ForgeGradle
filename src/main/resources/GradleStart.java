@@ -105,7 +105,7 @@ public class GradleStart
         YggdrasilUserAuthentication auth = (YggdrasilUserAuthentication) new YggdrasilAuthenticationService(Proxy.NO_PROXY, "1").createUserAuthentication(Agent.MINECRAFT);
         auth.setUsername(args.values.get("username"));
         auth.setPassword(args.values.get("password"));
-        args.values.remove("password");
+        args.values.put("password", null);
 
         try {
             auth.logIn();
@@ -119,7 +119,8 @@ public class GradleStart
 
         LOGGER.info("Login Succesful!");
         args.values.put("accessToken", auth.getAuthenticatedToken());
-        args.values.put("uuid", auth.getUserID());
+        args.values.put("uuid", auth.getSelectedProfile().getId().toString());
+        args.values.put("username", auth.getSelectedProfile().getName());
         //@@USERTYPE@@
         args.values.put("userProperties", auth.getUserProperties().toString());
     }
