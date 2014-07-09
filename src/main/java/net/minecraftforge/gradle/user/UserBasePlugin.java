@@ -584,7 +584,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             add(child, "option", "name", "MAIN_CLASS_NAME", "value", data[1]);
             add(child, "option", "name", "VM_PARAMETERS", "value", data[2]);
             add(child, "option", "name", "PROGRAM_PARAMETERS", "value", data[3]);
-            add(child, "option", "name", "WORKING_DIRECTORY", "value", "file://" + delayedFile("{ASSET_DIR}").call().getParentFile().getCanonicalPath().replace(module, "$PROJECT_DIR$"));
+            add(child, "option", "name", "WORKING_DIRECTORY", "value", "file://" + delayedFile("{RUN_DIR}").call().getCanonicalPath().replace(module, "$PROJECT_DIR$"));
             add(child, "option", "name", "ALTERNATIVE_JRE_PATH_ENABLED", "value", "false");
             add(child, "option", "name", "ALTERNATIVE_JRE_PATH", "value", "");
             add(child, "option", "name", "ENABLE_SWING_INSPECTOR", "value", "false");
@@ -614,7 +614,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         {
             CopyAssetsTask task = makeTask("copyAssets", CopyAssetsTask.class);
             task.setAssetsDir(delayedFile(ASSETS));
-            task.setOutputDir(delayedFile("{ASSET_DIR}"));
+            task.setOutputDir(delayedFile("{RUN_DIR}/assets"));
             task.setAssetIndex(getAssetIndexClosure());
             task.dependsOn("getAssets");
         }
@@ -791,7 +791,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             exec.setMain(getClientRunClass());
             //exec.jvmArgs("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
             exec.args(getClientRunArgs());
-            exec.workingDir(delayedFile("{ASSET_DIR}/.."));
+            exec.workingDir(delayedFile("{RUN_DIR}"));
             exec.setStandardOutput(System.out);
             exec.setErrorOutput(System.err);
 
@@ -803,7 +803,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         {
             exec.setMain(getServerRunClass());
             exec.jvmArgs("-Xincgc", "-Dfml.ignoreInvalidMinecraftCertificates=true");
-            exec.workingDir(delayedFile("{ASSET_DIR}/.."));
+            exec.workingDir(delayedFile("{RUN_DIR}"));
             exec.args(getServerRunArgs());
             exec.setStandardOutput(System.out);
             exec.setStandardInput(System.in);
@@ -831,7 +831,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             exec.setMain(getClientRunClass());
             exec.jvmArgs("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
             exec.args(getClientRunArgs());
-            exec.workingDir(delayedFile("{ASSET_DIR}/.."));
+            exec.workingDir(delayedFile("{RUN_DIR}"));
             exec.setStandardOutput(System.out);
             exec.setErrorOutput(System.err);
             exec.setDebug(true);
@@ -857,7 +857,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             });
             exec.setMain(getServerRunClass());
             exec.jvmArgs("-Xincgc", "-Dfml.ignoreInvalidMinecraftCertificates=true");
-            exec.workingDir(delayedFile("{ASSET_DIR}/.."));
+            exec.workingDir(delayedFile("{RUN_DIR}"));
             exec.args(getServerRunArgs());
             exec.setStandardOutput(System.out);
             exec.setStandardInput(System.in);
