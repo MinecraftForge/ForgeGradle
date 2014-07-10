@@ -119,7 +119,7 @@ public class GradleStart
 
         LOGGER.info("Login Succesful!");
         args.values.put("accessToken", auth.getAuthenticatedToken());
-        args.values.put("uuid", auth.getSelectedProfile().getId().toString());
+        args.values.put("uuid", auth.getSelectedProfile().getId().toString().replace("-", ""));
         args.values.put("username", auth.getSelectedProfile().getName());
         //@@USERTYPE@@
         args.values.put("userProperties", auth.getUserProperties().toString());
