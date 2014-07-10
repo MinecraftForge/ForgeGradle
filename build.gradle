@@ -1,5 +1,3 @@
-evaluationDependsOn(':GradleStart')
-
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
@@ -28,6 +26,14 @@ repositories {
         url = "https://oss.sonatype.org/content/repositories/snapshots/"
     }
     mavenCentral()
+    maven {
+        name = "mojang"
+        url = "https://libraries.minecraft.net/"
+    }
+    flatDir {
+        name "fileRepo"
+        dirs "repo"
+    }
 }
 
 jar {
@@ -39,11 +45,7 @@ jar {
 
 configurations {
     deployerJars
-}
-
-processResources {
-    from project(":GradleStart").sourceSets.main.java // get the GradleStart sources
-    dependsOn  ":GradleStart:compileJava" // ensure they are compileable first
+    compileOnly
 }
 
 dependencies {
@@ -77,9 +79,17 @@ dependencies {
 
     // stupid maven
     deployerJars "org.apache.maven.wagon:wagon-ssh:2.2"
+    
+    //Stuff used in the GradleStart classes
+    compileOnly 'com.mojang:authlib:1.5.16'
 }
 
 artifacts { archives jar }
+
+//These should add a compile time only dependancies to eclipse, ide, and javac, but NOT to the generated POM on maven.
+sourceSets.main.compileClasspath += configurations.compileOnly
+idea.module.scopes.PROVIDED.plus += configurations.compileOnly
+eclipse.classpath.plusConfigurations += configurations.compileOnly
 
 uploadArchives {
     repositories {
