@@ -335,12 +335,12 @@ public class ObfArtifact extends AbstractPublishArtifact
         {
             File tempSrg = File.createTempFile("reobf", ".srg", caller.getTemporaryDir());
             isTempSrg = true;
-            
+
             exc.buildSrg(srg, tempSrg);
             srg = tempSrg;
-            
+
         }
-        
+
         // obfuscate!
         if (caller.getUseRetroGuard())
             applyRetroGuard(toObfTemp, output, srg, extraSrg);
@@ -351,10 +351,10 @@ public class ObfArtifact extends AbstractPublishArtifact
         toObfTemp.delete();
         if (isTempSrg)
             srg.delete();
-        
+
         System.gc(); // clean anything out.. I hope..
     }
-    
+
     private void applySpecialSource(File input, File output, File srg, File extraSrg) throws IOException
     {
         // load mapping
@@ -378,8 +378,7 @@ public class ObfArtifact extends AbstractPublishArtifact
         // remap jar
         remapper.remapJar(inputJar, output);
     }
-    
-    @SuppressWarnings({ "rawtypes", "unchecked", "static-access" })
+
     private void applyRetroGuard(File input, File output, File srg, File extraSrg) throws Exception
     {
         File cfg =    new File(caller.getTemporaryDir(), "retroguard.cfg");
@@ -387,12 +386,12 @@ public class ObfArtifact extends AbstractPublishArtifact
         File script = new File(caller.getTemporaryDir(), "retroguard.script");
         File packedJar = new File(caller.getTemporaryDir(), "rgPackaged.jar");
         File outPackedJar = new File(caller.getTemporaryDir(), "rgOutPackaged.jar");
-        
+
         HashSet<String> modFiles = Sets.newHashSet();
         { // pack in classPath
             ZipOutputStream out = new ZipOutputStream(new FileOutputStream(packedJar));
             ZipEntry entry = null;
-            
+
             // pack input jar
             ZipInputStream in = new ZipInputStream(new FileInputStream(input));
             while ((entry = in.getNextEntry()) != null)
@@ -404,7 +403,7 @@ public class ObfArtifact extends AbstractPublishArtifact
                 out.closeEntry();
             }
             in.close();
-            
+
             HashSet<String> antiDuplicate = Sets.newHashSet();
             for (File f : classpath)
             {
@@ -413,7 +412,7 @@ public class ObfArtifact extends AbstractPublishArtifact
                     LinkedList<File> dirStack = new LinkedList<File>();
                     dirStack.push(f);
                     String root = f.getCanonicalPath();
-                    
+
                     while (!dirStack.isEmpty())
                     {
                         File dir = dirStack.pop();
@@ -453,41 +452,41 @@ public class ObfArtifact extends AbstractPublishArtifact
                     in.close();
                 }
             }
-            
+
             out.close();
         }
-        
+
         generateRgConfig(cfg, script, srg, extraSrg);
-        
+
         String[] args = new String[] {
                 "-notch",
                 cfg.getCanonicalPath()
         };
-        
+
         // load in classpath... ewww
         ClassLoader loader = BasePlugin.class.getClassLoader(); // dunno.. maybe this will load the classes??
         if (classpath != null)
         {
             loader = new URLClassLoader(ObfuscateTask.toUrls(classpath), BasePlugin.class.getClassLoader());
         }
-        
+
         // the name provider
 //        Class clazz = getClass().forName("COM.rl.NameProvider", true, loader);
 //        clazz.getMethod("parseCommandLine", String[].class).invoke(null, new Object[] { args });
         NameProvider.parseCommandLine(args);
-        
+
         // actual retroguard
 //        clazz = getClass().forName("COM.rl.obf.RetroGuardImpl", true, loader);
 //        clazz.getMethod("obfuscate", File.class, File.class, File.class, File.class).invoke(null, packedJar, outPackedJar, script, log);
         RetroGuardImpl.obfuscate(packedJar, outPackedJar, script, log);
-        
+
         loader = null; // if we are lucky.. this will be dropped...
-        
+
         // unpack jar.
         {
             ZipOutputStream out = new ZipOutputStream(new FileOutputStream(output));
             ZipEntry entry = null;
-            
+
             // pack input jar
             ZipInputStream in = new ZipInputStream(new FileInputStream(outPackedJar));
             while ((entry = in.getNextEntry()) != null)
@@ -504,7 +503,7 @@ public class ObfArtifact extends AbstractPublishArtifact
             out.close();
         }
     }
-    
+
     private void generateRgConfig(File config, File script, File srg, File extraSrg) throws IOException
     {
         // the config
@@ -517,9 +516,9 @@ public class ObfArtifact extends AbstractPublishArtifact
                 "fullmap = 0",
                 "startindex = 0",
         };
-        
+
         Files.write(Joiner.on(Constants.NEWLINE).join(lines), config, Charset.defaultCharset());
-        
+
         // the script.
         lines = new String[] {
                 ".option Application",
@@ -531,7 +530,7 @@ public class ObfArtifact extends AbstractPublishArtifact
                 ".attribute EnclosingMethod",
                 ".attribute Deprecated"
         };
-        
+
         Files.write(Joiner.on(Constants.NEWLINE).join(lines), script, Charset.defaultCharset());
     }
 }
