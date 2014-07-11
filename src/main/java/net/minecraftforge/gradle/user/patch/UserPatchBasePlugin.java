@@ -18,7 +18,6 @@ import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.user.ApplyBinPatchesTask;
 import net.minecraftforge.gradle.user.UserBasePlugin;
-import net.minecraftforge.gradle.user.UserConstants;
 
 import org.apache.tools.ant.types.Commandline;
 import org.gradle.api.Action;
@@ -105,7 +104,6 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
             CreateStartTask task =  makeTask("makeStart", CreateStartTask.class);
             {
                 task.setAssetIndex(delayedString("{ASSET_INDEX}"));
-                task.setAssetsJson(getAssetIndexClosure());
                 task.setAssetsDir(delayedFile("{CACHE_DIR}/minecraft/assets"));
                 task.setVersion(delayedString("{MC_VERSION}"));
                 task.setTweaker(delayedString("cpw.mods.fml.common.launcher.FMLTweaker"));
