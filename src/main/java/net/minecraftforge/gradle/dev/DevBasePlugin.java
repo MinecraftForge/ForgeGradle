@@ -45,6 +45,7 @@ import org.gradle.process.ExecSpec;
 
 import argo.jdom.JsonNode;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
@@ -82,19 +83,19 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
             {
                 project.getTasks().getByName("uploadArchives").dependsOn("launch4j");
             }
-            
+
             task1 = makeTask("downloadBaseInstaller", DownloadTask.class);
             {
                 task1.setOutput(delayedFile(DevConstants.INSTALLER_BASE));
                 task1.setUrl(delayedString(DevConstants.INSTALLER_URL));
             }
-            
+
             task1 = makeTask("downloadL4J", DownloadTask.class);
             {
                 task1.setOutput(delayedFile(DevConstants.LAUNCH4J));
                 task1.setUrl(delayedString(DevConstants.LAUNCH4J_URL));
             }
-            
+
             task = makeTask("extractL4J", ExtractTask.class);
             {
                 task.dependsOn("downloadL4J");
@@ -105,9 +106,36 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
 
         task1 = makeTask("updateJson", DownloadTask.class);
         {
+            task1.getOutputs().upToDateWhen(Constants.CALL_FALSE);
             task1.setUrl(delayedString(DevConstants.MC_JSON_URL));
             task1.setOutput(delayedFile(DevConstants.JSON_BASE));
             task1.setDoesCache(false);
+            task1.doLast(new Closure<Boolean>(project)
+            {
+                @Override
+                public Boolean call()
+                {
+                    try
+                    {
+                        File json = delayedFile(DevConstants.JSON_BASE).call();
+                        if (!json.exists())
+                            return true;
+                        List<String> lines = Files.readLines(json, Charsets.UTF_8);
+                        StringBuilder buf = new StringBuilder();
+                        for (String line : lines)
+                        {
+                            buf = buf.append(line).append('\n');
+                        }
+                        Files.write(buf.toString().getBytes(Charsets.UTF_8), json);
+                    }
+                    catch (Throwable t)
+                    {
+                        Throwables.propagate(t);
+                    }
+                    return true;
+                }
+            }
+            );
         }
 
         CompressLZMA task3 = makeTask("compressDeobfData", CompressLZMA.class);
@@ -149,7 +177,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
             task6.setDoesCache(false);
         }
     }
-    
+
     @Override
     public final void applyOverlayPlugin()
     {
@@ -166,7 +194,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
     {
         if (!hasInstaller())
             return;
-        
+
         final File installer = ((Zip) project.getTasks().getByName("packageInstaller")).getArchivePath();
 
         File output = new File(installer.getParentFile(), installer.getName().replace(".jar", "-win.exe"));
@@ -243,7 +271,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
         super.afterEvaluate();
 
         configureLaunch4J();
-        
+
         // set obfuscate extras
         Task t = project.getTasks().getByName("obfuscateJar");
         if (t != null)
@@ -313,7 +341,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
     {
         return DevExtension.class;
     }
-    
+
     protected DevExtension getOverlayExtension()
     {
         // never happens.
@@ -497,7 +525,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
         out.close();
         signed.delete();
     }
-    
+
     protected boolean hasInstaller()
     {
         return true;

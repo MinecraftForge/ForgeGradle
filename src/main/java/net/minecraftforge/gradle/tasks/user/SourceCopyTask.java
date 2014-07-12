@@ -60,7 +60,7 @@ public class SourceCopyTask extends DefaultTask
 
         out.mkdirs();
         out = out.getCanonicalFile();
-        
+
         // resolve replacements
         HashMap<String, String> repl = new HashMap<String, String>(replacements.size());
         for (Entry<String, Object> e : replacements.entrySet())
@@ -68,12 +68,12 @@ public class SourceCopyTask extends DefaultTask
             Object val = e.getValue();
             while (val instanceof Closure)
                 val = ((Closure<Object>) val).call();
-            
+
             repl.put(Pattern.quote(e.getKey()), val.toString());
         }
-        
+
         getLogger().info("REPLACE >> " + repl);
-        
+
         // start traversing tree
         for (DirectoryTree dirTree : source.getSrcDirTrees())
         {
