@@ -32,7 +32,7 @@ public class DownloadAssetsTask extends DefaultTask
 
     @Input
     Closure<AssetIndex>                        index;
-    
+
     @Input
     DelayedString                              indexName;
 
@@ -52,7 +52,7 @@ public class DownloadAssetsTask extends DefaultTask
         out.mkdirs();
 
         AssetIndex index = getIndex();
-        
+
         // check virtual
         if (index.virtual)
         {
@@ -63,16 +63,32 @@ public class DownloadAssetsTask extends DefaultTask
         for (Entry<String, AssetEntry> e : index.objects.entrySet())
         {
             Asset asset = new Asset(e.getKey(), e.getValue().hash, e.getValue().size);
-            File file = new File(out, asset.path);
-            File virtual = new File(virtualRoot, asset.name);
+            File file_hashed = new File(out, asset.path);
+            File file_virtual = new File(virtualRoot, asset.name);
 
             // exists but not the right size?? delete
-            if (file.exists() && file.length() != asset.size)
-                file.delete();
+            if (file_hashed.exists() && file_hashed.length() != asset.size)
+                file_hashed.delete();
 
             // File or virtual doesnt exist? add to the list.
-            if (!file.exists() || !virtual.exists())
+            if (!file_hashed.exists())
+            {
                 filesLeft.offer(asset);
+                continue;
+            }
+
+            if (index.virtual)
+            {
+                if (file_virtual.exists() && (file_virtual.length() != asset.size || !asset.hash.equalsIgnoreCase(Constants.hash(file_virtual, "SHA"))))
+                {
+                    file_virtual.delete();
+                }
+
+                if (!file_virtual.exists())
+                {
+                    filesLeft.offer(asset);
+                }
+            }
         }
 
         getLogger().info("Finished parsing JSON");
@@ -97,7 +113,7 @@ public class DownloadAssetsTask extends DefaultTask
             spawnThread();
             Thread.sleep(1000);
         }
-        
+
         if (errored)
         {
             // CRASH!
@@ -150,7 +166,7 @@ public class DownloadAssetsTask extends DefaultTask
     {
         this.index = index;
     }
-    
+
     public String getIndexName()
     {
         return indexName.call();
@@ -196,47 +212,53 @@ public class DownloadAssetsTask extends DefaultTask
                     {
                         File file = new File(getAssetsDir(), "objects/" + asset.path);
 
-                        // doesnt exist? create
+                        if (file.exists() && file.length() != asset.size)
+                        {
+                            file.delete();
+                        }
+
                         if (!file.exists())
                         {
                             file.getParentFile().mkdirs();
-                            file.createNewFile();
+
+                            File localMc = new File(minecraftDir, asset.path);
+                            BufferedInputStream stream;
+
+                            // check for local copy
+                            if (localMc.exists() && Constants.hash(localMc, "SHA").equals(asset.hash))
+                                stream = new BufferedInputStream(Files.newInputStreamSupplier(localMc).getInput()); // if so, copy
+                            else
+                                stream = new BufferedInputStream(new URL(Constants.ASSETS_URL + "/" + asset.path).openStream()); // otherwise download
+
+                            Files.write(ByteStreams.toByteArray(stream), file);
+                            stream.close();
                         }
 
-                        File localMc = new File(minecraftDir, asset.path);
-                        BufferedInputStream stream;
-
-                        // check for local copy
-                        if (localMc.exists() && Constants.hash(localMc, "SHA1").equals(asset.hash))
-                            // if so, copy
-                            stream = new BufferedInputStream(Files.newInputStreamSupplier(localMc).getInput());
-                        else
-                            // otherwise download
-                            stream = new BufferedInputStream(new URL(Constants.ASSETS_URL + "/" + asset.path).openStream());
-
-                        Files.write(ByteStreams.toByteArray(stream), file);
-                        stream.close();
-                        
-                        // copy to virtual
-                        if (virtualRoot != null)
-                        {
-                            File virtual = new File(virtualRoot, asset.name);
-                            virtual.getParentFile().mkdirs();
-                            
-                            Files.copy(file, virtual);
-                            
-                        }
-
-                        // check hash...
-                        String hash = Constants.hash(file, "SHA1");
+                        String hash = Constants.hash(file, "SHA");
                         if (asset.hash.equals(hash))
                         {
-                            break; // hashes are fine;
+                            break;
                         }
                         else
                         {
                             file.delete();
                             getLogger().error("download attempt " + i + " failed! : " + asset.hash + " != " + hash);
+                        }
+
+                        // copy to virtual
+                        if (virtualRoot != null)
+                        {
+                            File virtual = new File(virtualRoot, asset.name);
+                            virtual.getParentFile().mkdirs();
+                            if (virtual.exists() && !Constants.hash(virtual, "SHA").equalsIgnoreCase(asset.hash))
+                            {
+                                virtual.delete();
+                            }
+
+                            if (!virtual.exists())
+                            {
+                                Files.copy(file, virtual);
+                            }
                         }
                     }
                     catch (Exception e)
