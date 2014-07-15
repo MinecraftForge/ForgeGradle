@@ -4,6 +4,8 @@ import groovy.lang.Closure;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
+import java.util.HashMap;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -14,6 +16,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.delayed.DelayedString;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.user.reobf.ArtifactSpec;
 import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
@@ -22,6 +25,7 @@ import net.minecraftforge.gradle.user.UserConstants;
 import net.minecraftforge.gradle.user.UserExtension;
 
 import org.gradle.api.Action;
+import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.XmlProvider;
 import org.gradle.api.artifacts.Configuration;
@@ -39,6 +43,14 @@ import com.google.common.base.Joiner;
 
 public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
 {
+    private static final Map<String, String> mcFmlMap;
+    static
+    {
+        mcFmlMap = new HashMap<String, String>();
+        mcFmlMap.put("1.7.2", "1.7.2-7.2.158.889");
+        mcFmlMap.put("1.7.10", "1.7.10-7.10.18.952");
+    }
+
     @Override
     public void applyPlugin()
     {
@@ -278,6 +290,20 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
     }
 
     @Override
+    public String resolve(String pattern, Project project, UserExtension exten)
+    {
+        pattern = super.resolve(pattern, project, exten);
+        String mcVersion = getMcVersion(exten);
+        if (!mcFmlMap.containsKey(mcVersion))
+        {
+            // set a valid (latest) version, delay failure
+            mcVersion = "1.7.10";
+        }
+        pattern = pattern.replace("{FML_VERSION}", this.mcFmlMap.get(mcVersion));
+        return pattern;
+    }
+
+    @Override
     public String getApiName()
     {
         return "minecraft_merged";
@@ -345,7 +371,7 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
 
     private final String getFmlVersion()
     {
-        return "1.7.2-7.2.158.889";
+        return "{FML_VERSION}";
     }
 
     @Override
@@ -369,7 +395,7 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
     @Override
     protected final void doVersionChecks(String version)
     {
-        if (!"1.7.2".equals(version))
+        if (!mcFmlMap.containsKey(version))
             throw new RuntimeException("ForgeGradle 1.2 does not support " + version);
     }
 
