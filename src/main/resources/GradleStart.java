@@ -84,7 +84,20 @@ public class GradleStart
 
         args = cArgs.getArgs();
 
-        LOGGER.info("Running with arguments: "+Arrays.toString(args));
+        StringBuilder b = new StringBuilder();
+        b.append('[');
+        for (int x = 0; x < args.length; x++)
+        {
+            b.append(args[x]).append(", ");
+            if ("--accessToken".equalsIgnoreCase(args[x]))
+            {
+                b.append("{REDACTED}, ");
+                x++;
+            }
+        }
+        b.replace(b.length() - 2, b.length(), "");
+        b.append(']');
+        LOGGER.info("Running with arguments: "+b.toString());
         bounce("@@BOUNCERCLIENT@@", args);
     }
 
@@ -182,7 +195,8 @@ public class GradleStart
             {
                 String value = (String)options.valueOf(key);
                 values.put(key, value);
-                LOGGER.info(key + ": " + value);
+                if (!"password".equalsIgnoreCase(key))
+                    LOGGER.info(key + ": " + value);
             }
         }
 
