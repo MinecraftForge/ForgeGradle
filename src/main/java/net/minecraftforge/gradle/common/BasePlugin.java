@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.util.HashMap;
 
 import net.minecraftforge.gradle.FileLogListenner;
-import net.minecraftforge.gradle.delayed.DelayedAlternatorFile;
 import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
@@ -36,13 +35,38 @@ import com.google.gson.JsonSyntaxException;
 public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Project>, IDelayedResolver<K>
 {
     public Project    project;
+    @SuppressWarnings("rawtypes")
+    public BasePlugin otherPlugin;
     public Version    version;
     public AssetIndex assetIndex;
 
+    @SuppressWarnings("rawtypes")
     @Override
     public final void apply(Project arg)
     {
         project = arg;
+
+        // search for overlays..
+        for (Plugin p : project.getPlugins())
+        {
+            if (p instanceof BasePlugin && p != this)
+            {
+                if (canOverlayPlugin())
+                {
+                    project.getLogger().info("Applying Overlay");
+                    
+                    // found another BasePlugin thats already applied.
+                    // do only overlay stuff and return;
+                    otherPlugin = (BasePlugin) p;
+                    applyOverlayPlugin();
+                    return;
+                }
+                else
+                {
+                    throw new RuntimeException("Seems you are trying to apply 2 ForgeGradle plugins that are not designed to overlay... Fix your buildscripts.");
+                }
+            }
+        }
 
         // logging
         FileLogListenner listener = new FileLogListenner(project.file(Constants.LOG));
@@ -57,7 +81,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         }
 
         // extension objects
-        project.getExtensions().create(Constants.EXT_NAME_MC, getExtensionClass(), project);
+        project.getExtensions().create(Constants.EXT_NAME_MC, getExtensionClass(), this);
         project.getExtensions().create(Constants.EXT_NAME_JENKINS, JenkinsExtension.class, project);
 
         // repos
@@ -104,7 +128,14 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
     public abstract void applyPlugin();
 
-    protected abstract String getDevJson();
+    public abstract void applyOverlayPlugin();
+
+    /**
+     * return true if this plugin can be applied over another BasePlugin.
+     */
+    public abstract boolean canOverlayPlugin();
+
+    protected abstract DelayedFile getDevJson();
 
     private static boolean displayBanner = true;
 
@@ -182,6 +213,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         {
             assets.setAssetsDir(delayedFile(Constants.ASSETS));
             assets.setIndex(getAssetIndexClosure());
+            assets.setIndexName(delayedString("{ASSET_INDEX}"));
             assets.dependsOn("getAssetsIndex");
         }
 
@@ -231,8 +263,17 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     @SuppressWarnings("unchecked")
     public final K getExtension()
     {
-        return (K) project.getExtensions().getByName(Constants.EXT_NAME_MC);
+        if (otherPlugin != null && canOverlayPlugin())
+            return getOverlayExtension();
+        else
+            return (K) project.getExtensions().getByName(Constants.EXT_NAME_MC);
     }
+    
+    /**
+     * @return the extension object with name EXT_NAME_MC
+     * @see Constants.EXT_NAME_MC
+     */
+    protected abstract K getOverlayExtension();
 
     public DefaultTask makeTask(String name)
     {
@@ -331,14 +372,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     protected DelayedFile delayedFile(String path)
     {
         return new DelayedFile(project, path, this);
-    }
-
-    protected DelayedAlternatorFile delayedFile(String path, String... alternates)
-    {
-        DelayedAlternatorFile delayed = new DelayedAlternatorFile(project, path, this);
-        for (String pat : alternates)
-            delayed.add(pat);
-        return delayed;
     }
 
     protected DelayedFileTree delayedFileTree(String path)

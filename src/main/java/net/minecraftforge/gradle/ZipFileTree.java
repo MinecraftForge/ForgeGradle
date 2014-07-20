@@ -17,8 +17,10 @@
 package net.minecraftforge.gradle;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
@@ -27,15 +29,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.apache.commons.io.IOUtils;
 import org.gradle.api.GradleException;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.file.RelativePath;
-import org.gradle.api.internal.file.AbstractFileTreeElement;
 import org.gradle.api.internal.file.collections.MinimalFileTree;
 import org.gradle.util.DeprecationLogger;
+import org.gradle.util.GFileUtils;
 
 public class ZipFileTree implements MinimalFileTree
 {
@@ -106,7 +109,7 @@ public class ZipFileTree implements MinimalFileTree
         }
     }
 
-    private class DetailsImpl extends AbstractFileTreeElement implements FileVisitDetails
+    private class DetailsImpl implements FileVisitDetails
     {
         private final ZipEntry      entry;
         private final ZipFile       zip;
@@ -174,6 +177,91 @@ public class ZipFileTree implements MinimalFileTree
         public RelativePath getRelativePath()
         {
             return new RelativePath(!entry.isDirectory(), entry.getName().split("/"));
+        }
+        
+        // Stuff below this line was    --------------------------------------------------
+        // Stolen from Gradle's  org.gradle.api.internal.file.AbstractFileTreeElement 
+        
+        public String toString()
+        {
+            return getDisplayName();
+        }
+
+        public String getName()
+        {
+            return getRelativePath().getLastName();
+        }
+
+        public String getPath()
+        {
+            return getRelativePath().getPathString();
+        }
+
+        public void copyTo(OutputStream outstr)
+        {
+            try
+            {
+                InputStream inputStream = open();
+                try
+                {
+                    IOUtils.copyLarge(inputStream, outstr);
+                }
+                finally
+                {
+                    inputStream.close();
+                }
+            }
+            catch (IOException e)
+            {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        public boolean copyTo(File target)
+        {
+            validateTimeStamps();
+            try
+            {
+                if (isDirectory())
+                {
+                    GFileUtils.mkdirs(target);
+                }
+                else
+                {
+                    GFileUtils.mkdirs(target.getParentFile());
+                    copyFile(target);
+                }
+                return true;
+            }
+            catch (Exception e)
+            {
+                throw new GradleException(String.format("Could not copy %s to '%s'.", new Object[] { getDisplayName(), target }), e);
+            }
+        }
+
+        private void validateTimeStamps()
+        {
+            long lastModified = getLastModified();
+            if (lastModified < 0L)
+                throw new GradleException(String.format("Invalid Timestamp %s for '%s'.", new Object[] { Long.valueOf(lastModified), getDisplayName() }));
+        }
+
+        private void copyFile(File target) throws IOException
+        {
+            FileOutputStream outputStream = new FileOutputStream(target);
+            try
+            {
+                copyTo(outputStream);
+            }
+            finally
+            {
+                outputStream.close();
+            }
+        }
+
+        public int getMode()
+        {
+            return ((isDirectory()) ? 493 : 420);
         }
     }
 }

@@ -21,7 +21,7 @@ public class EnumFixerTest
         String input = readResource(INPUT);
         //String expected = readResource(EXPECTED);
 
-        input = FFPatcher.processFile(INPUT + ".java", input);
+        input = FFPatcher.processFile(INPUT + ".java", input, true);
 
         // check LineByLine...
         String[] expected = readResource(EXPECTED).split("\r\n|\r|\n");

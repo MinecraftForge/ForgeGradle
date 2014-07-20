@@ -104,6 +104,10 @@ public class Library
         public String getArtifact(String classifier)
         {
             String ret = domain + ":" + name + ":" + version;
+            if (classifier != null && classifier.indexOf('$') > -1)
+            {
+                classifier = classifier.replace("${arch}", Constants.SYSTEM_ARCH.toString());
+            }
             if (classifier != null) ret += ":" + classifier;
             if (!"jar".equals(ext)) ret += "@" + ext;
             return ret;
@@ -113,6 +117,10 @@ public class Library
         public String getPath(String classifier)
         {
             String ret = String.format("%s/%s/%s/%s-%s", domain.replace('.', '/'), name, version, name, version);
+            if (classifier != null && classifier.indexOf('$') > -1)
+            {
+                classifier = classifier.replace("${arch}", Constants.SYSTEM_ARCH.toString());
+            }
             if (classifier != null) ret += "-" + classifier;
             return ret + "." + ext;
         }

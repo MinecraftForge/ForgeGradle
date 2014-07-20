@@ -9,12 +9,12 @@ public class BaseExtension
     protected Project project;
     protected String version = "null";
     protected String mcpVersion = "unknown";
-    protected String assetDir = "run/assets";
+    protected String runDir = "run";
     private LinkedList<String> srgExtra = new LinkedList<String>();
 
-    public BaseExtension(Project project)
+    public BaseExtension(BasePlugin<? extends BaseExtension> plugin)
     {
-        this.project = project;
+        this.project = plugin.project;
     }
 
     public String getVersion()
@@ -36,15 +36,22 @@ public class BaseExtension
     {
         this.mcpVersion = mcpVersion;
     }
-
-    public void setAssetDir(String value)
+    
+    public void setRunDir(String value)
     {
-        this.assetDir = value;
+        this.runDir = value;
     }
 
-    public String getAssetDir()
+    public String getRunDir()
     {
-        return this.assetDir;
+        return this.runDir;
+    }
+
+    @Deprecated
+    public void setAssetDir(String value)
+    {
+        runDir = value + "/..";
+        project.getLogger().lifecycle("The assetDir is deprecated!  Use runDir instead! runDir set to "+runDir);
     }
 
     public LinkedList<String> getSrgExtra()
@@ -55,5 +62,18 @@ public class BaseExtension
     public void srgExtra(String in)
     {
         srgExtra.add(in);
+    }
+    
+    public void copyFrom(BaseExtension ext)
+    {
+        if ("null".equals(version))
+        {
+            setVersion(ext.getVersion());
+        }
+        
+        if ("unknown".equals(mcpVersion))
+        {
+            setMcpVersion(ext.getMcpVersion());
+        }
     }
 }

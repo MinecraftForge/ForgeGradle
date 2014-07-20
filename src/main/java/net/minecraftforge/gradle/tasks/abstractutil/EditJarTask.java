@@ -1,13 +1,5 @@
 package net.minecraftforge.gradle.tasks.abstractutil;
 
-import com.google.common.io.ByteStreams;
-
-import net.minecraftforge.gradle.delayed.DelayedFile;
-
-import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.OutputFile;
-import org.gradle.api.tasks.TaskAction;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -15,9 +7,18 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
+
+import net.minecraftforge.gradle.delayed.DelayedFile;
+
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.TaskAction;
+
+import com.google.common.io.ByteStreams;
 
 public abstract class EditJarTask extends CachedTask
 {
@@ -98,12 +99,12 @@ public abstract class EditJarTask extends CachedTask
 
     private void saveJar(File output) throws IOException
     {
-        ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(output));
+        JarOutputStream zout = new JarOutputStream(new FileOutputStream(output));
 
         // write in resources
         for (Map.Entry<String, byte[]> entry : resourceMap.entrySet())
         {
-            zout.putNextEntry(new ZipEntry(entry.getKey()));
+            zout.putNextEntry(new JarEntry(entry.getKey()));
             zout.write(entry.getValue());
             zout.closeEntry();
         }
@@ -111,7 +112,7 @@ public abstract class EditJarTask extends CachedTask
         // write in sources
         for (Map.Entry<String, String> entry : sourceMap.entrySet())
         {
-            zout.putNextEntry(new ZipEntry(entry.getKey()));
+            zout.putNextEntry(new JarEntry(entry.getKey()));
             zout.write(entry.getValue().getBytes());
             zout.closeEntry();
         }

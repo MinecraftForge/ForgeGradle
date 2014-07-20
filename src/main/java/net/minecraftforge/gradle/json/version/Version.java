@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import net.minecraftforge.gradle.common.Constants;
-
 public class Version
 {
     public String id;
@@ -41,6 +39,6 @@ public class Version
     
     public String getAssets()
     {
-        return assets == null ? Constants.ASSETS_INDEX : assets;
+        return assets == null ? "legacy" : assets;
     }
 }

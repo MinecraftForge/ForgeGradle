@@ -16,7 +16,7 @@ import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
-import net.minecraftforge.gradle.tasks.PatchJarTask;
+import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DelayedJar;
@@ -127,11 +127,11 @@ public class FmlDevPlugin extends DevBasePlugin
             remapTask.dependsOn("decompile");
         }
 
-        PatchJarTask task5 = makeTask("fmlPatchJar", PatchJarTask.class);
+        ProcessSrcJarTask task5 = makeTask("fmlPatchJar", ProcessSrcJarTask.class);
         {
             task5.setInJar(delayedFile(DevConstants.ZIP_DECOMP_FML));
             task5.setOutJar(delayedFile(DevConstants.ZIP_PATCHED_FML));
-            task5.setInPatches(delayedFile(DevConstants.FML_PATCH_DIR));
+            task5.addStage("fml", delayedFile(DevConstants.FML_PATCH_DIR));
             task5.setDoesCache(false);
             task5.setMaxFuzz(2);
             task5.dependsOn("decompile");
@@ -295,9 +295,9 @@ public class FmlDevPlugin extends DevBasePlugin
 
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
-            obf.setSrg(delayedFile(DevConstants.NOTCH_2_SRG_SRG));
+            obf.setSrg(delayedFile(DevConstants.MCP_2_NOTCH_SRG));
             obf.setExc(delayedFile(DevConstants.SRG_EXC));
-            obf.setReverse(true);
+            obf.setReverse(false);
             obf.setPreFFJar(delayedFile(DevConstants.JAR_SRG_FML));
             obf.setOutJar(delayedFile(DevConstants.REOBF_TMP));
             obf.setBuildFile(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"));
@@ -376,7 +376,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
             task.addReplacement("@version@", delayedString("{VERSION}"));
             task.addReplacement("@project@", delayedString("FML"));
-            task.addReplacement("@artifact@", delayedString("cpw.mods:fml:{MC_VERSION}-{VERSION}"));
+            task.addReplacement("@artifact@", delayedString("cpw.mods:fml:{MC_VERSION_SAFE}-{VERSION}"));
             task.addReplacement("@universal_jar@", new Closure<String>(project)
             {
                 public String call()
@@ -496,7 +496,7 @@ public class FmlDevPlugin extends DevBasePlugin
             userDev.from(delayedFile(DevConstants.NOTCH_2_SRG_SRG), new CopyInto("conf"));
             userDev.from(delayedFile(DevConstants.SRG_EXC), new CopyInto("conf"));
             userDev.from(delayedFileTree("{MAPPINGS_DIR}/patches"), new CopyInto("conf"));
-            userDev.rename("[\\d.]+?-dev\\.json", "dev.json");
+            userDev.rename(".+-dev\\.json", "dev.json");
             userDev.rename(".+?\\.srg", "packaged.srg");
             userDev.rename(".+?\\.exc", "packaged.exc");
             userDev.setIncludeEmptyDirs(false);
@@ -512,7 +512,7 @@ public class FmlDevPlugin extends DevBasePlugin
             src.from(delayedFile(DevConstants.FML_LICENSE));
             src.from(delayedFile(DevConstants.FML_CREDITS));
             src.from(delayedFile("{FML_DIR}/install"), new CopyInto(null, "!*.gradle"));
-            src.from(delayedFile("{FML_DIR}/install"), (new CopyInto(null, "*.gradle")).addExpand("version", delayedString("{MC_VERSION}-{VERSION}")).addExpand("name", "fml"));
+            src.from(delayedFile("{FML_DIR}/install"), (new CopyInto(null, "*.gradle")).addExpand("version", delayedString("{MC_VERSION_SAFE}-{VERSION}")).addExpand("name", "fml"));
             src.from(delayedFile("{FML_DIR}/gradlew"));
             src.from(delayedFile("{FML_DIR}/gradlew.bat"));
             src.from(delayedFile("{FML_DIR}/gradle/wrapper"), new CopyInto("gradle/wrapper"));
@@ -566,7 +566,7 @@ public class FmlDevPlugin extends DevBasePlugin
         }
 
         StringBuilder out = new StringBuilder();
-        out.append(DelayedBase.resolve("{MC_VERSION}", project)).append('-'); // Somehow configure this?
+        out.append(DelayedBase.resolve("{MC_VERSION_SAFE}", project)).append('-'); // Somehow configure this?
         out.append(major).append('.').append(minor).append('.').append(revision).append('.').append(build);
         if (branch != null)
         {

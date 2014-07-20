@@ -48,10 +48,12 @@ final class DevConstants
     // jars.
     static final String JAR_SRG_FML         = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/minecraft_srg_fml-{MC_VERSION}.jar";
     static final String JAR_SRG_FORGE       = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/minecraft_srg_forge-{MC_VERSION}.jar";
-    static final String JAR_SRG_MCPC        = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/minecraft_srg_mcpc-{MC_VERSION}.jar";
+    static final String JAR_SRG_CDN         = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/minecraft_srg_cauldron-{MC_VERSION}.jar";
+    static final String JAR_SRG_EDU         = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/minecraft_srg_edu-{MC_VERSION}.jar";
     static final String ZIP_DECOMP_FML      = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_decomp_fml-{MC_VERSION}.zip";
     static final String ZIP_DECOMP_FORGE    = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_decomp_forge-{MC_VERSION}.zip";
-    static final String ZIP_DECOMP_MCPC     = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_decomp_mcpc-{MC_VERSION}.zip";
+    static final String ZIP_DECOMP_CDN      = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_decomp_cauldron-{MC_VERSION}.zip";
+    static final String ZIP_DECOMP_EDU      = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_decomp/{MC_VERSION}/minecraft_decomp_edu-{MC_VERSION}.zip";
     static final String LAUNCH4J            = "{CACHE_DIR}/minecraft/launch4j.zip";
 
     // fml intermediate jars
@@ -59,35 +61,36 @@ final class DevConstants
 
     // forge intermediate jars
     static final String ZIP_FMLED_FORGE     = "{BUILD_DIR}/forgeTmp/minecraft_fmlpatched.zip";
-    static final String ZIP_INJECT_FORGE    = "{BUILD_DIR}/forgeTmp/minecraft_fmlinjected.zip";
-    static final String ZIP_RENAMED_FORGE   = "{BUILD_DIR}/forgeTmp/minecraft_renamed.zip";
     static final String ZIP_PATCHED_FORGE   = "{BUILD_DIR}/forgeTmp/minecraft_patches.zip";
+    static final String ZIP_RENAMED_FORGE   = "{BUILD_DIR}/forgeTmp/minecraft_renamed.zip";
     
-    // mcpc intermediate jars
-    static final String ZIP_FMLED_MCPC     = "{BUILD_DIR}/mcpcTmp/minecraft_fmlpatched.zip";
-    static final String ZIP_INJECT_MCPC    = "{BUILD_DIR}/mcpcTmp/minecraft_fmlinjected.zip";
-    static final String ZIP_RENAMED_MCPC   = "{BUILD_DIR}/mcpcTmp/minecraft_renamed.zip";
-    static final String ZIP_FINJECT_MCPC   = "{BUILD_DIR}/mcpcTmp/minecraft_forgeinjected.zip";
-    static final String ZIP_FORGED_MCPC    = "{BUILD_DIR}/mcpcTmp/minecraft_forged.zip";
-    static final String ZIP_PATCHED_MCPC   = "{BUILD_DIR}/mcpcTmp/minecraft_patched.zip";
+    //Cauldron  intermediate jars
+    static final String ZIP_FORGED_CDN     = "{BUILD_DIR}/cauldronTmp/minecraft_fmlpatched.zip";
+    static final String ZIP_PATCHED_CDN    = "{BUILD_DIR}/cauldronTmp/minecraft_patched.zip";
+    static final String ZIP_RENAMED_CDN    = "{BUILD_DIR}/cauldronTmp/minecraft_renamed.zip";
+    
+    //MC EDU  intermediate jars
+    static final String ZIP_FORGED_EDU     = "{BUILD_DIR}/eduTmp/minecraft_fmlpatched.zip";
+    static final String ZIP_PATCHED_EDU    = "{BUILD_DIR}/eduTmp/minecraft_patched.zip";
+    static final String ZIP_RENAMED_EDU    = "{BUILD_DIR}/eduTmp/minecraft_renamed.zip";
 
     // other stuff
-    static final String CHANGELOG          = "{BUILD_DIR}/distributions/{PROJECT}-{MC_VERSION}-{VERSION}-changelog.txt";
-    static final String USERDEV_SRG_SRC    = "{BUILD_DIR}/tmp/user_dev_srg_src.zip";
+    static final String CHANGELOG           = "{BUILD_DIR}/distributions/{PROJECT}-{MC_VERSION_SAFE}-{VERSION}-changelog.txt";
+    static final String USERDEV_SRG_SRC     = "{BUILD_DIR}/tmp/user_dev_srg_src.zip";
     
     // necesary for patch generation
-    static final String PATCH_CLEAN        = "{BUILD_DIR}/tmp/clean-path-base.zip";
-    static final String PATCH_DIRTY        = "{BUILD_DIR}/tmp/dirty-patch-base.zip";
-    static final String REMAPPED_CLEAN     = "{BUILD_DIR}/tmp/clean.jar";
-    static final String REMAPPED_DIRTY     = "{BUILD_DIR}/tmp/dirty.jar";
+    static final String PATCH_CLEAN         = "{BUILD_DIR}/tmp/clean-path-base.zip";
+    static final String PATCH_DIRTY         = "{BUILD_DIR}/tmp/dirty-patch-base.zip";
+    static final String REMAPPED_CLEAN      = "{BUILD_DIR}/tmp/clean.jar";
+    static final String REMAPPED_DIRTY      = "{BUILD_DIR}/tmp/dirty.jar";
 
     // jsons
     static final String JSON_DEV            = "{FML_DIR}/jsons/{MC_VERSION}-dev.json";
     static final String JSON_REL            = "{FML_DIR}/jsons/{MC_VERSION}-rel.json";
     static final String JSON_BASE           = "{FML_DIR}/jsons/{MC_VERSION}.json";
-    static final String MCPC_JSON_DEV       = "jsons/{MC_VERSION}-dev.json";
-    static final String MCPC_JSON_REL       = "jsons/{MC_VERSION}-rel.json";
-    static final String MCPC_JSON_BASE      = "jsons/{MC_VERSION}.json";
+    static final String EXTRA_JSON_DEV      = "jsons/{MC_VERSION}-dev.json";
+    static final String EXTRA_JSON_REL      = "jsons/{MC_VERSION}-rel.json";
+    static final String EXTRA_JSON_BASE     = "jsons/{MC_VERSION}.json";
 
     // eclipse folders      More stuff only for the Dev plugins
     static final String WORKSPACE_ZIP       = "eclipse-workspace-dev.zip";
@@ -101,9 +104,12 @@ final class DevConstants
     static final String ECLIPSE_FORGE       = WORKSPACE + "/Forge";
     static final String ECLIPSE_FORGE_SRC   = ECLIPSE_FORGE + "/src/main/java";
     static final String ECLIPSE_FORGE_RES   = ECLIPSE_FORGE + "/src/main/resources";
-    static final String ECLIPSE_MCPC       = WORKSPACE + "/MCPC";
-    static final String ECLIPSE_MCPC_SRC   = ECLIPSE_MCPC + "/src/main/java";
-    static final String ECLIPSE_MCPC_RES   = ECLIPSE_MCPC + "/src/main/resources";
+    static final String ECLIPSE_CDN         = WORKSPACE + "/cauldron";
+    static final String ECLIPSE_CDN_SRC     = ECLIPSE_CDN + "/src/main/java";
+    static final String ECLIPSE_CDN_RES     = ECLIPSE_CDN + "/src/main/resources";
+    static final String ECLIPSE_EDU         = WORKSPACE + "/McEdu";
+    static final String ECLIPSE_EDU_SRC     = ECLIPSE_EDU + "/src/main/java";
+    static final String ECLIPSE_EDU_RES     = ECLIPSE_EDU + "/src/main/resources";
     static final String ECLIPSE_RUN         = WORKSPACE + "/run";
     static final String ECLIPSE_NATIVES     = ECLIPSE_RUN + "/bin/natives";
     static final String ECLIPSE_ASSETS      = ECLIPSE_RUN + "/assets";
@@ -132,15 +138,14 @@ final class DevConstants
     static final String FORGE_LOGO          = FORGE_RESOURCES + "/forge_logo.png";
     static final String FORGE_VERSION_JAVA  = FORGE_SOURCES + "/net/minecraftforge/common/ForgeVersion.java";
     
-    // MCPC+ stuff only
-    static final String MCPC_PATCH_DIR      = "patches";
-    static final String MCPC_SOURCES        = "src/main/java";
-    static final String MCPC_RESOURCES      = "src/main/resources";
-    static final String MCPC_TEST_SOURCES   = "src/test/java";
-    static final String MCPC_TEST_RES       = "src/test/resources";
+    // Extra stuff only, for the current project
+    static final String EXTRA_PATCH_DIR      = "patches";
+    static final String EXTRA_SOURCES        = "src/main/java";
+    static final String EXTRA_RESOURCES      = "src/main/resources";
+    static final String EXTRA_TEST_SOURCES   = "src/test/java";
+    static final String EXTRA_TEST_RES       = "src/test/resources";
     
-    // USED ONLY FOR mcpc.. BUT ITS BUKKIT STUFF
-    static final String BUKKIT_SOURCES       = "{BUKKIT_DIR}/src/main/java";
-    static final String BUKKIT_RESOURCES     = "{BUKKIT_DIR}/src/main/resources";
-    static final String EXTRACTED_RES        = "{BUILD_DIR}/extractedResources";
+    // USED ONLY FOR Cauldron.. BUT ITS BUKKIT STUFF
+    static final String BUKKIT_SOURCES     = "{BUKKIT_DIR}/src/main/java";
+    static final String EXTRACTED_RES      = "{BUILD_DIR}/extractedResources";
 }

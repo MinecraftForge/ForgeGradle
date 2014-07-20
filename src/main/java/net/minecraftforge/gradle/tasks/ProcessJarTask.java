@@ -1,18 +1,26 @@
 package net.minecraftforge.gradle.tasks;
 
+import static net.minecraftforge.gradle.common.Constants.EXT_NAME_MC;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PROTECTED;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 import net.md_5.specialsource.AccessMap;
 import net.md_5.specialsource.Jar;
@@ -21,6 +29,7 @@ import net.md_5.specialsource.JarRemapper;
 import net.md_5.specialsource.RemapperProcessor;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
+import net.minecraftforge.gradle.common.BaseExtension;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.json.MCInjectorStruct;
@@ -34,10 +43,17 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.MethodNode;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
 
@@ -60,6 +76,10 @@ public class ProcessJarTask extends CachedTask
 
     @InputFile
     private DelayedFile            exceptorCfg;
+    
+    @Optional
+    @Input
+    private boolean stripSynthetics = false;
 
     @InputFile
     private DelayedFile exceptorJson;
@@ -110,7 +130,7 @@ public class ProcessJarTask extends CachedTask
         // make stuff into files.
         File tempObfJar = new File(getTemporaryDir(), "deobfed.jar"); // courtesy of gradle temp dir.
         File out = isClean ? getOutCleanJar() : getOutDirtyJar();
-        //File tempExcJar = new File(getTemporaryDir(), "excepted.jar"); // courtesy of gradle temp dir.
+        File tempExcJar = stripSynthetics ? new File(getTemporaryDir(), "excpeted.jar") : out; // courtesy of gradle temp dir.
 
         // make the ATs list.. its a Set to avoid duplication.
         Set<File> ats = new HashSet<File>();
@@ -129,7 +149,14 @@ public class ProcessJarTask extends CachedTask
 
         // apply exceptor
         getLogger().lifecycle("Applying Exceptor...");
-        applyExceptor(tempObfJar, out, getExceptorCfg(), log, ats);
+        applyExceptor(tempObfJar, tempExcJar, getExceptorCfg(), log, ats);
+        
+        if (stripSynthetics)
+        {
+            // strip out synthetics that arnt from enums..
+            getLogger().lifecycle("Stripping synthetics...");
+            stripSynthetics(tempExcJar, out);
+        }
     }
 
     private void deobfJar(File inJar, File outJar, File srg, Collection<File> ats) throws IOException
@@ -290,11 +317,14 @@ public class ProcessJarTask extends CachedTask
             Files.write(JsonFactory.GSON.toJson(struct).getBytes(), jsonTmp);
         }
 
+        BaseExtension exten = (BaseExtension)getProject().getExtensions().getByName(EXT_NAME_MC);
+        boolean genParams = !exten.getVersion().equals("1.7.2");
         getLogger().debug("INPUT: " + inJar);
         getLogger().debug("OUTPUT: " + outJar);
         getLogger().debug("CONFIG: " + config);
         getLogger().debug("JSON: " + json);
         getLogger().debug("LOG: " + log);
+        getLogger().debug("PARAMS: " + genParams);
 
         MCInjectorImpl.process(inJar.getCanonicalPath(),
                 outJar.getCanonicalPath(),
@@ -303,7 +333,72 @@ public class ProcessJarTask extends CachedTask
                 null,
                 0,
                 json,
-                isApplyMarkers());
+                isApplyMarkers(),
+                genParams);
+    }
+    
+    private void stripSynthetics(File inJar, File outJar) throws IOException
+    {
+        ZipFile in = new ZipFile(inJar);
+        final ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(outJar)));
+
+        for (ZipEntry e : Collections.list(in.entries()))
+        {
+            if (e.getName().contains("META-INF"))
+                continue;
+
+            if (e.isDirectory())
+            {
+                out.putNextEntry(e);
+            }
+            else
+            {
+                ZipEntry n = new ZipEntry(e.getName());
+                n.setTime(e.getTime());
+                out.putNextEntry(n);
+
+                byte[] data = ByteStreams.toByteArray(in.getInputStream(e));
+
+                // correct source name
+                if (e.getName().endsWith(".class"))
+                    data = stripSynthetics(e.getName(), data);
+
+                out.write(data);
+            }
+        }
+
+        out.flush();
+        out.close();
+        in.close();
+    }
+
+    private byte[] stripSynthetics(String name, byte[] data)
+    {
+        ClassReader reader = new ClassReader(data);
+        ClassNode node = new ClassNode();
+
+        reader.accept(node, 0);
+        
+        if ((node.access & Opcodes.ACC_ENUM) == 0 && !node.superName.equals("java/lang/Enum") && (node.access & Opcodes.ACC_SYNTHETIC) == 0)
+        {
+            // ^^ is for ignoring enums.
+            
+            for (FieldNode f : ((List<FieldNode>) node.fields))
+            {
+                f.access = f.access & (0xffffffff-Opcodes.ACC_SYNTHETIC);
+                //getLogger().lifecycle("Stripping field: "+f.name);
+            }
+            
+            for (MethodNode m : ((List<MethodNode>) node.methods))
+            {
+                m.access = m.access & (0xffffffff-Opcodes.ACC_SYNTHETIC);
+                //getLogger().lifecycle("Stripping method: "+m.name);
+            }
+        }
+
+        ClassWriter writer = new ClassWriter(0);
+        node.accept(writer);
+        return writer.toByteArray();
     }
 
     public File getExceptorCfg()
@@ -445,5 +540,20 @@ public class ProcessJarTask extends CachedTask
     protected boolean defaultCache()
     {
         return isClean();
+    }
+    
+    public void setDirty()
+    {
+        isClean = false;
+    }
+
+    public boolean getStripSynthetics()
+    {
+        return stripSynthetics;
+    }
+
+    public void setStripSynthetics(boolean stripSynthetics)
+    {
+        this.stripSynthetics = stripSynthetics;
     }
 }

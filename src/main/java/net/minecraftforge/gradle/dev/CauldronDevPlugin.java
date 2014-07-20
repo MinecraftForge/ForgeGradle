@@ -9,15 +9,18 @@ import java.util.Date;
 
 import net.minecraftforge.gradle.CopyInto;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.delayed.DelayedBase;
+import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
-import net.minecraftforge.gradle.tasks.PatchJarTask;
+import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
+import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
+import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
-import net.minecraftforge.gradle.tasks.ReplaceJavadocsTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DelayedJar;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.abstractutil.FileFilterTask;
+import net.minecraftforge.gradle.tasks.dev.ChangelogTask;
 import net.minecraftforge.gradle.tasks.dev.FMLVersionPropTask;
 import net.minecraftforge.gradle.tasks.dev.GenBinaryPatches;
 import net.minecraftforge.gradle.tasks.dev.GenDevProjectsTask;
@@ -25,15 +28,16 @@ import net.minecraftforge.gradle.tasks.dev.GeneratePatches;
 import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
 import net.minecraftforge.gradle.tasks.dev.SubprojectTask;
 
-import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;
+import org.gradle.api.file.ConfigurableFileTree;
+import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.java.archives.Manifest;
+import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.bundling.Zip;
-import org.gradle.api.tasks.javadoc.Javadoc;
 
-public class McpcDevPlugin extends DevBasePlugin
+public class CauldronDevPlugin extends DevBasePlugin
 {
     @Override
     public void applyPlugin()
@@ -45,6 +49,35 @@ public class McpcDevPlugin extends DevBasePlugin
         getExtension().setForgeDir("forge");
         getExtension().setBukkitDir("bukkit");
         
+        // configure genSrg task.
+        GenSrgTask genSrgTask = (GenSrgTask) project.getTasks().getByName("genSrgs");
+        {
+            // find all the exc & srg files in the resources.
+            for (File f : project.fileTree(delayedFile(DevConstants.FML_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    genSrgTask.addExtraExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    genSrgTask.addExtraSrg(f);
+            }
+            
+            for (File f : project.fileTree(delayedFile(DevConstants.FORGE_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    genSrgTask.addExtraExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    genSrgTask.addExtraSrg(f);
+            }
+            
+            for (File f : project.fileTree(delayedFile(DevConstants.EXTRA_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    genSrgTask.addExtraExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    genSrgTask.addExtraSrg(f);
+            }
+        }
+        
         createJarProcessTasks();
         createProjectTasks();
         createEclipseTasks();
@@ -53,9 +86,9 @@ public class McpcDevPlugin extends DevBasePlugin
         createPackageTasks();
 
         // the master setup task.
-        Task task = makeTask("setupMcpc", DefaultTask.class);
-        task.dependsOn("extractMcpcSources", "generateProjects", "eclipse", "copyAssets");
-        task.setGroup("MCPC");
+        Task task = makeTask("setupCauldron", DefaultTask.class);
+        task.dependsOn("extractCauldronSources", "generateProjects", "eclipse", "copyAssets");
+        task.setGroup("Cauldron");
         
         // clean packages
         {
@@ -66,14 +99,14 @@ public class McpcDevPlugin extends DevBasePlugin
 //        // the master task.
         task = makeTask("buildPackages");
         //task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "genJavadocs");
-        task.dependsOn("cleanPackages", "packageUniversal", "packageInstaller", "genJavadocs");
-        task.setGroup("MCPC");
+        task.dependsOn("cleanPackages", "createChangelog", "packageUniversal", "packageInstaller");
+        task.setGroup("Cauldron");
     }
     
     @Override
-    protected final String getDevJson()
+    protected final DelayedFile getDevJson()
     {
-        return DelayedBase.resolve(DevConstants.MCPC_JSON_DEV, project, this);
+        return delayedFile(DevConstants.EXTRA_JSON_DEV);
     }
     
     protected void createJarProcessTasks()
@@ -81,7 +114,7 @@ public class McpcDevPlugin extends DevBasePlugin
         ProcessJarTask task2 = makeTask("deobfuscateJar", ProcessJarTask.class);
         {
             task2.setInJar(delayedFile(Constants.JAR_MERGED));
-            task2.setOutCleanJar(delayedFile(JAR_SRG_MCPC));
+            task2.setOutCleanJar(delayedFile(JAR_SRG_CDN));
             task2.setSrg(delayedFile(JOINED_SRG));
             task2.setExceptorCfg(delayedFile(JOINED_EXC));
             task2.setExceptorJson(delayedFile(EXC_JSON));
@@ -93,123 +126,129 @@ public class McpcDevPlugin extends DevBasePlugin
 
         DecompileTask task3 = makeTask("decompile", DecompileTask.class);
         {
-            task3.setInJar(delayedFile(JAR_SRG_MCPC));
-            task3.setOutJar(delayedFile(ZIP_DECOMP_MCPC));
+            task3.setInJar(delayedFile(JAR_SRG_CDN));
+            task3.setOutJar(delayedFile(ZIP_DECOMP_CDN));
             task3.setFernFlower(delayedFile(Constants.FERNFLOWER));
             task3.setPatch(delayedFile(MCP_PATCH_DIR));
             task3.setAstyleConfig(delayedFile(ASTYLE_CFG));
             task3.dependsOn("downloadMcpTools", "deobfuscateJar");
         }
-
-        PatchJarTask task4 = makeTask("fmlPatchJar", PatchJarTask.class);
+        
+        ProcessSrcJarTask task4 = makeTask("forgePatchJar", ProcessSrcJarTask.class);
         {
-            task4.setInJar(delayedFile(ZIP_DECOMP_MCPC));
-            task4.setOutJar(delayedFile(ZIP_FMLED_MCPC));
-            task4.setInPatches(delayedFile(FML_PATCH_DIR));
-            task4.setDoesCache(true);
+            task4.setInJar(delayedFile(ZIP_DECOMP_CDN));
+            task4.setOutJar(delayedFile(ZIP_FORGED_CDN));
+            task4.addStage("fml", delayedFile(FML_PATCH_DIR), delayedFile(FML_SOURCES), delayedFile(FML_RESOURCES), delayedFile("{MAPPINGS_DIR}/patches/Start.java"), delayedFile(DEOBF_DATA), delayedFile(FML_VERSIONF));
+            task4.addStage("forge", delayedFile(FORGE_PATCH_DIR), delayedFile(FORGE_SOURCES), delayedFile(FORGE_RESOURCES));
+            task4.addStage("bukkit", null, delayedFile(BUKKIT_SOURCES));
+            task4.setDoesCache(false);
             task4.setMaxFuzz(2);
-            task4.dependsOn("decompile");
+            task4.dependsOn("decompile", "compressDeobfData", "createVersionPropertiesFML");
         }
 
-        // add fml sources
-        Zip task5 = makeTask("fmlInjectJar", Zip.class);
+        RemapSourcesTask task6 = makeTask("remapCleanJar", RemapSourcesTask.class);
         {
-            task5.from(delayedFileTree(FML_SOURCES));
-            task5.from(delayedFileTree(FML_RESOURCES));
-            task5.from(delayedZipTree(ZIP_FMLED_MCPC));
-            task5.from(delayedFile("{MAPPINGS_DIR}/patches"), new CopyInto("", "Start.java"));
-            task5.from(delayedFile(DEOBF_DATA));
-            task5.from(delayedFile(FML_VERSIONF));
-
-            // see ZIP_INJECT_MCPC
-            task5.setArchiveName("minecraft_fmlinjected.zip");
-            task5.setDestinationDir(delayedFile("{BUILD_DIR}/mcpcTmp").call());
-
-            task5.dependsOn("fmlPatchJar", "compressDeobfData", "createVersionPropertiesFML");
-        }
-
-        RemapSourcesTask task6 = makeTask("remapSourcesJar", RemapSourcesTask.class);
-        {
-            task6.setInJar(delayedFile(ZIP_INJECT_MCPC));
-            task6.setOutJar(delayedFile(ZIP_RENAMED_MCPC));
+            task6.setInJar(delayedFile(ZIP_FORGED_CDN));
+            task6.setOutJar(delayedFile(REMAPPED_CLEAN));
             task6.setMethodsCsv(delayedFile(METHODS_CSV));
             task6.setFieldsCsv(delayedFile(FIELDS_CSV));
             task6.setParamsCsv(delayedFile(PARAMS_CSV));
             task6.setDoesCache(true);
-            task6.setDoesJavadocs(false);
-            task6.dependsOn("fmlInjectJar");
-        }
-        
-        task5 = makeTask("forgeInjectJar", Zip.class);
-        {
-            task5.from(delayedFileTree(FORGE_SOURCES));
-            task5.from(delayedFileTree(FORGE_RESOURCES));
-            task5.from(delayedFileTree(BUKKIT_SOURCES));
-            task5.from(delayedFileTree(BUKKIT_RESOURCES));
-            task5.from(delayedZipTree(ZIP_RENAMED_MCPC));
-
-            // see ZIP_FINJECT_MCPC
-            task5.setArchiveName("minecraft_forgeinjected.zip");
-            task5.setDestinationDir(delayedFile("{BUILD_DIR}/mcpcTmp").call());
-
-            task5.dependsOn("remapSourcesJar");
-        }
-
-        task4 = makeTask("forgePatchJar", PatchJarTask.class);
-        {
-            task4.setInJar(delayedFile(ZIP_FINJECT_MCPC));
-            task4.setOutJar(delayedFile(ZIP_FORGED_MCPC));
-            task4.setInPatches(delayedFile(FORGE_PATCH_DIR));
-            task4.setDoesCache(true);
-            task4.setMaxFuzz(2);
-            task4.dependsOn("forgeInjectJar");
+            task6.setNoJavadocs();
+            task6.dependsOn("forgePatchJar");
         }
          
-        task4 = makeTask("mcpcPatchJar", PatchJarTask.class);
+        task4 = makeTask("cauldronPatchJar", ProcessSrcJarTask.class);
         {
-            task4.setInJar(delayedFile(ZIP_FORGED_MCPC));
-            task4.setOutJar(delayedFile(ZIP_PATCHED_MCPC));
-            task4.setInPatches(delayedFile(MCPC_PATCH_DIR));
+            //task4.setInJar(delayedFile(ZIP_FORGED_CDN)); UNCOMMENT FOR SRG NAMES
+            task4.setInJar(delayedFile(REMAPPED_CLEAN));
+            task4.setOutJar(delayedFile(ZIP_PATCHED_CDN));
+            task4.addStage("Cauldron", delayedFile(EXTRA_PATCH_DIR));
             task4.setDoesCache(false);
             task4.setMaxFuzz(2);
-            task4.dependsOn("forgePatchJar");
+            task4.dependsOn("forgePatchJar", "remapCleanJar");
+        }
+        
+        task6 = makeTask("remapCauldronJar", RemapSourcesTask.class);
+        {
+            task6.setInJar(delayedFile(ZIP_PATCHED_CDN));
+            task6.setOutJar(delayedFile(ZIP_RENAMED_CDN));
+            task6.setMethodsCsv(delayedFile(METHODS_CSV));
+            task6.setFieldsCsv(delayedFile(FIELDS_CSV));
+            task6.setParamsCsv(delayedFile(PARAMS_CSV));
+            task6.setDoesCache(true);
+            task6.setNoJavadocs();
+            task6.dependsOn("cauldronPatchJar");
         }
     }
     
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private void createSourceCopyTasks()
     {
         ExtractTask task = makeTask("extractCleanResources", ExtractTask.class);
         {
             task.exclude(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
-            task.from(delayedFile(ZIP_FORGED_MCPC));
+            task.from(delayedFile(REMAPPED_CLEAN));
             task.into(delayedFile(ECLIPSE_CLEAN_RES));
-            task.dependsOn("extractWorkspace", "forgePatchJar");
+            task.dependsOn("extractWorkspace", "remapCleanJar");
         }
 
         task = makeTask("extractCleanSource", ExtractTask.class);
         {
             task.include(JAVA_FILES);
             task.setIncludeEmptyDirs(false);
-            task.from(delayedFile(ZIP_FORGED_MCPC));
+            task.from(delayedFile(REMAPPED_CLEAN));
             task.into(delayedFile(ECLIPSE_CLEAN_SRC));
             task.dependsOn("extractCleanResources");
         }
 
-        task = makeTask("extractMcpcResources", ExtractTask.class);
+        task = makeTask("extractCauldronResources", ExtractTask.class);
         {
             task.exclude(JAVA_FILES);
-            task.from(delayedFile(ZIP_PATCHED_MCPC));
-            task.into(delayedFile(ECLIPSE_MCPC_RES));
-            task.dependsOn("mcpcPatchJar", "extractWorkspace");
+            task.from(delayedFile(ZIP_RENAMED_CDN));
+            task.into(delayedFile(ECLIPSE_CDN_RES));
+            task.dependsOn("remapCauldronJar", "extractWorkspace");
+            task.onlyIf(new Spec() {
+
+                @Override
+                public boolean isSatisfiedBy(Object arg0)
+                {
+                    File dir = delayedFile(ECLIPSE_CDN_RES).call();
+                    if (!dir.exists())
+                        return true;
+                    
+                    ConfigurableFileTree tree = project.fileTree(dir);
+                    tree.include("**/*.java");
+                    
+                    return !tree.isEmpty();
+                }
+                
+            });
         }
 
-        task = makeTask("extractMcpcSources", ExtractTask.class);
+        task = makeTask("extractCauldronSources", ExtractTask.class);
         {
             task.include(JAVA_FILES);
-            task.from(delayedFile(ZIP_PATCHED_MCPC));
-            task.into(delayedFile(ECLIPSE_MCPC_SRC));
-            task.dependsOn("extractMcpcResources");
+            task.from(delayedFile(ZIP_RENAMED_CDN));
+            task.into(delayedFile(ECLIPSE_CDN_SRC));
+            task.dependsOn("extractCauldronResources");
+            task.onlyIf(new Spec() {
+
+                @Override
+                public boolean isSatisfiedBy(Object arg0)
+                {
+                    File dir = delayedFile(ECLIPSE_CDN_SRC).call();
+                    if (!dir.exists())
+                        return true;
+                    
+                    ConfigurableFileTree tree = project.fileTree(dir);
+                    tree.include("**/*.java");
+                    
+                    return !tree.isEmpty();
+                }
+                
+            });
         }
     }
     
@@ -247,7 +286,7 @@ public class McpcDevPlugin extends DevBasePlugin
         GenDevProjectsTask task = makeTask("generateProjectClean", GenDevProjectsTask.class);
         {
             task.setTargetDir(delayedFile(ECLIPSE_CLEAN));
-            task.setJson(delayedFile(MCPC_JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
+            task.setJson(delayedFile(EXTRA_JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
             
             task.addSource(delayedFile(ECLIPSE_CLEAN_SRC));
             
@@ -256,24 +295,24 @@ public class McpcDevPlugin extends DevBasePlugin
             task.dependsOn("extractNatives");
         }
 
-        task = makeTask("generateProjectMcpc", GenDevProjectsTask.class);
+        task = makeTask("generateProjectCauldron", GenDevProjectsTask.class);
         {
-            task.setJson(delayedFile(MCPC_JSON_DEV));
-            task.setTargetDir(delayedFile(ECLIPSE_MCPC));
+            task.setJson(delayedFile(EXTRA_JSON_DEV));
+            task.setTargetDir(delayedFile(ECLIPSE_CDN));
 
-            task.addSource(delayedFile(ECLIPSE_MCPC_SRC));
-            task.addSource(delayedFile(MCPC_SOURCES));
-            task.addTestSource(delayedFile(MCPC_TEST_SOURCES));
+            task.addSource(delayedFile(ECLIPSE_CDN_SRC));
+            task.addSource(delayedFile(EXTRA_SOURCES));
+            task.addTestSource(delayedFile(EXTRA_TEST_SOURCES));
 
-            task.addResource(delayedFile(ECLIPSE_MCPC_RES));
-            task.addResource(delayedFile(MCPC_RESOURCES));
+            task.addResource(delayedFile(ECLIPSE_CDN_RES));
+            task.addResource(delayedFile(EXTRA_RESOURCES));
             task.addResource(delayedFile(EXTRACTED_RES));
-            task.addTestSource(delayedFile(MCPC_TEST_SOURCES));
+            task.addTestSource(delayedFile(EXTRA_TEST_SOURCES));
 
             task.dependsOn("extractRes", "extractNatives","createVersionPropertiesFML");
         }
 
-        makeTask("generateProjects").dependsOn("generateProjectClean", "generateProjectMcpc");
+        makeTask("generateProjects").dependsOn("generateProjectClean", "generateProjectCauldron");
     }
     
     private void createEclipseTasks()
@@ -285,46 +324,98 @@ public class McpcDevPlugin extends DevBasePlugin
             task.dependsOn("extractCleanSource", "generateProjects");
         }
 
-        task = makeTask("eclipseMcpc", SubprojectTask.class);
+        task = makeTask("eclipseCauldron", SubprojectTask.class);
         {
-            task.setBuildFile(delayedFile(ECLIPSE_MCPC + "/build.gradle"));
+            task.setBuildFile(delayedFile(ECLIPSE_CDN + "/build.gradle"));
             task.setTasks("eclipse");
-            task.dependsOn("extractMcpcSources", "generateProjects");
+            task.dependsOn("extractCauldronSources", "generateProjects");
         }
 
-        makeTask("eclipse").dependsOn("eclipseClean", "eclipseMcpc");
+        makeTask("eclipse").dependsOn("eclipseClean", "eclipseCauldron");
     }
     
+    @SuppressWarnings("unused")
     private void createMiscTasks()
     {
+        DelayedFile rangeMapClean = delayedFile("{BUILD_DIR}/tmp/rangemapCLEAN.txt");
+        DelayedFile rangeMapDirty = delayedFile("{BUILD_DIR}/tmp/rangemapDIRTY.txt");
+        
+        ExtractS2SRangeTask extractRange = makeTask("extractRangeCauldron", ExtractS2SRangeTask.class);
+        {
+            extractRange.setLibsFromProject(delayedFile(ECLIPSE_CDN + "/build.gradle"), "compile", true);
+            extractRange.addIn(delayedFile(ECLIPSE_CDN_SRC));
+            extractRange.setRangeMap(rangeMapDirty);
+        }
+        
+        ApplyS2STask applyS2S = makeTask("retroMapCauldron", ApplyS2STask.class);
+        {
+            applyS2S.addIn(delayedFile(ECLIPSE_CDN_SRC));
+            applyS2S.setOut(delayedFile(PATCH_DIRTY));
+            applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
+            applyS2S.addExc(delayedFile(MCP_EXC));
+            applyS2S.addExc(delayedFile(SRG_EXC)); // just in case
+            applyS2S.setRangeMap(rangeMapDirty);
+            applyS2S.dependsOn("genSrgs", extractRange);
+        }
+        
+        extractRange = makeTask("extractRangeClean", ExtractS2SRangeTask.class);
+        {
+            extractRange.setLibsFromProject(delayedFile(ECLIPSE_CLEAN + "/build.gradle"), "compile", true);
+            extractRange.addIn(delayedFile(REMAPPED_CLEAN));
+            extractRange.setRangeMap(rangeMapClean);
+        }
+        
+        applyS2S = makeTask("retroMapClean", ApplyS2STask.class);
+        {
+            applyS2S.addIn(delayedFile(REMAPPED_CLEAN));
+            applyS2S.setOut(delayedFile(PATCH_CLEAN));
+            applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
+            applyS2S.addExc(delayedFile(MCP_EXC));
+            applyS2S.addExc(delayedFile(SRG_EXC)); // just in case
+            applyS2S.setRangeMap(rangeMapClean);
+            applyS2S.dependsOn("genSrgs", extractRange);
+        }
+        
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
         {
-            task2.setPatchDir(delayedFile(MCPC_PATCH_DIR));
+            task2.setPatchDir(delayedFile(EXTRA_PATCH_DIR));
             task2.setOriginal(delayedFile(ECLIPSE_CLEAN_SRC));
-            task2.setChanged(delayedFile(ECLIPSE_MCPC_SRC));
+            task2.setChanged(delayedFile(ECLIPSE_CDN_SRC));
             task2.setOriginalPrefix("../src-base/minecraft");
             task2.setChangedPrefix("../src-work/minecraft");
-            task2.setGroup("MCPC");
+            task2.getTaskDependencies().getDependencies(task2).clear(); // remove all the old dependants.
+            task2.setGroup("Cauldron");
+        }
+        
+        if (false) // COMMENT OUT SRG PATCHES!
+        {
+            task2.setPatchDir(delayedFile(EXTRA_PATCH_DIR));
+            task2.setOriginal(delayedFile(PATCH_CLEAN)); // was ECLIPSE_CLEAN_SRC
+            task2.setChanged(delayedFile(PATCH_DIRTY)); // ECLIPSE_FORGE_SRC
+            task2.setOriginalPrefix("../src-base/minecraft");
+            task2.setChangedPrefix("../src-work/minecraft");
+            task2.dependsOn("retroMapCauldron", "retroMapClean");
+            task2.setGroup("Cauldron");
         }
 
-        Delete clean = makeTask("cleanMcpc", Delete.class);
+        Delete clean = makeTask("cleanCauldron", Delete.class);
         {
             clean.delete("eclipse");
             clean.setGroup("Clean");
         }
-        (project.getTasksByName("clean", false).toArray(new Task[0])[0]).dependsOn("cleanMcpc");
+        project.getTasks().getByName("clean").dependsOn("cleanCauldron");
 
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
             obf.setSrg(delayedFile(MCP_2_NOTCH_SRG));
             obf.setExc(delayedFile(JOINED_EXC));
             obf.setReverse(false);
-            obf.setPreFFJar(delayedFile(JAR_SRG_MCPC));
+            obf.setPreFFJar(delayedFile(JAR_SRG_CDN));
             obf.setOutJar(delayedFile(REOBF_TMP));
-            obf.setBuildFile(delayedFile(ECLIPSE_MCPC + "/build.gradle"));
+            obf.setBuildFile(delayedFile(ECLIPSE_CDN + "/build.gradle"));
             obf.setMethodsCsv(delayedFile(METHODS_CSV));
             obf.setFieldsCsv(delayedFile(FIELDS_CSV));
-            obf.dependsOn("generateProjects", "extractMcpcSources", "genSrgs");
+            obf.dependsOn("genSrgs");
         }
 
         GenBinaryPatches task3 = makeTask("genBinPatches", GenBinaryPatches.class);
@@ -336,7 +427,7 @@ public class McpcDevPlugin extends DevBasePlugin
             task3.setDeobfDataLzma(delayedFile(DEOBF_DATA));
             task3.setOutJar(delayedFile(BINPATCH_TMP));
             task3.setSrg(delayedFile(JOINED_SRG));
-            task3.addPatchList(delayedFileTree(MCPC_PATCH_DIR));
+            task3.addPatchList(delayedFileTree(EXTRA_PATCH_DIR));
             task3.addPatchList(delayedFileTree(FORGE_PATCH_DIR));
             task3.addPatchList(delayedFileTree(FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData");
@@ -362,7 +453,7 @@ public class McpcDevPlugin extends DevBasePlugin
     @SuppressWarnings("serial")
     private void createPackageTasks()
     {
-        /*
+        
         ChangelogTask log = makeTask("createChangelog", ChangelogTask.class);
         {
             log.getOutputs().upToDateWhen(Constants.CALL_FALSE);
@@ -374,7 +465,7 @@ public class McpcDevPlugin extends DevBasePlugin
             log.setOutput(delayedFile(CHANGELOG));
         }
         
-
+        /*
         VersionJsonTask vjson = makeTask("generateVersionJson", VersionJsonTask.class);
         {
             vjson.setInput(delayedFile(INSTALL_PROFILE));
@@ -386,12 +477,12 @@ public class McpcDevPlugin extends DevBasePlugin
         final DelayedJar uni = makeTask("packageUniversal", DelayedJar.class);
         {
             uni.setClassifier(delayedString("B{BUILD_NUM}").call());
-            uni.getInputs().file(delayedFile(MCPC_JSON_REL));
+            uni.getInputs().file(delayedFile(EXTRA_JSON_REL));
             uni.getOutputs().upToDateWhen(Constants.CALL_FALSE);
             uni.from(delayedZipTree(BINPATCH_TMP));
-            uni.from(delayedFileTree(FML_RESOURCES));
+            uni.from(delayedFileTree(EXTRA_RESOURCES));
             uni.from(delayedFileTree(FORGE_RESOURCES));
-            uni.from(delayedFileTree(MCPC_RESOURCES));
+            uni.from(delayedFileTree(FML_RESOURCES));
             uni.from(delayedFileTree(EXTRACTED_RES));
             uni.from(delayedFile(FML_VERSIONF));
             uni.from(delayedFile(FML_LICENSE));
@@ -404,6 +495,7 @@ public class McpcDevPlugin extends DevBasePlugin
             uni.from(delayedFile(CHANGELOG));
             uni.from(delayedFile(VERSION_JSON));
             uni.exclude("devbinpatches.pack.lzma");
+            uni.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
             uni.setIncludeEmptyDirs(false);
             uni.setManifest(new Closure<Object>(project)
             {
@@ -412,7 +504,7 @@ public class McpcDevPlugin extends DevBasePlugin
                     Manifest mani = (Manifest) getDelegate();
                     mani.getAttributes().put("Main-Class", delayedString("{MAIN_CLASS}").call());
                     mani.getAttributes().put("TweakClass", delayedString("{FML_TWEAK_CLASS}").call());
-                    mani.getAttributes().put("Class-Path", getServerClassPath(delayedFile(MCPC_JSON_REL).call()));
+                    mani.getAttributes().put("Class-Path", getServerClassPath(delayedFile(EXTRA_JSON_REL).call()));
                     return null;
                 }
             });
@@ -435,17 +527,17 @@ public class McpcDevPlugin extends DevBasePlugin
             
             uni.setDestinationDir(delayedFile("{BUILD_DIR}/distributions").call());
             //uni.dependsOn("genBinPatches", "createChangelog", "createVersionPropertiesFML", "generateVersionJson");
-            uni.dependsOn("genBinPatches", "createVersionPropertiesFML");
+            uni.dependsOn("genBinPatches", "createChangelog", "createVersionPropertiesFML");
         }
         project.getArtifacts().add("archives", uni);
 
         FileFilterTask task = makeTask("generateInstallJson", FileFilterTask.class);
         {
-            task.setInputFile(delayedFile(MCPC_JSON_REL));
+            task.setInputFile(delayedFile(EXTRA_JSON_REL));
             task.setOutputFile(delayedFile(INSTALL_PROFILE));
             task.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
             task.addReplacement("@version@", delayedString("{VERSION}"));
-            task.addReplacement("@project@", delayedString("mcpc-plus"));
+            task.addReplacement("@project@", delayedString("cauldron"));
             task.addReplacement("@artifact@", delayedString("net.minecraftforge:forge:{MC_VERSION}-{VERSION}"));
             task.addReplacement("@universal_jar@", new Closure<String>(project)
             {
@@ -487,32 +579,6 @@ public class McpcDevPlugin extends DevBasePlugin
             inst.setExtension("jar");
         }
         project.getArtifacts().add("archives", inst);
-
-        final File javadocSource = project.file(delayedFile("{BUILD_DIR}/tmp/javadocSource"));
-        ReplaceJavadocsTask jdSource = makeTask("replaceJavadocs", ReplaceJavadocsTask.class);
-        {
-            jdSource.from(delayedFile(MCPC_SOURCES));
-            jdSource.from(delayedFile(ECLIPSE_MCPC_SRC));
-            jdSource.setOutFile(delayedFile("{BUILD_DIR}/tmp/javadocSource"));
-            jdSource.setMethodsCsv(delayedFile(METHODS_CSV));
-            jdSource.setFieldsCsv(delayedFile(FIELDS_CSV));
-        }
-
-        final File javadoc_temp = project.file(delayedFile("{BUILD_DIR}/tmp/javadoc"));
-        final SubprojectTask javadocJar = makeTask("genJavadocs", SubprojectTask.class);
-        {
-            javadocJar.dependsOn("replaceJavadocs");
-            javadocJar.setBuildFile(delayedFile(ECLIPSE_MCPC + "/build.gradle"));
-            javadocJar.setTasks("javadoc");
-            javadocJar.setConfigureTask(new Action<Task>() {
-                public void execute(Task obj)
-                {
-                    Javadoc task = (Javadoc)obj;
-                    task.setSource(project.fileTree(javadocSource));
-                    task.setDestinationDir(javadoc_temp);
-                }
-            });
-        }
     }
     
     @Override
@@ -524,11 +590,7 @@ public class McpcDevPlugin extends DevBasePlugin
         task.configureProject(getExtension().getSubprojects());
         task.configureProject(getExtension().getCleanProject());
         
-        task = (SubprojectTask) project.getTasks().getByName("eclipseMcpc");
-        task.configureProject(getExtension().getSubprojects());
-        task.configureProject(getExtension().getCleanProject());
-        
-        task = (SubprojectTask) project.getTasks().getByName("genJavadocs");
+        task = (SubprojectTask) project.getTasks().getByName("eclipseCauldron");
         task.configureProject(getExtension().getSubprojects());
         task.configureProject(getExtension().getCleanProject());
     }

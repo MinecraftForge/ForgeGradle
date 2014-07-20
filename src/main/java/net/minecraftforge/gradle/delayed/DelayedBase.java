@@ -66,14 +66,6 @@ public abstract class DelayedBase<V> extends Closure<V>
         {
             build = System.getenv("BUILD_NUMBER");
         }
-
-        // For simplicities sake, if the version is in the standard format of {MC_VERSION}-{realVersion}
-        // lets trim the MC version from the replacement string.
-        String version = project.getVersion().toString();
-        if (version.startsWith(exten.getVersion() + "-"))
-        {
-            version = version.substring(exten.getVersion().length() + 1);
-        }
         
         // resolvers first
         for (IDelayedResolver r : resolvers)
@@ -82,13 +74,13 @@ public abstract class DelayedBase<V> extends Closure<V>
         }
 
         patern = patern.replace("{MC_VERSION}", exten.getVersion());
+        patern = patern.replace("{MC_VERSION_SAFE}", exten.getVersion().replace('-', '_'));
         patern = patern.replace("{MCP_VERSION}", exten.getMcpVersion());
         patern = patern.replace("{CACHE_DIR}", project.getGradle().getGradleUserHomeDir().getAbsolutePath().replace('\\', '/') + "/caches");
         patern = patern.replace("{BUILD_DIR}", project.getBuildDir().getAbsolutePath().replace('\\', '/'));
-        patern = patern.replace("{VERSION}", version);
         patern = patern.replace("{BUILD_NUM}", build);
         patern = patern.replace("{PROJECT}", project.getName());
-        patern = patern.replace("{ASSET_DIR}", exten.getAssetDir().replace('\\', '/'));
+        patern = patern.replace("{RUN_DIR}", exten.getRunDir().replace('\\', '/'));
 
         patern = patern.replace("{JENKINS_SERVER}",        jenk.getServer());
         patern = patern.replace("{JENKINS_JOB}",           jenk.getJob());

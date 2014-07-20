@@ -97,5 +97,7 @@ public class TestClass {
          }
 
       }
+
+      public void func_1234_a(int var1, int var2, Block var3);
    }
 }

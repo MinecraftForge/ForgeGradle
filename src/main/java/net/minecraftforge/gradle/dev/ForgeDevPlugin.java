@@ -18,7 +18,7 @@ import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
-import net.minecraftforge.gradle.tasks.PatchJarTask;
+import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.ReplaceJavadocsTask;
@@ -122,53 +122,36 @@ public class ForgeDevPlugin extends DevBasePlugin
             task3.dependsOn("downloadMcpTools", "deobfuscateJar");
         }
 
-        PatchJarTask task4 = makeTask("fmlPatchJar", PatchJarTask.class);
+        ProcessSrcJarTask task4 = makeTask("fmlPatchJar", ProcessSrcJarTask.class);
         {
             task4.setInJar(delayedFile(ZIP_DECOMP_FORGE));
             task4.setOutJar(delayedFile(ZIP_FMLED_FORGE));
-            task4.setInPatches(delayedFile(FML_PATCH_DIR));
+            task4.addStage("fml", delayedFile(FML_PATCH_DIR), delayedFile(FML_SOURCES), delayedFile(FML_RESOURCES), delayedFile("{MAPPINGS_DIR}/patches/Start.java"), delayedFile(DEOBF_DATA), delayedFile(FML_VERSIONF));
             task4.setDoesCache(false);
             task4.setMaxFuzz(2);
-            task4.dependsOn("decompile");
-        }
-
-        // add fml sources
-        Zip task5 = makeTask("fmlInjectJar", Zip.class);
-        {
-            task5.from(delayedFileTree(FML_SOURCES));
-            task5.from(delayedFileTree(FML_RESOURCES));
-            task5.from(delayedZipTree(ZIP_FMLED_FORGE));
-            task5.from(delayedFile("{MAPPINGS_DIR}/patches"), new CopyInto("", "Start.java"));
-            task5.from(delayedFile(DEOBF_DATA));
-            task5.from(delayedFile(FML_VERSIONF));
-
-            // see ZIP_INJECT_FORGE
-            task5.setArchiveName("minecraft_fmlinjected.zip");
-            task5.setDestinationDir(delayedFile("{BUILD_DIR}/forgeTmp").call());
-
-            task5.dependsOn("fmlPatchJar", "compressDeobfData", "createVersionPropertiesFML");
+            task4.dependsOn("decompile", "compressDeobfData", "createVersionPropertiesFML");
         }
         
         RemapSourcesTask remapTask = makeTask("remapCleanJar", RemapSourcesTask.class);
         {
-            remapTask.setInJar(delayedFile(ZIP_INJECT_FORGE));
+            remapTask.setInJar(delayedFile(ZIP_FMLED_FORGE));
             remapTask.setOutJar(delayedFile(REMAPPED_CLEAN));
             remapTask.setMethodsCsv(delayedFile(DevConstants.METHODS_CSV));
             remapTask.setFieldsCsv(delayedFile(DevConstants.FIELDS_CSV));
             remapTask.setParamsCsv(delayedFile(DevConstants.PARAMS_CSV));
             remapTask.setDoesCache(false);
             remapTask.setNoJavadocs();
-            remapTask.dependsOn("fmlInjectJar");
+            remapTask.dependsOn("fmlPatchJar");
         }
 
-        task4 = makeTask("forgePatchJar", PatchJarTask.class);
+        task4 = makeTask("forgePatchJar", ProcessSrcJarTask.class);
         {
-            task4.setInJar(delayedFile(ZIP_INJECT_FORGE));
+            task4.setInJar(delayedFile(ZIP_FMLED_FORGE));
             task4.setOutJar(delayedFile(ZIP_PATCHED_FORGE));
-            task4.setInPatches(delayedFile(FORGE_PATCH_DIR));
+            task4.addStage("forge", delayedFile(FORGE_PATCH_DIR));
             task4.setDoesCache(false);
             task4.setMaxFuzz(2);
-            task4.dependsOn("fmlInjectJar");
+            task4.dependsOn("fmlPatchJar");
         }
         
         remapTask = makeTask("remapSourcesJar", RemapSourcesTask.class);
@@ -466,7 +449,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
             task.addReplacement("@version@", delayedString("{VERSION}"));
             task.addReplacement("@project@", delayedString("Forge"));
-            task.addReplacement("@artifact@", delayedString("net.minecraftforge:forge:{MC_VERSION}-{VERSION}"));
+            task.addReplacement("@artifact@", delayedString("net.minecraftforge:forge:{MC_VERSION_SAFE}-{VERSION}"));
             task.addReplacement("@universal_jar@", new Closure<String>(project)
             {
                 public String call()
@@ -638,7 +621,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             userDev.from(delayedFile(NOTCH_2_SRG_SRG), new CopyInto("conf"));
             userDev.from(delayedFile(SRG_EXC), new CopyInto("conf"));
             userDev.from(delayedFile(FML_VERSIONF), new CopyInto("src/main/resources"));
-            userDev.rename("[\\d.]+?-dev\\.json", "dev.json");
+            userDev.rename(".+-dev\\.json", "dev.json");
             userDev.rename(".+?\\.srg", "packaged.srg");
             userDev.rename(".+?\\.exc", "packaged.exc");
             userDev.setIncludeEmptyDirs(false);
@@ -656,7 +639,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             src.from(delayedFile(FORGE_LICENSE));
             src.from(delayedFile(FORGE_CREDITS));
             src.from(delayedFile("{FML_DIR}/install"), new CopyInto(null, "!*.gradle"));
-            src.from(delayedFile("{FML_DIR}/install"), (new CopyInto(null, "*.gradle")).addExpand("version", delayedString("{MC_VERSION}-{VERSION}")).addExpand("name", "forge"));
+            src.from(delayedFile("{FML_DIR}/install"), (new CopyInto(null, "*.gradle")).addExpand("version", delayedString("{MC_VERSION_SAFE}-{VERSION}")).addExpand("name", "forge"));
             src.from(delayedFile("{FML_DIR}/gradlew"));
             src.from(delayedFile("{FML_DIR}/gradlew.bat"));
             src.from(delayedFile("{FML_DIR}/gradle/wrapper"), new CopyInto("gradle/wrapper"));
@@ -716,7 +699,7 @@ public class ForgeDevPlugin extends DevBasePlugin
         IDelayedResolver resolver = (IDelayedResolver)project.getPlugins().findPlugin("forgedev");
         StringBuilder out = new StringBuilder();
 
-        out.append(DelayedBase.resolve("{MC_VERSION}", project, resolver)).append('-'); // Somehow configure this?
+        out.append(DelayedBase.resolve("{MC_VERSION_SAFE}", project, resolver)).append('-'); // Somehow configure this?
         out.append(major).append('.').append(minor).append('.').append(revision).append('.').append(build);
         if (branch != null)
         {

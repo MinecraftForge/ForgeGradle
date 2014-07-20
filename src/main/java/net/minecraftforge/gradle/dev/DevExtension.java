@@ -19,9 +19,9 @@ public class DevExtension extends BaseExtension
     private Action<Project> cleanProject = null;
     private Action<Project> dirtyProject = null;
 
-    public DevExtension(Project project)
+    public DevExtension(DevBasePlugin plugin)
     {
-        super(project);
+        super(plugin);
     }
 
     public String getFmlDir()
