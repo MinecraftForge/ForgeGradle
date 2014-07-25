@@ -43,23 +43,23 @@ public class ReobfTask extends DefaultTask
 
     @InputFile
     private DelayedFile                               srg;
-    
+
     @Optional
     @InputFile
     private DelayedFile                               fieldCsv;
-    
+
     @Optional
     @InputFile
     private DelayedFile                               methodCsv;
-    
+
     @Optional
     @InputFile
     private DelayedFile                               exceptorCfg;
-    
+
     @Optional
     @InputFile
     private DelayedFile                               deobfFile;
-    
+
     @Optional
     @InputFile
     private DelayedFile                               recompFile;
@@ -256,7 +256,7 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Generates the signature files.
-     * @throws Exception 
+     * @throws Exception
      */
     @TaskAction
     public void doTask() throws Exception
@@ -275,7 +275,7 @@ public class ReobfTask extends DefaultTask
         }
         else
             Files.copy(getSrg(), srg);
-        
+
         // generate extraSrg
         {
             if (!extraSrg.exists())
@@ -283,7 +283,7 @@ public class ReobfTask extends DefaultTask
                 extraSrg.getParentFile().mkdirs();
                 extraSrg.createNewFile();
             }
-            
+
             BufferedWriter writer = new BufferedWriter(new FileWriter(extraSrg));
             for (String line : getExtraSrg())
             {
@@ -296,8 +296,12 @@ public class ReobfTask extends DefaultTask
 
         for (ObfArtifact obf : getObfuscated())
             obf.generate(exc, srg, extraSrg);
+
+        // cleanup
+        srg.delete();
+        extraSrg.delete();
     }
-    
+
     private ReobfExceptor getExceptor() throws IOException
     {
         ReobfExceptor exc = new ReobfExceptor();
@@ -308,7 +312,7 @@ public class ReobfTask extends DefaultTask
         exc.methodCSV = getMethodCsv();
 
         exc.doFirstThings();
-        
+
         return exc;
     }
 
@@ -397,7 +401,7 @@ public class ReobfTask extends DefaultTask
     {
         this.deobfFile = deobfFile;
     }
-    
+
     public File getRecompFile()
     {
         return recompFile == null ? null : recompFile.call();
@@ -437,17 +441,17 @@ public class ReobfTask extends DefaultTask
     {
         this.srg = srg;
     }
-    
+
     public void setSrg(String srg)
     {
         this.srg = new DelayedFile(getProject(), srg);
     }
-    
+
     public void setSrgSrg()
     {
         this.srg = new DelayedFile(getProject(), UserConstants.REOBF_SRG, ((UserExtension)getProject().getExtensions().getByName(Constants.EXT_NAME_MC)).plugin);
     }
-    
+
     public void setSrgMcp()
     {
         this.srg = new DelayedFile(getProject(), UserConstants.REOBF_NOTCH_SRG, ((UserExtension)getProject().getExtensions().getByName(Constants.EXT_NAME_MC)).plugin);
