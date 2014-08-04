@@ -46,11 +46,11 @@ public class ReobfTask extends DefaultTask
 
     @Optional
     @InputFile
-    private DelayedFile                               fieldCsv;
+    private DelayedFile                               fieldsCsv;
 
     @Optional
     @InputFile
-    private DelayedFile                               methodCsv;
+    private DelayedFile                               methodsCsv;
 
     @Optional
     @InputFile
@@ -308,8 +308,8 @@ public class ReobfTask extends DefaultTask
         exc.deobfJar = getDeobfFile();
         exc.toReobfJar = getRecompFile();
         exc.excConfig = getExceptorCfg();
-        exc.fieldCSV = getFieldCsv();
-        exc.methodCSV = getMethodCsv();
+        exc.fieldCSV = getFieldsCsv();
+        exc.methodCSV = getMethodsCsv();
 
         exc.doFirstThings();
 
@@ -457,24 +457,24 @@ public class ReobfTask extends DefaultTask
         this.srg = new DelayedFile(getProject(), UserConstants.REOBF_NOTCH_SRG, ((UserExtension)getProject().getExtensions().getByName(Constants.EXT_NAME_MC)).plugin);
     }
 
-    public File getFieldCsv()
+    public File getFieldsCsv()
     {
-        return fieldCsv == null ? null : fieldCsv.call();
+        return fieldsCsv == null ? null : fieldsCsv.call();
     }
 
-    public void setFieldCsv(DelayedFile fieldCsv)
+    public void setFieldsCsv(DelayedFile fieldsCsv)
     {
-        this.fieldCsv = fieldCsv;
+        this.fieldsCsv = fieldsCsv;
     }
 
-    public File getMethodCsv()
+    public File getMethodsCsv()
     {
-        return methodCsv == null ? null : methodCsv.call();
+        return methodsCsv == null ? null : methodsCsv.call();
     }
 
-    public void setMethodCsv(DelayedFile methodCsv)
+    public void setMethodsCsv(DelayedFile methodsCsv)
     {
-        this.methodCsv = methodCsv;
+        this.methodsCsv = methodsCsv;
     }
 
     public DefaultDomainObjectSet<ObfArtifact> getObfOutput()

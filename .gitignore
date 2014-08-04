@@ -17,5 +17,6 @@ bin
 out
 *.idea
 *.iml
-
+*.ipr
+*.iws
 /repo/

@@ -84,18 +84,18 @@ public class GenSrgTask extends CachedTask
         
     }
     
-    private static void readCSVs(File methodCsv, File fieldCsv, Map<String, String> methodMap, Map<String, String> fieldMap) throws IOException
+    private static void readCSVs(File methodsCsv, File fieldsCsv, Map<String, String> methodMap, Map<String, String> fieldMap) throws IOException
     {
         
         // read methods
-        CSVReader csvReader = RemapSourcesTask.getReader(methodCsv);
+        CSVReader csvReader = RemapSourcesTask.getReader(methodsCsv);
         for (String[] s : csvReader.readAll())
         {
             methodMap.put(s[0], s[1]);
         }
 
         // read fields
-        csvReader = RemapSourcesTask.getReader(fieldCsv);
+        csvReader = RemapSourcesTask.getReader(fieldsCsv);
         for (String[] s : csvReader.readAll())
         {
             fieldMap.put(s[0], s[1]);
