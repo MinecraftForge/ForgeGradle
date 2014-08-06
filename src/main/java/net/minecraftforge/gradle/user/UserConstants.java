@@ -27,7 +27,7 @@ public final class UserConstants
     static final String        PACKAGED_EXC          = CONF_DIR + "/packaged.exc";
     static final String        EXC_JSON              = CONF_DIR + "/exceptor.json";
 
-    public static final String DEOBF_SRG_SRG         = "{SRG_DIR}/srgs/notch-srg.srg";
+    public static final String DEOBF_SRG_SRG         = "{SRG_DIR}/notch-srg.srg";
     public static final String DEOBF_MCP_SRG         = "{SRG_DIR}/notch-mcp.srg";
     public static final String REOBF_SRG             = "{SRG_DIR}/mcp-srg.srg";
     public static final String REOBF_NOTCH_SRG       = "{SRG_DIR}/mcp-notch.srg";
