@@ -28,12 +28,7 @@ import joptsimple.internal.Strings;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.json.JsonFactory;
-import net.minecraftforge.gradle.tasks.DecompileTask;
-import net.minecraftforge.gradle.tasks.ExtractConfigTask;
-import net.minecraftforge.gradle.tasks.GenSrgTask;
-import net.minecraftforge.gradle.tasks.MergeJarsTask;
-import net.minecraftforge.gradle.tasks.ProcessJarTask;
-import net.minecraftforge.gradle.tasks.RemapSourcesTask;
+import net.minecraftforge.gradle.tasks.*;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.user.SourceCopyTask;
 import net.minecraftforge.gradle.tasks.user.reobf.ArtifactSpec;
@@ -110,13 +105,13 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         //configureCISetup(task);
 
         task = makeTask("setupDevWorkspace", DefaultTask.class);
-        task.dependsOn("genSrgs", "deobfBinJar", "getAssets", "extractNatives");
+        task.dependsOn("genSrgs", "deobfBinJar", "makeStart");
         task.setDescription("CIWorkspace + natives and assets to run and test Minecraft");
         task.setGroup("ForgeGradle");
         //configureDevSetup(task);
 
         task = makeTask("setupDecompWorkspace", DefaultTask.class);
-        task.dependsOn("genSrgs", "getAssets", "extractNatives", "repackMinecraft");
+        task.dependsOn("genSrgs", "makeStart", "repackMinecraft");
         task.setDescription("DevWorkspace + the deobfuscated Minecraft source linked as a source jar.");
         task.setGroup("ForgeGradle");
         //configureDecompSetup(task);
@@ -211,6 +206,14 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     /**
      * For run configurations
      */
+    protected abstract String getTweaker();
+    /**
+     * For run configurations
+     */
+    protected abstract String getStartDir();
+    /**
+     * For run configurations
+     */
     protected abstract String getClientRunClass();
     /**
      * For run configurations
@@ -248,6 +251,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         // create configs
         project.getConfigurations().create(CONFIG_USERDEV);
         project.getConfigurations().create(CONFIG_NATIVES);
+        project.getConfigurations().create(CONFIG_START);
         project.getConfigurations().create(CONFIG_DEPS);
         project.getConfigurations().create(CONFIG_MC);
 
@@ -273,12 +277,16 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         extractNatives.exclude("META-INF/**", "META-INF/**");
         extractNatives.dependsOn("extractUserDev");
 
+        // special gradleStart stuff
+        project.getDependencies().add(CONFIG_START, project.files(delayedFile(getStartDir())).builtBy("makeStart"));
+
         // extra libs folder.
         project.getDependencies().add("compile", project.fileTree("libs"));
 
         // make MC dependencies into normal compile classpath
         project.getDependencies().add("compile", project.getConfigurations().getByName(CONFIG_DEPS));
         project.getDependencies().add("compile", project.getConfigurations().getByName(CONFIG_MC));
+        project.getDependencies().add("runtime", project.getConfigurations().getByName(CONFIG_START));
     }
 
     /**
@@ -526,14 +534,14 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 new String[]
                 {
                         "Minecraft Client",
-                        getClientRunClass(),
+                        GRADLE_START_CLIENT,
                         "-Xincgc -Xmx1024M -Xms1024M -Djava.library.path=\"" + natives + "\" -Dfml.ignoreInvalidMinecraftCertificates=true",
                         Joiner.on(' ').join(getClientRunArgs())
                 },
                 new String[]
                 {
                         "Minecraft Server",
-                        getServerRunClass(),
+                        GRADLE_START_SERVER,
                         "-Xincgc -Dfml.ignoreInvalidMinecraftCertificates=true",
                         Joiner.on(' ').join(getServerRunArgs())
                 }
@@ -666,6 +674,23 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             project.getTasks().getByName("uploadArchives").dependsOn(task);
         }
 
+        // create start task and add it to the classpath and stuff
+        {
+            // create task
+            CreateStartTask task =  makeTask("makeStart", CreateStartTask.class);
+            {
+                task.setAssetIndex(delayedString("{ASSET_INDEX}"));
+                task.setAssetsDir(delayedFile("{CACHE_DIR}/minecraft/assets"));
+                task.setVersion(delayedString("{MC_VERSION}"));
+                task.setTweaker(delayedString(getTweaker()));
+                task.setClientBounce(delayedString(getClientRunClass()));
+                task.setServerBounce(delayedString(getServerRunClass()));
+                task.setStartOut(delayedFile(getStartDir()));
+
+                task.dependsOn("extractUserDev", "getAssets", "getAssetsIndex", "extractNatives");
+            }
+        }
+
         createPostDecompTasks();
         createExecTasks();
         createSourceCopyTasks();
@@ -775,7 +800,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         JavaExec exec = makeTask("runClient", JavaExec.class);
         {
             exec.doFirst(new MakeDirExist(delayedFile("{RUN_DIR}")));
-            exec.setMain(getClientRunClass());
+            exec.setMain(GRADLE_START_CLIENT);
             //exec.jvmArgs("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
             exec.args(getClientRunArgs());
             exec.workingDir(delayedFile("{RUN_DIR}"));
@@ -784,12 +809,14 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
             exec.setGroup("ForgeGradle");
             exec.setDescription("Runs the Minecraft client");
+
+            exec.dependsOn("makeStart");
         }
 
         exec = makeTask("runServer", JavaExec.class);
         {
             exec.doFirst(new MakeDirExist(delayedFile("{RUN_DIR}")));
-            exec.setMain(getServerRunClass());
+            exec.setMain(GRADLE_START_SERVER);
             exec.jvmArgs("-Xincgc", "-Dfml.ignoreInvalidMinecraftCertificates=true");
             exec.workingDir(delayedFile("{RUN_DIR}"));
             exec.args(getServerRunArgs());
@@ -799,6 +826,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
             exec.setGroup("ForgeGradle");
             exec.setDescription("Runs the Minecraft Server");
+
+            exec.dependsOn("makeStart");
         }
 
         exec = makeTask("debugClient", JavaExec.class);
@@ -817,7 +846,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                     project.getLogger().error("");
                 }
             });
-            exec.setMain(getClientRunClass());
+            exec.setMain(GRADLE_START_CLIENT);
             exec.jvmArgs("-Xincgc", "-Xmx1024M", "-Xms1024M", "-Dfml.ignoreInvalidMinecraftCertificates=true");
             exec.args(getClientRunArgs());
             exec.workingDir(delayedFile("{RUN_DIR}"));
@@ -827,6 +856,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
             exec.setGroup("ForgeGradle");
             exec.setDescription("Runs the Minecraft client in debug mode");
+
+            exec.dependsOn("makeStart");
         }
 
         exec = makeTask("debugServer", JavaExec.class);
@@ -845,7 +876,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                     project.getLogger().error("");
                 }
             });
-            exec.setMain(getServerRunClass());
+            exec.setMain(GRADLE_START_SERVER);
             exec.jvmArgs("-Xincgc", "-Dfml.ignoreInvalidMinecraftCertificates=true");
             exec.workingDir(delayedFile("{RUN_DIR}"));
             exec.args(getServerRunArgs());
@@ -856,6 +887,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
             exec.setGroup("ForgeGradle");
             exec.setDescription("Runs the Minecraft serevr in debug mode");
+
+            exec.dependsOn("makeStart");
         }
     }
 

@@ -11,6 +11,7 @@ public final class UserConstants
 
     public static final String CONFIG_USERDEV        = "userDevPackageDepConfig";
     public static final String CONFIG_NATIVES        = "minecraftNatives";
+    public static final String CONFIG_START          = "forgeGradleStartClass";
     public static final String CONFIG_DEPS           = "minecraftDeps";
     public static final String CONFIG_MC             = "minecraft";
 
@@ -42,6 +43,9 @@ public final class UserConstants
 
     static final String        RECOMP_SRC_DIR        = "{BUILD_DIR}/tmp/recompSrc";
     static final String        RECOMP_CLS_DIR        = "{BUILD_DIR}/tmp/recompCls";
+
+    static final String        GRADLE_START_CLIENT   = "GradleStart";
+    static final String        GRADLE_START_SERVER   = "GradleStartServer";
 
     // classifiers
     public static final String CLASSIFIER_DEOBF_SRG  = "srg";

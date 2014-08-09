@@ -12,7 +12,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.tasks.CreateStartTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
@@ -21,7 +20,6 @@ import net.minecraftforge.gradle.user.UserBasePlugin;
 
 import org.apache.tools.ant.types.Commandline;
 import org.gradle.api.Action;
-import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 
@@ -97,34 +95,6 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
             }
 
         });
-
-        // create start task and add it to the classpath and stuff
-        {
-            // create task
-            CreateStartTask task =  makeTask("makeStart", CreateStartTask.class);
-            {
-                task.setAssetIndex(delayedString("{ASSET_INDEX}"));
-                task.setAssetsDir(delayedFile("{CACHE_DIR}/minecraft/assets"));
-                task.setVersion(delayedString("{MC_VERSION}"));
-                task.setTweaker(delayedString("cpw.mods.fml.common.launcher.FMLTweaker"));
-                task.setServerBounce(delayedString("cpw.mods.fml.relauncher.ServerLaunchWrapper"));
-                task.setClientBounce(delayedString("net.minecraft.launchwrapper.Launch"));
-                task.setStartOut(delayedFile(START_DIR));
-
-                task.dependsOn("extractUserDev", "getAssets", "getAssetsIndex");
-            }
-
-            // setup dependency
-            Configuration config = project.getConfigurations().create(CONFIG_START);
-            project.getDependencies().add(CONFIG_START, project.files(delayedFile(START_DIR)).builtBy(task));
-            project.getConfigurations().getByName("runtime").extendsFrom(config);
-
-            // task dependencies
-            project.getTasks().getByName("runClient").dependsOn(task);
-            project.getTasks().getByName("runServer").dependsOn(task);
-            project.getTasks().getByName("setupDevWorkspace").dependsOn(task);
-            project.getTasks().getByName("setupDecompWorkspace").dependsOn(task);
-        }
     }
 
     @Override
@@ -272,7 +242,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     @Override
     protected String getClientRunClass()
     {
-        return "GradleStart"; //return "net.minecraft.launchwrapper.Launch";
+        return "net.minecraft.launchwrapper.Launch";
     }
 
     @Override
@@ -295,7 +265,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     @Override
     protected String getServerRunClass()
     {
-        return "GradleStartServer"; //"cpw.mods.fml.relauncher.ServerLaunchWrapper";
+        return "cpw.mods.fml.relauncher.ServerLaunchWrapper";
     }
 
     @Override
@@ -312,7 +282,19 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     protected abstract void configurePatching(ProcessSrcJarTask patch);
 
     /**
-     * Should be with seperate with periods.
+     * Should be with separate with periods.
      */
     protected abstract String getApiGroup();
+
+    @Override
+    protected String getTweaker()
+    {
+        return "cpw.mods.fml.common.launcher.FMLTweaker";
+    }
+
+    @Override
+    protected String getStartDir()
+    {
+        return START_DIR;
+    }
 }

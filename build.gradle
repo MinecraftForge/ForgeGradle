@@ -15,13 +15,13 @@ repositories {
         name = "forge"
         url = "http://files.minecraftforge.net/maven"
     }
-	maven {
-		// because Srg2Source needs an eclipse dependency.
-		name = "eclipse"
-		url = "https://repo.eclipse.org/content/groups/eclipse/"
-	}
     maven {
-		// because SpecialSource doesnt have a full release
+        // because Srg2Source needs an eclipse dependency.
+        name = "eclipse"
+        url = "https://repo.eclipse.org/content/groups/eclipse/"
+    }
+    maven {
+        // because SpecialSource doesnt have a full release
         name = "sonatype"
         url = "https://oss.sonatype.org/content/repositories/snapshots/"
     }
