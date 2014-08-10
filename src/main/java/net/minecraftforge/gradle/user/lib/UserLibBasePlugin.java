@@ -1,19 +1,7 @@
 package net.minecraftforge.gradle.user.lib;
 
-import groovy.lang.Closure;
-
-import java.io.File;
-import java.io.IOException;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.tasks.CreateStartTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.user.reobf.ArtifactSpec;
 import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
@@ -22,20 +10,11 @@ import net.minecraftforge.gradle.user.UserConstants;
 import net.minecraftforge.gradle.user.UserExtension;
 
 import org.gradle.api.Action;
-import org.gradle.api.Task;
-import org.gradle.api.XmlProvider;
+import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.JavaPluginConvention;
-import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.Jar;
-import org.gradle.plugins.ide.idea.model.IdeaModel;
-import org.w3c.dom.DOMException;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-
-import com.google.common.base.Joiner;
 
 public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
 {
@@ -126,155 +105,17 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
 
     abstract String actualApiName();
 
-    @SuppressWarnings("serial")
     private void overrideRunConfigs()
     {
-        // run tasks
-
-        JavaExec exec = (JavaExec) project.getTasks().getByName("runClient");
-        {
-            exec.setMain(getClientRunClass());
-            exec.setArgs(getClientRunArgs());
-        }
-
-        exec = (JavaExec) project.getTasks().getByName("runServer");
-        {
-            exec.setMain(getServerRunClass());
-            exec.setArgs(getServerRunArgs());
-        }
-
-        exec = (JavaExec) project.getTasks().getByName("debugClient");
-        {
-            exec.setMain(getClientRunClass());
-            exec.setArgs(getClientRunArgs());
-        }
-
-        exec = (JavaExec) project.getTasks().getByName("debugServer");
-        {
-            exec.setMain(getServerRunClass());
-            exec.setArgs(getServerRunArgs());
-        }
-
-        // idea run configs
-
-        IdeaModel ideaConv = (IdeaModel) project.getExtensions().getByName("idea");
-
-        Task task = project.getTasks().getByName("genIntellijRuns");
-        task.doLast(new Action<Task>() {
-            @Override
-            public void execute(Task task)
-            {
-                try
-                {
-                    String module = task.getProject().getProjectDir().getCanonicalPath();
-                    File file = project.file(".idea/workspace.xml");
-                    if (!file.exists())
-                        throw new RuntimeException("Only run this task after importing a build.gradle file into intellij!");
-
-                    DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
-                    DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
-                    Document doc = docBuilder.parse(file);
-
-                    overrideIntellijRuns(doc, module);
-
-                    // write the content into xml file
-                    TransformerFactory transformerFactory = TransformerFactory.newInstance();
-                    Transformer transformer = transformerFactory.newTransformer();
-                    transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
-                    transformer.setOutputProperty(OutputKeys.METHOD, "xml");
-                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-                    transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-                    transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
-
-                    DOMSource source = new DOMSource(doc);
-                    StreamResult result = new StreamResult(file);
-                    //StreamResult result = new StreamResult(System.out);
-
-                    transformer.transform(source, result);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
-            }
-        });
-
-        if (ideaConv.getWorkspace().getIws() == null)
-            return;
-
-        ideaConv.getWorkspace().getIws().withXml(new Closure<Object>(this, null)
-        {
-            public Object call(Object... obj)
-            {
-                Element root = ((XmlProvider) this.getDelegate()).asElement();
-                Document doc = root.getOwnerDocument();
-                try
-                {
-                    overrideIntellijRuns(doc, project.getProjectDir().getCanonicalPath());
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
-
-                return null;
-            }
-        });
+        CreateStartTask starter = (CreateStartTask) project.getTasks().getByName("makeStart");
+        starter.setClientBounce(delayedString(getClientRunClass()));
+        starter.setServerBounce(delayedString(getServerRunClass()));
     }
 
-    private final void overrideIntellijRuns(Document doc, String module) throws DOMException, IOException
+    @Override
+    protected String getStartDir()
     {
-        Element root = null;
-
-        {
-            NodeList list = doc.getElementsByTagName("component");
-            for (int i = 0; i < list.getLength(); i++)
-            {
-                Element e = (Element) list.item(i);
-                if ("RunManager".equals(e.getAttribute("name")))
-                {
-                    root = e;
-                    break;
-                }
-            }
-        }
-
-        NodeList list = root.getElementsByTagName("configuration");
-        for (int i = 0; i < list.getLength(); i++)
-        {
-            Element e = (Element) list.item(i);
-
-            String runClass, args;
-            if ("Minecraft Client".equals(e.getAttribute("name")))
-            {
-                runClass = getClientRunClass();
-                args = Joiner.on(' ').join(getClientRunArgs());
-            }
-            else if ("Minecraft Server".equals(e.getAttribute("name")))
-            {
-                runClass = getServerRunClass();
-                args = Joiner.on(' ').join(getServerRunArgs());
-            }
-            else
-            {
-                continue;
-            }
-
-            NodeList list2 = e.getElementsByTagName("option");
-            for (int j = 0; j < list2.getLength(); j++)
-            {
-                Element e2 = (Element) list2.item(j);
-                if ("MAIN_CLASS_NAME".equals(e2.getAttribute("name")))
-                {
-                    e2.setAttribute("value", runClass);
-                }
-                else if ("PROGRAM_PARAMETERS".equals(e2.getAttribute("name")))
-                {
-                    e2.setAttribute("value", args);
-                }
-            }
-
-        }
+        return "{CACHE_DIR}/minecraft/net/minecraft_merged/"+actualApiName() + "Start";
     }
 
     @Override
@@ -340,19 +181,26 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
 
     private final String getFmlCacheDir()
     {
-        return "{CACHE_DIR}/minecraft/cpw/mods/fml/" + getFmlVersion();
+        return "{CACHE_DIR}/minecraft/cpw/mods/fml/{FML_VERSION}";
     }
 
-    private final String getFmlVersion()
+    private final String getFmlVersion(String mcVer)
     {
-        return "1.7.2-7.2.158.889";
+        // hardcoded because MCP snapshots should be soon, and this will be removed
+        if ("1.7.2".equals(mcVer))
+            return "1.7.2-7.2.158.889";
+
+        if ("1.7.10".equals(mcVer))
+            return "1.7.10-7.10.18.952";
+
+        return null;
     }
 
     @Override
     protected String getUserDev()
     {
         // hardcoded version of FML... for now..
-        return "cpw.mods:fml:" + getFmlVersion();
+        return "cpw.mods:fml:{FML_VERSION}";
     }
 
     @Override
@@ -369,12 +217,20 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
     @Override
     protected final void doVersionChecks(String version)
     {
-        if (!"1.7.2".equals(version))
+        if (!"1.7.2".equals(version) && !"1.7.10".equals(version))
             throw new RuntimeException("ForgeGradle 1.2 does not support " + version);
     }
 
     public UserExtension getOverlayExtension()
     {
         return (UserExtension) project.getExtensions().getByName(actualApiName());
+    }
+
+    @Override
+    public String resolve(String pattern, Project project, UserExtension exten)
+    {
+        pattern = super.resolve(pattern, project, exten);
+        pattern = pattern.replace("{FML_VERSION}", getFmlVersion(getMcVersion(exten)));
+        return pattern;
     }
 }

@@ -26,7 +26,6 @@ import java.net.Proxy;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -170,7 +169,7 @@ public class GradleStart
     {
         values = new HashMap<String, String>();
         values.put("version",        "@@MCVERSION@@");
-        values.put("tweakClass",     "cpw.mods.fml.common.launcher.FMLTweaker");
+        values.put("tweakClass",     "@@TWEAKER@@");
         values.put("assetIndex",     "@@ASSETINDEX@@");
         values.put("assetsDir",      "@@ASSETSDIR@@");
         values.put("accessToken",    "FML");
