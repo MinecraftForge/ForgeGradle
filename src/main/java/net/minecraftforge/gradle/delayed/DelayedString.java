@@ -17,12 +17,14 @@ public class DelayedString extends DelayedBase<String>
     }
 
     @Override
-    public String call()
+    public String resolveDelayed()
     {
-        if (resolved == null)
-        {
-            resolved = DelayedBase.resolve(pattern, project, resolvers);
-        }
-        return resolved;
+        return DelayedBase.resolve(pattern, project, resolvers);
+    }
+    
+    public DelayedString forceResolving()
+    {
+        resolveOnce = false;
+        return this;
     }
 }

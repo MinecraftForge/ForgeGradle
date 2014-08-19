@@ -679,7 +679,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             // create task
             CreateStartTask task =  makeTask("makeStart", CreateStartTask.class);
             {
-                task.setAssetIndex(delayedString("{ASSET_INDEX}"));
+                task.setAssetIndex(delayedString("{ASSET_INDEX}").forceResolving());
                 task.setAssetsDir(delayedFile("{CACHE_DIR}/minecraft/assets"));
                 task.setVersion(delayedString("{MC_VERSION}"));
                 task.setTweaker(delayedString(getTweaker()));
@@ -1154,7 +1154,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     {
         return new DelayedFile(project, "", this) {
             @Override
-            public File call()
+            public File resolveDelayed()
             {
                 ProcessJarTask decompDeobf = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
                 pattern = (decompDeobf.isClean() ? "{API_CACHE_DIR}" : DIRTY_DIR) + "/";
@@ -1171,7 +1171,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 if (!Strings.isNullOrEmpty(ext))
                     pattern+= "."+ext;
 
-                return super.call();
+                return super.resolveDelayed();
             }
         };
     }
