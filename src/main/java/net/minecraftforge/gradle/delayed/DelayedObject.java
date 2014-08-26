@@ -14,7 +14,7 @@ public class DelayedObject extends DelayedBase<Object>
     }
 
     @Override
-    public Object call()
+    public Object resolveDelayed()
     {        
         return obj;
     }

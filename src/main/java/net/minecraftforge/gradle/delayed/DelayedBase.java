@@ -12,8 +12,9 @@ import org.gradle.api.Project;
 public abstract class DelayedBase<V> extends Closure<V>
 {
     protected Project project;
-    protected V resolved;
+    private V resolved;
     protected String pattern;
+    public boolean resolveOnce = true;
     @SuppressWarnings("rawtypes")
     protected IDelayedResolver[] resolvers;
     public static final IDelayedResolver<BaseExtension> RESOLVER = new IDelayedResolver<BaseExtension>()
@@ -39,8 +40,18 @@ public abstract class DelayedBase<V> extends Closure<V>
         this.resolvers = resolvers;
     }
 
+    public abstract V resolveDelayed();
+    
     @Override
-    public abstract V call();
+    public final V call()
+    {
+        if (resolved == null || !resolveOnce)
+        {
+            resolved = resolveDelayed();
+        }
+        
+        return resolved;
+    }
 
     @Override
     public String toString()

@@ -19,17 +19,19 @@ public class DelayedFile extends DelayedBase<File>
     }
 
     @Override
-    public File call()
+    public File resolveDelayed()
     {
-        if (resolved == null)
-        {
-            resolved = project.file(DelayedBase.resolve(pattern, project, resolvers));
-        }
-        return resolved;
+        return project.file(DelayedBase.resolve(pattern, project, resolvers));
     }
-    
+
     public DelayedFileTree toZipTree()
     {
         return new DelayedFileTree(project, pattern, true, resolvers);
+    }
+    
+    public DelayedFile forceResolving()
+    {
+        resolveOnce = false;
+        return this;
     }
 }
