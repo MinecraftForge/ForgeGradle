@@ -112,6 +112,7 @@ public class ChangelogTask extends DefaultTask
     {
         URLConnection con = null;
         con = url.openConnection();
+        con.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows; U; Windows NT 6.0; ru; rv:1.9.0.11) Gecko/2009060215 Firefox/3.0.11 (.NET CLR 3.5.30729)");
         if (auth != null)
         {
             getProject().getLogger().debug(auth);
