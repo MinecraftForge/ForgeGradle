@@ -1,9 +1,12 @@
 package net.minecraftforge.gradle.user.lib;
 
+import static net.minecraftforge.gradle.common.Constants.EXT_NAME_MC;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import net.minecraftforge.gradle.common.BaseExtension;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.json.LiteLoaderJson;
@@ -114,7 +117,42 @@ public class LiteLoaderPlugin extends UserLibBasePlugin
         if (obj == null)//|| !obj.latest.hasMcp())
             throw new RuntimeException("LiteLoader does not have an ForgeGradle compatible edition for Minecraft " + mcVersion);
 
-        llArtifact = obj.latest;
+        BaseExtension exten = (BaseExtension)project.getExtensions().getByName(EXT_NAME_MC);
+        String llVersion = (String) exten.getExt("liteloaderVersion");
+
+        if(llVersion == null)
+        {
+            if(obj.latest.hasMcp()) // make sure the latest has an mcp jar.
+                llArtifact = obj.latest;
+            else
+                throw new RuntimeException("The latest version of LiteLoader (" + obj.latest.version + ") is not compatible with ForgeGradle."
+                        + " Select another using 'setExt \"liteloaderVersion\", version' in the minecraft block.");
+        }
+        else
+        {
+            for(Artifact artif : obj.artifacts)
+            {
+                if(artif.hasMcp() && artif.version.equals(llVersion))
+                {
+                    llArtifact = artif;
+                    break;
+                }
+            }
+            if(llArtifact == null)
+            {
+                // Build list of suitable versions, then throw exception
+                StringBuilder versions = new StringBuilder();
+                String prefix = "";
+                for(Artifact artif : obj.artifacts)
+                {
+                    if(!artif.hasMcp())
+                        continue;
+                    versions.append(prefix).append(artif.version);
+                    prefix = ", ";
+                }
+                throw new RuntimeException("LiteLoader " + llVersion + " has no ForgeGradle compatible edition. Compatible versions are: " + versions.toString());
+            }
+        }
 
         // add the dependency.
         project.getLogger().info("LiteLoader dep: "+llArtifact.getMcpDepString());

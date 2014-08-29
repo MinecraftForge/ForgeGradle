@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.common;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 
 import org.gradle.api.Project;
@@ -10,6 +11,7 @@ public class BaseExtension
     protected String version = "null";
     protected String mcpVersion = "unknown";
     protected String runDir = "run";
+    protected HashMap<Object, Object> ext = new HashMap<Object, Object>();
     private LinkedList<String> srgExtra = new LinkedList<String>();
 
     public BaseExtension(BasePlugin<? extends BaseExtension> plugin)
@@ -37,6 +39,16 @@ public class BaseExtension
         this.mcpVersion = mcpVersion;
     }
     
+    public Object getExt(String name)
+    {
+        return ext.get(name);
+    }
+
+    public void setExt(Object name, Object value)
+    {
+        ext.put(name, value);
+    }
+
     public void setRunDir(String value)
     {
         this.runDir = value;
