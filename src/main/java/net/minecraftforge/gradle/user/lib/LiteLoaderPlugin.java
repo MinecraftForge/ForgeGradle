@@ -154,6 +154,9 @@ public class LiteLoaderPlugin extends UserLibBasePlugin
             }
         }
 
+        // Update the version string for the user to use.
+        exten.setExt("liteloaderVersion", llArtifact.version);
+
         // add the dependency.
         project.getLogger().info("LiteLoader dep: "+llArtifact.getMcpDepString());
         project.getDependencies().add(actualApiName(), llArtifact.getMcpDepString());
