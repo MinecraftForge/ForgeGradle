@@ -30,6 +30,9 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
         // for special packaging.
         // make jar end with .litemod for litemod, and who knows what else for other things.
         ((Jar) project.getTasks().getByName("jar")).setExtension(getJarExtension());
+        
+        // to set the output not notch names
+        ((ReobfTask) project.getTasks().getByName("reobf")).setSrg(delayedFile(UserConstants.REOBF_NOTCH_SRG));
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
