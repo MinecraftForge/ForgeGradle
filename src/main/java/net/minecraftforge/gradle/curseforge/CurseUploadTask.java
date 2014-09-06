@@ -43,8 +43,8 @@ public class CurseUploadTask extends DefaultTask
     Object               changelog;
     int                  fileID;
 
-    private final String UPLOAD_URL    = "http://minecraft.curseforge.com/api/projects/%s/upload-file";
-    private final String VERSION_URL   = "http://minecraft.curseforge.com/api/game/versions";
+    private final String UPLOAD_URL    = "https://minecraft.curseforge.com/api/projects/%s/upload-file";
+    private final String VERSION_URL   = "https://minecraft.curseforge.com/api/game/versions";
     private final File   VERSION_CACHE = new File(getProject().getGradle().getGradleUserHomeDir() + "/caches/minecraft/curseVersions.json");
 
     @TaskAction
