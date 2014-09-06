@@ -625,8 +625,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.setSrg(delayedFile(DEOBF_MCP_SRG));
             task.setExceptorJson(delayedFile(EXC_JSON));
             task.setExceptorCfg(delayedFile(EXC_MCP));
-            task.setFieldCsv(delayedFile(FIELD_CSV));
-            task.setMethodCsv(delayedFile(METHOD_CSV));
+            task.setFieldsCsv(delayedFile(FIELD_CSV));
+            task.setMethodsCsv(delayedFile(METHOD_CSV));
             task.setInJar(delayedFile(JAR_MERGED));
             task.setOutCleanJar(delayedFile("{API_CACHE_DIR}/" + name));
             task.setOutDirtyJar(delayedFile(DIRTY_DIR + "/" + name));
@@ -656,8 +656,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.dependsOn("genSrgs");
             task.setExceptorCfg(delayedFile(EXC_SRG));
             task.setSrg(delayedFile(REOBF_SRG));
-            task.setFieldCsv(delayedFile(FIELD_CSV));
-            task.setFieldCsv(delayedFile(METHOD_CSV));
+            task.setFieldsCsv(delayedFile(FIELD_CSV));
+            task.setFieldsCsv(delayedFile(METHOD_CSV));
             task.reobf(project.getTasks().getByName("jar"), new Action<ArtifactSpec>()
             {
                 @Override

@@ -63,10 +63,10 @@ public class ProcessJarTask extends CachedTask
 {
     @InputFile
     @Optional
-    private DelayedFile            fieldCsv;
+    private DelayedFile            fieldsCsv;
     @InputFile
     @Optional
-    private DelayedFile            methodCsv;
+    private DelayedFile            methodsCsv;
 
     @InputFile
     private DelayedFile            inJar;
@@ -168,7 +168,7 @@ public class ProcessJarTask extends CachedTask
         mapping.loadMappings(srg);
 
         final Map<String, String> renames = Maps.newHashMap();
-        for (File f : new File[]{ getFieldCsv(), getMethodCsv() })
+        for (File f : new File[]{ getFieldsCsv(), getMethodsCsv() })
         {
             if (f == null) continue;
             Files.readLines(f, Charsets.UTF_8, new LineProcessor<String>()
@@ -516,24 +516,24 @@ public class ProcessJarTask extends CachedTask
         return getProject().files(ats.toArray());
     }
 
-    public File getFieldCsv()
+    public File getFieldsCsv()
     {
-        return fieldCsv == null ? null : fieldCsv.call();
+        return fieldsCsv == null ? null : fieldsCsv.call();
     }
 
-    public void setFieldCsv(DelayedFile fieldCsv)
+    public void setFieldsCsv(DelayedFile fieldsCsv)
     {
-        this.fieldCsv = fieldCsv;
+        this.fieldsCsv = fieldsCsv;
     }
 
-    public File getMethodCsv()
+    public File getMethodsCsv()
     {
-        return methodCsv == null ? null : methodCsv.call();
+        return methodsCsv == null ? null : methodsCsv.call();
     }
 
-    public void setMethodCsv(DelayedFile methodCsv)
+    public void setMethodsCsv(DelayedFile methodsCsv)
     {
-        this.methodCsv = methodCsv;
+        this.methodsCsv = methodsCsv;
     }
 
     @Override
