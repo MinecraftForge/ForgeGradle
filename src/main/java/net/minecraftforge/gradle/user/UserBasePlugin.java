@@ -278,7 +278,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         extractNatives.dependsOn("extractUserDev");
 
         // special gradleStart stuff
-        project.getDependencies().add(CONFIG_START, project.files(delayedFile(getStartDir())).builtBy("makeStart"));
+        project.getDependencies().add(CONFIG_START, project.files(delayedFile(getStartDir())));
 
         // extra libs folder.
         project.getDependencies().add("compile", project.fileTree("libs"));
