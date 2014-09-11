@@ -658,16 +658,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.setSrg(delayedFile(REOBF_SRG));
             task.setFieldCsv(delayedFile(FIELD_CSV));
             task.setFieldCsv(delayedFile(METHOD_CSV));
-            task.reobf(project.getTasks().getByName("jar"), new Action<ArtifactSpec>()
-            {
-                @Override
-                public void execute(ArtifactSpec arg0)
-                {
-                    JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
-                    arg0.setClasspath(javaConv.getSourceSets().getByName("main").getCompileClasspath());
-                }
-
-            });
 
             task.mustRunAfter("test");
             project.getTasks().getByName("assemble").dependsOn(task);
@@ -1018,7 +1008,20 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     protected void delayedTaskConfig()
     {
         // add extraSRG lines to reobf task
-        ((ReobfTask) project.getTasks().getByName("reobf")).setExtraSrg(getExtension().getSrgExtra());
+        {
+            ReobfTask task = ((ReobfTask) project.getTasks().getByName("reobf"));
+            task.reobf(project.getTasks().getByName("jar"), new Action<ArtifactSpec>()
+            {
+                @Override
+                public void execute(ArtifactSpec arg0)
+                {
+                    JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+                    arg0.setClasspath(javaConv.getSourceSets().getByName("main").getCompileClasspath());
+                }
+
+            });
+            task.setExtraSrg(getExtension().getSrgExtra());
+        }
 
         // configure output of recompile task
         {
