@@ -134,8 +134,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
                     }
                     return true;
                 }
-            }
-            );
+            });
         }
 
         CompressLZMA task3 = makeTask("compressDeobfData", CompressLZMA.class);

@@ -2,6 +2,8 @@ package net.minecraftforge.gradle.common;
 
 import java.util.LinkedList;
 
+import joptsimple.internal.Strings;
+
 import org.gradle.api.Project;
 
 public class BaseExtension
@@ -11,6 +13,10 @@ public class BaseExtension
     protected String mcpVersion = "unknown";
     protected String runDir = "run";
     private LinkedList<String> srgExtra = new LinkedList<String>();
+    
+    protected boolean mappingsSet = false; 
+    protected String mappingsChannel;
+    protected String mappingsVersion;
 
     public BaseExtension(BasePlugin<? extends BaseExtension> plugin)
     {
@@ -75,5 +81,45 @@ public class BaseExtension
         {
             setMcpVersion(ext.getMcpVersion());
         }
+    }
+
+    public String getMappings()
+    {
+        return mappingsChannel + "_" + mappingsVersion;
+    }
+    
+    public String getMappingsChannel()
+    {
+        return mappingsChannel;
+    }
+    
+    public String getMappingsVersion()
+    {
+        return mappingsVersion;
+    }
+    
+    public boolean mappingsSet()
+    {
+        return mappingsSet;
+    }
+
+    public void setMappings(String mappings)
+    {
+        if (Strings.isNullOrEmpty(mappings))
+        {
+            mappingsChannel = null;
+            mappingsVersion = null;
+            return;
+        }
+        
+        if (!mappings.contains("_"))
+        {
+            throw new IllegalArgumentException("Mappings must be in format 'channel_version'. eg: snapshot_20140910");
+        }
+        
+        int index = mappings.lastIndexOf('_');
+        mappingsChannel = mappings.substring(0,  index);
+        mappingsVersion = mappings.substring(index +1);
+        mappingsSet = true;
     }
 }

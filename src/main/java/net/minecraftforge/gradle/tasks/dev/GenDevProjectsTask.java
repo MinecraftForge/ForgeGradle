@@ -9,10 +9,12 @@ import groovy.lang.Closure;
 import net.minecraftforge.gradle.JsonUtil;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.delayed.DelayedString;
 import static net.minecraftforge.gradle.common.Constants.NEWLINE;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
@@ -28,7 +30,11 @@ public class GenDevProjectsTask extends DefaultTask
 
     @Input
     protected DelayedFile json;
-
+    
+    @Input
+    @Optional
+    private DelayedString mappingChannel, mappingVersion, mcVersion;
+    
     private List<DelayedFile> sources = new ArrayList<DelayedFile>();
     private List<DelayedFile> resources = new ArrayList<DelayedFile>();
     private List<DelayedFile> testSources = new ArrayList<DelayedFile>();
@@ -110,7 +116,14 @@ public class GenDevProjectsTask extends DefaultTask
         {
             o.append("    compile '").append(dep).append('\'').append(NEWLINE);
         }
-
+        
+        String channel = getMappingChannel();
+        String version = getMappingVersion();
+        String mcversion = getMcVersion();
+        if (version !=null && channel != null )
+        {
+            o.append("    compile group: 'de.oceanlabs.mcp', name:'mcp_").append(channel).append("', version:'").append(version).append('-').append(mcversion).append("', ext:'zip'");
+        }
         a(o, 
             "",
             "    testCompile 'junit:junit:4.5'", 
@@ -291,5 +304,37 @@ public class GenDevProjectsTask extends DefaultTask
     public void setJson(DelayedFile json)
     {
         this.json = json;
+    }
+
+    public String getMappingChannel()
+    {
+        String channel = mappingChannel.call();
+        return channel.equals("{MAPPING_CHANNEL}") ? null : channel;
+    }
+
+    public void setMappingChannel(DelayedString mChannel)
+    {
+        this.mappingChannel = mChannel;
+    }
+    
+    public String getMappingVersion()
+    {
+        String channel = mappingVersion.call();
+        return channel.equals("{MAPPING_VERSION}") ? null : channel;
+    }
+
+    public void setMappingVersion(DelayedString mappingVersion)
+    {
+        this.mappingVersion = mappingVersion;
+    }
+    
+    public String getMcVersion()
+    {
+        return mcVersion.call();
+    }
+
+    public void setMcVersion(DelayedString mcVersion)
+    {
+        this.mcVersion = mcVersion;
     }
 }

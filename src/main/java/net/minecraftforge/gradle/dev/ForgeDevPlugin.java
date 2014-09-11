@@ -227,6 +227,9 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             task.setTargetDir(delayedFile(ECLIPSE_CLEAN));
             task.setJson(delayedFile(JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
+            task.setMappingChannel(delayedString("{MAPPING_CHANNEL}"));
+            task.setMappingVersion(delayedString("{MAPPING_VERSION}"));
+            task.setMcVersion(delayedString("{MC_VERSION}"));
             task.dependsOn("extractNatives");
         }
 
@@ -242,6 +245,10 @@ public class ForgeDevPlugin extends DevBasePlugin
             task.addResource(delayedFile(ECLIPSE_FORGE_RES));
             task.addResource(delayedFile(FORGE_RESOURCES));
             task.addTestResource(delayedFile(FORGE_TEST_RES));
+            
+            task.setMappingChannel(delayedString("{MAPPING_CHANNEL}"));
+            task.setMappingVersion(delayedString("{MAPPING_VERSION}"));
+            task.setMcVersion(delayedString("{MC_VERSION}"));
 
             task.dependsOn("extractNatives","createVersionPropertiesFML");
         }

@@ -212,6 +212,9 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             task.setTargetDir(delayedFile(DevConstants.ECLIPSE_CLEAN));
             task.setJson(delayedFile(DevConstants.JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
+            task.setMappingChannel(delayedString("{MAPPING_CHANNEL}"));
+            task.setMappingVersion(delayedString("{MAPPING_VERSION}"));
+            task.setMcVersion(delayedString("{MC_VERSION}"));
             task.dependsOn("extractNatives");
         }
 
@@ -227,6 +230,10 @@ public class FmlDevPlugin extends DevBasePlugin
             task.addResource(delayedFile(DevConstants.ECLIPSE_FML_RES));
             task.addResource(delayedFile(DevConstants.FML_RESOURCES));
             task.addTestResource(delayedFile(DevConstants.FML_TEST_RES));
+            
+            task.setMappingChannel(delayedString("{MAPPING_CHANNEL}"));
+            task.setMappingVersion(delayedString("{MAPPING_VERSION}"));
+            task.setMcVersion(delayedString("{MC_VERSION}"));
 
             task.dependsOn("extractNatives","createVersionProperties");
         }
