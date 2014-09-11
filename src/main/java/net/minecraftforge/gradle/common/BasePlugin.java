@@ -15,6 +15,7 @@ import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.json.version.AssetIndex;
 import net.minecraftforge.gradle.json.version.Version;
 import net.minecraftforge.gradle.tasks.DownloadAssetsTask;
+import net.minecraftforge.gradle.tasks.ExtractConfigTask;
 import net.minecraftforge.gradle.tasks.ObtainFernFlowerTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DownloadTask;
 
@@ -29,6 +30,7 @@ import org.gradle.api.tasks.Delete;
 import org.gradle.testfixtures.ProjectBuilder;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
@@ -93,6 +95,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 addMavenRepo(proj, "minecraft", Constants.LIBRARY_URL);
             }
         });
+        
+        project.getConfigurations().create(Constants.CONFIG_MCP_DATA);
 
         // after eval
         project.afterEvaluate(new Action<Project>() {
@@ -141,6 +145,16 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
     public void afterEvaluate()
     {
+        if (getExtension().mappingsSet())
+        {
+            project.getDependencies().add(Constants.CONFIG_MCP_DATA, ImmutableMap.of(
+                    "group", "de.oceanlabs.mcp",
+                    "name", delayedString("mcp_{MAPPINGS_CHANNEL}").call(), 
+                    "version",  delayedString("{MAPPINGS_CHANNEL}-{MC_Version}").call(),
+                    "ext", "zip"
+                    ));
+        }
+        
         if (!displayBanner)
             return;
         project.getLogger().lifecycle("****************************");
@@ -222,6 +236,14 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             clearCache.delete(delayedFile("{CACHE_DIR}/minecraft"));
             clearCache.setGroup("ForgeGradle");
             clearCache.setDescription("Cleares the ForgeGradle cache. DONT RUN THIS unless you want a fresh start, or the dev tells you to.");
+        }
+        
+        // special userDev stuff
+        ExtractConfigTask extractMcpData = makeTask("extractMcpData", ExtractConfigTask.class);
+        {
+            extractMcpData.setOut(delayedFile(Constants.MCP_DATA_DIR));
+            extractMcpData.setConfig(Constants.CONFIG_MCP_DATA);
+            extractMcpData.setDoesCache(true);
         }
     }
 
