@@ -149,8 +149,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         {
             project.getDependencies().add(Constants.CONFIG_MCP_DATA, ImmutableMap.of(
                     "group", "de.oceanlabs.mcp",
-                    "name", delayedString("mcp_{MAPPINGS_CHANNEL}").call(), 
-                    "version",  delayedString("{MAPPINGS_CHANNEL}-{MC_Version}").call(),
+                    "name", delayedString("mcp_{MAPPING_CHANNEL}").call(), 
+                    "version",  delayedString("{MAPPING_VERSION}-{MC_VERSION}").call(),
                     "ext", "zip"
                     ));
         }
@@ -383,6 +383,10 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     {
         if (version != null)
             pattern = pattern.replace("{ASSET_INDEX}", version.getAssets());
+        
+        if (exten.mappingsSet())
+            pattern = pattern.replace("{MCP_DATA_DIR}", Constants.MCP_DATA_DIR);
+        
         return pattern;
     }
 

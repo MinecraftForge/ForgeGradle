@@ -174,6 +174,8 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
             task6.setSrgExc(delayedFile(DevConstants.SRG_EXC));
             task6.setMcpExc(delayedFile(DevConstants.MCP_EXC));
             task6.setDoesCache(false);
+            
+            task6.dependsOn("extractMcpData");
         }
     }
 
@@ -376,6 +378,9 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
     public String resolve(String pattern, Project project, DevExtension exten)
     {
         pattern = super.resolve(pattern, project, exten);
+        
+        // MCP_DATA_DIR wont be resolved if the data dir doesnt eixts,,, hence...
+        pattern = pattern.replace("{MCP_DATA_DIR}", "{FML_CONF_DIR}");
 
         // For simplicities sake, if the version is in the standard format of {MC_VERSION}-{realVersion}
         // lets trim the MC version from the replacement string.
@@ -392,7 +397,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
         pattern = pattern.replace("{FML_DIR}", exten.getFmlDir());
         pattern = pattern.replace("{FORGE_DIR}", exten.getForgeDir());
         pattern = pattern.replace("{BUKKIT_DIR}", exten.getBukkitDir());
-        pattern = pattern.replace("{MAPPINGS_DIR}", exten.getFmlDir() + "/conf");
+        pattern = pattern.replace("{FML_CONF_DIR}", exten.getFmlDir() + "/conf");
         return pattern;
     }
 

@@ -33,16 +33,16 @@ final class DevConstants
     static final String USERDEV_RANGEMAP    = "{BUILD_DIR}/tmp/user_dev_range.txt";
 
     // mappings
-    static final String METHODS_CSV         = "{MAPPINGS_DIR}/methods.csv";
-    static final String FIELDS_CSV          = "{MAPPINGS_DIR}/fields.csv";
-    static final String PARAMS_CSV          = "{MAPPINGS_DIR}/params.csv";
-    static final String PACK_CSV            = "{MAPPINGS_DIR}/packages.csv";
-    static final String JOINED_SRG          = "{MAPPINGS_DIR}/joined.srg";
-    static final String JOINED_EXC          = "{MAPPINGS_DIR}/joined.exc";
-    static final String ASTYLE_CFG          = "{MAPPINGS_DIR}/astyle.cfg";
-    static final String EXC_JSON            = "{MAPPINGS_DIR}/exceptor.json";
-    static final String MCP_PATCH           = "{MAPPINGS_DIR}/patches/minecraft_ff.patch";
-    static final String MCP_PATCH_DIR       = "{MAPPINGS_DIR}/patches/minecraft_ff";
+    static final String METHODS_CSV         = "{MCP_DATA_DIR}/methods.csv";
+    static final String FIELDS_CSV          = "{MCP_DATA_DIR}/fields.csv";
+    static final String PARAMS_CSV          = "{MCP_DATA_DIR}/params.csv";
+    static final String PACK_CSV            = "{FML_CONF_DIR}/packages.csv";
+    static final String JOINED_SRG          = "{FML_CONF_DIR}/joined.srg";
+    static final String JOINED_EXC          = "{FML_CONF_DIR}/joined.exc";
+    static final String ASTYLE_CFG          = "{FML_CONF_DIR}/astyle.cfg";
+    static final String EXC_JSON            = "{FML_CONF_DIR}/exceptor.json";
+    static final String MCP_PATCH           = "{FML_CONF_DIR}/patches/minecraft_ff.patch";
+    static final String MCP_PATCH_DIR       = "{FML_CONF_DIR}/patches/minecraft_ff";
     static final String MERGE_CFG           = "{FML_DIR}/mcp_merge.cfg";
 
     // jars.

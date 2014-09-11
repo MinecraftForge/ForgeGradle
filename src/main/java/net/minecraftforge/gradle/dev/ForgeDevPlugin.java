@@ -126,7 +126,7 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             task4.setInJar(delayedFile(ZIP_DECOMP_FORGE));
             task4.setOutJar(delayedFile(ZIP_FMLED_FORGE));
-            task4.addStage("fml", delayedFile(FML_PATCH_DIR), delayedFile(FML_SOURCES), delayedFile(FML_RESOURCES), delayedFile("{MAPPINGS_DIR}/patches/Start.java"), delayedFile(DEOBF_DATA), delayedFile(FML_VERSIONF));
+            task4.addStage("fml", delayedFile(FML_PATCH_DIR), delayedFile(FML_SOURCES), delayedFile(FML_RESOURCES), delayedFile("{FML_CONF_DIR}/patches/Start.java"), delayedFile(DEOBF_DATA), delayedFile(FML_VERSIONF));
             task4.setDoesCache(false);
             task4.setMaxFuzz(2);
             task4.dependsOn("decompile", "compressDeobfData", "createVersionPropertiesFML");
@@ -622,8 +622,8 @@ public class ForgeDevPlugin extends DevBasePlugin
             userDev.from(delayedFileTree("src/main/resources"), new CopyInto("src/main/resources"));
             userDev.from(delayedZipTree(DevConstants.USERDEV_SRG_SRC), new CopyInto("src/main/java"));
             userDev.from(delayedFile(DEOBF_DATA), new CopyInto("src/main/resources/"));
-            userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "astyle.cfg", "exceptor.json", "*.csv", "!packages.csv"));
-            userDev.from(delayedFileTree("{MAPPINGS_DIR}/patches"), new CopyInto("conf"));
+            userDev.from(delayedFileTree("{FML_CONF_DIR}"), new CopyInto("conf", "astyle.cfg", "exceptor.json", "*.csv", "!packages.csv"));
+            userDev.from(delayedFileTree("{FML_CONF_DIR}/patches"), new CopyInto("conf"));
             userDev.from(delayedFile(MERGE_CFG), new CopyInto("conf"));
             userDev.from(delayedFile(NOTCH_2_SRG_SRG), new CopyInto("conf"));
             userDev.from(delayedFile(SRG_EXC), new CopyInto("conf"));

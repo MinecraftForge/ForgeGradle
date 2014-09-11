@@ -164,7 +164,7 @@ public class FmlDevPlugin extends DevBasePlugin
 
         Copy copy = makeTask("copyStart", Copy.class);
         {
-            copy.from(delayedFile("{MAPPINGS_DIR}/patches"));
+            copy.from(delayedFile("{FML_CONF_DIR}/patches"));
             copy.include("Start.java");
             copy.into(delayedFile(DevConstants.ECLIPSE_CLEAN_SRC));
             copy.dependsOn("extractMcResources");
@@ -499,10 +499,10 @@ public class FmlDevPlugin extends DevBasePlugin
             userDev.from(delayedZipTree(DevConstants.USERDEV_SRG_SRC), new CopyInto("src/main/java"));
             userDev.from(delayedFile(DevConstants.DEOBF_DATA), new CopyInto("src/main/resources/"));
             userDev.from(delayedFile(DevConstants.MERGE_CFG), new CopyInto("conf"));
-            userDev.from(delayedFileTree("{MAPPINGS_DIR}"), new CopyInto("conf", "astyle.cfg", "exceptor.json", "*.csv", "!packages.csv"));
+            userDev.from(delayedFileTree("{FML_CONF_DIR}"), new CopyInto("conf", "astyle.cfg", "exceptor.json", "*.csv", "!packages.csv"));
             userDev.from(delayedFile(DevConstants.NOTCH_2_SRG_SRG), new CopyInto("conf"));
             userDev.from(delayedFile(DevConstants.SRG_EXC), new CopyInto("conf"));
-            userDev.from(delayedFileTree("{MAPPINGS_DIR}/patches"), new CopyInto("conf"));
+            userDev.from(delayedFileTree("{FML_CONF_DIR}/patches"), new CopyInto("conf"));
             userDev.rename(".+-dev\\.json", "dev.json");
             userDev.rename(".+?\\.srg", "packaged.srg");
             userDev.rename(".+?\\.exc", "packaged.exc");
