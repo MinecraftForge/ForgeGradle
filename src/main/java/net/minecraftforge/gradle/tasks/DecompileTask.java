@@ -74,7 +74,7 @@ public class DecompileTask extends CachedTask
 
     private HashMap<String, String> sourceMap   = new HashMap<String, String>();
     private HashMap<String, byte[]> resourceMap = new HashMap<String, byte[]>();
-    
+
     private static final Pattern BEFORE = Pattern.compile("(?m)((case|default).+(?:\\r\\n|\\r|\\n))(?:\\r\\n|\\r|\\n)");
     private static final Pattern AFTER  = Pattern.compile("(?m)(?:\\r\\n|\\r|\\n)((?:\\r\\n|\\r|\\n)[ \\t]+(case|default))");
 
@@ -93,6 +93,8 @@ public class DecompileTask extends CachedTask
         getLogger().info("Loading decompiled jar");
         readJarAndFix(temp);
 
+        saveJar(new File(getTemporaryDir(), getInJar().getName() + ".fixed.jar"));
+
         getLogger().info("Applying MCP patches");
         if (getPatch().isFile())
         {
@@ -102,6 +104,8 @@ public class DecompileTask extends CachedTask
         {
             applyPatchDirectory(getPatch());
         }
+
+        saveJar(new File(getTemporaryDir(), getInJar().getName() + ".patched.jar"));
 
         getLogger().info("Cleaning source");
         applyMcpCleanup(getAstyleConfig());
@@ -268,7 +272,7 @@ public class DecompileTask extends CachedTask
         {
             patch = ContextualPatch.create(Files.toString(f, Charset.defaultCharset()), new ContextProvider(sourceMap));
             List<PatchReport> errors = patch.patch(true);
-            
+
             boolean success = true;
             for (PatchReport rep : errors)
             {
@@ -318,7 +322,7 @@ public class DecompileTask extends CachedTask
             writer.flush();
             writer.close();
             text = writer.toString();
-            
+
             getLogger().debug("applying FML transformations");
             text = BEFORE.matcher(text).replaceAll("$1");
             text = AFTER.matcher(text).replaceAll("$1");
@@ -410,7 +414,7 @@ public class DecompileTask extends CachedTask
          else
              return getProject().files(patches);
     }
-    
+
     public File getPatch()
     {
         return patch.call();
