@@ -71,7 +71,7 @@ public class FmlCleanup
                         method.parent.children.remove(method);
                     }
                     method = method.parent;
-                    
+
                     if (method == null) // dont output if there is a parent method.
                         output.add(line);
                 }
@@ -232,6 +232,7 @@ public class FmlCleanup
         last.put("Short", new Holder(0, true, "oshort"));
         last.put("Boolean", new Holder(0, true, "obool"));
         last.put("Package", new Holder(0, true, "opackage"));
+        last.put("Enum", new Holder(0, true, "oenum"));
 
         remap = new HashMap<String, String>();
         remap.put("long", "int");
