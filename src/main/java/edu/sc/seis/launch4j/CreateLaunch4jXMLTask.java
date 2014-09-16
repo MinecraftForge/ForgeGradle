@@ -31,7 +31,7 @@ public class CreateLaunch4jXMLTask extends DefaultTask
     public void writeXmlConfig() throws ParserConfigurationException, TransformerException
     {
         Launch4jPluginExtension cfg = (Launch4jPluginExtension) getProject().getExtensions().getByName("launch4j");
-        
+
         File file = getXmlOutFile();
         file.getParentFile().mkdirs();
 
@@ -69,16 +69,18 @@ public class CreateLaunch4jXMLTask extends DefaultTask
 
         child = doc.createElement("versionInfo");
         {
-            root.appendChild(child);
-            textElement(doc, child, "fileVersion",       parseDotVersion(cfg.getVersion()));
-            textElement(doc, child, "txtFileVersion",    cfg.getVersion());
-            textElement(doc, child, "fileDescription",   getProject().getName());
-            textElement(doc, child, "copyright",         cfg.getCopyright());
-            textElement(doc, child, "productVersion",    parseDotVersion(cfg.getVersion()));
-            textElement(doc, child, "txtProductVersion", cfg.getVersion());
-            textElement(doc, child, "productName",       getProject().getName());
-            textElement(doc, child, "internalName",      getProject().getName());
-            textElement(doc, child, "originalFilename",  new File(cfg.getOutfile()).getName());
+            String originalFilename = ensureLength(46, new File(cfg.getOutfile()).getName());
+            if (!originalFilename.endsWith(".exe")) originalFilename += ".exe";
+
+            textElement(doc, child, "fileVersion",       ensureLength(20,  parseDotVersion(cfg.getVersion())));    //Max 20
+            textElement(doc, child, "txtFileVersion",    ensureLength(50,  cfg.getVersion()));                     //Max 50
+            textElement(doc, child, "fileDescription",   ensureLength(150, getProject().getName()));               //Max 150
+            textElement(doc, child, "copyright",         ensureLength(20,  cfg.getCopyright()));                   //Max 150
+            textElement(doc, child, "productVersion",    ensureLength(20,  parseDotVersion(cfg.getVersion())));    //Max 20
+            textElement(doc, child, "txtProductVersion", ensureLength(50,  cfg.getVersion()));                     //Max 50
+            textElement(doc, child, "productName",       ensureLength(150, getProject().getName()));               //Max 150
+            textElement(doc, child, "internalName",      ensureLength(150, getProject().getName()));               //Max 50, Must NOT end in .exe
+            textElement(doc, child, "originalFilename",  originalFilename);                                         //Max 50, Must end in .exe
         }
 
         child = doc.createElement("jre");
@@ -94,9 +96,9 @@ public class CreateLaunch4jXMLTask extends DefaultTask
             textElement(doc, child, "maxHeapPercent",     cfg.getMaxHeapPercent());
         }
 
-        if (cfg.getMessagesStartupError() != null || 
+        if (cfg.getMessagesStartupError() != null ||
             cfg.getMessagesBundledJreError() != null ||
-            cfg.getMessagesJreVersionError() != null || 
+            cfg.getMessagesJreVersionError() != null ||
             cfg.getMessagesLauncherError() != null)
         {
             child = doc.createElement("messages");
@@ -133,8 +135,13 @@ public class CreateLaunch4jXMLTask extends DefaultTask
         DOMSource source = new DOMSource(doc);
         StreamResult result = new StreamResult(file);
         //StreamResult result = new StreamResult(System.out);
-        
+
         transformer.transform(source, result);
+    }
+    private String ensureLength(int maxLen, String value)
+    {
+        if (value.length() > maxLen) return value.substring(0, maxLen - 1);
+        return value;
     }
 
     private void textElement(Document doc, Element parent, String name, Integer val)
@@ -150,7 +157,7 @@ public class CreateLaunch4jXMLTask extends DefaultTask
     {
         if (val == null || name == null || val.isEmpty())
             return;
-        
+
         Element node = doc.createElement(name);
 
         node.appendChild(doc.createTextNode(val));
