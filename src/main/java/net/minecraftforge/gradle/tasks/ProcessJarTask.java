@@ -7,9 +7,12 @@ import static org.objectweb.asm.Opcodes.ACC_PROTECTED;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -76,7 +79,7 @@ public class ProcessJarTask extends CachedTask
 
     @InputFile
     private DelayedFile            exceptorCfg;
-    
+
     @Optional
     @Input
     private boolean stripSynthetics = false;
@@ -150,7 +153,7 @@ public class ProcessJarTask extends CachedTask
         // apply exceptor
         getLogger().lifecycle("Applying Exceptor...");
         applyExceptor(tempObfJar, tempExcJar, getExceptorCfg(), log, ats);
-        
+
         if (stripSynthetics)
         {
             // strip out synthetics that arnt from enums..
@@ -219,11 +222,20 @@ public class ProcessJarTask extends CachedTask
             }
         };
         getLogger().info("Using AccessTransformers...");
+        PrintStream tmp = System.out;
+        System.setOut(new PrintStream(new ByteArrayOutputStream()
+        {
+            @Override public void write(int b) {}
+            @Override public void write(byte[] b, int off, int len) {}
+            @Override public void writeTo(OutputStream out) throws IOException {}
+        }));
+        //Make SS shutup about access maps
         for (File at : ats)
         {
             getLogger().info("" + at);
             accessMap.loadAccessTransformer(at);
         }
+        System.setOut(tmp);
 
         // make a processor out of the ATS and mappings.
         RemapperProcessor srgProcessor = new RemapperProcessor(null, mapping, null);
@@ -276,7 +288,7 @@ public class ProcessJarTask extends CachedTask
             for (File at : ats)
             {
                 getLogger().info("loading AT: "+at.getCanonicalPath());
-                
+
                 Files.readLines(at, Charset.defaultCharset(), new LineProcessor<Object>()
                 {
                     @Override
@@ -336,7 +348,7 @@ public class ProcessJarTask extends CachedTask
                 isApplyMarkers(),
                 genParams);
     }
-    
+
     private void stripSynthetics(File inJar, File outJar) throws IOException
     {
         ZipFile in = new ZipFile(inJar);
@@ -378,17 +390,17 @@ public class ProcessJarTask extends CachedTask
         ClassNode node = new ClassNode();
 
         reader.accept(node, 0);
-        
+
         if ((node.access & Opcodes.ACC_ENUM) == 0 && !node.superName.equals("java/lang/Enum") && (node.access & Opcodes.ACC_SYNTHETIC) == 0)
         {
             // ^^ is for ignoring enums.
-            
+
             for (FieldNode f : ((List<FieldNode>) node.fields))
             {
                 f.access = f.access & (0xffffffff-Opcodes.ACC_SYNTHETIC);
                 //getLogger().lifecycle("Stripping field: "+f.name);
             }
-            
+
             for (MethodNode m : ((List<MethodNode>) node.methods))
             {
                 m.access = m.access & (0xffffffff-Opcodes.ACC_SYNTHETIC);
@@ -423,7 +435,7 @@ public class ProcessJarTask extends CachedTask
     {
         this.exceptorJson = exceptorJson;
     }
-    
+
     public boolean isApplyMarkers()
     {
         return applyMarkers;
@@ -541,7 +553,7 @@ public class ProcessJarTask extends CachedTask
     {
         return isClean();
     }
-    
+
     public void setDirty()
     {
         isClean = false;
