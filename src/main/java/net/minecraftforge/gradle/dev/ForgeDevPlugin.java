@@ -57,7 +57,7 @@ public class ForgeDevPlugin extends DevBasePlugin
 
         // set fmlDir
         getExtension().setFmlDir("fml");
-        
+
         // configure genSrg task.
         GenSrgTask genSrgTask = (GenSrgTask) project.getTasks().getByName("genSrgs");
         {
@@ -69,7 +69,7 @@ public class ForgeDevPlugin extends DevBasePlugin
                 else if(f.getPath().endsWith(".srg"))
                     genSrgTask.addExtraSrg(f);
             }
-            
+
             for (File f : project.fileTree(delayedFile(DevConstants.FORGE_RESOURCES).call()).getFiles())
             {
                 if(f.getPath().endsWith(".exc"))
@@ -131,7 +131,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task4.setMaxFuzz(2);
             task4.dependsOn("decompile", "compressDeobfData", "createVersionPropertiesFML");
         }
-        
+
         RemapSourcesTask remapTask = makeTask("remapCleanJar", RemapSourcesTask.class);
         {
             remapTask.setInJar(delayedFile(ZIP_FMLED_FORGE));
@@ -153,7 +153,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task4.setMaxFuzz(2);
             task4.dependsOn("fmlPatchJar");
         }
-        
+
         remapTask = makeTask("remapSourcesJar", RemapSourcesTask.class);
         {
             remapTask.setInJar(delayedFile(ZIP_PATCHED_FORGE));
@@ -245,7 +245,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task.addResource(delayedFile(ECLIPSE_FORGE_RES));
             task.addResource(delayedFile(FORGE_RESOURCES));
             task.addTestResource(delayedFile(FORGE_TEST_RES));
-            
+
             task.setMappingChannel(delayedString("{MAPPING_CHANNEL}"));
             task.setMappingVersion(delayedString("{MAPPING_VERSION}"));
             task.setMcVersion(delayedString("{MC_VERSION}"));
@@ -279,14 +279,15 @@ public class ForgeDevPlugin extends DevBasePlugin
     {
         DelayedFile rangeMapClean = delayedFile("{BUILD_DIR}/tmp/rangemapCLEAN.txt");
         DelayedFile rangeMapDirty = delayedFile("{BUILD_DIR}/tmp/rangemapDIRTY.txt");
-        
+
         ExtractS2SRangeTask extractRange = makeTask("extractRangeForge", ExtractS2SRangeTask.class);
         {
             extractRange.setLibsFromProject(delayedFile(ECLIPSE_FORGE + "/build.gradle"), "compile", true);
             extractRange.addIn(delayedFile(ECLIPSE_FORGE_SRC));
+            extractRange.setExcOutput(delayedFile(EXC_MODIFIERS_DIRTY));
             extractRange.setRangeMap(rangeMapDirty);
         }
-        
+
         ApplyS2STask applyS2S = makeTask("retroMapForge", ApplyS2STask.class);
         {
             applyS2S.addIn(delayedFile(ECLIPSE_FORGE_SRC));
@@ -295,16 +296,18 @@ public class ForgeDevPlugin extends DevBasePlugin
             applyS2S.addExc(delayedFile(MCP_EXC));
             applyS2S.addExc(delayedFile(SRG_EXC)); // just in case
             applyS2S.setRangeMap(rangeMapDirty);
+            applyS2S.setExcModifiers(delayedFile(EXC_MODIFIERS_DIRTY));
             applyS2S.dependsOn("genSrgs", extractRange);
         }
-        
+
         extractRange = makeTask("extractRangeClean", ExtractS2SRangeTask.class);
         {
             extractRange.setLibsFromProject(delayedFile(ECLIPSE_CLEAN + "/build.gradle"), "compile", true);
             extractRange.addIn(delayedFile(REMAPPED_CLEAN));
+            extractRange.setExcOutput(delayedFile(EXC_MODIFIERS_CLEAN));
             extractRange.setRangeMap(rangeMapClean);
         }
-        
+
         applyS2S = makeTask("retroMapClean", ApplyS2STask.class);
         {
             applyS2S.addIn(delayedFile(REMAPPED_CLEAN));
@@ -313,9 +316,10 @@ public class ForgeDevPlugin extends DevBasePlugin
             applyS2S.addExc(delayedFile(MCP_EXC));
             applyS2S.addExc(delayedFile(SRG_EXC)); // just in case
             applyS2S.setRangeMap(rangeMapClean);
+            applyS2S.setExcModifiers(delayedFile(EXC_MODIFIERS_CLEAN));
             applyS2S.dependsOn("genSrgs", extractRange);
         }
-        
+
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
         {
             task2.setPatchDir(delayedFile(FORGE_PATCH_DIR));
@@ -554,7 +558,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             javadoc.dependsOn("genJavadocs");
         }
         project.getArtifacts().add("archives", javadoc);
-        
+
         ExtractS2SRangeTask range = makeTask("userDevExtractRange", ExtractS2SRangeTask.class);
         {
             range.setLibsFromProject(delayedFile(DevConstants.ECLIPSE_FORGE + "/build.gradle"), "compile", true);
@@ -563,7 +567,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             range.setRangeMap(delayedFile(DevConstants.USERDEV_RANGEMAP));
             range.dependsOn("extractForgeSources", "generateProjects");
         }
-        
+
         ApplyS2STask s2s = makeTask("userDevSrgSrc", ApplyS2STask.class);
         {
             s2s.addIn(delayedFile(DevConstants.FORGE_SOURCES));
@@ -574,7 +578,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             s2s.setRangeMap(delayedFile(DevConstants.USERDEV_RANGEMAP));
             s2s.dependsOn("genSrgs", range);
             s2s.getOutputs().upToDateWhen(Constants.CALL_FALSE); //Fucking caching.
-            
+
             // find all the exc & srg files in the resources.
             for (File f : project.fileTree(delayedFile(DevConstants.FML_RESOURCES).call()).getFiles())
             {
@@ -583,7 +587,7 @@ public class ForgeDevPlugin extends DevBasePlugin
                 else if(f.getPath().endsWith(".srg"))
                     s2s.addSrg(f);
             }
-            
+
             // find all the exc & srg files in the resources.
             for (File f : project.fileTree(delayedFile(DevConstants.FORGE_RESOURCES).call()).getFiles())
             {
@@ -715,20 +719,20 @@ public class ForgeDevPlugin extends DevBasePlugin
 
         return out.toString();
     }
-    
+
     @Override
     public void afterEvaluate()
     {
         super.afterEvaluate();
-        
+
         SubprojectTask task = (SubprojectTask) project.getTasks().getByName("eclipseClean");
         task.configureProject(getExtension().getSubprojects());
         task.configureProject(getExtension().getCleanProject());
-        
+
         task = (SubprojectTask) project.getTasks().getByName("eclipseForge");
         task.configureProject(getExtension().getSubprojects());
         task.configureProject(getExtension().getCleanProject());
-        
+
         task = (SubprojectTask) project.getTasks().getByName("genJavadocs");
         task.configureProject(getExtension().getSubprojects());
         task.configureProject(getExtension().getCleanProject());

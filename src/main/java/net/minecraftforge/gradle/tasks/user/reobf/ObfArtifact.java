@@ -464,6 +464,7 @@ public class ObfArtifact extends AbstractPublishArtifact
         };
 
         // load in classpath... ewww
+        @SuppressWarnings("unused")
         ClassLoader loader = BasePlugin.class.getClassLoader(); // dunno.. maybe this will load the classes??
         if (classpath != null)
         {

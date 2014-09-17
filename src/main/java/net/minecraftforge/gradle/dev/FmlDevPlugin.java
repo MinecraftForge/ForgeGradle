@@ -1,6 +1,7 @@
 package net.minecraftforge.gradle.dev;
 
 //import edu.sc.seis.launch4j.Launch4jPluginExtension;
+import static net.minecraftforge.gradle.dev.DevConstants.EXC_MODIFIERS_DIRTY;
 import groovy.lang.Closure;
 
 import java.io.File;
@@ -49,7 +50,7 @@ public class FmlDevPlugin extends DevBasePlugin
 
         // set fmlDir
         getExtension().setFmlDir(".");
-        
+
         // configure genSrg task.
         GenSrgTask genSrgTask = (GenSrgTask) project.getTasks().getByName("genSrgs");
         {
@@ -114,7 +115,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task3.setAstyleConfig(delayedFile(DevConstants.ASTYLE_CFG));
             task3.dependsOn("downloadMcpTools", "deobfuscateJar");
         }
-        
+
         RemapSourcesTask remapTask = makeTask("remapCleanJar", RemapSourcesTask.class);
         {
             remapTask.setInJar(delayedFile(DevConstants.ZIP_DECOMP_FML));
@@ -136,7 +137,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task5.setMaxFuzz(2);
             task5.dependsOn("decompile");
         }
-        
+
         remapTask = makeTask("remapDirtyJar", RemapSourcesTask.class);
         {
             remapTask.setInJar(delayedFile(DevConstants.ZIP_PATCHED_FML));
@@ -178,7 +179,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task.into(delayedFile(DevConstants.ECLIPSE_CLEAN_SRC));
             task.dependsOn("copyStart");
         }
-        
+
         // COPY FML STUFF
         task = makeTask("extractFmlResources", ExtractTask.class);
         {
@@ -230,7 +231,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task.addResource(delayedFile(DevConstants.ECLIPSE_FML_RES));
             task.addResource(delayedFile(DevConstants.FML_RESOURCES));
             task.addTestResource(delayedFile(DevConstants.FML_TEST_RES));
-            
+
             task.setMappingChannel(delayedString("{MAPPING_CHANNEL}"));
             task.setMappingVersion(delayedString("{MAPPING_VERSION}"));
             task.setMcVersion(delayedString("{MC_VERSION}"));
@@ -263,15 +264,16 @@ public class FmlDevPlugin extends DevBasePlugin
     private void createMiscTasks()
     {
         DelayedFile rangeMap = delayedFile("{BUILD_DIR}/tmp/rangemap.txt");
-        
+
         ExtractS2SRangeTask task = makeTask("extractRange", ExtractS2SRangeTask.class);
         {
             task.setLibsFromProject(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"), "compile", true);
             task.addIn(delayedFile(DevConstants.ECLIPSE_FML_SRC));
             //task.addIn(delayedFile(DevConstants.FML_SOURCES));
+            task.setExcOutput(delayedFile(DevConstants.EXC_MODIFIERS_DIRTY));
             task.setRangeMap(rangeMap);
         }
-        
+
         ApplyS2STask task4 = makeTask("retroMapSources", ApplyS2STask.class);
         {
             task4.addIn(delayedFile(DevConstants.ECLIPSE_FML_SRC));
@@ -279,10 +281,11 @@ public class FmlDevPlugin extends DevBasePlugin
             task4.addSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
             task4.addExc(delayedFile(DevConstants.MCP_EXC));
             task4.addExc(delayedFile(DevConstants.SRG_EXC)); // both EXCs just in case.
+            task4.setExcModifiers(delayedFile(EXC_MODIFIERS_DIRTY));
             task4.setRangeMap(rangeMap);
             task4.dependsOn("genSrgs", task);
         }
-        
+
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
         {
             task2.setPatchDir(delayedFile(DevConstants.FML_PATCH_DIR));
@@ -455,7 +458,7 @@ public class FmlDevPlugin extends DevBasePlugin
             range.setRangeMap(delayedFile(DevConstants.USERDEV_RANGEMAP));
             range.dependsOn("generateProjects", "extractFmlSources");
         }
-        
+
         ApplyS2STask s2s = makeTask("userDevSrgSrc", ApplyS2STask.class);
         {
             s2s.addIn(delayedFile(DevConstants.FML_SOURCES));
@@ -465,7 +468,7 @@ public class FmlDevPlugin extends DevBasePlugin
             s2s.setRangeMap(delayedFile(DevConstants.USERDEV_RANGEMAP));
             s2s.dependsOn("genSrgs", range);
             s2s.getOutputs().upToDateWhen(Constants.CALL_FALSE); //Fucking caching.
-            
+
             // find all the exc & srg files in the resources.
             for (File f : project.fileTree(delayedFile(DevConstants.FML_RESOURCES).call()).getFiles())
             {
@@ -475,7 +478,7 @@ public class FmlDevPlugin extends DevBasePlugin
                     s2s.addSrg(f);
             }
         }
-        
+
         Zip userDev = makeTask("packageUserDev", Zip.class);
         {
             userDev.setClassifier("userdev");
@@ -582,20 +585,20 @@ public class FmlDevPlugin extends DevBasePlugin
 
         return out.toString();
     }
-    
+
     @Override
     public void afterEvaluate()
     {
         super.afterEvaluate();
-        
+
         SubprojectTask task = (SubprojectTask) project.getTasks().getByName("eclipseClean");
         task.configureProject(getExtension().getSubprojects());
         task.configureProject(getExtension().getCleanProject());
-        
+
         task = (SubprojectTask) project.getTasks().getByName("eclipseFML");
         task.configureProject(getExtension().getSubprojects());
         task.configureProject(getExtension().getCleanProject());
-        
+
         task = (SubprojectTask) project.getTasks().getByName("genJavadocs");
         task.configureProject(getExtension().getSubprojects());
         task.configureProject(getExtension().getCleanProject());

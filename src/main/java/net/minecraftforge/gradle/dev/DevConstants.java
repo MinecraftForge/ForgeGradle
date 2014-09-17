@@ -13,7 +13,7 @@ final class DevConstants
     static final String LAUNCH4J_URL        = "http://files.minecraftforge.net/launch4j/launch4j-3.0.0-"+Constants.OPERATING_SYSTEM+"-"+Constants.SYSTEM_ARCH+".zip";
 
     static final String DEOBF_DATA          = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/deobfuscation_data-{MC_VERSION}.lzma";
-    
+
     public static final String MC_JSON_URL  = "http://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/{MC_VERSION}.json";
 
     // other generated stuff
@@ -31,6 +31,8 @@ final class DevConstants
     static final String LAUNCH4J_DIR        = "{BUILD_DIR}/launch4j_exec";
     static final String VERSION_JSON        = "{BUILD_DIR}/tmp/version.json";
     static final String USERDEV_RANGEMAP    = "{BUILD_DIR}/tmp/user_dev_range.txt";
+    static final String EXC_MODIFIERS_DIRTY = "{BUILD_DIR}/tmp/exc_modifiers_dirty.txt";
+    static final String EXC_MODIFIERS_CLEAN = "{BUILD_DIR}/tmp/exc_modifiers_clean.txt";
 
     // mappings
     static final String METHODS_CSV         = "{MCP_DATA_DIR}/methods.csv";
@@ -63,12 +65,12 @@ final class DevConstants
     static final String ZIP_FMLED_FORGE     = "{BUILD_DIR}/forgeTmp/minecraft_fmlpatched.zip";
     static final String ZIP_PATCHED_FORGE   = "{BUILD_DIR}/forgeTmp/minecraft_patches.zip";
     static final String ZIP_RENAMED_FORGE   = "{BUILD_DIR}/forgeTmp/minecraft_renamed.zip";
-    
+
     //Cauldron  intermediate jars
     static final String ZIP_FORGED_CDN     = "{BUILD_DIR}/cauldronTmp/minecraft_fmlpatched.zip";
     static final String ZIP_PATCHED_CDN    = "{BUILD_DIR}/cauldronTmp/minecraft_patched.zip";
     static final String ZIP_RENAMED_CDN    = "{BUILD_DIR}/cauldronTmp/minecraft_renamed.zip";
-    
+
     //MC EDU  intermediate jars
     static final String ZIP_FORGED_EDU     = "{BUILD_DIR}/eduTmp/minecraft_fmlpatched.zip";
     static final String ZIP_PATCHED_EDU    = "{BUILD_DIR}/eduTmp/minecraft_patched.zip";
@@ -77,7 +79,7 @@ final class DevConstants
     // other stuff
     static final String CHANGELOG           = "{BUILD_DIR}/distributions/{PROJECT}-{MC_VERSION_SAFE}-{VERSION}-changelog.txt";
     static final String USERDEV_SRG_SRC     = "{BUILD_DIR}/tmp/user_dev_srg_src.zip";
-    
+
     // necesary for patch generation
     static final String PATCH_CLEAN         = "{BUILD_DIR}/tmp/clean-path-base.zip";
     static final String PATCH_DIRTY         = "{BUILD_DIR}/tmp/dirty-patch-base.zip";
@@ -137,14 +139,14 @@ final class DevConstants
     static final String PAULSCODE_LISCENCE2 = "{FORGE_DIR}/Paulscode SoundSystem CodecIBXM License.txt";
     static final String FORGE_LOGO          = FORGE_RESOURCES + "/forge_logo.png";
     static final String FORGE_VERSION_JAVA  = FORGE_SOURCES + "/net/minecraftforge/common/ForgeVersion.java";
-    
+
     // Extra stuff only, for the current project
     static final String EXTRA_PATCH_DIR      = "patches";
     static final String EXTRA_SOURCES        = "src/main/java";
     static final String EXTRA_RESOURCES      = "src/main/resources";
     static final String EXTRA_TEST_SOURCES   = "src/test/java";
     static final String EXTRA_TEST_RES       = "src/test/resources";
-    
+
     // USED ONLY FOR Cauldron.. BUT ITS BUKKIT STUFF
     static final String BUKKIT_SOURCES     = "{BUKKIT_DIR}/src/main/java";
     static final String EXTRACTED_RES      = "{BUILD_DIR}/extractedResources";
