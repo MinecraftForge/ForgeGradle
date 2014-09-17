@@ -19,7 +19,7 @@ public class FFPatcher
 
     private static final Pattern SYNTHETICS = Pattern.compile("(?m)(\\s*// \\$FF: (synthetic|bridge) method(\\r\\n|\\n|\\r)){1,2}\\s*(?<modifiers>(?:(?:" + MODIFIERS + ") )*)(?<return>.+?) (?<method>.+?)\\((?<arguments>.*)\\)\\s*\\{(\\r\\n|\\n|\\r)\\s*return this\\.(?<method2>.+?)\\((?<arguments2>.*)\\);(\\r\\n|\\n|\\r)\\s*\\}");
     //private static final Pattern TYPECAST = Pattern.compile("\\([\\w\\.]+\\)");
-    private static final Pattern ABSTRACT = Pattern.compile("(?m)^(?<indent>[ \\t\\f\\v]*)(?<modifiers>(?:(?:" + MODIFIERS + ") )*)(?<return>[^ ]+) (?<method>func_(?<number>\\d+)_[a-zA-Z_]+)\\((?<arguments>([^ ,]+ var\\d+,? ?)*)\\)(?: throws (?:[\\w$.]+,? ?)+)?;$");
+    private static final Pattern ABSTRACT = Pattern.compile("(?m)^(?<indent>[ \\t\\f\\v]*)(?<modifiers>(?:(?:" + MODIFIERS + ") )*)(?<return>[^ ]+) (?<method>func_(?<number>\\d+)_[a-zA-Z_]+)\\((?<arguments>([^ ,]+ (\\.\\.\\. )?var\\d+,? ?)*)\\)(?: throws (?:[\\w$.]+,? ?)+)?;$");
 
     // Remove TRAILING whitespace
     private static final String TRAILING = "(?m)[ \\t]+$";
@@ -278,6 +278,11 @@ public class FFPatcher
         for (int x = 0; x < args.length; x++)
         {
             String[] p = args[x].split(" ");
+            if (p.length == 3) //varargs
+            {
+                p[0] = p[0] + " " + p[1];
+                p[1] = p[2];
+            }
             fixed.append(p[0]).append(" p_").append(number).append('_').append(p[1].substring(3)).append('_');
             if (x != args.length - 1)
                 fixed.append(", ");

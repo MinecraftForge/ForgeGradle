@@ -19,9 +19,7 @@ public class TestClass {
       return this.field_150907_b && var2.func_150973_i()?var2.func_150977_f():var2.func_150967_d();
    }
 
-   public String func_150896_i(ItemStack p_150896_1_) {
-      return TestClass.InnerEnum.func_150978_a(p_150896_1_) == TestClass.InnerEnum.PUFFERFISH?PotionHelper.field_151423_m:null;
-   }
+   public String func_150896_i(ItemStack ... var1);
 
    public static enum InnerEnum {
 
@@ -66,8 +64,8 @@ public class TestClass {
          this.field_150990_m = 0.0F;
          this.field_150987_n = false;
       }
-      
-      
+
+
 
       @SideOnly(Side.CLIENT)
       public void func_150968_a(IIconRegister p_150968_1_) {
