@@ -18,6 +18,7 @@ import net.minecraftforge.gradle.tasks.DownloadAssetsTask;
 import net.minecraftforge.gradle.tasks.ExtractConfigTask;
 import net.minecraftforge.gradle.tasks.ObtainFernFlowerTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DownloadTask;
+import net.minecraftforge.gradle.tasks.abstractutil.EtagDownloadTask;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
@@ -195,11 +196,11 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             mcpTask.setFfJar(delayedFile(Constants.FERNFLOWER));
         }
 
-        DownloadTask getAssetsIndex = makeTask("getAssetsIndex", DownloadTask.class);
+        EtagDownloadTask getAssetsIndex = makeTask("getAssetsIndex", EtagDownloadTask.class);
         {
             getAssetsIndex.setUrl(delayedString(Constants.ASSETS_INDEX_URL));
-            getAssetsIndex.setOutput(delayedFile(Constants.ASSETS + "/indexes/{ASSET_INDEX}.json"));
-            getAssetsIndex.setDoesCache(false);
+            getAssetsIndex.setFile(delayedFile(Constants.ASSETS + "/indexes/{ASSET_INDEX}.json"));
+            getAssetsIndex.setDieWithError(false);
 
             getAssetsIndex.doLast(new Action<Task>() {
                 public void execute(Task task)

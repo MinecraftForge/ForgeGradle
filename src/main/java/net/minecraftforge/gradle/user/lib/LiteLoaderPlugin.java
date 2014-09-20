@@ -9,7 +9,7 @@ import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.json.LiteLoaderJson;
 import net.minecraftforge.gradle.json.LiteLoaderJson.Artifact;
 import net.minecraftforge.gradle.json.LiteLoaderJson.VersionObject;
-import net.minecraftforge.gradle.tasks.user.EtagDownloadTask;
+import net.minecraftforge.gradle.tasks.abstractutil.EtagDownloadTask;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;

@@ -8,6 +8,8 @@ import java.util.Map.Entry;
 
 import net.minecraftforge.gradle.common.BaseExtension;
 
+import com.google.common.base.Strings;
+
 public class UserExtension extends BaseExtension
 {
     public UserBasePlugin<? extends UserExtension> plugin;
@@ -57,5 +59,16 @@ public class UserExtension extends BaseExtension
     public void setDecomp()
     {
         this.isDecomp = true;
+    }
+    
+    public void setMappings(String mappings)
+    {
+        
+        super.setMappings(mappings);
+        
+        if (!Strings.isNullOrEmpty(mappings))
+        {
+            this.setMcpVersion(mappings);
+        }
     }
 }
