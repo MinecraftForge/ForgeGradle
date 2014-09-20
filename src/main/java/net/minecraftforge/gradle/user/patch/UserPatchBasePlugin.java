@@ -17,6 +17,7 @@ import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.user.ApplyBinPatchesTask;
 import net.minecraftforge.gradle.user.UserBasePlugin;
+import net.minecraftforge.gradle.user.UserConstants;
 
 import org.apache.tools.ant.types.Commandline;
 import org.gradle.api.Action;
@@ -50,8 +51,8 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
 
         // add source patching task
         {
-            DelayedFile decompOut = delayedDirtyFile(null, CLASSIFIER_DECOMPILED, "jar");
-            DelayedFile processed = delayedDirtyFile(null, CLASSIFIER_PATCHED, "jar");
+            DelayedFile decompOut = delayedDirtyFile(null, CLASSIFIER_DECOMPILED, "jar", false);
+            DelayedFile processed = delayedDirtyFile(null, CLASSIFIER_PATCHED, "jar", false);
 
             ProcessSrcJarTask patch = makeTask("processSources", ProcessSrcJarTask.class);
             patch.dependsOn("decompile");
@@ -206,7 +207,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     @Override
     protected String getSrgCacheDir(UserPatchExtension exten)
     {
-        return "{API_CACHE_DIR}/srgs";
+        return "{API_CACHE_DIR}/"+ UserConstants.MAPPING_APPENDAGE +"srgs";
     }
 
     @Override

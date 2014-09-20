@@ -235,13 +235,24 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     @Override
     public String resolve(String pattern, Project project, T exten)
     {
+        pattern = super.resolve(pattern, project, exten);
+        
+        if (!exten.mappingsSet())
+        {
+            // no mappings set?remove these tokens
+            pattern = pattern.replace("{MAPPING_CHANNEL}", "");
+            pattern = pattern.replace("{MAPPING_VERSION}", "");
+        }
+        
+        pattern = pattern.replace("{MCP_DATA_DIR}", CONF_DIR);
         pattern = pattern.replace("{USER_DEV}", this.getUserDevCacheDir(exten));
         pattern = pattern.replace("{SRG_DIR}", this.getSrgCacheDir(exten));
         pattern = pattern.replace("{API_CACHE_DIR}", this.getApiCacheDir(exten));
         pattern = pattern.replace("{MC_VERSION}", getMcVersion(exten));
-        pattern = super.resolve(pattern, project, exten);
+        
         if (hasApiVersion())
             pattern = pattern.replace("{API_VERSION}", getApiVersion(exten));
+        
         pattern = pattern.replace("{API_NAME}", getApiName());
         return pattern;
     }
@@ -606,7 +617,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.setMcpToNotch(delayedFile(REOBF_NOTCH_SRG));
             task.setSrgExc(delayedFile(EXC_SRG));
             task.setMcpExc(delayedFile(EXC_MCP));
-            task.dependsOn("extractUserDev");
+            task.dependsOn("extractUserDev", "extractMcpData");
         }
 
         {
@@ -628,7 +639,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.setFieldCsv(delayedFile(FIELD_CSV));
             task.setMethodCsv(delayedFile(METHOD_CSV));
             task.setInJar(delayedFile(JAR_MERGED));
-            task.setOutCleanJar(delayedFile("{API_CACHE_DIR}/" + name));
+            task.setOutCleanJar(delayedFile("{API_CACHE_DIR}/" + MAPPING_APPENDAGE + name));
             task.setOutDirtyJar(delayedFile(DIRTY_DIR + "/" + name));
             task.setApplyMarkers(false);
             task.setStripSynthetics(true);
@@ -689,7 +700,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private final void createPostDecompTasks()
     {
-        DelayedFile decompOut = delayedDirtyFile(null, CLASSIFIER_DECOMPILED, "jar");
+        DelayedFile decompOut = delayedDirtyFile(null, CLASSIFIER_DECOMPILED, "jar", false);
         DelayedFile remapped = delayedDirtyFile(getSrcDepName(), CLASSIFIER_SOURCES, "jar");
         final DelayedFile recomp = delayedDirtyFile(getSrcDepName(), null, "jar");
         final DelayedFile recompSrc = delayedFile(RECOMP_SRC_DIR);
@@ -697,7 +708,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         DecompileTask decomp = makeTask("decompile", DecompileTask.class);
         {
-            decomp.setInJar(delayedDirtyFile(null, CLASSIFIER_DEOBF_SRG, "jar"));
+            decomp.setInJar(delayedDirtyFile(null, CLASSIFIER_DEOBF_SRG, "jar", false));
             decomp.setOutJar(decompOut);
             decomp.setFernFlower(delayedFile(FERNFLOWER));
             decomp.setPatch(delayedFile(MCP_PATCH_DIR));
@@ -1147,20 +1158,31 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     protected abstract void doVersionChecks(String version);
 
     /**
-     * Returns a file in the DirtyDir if the deobfusctaion task is dirty. Otherwise returns the cached one.
+     * Returns a file in the DirtyDir if the deobfuscation task is dirty. Otherwise returns the cached one.
+     * @param classifier
+     * @param ext
+     * @return
+     */
+    protected DelayedFile delayedDirtyFile(final String name, final String classifier, final String ext)
+    {
+        return delayedDirtyFile(name, classifier, ext, true);
+    }
+    
+    /**
+     * Returns a file in the DirtyDir if the deobfuscation task is dirty. Otherwise returns the cached one.
      * @param classifier
      * @param ext
      * @return
      */
     @SuppressWarnings("serial")
-    protected DelayedFile delayedDirtyFile(final String name, final String classifier, final String ext)
+    protected DelayedFile delayedDirtyFile(final String name, final String classifier, final String ext, final boolean usesMappings)
     {
         return new DelayedFile(project, "", this) {
             @Override
             public File resolveDelayed()
             {
                 ProcessJarTask decompDeobf = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
-                pattern = (decompDeobf.isClean() ? "{API_CACHE_DIR}" : DIRTY_DIR) + "/";
+                pattern = (decompDeobf.isClean() ? "{API_CACHE_DIR}/"+(usesMappings ? MAPPING_APPENDAGE : "") : DIRTY_DIR) + "/";
 
                 if (!Strings.isNullOrEmpty(name))
                     pattern += name;

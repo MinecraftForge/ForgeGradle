@@ -28,6 +28,8 @@ public final class UserConstants
     static final String        PACKAGED_EXC          = CONF_DIR + "/packaged.exc";
     static final String        EXC_JSON              = CONF_DIR + "/exceptor.json";
 
+    public static final String MAPPING_APPENDAGE     = "{MAPPING_CHANNEL}/{MAPPING_VERSION}/";
+
     public static final String DEOBF_SRG_SRG         = "{SRG_DIR}/notch-srg.srg";
     public static final String DEOBF_MCP_SRG         = "{SRG_DIR}/notch-mcp.srg";
     public static final String REOBF_SRG             = "{SRG_DIR}/mcp-srg.srg";
@@ -35,9 +37,9 @@ public final class UserConstants
     public static final String EXC_SRG               = "{SRG_DIR}/srg.exc";
     public static final String EXC_MCP               = "{SRG_DIR}/mcp.srg";
 
-    public static final String METHOD_CSV            = CONF_DIR + "/methods.csv";
-    public static final String FIELD_CSV             = CONF_DIR + "/fields.csv";
-    public static final String PARAM_CSV             = CONF_DIR + "/params.csv";
+    public static final String METHOD_CSV            = "{MCP_DATA_DIR}/methods.csv";
+    public static final String FIELD_CSV             = "{MCP_DATA_DIR}/fields.csv";
+    public static final String PARAM_CSV             = "{MCP_DATA_DIR}/params.csv";
 
     static final String        DIRTY_DIR             = "{BUILD_DIR}/dirtyArtifacts";
 

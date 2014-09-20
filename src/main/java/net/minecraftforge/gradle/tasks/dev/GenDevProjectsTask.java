@@ -319,8 +319,8 @@ public class GenDevProjectsTask extends DefaultTask
     
     public String getMappingVersion()
     {
-        String channel = mappingVersion.call();
-        return channel.equals("{MAPPING_VERSION}") ? null : channel;
+        String version = mappingVersion.call();
+        return version.equals("{MAPPING_VERSION}") ? null : version;
     }
 
     public void setMappingVersion(DelayedString mappingVersion)
