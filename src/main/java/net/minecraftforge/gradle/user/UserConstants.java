@@ -35,7 +35,7 @@ public final class UserConstants
     public static final String REOBF_SRG             = "{SRG_DIR}/mcp-srg.srg";
     public static final String REOBF_NOTCH_SRG       = "{SRG_DIR}/mcp-notch.srg";
     public static final String EXC_SRG               = "{SRG_DIR}/srg.exc";
-    public static final String EXC_MCP               = "{SRG_DIR}/mcp.srg";
+    public static final String EXC_MCP               = "{SRG_DIR}/mcp.exc";
 
     public static final String METHOD_CSV            = "{MCP_DATA_DIR}/methods.csv";
     public static final String FIELD_CSV             = "{MCP_DATA_DIR}/fields.csv";
