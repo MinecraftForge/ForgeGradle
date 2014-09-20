@@ -158,10 +158,10 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         if (!displayBanner)
             return;
         project.getLogger().lifecycle("****************************");
-        project.getLogger().lifecycle(" Powered By MCP:            ");
-        project.getLogger().lifecycle(" http://mcp.ocean-labs.de/  ");
-        project.getLogger().lifecycle(" Searge, ProfMobius, Fesh0r,");
-        project.getLogger().lifecycle(" R4wk, ZeuX, IngisKahn      ");
+        project.getLogger().lifecycle(" Powered By MCP:             ");
+        project.getLogger().lifecycle(" http://mcp.ocean-labs.de/   ");
+        project.getLogger().lifecycle(" Searge, ProfMobius, Fesh0r, ");
+        project.getLogger().lifecycle(" R4wk, ZeuX, IngisKahn, bspkrs");
         project.getLogger().lifecycle(delayedString(" MCP Data version : {MCP_VERSION}").call());
         project.getLogger().lifecycle("****************************");
         displayBanner = false;
