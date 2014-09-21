@@ -28,6 +28,9 @@ public class EtagDownloadTask extends DefaultTask
         URL url = getUrl();
         File outFile = getFile();
         File etagFile = getProject().file(getFile().getPath() + ".etag");
+        
+        // ensure folder exists
+        outFile.getParentFile().mkdirs();
 
         String etag;
         if (etagFile.exists())
