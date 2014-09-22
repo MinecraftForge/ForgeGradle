@@ -174,7 +174,7 @@ public class GradleStart
         values.put("assetsDir",      "@@ASSETSDIR@@");
         values.put("accessToken",    "FML");
         values.put("userProperties", "{}");
-        values.put("username",       "ForgeDevName");
+        values.put("username",        null);
         values.put("password",        null);
 
         final OptionParser parser = new OptionParser();
