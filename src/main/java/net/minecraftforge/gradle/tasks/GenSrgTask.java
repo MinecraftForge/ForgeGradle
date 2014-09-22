@@ -290,7 +290,7 @@ public class GenSrgTask extends CachedTask
                 name = methods.get(name);
             
             // write remapped line
-            mcpOut.write(split[0].substring(0, dotIndex) + name + split[0].substring(sigIndex) + "=" + split[1]);
+            mcpOut.write(split[0].substring(0, dotIndex) + "." + name + split[0].substring(sigIndex) + "=" + split[1]);
             mcpOut.newLine();
             
         }
