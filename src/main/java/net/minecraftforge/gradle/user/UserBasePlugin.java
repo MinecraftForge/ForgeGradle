@@ -237,18 +237,18 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     {
         pattern = super.resolve(pattern, project, exten);
         
+        pattern = pattern.replace("{MCP_DATA_DIR}", CONF_DIR);
+        pattern = pattern.replace("{USER_DEV}", this.getUserDevCacheDir(exten));
+        pattern = pattern.replace("{SRG_DIR}", this.getSrgCacheDir(exten));
+        pattern = pattern.replace("{API_CACHE_DIR}", this.getApiCacheDir(exten));
+        pattern = pattern.replace("{MC_VERSION}", getMcVersion(exten));
+        
         if (!exten.mappingsSet())
         {
             // no mappings set?remove these tokens
             pattern = pattern.replace("{MAPPING_CHANNEL}", "");
             pattern = pattern.replace("{MAPPING_VERSION}", "");
         }
-        
-        pattern = pattern.replace("{MCP_DATA_DIR}", CONF_DIR);
-        pattern = pattern.replace("{USER_DEV}", this.getUserDevCacheDir(exten));
-        pattern = pattern.replace("{SRG_DIR}", this.getSrgCacheDir(exten));
-        pattern = pattern.replace("{API_CACHE_DIR}", this.getApiCacheDir(exten));
-        pattern = pattern.replace("{MC_VERSION}", getMcVersion(exten));
         
         if (hasApiVersion())
             pattern = pattern.replace("{API_VERSION}", getApiVersion(exten));
