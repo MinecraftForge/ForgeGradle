@@ -243,6 +243,11 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         pattern = pattern.replace("{API_CACHE_DIR}", this.getApiCacheDir(exten));
         pattern = pattern.replace("{MC_VERSION}", getMcVersion(exten));
         
+        // do run config stuff.
+        pattern = pattern.replace("{RUN_TWEAKER}", getTweaker());
+        pattern = pattern.replace("{RUN_BOUNCE_CLIENT}", getClientRunClass());
+        pattern = pattern.replace("{RUN_BOUNCE_SERVER}", getServerRunClass());
+        
         if (!exten.mappingsSet())
         {
             // no mappings set?remove these tokens
@@ -626,6 +631,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.setServer(delayedFile(JAR_SERVER_FRESH));
             task.setOutJar(delayedFile(JAR_MERGED));
             task.setMergeCfg(delayedFile(MERGE_CFG));
+            task.setMcVersion(delayedString("{MC_VERSION}"));
             task.dependsOn("extractUserDev", "downloadClient", "downloadServer");
         }
 
@@ -683,9 +689,9 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 task.setAssetIndex(delayedString("{ASSET_INDEX}").forceResolving());
                 task.setAssetsDir(delayedFile("{CACHE_DIR}/minecraft/assets"));
                 task.setVersion(delayedString("{MC_VERSION}"));
-                task.setTweaker(delayedString(getTweaker()));
-                task.setClientBounce(delayedString(getClientRunClass()));
-                task.setServerBounce(delayedString(getServerRunClass()));
+                task.setTweaker(delayedString("{RUN_TWEAKER}"));
+                task.setClientBounce(delayedString("{RUN_CLIENT_BOUNCE}"));
+                task.setServerBounce(delayedString("RUN_SERVER_BOUNCE"));
                 task.setStartOut(delayedFile(getStartDir()));
 
                 task.dependsOn("extractUserDev", "getAssets", "getAssetsIndex", "extractNatives");

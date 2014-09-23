@@ -2,7 +2,16 @@ package net.minecraftforge.gradle.tasks;
 
 import groovy.lang.Closure;
 
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,8 +23,10 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
+import net.minecraftforge.gradle.delayed.DelayedString;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -33,9 +44,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.ByteStreams;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
-
 public class MergeJarsTask extends CachedTask
 {
     @InputFile
@@ -46,10 +54,16 @@ public class MergeJarsTask extends CachedTask
 
     @InputFile
     private Closure<File>                     server;
+    
+    @Input
+    private DelayedString                     mcVersion;
 
     @OutputFile
     @Cached
     private Closure<File>                     outJar;
+    
+    @SuppressWarnings("rawtypes")
+    private Class                             sideClass, sideOnlyClass;
 
     private static HashSet<String>            copyToServer = new HashSet<String>();
     private static HashSet<String>            copyToClient = new HashSet<String>();
@@ -60,6 +74,18 @@ public class MergeJarsTask extends CachedTask
     @TaskAction
     public void doTask() throws IOException
     {
+        // set classes.
+        if (getMcVersion().startsWith("1.8"))
+        {
+            sideClass = net.minecraftforge.fml.relauncher.Side.class;
+            sideOnlyClass = net.minecraftforge.fml.relauncher.SideOnly.class;
+        }
+        else
+        {
+            sideClass = cpw.mods.fml.relauncher.Side.class;
+            sideOnlyClass = cpw.mods.fml.relauncher.SideOnly.class;
+        }
+        
         readConfig(getMergeCfg());
         processJar(getClient(), getServer(), getOutJar());
     }
@@ -187,7 +213,7 @@ public class MergeJarsTask extends CachedTask
                 copyClass(sInJar, entry.getValue(), outJar, false);
             }
 
-            for (String name : new String[] { SideOnly.class.getName(), Side.class.getName() })
+            for (String name : new String[] { sideOnlyClass.getName(), sideClass.getName() })
             {
                 String eName = name.replace(".", "/");
                 String classPath = eName + ".class";
@@ -270,10 +296,10 @@ public class MergeJarsTask extends CachedTask
 
     private AnnotationNode getSideAnn(boolean isClientOnly)
     {
-        AnnotationNode ann = new AnnotationNode(Type.getDescriptor(SideOnly.class));
+        AnnotationNode ann = new AnnotationNode(Type.getDescriptor(sideOnlyClass));
         ann.values = new ArrayList<Object>();
         ann.values.add("value");
-        ann.values.add(new String[] { Type.getDescriptor(Side.class), isClientOnly ? "CLIENT" : "SERVER" });
+        ann.values.add(new String[] { Type.getDescriptor(sideClass), isClientOnly ? "CLIENT" : "SERVER" });
         return ann;
     }
 
@@ -645,5 +671,15 @@ public class MergeJarsTask extends CachedTask
     public void setServer(Closure<File> server)
     {
         this.server = server;
+    }
+
+    public String getMcVersion()
+    {
+        return mcVersion.call();
+    }
+
+    public void setMcVersion(DelayedString mcVersion)
+    {
+        this.mcVersion = mcVersion;
     }
 }

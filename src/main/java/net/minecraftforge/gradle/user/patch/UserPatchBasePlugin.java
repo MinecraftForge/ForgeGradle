@@ -2,7 +2,14 @@ package net.minecraftforge.gradle.user.patch;
 
 import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
 import static net.minecraftforge.gradle.user.UserConstants.CLASSIFIER_DECOMPILED;
-import static net.minecraftforge.gradle.user.patch.UserPatchConstants.*;
+import static net.minecraftforge.gradle.user.patch.UserPatchConstants.BINARIES_JAR;
+import static net.minecraftforge.gradle.user.patch.UserPatchConstants.BINPATCHES;
+import static net.minecraftforge.gradle.user.patch.UserPatchConstants.CLASSIFIER_PATCHED;
+import static net.minecraftforge.gradle.user.patch.UserPatchConstants.ECLIPSE_LOCATION;
+import static net.minecraftforge.gradle.user.patch.UserPatchConstants.JAR_BINPATCHED;
+import static net.minecraftforge.gradle.user.patch.UserPatchConstants.JSON;
+import static net.minecraftforge.gradle.user.patch.UserPatchConstants.RES_DIR;
+import static net.minecraftforge.gradle.user.patch.UserPatchConstants.START_DIR;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -21,6 +28,7 @@ import net.minecraftforge.gradle.user.UserConstants;
 
 import org.apache.tools.ant.types.Commandline;
 import org.gradle.api.Action;
+import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 
@@ -241,12 +249,6 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     }
 
     @Override
-    protected String getClientRunClass()
-    {
-        return "net.minecraft.launchwrapper.Launch";
-    }
-
-    @Override
     protected Iterable<String> getClientRunArgs()
     {
         return getRunArgsFromProperty();
@@ -261,12 +263,6 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
             ret.addAll(Arrays.asList(Commandline.translateCommandline(arg)));
         }
         return ret;
-    }
-
-    @Override
-    protected String getServerRunClass()
-    {
-        return "cpw.mods.fml.relauncher.ServerLaunchWrapper";
     }
 
     @Override
@@ -288,14 +284,40 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     protected abstract String getApiGroup();
 
     @Override
-    protected String getTweaker()
-    {
-        return "cpw.mods.fml.common.launcher.FMLTweaker";
-    }
-
-    @Override
     protected String getStartDir()
     {
         return START_DIR;
+    }
+    
+    @Override
+    protected String getClientRunClass()
+    {
+        return "net.minecraft.launchwrapper.Launch";
+    }
+    
+    @Override
+    protected String getTweaker()
+    {
+        return "fml.common.launcher.FMLTweaker";
+    }
+    
+    @Override
+    protected String getServerRunClass()
+    {
+        return "fml.relauncher.ServerLaunchWrapper";
+    }
+    
+    @Override
+    public String resolve(String pattern, Project project, UserPatchExtension exten)
+    {
+        // override tweaker and server run class.
+        // do run config stuff.
+        String prefix = getMcVersion(exten).startsWith("1.8") ? "net.minecraftforge." : "cpw.mods.";
+        pattern = pattern.replace("{RUN_TWEAKER}", prefix + getTweaker());
+        pattern = pattern.replace("{RUN_BOUNCE_SERVER}", prefix + getServerRunClass());
+        
+        pattern = super.resolve(pattern, project, exten);
+        
+        return pattern;
     }
 }

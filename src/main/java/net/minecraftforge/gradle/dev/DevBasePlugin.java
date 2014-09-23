@@ -150,6 +150,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
             task4.setServer(delayedFile(Constants.JAR_SERVER_FRESH));
             task4.setOutJar(delayedFile(Constants.JAR_MERGED));
             task4.setMergeCfg(delayedFile(DevConstants.MERGE_CFG));
+            task4.setMcVersion(delayedString("{MC_VERSION}"));
             task4.dependsOn("downloadClient", "downloadServer", "updateJson");
         }
 
