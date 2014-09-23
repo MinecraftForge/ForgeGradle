@@ -201,6 +201,7 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             task.include(JAVA_FILES);
             task.exclude("cpw/**");
+            task.exclude("net/minecraftforge/fml/**");
             task.from(delayedFile(DevConstants.REMAPPED_DIRTY));
             task.into(delayedFile(DevConstants.ECLIPSE_FML_SRC));
             task.dependsOn("copyDeobfData");
