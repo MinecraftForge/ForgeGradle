@@ -691,7 +691,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 task.setVersion(delayedString("{MC_VERSION}"));
                 task.setTweaker(delayedString("{RUN_TWEAKER}"));
                 task.setClientBounce(delayedString("{RUN_BOUNCE_CLIENT}"));
-                task.setServerBounce(delayedString("RUN_BOUNCE_SERVER"));
+                task.setServerBounce(delayedString("{RUN_BOUNCE_SERVER}"));
                 task.setStartOut(delayedFile(getStartDir()));
 
                 task.dependsOn("extractUserDev", "getAssets", "getAssetsIndex", "extractNatives");
