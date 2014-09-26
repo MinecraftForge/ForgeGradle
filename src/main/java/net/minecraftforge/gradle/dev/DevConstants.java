@@ -14,8 +14,6 @@ final class DevConstants
 
     static final String DEOBF_DATA          = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/deobfuscation_data-{MC_VERSION}.lzma";
 
-    public static final String MC_JSON_URL  = "http://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/{MC_VERSION}.json";
-
     // other generated stuff
     static final String INSTALLER_BASE      = "{BUILD_DIR}/tmp/installer_base.{INSTALLER_VERSION}.jar";
     static final String INSTALL_PROFILE     = "{BUILD_DIR}/tmp/install_profile.json";

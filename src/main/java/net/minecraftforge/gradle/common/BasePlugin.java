@@ -5,6 +5,7 @@ import groovy.lang.Closure;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 
 import net.minecraftforge.gradle.FileLogListenner;
 import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
@@ -30,8 +31,10 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.tasks.Delete;
 import org.gradle.testfixtures.ProjectBuilder;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.Files;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
@@ -196,13 +199,13 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             mcpTask.setFfJar(delayedFile(Constants.FERNFLOWER));
         }
 
-        EtagDownloadTask getAssetsIndex = makeTask("getAssetsIndex", EtagDownloadTask.class);
+        EtagDownloadTask etagDlTask = makeTask("getAssetsIndex", EtagDownloadTask.class);
         {
-            getAssetsIndex.setUrl(delayedString(Constants.ASSETS_INDEX_URL));
-            getAssetsIndex.setFile(delayedFile(Constants.ASSETS + "/indexes/{ASSET_INDEX}.json"));
-            getAssetsIndex.setDieWithError(false);
+            etagDlTask.setUrl(delayedString(Constants.ASSETS_INDEX_URL));
+            etagDlTask.setFile(delayedFile(Constants.ASSETS + "/indexes/{ASSET_INDEX}.json"));
+            etagDlTask.setDieWithError(false);
 
-            getAssetsIndex.doLast(new Action<Task>() {
+            etagDlTask.doLast(new Action<Task>() {
                 public void execute(Task task)
                 {
                     try
@@ -215,13 +218,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                     }
                 }
             });
-
-            getAssetsIndex.getOutputs().upToDateWhen(new Closure<Boolean>(this, null) {
-                public Boolean call(Object... obj)
-                {
-                    return false;
-                }
-            });
         }
 
         DownloadAssetsTask assets = makeTask("getAssets", DownloadAssetsTask.class);
@@ -230,6 +226,39 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             assets.setIndex(getAssetIndexClosure());
             assets.setIndexName(delayedString("{ASSET_INDEX}"));
             assets.dependsOn("getAssetsIndex");
+        }
+        
+        etagDlTask = makeTask("getVersionJson", EtagDownloadTask.class);
+        {
+            etagDlTask.setUrl(delayedString(Constants.MC_JSON_URL));
+            etagDlTask.setFile(delayedFile(Constants.VERSION_JSON));
+            etagDlTask.setDieWithError(false);
+            etagDlTask.doLast(new Closure<Boolean>(project) // normalizes to linux endings
+            {
+                @Override
+                public Boolean call()
+                {
+                    try
+                    {
+                        File json = delayedFile(Constants.VERSION_JSON).call();
+                        if (!json.exists())
+                            return true;
+                        
+                        List<String> lines = Files.readLines(json, Charsets.UTF_8);
+                        StringBuilder buf = new StringBuilder();
+                        for (String line : lines)
+                        {
+                            buf = buf.append(line).append('\n');
+                        }
+                        Files.write(buf.toString().getBytes(Charsets.UTF_8), json);
+                    }
+                    catch (Throwable t)
+                    {
+                        Throwables.propagate(t);
+                    }
+                    return true;
+                }
+            });
         }
 
         Delete clearCache = makeTask("cleanCache", Delete.class);

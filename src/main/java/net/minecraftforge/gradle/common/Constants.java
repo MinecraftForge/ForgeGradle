@@ -61,6 +61,7 @@ public class Constants
     public static final Closure<Boolean> CALL_FALSE = new Closure<Boolean>(null){ public Boolean call(Object o){ return false; }};
 
     // urls
+    public static final String MC_JSON_URL      = "http://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/{MC_VERSION}.json";
     public static final String MC_JAR_URL       = "http://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/{MC_VERSION}.jar";
     public static final String MC_SERVER_URL    = "http://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/minecraft_server.{MC_VERSION}.jar";
     public static final String MCP_URL          = "http://files.minecraftforge.net/fernflower-fix-1.0.zip";
@@ -82,6 +83,8 @@ public class Constants
     public static final String FERNFLOWER       = "{CACHE_DIR}/minecraft/fernflower-fixed.jar";
     public static final String EXCEPTOR         = "{CACHE_DIR}/minecraft/exceptor.jar";
     public static final String ASSETS           = "{CACHE_DIR}/minecraft/assets";
+    public static final String JSONS_DIR        = "{CACHE_DIR}/minecraft/versionJsons";
+    public static final String VERSION_JSON     = JSONS_DIR + "/{MC_VERSION}.json";
 
     // util
     public static final String NEWLINE = System.getProperty("line.separator");

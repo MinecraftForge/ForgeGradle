@@ -1,6 +1,7 @@
 package net.minecraftforge.gradle.json;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Date;
@@ -12,6 +13,7 @@ import net.minecraftforge.gradle.json.LiteLoaderJson.VersionObject;
 import net.minecraftforge.gradle.json.version.AssetIndex;
 import net.minecraftforge.gradle.json.version.Version;
 
+import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -35,11 +37,23 @@ public class JsonFactory
         GSON = builder.create();
     }
 
-    public static Version loadVersion(File json) throws JsonSyntaxException, JsonIOException, IOException
+    public static Version loadVersion(File json, File inheritanceDir) throws JsonSyntaxException, JsonIOException, IOException
     {
         FileReader reader = new FileReader(json);
         Version v =  GSON.fromJson(reader, Version.class);
         reader.close();
+        
+        if (!Strings.isNullOrEmpty(v.inheritsFrom))
+        {
+            File parentFile = new File(inheritanceDir, v.inheritsFrom + ".json");
+            if (!parentFile.exists())
+            {
+                throw new FileNotFoundException("Inherited json file (" + v.inheritsFrom + ") not found! Myabe you are running in offline mode?");
+            }
+            Version parent = loadVersion(new File(inheritanceDir, v.inheritsFrom + ".json"), inheritanceDir);
+            v.extendFrom(parent);
+        }
+        
         return v;
     }
     

@@ -26,6 +26,7 @@ import javax.xml.transform.stream.StreamResult;
 
 import joptsimple.internal.Strings;
 import net.minecraftforge.gradle.common.BasePlugin;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.tasks.*;
@@ -276,6 +277,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         extractUserDev.setOut(delayedFile("{USER_DEV}"));
         extractUserDev.setConfig(CONFIG_USERDEV);
         extractUserDev.setDoesCache(true);
+        extractUserDev.dependsOn("getVersionJson");
         extractUserDev.doLast(new Action<Task>()
         {
             @Override
@@ -334,7 +336,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         {
             try
             {
-                version = JsonFactory.loadVersion(file);
+                version = JsonFactory.loadVersion(file, delayedFile(Constants.JSONS_DIR).call());
             }
             catch (Exception e)
             {

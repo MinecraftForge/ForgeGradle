@@ -107,7 +107,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
         task1 = makeTask("updateJson", DownloadTask.class);
         {
             task1.getOutputs().upToDateWhen(Constants.CALL_FALSE);
-            task1.setUrl(delayedString(DevConstants.MC_JSON_URL));
+            task1.setUrl(delayedString(Constants.MC_JSON_URL));
             task1.setOutput(delayedFile(DevConstants.JSON_BASE));
             task1.setDoesCache(false);
             task1.doLast(new Closure<Boolean>(project)
@@ -305,7 +305,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
                 File jsonFile = devJson.call().getAbsoluteFile();
                 try
                 {
-                    version = JsonFactory.loadVersion(jsonFile);
+                    version = JsonFactory.loadVersion(jsonFile, jsonFile.getParentFile());
                 }
                 catch (Exception e)
                 {
