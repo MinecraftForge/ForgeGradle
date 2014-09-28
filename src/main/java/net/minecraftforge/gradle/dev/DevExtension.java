@@ -14,6 +14,7 @@ public class DevExtension extends BaseExtension
     private String bukkitDir;
     private String mainClass;
     private String tweakClass;
+    private boolean makeJavadoc = false;
     private String installerVersion = "null";
     private Action<Project> subprojects = null;
     private Action<Project> cleanProject = null;
@@ -130,5 +131,15 @@ public class DevExtension extends BaseExtension
     public void dirtyProject(Closure subprojects)
     {
         this.dirtyProject = new ClosureBackedAction<Project>(subprojects);
+    }
+
+    public boolean getMakeJavadoc()
+    {
+        return makeJavadoc;
+    }
+
+    public void setMakeJavadoc(boolean makeJavadoc)
+    {
+        this.makeJavadoc = makeJavadoc;
     }
 }

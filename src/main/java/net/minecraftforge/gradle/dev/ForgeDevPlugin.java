@@ -93,7 +93,7 @@ public class ForgeDevPlugin extends DevBasePlugin
 
         // the master task.
         task = makeTask("buildPackages");
-        task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "packageUserDev", "packageSrc", "genJavadocs");
+        task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "packageUserDev", "packageSrc", "javadoc");
         task.setGroup("Forge");
     }
 
@@ -532,6 +532,13 @@ public class ForgeDevPlugin extends DevBasePlugin
             jdSource.setOutFile(delayedFile("{BUILD_DIR}/tmp/javadocSource"));
             jdSource.setMethodsCsv(delayedFile(METHODS_CSV));
             jdSource.setFieldsCsv(delayedFile(FIELDS_CSV));
+            jdSource.onlyIf(new Closure<Boolean>(this) {
+                @Override
+                public Boolean call()
+                {
+                    return getExtension().getMakeJavadoc();
+                }
+            });
         }
 
         final File javadoc_temp = project.file(delayedFile("{BUILD_DIR}/tmp/javadoc"));
@@ -548,6 +555,13 @@ public class ForgeDevPlugin extends DevBasePlugin
                     task.setDestinationDir(javadoc_temp);
                 }
             });
+            javadocJar.onlyIf(new Closure<Boolean>(this) {
+                @Override
+                public Boolean call()
+                {
+                    return getExtension().getMakeJavadoc();
+                }
+            });
             javadocJar.dependsOn("generateProjects", "extractForgeSources");
         }
 
@@ -556,6 +570,13 @@ public class ForgeDevPlugin extends DevBasePlugin
             javadoc.from(javadoc_temp);
             javadoc.setClassifier("javadoc");
             javadoc.dependsOn("genJavadocs");
+            javadoc.onlyIf(new Closure<Boolean>(this) {
+                @Override
+                public Boolean call()
+                {
+                    return getExtension().getMakeJavadoc();
+                }
+            });
         }
         project.getArtifacts().add("archives", javadoc);
 

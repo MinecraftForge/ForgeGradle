@@ -449,6 +449,13 @@ public class FmlDevPlugin extends DevBasePlugin
                     task.setArchiveName(file.getName());
                 }
             });
+            javadocJar.onlyIf(new Closure<Boolean>(this) {
+                @Override
+                public Boolean call()
+                {
+                    return getExtension().getMakeJavadoc();
+                }
+            });
             javadocJar.dependsOn("generateProjects", "extractFmlSources");
         }
 
@@ -484,7 +491,7 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             userDev.setClassifier("userdev");
             userDev.from(delayedFile(DevConstants.JSON_DEV));
-            userDev.from(delayedFile(DevConstants.JAVADOC_TMP));
+            //userDev.from(delayedFile(DevConstants.JAVADOC_TMP));
             userDev.from(new Closure<File>(project) {
                 public File call()
                 {
