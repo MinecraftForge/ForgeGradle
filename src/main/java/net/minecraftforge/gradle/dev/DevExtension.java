@@ -14,7 +14,7 @@ public class DevExtension extends BaseExtension
     private String bukkitDir;
     private String mainClass;
     private String tweakClass;
-    private boolean makeJavadoc = false;
+    private boolean makeJavadoc = true;
     private String installerVersion = "null";
     private Action<Project> subprojects = null;
     private Action<Project> cleanProject = null;
