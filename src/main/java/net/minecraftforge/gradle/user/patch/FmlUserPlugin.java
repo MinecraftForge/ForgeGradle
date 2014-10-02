@@ -19,6 +19,14 @@ public class FmlUserPlugin extends UserPatchBasePlugin
     {
         return "{API_GROUP}";
     }
+    
+    /**
+     * Should be with separate with slashes.
+     */
+    protected String getApiPath(UserPatchExtension exten)
+    {
+        return getMcVersion(exten).startsWith("1.8") ? "net/minecraftforge" : "cpw/mods";
+    }
 
     @Override
     protected void configureDeobfuscation(ProcessJarTask task)

@@ -209,7 +209,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     @Override
     protected String getApiCacheDir(UserPatchExtension exten)
     {
-        return "{CACHE_DIR}/minecraft/"+getApiGroup().replace('.', '/') + "/{API_NAME}/{API_VERSION}";
+        return "{CACHE_DIR}/minecraft/"+getApiPath(exten) + "/{API_NAME}/{API_VERSION}";
     }
 
     @Override
@@ -282,6 +282,14 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
      * Should be with separate with periods.
      */
     protected abstract String getApiGroup();
+    
+    /**
+     * Should be with separate with slashes.
+     */
+    protected String getApiPath(UserPatchExtension exten)
+    {
+        return getApiGroup().replace('.', '/');
+    }
 
     @Override
     protected String getStartDir()
