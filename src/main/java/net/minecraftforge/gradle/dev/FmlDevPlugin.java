@@ -449,9 +449,9 @@ public class FmlDevPlugin extends DevBasePlugin
                     task.setArchiveName(file.getName());
                 }
             });
-            javadocJar.onlyIf(new Closure<Boolean>(this) {
+            javadocJar.onlyIf(new Closure<Boolean>(this.project) {
                 @Override
-                public Boolean call()
+                public Boolean call(Object o)
                 {
                     return getExtension().getMakeJavadoc();
                 }

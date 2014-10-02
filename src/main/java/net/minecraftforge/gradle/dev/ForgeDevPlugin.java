@@ -532,9 +532,9 @@ public class ForgeDevPlugin extends DevBasePlugin
             jdSource.setOutFile(delayedFile("{BUILD_DIR}/tmp/javadocSource"));
             jdSource.setMethodsCsv(delayedFile(METHODS_CSV));
             jdSource.setFieldsCsv(delayedFile(FIELDS_CSV));
-            jdSource.onlyIf(new Closure<Boolean>(this) {
+            jdSource.onlyIf(new Closure<Boolean>(this.project) {
                 @Override
-                public Boolean call()
+                public Boolean call(Object o)
                 {
                     return getExtension().getMakeJavadoc();
                 }
@@ -555,9 +555,9 @@ public class ForgeDevPlugin extends DevBasePlugin
                     task.setDestinationDir(javadoc_temp);
                 }
             });
-            javadocJar.onlyIf(new Closure<Boolean>(this) {
+            javadocJar.onlyIf(new Closure<Boolean>(this.project) {
                 @Override
-                public Boolean call()
+                public Boolean call(Object o)
                 {
                     return getExtension().getMakeJavadoc();
                 }
@@ -570,9 +570,9 @@ public class ForgeDevPlugin extends DevBasePlugin
             javadoc.from(javadoc_temp);
             javadoc.setClassifier("javadoc");
             javadoc.dependsOn("genJavadocs");
-            javadoc.onlyIf(new Closure<Boolean>(this) {
+            javadoc.onlyIf(new Closure<Boolean>(this.project) {
                 @Override
-                public Boolean call()
+                public Boolean call(Object o)
                 {
                     return getExtension().getMakeJavadoc();
                 }

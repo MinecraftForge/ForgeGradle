@@ -60,7 +60,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 if (canOverlayPlugin())
                 {
                     project.getLogger().info("Applying Overlay");
-                    
+
                     // found another BasePlugin thats already applied.
                     // do only overlay stuff and return;
                     otherPlugin = (BasePlugin) p;
@@ -99,7 +99,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 addMavenRepo(proj, "minecraft", Constants.LIBRARY_URL);
             }
         });
-        
+
         project.getConfigurations().create(Constants.CONFIG_MCP_DATA);
 
         // after eval
@@ -153,12 +153,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         {
             project.getDependencies().add(Constants.CONFIG_MCP_DATA, ImmutableMap.of(
                     "group", "de.oceanlabs.mcp",
-                    "name", delayedString("mcp_{MAPPING_CHANNEL}").call(), 
+                    "name", delayedString("mcp_{MAPPING_CHANNEL}").call(),
                     "version",  delayedString("{MAPPING_VERSION}-{MC_VERSION}").call(),
                     "ext", "zip"
                     ));
         }
-        
+
         if (!displayBanner)
             return;
         project.getLogger().lifecycle("****************************");
@@ -227,7 +227,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             assets.setIndexName(delayedString("{ASSET_INDEX}"));
             assets.dependsOn("getAssetsIndex");
         }
-        
+
         etagDlTask = makeTask("getVersionJson", EtagDownloadTask.class);
         {
             etagDlTask.setUrl(delayedString(Constants.MC_JSON_URL));
@@ -243,7 +243,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                         File json = delayedFile(Constants.VERSION_JSON).call();
                         if (!json.exists())
                             return true;
-                        
+
                         List<String> lines = Files.readLines(json, Charsets.UTF_8);
                         StringBuilder buf = new StringBuilder();
                         for (String line : lines)
@@ -267,7 +267,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             clearCache.setGroup("ForgeGradle");
             clearCache.setDescription("Cleares the ForgeGradle cache. DONT RUN THIS unless you want a fresh start, or the dev tells you to.");
         }
-        
+
         // special userDev stuff
         ExtractConfigTask extractMcpData = makeTask("extractMcpData", ExtractConfigTask.class);
         {
@@ -320,7 +320,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         else
             return (K) project.getExtensions().getByName(Constants.EXT_NAME_MC);
     }
-    
+
     /**
      * @return the extension object with name EXT_NAME_MC
      * @see Constants.EXT_NAME_MC
@@ -413,10 +413,10 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     {
         if (version != null)
             pattern = pattern.replace("{ASSET_INDEX}", version.getAssets());
-        
+
         if (exten.mappingsSet())
             pattern = pattern.replace("{MCP_DATA_DIR}", Constants.MCP_DATA_DIR);
-        
+
         return pattern;
     }
 
