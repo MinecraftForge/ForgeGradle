@@ -42,9 +42,9 @@ public class FmlUserPlugin extends UserPatchBasePlugin
     @Override
     public String resolve(String pattern, Project project, UserPatchExtension exten)
     {
-        pattern = pattern.replace("{API_GROUP}", getMcVersion(exten).startsWith("1.8") ? "net.minecraftforge" : "cpw.mods");
-        
         pattern = super.resolve(pattern, project, exten);
+        
+        pattern = pattern.replace("{API_GROUP}", getMcVersion(exten).startsWith("1.8") ? "net.minecraftforge" : "cpw.mods");
         
         return pattern;
     }
