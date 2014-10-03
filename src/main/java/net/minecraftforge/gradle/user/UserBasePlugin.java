@@ -237,28 +237,28 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     public String resolve(String pattern, Project project, T exten)
     {
         pattern = super.resolve(pattern, project, exten);
-        
+
         pattern = pattern.replace("{MCP_DATA_DIR}", CONF_DIR);
         pattern = pattern.replace("{USER_DEV}", this.getUserDevCacheDir(exten));
         pattern = pattern.replace("{SRG_DIR}", this.getSrgCacheDir(exten));
         pattern = pattern.replace("{API_CACHE_DIR}", this.getApiCacheDir(exten));
         pattern = pattern.replace("{MC_VERSION}", getMcVersion(exten));
-        
+
         // do run config stuff.
         pattern = pattern.replace("{RUN_TWEAKER}", getTweaker());
         pattern = pattern.replace("{RUN_BOUNCE_CLIENT}", getClientRunClass());
         pattern = pattern.replace("{RUN_BOUNCE_SERVER}", getServerRunClass());
-        
+
         if (!exten.mappingsSet())
         {
             // no mappings set?remove these tokens
             pattern = pattern.replace("{MAPPING_CHANNEL}", "");
             pattern = pattern.replace("{MAPPING_VERSION}", "");
         }
-        
+
         if (hasApiVersion())
             pattern = pattern.replace("{API_VERSION}", getApiVersion(exten));
-        
+
         pattern = pattern.replace("{API_NAME}", getApiName());
         return pattern;
     }
@@ -957,6 +957,12 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     @Override
     public final void afterEvaluate()
     {
+        String mcversion = getMcVersion(getExtension());
+        if (!getExtension().mappingsSet() && mcversion.startsWith("1.8"))
+        {
+            getExtension().setMappings("snapshot_20141001"); //Default snapshots for 1.8
+        }
+
         super.afterEvaluate();
 
         // version checks
@@ -1175,7 +1181,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     {
         return delayedDirtyFile(name, classifier, ext, true);
     }
-    
+
     /**
      * Returns a file in the DirtyDir if the deobfuscation task is dirty. Otherwise returns the cached one.
      * @param classifier
