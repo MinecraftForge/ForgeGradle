@@ -507,6 +507,7 @@ public class FmlDevPlugin extends DevBasePlugin
             userDev.from(delayedFile(DevConstants.CHANGELOG));
             userDev.from(delayedZipTree(DevConstants.BINPATCH_TMP), new CopyInto("", "devbinpatches.pack.lzma"));
             userDev.from(delayedFileTree("{FML_DIR}/src/main/resources"), new CopyInto("src/main/resources"));
+            userDev.from(delayedFile(DevConstants.FML_VERSIONF), new CopyInto("src/main/resources"));
             userDev.from(delayedZipTree(DevConstants.USERDEV_SRG_SRC), new CopyInto("src/main/java"));
             userDev.from(delayedFile(DevConstants.DEOBF_DATA), new CopyInto("src/main/resources/"));
             userDev.from(delayedFile(DevConstants.MERGE_CFG), new CopyInto("conf"));
@@ -518,7 +519,7 @@ public class FmlDevPlugin extends DevBasePlugin
             userDev.rename(".+?\\.srg", "packaged.srg");
             userDev.rename(".+?\\.exc", "packaged.exc");
             userDev.setIncludeEmptyDirs(false);
-            userDev.dependsOn("packageUniversal", "zipPatches", "jarClasses", s2s);
+            userDev.dependsOn("packageUniversal", "zipPatches", "jarClasses", "createVersionProperties", s2s);
             userDev.setExtension("jar");
         }
         project.getArtifacts().add("archives", userDev);
