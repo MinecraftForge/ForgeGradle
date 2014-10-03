@@ -93,6 +93,15 @@ public class BaseExtension
         return mappingsChannel;
     }
     
+    public String getMappingsChannelWithDoc()
+    {
+        int underscore = mappingsChannel.indexOf('_');
+        if (underscore <= 0) // already has docs.
+            return mappingsChannel;
+        else
+            return mappingsChannel.substring(0, underscore);
+    }
+    
     public String getMappingsVersion()
     {
         return mappingsVersion;
