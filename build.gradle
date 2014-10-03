@@ -4,7 +4,7 @@ apply plugin: 'eclipse'
 apply plugin: 'maven'
 
 group = 'net.minecraftforge.gradle'
-version = '1.2-SNAPSHOT'
+version = '1.3-SNAPSHOT'
 archivesBaseName = 'ForgeGradle'
 targetCompatibility = '1.6'
 sourceCompatibility = '1.6'
