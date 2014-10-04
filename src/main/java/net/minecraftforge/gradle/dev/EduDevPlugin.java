@@ -266,10 +266,12 @@ public class EduDevPlugin extends DevBasePlugin
         {
             task.setTargetDir(delayedFile(ECLIPSE_CLEAN));
             task.setJson(delayedFile(EXTRA_JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
-            
             task.addSource(delayedFile(ECLIPSE_CLEAN_SRC));
-            
             task.addResource(delayedFile(ECLIPSE_CLEAN_RES));
+            
+            task.setMcVersion(delayedString("{MC_VERSION}"));
+            task.setMappingChannel(delayedString("{MAPPING_CHANNEL}"));
+            task.setMappingVersion(delayedString("{MAPPING_VERSION}"));
             
             task.dependsOn("extractNatives");
         }
@@ -287,6 +289,10 @@ public class EduDevPlugin extends DevBasePlugin
             task.addResource(delayedFile(EXTRA_RESOURCES));
             task.addResource(delayedFile(EXTRACTED_RES));
             task.addTestSource(delayedFile(EXTRA_TEST_SOURCES));
+            
+            task.setMcVersion(delayedString("{MC_VERSION}"));
+            task.setMappingChannel(delayedString("{MAPPING_CHANNEL}"));
+            task.setMappingVersion(delayedString("{MAPPING_VERSION}"));
 
             task.dependsOn("extractNatives","createVersionPropertiesFML");
         }
