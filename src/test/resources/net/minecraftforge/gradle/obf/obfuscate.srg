@@ -1,0 +1,9 @@
+CL: test/dep/IDependency pack/ia
+CL: test/dep/Dependency pack/a
+MD: test/dep/IDependency/someMethod ()V pack/ia/a ()V
+MD: test/dep/IDependency/getSomeInt ()I pack/ia/b ()I
+MD: test/dep/IDependency/setSomeInt (I)V pack/ia/c (I)V
+MD: test/dep/IDependency/getDep ()Ltest/dep/IDependency; pack/ia/d ()Lpack/ia;
+MD: test/dep/Dependency/staticMethod1 ()V pack/a/a ()V
+MD: test/dep/Dependency/getDep ()Ltest/dep/IDependency; pack/a/b ()Lpack/ia;
+MD: test/actual/NonDepUser/doStuffObf ()V test/actual/NonDepUser/method1 ()V
