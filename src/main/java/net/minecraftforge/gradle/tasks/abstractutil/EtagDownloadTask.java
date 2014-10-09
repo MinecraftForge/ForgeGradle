@@ -28,7 +28,7 @@ public class EtagDownloadTask extends DefaultTask
         URL url = getUrl();
         File outFile = getFile();
         File etagFile = getProject().file(getFile().getPath() + ".etag");
-        
+
         // ensure folder exists
         outFile.getParentFile().mkdirs();
 
@@ -42,45 +42,38 @@ public class EtagDownloadTask extends DefaultTask
             etag = "";
         }
 
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setInstanceFollowRedirects(true);
-        con.setRequestProperty("If-None-Match", etag);
-        
         try
         {
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setInstanceFollowRedirects(true);
+            con.setRequestProperty("If-None-Match", etag);
+
             con.connect();
+
+            switch (con.getResponseCode())
+                {
+                    case 404: // file not found.... duh...
+                        error("" + url + "  404'ed!");
+                        break;
+                    case 304: // content is the same.
+                        this.setDidWork(false);
+                        break;
+                    case 200: // worked
+                        InputStream stream = con.getInputStream();
+                        Files.write(ByteStreams.toByteArray(stream), outFile);
+                        stream.close();
+                        break;
+                    default: // another code?? uh.. 
+                        error("Unexpected reponse " + con.getResponseCode() + " from " + url);
+                        break;
+                }
+
+            con.disconnect();
         }
-        catch(Throwable e)
+        catch (Throwable e)
         {
             // just in case people dont have internet at the moment.
             error(e.getLocalizedMessage());
-        }
-
-        String error = null;
-
-        switch (con.getResponseCode())
-            {
-                case 404: // file not found.... duh...
-                    error = "" + url + "  404'ed!";
-                    break;
-                case 304: // content is the same.
-                    this.setDidWork(false);
-                    break;
-                case 200: // worked
-                    InputStream stream = con.getInputStream();
-                    Files.write(ByteStreams.toByteArray(stream), outFile);
-                    stream.close();
-                    break;
-                default: // another code?? uh.. 
-                    error = "Unexpected reponse " + con.getResponseCode() + " from " + url;
-                    break;
-            }
-
-        con.disconnect();
-
-        if (error != null)
-        {
-            error(error);
         }
     }
 
