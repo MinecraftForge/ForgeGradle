@@ -171,6 +171,9 @@ public class CrowdinDownloadTask extends DefaultTask
         while (apiKey instanceof Closure)
             apiKey = ((Closure) apiKey).call();
         
+        if (apiKey == null)
+            return null;
+        
         return apiKey.toString();
     }
 

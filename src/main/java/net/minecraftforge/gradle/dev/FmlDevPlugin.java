@@ -1,6 +1,8 @@
 package net.minecraftforge.gradle.dev;
 
 //import edu.sc.seis.launch4j.Launch4jPluginExtension;
+import static net.minecraftforge.gradle.dev.DevConstants.CROWDIN_FORGEID;
+import static net.minecraftforge.gradle.dev.DevConstants.CROWDIN_ZIP;
 import static net.minecraftforge.gradle.dev.DevConstants.EXC_MODIFIERS_DIRTY;
 import groovy.lang.Closure;
 
@@ -14,6 +16,7 @@ import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedBase;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.ApplyS2STask;
+import net.minecraftforge.gradle.tasks.CrowdinDownloadTask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
@@ -342,15 +345,22 @@ public class FmlDevPlugin extends DevBasePlugin
     @SuppressWarnings("serial")
     private void createPackageTasks()
     {
-        ChangelogTask log = makeTask("createChangelog", ChangelogTask.class);
+        CrowdinDownloadTask crowdin = makeTask("getLocalizations", CrowdinDownloadTask.class);
         {
-            log.getOutputs().upToDateWhen(Constants.CALL_FALSE);
-            log.setServerRoot(delayedString("{JENKINS_SERVER}"));
-            log.setJobName(delayedString("{JENKINS_JOB}"));
-            log.setAuthName(delayedString("{JENKINS_AUTH_NAME}"));
-            log.setAuthPassword(delayedString("{JENKINS_AUTH_PASSWORD}"));
-            log.setTargetBuild(delayedString("{BUILD_NUM}"));
-            log.setOutput(delayedFile(DevConstants.CHANGELOG));
+            crowdin.setOutput(delayedFile(CROWDIN_ZIP));
+            crowdin.setProjectId(CROWDIN_FORGEID);
+            crowdin.setExtract(false);
+        }
+        
+        ChangelogTask makeChangelog = makeTask("createChangelog", ChangelogTask.class);
+        {
+            makeChangelog.getOutputs().upToDateWhen(Constants.CALL_FALSE);
+            makeChangelog.setServerRoot(delayedString("{JENKINS_SERVER}"));
+            makeChangelog.setJobName(delayedString("{JENKINS_JOB}"));
+            makeChangelog.setAuthName(delayedString("{JENKINS_AUTH_NAME}"));
+            makeChangelog.setAuthPassword(delayedString("{JENKINS_AUTH_PASSWORD}"));
+            makeChangelog.setTargetBuild(delayedString("{BUILD_NUM}"));
+            makeChangelog.setOutput(delayedFile(DevConstants.CHANGELOG));
         }
 
         final DelayedJar uni = makeTask("packageUniversal", DelayedJar.class);
@@ -360,6 +370,7 @@ public class FmlDevPlugin extends DevBasePlugin
             uni.getOutputs().upToDateWhen(Constants.CALL_FALSE);
             uni.from(delayedZipTree(DevConstants.BINPATCH_TMP));
             uni.from(delayedFileTree(DevConstants.FML_RESOURCES));
+            uni.from(delayedZipTree(DevConstants.CROWDIN_ZIP));
             uni.from(delayedFile(DevConstants.FML_VERSIONF));
             uni.from(delayedFile(DevConstants.FML_LICENSE));
             uni.from(delayedFile(DevConstants.FML_CREDITS));
@@ -378,26 +389,26 @@ public class FmlDevPlugin extends DevBasePlugin
                     return null;
                 }
             });
-            uni.dependsOn("genBinPatches", "createChangelog", "createVersionProperties");
+            uni.dependsOn("genBinPatches", crowdin, makeChangelog, "createVersionProperties");
         }
         project.getArtifacts().add("archives", uni);
 
-        FileFilterTask task = makeTask("generateInstallJson", FileFilterTask.class);
+        FileFilterTask genInstallJson = makeTask("generateInstallJson", FileFilterTask.class);
         {
-            task.setInputFile(delayedFile(DevConstants.JSON_REL));
-            task.setOutputFile(delayedFile(DevConstants.INSTALL_PROFILE));
-            task.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
-            task.addReplacement("@version@", delayedString("{VERSION}"));
-            task.addReplacement("@project@", delayedString("FML"));
-            task.addReplacement("@artifact@", delayedString("cpw.mods:fml:{MC_VERSION_SAFE}-{VERSION}"));
-            task.addReplacement("@universal_jar@", new Closure<String>(project)
+            genInstallJson.setInputFile(delayedFile(DevConstants.JSON_REL));
+            genInstallJson.setOutputFile(delayedFile(DevConstants.INSTALL_PROFILE));
+            genInstallJson.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
+            genInstallJson.addReplacement("@version@", delayedString("{VERSION}"));
+            genInstallJson.addReplacement("@project@", delayedString("FML"));
+            genInstallJson.addReplacement("@artifact@", delayedString("cpw.mods:fml:{MC_VERSION_SAFE}-{VERSION}"));
+            genInstallJson.addReplacement("@universal_jar@", new Closure<String>(project)
             {
                 public String call()
                 {
                     return uni.getArchiveName();
                 }
             });
-            task.addReplacement("@timestamp@", new Closure<String>(project)
+            genInstallJson.addReplacement("@timestamp@", new Closure<String>(project)
             {
                 public String call()
                 {
@@ -421,7 +432,7 @@ public class FmlDevPlugin extends DevBasePlugin
             inst.from(delayedFile(DevConstants.FML_CREDITS));
             inst.from(delayedFile(DevConstants.FML_LOGO));
             inst.from(delayedZipTree(DevConstants.INSTALLER_BASE), new CopyInto("/", "!*.json", "!*.png"));
-            inst.dependsOn("packageUniversal", "downloadBaseInstaller", "generateInstallJson");
+            inst.dependsOn(uni, "downloadBaseInstaller", genInstallJson);
             inst.setExtension("jar");
         }
         project.getArtifacts().add("archives", inst);
@@ -509,6 +520,7 @@ public class FmlDevPlugin extends DevBasePlugin
             userDev.from(delayedFile(DevConstants.CHANGELOG));
             userDev.from(delayedZipTree(DevConstants.BINPATCH_TMP), new CopyInto("", "devbinpatches.pack.lzma"));
             userDev.from(delayedFileTree("{FML_DIR}/src/main/resources"), new CopyInto("src/main/resources"));
+            userDev.from(delayedZipTree(DevConstants.CROWDIN_ZIP), new CopyInto("src/main/resources"));
             userDev.from(delayedFile(DevConstants.FML_VERSIONF), new CopyInto("src/main/resources"));
             userDev.from(delayedZipTree(DevConstants.USERDEV_SRG_SRC), new CopyInto("src/main/java"));
             userDev.from(delayedFile(DevConstants.DEOBF_DATA), new CopyInto("src/main/resources/"));
@@ -521,7 +533,7 @@ public class FmlDevPlugin extends DevBasePlugin
             userDev.rename(".+?\\.srg", "packaged.srg");
             userDev.rename(".+?\\.exc", "packaged.exc");
             userDev.setIncludeEmptyDirs(false);
-            userDev.dependsOn("packageUniversal", "zipPatches", "jarClasses", "createVersionProperties", s2s);
+            userDev.dependsOn("packageUniversal", crowdin, patchZip, classZip, "createVersionProperties", s2s);
             userDev.setExtension("jar");
         }
         project.getArtifacts().add("archives", userDev);
