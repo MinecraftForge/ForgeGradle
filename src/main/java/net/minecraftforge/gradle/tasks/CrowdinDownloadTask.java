@@ -13,9 +13,10 @@ import java.util.zip.ZipInputStream;
 import joptsimple.internal.Strings;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.api.tasks.OutputFiles;
 import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.io.ByteStreams;
@@ -57,7 +58,7 @@ public class CrowdinDownloadTask extends DefaultTask
                 // offline? skip.
                 if (getProject().getGradle().getStartParameter().isOffline())
                 {
-                    getLogger().lifecycle("Crowdin api key is null, skipping task.");
+                    getLogger().lifecycle("Gradle is in offline mode, skipping task.");
                     return false;
                 }
                 
@@ -150,6 +151,9 @@ public class CrowdinDownloadTask extends DefaultTask
     @SuppressWarnings("rawtypes")
     public String getProjectId()
     {
+        if (projectId == null)
+            throw new NullPointerException("ProjectID must be set for crowdin!");
+        
         while (projectId instanceof Closure)
             projectId = ((Closure) projectId).call();
         
@@ -175,6 +179,15 @@ public class CrowdinDownloadTask extends DefaultTask
         this.apiKey = apiKey;
     }
 
+    @OutputFiles
+    public FileCollection getOutputFiles()
+    {
+        if (isExtract())
+            return getProject().fileTree(getOutput());
+        else
+            return getProject().files(getOutput());
+    }
+
     public File getOutput()
     {
         return getProject().file(output);
@@ -194,5 +207,4 @@ public class CrowdinDownloadTask extends DefaultTask
     {
         this.extract = extract;
     }
-    
 }

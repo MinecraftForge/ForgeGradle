@@ -148,4 +148,8 @@ final class DevConstants
     // USED ONLY FOR Cauldron.. BUT ITS BUKKIT STUFF
     static final String BUKKIT_SOURCES     = "{BUKKIT_DIR}/src/main/java";
     static final String EXTRACTED_RES      = "{BUILD_DIR}/extractedResources";
+    
+    // CrowdIn Stuff
+    static final String CROWDIN_ZIP        = "{BUILD_DIR}/crowdin-localizations.zip";
+    static final String CROWDIN_FORGEID    = "minecraft-forge";
 }

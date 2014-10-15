@@ -65,7 +65,7 @@ public class CreateStartTask extends JavaCompile
     @Cached
     private DelayedFile startOut;
 
-    @SuppressWarnings({ "unchecked", "rawtypes", "serial", "deprecation" })
+    @SuppressWarnings({ "unchecked", "rawtypes", "serial" })
     public CreateStartTask() throws IOException
     {
         super();

@@ -15,6 +15,7 @@ import net.minecraftforge.gradle.delayed.DelayedBase;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.tasks.ApplyS2STask;
+import net.minecraftforge.gradle.tasks.CrowdinDownloadTask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
@@ -386,15 +387,22 @@ public class ForgeDevPlugin extends DevBasePlugin
     @SuppressWarnings("serial")
     private void createPackageTasks()
     {
-        ChangelogTask log = makeTask("createChangelog", ChangelogTask.class);
+        CrowdinDownloadTask crowdin = makeTask("getLocalizations", CrowdinDownloadTask.class);
         {
-            log.getOutputs().upToDateWhen(Constants.CALL_FALSE);
-            log.setServerRoot(delayedString("{JENKINS_SERVER}"));
-            log.setJobName(delayedString("{JENKINS_JOB}"));
-            log.setAuthName(delayedString("{JENKINS_AUTH_NAME}"));
-            log.setAuthPassword(delayedString("{JENKINS_AUTH_PASSWORD}"));
-            log.setTargetBuild(delayedString("{BUILD_NUM}"));
-            log.setOutput(delayedFile(CHANGELOG));
+            crowdin.setOutput(delayedFile(CROWDIN_ZIP));
+            crowdin.setProjectId(CROWDIN_FORGEID);
+            crowdin.setExtract(false);
+        }
+        
+        ChangelogTask makeChangelog = makeTask("createChangelog", ChangelogTask.class);
+        {
+            makeChangelog.getOutputs().upToDateWhen(Constants.CALL_FALSE);
+            makeChangelog.setServerRoot(delayedString("{JENKINS_SERVER}"));
+            makeChangelog.setJobName(delayedString("{JENKINS_JOB}"));
+            makeChangelog.setAuthName(delayedString("{JENKINS_AUTH_NAME}"));
+            makeChangelog.setAuthPassword(delayedString("{JENKINS_AUTH_PASSWORD}"));
+            makeChangelog.setTargetBuild(delayedString("{BUILD_NUM}"));
+            makeChangelog.setOutput(delayedFile(CHANGELOG));
         }
 
         VersionJsonTask vjson = makeTask("generateVersionJson", VersionJsonTask.class);
@@ -412,6 +420,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             uni.from(delayedZipTree(BINPATCH_TMP));
             uni.from(delayedFileTree(FML_RESOURCES));
             uni.from(delayedFileTree(FORGE_RESOURCES));
+            uni.from(delayedZipTree(CROWDIN_ZIP));
             uni.from(delayedFile(FML_VERSIONF));
             uni.from(delayedFile(FML_LICENSE));
             uni.from(delayedFile(FML_CREDITS));
@@ -451,26 +460,26 @@ public class ForgeDevPlugin extends DevBasePlugin
                 }
             });
             uni.setDestinationDir(delayedFile("{BUILD_DIR}/distributions").call());
-            uni.dependsOn("genBinPatches", "createChangelog", "createVersionPropertiesFML", "generateVersionJson");
+            uni.dependsOn("genBinPatches", crowdin, makeChangelog, "createVersionPropertiesFML", vjson);
         }
         project.getArtifacts().add("archives", uni);
 
-        FileFilterTask task = makeTask("generateInstallJson", FileFilterTask.class);
+        FileFilterTask genInstallJson = makeTask("generateInstallJson", FileFilterTask.class);
         {
-            task.setInputFile(delayedFile(JSON_REL));
-            task.setOutputFile(delayedFile(INSTALL_PROFILE));
-            task.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
-            task.addReplacement("@version@", delayedString("{VERSION}"));
-            task.addReplacement("@project@", delayedString("Forge"));
-            task.addReplacement("@artifact@", delayedString("net.minecraftforge:forge:{MC_VERSION_SAFE}-{VERSION}"));
-            task.addReplacement("@universal_jar@", new Closure<String>(project)
+            genInstallJson.setInputFile(delayedFile(JSON_REL));
+            genInstallJson.setOutputFile(delayedFile(INSTALL_PROFILE));
+            genInstallJson.addReplacement("@minecraft_version@", delayedString("{MC_VERSION}"));
+            genInstallJson.addReplacement("@version@", delayedString("{VERSION}"));
+            genInstallJson.addReplacement("@project@", delayedString("Forge"));
+            genInstallJson.addReplacement("@artifact@", delayedString("net.minecraftforge:forge:{MC_VERSION_SAFE}-{VERSION}"));
+            genInstallJson.addReplacement("@universal_jar@", new Closure<String>(project)
             {
                 public String call()
                 {
                     return uni.getArchiveName();
                 }
             });
-            task.addReplacement("@timestamp@", new Closure<String>(project)
+            genInstallJson.addReplacement("@timestamp@", new Closure<String>(project)
             {
                 public String call()
                 {
@@ -498,7 +507,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             inst.from(delayedFile(PAULSCODE_LISCENCE2));
             inst.from(delayedFile(FORGE_LOGO));
             inst.from(delayedZipTree(INSTALLER_BASE), new CopyInto("", "!*.json", "!*.png"));
-            inst.dependsOn("packageUniversal", "downloadBaseInstaller", "generateInstallJson");
+            inst.dependsOn(uni, "downloadBaseInstaller", genInstallJson);
             inst.rename("forge_logo\\.png", "big_logo.png");
             inst.setExtension("jar");
         }
@@ -555,6 +564,7 @@ public class ForgeDevPlugin extends DevBasePlugin
                     Javadoc task = (Javadoc)obj;
                     task.setSource(project.fileTree(javadocSource));
                     task.setDestinationDir(javadoc_temp);
+                    task.setFailOnError(false);
                 }
             });
             javadocJar.onlyIf(new Closure<Boolean>(this.project) {
@@ -647,6 +657,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             userDev.from(delayedZipTree(BINPATCH_TMP), new CopyInto("", "devbinpatches.pack.lzma"));
             userDev.from(delayedFileTree("{FML_DIR}/src/main/resources"), new CopyInto("src/main/resources"));
             userDev.from(delayedFileTree("src/main/resources"), new CopyInto("src/main/resources"));
+            userDev.from(delayedZipTree(CROWDIN_ZIP), new CopyInto("src/main/resources"));
             userDev.from(delayedZipTree(DevConstants.USERDEV_SRG_SRC), new CopyInto("src/main/java"));
             userDev.from(delayedFile(DEOBF_DATA), new CopyInto("src/main/resources/"));
             userDev.from(delayedFileTree("{FML_CONF_DIR}"), new CopyInto("conf", "astyle.cfg", "exceptor.json", "*.csv", "!packages.csv"));
@@ -659,7 +670,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             userDev.rename(".+?\\.srg", "packaged.srg");
             userDev.rename(".+?\\.exc", "packaged.exc");
             userDev.setIncludeEmptyDirs(false);
-            userDev.dependsOn("packageUniversal", "zipFmlPatches", "zipForgePatches", "jarClasses", "createVersionPropertiesFML", s2s);
+            userDev.dependsOn(uni, patchZipFML, patchZipForge, classZip, "createVersionPropertiesFML", s2s);
             userDev.setExtension("jar");
         }
         project.getArtifacts().add("archives", userDev);
@@ -681,7 +692,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             src.from(delayedFile("{FML_DIR}/gradlew.bat"));
             src.from(delayedFile("{FML_DIR}/gradle/wrapper"), new CopyInto("gradle/wrapper"));
             src.rename(".+?\\.gradle", "build.gradle");
-            src.dependsOn("createChangelog");
+            src.dependsOn(makeChangelog);
             src.setExtension("zip");
         }
         project.getArtifacts().add("archives", src);
