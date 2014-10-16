@@ -42,6 +42,7 @@ import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.java.archives.Manifest;
 import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.bundling.Zip;
@@ -433,6 +434,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             uni.from(delayedFile(VERSION_JSON));
             uni.exclude("devbinpatches.pack.lzma");
             uni.setIncludeEmptyDirs(false);
+            uni.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
             uni.setManifest(new Closure<Object>(project)
             {
                 public Object call()
@@ -670,6 +672,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             userDev.rename(".+?\\.srg", "packaged.srg");
             userDev.rename(".+?\\.exc", "packaged.exc");
             userDev.setIncludeEmptyDirs(false);
+            uni.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
             userDev.dependsOn(uni, patchZipFML, patchZipForge, classZip, "createVersionPropertiesFML", s2s);
             userDev.setExtension("jar");
         }
