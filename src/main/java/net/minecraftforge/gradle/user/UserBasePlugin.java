@@ -767,6 +767,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             recompTask.setTargetCompatibility("1.6");
             recompTask.setClasspath(project.getConfigurations().getByName(CONFIG_DEPS));
             recompTask.dependsOn(extract);
+            recompTask.getOptions().setWarnings(false);
 
             recompTask.onlyIf(onlyIfCheck);
         }
