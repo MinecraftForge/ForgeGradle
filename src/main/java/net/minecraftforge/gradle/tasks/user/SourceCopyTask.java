@@ -65,6 +65,9 @@ public class SourceCopyTask extends DefaultTask
         HashMap<String, String> repl = new HashMap<String, String>(replacements.size());
         for (Entry<String, Object> e : replacements.entrySet())
         {
+            if (e.getKey() == null || e.getValue() == null)
+                continue; // we dont deal with nulls.
+            
             Object val = e.getValue();
             while (val instanceof Closure)
                 val = ((Closure<Object>) val).call();
