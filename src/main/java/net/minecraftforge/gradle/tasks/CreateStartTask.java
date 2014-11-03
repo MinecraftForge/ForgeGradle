@@ -48,6 +48,8 @@ public class CreateStartTask extends JavaCompile
     @Input
     private DelayedFile assetsDir;
     @Input
+    private DelayedFile nativesDir;
+    @Input
     private DelayedString version;
     @Input
     private DelayedString tweaker;
@@ -155,6 +157,7 @@ public class CreateStartTask extends JavaCompile
         resource = resource.replace("@@MCVERSION@@", getVersion());
         resource = resource.replace("@@ASSETINDEX@@", getAssetIndex());
         resource = resource.replace("@@ASSETSDIR@@", getAssetsDir().replace('\\', '/'));
+        resource = resource.replace("@@NATIVESDIR@@", getNativesDir().replace('\\', '/'));
         resource = resource.replace("@@TWEAKER@@", getTweaker());
         resource = resource.replace("@@BOUNCERSERVER@@", getServerBounce());
         resource = resource.replace("@@BOUNCERCLIENT@@", getClientBounce());
@@ -469,6 +472,16 @@ public class CreateStartTask extends JavaCompile
     public void setAssetsDir(DelayedFile assetsDir)
     {
         this.assetsDir = assetsDir;
+    }
+    
+    public String getNativesDir() throws IOException
+    {
+        return nativesDir.call().getCanonicalPath();
+    }
+
+    public void setNativesDir(DelayedFile nativesDir)
+    {
+        this.nativesDir = nativesDir;
     }
 
     public String getVersion()

@@ -23,8 +23,12 @@ public class GradleStartCommon
     
     public static void launch(String mainClass, String[] args)
     {
+        
         try {
+            // do system prop stuff
+            System.setProperty("fml.ignoreInvalidMinecraftCertificates", "true");
             searchCoremods();
+            
             System.gc();
             Class.forName(mainClass).getDeclaredMethod("main", String[].class).invoke(null, new Object[] {args});
         }

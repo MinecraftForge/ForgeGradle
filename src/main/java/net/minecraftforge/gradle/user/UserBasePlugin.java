@@ -6,15 +6,9 @@ import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
 import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_FRESH;
 import static net.minecraftforge.gradle.user.UserConstants.*;
 import groovy.lang.Closure;
-import groovy.util.Node;
-import groovy.util.XmlParser;
-import groovy.xml.XmlUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -52,16 +46,12 @@ import org.gradle.api.tasks.GroovySourceSet;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.ScalaSourceSet;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.api.tasks.compile.GroovyCompile;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.scala.ScalaCompile;
-import org.gradle.listener.ActionBroadcast;
-import org.gradle.plugins.ide.eclipse.model.Classpath;
-import org.gradle.plugins.ide.eclipse.model.ClasspathEntry;
-import org.gradle.plugins.ide.eclipse.model.EclipseModel;
-import org.gradle.plugins.ide.eclipse.model.Library;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
@@ -91,7 +81,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         configureDeps();
         configureCompilation();
-        fixEclipseNatives();
         configureIntellij();
 
         // create basic tasks.
@@ -293,7 +282,14 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         extractNatives.setOut(delayedFile(NATIVES_DIR));
         extractNatives.setConfig(CONFIG_NATIVES);
         extractNatives.exclude("META-INF/**", "META-INF/**");
+        extractNatives.doesCache();
         extractNatives.dependsOn("extractUserDev");
+
+        // backwards compat natives copy
+        Sync copyNatives = makeTask("copyNativesLegacy", Sync.class);
+        copyNatives.from(delayedFile(NATIVES_DIR));
+        copyNatives.into(delayedFile(NATIVES_DIR_OLD));
+        copyNatives.dependsOn("extractNatives");
 
         // special gradleStart stuff
         project.getDependencies().add(CONFIG_START, project.files(delayedFile(getStartDir())));
@@ -376,69 +372,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             log.info("RESOLVED: " + nativeConfig);
 
         hasAppliedJson = true;
-    }
-
-    @SuppressWarnings({ "unchecked" })
-    protected void fixEclipseNatives()
-    {
-        EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse");
-
-        eclipseConv.getClasspath().setDownloadJavadoc(true);
-        eclipseConv.getClasspath().setDownloadSources(true);
-        ((ActionBroadcast<Classpath>) eclipseConv.getClasspath().getFile().getWhenMerged()).add(new Action<Classpath>()
-        {
-            @Override
-            public void execute(Classpath classpath)
-            {
-                String natives = delayedString(NATIVES_DIR).call().replace('\\', '/');
-                for (ClasspathEntry e : classpath.getEntries())
-                {
-                    if (e instanceof Library)
-                    {
-                        Library lib = (Library) e;
-                        if (lib.getPath().contains("lwjg") || lib.getPath().contains("jinput"))
-                        {
-                            lib.setNativeLibraryLocation(natives);
-                        }
-                    }
-                }
-            }
-        });
-
-        Task task = makeTask("afterEclipseImport", DefaultTask.class);
-        task.doLast(new Action<Object>() {
-            public void execute(Object obj)
-            {
-                try
-                {
-                    Node root = new XmlParser().parseText(Files.toString(project.file(".classpath"), Charset.defaultCharset()));
-
-                    HashMap<String, String> map = new HashMap<String, String>();
-                    map.put("name", "org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY");
-                    map.put("value", delayedString(NATIVES_DIR).call());
-
-                    for (Node child : (List<Node>) root.children())
-                    {
-                        if (child.attribute("path").equals("org.springsource.ide.eclipse.gradle.classpathcontainer"))
-                        {
-                            child.appendNode("attributes").appendNode("attribute", map);
-                            break;
-                        }
-                    }
-
-                    String result = XmlUtil.serialize(root);
-
-                    project.getLogger().lifecycle(result);
-                    Files.write(result, project.file(".classpath"), Charset.defaultCharset());
-
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                    return;
-                }
-            }
-        });
     }
 
     @SuppressWarnings("serial")
@@ -545,15 +478,13 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             }
         }
 
-        String natives = delayedFile(NATIVES_DIR).call().getCanonicalPath().replace(module, "$PROJECT_DIR$");
-
         String[][] config = new String[][]
         {
                 new String[]
                 {
                         "Minecraft Client",
                         GRADLE_START_CLIENT,
-                        "-Xincgc -Xmx1024M -Xms1024M -Djava.library.path=\"" + natives + "\" -Dfml.ignoreInvalidMinecraftCertificates=true",
+                        "-Xincgc -Xmx1024M -Xms1024M",
                         Joiner.on(' ').join(getClientRunArgs())
                 },
                 new String[]
@@ -690,13 +621,14 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             {
                 task.setAssetIndex(delayedString("{ASSET_INDEX}").forceResolving());
                 task.setAssetsDir(delayedFile("{CACHE_DIR}/minecraft/assets"));
+                task.setNativesDir(delayedFile(NATIVES_DIR));
                 task.setVersion(delayedString("{MC_VERSION}"));
                 task.setTweaker(delayedString("{RUN_TWEAKER}"));
                 task.setClientBounce(delayedString("{RUN_BOUNCE_CLIENT}"));
                 task.setServerBounce(delayedString("{RUN_BOUNCE_SERVER}"));
                 task.setStartOut(delayedFile(getStartDir()));
 
-                task.dependsOn("extractUserDev", "getAssets", "getAssetsIndex", "extractNatives");
+                task.dependsOn("extractUserDev", "getAssets", "getAssetsIndex", "copyNativesLegacy");
             }
         }
 

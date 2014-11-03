@@ -40,13 +40,11 @@ public class GradleStart
 
     public static void main(String[] args)
     {
-        // set system variables for dev environment
-        System.setProperty("fml.ignoreInvalidMinecraftCertificates", "true");
-
         if (args.length == 0)
         {
             // empty args? start client with defaults
             GradleStartCommon.LOGGER.info("No arguments specified, assuming client.");
+            hackNatives(); // set natives dir
             startClient(args);
         }
 
@@ -93,6 +91,19 @@ public class GradleStart
         b.append(']');
         GradleStartCommon.LOGGER.info("Running with arguments: "+b.toString());
         GradleStartCommon.launch("@@BOUNCERCLIENT@@", args);
+    }
+    
+    private static void hackNatives()
+    {
+        String paths = System.getProperty("java.library.path");
+        String nativesDir = "@@NATIVESDIR@@";
+        
+        if (Strings.isNullOrEmpty(paths))
+            paths = nativesDir;
+        else
+            paths += File.pathSeparator + nativesDir;
+        
+        System.setProperty("java.library.path", paths);
     }
 
     private static void attemptLogin(GradleStart args)
