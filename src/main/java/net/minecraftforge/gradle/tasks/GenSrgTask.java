@@ -152,10 +152,12 @@ public class GenSrgTask extends CachedTask
             notch2Mcp.write(line);
             notch2Mcp.newLine();
             
-            mcpToSrg.write(line);
-            mcpToSrg.newLine();
+            // No apckage changes from MCP to SRG names
+            //mcpToSrg.write(line);
+            //mcpToSrg.newLine();
             
-            mcpToNotch.write(line);
+            // reverse!
+            mcpToNotch.write("PK: "+e.getValue()+" "+e.getKey());
             mcpToNotch.newLine();
         }
         
