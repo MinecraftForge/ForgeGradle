@@ -23,7 +23,6 @@ public class GradleStartCommon
     
     public static void launch(String mainClass, String[] args)
     {
-        
         try {
             // do system prop stuff
             System.setProperty("fml.ignoreInvalidMinecraftCertificates", "true");
@@ -34,7 +33,7 @@ public class GradleStartCommon
         }
         catch (Exception e)
         {
-            Throwables.propagate(e.getCause());
+            Throwables.propagate(e);
         }
     }
     
