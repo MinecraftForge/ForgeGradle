@@ -15,7 +15,6 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
-import com.google.common.io.Files;
 
 
 public class GradleStartCommon
@@ -26,7 +25,6 @@ public class GradleStartCommon
     {
         try {
             searchCoremods();
-            LOGGER = null;
             System.gc();
             Class.forName(mainClass).getDeclaredMethod("main", String[].class).invoke(null, new Object[] {args});
         }
@@ -68,6 +66,7 @@ public class GradleStartCommon
             {
                 JarFile jar = new JarFile(coreMod);
                 manifest = jar.getManifest();
+                addFmlAt(jar);
                 jar.close();
             }
             
@@ -84,5 +83,17 @@ public class GradleStartCommon
         }
         
         System.setProperty(COREMOD_VAR, Joiner.on(',').join(coremodsSet));
+    }
+    
+    // AT hack,.
+    private static final String AT_LOADER_CLASS = "cpw.mods.fml.common.asm.transformers";
+    private static final String AT_LOADER_METHOD = "addJar";
+    
+    private static void addFmlAt(JarFile jar)
+    {
+        try {
+            Class.forName(AT_LOADER_CLASS).getDeclaredMethod(AT_LOADER_METHOD, JarFile.class).invoke(null, jar);
+        }
+        catch(Throwable t){}
     }
 }
