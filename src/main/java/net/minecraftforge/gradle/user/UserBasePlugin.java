@@ -1003,7 +1003,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         JavaExec exec = (JavaExec) project.getTasks().getByName("runClient");
         {
-            exec.jvmArgs("-Djava.library.path=" + delayedFile(NATIVES_DIR).call().getAbsolutePath());
             exec.classpath(project.getConfigurations().getByName("runtime"));
             exec.classpath(jarTask.getArchivePath());
             exec.dependsOn(jarTask);
@@ -1018,7 +1017,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         exec = (JavaExec) project.getTasks().getByName("debugClient");
         {
-            exec.jvmArgs("-Djava.library.path=" + delayedFile(NATIVES_DIR).call().getAbsolutePath());
             exec.classpath(project.getConfigurations().getByName("runtime"));
             exec.classpath(jarTask.getArchivePath());
             exec.dependsOn(jarTask);

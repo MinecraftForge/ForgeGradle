@@ -2,6 +2,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.net.Proxy;
 import java.security.DigestInputStream;
@@ -105,6 +106,16 @@ public class GradleStart
             paths += File.pathSeparator + nativesDir;
         
         System.setProperty("java.library.path", paths);
+        
+        // hack teh classlaoder now.
+        try
+        {
+            final Field sysPathsField = ClassLoader.class.getDeclaredField("sys_paths");
+            sysPathsField.setAccessible(true);
+            sysPathsField.set(null, null);
+        }
+        catch(Throwable t) {};
+        
     }
 
     private static void attemptLogin(GradleStart args)
