@@ -46,6 +46,7 @@ public class GradleStart
             GradleStartCommon.LOGGER.info("No arguments specified, assuming client.");
             hackNatives(); // set natives dir
             startClient(args);
+            return;
         }
 
         // check the server
