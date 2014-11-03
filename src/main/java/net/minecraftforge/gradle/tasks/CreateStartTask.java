@@ -60,61 +60,30 @@ public class CreateStartTask extends JavaCompile
     private String clientResource = getResource("GradleStart.java");
     @Input
     private String serverResource = getResource("GradleStartServer.java");
+    @Input
+    private String commonResource = getResource("GradleStartCommon.java");
 
     @OutputDirectory
     @Cached
     private DelayedFile startOut;
 
-    @SuppressWarnings({ "unchecked", "rawtypes", "serial" })
+    @SuppressWarnings({ "unchecked", "rawtypes"})
     public CreateStartTask() throws IOException
     {
         super();
 
         final File clientJava = new File(getTemporaryDir(), "GradleStart.java");
         final File serverJava = new File(getTemporaryDir(), "GradleStartServer.java");
-
-        Closure clientClosure = new Closure<File>(null, null) {
-
-            @Override
-            public File call()
-            {
-                try
-                {
-                    replaceResource(clientResource, clientJava);
-                    return clientJava;
-                }
-                catch (IOException e)
-                {
-                    Throwables.propagate(e);
-                }
-                return null;
-            }
-        };
-        Closure serverClosure = new Closure<File>(null, null) {
-
-            @Override
-            public File call()
-            {
-                try
-                {
-                    replaceResource(serverResource, serverJava);
-                    return serverJava;
-                }
-                catch (IOException e)
-                {
-                    Throwables.propagate(e);
-                }
-                return null;
-            }
-        };
+        final File commonJava = new File(getTemporaryDir(), "GradleStartCommon.java");
 
         // configure compilation
-        this.source(clientClosure, serverClosure);
+        this.source(getReplaceClosure(clientResource, clientJava), getReplaceClosure(serverResource, serverJava),getReplaceClosure(commonResource, commonJava));
         this.setClasspath(getProject().getConfigurations().getByName(UserConstants.CONFIG_DEPS));
         this.setDestinationDir(getTemporaryDir());
         this.setSourceCompatibility("1.6");
         this.setTargetCompatibility("1.6");
         this.getOptions().setEncoding("UTF-8");
+        this.getOptions().setWarnings(false);
 
         // copy the stuff to the cache
         this.doLast(new Action() {
@@ -143,6 +112,28 @@ public class CreateStartTask extends JavaCompile
         // do the caching stuff
         // do this last, so it adds its stuff first.
         cachedStuff();
+    }
+    
+    @SuppressWarnings("serial")
+    private Closure<File> getReplaceClosure(final String resource, final File out)
+    {
+        return new Closure<File>(null, null) {
+
+            @Override
+            public File call()
+            {
+                try
+                {
+                    replaceResource(resource, out);
+                    return out;
+                }
+                catch (IOException e)
+                {
+                    Throwables.propagate(e);
+                }
+                return null;
+            }
+        };
     }
 
     private String getResource(String resource)

@@ -1,22 +1,3 @@
-import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
-import com.google.common.io.Files;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonSyntaxException;
-import com.mojang.authlib.Agent;
-import com.mojang.authlib.exceptions.AuthenticationException;
-import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
-import com.mojang.authlib.yggdrasil.YggdrasilUserAuthentication;
-
-import joptsimple.NonOptionArgumentSpec;
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
@@ -30,10 +11,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import joptsimple.NonOptionArgumentSpec;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
+
+import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
+import com.google.common.io.Files;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
+import com.mojang.authlib.Agent;
+import com.mojang.authlib.exceptions.AuthenticationException;
+import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
+import com.mojang.authlib.yggdrasil.YggdrasilUserAuthentication;
+
 public class GradleStart
 {
-    private static final Logger LOGGER = LogManager.getLogger();
-
     public static final Gson GSON;
     static
     {
@@ -51,7 +46,7 @@ public class GradleStart
         if (args.length == 0)
         {
             // empty args? start client with defaults
-            LOGGER.info("No arguments specified, assuming client.");
+            GradleStartCommon.LOGGER.info("No arguments specified, assuming client.");
             startClient(args);
         }
 
@@ -72,7 +67,7 @@ public class GradleStart
 
         if (!Strings.isNullOrEmpty(cArgs.values.get("password")))
         {
-            LOGGER.info("Password found, attempting login");
+            GradleStartCommon.LOGGER.info("Password found, attempting login");
             attemptLogin(cArgs);
         }
 
@@ -96,20 +91,8 @@ public class GradleStart
         }
         b.replace(b.length() - 2, b.length(), "");
         b.append(']');
-        LOGGER.info("Running with arguments: "+b.toString());
-        bounce("@@BOUNCERCLIENT@@", args);
-    }
-
-    private static void bounce(String mainClass, String[] args)
-    {
-        try {
-            System.gc();// why not? it'll clean stuff up before starting MC.
-            Class.forName(mainClass).getDeclaredMethod("main", String[].class).invoke(null, new Object[] {args});
-        }
-        catch (Exception e)
-        {
-            Throwables.propagate(e);
-        }
+        GradleStartCommon.LOGGER.info("Running with arguments: "+b.toString());
+        GradleStartCommon.launch("@@BOUNCERCLIENT@@", args);
     }
 
     private static void attemptLogin(GradleStart args)
@@ -124,12 +107,12 @@ public class GradleStart
         }
         catch (AuthenticationException e)
         {
-            LOGGER.error("-- Login failed!  " + e.getMessage());
+            GradleStartCommon.LOGGER.error("-- Login failed!  " + e.getMessage());
             Throwables.propagate(e);
             return; // dont set other variables
         }
 
-        LOGGER.info("Login Succesful!");
+        GradleStartCommon.LOGGER.info("Login Succesful!");
         args.values.put("accessToken", auth.getAuthenticatedToken());
         args.values.put("uuid", auth.getSelectedProfile().getId().toString().replace("-", ""));
         args.values.put("username", auth.getSelectedProfile().getName());
@@ -195,12 +178,12 @@ public class GradleStart
                 String value = (String)options.valueOf(key);
                 values.put(key, value);
                 if (!"password".equalsIgnoreCase(key))
-                    LOGGER.info(key + ": " + value);
+                    GradleStartCommon.LOGGER.info(key + ": " + value);
             }
         }
 
         extras = nonOption.values(options);
-        LOGGER.info("Extra: " + extras);
+        GradleStartCommon.LOGGER.info("Extra: " + extras);
     }
 
     private void setupAssets()
@@ -221,7 +204,7 @@ public class GradleStart
             File assetVirtual = new File(new File(assets, "virtual"), values.get("assetIndex"));
             values.put("assetsDir", assetVirtual.getAbsolutePath());
 
-            LOGGER.info("Setting up virtual assets in: " + assetVirtual.getAbsolutePath());
+            GradleStartCommon.LOGGER.info("Setting up virtual assets in: " + assetVirtual.getAbsolutePath());
 
             Map<String, String> existing = gatherFiles(assetVirtual);
 
@@ -240,7 +223,7 @@ public class GradleStart
                     }
                     else
                     {
-                        LOGGER.info("  " + key + ": INVALID HASH");
+                        GradleStartCommon.LOGGER.info("  " + key + ": INVALID HASH");
                         virtual.delete();
                     }
                 }
@@ -248,11 +231,11 @@ public class GradleStart
                 {
                     if (!source.exists())
                     {
-                        LOGGER.info("  " + key + ": NEW MISSING " + hash);
+                        GradleStartCommon.LOGGER.info("  " + key + ": NEW MISSING " + hash);
                     }
                     else
                     {
-                        LOGGER.info("  " + key + ": NEW ");
+                        GradleStartCommon.LOGGER.info("  " + key + ": NEW ");
                         File parent = virtual.getParentFile();
                         if (!parent.exists())
                             parent.mkdirs();
@@ -263,7 +246,7 @@ public class GradleStart
 
             for (String key : existing.keySet())
             {
-                LOGGER.info("  " + key + ": REMOVED");
+                GradleStartCommon.LOGGER.info("  " + key + ": REMOVED");
                 File virtual = new File(assetVirtual, key);
                 virtual.delete();
             }
