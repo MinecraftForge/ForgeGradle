@@ -1,6 +1,6 @@
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Set;
@@ -34,15 +34,28 @@ public class GradleStartCommon
         }
         catch (Exception e)
         {
-            Throwables.propagate(e);
+            Throwables.propagate(e.getCause());
         }
     }
     
+    // coremod hack
     private static final String COREMOD_VAR = "fml.coreMods.load";
     private static final String COREMOD_MF  = "FMLCorePlugin";
+    // AT hack
+    private static final String AT_LOADER_CLASS    = "cpw.mods.fml.common.asm.transformers.ModAccessTransformer";
+    private static final String AT_LOADER_CLASS_18 = "net.minecraftforge.fml.common.asm.transformers.ModAccessTransformer";
+    private static final String AT_LOADER_METHOD   = "addJar";
 
-    public static void searchCoremods() throws IOException
+    public static void searchCoremods() throws Exception
     {
+        // intialize AT hack Method
+        Method atRegistrar = null;
+        try{
+            atRegistrar = Class.forName("@@MCVERSION@@".startsWith("1.7") ? AT_LOADER_CLASS : AT_LOADER_CLASS_18)
+                    .getDeclaredMethod(AT_LOADER_METHOD, JarFile.class);
+        }
+        catch(Throwable t) { }
+        
         Set<String> coremodsSet = Sets.newHashSet();
         
         if (!Strings.isNullOrEmpty(System.getProperty(COREMOD_VAR)))
@@ -70,7 +83,7 @@ public class GradleStartCommon
             {
                 JarFile jar = new JarFile(coreMod);
                 manifest = jar.getManifest();
-                addFmlAt(jar);
+                if (atRegistrar != null && manifest != null) atRegistrar.invoke(null, jar);
                 jar.close();
             }
             
@@ -87,17 +100,5 @@ public class GradleStartCommon
         }
         
         System.setProperty(COREMOD_VAR, Joiner.on(',').join(coremodsSet));
-    }
-    
-    // AT hack,.
-    private static final String AT_LOADER_CLASS = "cpw.mods.fml.common.asm.transformers";
-    private static final String AT_LOADER_METHOD = "addJar";
-    
-    private static void addFmlAt(JarFile jar)
-    {
-        try {
-            Class.forName(AT_LOADER_CLASS).getDeclaredMethod(AT_LOADER_METHOD, JarFile.class).invoke(null, jar);
-        }
-        catch(Throwable t){}
     }
 }
