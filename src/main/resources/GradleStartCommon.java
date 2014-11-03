@@ -68,6 +68,9 @@ public class GradleStartCommon
             File coreMod = new File(url.getFile());
             Manifest manifest = null;
             
+            if (!coreMod.exists())
+                continue;
+            
             if (coreMod.isDirectory())
             {
                 File manifestMF = new File(coreMod, "META-INF/MANIFEST.MF");
