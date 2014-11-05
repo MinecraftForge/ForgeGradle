@@ -45,7 +45,6 @@ public class GradleStart
         {
             // empty args? start client with defaults
             GradleStartCommon.LOGGER.info("No arguments specified, assuming client.");
-            hackNatives(); // set natives dir
             startClient(args);
             return;
         }
@@ -62,6 +61,9 @@ public class GradleStart
 
     private static void startClient(String[] args)
     {
+        // set natives dir
+        hackNatives();
+        
         GradleStart cArgs = new GradleStart();
         cArgs.parseArgs(args);
 
