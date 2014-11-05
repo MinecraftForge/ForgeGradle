@@ -304,15 +304,21 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     }
     
     @Override
-    protected String getTweaker()
+    protected String getClientTweaker()
     {
         return "fml.common.launcher.FMLTweaker";
     }
     
     @Override
+    protected String getServerTweaker()
+    {
+        return "fml.common.launcher.FMLServerTweaker";
+    }
+    
+    @Override
     protected String getServerRunClass()
     {
-        return "fml.relauncher.ServerLaunchWrapper";
+        return getClientRunClass();
     }
     
     @Override
@@ -321,8 +327,8 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
         // override tweaker and server run class.
         // do run config stuff.
         String prefix = getMcVersion(exten).startsWith("1.8") ? "net.minecraftforge." : "cpw.mods.";
-        pattern = pattern.replace("{RUN_TWEAKER}", prefix + getTweaker());
-        pattern = pattern.replace("{RUN_BOUNCE_SERVER}", prefix + getServerRunClass());
+        pattern = pattern.replace("{RUN_CLIENT_TWEAKER}", prefix + getClientTweaker());
+        pattern = pattern.replace("{RUN_SERVER_TWEAKER}", prefix + getServerTweaker());
         
         pattern = super.resolve(pattern, project, exten);
         

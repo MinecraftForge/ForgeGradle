@@ -52,11 +52,13 @@ public class CreateStartTask extends JavaCompile
     @Input
     private DelayedString version;
     @Input
-    private DelayedString tweaker;
+    private DelayedString clientTweaker;
     @Input
-    private DelayedString serverBounce;
+    private DelayedString serverTweaker;
     @Input
     private DelayedString clientBounce;
+    @Input
+    private DelayedString serverBounce;
 
     @Input
     private String clientResource = getResource("GradleStart.java");
@@ -158,9 +160,10 @@ public class CreateStartTask extends JavaCompile
         resource = resource.replace("@@ASSETINDEX@@", getAssetIndex());
         resource = resource.replace("@@ASSETSDIR@@", getAssetsDir().replace('\\', '/'));
         resource = resource.replace("@@NATIVESDIR@@", getNativesDir().replace('\\', '/'));
-        resource = resource.replace("@@TWEAKER@@", getTweaker());
-        resource = resource.replace("@@BOUNCERSERVER@@", getServerBounce());
+        resource = resource.replace("@@CLIENTTWEAKER@@", getClientTweaker());
+        resource = resource.replace("@@SERVERTWEAKER@@", getServerTweaker());
         resource = resource.replace("@@BOUNCERCLIENT@@", getClientBounce());
+        resource = resource.replace("@@BOUNCERSERVER@@", getServerBounce());
 
         // because there are different versions of authlib
         //resource = resource.replace("@@USERTYPE@@", "1.7.2".equals(getVersion()) ? "" : "auth.getUserType().getName();");
@@ -494,24 +497,24 @@ public class CreateStartTask extends JavaCompile
         this.version = version;
     }
 
-    public String getTweaker()
+    public String getClientTweaker()
     {
-        return tweaker.call();
+        return clientTweaker.call();
     }
 
-    public void setTweaker(DelayedString version)
+    public void setClientTweaker(DelayedString tweaker)
     {
-        this.tweaker = version;
+        this.clientTweaker = tweaker;
+    }
+    
+    public String getServerTweaker()
+    {
+        return serverTweaker.call();
     }
 
-    public String getServerBounce()
+    public void setServerTweaker(DelayedString tweaker)
     {
-        return serverBounce.call();
-    }
-
-    public void setServerBounce(DelayedString version)
-    {
-        this.serverBounce = version;
+        this.serverTweaker = tweaker;
     }
 
     public String getClientBounce()
@@ -522,6 +525,16 @@ public class CreateStartTask extends JavaCompile
     public void setClientBounce(DelayedString version)
     {
         this.clientBounce = version;
+    }
+
+    public String getServerBounce()
+    {
+        return serverBounce.call();
+    }
+
+    public void setServerBounce(DelayedString version)
+    {
+        this.serverBounce = version;
     }
 
     public File getStartOut()

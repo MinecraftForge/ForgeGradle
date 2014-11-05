@@ -194,15 +194,19 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     protected abstract String getUserDev();
 
     /**
-     * For run configurations
+     * For run configurations. Is delayed.
      */
-    protected abstract String getTweaker();
+    protected abstract String getClientTweaker();
+    /**
+     * For run configurations. Is delayed.
+     */
+    protected abstract String getServerTweaker();
     /**
      * For run configurations
      */
     protected abstract String getStartDir();
     /**
-     * For run configurations
+     * For run configurations. Is delayed.
      */
     protected abstract String getClientRunClass();
     /**
@@ -210,7 +214,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
      */
     protected abstract Iterable<String> getClientRunArgs();
     /**
-     * For run configurations
+     * For run configurations. Is delayed.
      */
     protected abstract String getServerRunClass();
     /**
@@ -234,7 +238,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         pattern = pattern.replace("{MC_VERSION}", getMcVersion(exten));
 
         // do run config stuff.
-        pattern = pattern.replace("{RUN_TWEAKER}", getTweaker());
+        pattern = pattern.replace("{RUN_CLIENT_TWEAKER}", getClientTweaker());
+        pattern = pattern.replace("{RUN_SERVER_TWEAKER}", getServerTweaker());
         pattern = pattern.replace("{RUN_BOUNCE_CLIENT}", getClientRunClass());
         pattern = pattern.replace("{RUN_BOUNCE_SERVER}", getServerRunClass());
 
@@ -623,7 +628,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 task.setAssetsDir(delayedFile("{CACHE_DIR}/minecraft/assets"));
                 task.setNativesDir(delayedFile(NATIVES_DIR));
                 task.setVersion(delayedString("{MC_VERSION}"));
-                task.setTweaker(delayedString("{RUN_TWEAKER}"));
+                task.setClientTweaker(delayedString("{RUN_CLIENT_TWEAKER}"));
+                task.setServerTweaker(delayedString("{RUN_SERVER_TWEAKER}"));
                 task.setClientBounce(delayedString("{RUN_BOUNCE_CLIENT}"));
                 task.setServerBounce(delayedString("{RUN_BOUNCE_SERVER}"));
                 task.setStartOut(delayedFile(getStartDir()));

@@ -7,14 +7,9 @@ import java.math.BigInteger;
 import java.net.Proxy;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import joptsimple.NonOptionArgumentSpec;
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
 
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
@@ -28,9 +23,9 @@ import com.mojang.authlib.exceptions.AuthenticationException;
 import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
 import com.mojang.authlib.yggdrasil.YggdrasilUserAuthentication;
 
-public class GradleStart
+public class GradleStart extends GradleStartCommon
 {
-    public static final Gson GSON;
+    private static final Gson GSON;
     static
     {
         GsonBuilder builder = new GsonBuilder();
@@ -39,64 +34,49 @@ public class GradleStart
         GSON = builder.create();
     }
 
-    public static void main(String[] args)
+    public static void main(String[] args) throws Throwable
     {
-        if (args.length == 0)
-        {
-            // empty args? start client with defaults
-            GradleStartCommon.LOGGER.info("No arguments specified, assuming client.");
-            startClient(args);
-            return;
-        }
-
-        // check the server
-        if ("server".equalsIgnoreCase(args[0]) || "--server".equalsIgnoreCase(args[0])) // cant be 0, so it must be atleast 1 right?
-        {
-            throw new IllegalArgumentException("If you want to run a server, use GradleStartServer as your main class");
-        }
-
-        // not server, but has args? its client.
-        startClient(args);
-    }
-
-    private static void startClient(String[] args)
-    {
-        // set natives dir
+        // hack natives.
         hackNatives();
         
-        GradleStart cArgs = new GradleStart();
-        cArgs.parseArgs(args);
-
-        if (!Strings.isNullOrEmpty(cArgs.values.get("password")))
-        {
-            GradleStartCommon.LOGGER.info("Password found, attempting login");
-            attemptLogin(cArgs);
-        }
-
-        if (!Strings.isNullOrEmpty(cArgs.values.get("assetIndex")))
-        {
-            cArgs.setupAssets();
-        }
-
-        args = cArgs.getArgs();
-
-        StringBuilder b = new StringBuilder();
-        b.append('[');
-        for (int x = 0; x < args.length; x++)
-        {
-            b.append(args[x]).append(", ");
-            if ("--accessToken".equalsIgnoreCase(args[x]))
-            {
-                b.append("{REDACTED}, ");
-                x++;
-            }
-        }
-        b.replace(b.length() - 2, b.length(), "");
-        b.append(']');
-        GradleStartCommon.LOGGER.info("Running with arguments: "+b.toString());
-        GradleStartCommon.launch("@@BOUNCERCLIENT@@", args);
+        // launch
+        (new GradleStart()).launch(args);
     }
     
+    @Override
+    String getBounceClass()
+    {
+        return "@@BOUNCERCLIENT@@";
+    }
+    
+    @Override
+    void setDefaultArguments(Map<String, String> argMap)
+    {
+        argMap.put("version",        "@@MCVERSION@@");
+        argMap.put("tweakClass",     "@@CLIENTTWEAKER@@");
+        argMap.put("assetIndex",     "@@ASSETINDEX@@");
+        argMap.put("assetsDir",      "@@ASSETSDIR@@");
+        argMap.put("accessToken",    "FML");
+        argMap.put("userProperties", "{}");
+        argMap.put("username",        null);
+        argMap.put("password",        null);
+    }
+
+    @Override
+    void preLaunch(Map<String, String> argMap, List<String> extras)
+    {
+        if (!Strings.isNullOrEmpty(argMap.get("password")))
+        {
+            GradleStartCommon.LOGGER.info("Password found, attempting login");
+            attemptLogin(argMap);
+        }
+
+        if (!Strings.isNullOrEmpty(argMap.get("assetIndex")))
+        {
+            setupAssets(argMap);
+        }
+    }
+
     private static void hackNatives()
     {
         String paths = System.getProperty("java.library.path");
@@ -109,7 +89,7 @@ public class GradleStart
         
         System.setProperty("java.library.path", paths);
         
-        // hack teh classlaoder now.
+        // hack the classloader now.
         try
         {
             final Field sysPathsField = ClassLoader.class.getDeclaredField("sys_paths");
@@ -117,117 +97,51 @@ public class GradleStart
             sysPathsField.set(null, null);
         }
         catch(Throwable t) {};
-        
     }
 
-    private static void attemptLogin(GradleStart args)
+    private void attemptLogin(Map<String, String> argMap)
     {
         YggdrasilUserAuthentication auth = (YggdrasilUserAuthentication) new YggdrasilAuthenticationService(Proxy.NO_PROXY, "1").createUserAuthentication(Agent.MINECRAFT);
-        auth.setUsername(args.values.get("username"));
-        auth.setPassword(args.values.get("password"));
-        args.values.put("password", null);
+        auth.setUsername(argMap.get("username"));
+        auth.setPassword(argMap.get("password"));
+        argMap.put("password", null);
 
         try {
             auth.logIn();
         }
         catch (AuthenticationException e)
         {
-            GradleStartCommon.LOGGER.error("-- Login failed!  " + e.getMessage());
+            LOGGER.error("-- Login failed!  " + e.getMessage());
             Throwables.propagate(e);
             return; // dont set other variables
         }
 
-        GradleStartCommon.LOGGER.info("Login Succesful!");
-        args.values.put("accessToken", auth.getAuthenticatedToken());
-        args.values.put("uuid", auth.getSelectedProfile().getId().toString().replace("-", ""));
-        args.values.put("username", auth.getSelectedProfile().getName());
+        LOGGER.info("Login Succesful!");
+        argMap.put("accessToken", auth.getAuthenticatedToken());
+        argMap.put("uuid", auth.getSelectedProfile().getId().toString().replace("-", ""));
+        argMap.put("username", auth.getSelectedProfile().getName());
         //@@USERTYPE@@
-        args.values.put("userProperties", auth.getUserProperties().toString());
+        argMap.put("userProperties", auth.getUserProperties().toString());
     }
+    
 
-
-    // THIS HERE IS THE ACTUAL CLASS
-    // ----------------------------------------------
-    private List<String> extras;
-    private Map<String, String> values = new HashMap<String, String>();
-
-    String[] getArgs()
+    private void setupAssets(Map<String, String> argMap)
     {
-        ArrayList<String> list = new ArrayList<String>(22);
-
-        for (Map.Entry<String, String> e : values.entrySet())
-        {
-            String val = e.getValue();
-            if (!Strings.isNullOrEmpty(val))
-            {
-                list.add("--" + e.getKey());
-                list.add(val);
-            }
-        }
-
-        if (extras != null)
-        {
-            list.addAll(extras);
-        }
-
-        return list.toArray(new String[0]);
-    }
-
-    void parseArgs(String[] args)
-    {
-        values = new HashMap<String, String>();
-        values.put("version",        "@@MCVERSION@@");
-        values.put("tweakClass",     "@@TWEAKER@@");
-        values.put("assetIndex",     "@@ASSETINDEX@@");
-        values.put("assetsDir",      "@@ASSETSDIR@@");
-        values.put("accessToken",    "FML");
-        values.put("userProperties", "{}");
-        values.put("username",        null);
-        values.put("password",        null);
-
-        final OptionParser parser = new OptionParser();
-        parser.allowsUnrecognizedOptions();
-
-        for (String key : values.keySet())
-        {
-            parser.accepts(key).withRequiredArg().ofType(String.class);
-        }
-
-        final NonOptionArgumentSpec<String> nonOption = parser.nonOptions();
-
-        final OptionSet options = parser.parse(args);
-        for (String key : values.keySet())
-        {
-            if (options.hasArgument(key))
-            {
-                String value = (String)options.valueOf(key);
-                values.put(key, value);
-                if (!"password".equalsIgnoreCase(key))
-                    GradleStartCommon.LOGGER.info(key + ": " + value);
-            }
-        }
-
-        extras = nonOption.values(options);
-        GradleStartCommon.LOGGER.info("Extra: " + extras);
-    }
-
-    private void setupAssets()
-    {
-        if (Strings.isNullOrEmpty(values.get("assetsDir")))
+        if (Strings.isNullOrEmpty(argMap.get("assetsDir")))
         {
             throw new RuntimeException("assetsDir is null when assetIndex is not! THIS IS BAD COMMAND LINE ARGUMENTS, fix them");
         }
-        File assets = new File(values.get("assetsDir"));
+        File assets = new File(argMap.get("assetsDir"));
         File objects = new File(assets, "objects");
-        File assetIndex = new File(new File(assets, "indexes"), values.get("assetIndex") + ".json");
+        File assetIndex = new File(new File(assets, "indexes"), argMap.get("assetIndex") + ".json");
         try
         {
             AssetIndex index = loadAssetsIndex(assetIndex);
             if (!index.virtual)
                 return;
 
-            File assetVirtual = new File(new File(assets, "virtual"), values.get("assetIndex"));
-            values.put("assetsDir", assetVirtual.getAbsolutePath());
+            File assetVirtual = new File(new File(assets, "virtual"), argMap.get("assetIndex"));
+            argMap.put("assetsDir", assetVirtual.getAbsolutePath());
 
             GradleStartCommon.LOGGER.info("Setting up virtual assets in: " + assetVirtual.getAbsolutePath());
 
@@ -290,7 +204,7 @@ public class GradleStart
         return a;
     }
 
-    public static class AssetIndex
+    private static class AssetIndex
     {
         public boolean            virtual;
         public Map<String, AssetEntry> objects;
@@ -301,7 +215,7 @@ public class GradleStart
         }
     }
 
-    public static String getDigest(File file)
+    private String getDigest(File file)
     {
         DigestInputStream input = null;
         try

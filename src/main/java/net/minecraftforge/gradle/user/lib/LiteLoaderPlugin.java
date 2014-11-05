@@ -164,8 +164,14 @@ public class LiteLoaderPlugin extends UserLibBasePlugin
     }
 
     @Override
-    protected String getTweaker()
+    protected String getClientTweaker()
     {
         return "com.mumfrey.liteloader.launch.LiteLoaderTweaker";
+    }
+    
+    @Override
+    protected String getServerTweaker()
+    {
+        return ""; // umm...
     }
 }

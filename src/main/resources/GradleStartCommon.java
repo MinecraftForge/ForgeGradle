@@ -3,9 +3,16 @@ import java.io.FileInputStream;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+
+import joptsimple.NonOptionArgumentSpec;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,28 +20,116 @@ import org.apache.logging.log4j.Logger;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-
-public class GradleStartCommon
+public abstract class GradleStartCommon
 {
-    public static Logger LOGGER = LogManager.getLogger("GradleStart");
-    
-    public static void launch(String mainClass, String[] args)
+    protected static Logger LOGGER = LogManager.getLogger("GradleStart");
+
+    private Map<String, String> argMap = Maps.newHashMap(); 
+    private List<String> extras = Lists.newArrayList();
+
+    abstract void setDefaultArguments(Map<String, String> argMap);
+    abstract void preLaunch(Map<String, String> argMap, List<String> extras);
+    abstract String getBounceClass();
+
+    private static String[] mapToArgs(Map<String, String> argMap, List<String> extras)
     {
-        try {
-            // do system prop stuff
-            System.setProperty("fml.ignoreInvalidMinecraftCertificates", "true");
-            searchCoremods();
-            
-            System.gc();
-            Class.forName(mainClass).getDeclaredMethod("main", String[].class).invoke(null, new Object[] {args});
-        }
-        catch (Exception e)
+        ArrayList<String> list = new ArrayList<String>(22);
+
+        for (Map.Entry<String, String> e : argMap.entrySet())
         {
-            Throwables.propagate(e);
+            String val = e.getValue();
+            if (!Strings.isNullOrEmpty(val))
+            {
+                list.add("--" + e.getKey());
+                list.add(val);
+            }
         }
+
+        if (extras != null)
+        {
+            list.addAll(extras);
+        }
+
+        String[] out =  list.toArray(new String[0]);
+        
+        // final logging.
+        StringBuilder b = new StringBuilder();
+        b.append('[');
+        for (int x = 0; x < out.length; x++)
+        {
+            b.append(out[x]).append(", ");
+            if ("--accessToken".equalsIgnoreCase(out[x]))
+            {
+                b.append("{REDACTED}, ");
+                x++;
+            }
+        }
+        b.replace(b.length() - 2, b.length(), "");
+        b.append(']');
+        GradleStartCommon.LOGGER.info("Running with arguments: " + b.toString());
+        
+        return out;
+    }
+    
+    private void parseArgs(String[] args)
+    {
+        final OptionParser parser = new OptionParser();
+        parser.allowsUnrecognizedOptions();
+
+        for (String key : argMap.keySet())
+        {
+            parser.accepts(key).withRequiredArg().ofType(String.class);
+        }
+
+        final NonOptionArgumentSpec<String> nonOption = parser.nonOptions();
+
+        final OptionSet options = parser.parse(args);
+        for (String key : argMap.keySet())
+        {
+            if (options.hasArgument(key))
+            {
+                String value = (String)options.valueOf(key);
+                argMap.put(key, value);
+                if (!"password".equalsIgnoreCase(key))
+                    LOGGER.info(key + ": " + value);
+            }
+        }
+
+        extras = nonOption.values(options);
+        LOGGER.info("Extra: " + extras);
+    }
+    
+    protected void launch(String[] args) throws Throwable
+    {
+        System.out.println(getBounceClass());
+        
+        // set defaults!
+        setDefaultArguments(argMap);
+        
+        // parse stuff
+        parseArgs(args);
+        
+        // now send it back for prelaunch
+        preLaunch(argMap, extras);
+        
+        // some common stuff
+        System.setProperty("fml.ignoreInvalidMinecraftCertificates", "true"); // cant hurt. set it now.
+        searchCoremods();
+        
+        // now the actual launch args.
+        args = mapToArgs(argMap, extras);
+        
+        // clear it out
+        argMap = null;
+        extras = null;
+
+        // launch.
+        System.gc();
+        Class.forName(getBounceClass()).getDeclaredMethod("main", String[].class).invoke(null, new Object[] { args });
     }
     
     // coremod hack
