@@ -13,6 +13,7 @@ import java.util.jar.Manifest;
 import joptsimple.NonOptionArgumentSpec;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
+import net.minecraft.launchwrapper.Launch;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,6 +28,7 @@ import com.google.common.collect.Sets;
 public abstract class GradleStartCommon
 {
     protected static Logger LOGGER = LogManager.getLogger("GradleStart");
+    private static final String NO_CORE_SEARCH = "noCoreSearch";
 
     private Map<String, String> argMap = Maps.newHashMap(); 
     private List<String> extras = Lists.newArrayList();
@@ -34,7 +36,43 @@ public abstract class GradleStartCommon
     abstract void setDefaultArguments(Map<String, String> argMap);
     abstract void preLaunch(Map<String, String> argMap, List<String> extras);
     abstract String getBounceClass();
+    
+    protected void launch(String[] args) throws Throwable
+    {
+        // set defaults!
+        setDefaultArguments(argMap);
+        
+        // parse stuff
+        parseArgs(args);
+        
+        // now send it back for prelaunch
+        preLaunch(argMap, extras);
+        
+        // because its teh ev env.
+        System.setProperty("fml.ignoreInvalidMinecraftCertificates", "true"); // cant hurt. set it now.
+        
+        // coremod searching.
+        if (argMap.get(NO_CORE_SEARCH) == null)
+            searchCoremods();
+        else
+            LOGGER.info("GradleStart coremod searching disabl;ed!");
+        
+        // now the actual launch args.
+        args = mapToArgs(argMap, extras);
+        
+        // clear it out
+        argMap = null;
+        extras = null;
 
+        // launch.
+        System.gc();
+        String bounce = getBounceClass(); // marginally faster. And we need the launch wrapper anyways.
+        if (bounce.endsWith("launchwrapper.Launch"))
+            Launch.main(args);
+        else
+            Class.forName(getBounceClass()).getDeclaredMethod("main", String[].class).invoke(null, new Object[] { args });
+    }
+    
     private static String[] mapToArgs(Map<String, String> argMap, List<String> extras)
     {
         ArrayList<String> list = new ArrayList<String>(22);
@@ -84,6 +122,8 @@ public abstract class GradleStartCommon
         {
             parser.accepts(key).withRequiredArg().ofType(String.class);
         }
+        // accept the noCoreSearch thing
+        parser.accepts(NO_CORE_SEARCH);
 
         final NonOptionArgumentSpec<String> nonOption = parser.nonOptions();
 
@@ -98,38 +138,12 @@ public abstract class GradleStartCommon
                     LOGGER.info(key + ": " + value);
             }
         }
+        
+        if (options.has(NO_CORE_SEARCH))
+            argMap.put(NO_CORE_SEARCH, "");
 
         extras = nonOption.values(options);
         LOGGER.info("Extra: " + extras);
-    }
-    
-    protected void launch(String[] args) throws Throwable
-    {
-        System.out.println(getBounceClass());
-        
-        // set defaults!
-        setDefaultArguments(argMap);
-        
-        // parse stuff
-        parseArgs(args);
-        
-        // now send it back for prelaunch
-        preLaunch(argMap, extras);
-        
-        // some common stuff
-        System.setProperty("fml.ignoreInvalidMinecraftCertificates", "true"); // cant hurt. set it now.
-        searchCoremods();
-        
-        // now the actual launch args.
-        args = mapToArgs(argMap, extras);
-        
-        // clear it out
-        argMap = null;
-        extras = null;
-
-        // launch.
-        System.gc();
-        Class.forName(getBounceClass()).getDeclaredMethod("main", String[].class).invoke(null, new Object[] { args });
     }
     
     // coremod hack
