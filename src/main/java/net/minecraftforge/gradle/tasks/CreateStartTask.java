@@ -65,7 +65,7 @@ public class CreateStartTask extends JavaCompile
     @Input
     private String serverResource = getResource("GradleStartServer.java");
     @Input
-    private String commonResource = getResource("GradleStartCommon.java");
+    private String commonResource = getResource("net/minecraftforge/gradle/GradleStartCommon.java");
 
     @OutputDirectory
     @Cached
@@ -77,7 +77,7 @@ public class CreateStartTask extends JavaCompile
         super();
 
         final File clientJava = new File(getTemporaryDir(), "GradleStart.java");
-        final File serverJava = new File(getTemporaryDir(), "GradleStartServer.java");
+        final File serverJava = new File(getTemporaryDir(), "net/minecraftforge/gradle/GradleStartServer.java");
         final File commonJava = new File(getTemporaryDir(), "GradleStartCommon.java");
 
         // configure compilation
@@ -97,11 +97,20 @@ public class CreateStartTask extends JavaCompile
             {
                 try
                 {
-                    for (File f : getTemporaryDir().listFiles())
+                    for (File f : getProject().fileTree(getTemporaryDir()))
                     {
                         if (f.isFile() && f.getName().endsWith(".class"))
                         {
-                            Files.copy(f, new File(getStartOut(), f.getName()));
+                            if (f.getParentFile().equals(getTemporaryDir()))
+                            {
+                                Files.copy(f, new File(getStartOut(), f.getName()));
+                            }
+                            else
+                            {
+                                File out = new File(getStartOut(), f.getAbsolutePath().substring(getTemporaryDir().getAbsolutePath().length()));
+                                out.getParentFile().mkdirs();
+                                Files.copy(f, out);
+                            }
                         }
                     }
                 }
@@ -110,7 +119,6 @@ public class CreateStartTask extends JavaCompile
                     Throwables.propagate(e);
                 }
             }
-
         });
 
         // do the caching stuff

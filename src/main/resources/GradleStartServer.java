@@ -1,6 +1,8 @@
 import java.util.List;
 import java.util.Map;
 
+import net.minecraftforge.gradle.GradleStartCommon;
+
 public class GradleStartServer extends GradleStartCommon
 {
     public static void main(String[] args) throws Throwable
@@ -9,19 +11,19 @@ public class GradleStartServer extends GradleStartCommon
     }
 
     @Override
-    void setDefaultArguments(Map<String, String> argMap)
+    protected void setDefaultArguments(Map<String, String> argMap)
     {
         argMap.put("tweakClass", "@@SERVERTWEAKER@@");
     }
 
     @Override
-    void preLaunch(Map<String, String> argMap, List<String> extras)
+    protected void preLaunch(Map<String, String> argMap, List<String> extras)
     {
         // umm... nothing?
     }
 
     @Override
-    String getBounceClass()
+    protected String getBounceClass()
     {
         return "@@BOUNCERSERVER@@";
     }

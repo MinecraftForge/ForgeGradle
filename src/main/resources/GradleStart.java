@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.minecraftforge.gradle.GradleStartCommon;
+
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.io.Files;
@@ -44,13 +46,13 @@ public class GradleStart extends GradleStartCommon
     }
     
     @Override
-    String getBounceClass()
+    protected String getBounceClass()
     {
         return "@@BOUNCERCLIENT@@";
     }
     
     @Override
-    void setDefaultArguments(Map<String, String> argMap)
+    protected void setDefaultArguments(Map<String, String> argMap)
     {
         argMap.put("version",        "@@MCVERSION@@");
         argMap.put("tweakClass",     "@@CLIENTTWEAKER@@");
@@ -63,7 +65,7 @@ public class GradleStart extends GradleStartCommon
     }
 
     @Override
-    void preLaunch(Map<String, String> argMap, List<String> extras)
+    protected void preLaunch(Map<String, String> argMap, List<String> extras)
     {
         if (!Strings.isNullOrEmpty(argMap.get("password")))
         {
