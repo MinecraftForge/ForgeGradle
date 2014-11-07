@@ -280,7 +280,7 @@ public abstract class GradleStartCommon
                 
                 Field[] fields = clazz.getDeclaredFields();
                 Field pluginField = fields[1];  // 1
-                Field fileField = fields[4];  // 4
+                Field fileField = fields[3];  // 3
                 Field listField = fields[2];  // 2
                 
                 Field.setAccessible(clazz.getConstructors(), true);
@@ -295,7 +295,7 @@ public abstract class GradleStartCommon
                     if (clazz.isInstance(tweaker))
                     {
                         Object coreMod = pluginField.get(tweaker);
-                        Object oldFile = fileField.get(coreMod);
+                        Object oldFile = fileField.get(tweaker);
                         File newFile = coreMap.get(coreMod.getClass().getCanonicalName());
                         
                         LOGGER.info("Injecting location in coremod {}", coreMod.getClass().getCanonicalName());
