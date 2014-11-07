@@ -42,6 +42,7 @@ public abstract class GradleStartCommon
     protected abstract void setDefaultArguments(Map<String, String> argMap);
     protected abstract void preLaunch(Map<String, String> argMap, List<String> extras);
     protected abstract String getBounceClass();
+    protected abstract String getTweakClass();
     
     protected void launch(String[] args) throws Throwable
     {
@@ -54,7 +55,7 @@ public abstract class GradleStartCommon
         // now send it back for prelaunch
         preLaunch(argMap, extras);
         
-        // because its teh ev env.
+        // because its the dev env.
         System.setProperty("fml.ignoreInvalidMinecraftCertificates", "true"); // cant hurt. set it now.
         
         // coremod searching.
@@ -64,7 +65,7 @@ public abstract class GradleStartCommon
             LOGGER.info("GradleStart coremod searching disabl;ed!");
         
         // now the actual launch args.
-        args = mapToArgs(argMap, extras);
+        args = getArgs();
         
         // clear it out
         argMap = null;
@@ -79,7 +80,7 @@ public abstract class GradleStartCommon
             Class.forName(getBounceClass()).getDeclaredMethod("main", String[].class).invoke(null, new Object[] { args });
     }
     
-    private static String[] mapToArgs(Map<String, String> argMap, List<String> extras)
+    private String[] getArgs()
     {
         ArrayList<String> list = new ArrayList<String>(22);
 
@@ -91,6 +92,13 @@ public abstract class GradleStartCommon
                 list.add("--" + e.getKey());
                 list.add(val);
             }
+        }
+        
+        // grab tweakClass
+        if (!Strings.isNullOrEmpty(getTweakClass()))
+        {
+            list.add("--tweakClass");
+            list.add(getTweakClass());
         }
 
         if (extras != null)
@@ -152,23 +160,43 @@ public abstract class GradleStartCommon
         LOGGER.info("Extra: " + extras);
     }
     
+    /* -----------  REFLECTION HELPER  --------- */
+    
+    private static final String MC_VERSION = "@@MCVERSION@@";
+    private static final String FML_PACK_OLD = "cpw.mods";
+    private static final String FML_PACK_NEW = "net.minecraftforge";
+    @SuppressWarnings("rawtypes")
+    protected static Class getFmlClass(String classname) throws ClassNotFoundException
+    {
+        if (!classname.startsWith("fml")) // dummy check myself
+            throw new IllegalArgumentException("invalid FML classname");
+        
+        if (MC_VERSION.startsWith("1.7"))
+            classname = FML_PACK_OLD + "." + classname;
+        else
+            classname = FML_PACK_NEW + "." + classname;
+        
+        return Class.forName(classname);
+    }
+    
+    /* -----------  COREMOD AND AT HACK  --------- */
+    
     // coremod hack
     private static final String COREMOD_VAR = "fml.coreMods.load";
     private static final String COREMOD_MF  = "FMLCorePlugin";
     // AT hack
-    private static final String AT_LOADER_CLASS    = "cpw.mods.fml.common.asm.transformers.ModAccessTransformer";
-    private static final String AT_LOADER_CLASS_18 = "net.minecraftforge.fml.common.asm.transformers.ModAccessTransformer";
+    private static final String AT_LOADER_CLASS    = "fml.common.asm.transformers.ModAccessTransformer";
     private static final String AT_LOADER_METHOD   = "addJar";
     
     private static final Map<String, File> coreMap = Maps.newHashMap();
 
+    @SuppressWarnings("unchecked")
     private void searchCoremods() throws Exception
     {
         // intialize AT hack Method
         Method atRegistrar = null;
         try{
-            atRegistrar = Class.forName("@@MCVERSION@@".startsWith("1.7") ? AT_LOADER_CLASS : AT_LOADER_CLASS_18)
-                    .getDeclaredMethod(AT_LOADER_METHOD, JarFile.class);
+            atRegistrar = getFmlClass(AT_LOADER_CLASS).getDeclaredMethod(AT_LOADER_METHOD, JarFile.class);
         }
         catch(Throwable t) { }
         
@@ -221,12 +249,14 @@ public abstract class GradleStartCommon
         System.setProperty(COREMOD_VAR, Joiner.on(',').join(coremodsSet));
         
         // ok.. tweaker hack now.
-        if (argMap.get("tweakClass") != null)
+        if (!Strings.isNullOrEmpty(getTweakClass()))
         {
             extras.add("--tweakClass");
             extras.add(GradleStartTweaker.class.getName());
         }
     }
+    
+    /* -----------  CUSTOM TWEAKER FOR COREMOD HACK  --------- */
     
     public static final class GradleStartTweaker implements ITweaker
     {
@@ -240,11 +270,11 @@ public abstract class GradleStartCommon
         {
             try
             {
-                Field coreModList = Class.forName("cpw.mods.fml.relauncher.CoreModManager").getDeclaredField("loadPlugins");
+                Field coreModList = getFmlClass("fml.relauncher.CoreModManager").getDeclaredField("loadPlugins");
                 coreModList.setAccessible(true);
                 
                 // grab constructor.
-                Class<ITweaker> clazz = (Class<ITweaker>) Class.forName("cpw.mods.fml.relauncher.CoreModManager$FMLPluginWrapper");
+                Class<ITweaker> clazz = (Class<ITweaker>) getFmlClass("fml.relauncher.CoreModManager$FMLPluginWrapper");
                 Constructor<ITweaker> construct = (Constructor<ITweaker>) clazz.getConstructors()[0];
                 construct.setAccessible(true);
                 

@@ -9,22 +9,20 @@ public class GradleStartServer extends GradleStartCommon
     {
         (new GradleStartServer()).launch(args);
     }
-
+    
     @Override
-    protected void setDefaultArguments(Map<String, String> argMap)
+    protected String getTweakClass()
     {
-        argMap.put("tweakClass", "@@SERVERTWEAKER@@");
+        return "@@SERVERTWEAKER@@";
     }
-
-    @Override
-    protected void preLaunch(Map<String, String> argMap, List<String> extras)
-    {
-        // umm... nothing?
-    }
-
+    
     @Override
     protected String getBounceClass()
     {
         return "@@BOUNCERSERVER@@";
     }
+
+    @Override protected void preLaunch(Map<String, String> argMap, List<String> extras) { }
+    @Override protected void setDefaultArguments(Map<String, String> argMap) { }
+
 }

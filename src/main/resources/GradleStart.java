@@ -52,10 +52,15 @@ public class GradleStart extends GradleStartCommon
     }
     
     @Override
+    protected String getTweakClass()
+    {
+        return "@@CLIENTTWEAKER@@";
+    }
+    
+    @Override
     protected void setDefaultArguments(Map<String, String> argMap)
     {
         argMap.put("version",        "@@MCVERSION@@");
-        argMap.put("tweakClass",     "@@CLIENTTWEAKER@@");
         argMap.put("assetIndex",     "@@ASSETINDEX@@");
         argMap.put("assetsDir",      "@@ASSETSDIR@@");
         argMap.put("accessToken",    "FML");
