@@ -25,12 +25,20 @@ public class ObtainFernFlowerTask extends CachedTask
     @Input
     private DelayedString mcpUrl;
 
+    @Cached
     @OutputFile
     private DelayedFile ffJar;
 
     @TaskAction
     public void doTask() throws MalformedURLException, IOException
     {
+        if (getProject().getGradle().getStartParameter().isOffline())
+        {
+            getLogger().error("Offline mode! not downloading Fernflower!");
+            this.setDidWork(false);
+            return;
+        }
+        
         File ff = getFfJar();
         String url = getMcpUrl();
 
