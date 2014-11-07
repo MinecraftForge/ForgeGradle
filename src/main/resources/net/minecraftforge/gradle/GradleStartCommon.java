@@ -280,6 +280,7 @@ public abstract class GradleStartCommon
                 
                 Field[] fields = clazz.getDeclaredFields();
                 Field pluginField = fields[1];  // 1
+                Field fileField = fields[4];  // 4
                 Field listField = fields[2];  // 2
                 
                 Field.setAccessible(clazz.getConstructors(), true);
@@ -294,17 +295,18 @@ public abstract class GradleStartCommon
                     if (clazz.isInstance(tweaker))
                     {
                         Object coreMod = pluginField.get(tweaker);
-                        File file = coreMap.get(coreMod.getClass().getCanonicalName());
+                        Object oldFile = fileField.get(coreMod);
+                        File newFile = coreMap.get(coreMod.getClass().getCanonicalName());
                         
                         LOGGER.info("Injecting location in coremod {}", coreMod.getClass().getCanonicalName());
                         
-                        if (file != null)
+                        if (newFile != null && oldFile == null)
                         {
                             // build new tweaker.
                             oldList.set(i, construct.newInstance(new Object[] {
                                     (String)fields[0].get(tweaker), // name
                                     coreMod, // coremod
-                                    file, // location
+                                    newFile, // location
                                     fields[4].getInt(tweaker), // sort index?
                                     ((List<String>)listField.get(tweaker)).toArray(new String[0])
                             }));
