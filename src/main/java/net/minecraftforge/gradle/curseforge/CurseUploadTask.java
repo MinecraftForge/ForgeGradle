@@ -8,21 +8,21 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Set;
 import java.util.TreeSet;
 
 import net.minecraftforge.gradle.StringUtils;
 import net.minecraftforge.gradle.json.JsonFactory;
+import net.minecraftforge.gradle.json.curse.CurseError;
 import net.minecraftforge.gradle.json.curse.CurseMetadata;
 import net.minecraftforge.gradle.json.curse.CurseReply;
 import net.minecraftforge.gradle.json.curse.CurseVersion;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -64,7 +64,6 @@ public class CurseUploadTask extends DefaultTask
 
     private void upload(CurseMetadata meta, String strUrl, File artifact) throws IOException, URISyntaxException
     {
-
         // stolen from http://stackoverflow.com/a/3003402
         HttpClient httpclient = HttpClientBuilder.create().build();
         HttpPost httpPost = new HttpPost(new URI(strUrl));
@@ -84,9 +83,20 @@ public class CurseUploadTask extends DefaultTask
 
         if (response.getStatusLine().getStatusCode() != 200)
         {
-            getLogger().error("Error code: {}   {}", response.getStatusLine().getStatusCode(), response.getStatusLine().getReasonPhrase());
-            getLogger().error("Maybe your API key or projectID is wrong!");
-            return;
+            if (response.getHeaders("content-type")[0].getValue().contains("json"))
+            {
+                InputStreamReader stream = new InputStreamReader(response.getEntity().getContent());
+                CurseError curseError = JsonFactory.GSON.fromJson(stream, CurseError.class);
+                getLogger().error("Error code: {}   {}", curseError.errorCode, curseError.errorMessage);
+                stream.close();
+                return;
+            }
+            else
+            {
+                getLogger().error("Error code: {}   {}", response.getStatusLine().getStatusCode(), response.getStatusLine().getReasonPhrase());
+                getLogger().error("Maybe your API key or projectID is wrong!");
+                return;
+            }
         }
 
         InputStreamReader stream = new InputStreamReader(response.getEntity().getContent());
@@ -96,7 +106,7 @@ public class CurseUploadTask extends DefaultTask
         getLogger().lifecycle("File uploaded to CurseForge succcesfully with ID {}", fileID);
     }
 
-    private int[] resolveGameVersion() throws IOException
+    private int[] resolveGameVersion() throws IOException, URISyntaxException
     {
         String json = getWithEtag(VERSION_URL, VERSION_CACHE);
         CurseVersion[] versions = JsonFactory.GSON.fromJson(json, CurseVersion[].class);
@@ -133,9 +143,9 @@ public class CurseUploadTask extends DefaultTask
 
     // getters setters and util
 
-    private String getWithEtag(String strUrl, File cache) throws IOException
+    private String getWithEtag(String strUrl, File cache) throws IOException, URISyntaxException
     {
-        URL url = new URL(strUrl);
+        //URL url = new URL(strUrl);
         File etagFile = getProject().file(cache.getPath() + ".etag");
 
         String etag;
@@ -147,52 +157,63 @@ public class CurseUploadTask extends DefaultTask
         {
             etag = "";
         }
+        
+        HttpClient httpclient = HttpClientBuilder.create().build();
+        HttpGet httpGet = new HttpGet(new URI(strUrl));
 
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setInstanceFollowRedirects(true);
-        con.addRequestProperty("X-Api-Token", getApiKey());
-        con.setRequestProperty("If-None-Match", etag);
+        httpGet.setHeader("X-Api-Token", getApiKey());
+        httpGet.setHeader("If-None-Match", etag);
+//        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+//        con.setInstanceFollowRedirects(true);
+//        con.addRequestProperty("X-Api-Token", getApiKey());
+//        con.setRequestProperty("If-None-Match", etag);
 
-        try
-        {
-            con.connect();
-        }
-        catch (Throwable e)
-        {
-            // just in case people dont have internet at the moment.
-            throw new RuntimeException(e.getLocalizedMessage());
-        }
+        HttpResponse response = httpclient.execute(httpGet);
+        
+//        try
+//        {
+//            con.connect();
+//        }
+//        catch (Throwable e)
+//        {
+//            // just in case people dont have internet at the moment.
+//            throw new RuntimeException(e.getLocalizedMessage());
+//        }
 
         String error = null;
+        String out = null;
 
-        byte[] stuff = new byte[0];
-
-        switch (con.getResponseCode())
-            {
-                case 404: // file not found.... duh...
-                    error = "" + url + "  404'ed!";
-                    break;
-                case 304: // content is the same.
-                    break;
-                case 200: // worked
-                    InputStream stream = con.getInputStream();
-                    stuff = ByteStreams.toByteArray(stream);
-                    Files.write(stuff, cache);
-                    stream.close();
-                    break;
-                default: // another code?? uh.. 
-                    error = "Unexpected reponse " + con.getResponseCode() + " from " + url;
-                    break;
-            }
-
-        con.disconnect();
+        int statusCode = response.getStatusLine().getStatusCode();
+        
+        if (statusCode == 304) // cached
+            out = Files.toString(cache, Charsets.UTF_8);
+        else if (statusCode == 200)
+        {
+            InputStream stream = response.getEntity().getContent();
+            byte[] data = ByteStreams.toByteArray(stream);
+            Files.write(data, cache);
+            stream.close();
+            out = new String(data, Charsets.UTF_8);
+        }
+        else if (response.getEntity().getContentType().getValue().contains("json"))
+        {
+            InputStreamReader stream = new InputStreamReader(response.getEntity().getContent());
+            CurseError cError = JsonFactory.GSON.fromJson(stream, CurseError.class);
+            stream.close();
+            
+            error = "Curse Error " + cError.errorCode + ": " + cError.errorMessage;
+        }
+        else
+        {
+            error = "Error " + statusCode + ": " + response.getStatusLine().getReasonPhrase(); 
+        }
 
         if (error != null)
         {
             throw new RuntimeException(error);
         }
 
-        return new String(stuff, Charsets.UTF_8);
+        return out;
     }
 
     @SuppressWarnings("rawtypes")
