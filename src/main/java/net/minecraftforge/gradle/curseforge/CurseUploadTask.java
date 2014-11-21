@@ -87,23 +87,22 @@ public class CurseUploadTask extends DefaultTask
             {
                 InputStreamReader stream = new InputStreamReader(response.getEntity().getContent());
                 CurseError curseError = JsonFactory.GSON.fromJson(stream, CurseError.class);
-                getLogger().error("Error code: {}   {}", curseError.errorCode, curseError.errorMessage);
                 stream.close();
-                return;
+                throw new RuntimeException("Error code: " + curseError.errorCode + " " + curseError.errorMessage);
             }
             else
             {
-                getLogger().error("Error code: {}   {}", response.getStatusLine().getStatusCode(), response.getStatusLine().getReasonPhrase());
-                getLogger().error("Maybe your API key or projectID is wrong!");
-                return;
+                throw new RuntimeException("Error code: " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase());
             }
         }
-
-        InputStreamReader stream = new InputStreamReader(response.getEntity().getContent());
-        int fileID = JsonFactory.GSON.fromJson(stream, CurseReply.class).id;
-        this.fileID = fileID;
-        stream.close();
-        getLogger().lifecycle("File uploaded to CurseForge succcesfully with ID {}", fileID);
+        else
+        {
+            InputStreamReader stream = new InputStreamReader(response.getEntity().getContent());
+            int fileID = JsonFactory.GSON.fromJson(stream, CurseReply.class).id;
+            this.fileID = fileID;
+            stream.close();
+            getLogger().lifecycle("File uploaded to CurseForge succcesfully with ID {}", fileID);
+        }
     }
 
     private int[] resolveGameVersion() throws IOException, URISyntaxException
