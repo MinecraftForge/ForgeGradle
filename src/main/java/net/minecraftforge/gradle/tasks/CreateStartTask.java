@@ -174,7 +174,8 @@ public class CreateStartTask extends JavaCompile
         resource = resource.replace("@@BOUNCERSERVER@@", getServerBounce());
 
         // because there are different versions of authlib
-        //resource = resource.replace("@@USERTYPE@@", "1.7.2".equals(getVersion()) ? "" : "auth.getUserType().getName();");
+        if (!"1.7.2".equals(getVersion()))
+            resource = resource.replace("//@@USERTYPE@@", "argMap.put(\"userType\", auth.getUserType().getName());");
 
         out.getParentFile().mkdirs();
         Files.write(resource, out, Charsets.UTF_8);
