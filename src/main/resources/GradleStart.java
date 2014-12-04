@@ -22,6 +22,7 @@ import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.authlib.Agent;
 import com.mojang.authlib.exceptions.AuthenticationException;
+import com.mojang.authlib.properties.PropertyMap;
 import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
 import com.mojang.authlib.yggdrasil.YggdrasilUserAuthentication;
 
@@ -128,7 +129,7 @@ public class GradleStart extends GradleStartCommon
         argMap.put("uuid", auth.getSelectedProfile().getId().toString().replace("-", ""));
         argMap.put("username", auth.getSelectedProfile().getName());
         //@@USERTYPE@@
-        argMap.put("userProperties", auth.getUserProperties().toString());
+        argMap.put("userProperties", new GsonBuilder().registerTypeAdapter(PropertyMap.class, new PropertyMap.Serializer()).create().toJson(auth.getUserProperties()));
     }
     
 
