@@ -1,23 +1,10 @@
 package net.minecraftforge.gradle.user;
 
-import static net.minecraftforge.gradle.common.Constants.FERNFLOWER;
-import static net.minecraftforge.gradle.common.Constants.JAR_CLIENT_FRESH;
-import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
-import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_FRESH;
-import static net.minecraftforge.gradle.user.UserConstants.*;
+import com.google.common.base.Joiner;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.io.Files;
 import groovy.lang.Closure;
-
-import java.io.File;
-import java.io.IOException;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-
 import joptsimple.internal.Strings;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
@@ -28,12 +15,7 @@ import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.user.SourceCopyTask;
 import net.minecraftforge.gradle.tasks.user.reobf.ArtifactSpec;
 import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
-
-import org.gradle.api.Action;
-import org.gradle.api.DefaultTask;
-import org.gradle.api.Project;
-import org.gradle.api.Task;
-import org.gradle.api.XmlProvider;
+import org.gradle.api.*;
 import org.gradle.api.artifacts.Configuration.State;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.execution.TaskExecutionGraph;
@@ -42,11 +24,7 @@ import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.specs.Spec;
-import org.gradle.api.tasks.GroovySourceSet;
-import org.gradle.api.tasks.JavaExec;
-import org.gradle.api.tasks.ScalaSourceSet;
-import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.Sync;
+import org.gradle.api.tasks.*;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.api.tasks.compile.GroovyCompile;
@@ -58,10 +36,18 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.io.Files;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.File;
+import java.io.IOException;
+
+import static net.minecraftforge.gradle.common.Constants.*;
+import static net.minecraftforge.gradle.user.UserConstants.*;
 
 public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin<T>
 {
@@ -1150,16 +1136,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 return super.resolveDelayed();
             }
         };
-    }
-
-    /**
-     * This extension object will have the name "minecraft"
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    protected Class<T> getExtensionClass()
-    {
-        return (Class<T>) UserExtension.class;
     }
 
     private void addGitIgnore()
