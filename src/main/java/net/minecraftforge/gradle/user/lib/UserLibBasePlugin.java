@@ -1,20 +1,14 @@
 package net.minecraftforge.gradle.user.lib;
 
 import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.tasks.CreateStartTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
-import net.minecraftforge.gradle.tasks.user.reobf.ArtifactSpec;
 import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
 import net.minecraftforge.gradle.user.UserBasePlugin;
 import net.minecraftforge.gradle.user.UserConstants;
 import net.minecraftforge.gradle.user.UserExtension;
 
-import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.plugins.JavaPluginConvention;
-import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.bundling.Jar;
 
 public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
 {
@@ -27,93 +21,11 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
         Configuration config = project.getConfigurations().create(actualApiName());
         project.getConfigurations().getByName(UserConstants.CONFIG_MC).extendsFrom(config);
         
-        // for special packaging.
-        // make jar end with .litemod for litemod, and who knows what else for other things.
-        ((Jar) project.getTasks().getByName("jar")).setExtension(getJarExtension());
-        
         // to set the output not notch names
         ((ReobfTask) project.getTasks().getByName("reobf")).setSrg(delayedFile(UserConstants.REOBF_NOTCH_SRG));
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    @Override
-    public void applyOverlayPlugin()
-    {
-        // add in extension
-        project.getExtensions().create(actualApiName(), getExtensionClass(), this);
-        
-        // ensure that this lib goes everywhere MC goes. its a required lib after all.
-        Configuration config = project.getConfigurations().create(actualApiName());
-        project.getConfigurations().getByName(UserConstants.CONFIG_MC).extendsFrom(config);
-
-        // override run configs if needed
-        if (shouldOverrideRunConfigs())
-        {
-            overrideRunConfigs();
-        }
-
-        configurePackaging();
-
-        // ensure we get basic things from the other extension
-        project.afterEvaluate(new Action() {
-
-            @Override
-            public void execute(Object arg0)
-            {
-                getOverlayExtension().copyFrom(otherPlugin.getExtension());
-            }
-
-        });
-    }
-
-    @SuppressWarnings("rawtypes")
-    protected void configurePackaging()
-    {
-        String cappedApiName = Character.toUpperCase(actualApiName().charAt(0)) + actualApiName().substring(1);
-        JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
-
-        // create apiJar task
-        Jar jarTask = makeTask("jar" + cappedApiName, Jar.class);
-        jarTask.from(javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput());
-        jarTask.setClassifier(actualApiName());
-        jarTask.setExtension(getJarExtension());
-
-        // configure otherPlugin task to have a classifier
-        ((Jar) project.getTasks().getByName("jar")).setClassifier(((UserBasePlugin) otherPlugin).getApiName());
-
-        //  configure reobf for litemod
-        ((ReobfTask) project.getTasks().getByName("reobf")).reobf(jarTask, new Action<ArtifactSpec>()
-        {
-            @Override
-            public void execute(ArtifactSpec spec)
-            {
-                spec.setSrgMcp();
-
-                JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
-                spec.setClasspath(javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getCompileClasspath());
-            }
-
-        });
-
-        project.getArtifacts().add("archives", jarTask);
-    }
-
-    @Override
-    public final boolean canOverlayPlugin()
-    {
-        return true;
-    }
-
-    public abstract boolean shouldOverrideRunConfigs();
-
     abstract String actualApiName();
-
-    private void overrideRunConfigs()
-    {
-        CreateStartTask starter = (CreateStartTask) project.getTasks().getByName("makeStart");
-        starter.setClientBounce(delayedString(getClientRunClass()));
-        starter.setServerBounce(delayedString(getServerRunClass()));
-    }
 
     @Override
     protected String getStartDir()
@@ -210,11 +122,6 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
     protected final void configureDeobfuscation(ProcessJarTask task)
     {
         // no access transformers...
-    }
-    
-    protected String getJarExtension()
-    {
-        return "jar";
     }
 
     @Override

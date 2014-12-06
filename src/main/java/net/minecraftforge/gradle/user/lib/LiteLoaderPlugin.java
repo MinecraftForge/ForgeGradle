@@ -9,29 +9,101 @@ import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.json.LiteLoaderJson;
 import net.minecraftforge.gradle.json.LiteLoaderJson.Artifact;
 import net.minecraftforge.gradle.json.LiteLoaderJson.VersionObject;
+import net.minecraftforge.gradle.tasks.CreateStartTask;
 import net.minecraftforge.gradle.tasks.abstractutil.EtagDownloadTask;
+import net.minecraftforge.gradle.tasks.user.reobf.ArtifactSpec;
+import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
+import net.minecraftforge.gradle.user.UserBasePlugin;
+import net.minecraftforge.gradle.user.UserConstants;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.bundling.Jar;
 
 import com.google.common.base.Throwables;
 
 public class LiteLoaderPlugin extends UserLibBasePlugin
 {
     private Artifact llArtifact;
+    
+    private static final String EXTENSION = "litemod";
 
     @Override
     public void applyPlugin()
     {
         super.applyPlugin();
         commonApply();
+        
+        // change main output to litemod
+        ((Jar) project.getTasks().getByName("jar")).setExtension(EXTENSION);
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public void applyOverlayPlugin()
     {
-        super.applyOverlayPlugin();
+        // add in extension
+        project.getExtensions().create(actualApiName(), getExtensionClass(), this);
+        
+        // ensure that this lib goes everywhere MC goes. its a required lib after all.
+        Configuration config = project.getConfigurations().create(actualApiName());
+        project.getConfigurations().getByName(UserConstants.CONFIG_MC).extendsFrom(config);
+
+        // override run configs
+        CreateStartTask starter = (CreateStartTask) project.getTasks().getByName("makeStart");
+        starter.setClientBounce(delayedString(getClientRunClass()));
+        starter.setServerBounce(delayedString(getServerRunClass()));
+
+        // packaging
+        configurePackaging();
+
+        // ensure we get basic things from the other extension
+        project.afterEvaluate(new Action() {
+
+            @Override
+            public void execute(Object arg0)
+            {
+                getOverlayExtension().copyFrom(otherPlugin.getExtension());
+            }
+
+        });
+        
         commonApply();
+    }
+    
+    @SuppressWarnings("rawtypes")
+    protected void configurePackaging()
+    {
+        String cappedApiName = Character.toUpperCase(actualApiName().charAt(0)) + actualApiName().substring(1);
+        JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+
+        // create apiJar task
+        Jar jarTask = makeTask("jar" + cappedApiName, Jar.class);
+        jarTask.from(javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput());
+        jarTask.setClassifier(actualApiName());
+        jarTask.setExtension(EXTENSION);
+
+        // configure otherPlugin task to have a classifier
+        ((Jar) project.getTasks().getByName("jar")).setClassifier(((UserBasePlugin) otherPlugin).getApiName());
+
+        //  configure reobf for litemod
+        ((ReobfTask) project.getTasks().getByName("reobf")).reobf(jarTask, new Action<ArtifactSpec>()
+        {
+            @Override
+            public void execute(ArtifactSpec spec)
+            {
+                spec.setSrgMcp();
+
+                JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+                spec.setClasspath(javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getCompileClasspath());
+            }
+
+        });
+
+        project.getArtifacts().add("archives", jarTask);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -150,15 +222,9 @@ public class LiteLoaderPlugin extends UserLibBasePlugin
     {
         return "liteloader";
     }
-
+    
     @Override
-    protected String getJarExtension()
-    {
-        return "litemod";
-    }
-
-    @Override
-    public boolean shouldOverrideRunConfigs()
+    public final boolean canOverlayPlugin()
     {
         return true;
     }
