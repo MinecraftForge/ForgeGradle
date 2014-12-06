@@ -20,6 +20,7 @@ import net.minecraftforge.gradle.json.curse.CurseMetadata;
 import net.minecraftforge.gradle.json.curse.CurseReply;
 import net.minecraftforge.gradle.json.curse.CurseVersion;
 
+import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -83,7 +84,7 @@ public class CurseUploadTask extends DefaultTask
 
         if (response.getStatusLine().getStatusCode() != 200)
         {
-            if (response.getHeaders("content-type")[0].getValue().contains("json"))
+            if (response.getFirstHeader("content-type").getValue().contains("json"))
             {
                 InputStreamReader stream = new InputStreamReader(response.getEntity().getContent());
                 CurseError curseError = JsonFactory.GSON.fromJson(stream, CurseError.class);
@@ -185,7 +186,9 @@ public class CurseUploadTask extends DefaultTask
         int statusCode = response.getStatusLine().getStatusCode();
         
         if (statusCode == 304) // cached
+        {
             out = Files.toString(cache, Charsets.UTF_8);
+        }
         else if (statusCode == 200)
         {
             InputStream stream = response.getEntity().getContent();
@@ -193,6 +196,12 @@ public class CurseUploadTask extends DefaultTask
             Files.write(data, cache);
             stream.close();
             out = new String(data, Charsets.UTF_8);
+            
+            Header etagHeader = response.getFirstHeader("ETag");
+            if (etagHeader != null)
+            {
+                Files.write(etagHeader.getValue(), etagFile, Charsets.UTF_8);
+            }
         }
         else if (response.getEntity().getContentType().getValue().contains("json"))
         {

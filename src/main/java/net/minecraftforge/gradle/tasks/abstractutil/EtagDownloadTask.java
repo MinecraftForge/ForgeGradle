@@ -13,6 +13,7 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
@@ -59,9 +60,19 @@ public class EtagDownloadTask extends DefaultTask
                         this.setDidWork(false);
                         break;
                     case 200: // worked
+                        
+                        // write file
                         InputStream stream = con.getInputStream();
                         Files.write(ByteStreams.toByteArray(stream), outFile);
                         stream.close();
+                        
+                        // write etag
+                        etag = con.getHeaderField("ETag");
+                        if (!Strings.isNullOrEmpty(etag))
+                        {
+                            Files.write(etag, etagFile, Charsets.UTF_8);
+                        }
+                        
                         break;
                     default: // another code?? uh.. 
                         error("Unexpected reponse " + con.getResponseCode() + " from " + url);
