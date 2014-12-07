@@ -19,7 +19,7 @@ public class UserPatchExtension extends UserExtension
     // groups:  mcVersion  forgeVersion
     //private static final Pattern VERSION_CHECK = Pattern.compile("(?:[\\w\\d.-]+):(?:[\\w\\d-]+):([\\d.]+)-([\\d.]+)-(?:[\\w\\d.]+)");
     private static final String JUST_MC = "(\\d+\\.\\d+(?:\\.\\d+)?[_pre\\d]*)";
-    private static final String JUST_API = "((?:\\d+\\.){3}(\\d+))(-(?:[\\w\\.]+)?)";
+    private static final String JUST_API = "((?:\\d+\\.){3}(\\d+))((?:-[\\w\\.]+)?)";
     private static final Pattern API = Pattern.compile(JUST_API);
     private static final Pattern STANDARD = Pattern.compile(JUST_MC+"-"+JUST_API);
     
@@ -110,21 +110,22 @@ public class UserPatchExtension extends UserExtension
             else
                 branchMatches = branch.substring(1).equals(build.branch);
             
+            String outBranch = build.branch;
+            if (outBranch == null)
+                outBranch = "";
+            else
+                outBranch = "-" + build.branch;
+            
+            
             if (!build.version.equals(forgeVersion) || !branchMatches)
             {
-                String outBranch = build.branch;
-                if (outBranch == null)
-                    outBranch = "";
-                else
-                    outBranch = "-" + build.branch;
-                
                 throw new RuntimeException(str+" is an invalid version! did you mean '"+build.version+outBranch+"' ?");
             }
             
             version = build.mcversion.replace("_", "-");
             apiVersion = version + "-" + build.version;
             if (!Strings.isNullOrEmpty(build.branch) && !"null".equals(build.branch))
-                apiVersion += "-" + build.branch;
+                apiVersion += outBranch;
             
             return;
         }
@@ -147,21 +148,21 @@ public class UserPatchExtension extends UserExtension
             
             boolean mcMatches = build.mcversion.equals(mcversion);
             
+            String outBranch = build.branch;
+            if (outBranch == null)
+                outBranch = "";
+            else
+                outBranch = "-" + build.branch;
+            
             if (!build.version.equals(forgeVersion) || !branchMatches || !mcMatches)
             {
-                String outBranch = build.branch;
-                if (outBranch == null)
-                    outBranch = "";
-                else
-                    outBranch = "-" + build.branch;
-                
                 throw new RuntimeException(str+" is an invalid version! did you mean '"+build.mcversion+"-"+build.version+outBranch+"' ?");
             }
             
             version = build.mcversion.replace("_", "-");
             apiVersion = version + "-" + build.version;
             if (!Strings.isNullOrEmpty(build.branch) && !"null".equals(build.branch))
-                apiVersion += "-" + build.branch;
+                apiVersion += outBranch;
             
             return;
         }
