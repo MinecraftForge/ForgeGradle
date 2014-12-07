@@ -30,10 +30,6 @@ repositories {
         name = "mojang"
         url = "https://libraries.minecraft.net/"
     }
-    flatDir {
-        name "fileRepo"
-        dirs "repo"
-    }
 }
 
 jar {
@@ -54,13 +50,11 @@ dependencies {
     // moved to the beginning to be the overrider
     compile 'org.ow2.asm:asm-debug-all:4.1' // Debug version, so we can have generics!
 
-    compile 'net.sourceforge.argo:argo:3.4' // json stuff? perhaps replace with json slurper and stuff?
     compile 'net.sf.opencsv:opencsv:2.3' // reading CSVs.. also used by SpecialSource
     compile 'com.cloudbees:diff4j:1.1' // for difing and patching
     compile 'com.github.abrarsyed.jastyle:jAstyle:1.2' // formatting
     compile 'net.sf.trove4j:trove4j:2.1.0' // because its awesome.
     
-
     compile 'com.github.jponge:lzma-java:1.3' // replaces the LZMA binary
     compile 'com.nothome:javaxdelta:2.0.1' // GDIFF implementation for BinPatches
     compile 'com.google.code.gson:gson:2.2.4' // Used instead of Argo for buuilding changelog.
@@ -68,7 +62,7 @@ dependencies {
     
     compile 'net.md-5:SpecialSource:1.7-SNAPSHOT' // deobf and reobs
     
-    // beause curse
+    // because curse
     compile 'org.apache.httpcomponents:httpclient:4.3.3'
     compile 'org.apache.httpcomponents:httpmime:4.3.3'
     

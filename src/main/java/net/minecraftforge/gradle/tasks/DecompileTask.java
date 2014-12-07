@@ -44,8 +44,6 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.process.JavaExecSpec;
 
-import argo.saj.InvalidSyntaxException;
-
 import com.github.abrarsyed.jastyle.ASFormatter;
 import com.github.abrarsyed.jastyle.FileWildcardFilter;
 import com.github.abrarsyed.jastyle.OptParser;
@@ -283,7 +281,7 @@ public class DecompileTask extends CachedTask
         return patch;
     }
 
-    private void applyMcpCleanup(File conf) throws IOException, InvalidSyntaxException
+    private void applyMcpCleanup(File conf) throws IOException
     {
         ASFormatter formatter = new ASFormatter();
         OptParser parser = new OptParser(formatter);

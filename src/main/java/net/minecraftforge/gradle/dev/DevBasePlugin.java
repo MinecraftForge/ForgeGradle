@@ -20,10 +20,10 @@ import java.util.zip.ZipOutputStream;
 
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.json.version.Library;
-import net.minecraftforge.gradle.json.version.OS;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.json.JsonFactory;
+import net.minecraftforge.gradle.json.version.Library;
+import net.minecraftforge.gradle.json.version.OS;
 import net.minecraftforge.gradle.tasks.CopyAssetsTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
@@ -43,13 +43,14 @@ import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.process.ExecSpec;
 
-import argo.jdom.JsonNode;
-
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public abstract class DevBasePlugin extends BasePlugin<DevExtension>
 {
@@ -354,15 +355,17 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
     {
         try
         {
-            JsonNode node = Constants.PARSER.parse(Files.newReader(json, Charset.defaultCharset()));
+            JsonObject node = new JsonParser().parse(Files.toString(json, Charset.defaultCharset())).getAsJsonObject();
 
             StringBuilder buf = new StringBuilder();
 
-            for (JsonNode lib : node.getArrayNode("versionInfo", "libraries"))
+            for (JsonElement libElement : node.get("versionInfo").getAsJsonObject().get("libraries").getAsJsonArray())
             {
-                if (lib.isNode("serverreq") && lib.getBooleanValue("serverreq"))
+                JsonObject lib = libElement.getAsJsonObject();
+                
+                if (lib.has("serverreq") && lib.get("serverreq").getAsBoolean())
                 {
-                    String[] pts = lib.getStringValue("name").split(":");
+                    String[] pts = lib.get("name").getAsString().split(":");
                     buf.append(String.format("libraries/%s/%s/%s/%s-%s.jar ", pts[0].replace('.', '/'), pts[1], pts[2], pts[1], pts[2]));
                 }
             }

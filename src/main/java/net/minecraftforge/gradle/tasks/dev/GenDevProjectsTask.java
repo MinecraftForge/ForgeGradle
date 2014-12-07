@@ -1,21 +1,7 @@
 package net.minecraftforge.gradle.tasks.dev;
 
-import argo.jdom.JsonNode;
-import argo.saj.InvalidSyntaxException;
-
-import com.google.common.io.Files;
-
-import groovy.lang.Closure;
-import net.minecraftforge.gradle.JsonUtil;
-import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.delayed.DelayedString;
 import static net.minecraftforge.gradle.common.Constants.NEWLINE;
-
-import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.Optional;
-import org.gradle.api.tasks.TaskAction;
+import groovy.lang.Closure;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +9,20 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+
+import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.delayed.DelayedString;
+import net.minecraftforge.gradle.json.JsonFactory;
+import net.minecraftforge.gradle.json.version.Library;
+import net.minecraftforge.gradle.json.version.Version;
+
+import org.gradle.api.DefaultTask;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.TaskAction;
+
+import com.google.common.io.Files;
 
 public class GenDevProjectsTask extends DefaultTask
 {
@@ -48,25 +48,25 @@ public class GenDevProjectsTask extends DefaultTask
     }
 
     @TaskAction
-    public void doTask() throws IOException, InvalidSyntaxException
+    public void doTask() throws IOException
     {
         parseJson();
         writeFile();
     }
 
-    private void parseJson() throws IOException, InvalidSyntaxException
+    private void parseJson() throws IOException
     {
-        JsonNode node = Constants.PARSER.parse(Files.newReader(getJson(), Charset.defaultCharset()));
+        Version version = JsonFactory.loadVersion(getJson(), getJson().getParentFile());
 
-        for (JsonNode lib : node.getArrayNode("libraries"))
+        for (Library lib : version.getLibraries())
         {
-            if (lib.getStringValue("name").contains("fixed") || lib.isNode("natives") || lib.isNode("extract"))
+            if (lib.name.contains("fixed") || lib.natives != null || lib.extract != null)
             {
                 continue;
             }
-            else if (!lib.isNode("rules") || JsonUtil.ruleMatches(lib.getArrayNode("rules")))
+            else
             {
-                deps.add(lib.getStringValue("name"));
+                deps.add(lib.getArtifactName());
             }
         }
     }

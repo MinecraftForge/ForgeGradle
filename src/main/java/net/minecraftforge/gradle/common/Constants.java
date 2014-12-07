@@ -28,8 +28,6 @@ import org.gradle.api.logging.Logger;
 import org.gradle.internal.io.TextStream;
 import org.gradle.util.LineBufferingOutputStream;
 
-import argo.jdom.JdomParser;
-
 import com.google.common.base.Joiner;
 import com.google.common.io.ByteStreams;
 
@@ -53,9 +51,6 @@ public class Constants
     // extension nam
     public static final String EXT_NAME_MC      = "minecraft";
     public static final String EXT_NAME_JENKINS = "jenkins";
-
-    // json parser
-    public static final JdomParser PARSER = new JdomParser();
 
     @SuppressWarnings("serial")
     public static final Closure<Boolean> CALL_FALSE = new Closure<Boolean>(null){ public Boolean call(Object o){ return false; }};

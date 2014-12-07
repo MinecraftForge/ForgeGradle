@@ -1,26 +1,26 @@
 [
-   [
-      {
+   {
+      "functions": {
          "GL11":[
             "glClear"
          ]
       },
-      {
+      "constants": {
          "GL11":{
             "256":"GL_DEPTH_BUFFER_BIT",
             "16640":"GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT"
          }
       }
-   ],
-   [
-      {
+   },
+   {
+      "functions": {
          "GL11":[
             "glBegin",
             "glDrawArrays",
             "glDrawElements"
          ]
       },
-      {
+      "constants": {
          "GL11":{
             "1":"GL_LINES",
             "2":"GL_LINE_LOOP",
@@ -36,14 +36,14 @@
             "5125":"GL_UNSIGNED_INT"
          }
       }
-   ],
-   [
-      {
+   },
+   {
+      "functions": {
          "GL11":[
             "glAccum"
          ]
       },
-      {
+      "constants": {
          "GL11":{
             "256":"GL_ACCUM",
             "257":"GL_LOAD",
@@ -52,14 +52,14 @@
             "260":"GL_ADD"
          }
       }
-   ],
-   [
-      {
+   },
+   {
+      "functions": {
          "GL11":[
             "glBlendFunc"
          ]
       },
-      {
+      "constants": {
          "GL11":{
             "0":"GL_ZERO",
             "1":"GL_ONE",
@@ -78,9 +78,9 @@
             "32772":"GL_ONE_MINUS_CONSTANT_ALPHA"
          }
       }
-   ],
-   [
-      {
+   },
+   {
+      "functions": {
          "GL11":[
             "glAlphaFunc",
             "glBindTexture",
@@ -296,7 +296,7 @@
             "glUnmapBufferARB"
          ]
       },
-      {
+      "constants": {
          "GL11":{
             "260":"GL_ADD",
             "512":"GL_NEVER",
@@ -1214,9 +1214,9 @@
             "35050":"GL_DYNAMIC_COPY_ARB"
          }
       }
-   ],
-   [
-      {
+   },
+   {
+      "functions": {
          "ARBShaderObjects":[
             "glGetObjectParameterARB",
             "glGetObjectParameterfARB",
@@ -1224,7 +1224,7 @@
             "glCreateShaderObjectARB"
          ]
       },
-      {
+      "constants": {
          "ARBShaderObjects":{
             "35662":"GL_OBJECT_TYPE_ARB",
             "35663":"GL_OBJECT_SUBTYPE_ARB",
@@ -1245,5 +1245,5 @@
             "35633":"GL_VERTEX_SHADER_ARB"
          }
       }
-   ]
+   }
 ]
