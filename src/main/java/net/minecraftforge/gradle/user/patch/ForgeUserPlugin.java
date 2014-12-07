@@ -1,6 +1,7 @@
 package net.minecraftforge.gradle.user.patch;
 
 import static net.minecraftforge.gradle.user.patch.UserPatchConstants.*;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 
@@ -37,5 +38,12 @@ public class ForgeUserPlugin extends UserPatchBasePlugin
     {
         if (buildNumber < 1048)
             throw new IllegalArgumentException("ForgeGradle 1.2 only works for Forge versions 10.12.0.1048+");
+    }
+    
+    @Override
+    protected String getVersionsJsonUrl()
+    {
+        // TODO Auto-generated method stub
+        return Constants.FORGE_MAVEN + "/net/minecraftforge/forge/json";
     }
 }

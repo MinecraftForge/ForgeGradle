@@ -1,6 +1,7 @@
 package net.minecraftforge.gradle.user.patch;
 
 import static net.minecraftforge.gradle.user.patch.UserPatchConstants.*;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 
@@ -55,5 +56,12 @@ public class FmlUserPlugin extends UserPatchBasePlugin
         pattern = pattern.replace("{API_GROUP}", getMcVersion(exten).startsWith("1.8") ? "net.minecraftforge" : "cpw.mods");
         
         return pattern;
+    }
+
+    @Override
+    protected String getVersionsJsonUrl()
+    {
+        // TODO Auto-generated method stub
+        return Constants.FORGE_MAVEN + "/net/minecraftforge/fml/json";
     }
 }

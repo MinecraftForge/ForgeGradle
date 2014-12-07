@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import net.minecraftforge.gradle.json.LiteLoaderJson.VersionObject;
+import net.minecraftforge.gradle.json.forgeversion.ForgeArtifact;
+import net.minecraftforge.gradle.json.forgeversion.ForgeArtifactAdapter;
 import net.minecraftforge.gradle.json.version.AssetIndex;
 import net.minecraftforge.gradle.json.version.Version;
 
@@ -32,6 +34,7 @@ public class JsonFactory
         builder.registerTypeAdapter(Date.class, new DateAdapter());
         builder.registerTypeAdapter(File.class, new FileAdapter());
         builder.registerTypeAdapter(VersionObject.class, new LiteLoaderJson.VersionAdapter());
+        builder.registerTypeAdapter(ForgeArtifact.class, new ForgeArtifactAdapter());
         builder.enableComplexMapKeySerialization();
         builder.setPrettyPrinting();
         GSON = builder.create();

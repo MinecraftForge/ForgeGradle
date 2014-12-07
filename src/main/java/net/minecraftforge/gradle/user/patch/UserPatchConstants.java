@@ -2,7 +2,6 @@ package net.minecraftforge.gradle.user.patch;
 
 public class UserPatchConstants
 {
-
     static final String SRC_DIR            = "{USER_DEV}/src/main/java";
     static final String RES_DIR            = "{USER_DEV}/src/main/resources";
     static final String FML_AT             = RES_DIR + "/fml_at.cfg";

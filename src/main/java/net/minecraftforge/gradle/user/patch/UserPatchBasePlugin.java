@@ -14,11 +14,17 @@ import static net.minecraftforge.gradle.user.patch.UserPatchConstants.START_DIR;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.json.JsonFactory;
+import net.minecraftforge.gradle.json.forgeversion.ForgeVersion;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
@@ -32,6 +38,12 @@ import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 
+import com.google.common.base.Charsets;
+import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
+import com.google.common.io.ByteStreams;
+import com.google.common.io.Files;
+
 public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtension>
 {
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -39,6 +51,8 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     public void applyPlugin()
     {
         super.applyPlugin();
+        
+        setVersionInfoJson(); // stuff for version parsing
 
         // add the binPatching task
         {
@@ -119,6 +133,75 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     public final UserPatchExtension getOverlayExtension()
     {
         return null; // nope.
+    }
+    
+    protected void setVersionInfoJson()
+    {
+        File jsonCache = Constants.cacheFile(project, "minecraft", getApiName()+"Versions.json");
+        File etagFile = new File(jsonCache.getAbsolutePath() + ".etag");
+        
+        ForgeVersion version = JsonFactory.GSON.fromJson(getWithEtag(getVersionsJsonUrl(), jsonCache, etagFile), ForgeVersion.class);
+        getExtension().versionInfo = version;
+    }
+    
+    private String getWithEtag(String strUrl, File cache, File etagFile)
+    {
+        try
+        {
+            if (project.getGradle().getStartParameter().isOffline()) // dont even try the internet
+                return Files.toString(cache, Charsets.UTF_8);
+            
+
+            String etag;
+            if (etagFile.exists())
+            {
+                etag = Files.toString(etagFile, Charsets.UTF_8);
+            }
+            else
+            {
+                etagFile.getParentFile().mkdirs();
+                etag = "";
+            }
+            
+            URL url = new URL(strUrl);
+            
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setInstanceFollowRedirects(true);
+            con.setRequestProperty("If-None-Match", etag);
+            con.connect();
+            
+            String out =  null;
+            if (con.getResponseCode() == 304)
+            {
+                out =  Files.toString(cache, Charsets.UTF_8);
+            }
+            else if (con.getResponseCode() == 200)
+            {
+                InputStream stream = con.getInputStream();
+                byte[] data = ByteStreams.toByteArray(stream);
+                Files.write(data, cache);
+                stream.close();
+                
+                // write etag
+                etag = con.getHeaderField("ETag");
+                if (!Strings.isNullOrEmpty(etag))
+                {
+                    Files.write(etag, etagFile, Charsets.UTF_8);
+                }
+                
+                out = new String(data);
+            }
+            
+            con.disconnect();
+            
+            return out;
+        }
+        catch (Throwable e)
+        {
+            Throwables.propagate(e);
+        }
+        
+        return null;
     }
 
     /**
@@ -247,6 +330,11 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     {
         return exten.getVersion();
     }
+    
+    /**
+     * THIS HAPPENS EARLY!  no delay tokens or stuff!
+     */
+    protected abstract String getVersionsJsonUrl();
 
     @Override
     protected Iterable<String> getClientRunArgs()
