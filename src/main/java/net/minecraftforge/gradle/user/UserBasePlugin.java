@@ -396,24 +396,31 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 try
                 {
                     String module = task.getProject().getProjectDir().getCanonicalPath();
-                    File file = project.file(".idea/workspace.xml");
-                    if (!file.exists())
+                    
+                    File root = task.getProject().getProjectDir();
+                    File file = null;
+                    while (file == null && root.equals(task.getProject().getRootProject().getProjectDir().getParentFile()))
                     {
-                        file = null;
-                        // find iws file
-                        for (File f : project.getProjectDir().listFiles())
+                        file = new File(root, ".idea/workspace.xml");
+                        if (!file.exists())
                         {
-                            if (f.isFile() && f.getName().endsWith(".iws"))
+                            file = null;
+                            // find iws file
+                            for (File f : project.getProjectDir().listFiles())
                             {
-                                file = f;
+                                if (f.isFile() && f.getName().endsWith(".iws"))
+                                {
+                                    file = f;
+                                    break;
+                                }
                             }
                         }
-
-                        if (file == null)
-                        {
-                            throw new RuntimeException("Only run this task after importing a build.gradle file into intellij!");
-                        }
+                        
+                        root = root.getParentFile();
                     }
+                    
+                    if (file == null || !file.exists())
+                        throw new RuntimeException("Intellij workspace file could not be found! are you sure you imported the project into intellij?");
 
                     DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
                     DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
