@@ -397,16 +397,16 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 {
                     String module = task.getProject().getProjectDir().getCanonicalPath();
                     
-                    File root = task.getProject().getProjectDir();
+                    File root = task.getProject().getProjectDir().getCanonicalFile();
                     File file = null;
-                    while (file == null && root.equals(task.getProject().getRootProject().getProjectDir().getParentFile()))
+                    while (file == null && !root.equals(task.getProject().getRootProject().getProjectDir().getCanonicalFile().getParentFile()))
                     {
                         file = new File(root, ".idea/workspace.xml");
                         if (!file.exists())
                         {
                             file = null;
                             // find iws file
-                            for (File f : project.getProjectDir().listFiles())
+                            for (File f : root.listFiles())
                             {
                                 if (f.isFile() && f.getName().endsWith(".iws"))
                                 {
