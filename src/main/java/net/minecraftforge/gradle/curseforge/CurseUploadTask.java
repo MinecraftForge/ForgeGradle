@@ -1,5 +1,7 @@
 package net.minecraftforge.gradle.curseforge;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import gnu.trove.TIntHashSet;
 import gnu.trove.TObjectIntHashMap;
 import groovy.lang.Closure;
@@ -10,13 +12,18 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
 
 import net.minecraftforge.gradle.StringUtils;
+import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.json.curse.CurseError;
 import net.minecraftforge.gradle.json.curse.CurseMetadata;
+import net.minecraftforge.gradle.json.curse.CurseMetadataChild;
 import net.minecraftforge.gradle.json.curse.CurseReply;
 import net.minecraftforge.gradle.json.curse.CurseVersion;
 
@@ -34,15 +41,17 @@ import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
+import org.gradle.api.tasks.bundling.AbstractArchiveTask;
+
 public class CurseUploadTask extends DefaultTask
 {
     Object               projectId;
     Object               artifact;
+    Collection<Object>   additionalArtifacts = new ArrayList<Object>();
     String               apiKey;
     Set<Object>          gameVersions  = new TreeSet<Object>();
     Object               releaseType;
     Object               changelog;
-    int                  fileID;
 
     private final String UPLOAD_URL    = "https://minecraft.curseforge.com/api/projects/%s/upload-file";
     private final String VERSION_URL   = "https://minecraft.curseforge.com/api/game/versions";
@@ -60,29 +69,54 @@ public class CurseUploadTask extends DefaultTask
         if (meta.releaseType == null)
             throw new IllegalArgumentException("Release type must be defined!");
 
-        upload(meta, url, getProject().file(getArtifact()));
+        String metaJson = JsonFactory.GSON.toJson(meta);
+        int parentId = uploadFile(metaJson, url, resolveFile(getArtifact()));
+
+        if (!additionalArtifacts.isEmpty())
+        {
+            CurseMetadataChild childMeta = new CurseMetadataChild();
+            childMeta.releaseType = meta.releaseType;
+            childMeta.changelog = meta.changelog;
+            childMeta.parentFileID = parentId;
+            String childMetaJson = JsonFactory.GSON.toJson(childMeta);
+            uploadFiles(childMetaJson, url, additionalArtifacts);
+        }
+    }
+    
+    private void uploadFiles(String jsonMetadata, String url, Collection<Object> files) throws IOException, URISyntaxException
+    {
+        for (Object obj : files)
+        {
+            File file = resolveFile(obj);
+            uploadFile(jsonMetadata, url, file);
+        }
     }
 
-    private void upload(CurseMetadata meta, String strUrl, File artifact) throws IOException, URISyntaxException
+    private int uploadFile(String jsonMetadata, String url, File file) throws IOException, URISyntaxException
     {
-        // stolen from http://stackoverflow.com/a/3003402
         HttpClient httpclient = HttpClientBuilder.create().build();
-        HttpPost httpPost = new HttpPost(new URI(strUrl));
-        String metaJson = JsonFactory.GSON.toJson(meta);
+        HttpPost httpPost = new HttpPost(new URI(url));
 
         httpPost.addHeader("X-Api-Token", getApiKey());
         httpPost.setEntity(
                 MultipartEntityBuilder.create()
-                        .addTextBody("metadata", metaJson)
-                        .addBinaryBody("file", artifact).build()
-                );
-
-        getLogger().lifecycle("Uploading {} to {}", artifact, strUrl);
-        getLogger().info("Uploading with meta {}", metaJson);
+                        .addTextBody("metadata", jsonMetadata)
+                        .addBinaryBody("file", file).build()
+        );
+        getLogger().lifecycle("Uploading {} to {}", file, url);
+        getLogger().info("Using with metadata: {}", jsonMetadata);
 
         HttpResponse response = httpclient.execute(httpPost);
 
-        if (response.getStatusLine().getStatusCode() != 200)
+        if (response.getStatusLine().getStatusCode() == 200)
+        {
+            InputStreamReader stream = new InputStreamReader(response.getEntity().getContent());
+            int fileId = JsonFactory.GSON.fromJson(stream, CurseReply.class).id;
+            stream.close();
+            getLogger().lifecycle("File uploaded to CurseForge succesfully with ID: {}", fileId);
+            return fileId;
+        }
+        else
         {
             if (response.getFirstHeader("content-type").getValue().contains("json"))
             {
@@ -95,14 +129,6 @@ public class CurseUploadTask extends DefaultTask
             {
                 throw new RuntimeException("Error code: " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase());
             }
-        }
-        else
-        {
-            InputStreamReader stream = new InputStreamReader(response.getEntity().getContent());
-            int fileID = JsonFactory.GSON.fromJson(stream, CurseReply.class).id;
-            this.fileID = fileID;
-            stream.close();
-            getLogger().lifecycle("File uploaded to CurseForge succcesfully with ID {}", fileID);
         }
     }
 
@@ -275,10 +301,7 @@ public class CurseUploadTask extends DefaultTask
     
     public void addGameVersion(Object... gameVersions)
     {
-        for (Object o : gameVersions)
-        {
-            this.gameVersions.add(o);
-        }
+        Collections.addAll(this.gameVersions, gameVersions);
     }
 
     public String getReleaseType()
@@ -311,14 +334,42 @@ public class CurseUploadTask extends DefaultTask
 
     public void setArtifact(Object artifact)
     {
+        if (artifact instanceof AbstractArchiveTask)
+            dependsOn(artifact);
+
         this.artifact = artifact;
     }
 
-    public int getFileID() {
-        return fileID;
+    public Collection<Object> getAdditionalArtifacts()
+    {
+        return additionalArtifacts;
     }
 
-    public void setFileID(int fileID) {
-        this.fileID = fileID;
+    public void additionalArtifact(Object obj)
+    {
+        if (obj instanceof AbstractArchiveTask)
+            dependsOn(obj);
+
+        additionalArtifacts.add(obj);
+    }
+
+    public void additionalArtifact(Object... obj)
+    {
+        for (Object o : obj)
+            additionalArtifact(o);
+    }
+
+    private File resolveFile(Object object)
+    {
+        checkNotNull(object, "Configured a null artifact!");
+
+        if (object instanceof File)
+            return (File)object;
+        else if (object instanceof AbstractArchiveTask)
+            return ((AbstractArchiveTask)object).getArchivePath();
+        else if (object instanceof DelayedFile)
+            return ((DelayedFile)object).call();
+        else
+            return getProject().file(object);
     }
 }
