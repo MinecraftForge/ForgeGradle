@@ -62,7 +62,7 @@ public abstract class GradleStartCommon
         if (argMap.get(NO_CORE_SEARCH) == null)
             searchCoremods();
         else
-            LOGGER.info("GradleStart coremod searching disabl;ed!");
+            LOGGER.info("GradleStart coremod searching disabled!");
         
         // now the actual launch args.
         args = getArgs();
