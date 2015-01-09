@@ -33,6 +33,7 @@ import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
@@ -369,7 +370,7 @@ public class ReobfExceptor
                 info.access = acc;
                 access.put(path, info);
                 
-                return new MethodVisitor(Opcodes.ASM4)
+                return new MethodVisitor(Opcodes.ASM5)
                 {
                     // GETSTATIC, PUTSTATIC, GETFIELD or PUTFIELD.
                     @Override
@@ -379,7 +380,8 @@ public class ReobfExceptor
                     }
 
                     // INVOKEVIRTUAL, INVOKESPECIAL, INVOKESTATIC or INVOKEINTERFACE.
-                    public void visitMethodInsn(int opcode, String owner, String name, String desc)
+                    @Override
+                    public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf)
                     {
                         info.add(opcode, owner, name, desc);
                     }
@@ -418,12 +420,10 @@ public class ReobfExceptor
         {
             if (cache == null)
             {
-                StringBuilder buf = new StringBuilder();
-                buf.append('[').append(insns.get(0));
-                for (int x = 1; x < insns.size(); x++)
-                    buf.append(", ").append(insns.get(x));
-                buf.append(']');
-                cache = buf.toString();
+                if (insns.size() < 1)
+                    throw new RuntimeException("Empty Intruction!!!  IMPOSSIBURU");
+                
+                cache = "[" + Joiner.on(", ").join(insns) + "]";
             }
             return cache;
         }

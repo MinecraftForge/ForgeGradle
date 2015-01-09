@@ -1,7 +1,6 @@
 package net.minecraftforge.gradle.curseforge;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-
 import gnu.trove.TIntHashSet;
 import gnu.trove.TObjectIntHashMap;
 import groovy.lang.Closure;
@@ -136,7 +135,7 @@ public class CurseUploadTask extends DefaultTask
     {
         String json = getWithEtag(VERSION_URL, VERSION_CACHE);
         CurseVersion[] versions = JsonFactory.GSON.fromJson(json, CurseVersion[].class);
-        TObjectIntHashMap vMap = new TObjectIntHashMap();
+        TObjectIntHashMap<String> vMap = new TObjectIntHashMap<String>();
 
         for (CurseVersion v : versions)
         {

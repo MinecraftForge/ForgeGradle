@@ -48,7 +48,8 @@ dependencies {
     compile gradleApi()
     
     // moved to the beginning to be the overrider
-    compile 'org.ow2.asm:asm-debug-all:4.1' // Debug version, so we can have generics!
+    compile 'org.ow2.asm:asm-debug-all:5.0.3'
+    compile 'com.google.guava:guava:18.0'
 
     compile 'net.sf.opencsv:opencsv:2.3' // reading CSVs.. also used by SpecialSource
     compile 'com.cloudbees:diff4j:1.1' // for difing and patching
@@ -77,6 +78,12 @@ dependencies {
     //Stuff used in the GradleStart classes
     compileOnly 'com.mojang:authlib:1.5.16'
     compileOnly "net.minecraft:launchwrapper:1.11"
+}
+
+compileJava {
+	options.deprecation = true
+	options.compilerArgs += ["-Werror"]
+	//options.compilerArgs += ["-Werror", "-Xlint:unchecked"]
 }
 
 artifacts { archives jar }

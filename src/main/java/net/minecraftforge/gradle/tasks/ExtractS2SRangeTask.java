@@ -500,7 +500,7 @@ public class ExtractS2SRangeTask extends DefaultTask
 
         public GenerateMapClassAdapter(BufferedWriter writer)
         {
-            super(Opcodes.ASM4);
+            super(Opcodes.ASM5);
             this.writer = writer;
         }
 

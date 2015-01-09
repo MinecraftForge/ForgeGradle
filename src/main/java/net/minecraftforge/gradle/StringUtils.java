@@ -13,7 +13,6 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
-import com.google.common.io.InputSupplier;
 
 public final class StringUtils
 {
@@ -35,13 +34,7 @@ public final class StringUtils
     {
         try
         {
-            return ImmutableList.copyOf(CharStreams.readLines(new InputSupplier<StringReader>() {
-                @Override
-                public StringReader getInput() throws IOException
-                {
-                    return new StringReader(text);
-                }
-            }));
+            return ImmutableList.copyOf(CharStreams.readLines(new StringReader(text)));
         }
         catch (IOException e)
         {

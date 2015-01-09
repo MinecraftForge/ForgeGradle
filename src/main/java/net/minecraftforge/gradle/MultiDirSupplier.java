@@ -1,6 +1,8 @@
 package net.minecraftforge.gradle;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -12,7 +14,6 @@ import net.minecraftforge.srg2source.util.io.InputSupplier;
 import net.minecraftforge.srg2source.util.io.OutputSupplier;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.Files;
 
 public class MultiDirSupplier implements InputSupplier, OutputSupplier
 {
@@ -35,7 +36,7 @@ public class MultiDirSupplier implements InputSupplier, OutputSupplier
         File f = getFileFor(relPath);
         try
         {
-            return f == null ? null : Files.newOutputStreamSupplier(f).getOutput();
+            return f == null ? null : new FileOutputStream(f);
         }
         catch (IOException e)
         {
@@ -56,7 +57,7 @@ public class MultiDirSupplier implements InputSupplier, OutputSupplier
         File f = getFileFor(relPath);
         try
         {
-            return f == null ? null : Files.newInputStreamSupplier(f).getInput();
+            return f == null ? null : new FileInputStream(f);
         }
         catch (IOException e)
         {
