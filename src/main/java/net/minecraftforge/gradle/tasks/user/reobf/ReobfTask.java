@@ -4,10 +4,9 @@ import groovy.lang.Closure;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.List;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
@@ -28,10 +27,13 @@ import org.gradle.api.internal.DefaultDomainObjectSet;
 import org.gradle.api.internal.file.collections.SimpleFileCollection;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 
+import com.google.common.base.Charsets;
+import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 
 public class ReobfTask extends DefaultTask
@@ -65,7 +67,9 @@ public class ReobfTask extends DefaultTask
     private DelayedFile                               recompFile;
 
     @Input
-    private LinkedList<String>                        extraSrg      = new LinkedList<String>();
+    private List<String>                              extraSrg      = Lists.newArrayList();
+    
+    private List<Object>                              extraSrgFiles = Lists.newArrayList();
 
     @SuppressWarnings("serial")
     public ReobfTask()
@@ -284,18 +288,19 @@ public class ReobfTask extends DefaultTask
                 extraSrg.createNewFile();
             }
 
-            BufferedWriter writer = new BufferedWriter(new FileWriter(extraSrg));
+            BufferedWriter writer = Files.newWriter(extraSrg, Charsets.UTF_8);
             for (String line : getExtraSrg())
             {
                 writer.write(line);
                 writer.newLine();
             }
+            
             writer.flush();
             writer.close();
         }
 
         for (ObfArtifact obf : getObfuscated())
-            obf.generate(exc, srg, extraSrg);
+            obf.generate(exc, srg, extraSrg, getExtraSrgFiles());
 
         // cleanup
         srg.delete();
@@ -422,14 +427,46 @@ public class ReobfTask extends DefaultTask
         this.exceptorCfg = file;
     }
 
-    public LinkedList<String> getExtraSrg()
+    public List<String> getExtraSrg()
     {
         return extraSrg;
     }
 
-    public void setExtraSrg(LinkedList<String> extraSrg)
+    public void setExtraSrg(List<String> extraSrg)
     {
         this.extraSrg = extraSrg;
+    }
+    
+    public void addExtraSrgFile(Object thing)
+    {
+        extraSrgFiles.add(thing);
+    }
+    
+    @InputFiles
+    public FileCollection getExtraSrgFiles()
+    {
+        List<File> files = new ArrayList<File>(extraSrgFiles.size());
+        
+        for (Object thing : getProject().files(extraSrgFiles))
+        {
+            File f = getProject().file(thing);
+            if (f.isDirectory())
+            {
+                for (File nested : getProject().fileTree(f))
+                {
+                    if ("srg".equals(Files.getFileExtension(nested.getName()).toLowerCase()))
+                    {
+                        files.add(nested.getAbsoluteFile());
+                    }
+                }
+            }
+            else if ("srg".equals(Files.getFileExtension(f.getName()).toLowerCase()))
+            {
+                files.add(f.getAbsoluteFile());
+            }
+        }
+        
+        return getProject().files(files);
     }
 
     public File getSrg()

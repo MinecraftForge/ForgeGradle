@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URLClassLoader;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -315,7 +316,7 @@ public class ObfArtifact extends AbstractPublishArtifact
      * @throws IOException
      * @throws org.gradle.api.InvalidUserDataException if the there is insufficient information available to generate the signature.
      */
-    void generate(ReobfExceptor exc, File defaultSrg, File extraSrg) throws Exception
+    void generate(ReobfExceptor exc, File defaultSrg, File extraSrg, FileCollection extraSrgFiles) throws Exception
     {
         File toObf = getToObf();
         if (toObf == null)
@@ -343,9 +344,9 @@ public class ObfArtifact extends AbstractPublishArtifact
 
         // obfuscate!
         if (caller.getUseRetroGuard())
-            applyRetroGuard(toObfTemp, output, srg, extraSrg);
+            applyRetroGuard(toObfTemp, output, srg, extraSrg, extraSrgFiles);
         else
-            applySpecialSource(toObfTemp, output, srg, extraSrg);
+            applySpecialSource(toObfTemp, output, srg, extraSrg, extraSrgFiles);
 
         // delete temporary files
         toObfTemp.delete();
@@ -355,12 +356,17 @@ public class ObfArtifact extends AbstractPublishArtifact
         System.gc(); // clean anything out.. I hope..
     }
 
-    private void applySpecialSource(File input, File output, File srg, File extraSrg) throws IOException
+    private void applySpecialSource(File input, File output, File srg, File extraSrg, FileCollection extraSrgFiles) throws IOException
     {
         // load mapping
         JarMapping mapping = new JarMapping();
         mapping.loadMappings(srg);
         mapping.loadMappings(extraSrg);
+        
+        for (File f : extraSrgFiles)
+        {
+            mapping.loadMappings(f);
+        }
 
         // make remapper
         JarRemapper remapper = new JarRemapper(null, mapping);
@@ -379,7 +385,7 @@ public class ObfArtifact extends AbstractPublishArtifact
         remapper.remapJar(inputJar, output);
     }
 
-    private void applyRetroGuard(File input, File output, File srg, File extraSrg) throws Exception
+    private void applyRetroGuard(File input, File output, File srg, File extraSrg, FileCollection extraSrgFiles) throws Exception
     {
         File cfg =    new File(caller.getTemporaryDir(), "retroguard.cfg");
         File log =    new File(caller.getTemporaryDir(), "retroguard.log");
@@ -456,7 +462,7 @@ public class ObfArtifact extends AbstractPublishArtifact
             out.close();
         }
 
-        generateRgConfig(cfg, script, srg, extraSrg);
+        generateRgConfig(cfg, script, srg, extraSrg, extraSrgFiles);
 
         String[] args = new String[] {
                 "-notch",
@@ -505,23 +511,29 @@ public class ObfArtifact extends AbstractPublishArtifact
         }
     }
 
-    private void generateRgConfig(File config, File script, File srg, File extraSrg) throws IOException
+    private void generateRgConfig(File config, File script, File srg, File extraSrg, FileCollection extraSrgFiles) throws IOException
     {
         // the config
-        String[] lines = new String[] {
-                "reob = "+srg.getCanonicalPath(),
-                "reob = "+extraSrg.getCanonicalPath(), // because it should work...
-                "script = "+script.getCanonicalPath(),
-                "verbose = 0",
-                "quiet = 1",
-                "fullmap = 0",
-                "startindex = 0",
-        };
+        ArrayList<String> configOut = new ArrayList<String>(10);
+        
+        configOut.add("reob = "+srg.getCanonicalPath());
+        configOut.add("reob = "+extraSrg.getCanonicalPath()); // because it should work
+        
+        for (File f : extraSrgFiles)
+        {
+            configOut.add("reob = "+f.getCanonicalPath());
+        }
 
-        Files.write(Joiner.on(Constants.NEWLINE).join(lines), config, Charset.defaultCharset());
+        configOut.add("script = "+script.getCanonicalPath());
+        configOut.add("verbose = 0");
+        configOut.add("quiet = 1");
+        configOut.add("fullmap = 0");
+        configOut.add("startindex = 0");
+
+        Files.write(Joiner.on(Constants.NEWLINE).join(configOut), config, Charset.defaultCharset());
 
         // the script.
-        lines = new String[] {
+        String[] lines = new String[] {
                 ".option Application",
                 ".option Applet",
                 ".option Repackage",
