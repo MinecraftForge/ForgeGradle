@@ -252,9 +252,9 @@ public class CurseUploadTask extends DefaultTask
     @SuppressWarnings("rawtypes")
     private String resolveString(Object obj)
     {
-        while (obj instanceof Closure)
+        if (obj instanceof Closure)
         {
-            obj = ((Closure) obj).call();
+            obj = resolveString(((Closure) obj).call());
         }
 
         return obj.toString();
@@ -305,15 +305,17 @@ public class CurseUploadTask extends DefaultTask
 
     public String getReleaseType()
     {
-        return (String) (releaseType = resolveString(releaseType));
-    }
-
-    public void setReleaseType(Object releaseType)
-    {
         this.releaseType = StringUtils.lower(resolveString(releaseType));
 
         if (!"alpha".equals(releaseType) && !"beta".equals(releaseType) && !"release".equals(releaseType))
             throw new IllegalArgumentException("The release type must be either 'alpha', 'beta', or 'release'! '" + releaseType + "' is not a valid type!");
+        
+        return (String)releaseType;
+    }
+
+    public void setReleaseType(Object releaseType)
+    {
+        this.releaseType = releaseType;
     }
 
     public String getChangelog()
