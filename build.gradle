@@ -20,11 +20,6 @@ repositories {
         name = "eclipse"
         url = "https://repo.eclipse.org/content/groups/eclipse/"
     }
-    maven {
-        // because SpecialSource doesnt have a full release
-        name = "sonatype"
-        url = "https://oss.sonatype.org/content/repositories/snapshots/"
-    }
     mavenCentral()
     maven {
         name = "mojang"
