@@ -81,7 +81,7 @@ public class CurseUploadTask extends DefaultTask
             uploadFiles(childMetaJson, url, additionalArtifacts);
         }
     }
-    
+
     private void uploadFiles(String jsonMetadata, String url, Collection<Object> files) throws IOException, URISyntaxException
     {
         for (Object obj : files)
@@ -135,7 +135,7 @@ public class CurseUploadTask extends DefaultTask
     {
         String json = getWithEtag(VERSION_URL, VERSION_CACHE);
         CurseVersion[] versions = JsonFactory.GSON.fromJson(json, CurseVersion[].class);
-        TObjectIntHashMap<String> vMap = new TObjectIntHashMap<String>();
+        TObjectIntHashMap vMap = new TObjectIntHashMap();
 
         for (CurseVersion v : versions)
         {
@@ -182,7 +182,7 @@ public class CurseUploadTask extends DefaultTask
         {
             etag = "";
         }
-        
+
         HttpClient httpclient = HttpClientBuilder.create().build();
         HttpGet httpGet = new HttpGet(new URI(strUrl));
 
@@ -194,7 +194,7 @@ public class CurseUploadTask extends DefaultTask
 //        con.setRequestProperty("If-None-Match", etag);
 
         HttpResponse response = httpclient.execute(httpGet);
-        
+
 //        try
 //        {
 //            con.connect();
@@ -209,7 +209,7 @@ public class CurseUploadTask extends DefaultTask
         String out = null;
 
         int statusCode = response.getStatusLine().getStatusCode();
-        
+
         if (statusCode == 304) // cached
         {
             out = Files.toString(cache, Charsets.UTF_8);
@@ -221,7 +221,7 @@ public class CurseUploadTask extends DefaultTask
             Files.write(data, cache);
             stream.close();
             out = new String(data, Charsets.UTF_8);
-            
+
             Header etagHeader = response.getFirstHeader("ETag");
             if (etagHeader != null)
             {
@@ -233,12 +233,12 @@ public class CurseUploadTask extends DefaultTask
             InputStreamReader stream = new InputStreamReader(response.getEntity().getContent());
             CurseError cError = JsonFactory.GSON.fromJson(stream, CurseError.class);
             stream.close();
-            
+
             error = "Curse Error " + cError.errorCode + ": " + cError.errorMessage;
         }
         else
         {
-            error = "Error " + statusCode + ": " + response.getStatusLine().getReasonPhrase(); 
+            error = "Error " + statusCode + ": " + response.getStatusLine().getReasonPhrase();
         }
 
         if (error != null)
@@ -297,7 +297,7 @@ public class CurseUploadTask extends DefaultTask
     {
         this.gameVersions.add(gameVersion);
     }
-    
+
     public void addGameVersion(Object... gameVersions)
     {
         Collections.addAll(this.gameVersions, gameVersions);
@@ -309,7 +309,7 @@ public class CurseUploadTask extends DefaultTask
 
         if (!"alpha".equals(releaseType) && !"beta".equals(releaseType) && !"release".equals(releaseType))
             throw new IllegalArgumentException("The release type must be either 'alpha', 'beta', or 'release'! '" + releaseType + "' is not a valid type!");
-        
+
         return (String)releaseType;
     }
 

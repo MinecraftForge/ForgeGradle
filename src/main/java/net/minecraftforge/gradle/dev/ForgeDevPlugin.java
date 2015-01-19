@@ -18,7 +18,6 @@ import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.CrowdinDownloadTask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
-import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
@@ -60,26 +59,23 @@ public class ForgeDevPlugin extends DevBasePlugin
         // set fmlDir
         getExtension().setFmlDir("fml");
 
+        /* is this even needed for anything....
         // configure genSrg task.
         GenSrgTask genSrgTask = (GenSrgTask) project.getTasks().getByName("genSrgs");
         {
-            // find all the exc & srg files in the resources.
-            for (File f : project.fileTree(delayedFile(DevConstants.FML_RESOURCES).call()).getFiles())
+            String[] paths = {DevConstants.FML_RESOURCES, DevConstants.FORGE_RESOURCES};
+            for (String path : paths)
             {
-                if(f.getPath().endsWith(".exc"))
-                    genSrgTask.addExtraExc(f);
-                else if(f.getPath().endsWith(".srg"))
-                    genSrgTask.addExtraSrg(f);
-            }
-
-            for (File f : project.fileTree(delayedFile(DevConstants.FORGE_RESOURCES).call()).getFiles())
-            {
-                if(f.getPath().endsWith(".exc"))
-                    genSrgTask.addExtraExc(f);
-                else if(f.getPath().endsWith(".srg"))
-                    genSrgTask.addExtraSrg(f);
+                for (File f : project.fileTree(delayedFile(path).call()).getFiles())
+                {
+                    if(f.getPath().endsWith(".exc"))
+                        genSrgTask.addExtraExc(f);
+                    else if(f.getPath().endsWith(".srg"))
+                        genSrgTask.addExtraSrg(f);
+                }
             }
         }
+        */
 
         createJarProcessTasks();
         createProjectTasks();
@@ -229,11 +225,11 @@ public class ForgeDevPlugin extends DevBasePlugin
         {
             task.setTargetDir(delayedFile(ECLIPSE_CLEAN));
             task.setJson(delayedFile(JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
-            
+
             task.setMcVersion(delayedString("{MC_VERSION}"));
             task.setMappingChannel(delayedString("{MAPPING_CHANNEL}"));
             task.setMappingVersion(delayedString("{MAPPING_VERSION}"));
-            
+
             task.dependsOn("extractNatives");
         }
 
@@ -249,7 +245,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task.addResource(delayedFile(ECLIPSE_FORGE_RES));
             task.addResource(delayedFile(FORGE_RESOURCES));
             task.addTestResource(delayedFile(FORGE_TEST_RES));
-            
+
             task.setMcVersion(delayedString("{MC_VERSION}"));
             task.setMappingChannel(delayedString("{MAPPING_CHANNEL}"));
             task.setMappingVersion(delayedString("{MAPPING_VERSION}"));
@@ -302,6 +298,18 @@ public class ForgeDevPlugin extends DevBasePlugin
             applyS2S.setRangeMap(rangeMapDirty);
             applyS2S.setExcModifiers(delayedFile(EXC_MODIFIERS_DIRTY));
             applyS2S.dependsOn("genSrgs", extractRange);
+
+            String[] paths = {DevConstants.FML_RESOURCES, DevConstants.FORGE_RESOURCES};
+            for (String path : paths)
+            {
+                for (File f : project.fileTree(delayedFile(path).call()).getFiles())
+                {
+                    if(f.getPath().endsWith(".exc"))
+                        applyS2S.addExc(f);
+                    else if(f.getPath().endsWith(".srg"))
+                        applyS2S.addSrg(f);
+                }
+            }
         }
 
         extractRange = makeTask("extractRangeClean", ExtractS2SRangeTask.class);
@@ -322,6 +330,18 @@ public class ForgeDevPlugin extends DevBasePlugin
             applyS2S.setRangeMap(rangeMapClean);
             applyS2S.setExcModifiers(delayedFile(EXC_MODIFIERS_CLEAN));
             applyS2S.dependsOn("genSrgs", extractRange);
+
+            String[] paths = {DevConstants.FML_RESOURCES};
+            for (String path : paths)
+            {
+                for (File f : project.fileTree(delayedFile(path).call()).getFiles())
+                {
+                    if(f.getPath().endsWith(".exc"))
+                        applyS2S.addExc(f);
+                    else if(f.getPath().endsWith(".srg"))
+                        applyS2S.addSrg(f);
+                }
+            }
         }
 
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
@@ -394,7 +414,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             crowdin.setProjectId(CROWDIN_FORGEID);
             crowdin.setExtract(false);
         }
-        
+
         ChangelogTask makeChangelog = makeTask("createChangelog", ChangelogTask.class);
         {
             makeChangelog.getOutputs().upToDateWhen(Constants.CALL_FALSE);
@@ -614,22 +634,16 @@ public class ForgeDevPlugin extends DevBasePlugin
             s2s.dependsOn("genSrgs", range);
             s2s.getOutputs().upToDateWhen(Constants.CALL_FALSE); //Fucking caching.
 
-            // find all the exc & srg files in the resources.
-            for (File f : project.fileTree(delayedFile(DevConstants.FML_RESOURCES).call()).getFiles())
+            String[] paths = {DevConstants.FML_RESOURCES, DevConstants.FORGE_RESOURCES};
+            for (String path : paths)
             {
-                if(f.getPath().endsWith(".exc"))
-                    s2s.addExc(f);
-                else if(f.getPath().endsWith(".srg"))
-                    s2s.addSrg(f);
-            }
-
-            // find all the exc & srg files in the resources.
-            for (File f : project.fileTree(delayedFile(DevConstants.FORGE_RESOURCES).call()).getFiles())
-            {
-                if(f.getPath().endsWith(".exc"))
-                    s2s.addExc(f);
-                else if(f.getPath().endsWith(".srg"))
-                    s2s.addSrg(f);
+                for (File f : project.fileTree(delayedFile(path).call()).getFiles())
+                {
+                    if(f.getPath().endsWith(".exc"))
+                        s2s.addExc(f);
+                    else if(f.getPath().endsWith(".srg"))
+                        s2s.addSrg(f);
+                }
             }
         }
 
