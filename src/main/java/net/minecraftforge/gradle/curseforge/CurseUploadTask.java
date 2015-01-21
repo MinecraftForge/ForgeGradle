@@ -1,6 +1,7 @@
 package net.minecraftforge.gradle.curseforge;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import gnu.trove.TIntArrayList;
 import gnu.trove.TIntHashSet;
 import gnu.trove.TObjectIntHashMap;
 import groovy.lang.Closure;
@@ -35,22 +36,24 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
-import org.gradle.api.tasks.bundling.AbstractArchiveTask;
-
 public class CurseUploadTask extends DefaultTask
 {
     Object               projectId;
     Object               artifact;
+    Object               displayName;
     Collection<Object>   additionalArtifacts = new ArrayList<Object>();
     String               apiKey;
     Set<Object>          gameVersions  = new TreeSet<Object>();
     Object               releaseType;
     Object               changelog;
+    
+    TIntArrayList        fileIds;
 
     private final String UPLOAD_URL    = "https://minecraft.curseforge.com/api/projects/%s/upload-file";
     private final String VERSION_URL   = "https://minecraft.curseforge.com/api/game/versions";
@@ -63,6 +66,7 @@ public class CurseUploadTask extends DefaultTask
         meta.releaseType = getReleaseType();
         meta.changelog = getChangelog() == null ? "" : getChangelog();
         meta.gameVersions = resolveGameVersion();
+        if (displayName != null) meta.displayName = getDisplayName();
         String url = String.format(UPLOAD_URL, getProjectId());
 
         if (meta.releaseType == null)
@@ -70,6 +74,9 @@ public class CurseUploadTask extends DefaultTask
 
         String metaJson = JsonFactory.GSON.toJson(meta);
         int parentId = uploadFile(metaJson, url, resolveFile(getArtifact()));
+        
+        fileIds = new TIntArrayList(additionalArtifacts.size() + 1);
+        fileIds.add(parentId);
 
         if (!additionalArtifacts.isEmpty())
         {
@@ -81,13 +88,14 @@ public class CurseUploadTask extends DefaultTask
             uploadFiles(childMetaJson, url, additionalArtifacts);
         }
     }
-    
+
     private void uploadFiles(String jsonMetadata, String url, Collection<Object> files) throws IOException, URISyntaxException
     {
         for (Object obj : files)
         {
             File file = resolveFile(obj);
-            uploadFile(jsonMetadata, url, file);
+            int id = uploadFile(jsonMetadata, url, file);
+            fileIds.add(id);
         }
     }
 
@@ -182,34 +190,20 @@ public class CurseUploadTask extends DefaultTask
         {
             etag = "";
         }
-        
+
         HttpClient httpclient = HttpClientBuilder.create().build();
         HttpGet httpGet = new HttpGet(new URI(strUrl));
 
         httpGet.setHeader("X-Api-Token", getApiKey());
         httpGet.setHeader("If-None-Match", etag);
-//        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-//        con.setInstanceFollowRedirects(true);
-//        con.addRequestProperty("X-Api-Token", getApiKey());
-//        con.setRequestProperty("If-None-Match", etag);
 
         HttpResponse response = httpclient.execute(httpGet);
-        
-//        try
-//        {
-//            con.connect();
-//        }
-//        catch (Throwable e)
-//        {
-//            // just in case people dont have internet at the moment.
-//            throw new RuntimeException(e.getLocalizedMessage());
-//        }
 
         String error = null;
         String out = null;
 
         int statusCode = response.getStatusLine().getStatusCode();
-        
+
         if (statusCode == 304) // cached
         {
             out = Files.toString(cache, Charsets.UTF_8);
@@ -221,7 +215,7 @@ public class CurseUploadTask extends DefaultTask
             Files.write(data, cache);
             stream.close();
             out = new String(data, Charsets.UTF_8);
-            
+
             Header etagHeader = response.getFirstHeader("ETag");
             if (etagHeader != null)
             {
@@ -233,12 +227,12 @@ public class CurseUploadTask extends DefaultTask
             InputStreamReader stream = new InputStreamReader(response.getEntity().getContent());
             CurseError cError = JsonFactory.GSON.fromJson(stream, CurseError.class);
             stream.close();
-            
+
             error = "Curse Error " + cError.errorCode + ": " + cError.errorMessage;
         }
         else
         {
-            error = "Error " + statusCode + ": " + response.getStatusLine().getReasonPhrase(); 
+            error = "Error " + statusCode + ": " + response.getStatusLine().getReasonPhrase();
         }
 
         if (error != null)
@@ -252,9 +246,9 @@ public class CurseUploadTask extends DefaultTask
     @SuppressWarnings("rawtypes")
     private String resolveString(Object obj)
     {
-        while (obj instanceof Closure)
+        if (obj instanceof Closure)
         {
-            obj = ((Closure) obj).call();
+            obj = resolveString(((Closure) obj).call());
         }
 
         return obj.toString();
@@ -297,7 +291,7 @@ public class CurseUploadTask extends DefaultTask
     {
         this.gameVersions.add(gameVersion);
     }
-    
+
     public void addGameVersion(Object... gameVersions)
     {
         Collections.addAll(this.gameVersions, gameVersions);
@@ -305,15 +299,17 @@ public class CurseUploadTask extends DefaultTask
 
     public String getReleaseType()
     {
-        return (String) (releaseType = resolveString(releaseType));
-    }
-
-    public void setReleaseType(Object releaseType)
-    {
         this.releaseType = StringUtils.lower(resolveString(releaseType));
 
         if (!"alpha".equals(releaseType) && !"beta".equals(releaseType) && !"release".equals(releaseType))
             throw new IllegalArgumentException("The release type must be either 'alpha', 'beta', or 'release'! '" + releaseType + "' is not a valid type!");
+
+        return (String)releaseType;
+    }
+
+    public void setReleaseType(Object releaseType)
+    {
+        this.releaseType = releaseType;
     }
 
     public String getChangelog()
@@ -338,6 +334,16 @@ public class CurseUploadTask extends DefaultTask
 
         this.artifact = artifact;
     }
+    
+    public String getDisplayName()
+    {
+        return (String) (displayName = resolveString(displayName));
+    }
+
+    public void setDisplayName(Object displayName)
+    {
+        this.displayName = displayName;
+    }
 
     public Collection<Object> getAdditionalArtifacts()
     {
@@ -356,6 +362,16 @@ public class CurseUploadTask extends DefaultTask
     {
         for (Object o : obj)
             additionalArtifact(o);
+    }
+    
+    public int getFileId()
+    {
+        return fileIds.get(0);
+    }
+    
+    public int[] getFileIds()
+    {
+        return fileIds.toNativeArray();
     }
 
     private File resolveFile(Object object)

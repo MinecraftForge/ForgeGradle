@@ -19,7 +19,6 @@ import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.CrowdinDownloadTask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
-import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
@@ -55,6 +54,7 @@ public class FmlDevPlugin extends DevBasePlugin
         // set fmlDir
         getExtension().setFmlDir(".");
 
+        /* We dont need to add this to ALL this is only used for S2S
         // configure genSrg task.
         GenSrgTask genSrgTask = (GenSrgTask) project.getTasks().getByName("genSrgs");
         {
@@ -67,6 +67,7 @@ public class FmlDevPlugin extends DevBasePlugin
                     genSrgTask.addExtraSrg(f);
             }
         }
+        */
 
         //configureLaunch4J();
         createJarProcessTasks();
@@ -218,11 +219,11 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             task.setTargetDir(delayedFile(DevConstants.ECLIPSE_CLEAN));
             task.setJson(delayedFile(DevConstants.JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
-            
+
             task.setMcVersion(delayedString("{MC_VERSION}"));
             task.setMappingChannel(delayedString("{MAPPING_CHANNEL}"));
             task.setMappingVersion(delayedString("{MAPPING_VERSION}"));
-            
+
             task.dependsOn("extractNatives");
         }
 
@@ -291,6 +292,15 @@ public class FmlDevPlugin extends DevBasePlugin
             task4.setExcModifiers(delayedFile(EXC_MODIFIERS_DIRTY));
             task4.setRangeMap(rangeMap);
             task4.dependsOn("genSrgs", task);
+
+            // find all the exc & srg files in the resources.
+            for (File f : project.fileTree(delayedFile(DevConstants.FML_RESOURCES).call()).getFiles())
+            {
+                if(f.getPath().endsWith(".exc"))
+                    task4.addExc(f);
+                else if(f.getPath().endsWith(".srg"))
+                    task4.addSrg(f);
+            }
         }
 
         GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
@@ -352,7 +362,7 @@ public class FmlDevPlugin extends DevBasePlugin
             crowdin.setProjectId(CROWDIN_FORGEID);
             crowdin.setExtract(false);
         }
-        
+
         ChangelogTask makeChangelog = makeTask("createChangelog", ChangelogTask.class);
         {
             makeChangelog.getOutputs().upToDateWhen(Constants.CALL_FALSE);
