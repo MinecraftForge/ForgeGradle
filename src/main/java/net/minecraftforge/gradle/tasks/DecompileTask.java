@@ -229,7 +229,7 @@ public class DecompileTask extends CachedTask
             }
             else
             {
-                getLogger().info("Patch succeeded: " + report.getTarget());
+                getLogger().debug("Patch succeeded: " + report.getTarget());
             }
         }
         if (fuzzed)

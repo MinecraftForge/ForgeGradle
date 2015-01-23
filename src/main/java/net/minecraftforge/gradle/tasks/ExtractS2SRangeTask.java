@@ -206,7 +206,7 @@ public class ExtractS2SRangeTask extends DefaultTask
             String[] tokens = s.split(";");
             if (tokens.length != 3)
             {
-                getLogger().info("Corrupted input cache! {}", cacheFile);
+                getLogger().warn("Corrupted input cache! {}", cacheFile);
                 break;
             }
             cache.add(new CacheEntry(tokens[0], new File(tokens[1]), tokens[2]));

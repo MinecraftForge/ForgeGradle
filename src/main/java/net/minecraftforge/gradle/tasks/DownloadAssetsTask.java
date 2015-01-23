@@ -92,9 +92,9 @@ public class DownloadAssetsTask extends DefaultTask
             }
         }
 
-        getLogger().info("Finished parsing JSON");
+        getLogger().debug("Finished parsing JSON");
         int max = filesLeft.size();
-        getLogger().info("Files Missing: " + max + "/" + index.objects.size());
+        getLogger().debug("Files Missing: " + max + "/" + index.objects.size());
 
         // get number of threads
         int threadNum = max / 100;
@@ -105,7 +105,7 @@ public class DownloadAssetsTask extends DefaultTask
         for (int i = 0; i < threadNum; i++)
             spawnThread();
 
-        getLogger().info("Threads initially spawned: " + threadNum);
+        getLogger().debug("Threads initially spawned: " + threadNum);
 
         while (stillRunning())
         {
@@ -144,7 +144,7 @@ public class DownloadAssetsTask extends DefaultTask
                 return true;
             }
         }
-        getLogger().info("All " + threads.size() + " threads Complete");
+        getLogger().debug("All " + threads.size() + " threads Complete");
         return false;
     }
 
