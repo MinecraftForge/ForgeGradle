@@ -141,6 +141,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
     /**
      * may not include delayed tokens.
+     * @return name of API, eg "forge", "fml", "liteloader"
      */
     public abstract String getApiName();
     /**

@@ -25,7 +25,6 @@ import java.util.zip.Adler32;
 import java.util.zip.ZipEntry;
 
 import lzma.streams.LzmaOutputStream;
-import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
 
@@ -233,7 +232,7 @@ public class GenBinaryPatches extends DefaultTask
         props.put(Packer.UNKNOWN_ATTRIBUTE, Packer.PASS);
 
         final PrintStream err = new PrintStream(System.err);
-        System.setErr(new PrintStream(Constants.getNullStream()));
+        System.setErr(new PrintStream(ByteStreams.nullOutputStream()));
         packer.pack(in, out);
         System.setErr(err);
 

@@ -40,13 +40,13 @@ public class ProcessSrcJarTask extends EditJarTask
     }
 
     @Override
-    public void doStuffBefore() throws Throwable
+    public void doStuffBefore()
     {
         PROVIDER = new ContextProvider(sourceMap);
     }
 
     @Override
-    public void doStuffMiddle() throws Throwable
+    public void doStuffMiddle() throws Exception
     {
         for (ResourceHolder stage : stages)
         {
@@ -80,7 +80,7 @@ public class ProcessSrcJarTask extends EditJarTask
         }
     }
 
-    public void applyPatchStage(String stage, FileCollection patchFiles) throws Throwable
+    public void applyPatchStage(String stage, FileCollection patchFiles) throws Exception
     {
         getLogger().info("Reading patches for stage {}", stage);
         ArrayList<PatchedFile> patches = readPatches(patchFiles);
@@ -229,7 +229,7 @@ public class ProcessSrcJarTask extends EditJarTask
     }
 
     @Override
-    public void doStuffAfter() throws Throwable
+    public void doStuffAfter() throws Exception
     {
     }
 

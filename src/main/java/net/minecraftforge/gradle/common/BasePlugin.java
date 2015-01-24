@@ -140,6 +140,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
     /**
      * return true if this plugin can be applied over another BasePlugin.
+     * @return TRUE if this can be applied upon another base plugin.
      */
     public abstract boolean canOverlayPlugin();
 
@@ -309,8 +310,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     }
 
     /**
-     * @return the extension object with name EXT_NAME_MC
-     * @see Constants.EXT_NAME_MC
+     * @return the extension object with name
+     * @see Constants#EXT_NAME_MC
      */
     @SuppressWarnings("unchecked")
     public final K getExtension()
@@ -323,7 +324,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
     /**
      * @return the extension object with name EXT_NAME_MC
-     * @see Constants.EXT_NAME_MC
+     * @see Constants#EXT_NAME_MC
      */
     protected abstract K getOverlayExtension();
 

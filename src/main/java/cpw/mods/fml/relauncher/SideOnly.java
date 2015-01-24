@@ -19,14 +19,8 @@ import java.lang.annotation.Target;
 
 
 /**
- * Marks the associated element as being only available on a certain {@link Side}. This is
- * generally meant for internal Forge and FML use only and should only be used on mod classes
- * when other more common mechanisms, such as using a {@link SidedProxy} fail to work.
- *
- * Note, this will <em>only</em> apply to the direct element marked. This code:
- * <code> @SideOnly public MyField field = new MyField();</code> will <strong>not</strong> work, as the initializer
- * is a separate piece of code to the actual field declaration, and will not be able to find
- * it's field on the wrong side.
+ * 
+ * Stolen from FML for use with merging the jars.
  *
  * @author cpw
  *
