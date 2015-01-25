@@ -137,7 +137,7 @@ public class DecompileTask extends CachedTask
                 exec.setWorkingDir(fernFlower.getParentFile());
 
                 exec.classpath(Constants.getClassPath());
-                exec.setStandardOutput(Constants.createLogger(getLogger(), LogLevel.DEBUG));
+                exec.setStandardOutput(Constants.getTaskLogStream(getProject(), getName() + ".log"));
 
                 exec.setMaxHeapSize("512M");
 
