@@ -25,6 +25,7 @@ import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.ProjectState;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.repositories.FlatDirectoryArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
@@ -107,6 +108,10 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             @Override
             public void execute(Project project)
             {
+                // dont continue if its already failed!
+                if (project.getState().getFailure() != null)
+                    return;
+                
                 afterEvaluate();
 
                 try
