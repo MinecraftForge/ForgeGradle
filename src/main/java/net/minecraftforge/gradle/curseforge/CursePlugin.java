@@ -38,6 +38,10 @@ public class CursePlugin implements Plugin<Project>
             @Override
             public void execute(Object arg0)
             {
+                // dont continue if its already failed!
+                if (project.getState().getFailure() != null)
+                    return;
+                
                 UserBasePlugin plugin = userPluginApplied(project);
                 upload.addGameVersion(plugin.getExtension().getVersion());
                 
