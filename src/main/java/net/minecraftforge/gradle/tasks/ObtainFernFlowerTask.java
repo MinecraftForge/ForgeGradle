@@ -42,8 +42,8 @@ public class ObtainFernFlowerTask extends CachedTask
         File ff = getFfJar();
         String url = getMcpUrl();
 
-        getLogger().info("Downloading " + url);
-        getLogger().info("Fernflower output location " + ff);
+        getLogger().debug("Downloading " + url);
+        getLogger().debug("Fernflower output location " + ff);
 
         HttpURLConnection connect = (HttpURLConnection) (new URL(url)).openConnection();
         connect.setInstanceFollowRedirects(true);

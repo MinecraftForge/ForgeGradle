@@ -30,7 +30,6 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.AbstractTask;
-import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
@@ -206,7 +205,7 @@ public class ExtractS2SRangeTask extends DefaultTask
             String[] tokens = s.split(";");
             if (tokens.length != 3)
             {
-                getLogger().info("Corrupted input cache! {}", cacheFile);
+                getLogger().warn("Corrupted input cache! {}", cacheFile);
                 break;
             }
             cache.add(new CacheEntry(tokens[0], new File(tokens[1]), tokens[2]));
@@ -238,12 +237,12 @@ public class ExtractS2SRangeTask extends DefaultTask
         RangeExtractor extractor = new RangeExtractor();
         extractor.addLibs(getLibs().getAsPath()).setSrc(inSup);
 
-        PrintStream stream = new PrintStream(Constants.createLogger(getLogger(), LogLevel.DEBUG));
-        extractor.setOutLogger(stream);
+        final PrintStream log = Constants.getTaskLogStream(getProject(), this.getName() + ".log");
+        extractor.setOutLogger(log);
 
         boolean worked = extractor.generateRangeMap(rangeMap);
 
-        stream.close();
+        log.close();
 
         if (!worked)
             throw new RuntimeException("RangeMap generation Failed!!!");

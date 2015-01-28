@@ -189,7 +189,7 @@ public class LiteLoaderPlugin extends UserLibBasePlugin
         llArtifact = obj.latest;
 
         // add the dependency.
-        project.getLogger().info("LiteLoader dep: "+llArtifact.getMcpDepString());
+        project.getLogger().debug("LiteLoader dep: "+llArtifact.getMcpDepString());
         project.getDependencies().add(actualApiName(), llArtifact.getMcpDepString());
     }
 

@@ -3,7 +3,6 @@ package net.minecraftforge.gradle.tasks;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,7 +21,6 @@ import net.minecraftforge.srg2source.util.io.ZipOutputSupplier;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
@@ -132,17 +130,7 @@ public class ApplyS2STask extends DefaultTask
     {
         RangeApplier app = new RangeApplier().readSrg(srg.getFiles());
 
-        final PrintStream debug = new PrintStream(Constants.createLogger(getLogger(), LogLevel.DEBUG));
-        final PrintStream stream = new PrintStream(rangeLog)
-        {
-            @Override
-            public void println(String line)
-            {
-                debug.println(line);
-                super.println(line);
-            }
-        };
-        app.setOutLogger(stream);
+        app.setOutLogger(Constants.getTaskLogStream(getProject(), this.getName() + ".log"));
 
         if (!exc.isEmpty())
         {

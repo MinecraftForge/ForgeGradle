@@ -36,12 +36,12 @@ public abstract class EditJarTask extends CachedTask
     public void doTask() throws Throwable
     {
         doStuffBefore();
-        getLogger().info("Reading jar: "+inJar);
+        getLogger().debug("Reading jar: "+inJar);
         readJarAndClean(getInJar());
         
         doStuffMiddle();
         
-        getLogger().info("Saving jar: "+outJar);
+        getLogger().debug("Saving jar: "+outJar);
         saveJar(getOutJar());
         doStuffAfter();
     }

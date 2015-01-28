@@ -218,7 +218,6 @@ public class MergeJarsTask extends CachedTask
                 String eName = name.replace(".", "/");
                 String classPath = eName + ".class";
                 ZipEntry newEntry = new ZipEntry(classPath);
-                System.out.printf("Adding %s\n", classPath);
                 if (!cAdded.contains(eName))
                 {
                     outJar.putNextEntry(newEntry);
