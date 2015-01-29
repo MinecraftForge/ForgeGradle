@@ -86,6 +86,10 @@ compileJava {
 	//options.compilerArgs += ["-Werror", "-Xlint:unchecked"]
 }
 
+javadoc {
+	classpath += configurations.compileOnly
+}
+
 artifacts { archives jar }
 
 //These should add a compile time only dependancies to eclipse, ide, and javac, but NOT to the generated POM on maven.

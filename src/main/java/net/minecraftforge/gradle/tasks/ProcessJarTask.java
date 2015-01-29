@@ -507,6 +507,7 @@ public class ProcessJarTask extends CachedTask
     /**
      * returns the actual output DelayedFile depending on Clean status
      * Unlike getOutputJar() this method does not resolve the files.
+     * @return DelayedFIle that will resolve to
      */
     public DelayedFile getDelayedOutput()
     {
@@ -515,12 +516,13 @@ public class ProcessJarTask extends CachedTask
 
     /**
      * returns the actual output file depending on Clean status
+     * @return File representing output jar
      */
     @Cached
     @OutputFile
     public File getOutJar()
     {
-        return isClean ? outCleanJar.call() : outDirtyJar.call();
+        return getDelayedOutput().call();
     }
 
     public FileCollection getAts()

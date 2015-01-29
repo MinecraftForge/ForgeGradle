@@ -50,18 +50,21 @@ public abstract class EditJarTask extends CachedTask
     
     /**
      * Do Stuff before the jar is read
+     * @throws Exception for convenience
      */
-    public abstract void doStuffBefore() throws Throwable;
+    public abstract void doStuffBefore() throws Exception;
 
     /**
      * Do Stuff after the jar is read, but before it is written.
+     * @throws Exception for convenience
      */
-    public abstract void doStuffMiddle() throws Throwable;
+    public abstract void doStuffMiddle() throws Exception;
     
     /**
      * Do Stuff after the jar is Written
+     * @throws Exception for convenience
      */
-    public abstract void doStuffAfter() throws Throwable;
+    public abstract void doStuffAfter() throws Exception;
 
     private void readJarAndClean(final File jar) throws IOException
     {

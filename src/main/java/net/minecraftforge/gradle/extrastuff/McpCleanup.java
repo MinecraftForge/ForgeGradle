@@ -303,8 +303,8 @@ public class McpCleanup
     /**
      * Ensures that no class imports stuff from the package its in.
      *
-     * @param text
-     * @return
+     * @param text Full file as a string
+     * @return Full file as a string with imports fixed.
      */
     public static String fixImports(String text)
     {

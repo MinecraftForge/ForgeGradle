@@ -112,6 +112,7 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Configures the task to sign the archive produced for each of the given tasks (which must be archive tasks).
+     * @param tasks 
      */
     public void reobf(Task... tasks)
     {
@@ -134,6 +135,8 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Configures the task to sign each of the given artifacts
+     * @param publishArtifact 
+     * @param artifactSpec 
      */
     public void reobf(PublishArtifact publishArtifact, Closure<Object> artifactSpec)
     {
@@ -146,6 +149,7 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Configures the task to sign each of the given artifacts
+     * @param publishArtifacts 
      */
     public void reobf(PublishArtifact... publishArtifacts)
     {
@@ -163,6 +167,8 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Configures the task to reobf each of the given files
+     * @param file 
+     * @param artifactSpec 
      */
     public void reobf(File file, Closure<Object> artifactSpec)
     {
@@ -174,6 +180,7 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Configures the task to reobf each of the given files
+     * @param files 
      */
     public void reobf(File... files)
     {
@@ -185,6 +192,8 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Configures the task to obfuscate every artifact of the given configurations
+     * @param configuration 
+     * @param artifactSpec 
      */
     public void reobf(Configuration configuration, final Closure<Object> artifactSpec)
     {
@@ -221,6 +230,7 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Configures the task to obfuscate every artifact of the given configurations
+     * @param configurations 
      */
     public void reobf(Configuration... configurations)
     {
