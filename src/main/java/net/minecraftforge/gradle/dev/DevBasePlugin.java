@@ -226,7 +226,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
                     if (!f.canExecute())
                     {
                         boolean worked = f.setExecutable(true);
-                        project.getLogger().info("Setting file +X "+worked + " : "+f.getPath());
+                        project.getLogger().debug("Setting file +X "+worked + " : "+f.getPath());
                     }
                     FileTree tree = delayedFileTree(DevConstants.LAUNCH4J_DIR + "/bin").call();
                     tree.visit(new FileVisitor()
@@ -238,7 +238,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
                             if (!fileDetails.getFile().canExecute())
                             {
                                 boolean worked = fileDetails.getFile().setExecutable(true);
-                                project.getLogger().info("Setting file +X "+worked + " : "+fileDetails.getPath());
+                                project.getLogger().debug("Setting file +X "+worked + " : "+fileDetails.getPath());
                             }
                         }
                     });

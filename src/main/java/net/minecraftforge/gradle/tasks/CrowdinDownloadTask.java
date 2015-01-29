@@ -126,7 +126,7 @@ public class CrowdinDownloadTask extends DefaultTask
                     continue;
                 }
 
-                getLogger().info("Extracting file: " + entry.getName());
+                getLogger().debug("Extracting file: " + entry.getName());
                 File out = new File(output, entry.getName());
                 Files.createParentDirs(out);
                 Files.touch(out);
