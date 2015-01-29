@@ -107,6 +107,10 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             @Override
             public void execute(Project project)
             {
+                // dont continue if its already failed!
+                if (project.getState().getFailure() != null)
+                    return;
+                
                 afterEvaluate();
 
                 try
