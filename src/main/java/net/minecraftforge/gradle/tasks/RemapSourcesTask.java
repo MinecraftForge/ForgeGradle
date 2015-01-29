@@ -48,7 +48,7 @@ public class RemapSourcesTask extends EditJarTask
     private static final Pattern                   FIELD      = Pattern.compile("^((?: {4})+|\\t+)(?:[\\w$.\\[\\]]+ )+(field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
 
     @Override
-    public void doStuffBefore() throws Throwable
+    public void doStuffBefore() throws Exception
     {
         readCsvFiles();
     }
@@ -261,12 +261,12 @@ public class RemapSourcesTask extends EditJarTask
     }
 
     @Override
-    public void doStuffAfter() throws Throwable
+    public void doStuffAfter() throws Exception
     {
     }
 
     @Override
-    public void doStuffMiddle() throws Throwable
+    public void doStuffMiddle() throws Exception
     {
     }
 }

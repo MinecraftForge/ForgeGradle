@@ -4,7 +4,6 @@ import groovy.lang.Closure;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
@@ -83,10 +82,6 @@ public class Constants
 
     // util
     public static final String NEWLINE = System.getProperty("line.separator");
-    private static final OutputStream NULL_OUT = new OutputStream()
-    {
-        public void write(int b) throws IOException{}
-    };
 
 
     // helper methods
@@ -259,14 +254,6 @@ public class Constants
         }
 
         return null;
-    }
-
-    /**
-     * DON'T FORGET TO CLOSE
-     */
-    public static OutputStream getNullStream()
-    {
-        return NULL_OUT;
     }
     
     public static OutputStream createLogger(final Logger logger, final LogLevel level)

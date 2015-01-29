@@ -52,9 +52,6 @@ import net.minecraftforge.gradle.StringUtils;
  */
 public class AntPathMatcher
 {
-
-    //TODO - complete JavaDoc
-
     /**
      * Default path separator: "/"
      */
@@ -65,6 +62,7 @@ public class AntPathMatcher
     /**
      * Set the path separator to use for pattern parsing.
      * Default is "/", as in Ant.
+     * @param pathSeparator 
      */
     public void setPathSeparator(String pathSeparator)
     {
@@ -436,17 +434,20 @@ public class AntPathMatcher
      * <p>
      * For example:
      * <ul>
-     * <li>'<code>/docs/cvs/commit.html</code>' and '<code>/docs/cvs/commit.html</code> -> ''</li>
-     * <li>'<code>/docs/*</code>' and '<code>/docs/cvs/commit</code> -> '<code>cvs/commit</code>'</li>
-     * <li>'<code>/docs/cvs/*.html</code>' and '<code>/docs/cvs/commit.html</code> -> '<code>commit.html</code>'</li>
-     * <li>'<code>/docs/**</code>' and '<code>/docs/cvs/commit</code> -> '<code>cvs/commit</code>'</li>
-     * <li>'<code>/docs/**\/*.html</code>' and '<code>/docs/cvs/commit.html</code> -> '<code>cvs/commit.html</code>'</li>
-     * <li>'<code>/*.html</code>' and '<code>/docs/cvs/commit.html</code> -> '<code>docs/cvs/commit.html</code>'</li>
-     * <li>'<code>*.html</code>' and '<code>/docs/cvs/commit.html</code> -> '<code>/docs/cvs/commit.html</code>'</li>
-     * <li>'<code>*</code>' and '<code>/docs/cvs/commit.html</code> -> '<code>/docs/cvs/commit.html</code>'</li>
+     * <li>'<code>/docs/cvs/commit.html</code>' and '<code>/docs/cvs/commit.html</code> -&gt; '</li>
+     * <li>'<code>/docs/*</code>' and '<code>/docs/cvs/commit</code> -&gt; '<code>cvs/commit</code>'</li>
+     * <li>'<code>/docs/cvs/*.html</code>' and '<code>/docs/cvs/commit.html</code> -&gt; '<code>commit.html</code>'</li>
+     * <li>'<code>/docs/**</code>' and '<code>/docs/cvs/commit</code> -&gt; '<code>cvs/commit</code>'</li>
+     * <li>'<code>/docs/**\/*.html</code>' and '<code>/docs/cvs/commit.html</code> -&gt; '<code>cvs/commit.html</code>'</li>
+     * <li>'<code>/*.html</code>' and '<code>/docs/cvs/commit.html</code> -&gt; '<code>docs/cvs/commit.html</code>'</li>
+     * <li>'<code>*.html</code>' and '<code>/docs/cvs/commit.html</code> -&gt; '<code>/docs/cvs/commit.html</code>'</li>
+     * <li>'<code>*</code>' and '<code>/docs/cvs/commit.html</code> -&gt; '<code>/docs/cvs/commit.html</code>'</li>
      * </ul>
      * <p>
      * Assumes that {@link #match} returns <code>true</code> for '<code>pattern</code>' and '<code>path</code>', but does <strong>not</strong> enforce this.
+     * @param pattern 
+     * @param path 
+     * @return The section of the path matched by the pattern
      */
     public String extractPathWithinPattern(String pattern, String path)
     {

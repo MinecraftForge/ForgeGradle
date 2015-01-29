@@ -71,7 +71,7 @@ public class ObfArtifact extends AbstractPublishArtifact
      * </p>
      * @param toObf The artifact that is to be obfuscated
      * @param artifactSpec The specification of how the obfuscated artifact is to be named
-     * @param task The task(s) that will invoke {@link #generate()} on this jar (optional)
+     * @param task The task(s) that will  reobfuscate this jar.
      */
     public ObfArtifact(AbstractArchiveTask toObf, ArtifactSpec artifactSpec, ReobfTask task)
     {
@@ -89,7 +89,7 @@ public class ObfArtifact extends AbstractPublishArtifact
      * </p>
      * @param toObf The artifact that is to be obfuscated
      * @param artifactSpec The specification of how the obfuscated artifact is to be named
-     * @param task The task(s) that will invoke {@link #generate()} on this jar (optional)
+     * @param task The task(s) that will  reobfuscate this jar.
      */
     public ObfArtifact(PublishArtifact toObf, ArtifactSpec artifactSpec, ReobfTask task)
     {
@@ -101,7 +101,7 @@ public class ObfArtifact extends AbstractPublishArtifact
      * Creates an obfuscated artifact for the given file.
      * @param toObf The file that is to be obfuscated
      * @param artifactSpec The specification of how the obfuscated artifact is to be named
-     * @param task The task(s) that will invoke {@link #generate()} on this jar (optional)
+     * @param task The task(s) that will  reobfuscate this jar.
      */
     public ObfArtifact(File toObf, ArtifactSpec artifactSpec, ReobfTask task)
     {
@@ -116,7 +116,7 @@ public class ObfArtifact extends AbstractPublishArtifact
      * </p>
      * @param toObf A closure that produces a File for the object to obfuscate (non File return values will be used as the path to the file)
      * @param outputSpec The specification of artifact to outputted
-     * @param task The task(s) that will invoke {@link #generate()} on this jar (optional)
+     * @param task The task(s) that will reobfuscate this jar.
      */
     public ObfArtifact(Closure<Object> toObf, ArtifactSpec outputSpec, ReobfTask task)
     {
