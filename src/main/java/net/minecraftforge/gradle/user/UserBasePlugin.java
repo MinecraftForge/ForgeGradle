@@ -112,11 +112,13 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             {
                 TaskExecutionGraph graph = project.getGradle().getTaskGraph();
                 String path = project.getPath();
+                
+                graph.getAllTasks().clear();
 
                 if (graph.hasTask(path + "setupDecompWorkspace"))
                 {
                     getExtension().setDecomp();
-                    setMinecraftDeps(true, true);
+                    configurePostDecomp(true, true);
                 }
                 return null;
             }
@@ -955,7 +957,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         }
 
         // post decompile status thing.
-        configurePostDecomp(getExtension().isDecomp());
+        configurePostDecomp(getExtension().isDecomp(), false);
 
         {
             // stop getting empty dirs
@@ -1063,7 +1065,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     /**
      * Configure tasks and stuff after you know if the decomp file exists or not.
      */
-    protected void configurePostDecomp(boolean decomp)
+    protected void configurePostDecomp(boolean decomp, boolean remove)
     {
         if (decomp)
         {
@@ -1076,7 +1078,12 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             (project.getTasks().getByName("compileApiJava")).dependsOn("deobfBinJar");
         }
 
-        setMinecraftDeps(decomp, false);
+        setMinecraftDeps(decomp, remove);
+        
+        if (decomp && remove)
+        {
+            (project.getTasks().getByName("deobfBinJar")).onlyIf(Constants.CALL_FALSE);
+        }
     }
 
     protected void setMinecraftDeps(boolean decomp, boolean remove)

@@ -29,6 +29,7 @@ import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.user.ApplyBinPatchesTask;
+import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
 import net.minecraftforge.gradle.user.UserBasePlugin;
 import net.minecraftforge.gradle.user.UserConstants;
 
@@ -421,5 +422,16 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
         pattern = super.resolve(pattern, project, exten);
         
         return pattern;
+    }
+    
+    @Override
+    protected void configurePostDecomp(boolean decomp, boolean remove)
+    {
+        super.configurePostDecomp(decomp, remove);
+        
+        if (decomp && remove)
+        {
+            (project.getTasks().getByName("applyBinPatches")).onlyIf(Constants.CALL_FALSE);
+        }
     }
 }
