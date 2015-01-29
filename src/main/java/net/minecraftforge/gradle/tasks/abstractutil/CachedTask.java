@@ -132,16 +132,16 @@ public abstract class CachedTask extends DefaultTask
 
                         if (!calcMD5.equals(foundMD5))
                         {
-                            getProject().getLogger().info(" Corrupted Cache!");
-                            getProject().getLogger().info("Checksums found: " + foundMD5);
-                            getProject().getLogger().info("Checksums calculated: " + calcMD5);
+                            getProject().getLogger().warn(" Corrupted Cache!");
+                            getProject().getLogger().debug("Checksums found: " + foundMD5);
+                            getProject().getLogger().debug("Checksums calculated: " + calcMD5);
                             file.delete();
                             getHashFile(file).delete();
                             return true;
                         }
                         
-                        getProject().getLogger().info("Checksums found: " + foundMD5);
-                        getProject().getLogger().info("Checksums calculated: " + calcMD5);
+                        getProject().getLogger().debug("Checksums found: " + foundMD5);
+                        getProject().getLogger().debug("Checksums calculated: " + calcMD5);
 
                     }
                     // error? spit it and do the task.
@@ -215,7 +215,7 @@ public abstract class CachedTask extends DefaultTask
             else if (m.isAnnotationPresent(InputFile.class))
             {
                 hashes.add(Constants.hash(getProject().file(input.getValue(instance))));
-                getLogger().info(Constants.hash(getProject().file(input.getValue(instance))) + " " + input.getValue(instance));
+                getLogger().debug(Constants.hash(getProject().file(input.getValue(instance))) + " " + input.getValue(instance));
             }
             else if (m.isAnnotationPresent(InputDirectory.class))
             {
@@ -229,7 +229,7 @@ public abstract class CachedTask extends DefaultTask
                 {
                     String hash = Constants.hash(file);
                     hashes.add(hash);
-                    getLogger().info(hash + " " + input.getValue(instance));
+                    getLogger().debug(hash + " " + input.getValue(instance));
                 }
             }
             else
@@ -243,7 +243,7 @@ public abstract class CachedTask extends DefaultTask
                 if (obj instanceof String)
                 {
                     hashes.add(Constants.hash((String) obj));
-                    getLogger().info(Constants.hash((String) obj) + " " + (String) obj);
+                    getLogger().debug(Constants.hash((String) obj) + " " + (String) obj);
                 }
                 else if (obj instanceof File)
                 {
@@ -255,13 +255,13 @@ public abstract class CachedTask extends DefaultTask
                         for (File i : files)
                         {
                             hashes.add(Constants.hash(i));
-                            getLogger().info(Constants.hash(i) + " " + i);
+                            getLogger().debug(Constants.hash(i) + " " + i);
                         }
                     }
                     else
                     {
                         hashes.add(Constants.hash(file));
-                        getLogger().info(Constants.hash(file) + " " + file);
+                        getLogger().debug(Constants.hash(file) + " " + file);
                     }
                 }
                 else

@@ -27,7 +27,7 @@ public class DownloadTask extends CachedTask
         outputFile.getParentFile().mkdirs();
         outputFile.createNewFile();
 
-        getLogger().info("Downloading " + getUrl() + " to " + outputFile);
+        getLogger().debug("Downloading " + getUrl() + " to " + outputFile);
         
         // TODO: check etags... maybe?
 
