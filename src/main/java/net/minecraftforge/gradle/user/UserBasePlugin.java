@@ -365,7 +365,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             }
         }
         else
-            log.info("RESOLVED: " + depConfig);
+            log.debug("RESOLVED: " + depConfig);
 
         // the natives
         if (project.getConfigurations().getByName(nativeConfig).getState() == State.UNRESOLVED)
@@ -377,7 +377,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             }
         }
         else
-            log.info("RESOLVED: " + nativeConfig);
+            log.debug("RESOLVED: " + nativeConfig);
 
         hasAppliedJson = true;
     }
@@ -945,7 +945,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             public void execute(Project proj)
             {
                 addFlatRepo(proj, getApiName()+"FlatRepo", repoDir);
-                proj.getLogger().info("Adding repo to " + proj.getPath() + " >> " + repoDir);
+                proj.getLogger().debug("Adding repo to " + proj.getPath() + " >> " + repoDir);
             }
         });
 

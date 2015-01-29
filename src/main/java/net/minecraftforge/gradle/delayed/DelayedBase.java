@@ -68,7 +68,7 @@ public abstract class DelayedBase<V> extends Closure<V>
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static String resolve(String patern, Project project, IDelayedResolver... resolvers)
     {
-        project.getLogger().info("Resolving: " + patern);
+        project.getLogger().debug("Resolving: " + patern);
         BaseExtension exten = (BaseExtension)project.getExtensions().getByName(EXT_NAME_MC);
         JenkinsExtension jenk = (JenkinsExtension)project.getExtensions().getByName(EXT_NAME_JENKINS);
 
@@ -105,7 +105,7 @@ public abstract class DelayedBase<V> extends Closure<V>
         patern = patern.replace("{JENKINS_AUTH_NAME}",     jenk.getAuthName());
         patern = patern.replace("{JENKINS_AUTH_PASSWORD}", jenk.getAuthPassword());
 
-        project.getLogger().info("Resolved:  " + patern);
+        project.getLogger().debug("Resolved:  " + patern);
         return patern;
     }
 }
