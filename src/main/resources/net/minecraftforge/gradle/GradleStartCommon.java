@@ -205,7 +205,7 @@ public abstract class GradleStartCommon
             if (!url.getProtocol().startsWith("file")) // because file urls start with file://
                 continue; //         this isnt a file
             
-            File coreMod = new File(url.getFile());
+            File coreMod = new File(url.toURI().getPath());
             Manifest manifest = null;
             
             if (!coreMod.exists())
