@@ -75,7 +75,6 @@ public class Constants
     // util
     public static final String NEWLINE = System.getProperty("line.separator");
 
-
     // helper methods
     public static File cacheFile(Project project, String... otherFiles)
     {

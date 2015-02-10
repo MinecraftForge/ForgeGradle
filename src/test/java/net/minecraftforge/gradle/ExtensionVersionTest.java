@@ -1,17 +1,16 @@
 package net.minecraftforge.gradle;
 
-import java.util.Map;
-import java.util.HashMap;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import net.minecraftforge.gradle.user.patch.ForgeUserPlugin;
 import net.minecraftforge.gradle.user.patch.UserPatchExtension;
 
 import org.gradle.api.Project;
 import org.gradle.testfixtures.ProjectBuilder;
-
-import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.collect.ImmutableMap;
 
 public class ExtensionVersionTest
 {
@@ -21,12 +20,9 @@ public class ExtensionVersionTest
     @Before
     public void setupProject()
     {
-        Map<String, Object> options = new HashMap<String, Object>();
-        options.put("plugin", ForgeUserPlugin.class);
-
         this.testProject = ProjectBuilder.builder().build();
         assertNotNull(this.testProject);
-        this.testProject.apply(options);
+        this.testProject.apply(ImmutableMap.of("plugin", ForgeUserPlugin.class));
 
         this.ext = this.testProject.getExtensions().findByType(UserPatchExtension.class);   // unlike getByType(), does not throw exception
         assertNotNull(this.ext);

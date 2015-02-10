@@ -196,12 +196,21 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
             
             return out;
         }
-        catch (Throwable e)
+        catch (Exception e) { }
+        
+        if (cache.exists())
         {
-            Throwables.propagate(e);
+            try
+            {
+                return Files.toString(cache, Charsets.UTF_8);
+            }
+            catch (IOException e)
+            {
+                Throwables.propagate(e);
+            }
         }
         
-        return null;
+        throw new RuntimeException("Unable to obtain " + this.getApiName() + " version json!");
     }
 
     /**
