@@ -77,8 +77,8 @@ public class CreateStartTask extends JavaCompile
         super();
 
         final File clientJava = new File(getTemporaryDir(), "GradleStart.java");
-        final File serverJava = new File(getTemporaryDir(), "net/minecraftforge/gradle/GradleStartServer.java");
-        final File commonJava = new File(getTemporaryDir(), "GradleStartCommon.java");
+        final File serverJava = new File(getTemporaryDir(), "GradleStartServer.java");
+        final File commonJava = new File(getTemporaryDir(), "net/minecraftforge/gradle/GradleStartCommon.java");
 
         // configure compilation
         this.source(getReplaceClosure(clientResource, clientJava), getReplaceClosure(serverResource, serverJava),getReplaceClosure(commonResource, commonJava));
