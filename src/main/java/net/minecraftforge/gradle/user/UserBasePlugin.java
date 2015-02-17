@@ -637,6 +637,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 task.setAssetIndex(delayedString("{ASSET_INDEX}").forceResolving());
                 task.setAssetsDir(delayedFile("{CACHE_DIR}/minecraft/assets"));
                 task.setNativesDir(delayedFile(NATIVES_DIR));
+                task.setSrgDir(delayedFile("{SRG_DIR}"));
+                task.setCsvDir(delayedFile("{MCP_DATA_DIR}"));
                 task.setVersion(delayedString("{MC_VERSION}"));
                 task.setClientTweaker(delayedString("{RUN_CLIENT_TWEAKER}"));
                 task.setServerTweaker(delayedString("{RUN_SERVER_TWEAKER}"));

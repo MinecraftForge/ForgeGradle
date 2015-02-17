@@ -50,6 +50,10 @@ public class CreateStartTask extends JavaCompile
     @Input
     private DelayedFile nativesDir;
     @Input
+    private DelayedFile srgDir;
+    @Input
+    private DelayedFile csvDir;
+    @Input
     private DelayedString version;
     @Input
     private DelayedString clientTweaker;
@@ -164,10 +168,12 @@ public class CreateStartTask extends JavaCompile
 
     private void replaceResource(String resource, File out) throws IOException
     {
-        resource = resource.replace("@@MCVERSION@@", getVersion());
-        resource = resource.replace("@@ASSETINDEX@@", getAssetIndex());
-        resource = resource.replace("@@ASSETSDIR@@", getAssetsDir().replace('\\', '/'));
-        resource = resource.replace("@@NATIVESDIR@@", getNativesDir().replace('\\', '/'));
+        resource = resource.replace("@@MCVERSION@@",     getVersion());
+        resource = resource.replace("@@ASSETINDEX@@",    getAssetIndex());
+        resource = resource.replace("@@ASSETSDIR@@",     getAssetsDir().replace('\\', '/'));
+        resource = resource.replace("@@NATIVESDIR@@",    getNativesDir().replace('\\', '/'));
+        resource = resource.replace("@@SRGDIR@@",        getSrgDir().replace('\\', '/'));
+        resource = resource.replace("@@CSVDIR@@",        getCsvDir().replace('\\', '/'));
         resource = resource.replace("@@CLIENTTWEAKER@@", getClientTweaker());
         resource = resource.replace("@@SERVERTWEAKER@@", getServerTweaker());
         resource = resource.replace("@@BOUNCERCLIENT@@", getClientBounce());
@@ -501,6 +507,26 @@ public class CreateStartTask extends JavaCompile
     public void setNativesDir(DelayedFile nativesDir)
     {
         this.nativesDir = nativesDir;
+    }
+    
+    public String getSrgDir() throws IOException
+    {
+        return srgDir.call().getCanonicalPath();
+    }
+
+    public void setSrgDir(DelayedFile srgDir)
+    {
+        this.srgDir = srgDir;
+    }
+    
+    public String getCsvDir() throws IOException
+    {
+        return csvDir.call().getCanonicalPath();
+    }
+
+    public void setCsvDir(DelayedFile csvDir)
+    {
+        this.csvDir = csvDir;
     }
 
     public String getVersion()
