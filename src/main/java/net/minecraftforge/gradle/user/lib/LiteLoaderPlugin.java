@@ -1,9 +1,6 @@
 package net.minecraftforge.gradle.user.lib;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-
+import com.google.common.base.Throwables;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.json.LiteLoaderJson;
@@ -15,7 +12,7 @@ import net.minecraftforge.gradle.tasks.user.reobf.ArtifactSpec;
 import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
 import net.minecraftforge.gradle.user.UserBasePlugin;
 import net.minecraftforge.gradle.user.UserConstants;
-
+import net.minecraftforge.gradle.user.UserExtension;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -23,9 +20,11 @@ import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.Jar;
 
-import com.google.common.base.Throwables;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 
-public class LiteLoaderPlugin extends UserLibBasePlugin
+public class LiteLoaderPlugin extends UserLibBasePlugin<UserExtension>
 {
     private Artifact llArtifact;
     

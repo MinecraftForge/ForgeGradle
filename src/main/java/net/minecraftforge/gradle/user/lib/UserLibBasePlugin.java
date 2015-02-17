@@ -10,7 +10,7 @@ import net.minecraftforge.gradle.user.UserExtension;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 
-public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
+public abstract class UserLibBasePlugin<T extends UserExtension> extends UserBasePlugin<T>
 {
     @Override
     public void applyPlugin()
@@ -131,13 +131,13 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
             throw new RuntimeException("ForgeGradle 1.2 does not support " + version);
     }
 
-    public UserExtension getOverlayExtension()
+    public T getOverlayExtension()
     {
-        return (UserExtension) project.getExtensions().getByName(actualApiName());
+        return (T) project.getExtensions().getByName(actualApiName());
     }
 
     @Override
-    public String resolve(String pattern, Project project, UserExtension exten)
+    public String resolve(String pattern, Project project, T exten)
     {
         pattern = super.resolve(pattern, project, exten);
         pattern = pattern.replace("{FML_VERSION}", getFmlVersion(getMcVersion(exten)));
