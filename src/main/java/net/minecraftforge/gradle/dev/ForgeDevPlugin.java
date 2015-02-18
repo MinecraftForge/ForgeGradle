@@ -21,7 +21,6 @@ import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
-import net.minecraftforge.gradle.tasks.ReplaceJavadocsTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DelayedJar;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.abstractutil.FileFilterTask;
@@ -45,7 +44,6 @@ import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.java.archives.Manifest;
 import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.bundling.Zip;
-import org.gradle.api.tasks.javadoc.Javadoc;
 
 import com.google.common.base.Throwables;
 
@@ -91,7 +89,7 @@ public class ForgeDevPlugin extends DevBasePlugin
 
         // the master task.
         task = makeTask("buildPackages");
-        task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "packageUserDev", "packageSrc", "packageJavadoc");
+        task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "packageUserDev", "packageSrc");
         task.setGroup("Forge");
     }
 
@@ -556,63 +554,6 @@ public class ForgeDevPlugin extends DevBasePlugin
             classZip.setDestinationDir(delayedFile("{BUILD_DIR}/tmp/").call());
         }
 
-        final File javadocSource = project.file(delayedFile("{BUILD_DIR}/tmp/javadocSource"));
-        ReplaceJavadocsTask jdSource = makeTask("replaceJavadocs", ReplaceJavadocsTask.class);
-        {
-            jdSource.from(delayedFile(FML_SOURCES));
-            jdSource.from(delayedFile(FORGE_SOURCES));
-            jdSource.from(delayedFile(ECLIPSE_FORGE_SRC));
-            jdSource.setOutFile(delayedFile("{BUILD_DIR}/tmp/javadocSource"));
-            jdSource.setMethodsCsv(delayedFile(METHODS_CSV));
-            jdSource.setFieldsCsv(delayedFile(FIELDS_CSV));
-            jdSource.onlyIf(new Closure<Boolean>(this.project) {
-                @Override
-                public Boolean call(Object o)
-                {
-                    return getExtension().getMakeJavadoc();
-                }
-            });
-        }
-
-        final File javadoc_temp = project.file(delayedFile("{BUILD_DIR}/tmp/javadoc"));
-        final SubprojectTask javadocJar = makeTask("genJavadocs", SubprojectTask.class);
-        {
-            javadocJar.dependsOn("replaceJavadocs");
-            javadocJar.setBuildFile(delayedFile(ECLIPSE_FORGE + "/build.gradle"));
-            javadocJar.setTasks("javadoc");
-            javadocJar.setConfigureTask(new Action<Task>() {
-                public void execute(Task obj)
-                {
-                    Javadoc task = (Javadoc)obj;
-                    task.setSource(project.fileTree(javadocSource));
-                    task.setDestinationDir(javadoc_temp);
-                    task.setFailOnError(false);
-                }
-            });
-            javadocJar.onlyIf(new Closure<Boolean>(this.project) {
-                @Override
-                public Boolean call(Object o)
-                {
-                    return getExtension().getMakeJavadoc();
-                }
-            });
-            javadocJar.dependsOn("generateProjects", "extractForgeSources");
-        }
-
-        final Zip javadoc = makeTask("packageJavadoc", Zip.class);
-        {
-            javadoc.from(javadoc_temp);
-            javadoc.setClassifier("javadoc");
-            javadoc.dependsOn("genJavadocs");
-            javadoc.onlyIf(new Closure<Boolean>(this.project) {
-                @Override
-                public Boolean call(Object o)
-                {
-                    return getExtension().getMakeJavadoc();
-                }
-            });
-        }
-        project.getArtifacts().add("archives", javadoc);
 
         ExtractS2SRangeTask range = makeTask("userDevExtractRange", ExtractS2SRangeTask.class);
         {
@@ -784,10 +725,6 @@ public class ForgeDevPlugin extends DevBasePlugin
         task.configureProject(getExtension().getCleanProject());
 
         task = (SubprojectTask) project.getTasks().getByName("eclipseForge");
-        task.configureProject(getExtension().getSubprojects());
-        task.configureProject(getExtension().getCleanProject());
-
-        task = (SubprojectTask) project.getTasks().getByName("genJavadocs");
         task.configureProject(getExtension().getSubprojects());
         task.configureProject(getExtension().getCleanProject());
     }
