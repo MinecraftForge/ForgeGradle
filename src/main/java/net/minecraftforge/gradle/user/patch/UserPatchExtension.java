@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import net.minecraftforge.gradle.GradleConfigurationException;
 import net.minecraftforge.gradle.delayed.DelayedObject;
 import net.minecraftforge.gradle.json.forgeversion.ForgeBuild;
 import net.minecraftforge.gradle.json.forgeversion.ForgeVersion;
@@ -76,6 +77,14 @@ public class UserPatchExtension extends UserExtension
     
     public void setVersion(String str) // magic goes here
     {
+        checkAndSetVersion(str);
+        
+        // now check the mappings from the base plugin
+        checkMappings();
+    }
+    
+    private void checkAndSetVersion(String str)
+    {
         str = str.trim();
         
         // build number
@@ -119,7 +128,7 @@ public class UserPatchExtension extends UserExtension
             
             if (!build.version.equals(forgeVersion) || !branchMatches)
             {
-                throw new RuntimeException(str+" is an invalid version! did you mean '"+build.version+outBranch+"' ?");
+                throw new GradleConfigurationException(str+" is an invalid version! did you mean '"+build.version+outBranch+"' ?");
             }
             
             version = build.mcversion.replace("_", "-");
@@ -156,7 +165,7 @@ public class UserPatchExtension extends UserExtension
             
             if (!build.version.equals(forgeVersion) || !branchMatches || !mcMatches)
             {
-                throw new RuntimeException(str+" is an invalid version! did you mean '"+build.mcversion+"-"+build.version+outBranch+"' ?");
+                throw new GradleConfigurationException(str+" is an invalid version! did you mean '"+build.mcversion+"-"+build.version+outBranch+"' ?");
             }
             
             version = build.mcversion.replace("_", "-");
@@ -167,7 +176,7 @@ public class UserPatchExtension extends UserExtension
             return;
         }
         
-        throw new RuntimeException("Invalid version notation! The following are valid notations. Buildnumber, version, version-branch, mcversion-version-branch, and pomotion");
+        throw new GradleConfigurationException("Invalid version notation! The following are valid notations. Buildnumber, version, version-branch, mcversion-version-branch, and pomotion");
     }
     
     private boolean isAllNums(String in)

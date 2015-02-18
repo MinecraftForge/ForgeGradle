@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.user.lib;
 
+import net.minecraftforge.gradle.GradleConfigurationException;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
@@ -128,7 +129,7 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
     protected final void doVersionChecks(String version)
     {
         if (!"1.7.2".equals(version) && !"1.7.10".equals(version))
-            throw new RuntimeException("ForgeGradle 1.2 does not support " + version);
+            throw new GradleConfigurationException("ForgeGradle 1.2 does not support " + version);
     }
 
     public UserExtension getOverlayExtension()

@@ -136,7 +136,7 @@ public class GradleStart extends GradleStartCommon
     {
         if (Strings.isNullOrEmpty(argMap.get("assetsDir")))
         {
-            throw new RuntimeException("assetsDir is null when assetIndex is not! THIS IS BAD COMMAND LINE ARGUMENTS, fix them");
+            throw new IllegalArgumentException("assetsDir is null when assetIndex is not! THIS IS BAD COMMAND LINE ARGUMENTS, fix them");
         }
         File assets = new File(argMap.get("assetsDir"));
         File objects = new File(assets, "objects");

@@ -12,7 +12,7 @@ import com.google.common.base.Strings;
 
 public class UserExtension extends BaseExtension
 {
-    public UserBasePlugin<? extends UserExtension> plugin;
+    public transient UserBasePlugin<? extends UserExtension> plugin;
     private HashMap<String, Object> replacements = new HashMap<String, Object>();
     private ArrayList<String> includes = new ArrayList<String>();
     private boolean isDecomp = false;
@@ -63,7 +63,6 @@ public class UserExtension extends BaseExtension
     
     public void setMappings(String mappings)
     {
-        
         super.setMappings(mappings);
         
         if (!Strings.isNullOrEmpty(mappings))

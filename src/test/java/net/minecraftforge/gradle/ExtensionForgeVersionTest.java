@@ -12,9 +12,9 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
 
-public class ExtensionVersionTest
+public class ExtensionForgeVersionTest
 {
-    private Project testProject;
+    private Project            testProject;
     private UserPatchExtension ext;
 
     @Before
@@ -113,35 +113,35 @@ public class ExtensionVersionTest
 
     // Invalid formats
 
-    @Test(expected=RuntimeException.class)
+    @Test(expected = GradleConfigurationException.class)
     public void testInvalidBuild()
     {
         // 1.8 build skipped due to 1.7.10
         this.ext.setVersion("11.14.0.1256-1.8");
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test(expected = GradleConfigurationException.class)
     public void testInvalidBuildWithMcVersion()
     {
         // 1.8 build skipped due to 1.7.10 (with MC version)
         this.ext.setVersion("1.8-11.14.0.1256-1.8");
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test(expected = GradleConfigurationException.class)
     public void testInvalidMcVersion()
     {
         // invalid MC version
         this.ext.setVersion("1.7.10-9.11.1.965");
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test(expected = GradleConfigurationException.class)
     public void testInvalidMcVersionWithBranch()
     {
         // invalid MC version (with branch)
         this.ext.setVersion("1.7.10-11.14.0.1257-1.8");
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test(expected = GradleConfigurationException.class)
     public void testInvalidBranch()
     {
         // invalid branch

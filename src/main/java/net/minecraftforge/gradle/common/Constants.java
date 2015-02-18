@@ -60,6 +60,7 @@ public class Constants
 
     // MCP things
     public static final String CONFIG_MCP_DATA  = "mcpSnapshotDataConfig";
+    public static final String MCP_JSON_URL     = "http://export.mcpbot.bspk.rs/versions.json";
 
     // things in the cache dir.
     public static final String MCP_DATA_DIR     = "{CACHE_DIR}/minecraft/de/oceanlabs/mcp/mcp_{MAPPING_CHANNEL}/{MAPPING_VERSION}/";
