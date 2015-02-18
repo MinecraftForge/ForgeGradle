@@ -132,7 +132,7 @@ public abstract class CachedTask extends DefaultTask
 
                         if (!calcMD5.equals(foundMD5))
                         {
-                            getProject().getLogger().warn(" Corrupted Cache!");
+                            getProject().getLogger().info(" Corrupted Cache!");
                             getProject().getLogger().debug("Checksums found: " + foundMD5);
                             getProject().getLogger().debug("Checksums calculated: " + calcMD5);
                             file.delete();
