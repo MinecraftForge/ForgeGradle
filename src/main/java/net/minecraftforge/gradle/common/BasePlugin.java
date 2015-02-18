@@ -459,7 +459,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setInstanceFollowRedirects(true);
             con.setRequestProperty("If-None-Match", etag);
-            con.setRequestProperty("User-Agent", "ForgeGradle_1.2");
+            con.setRequestProperty("User-Agent", Constants.USER_AGENT);
             con.connect();
             
             String out =  null;

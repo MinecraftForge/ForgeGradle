@@ -7,11 +7,13 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
+
 import gnu.trove.TIntArrayList;
 import gnu.trove.TIntHashSet;
 import gnu.trove.TObjectIntHashMap;
 import groovy.lang.Closure;
 import net.minecraftforge.gradle.StringUtils;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.json.curse.CurseError;
@@ -21,6 +23,7 @@ import net.minecraftforge.gradle.json.curse.CurseProjectDep;
 import net.minecraftforge.gradle.json.curse.CurseRelations;
 import net.minecraftforge.gradle.json.curse.CurseReply;
 import net.minecraftforge.gradle.json.curse.CurseVersion;
+
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -139,6 +142,7 @@ public class CurseUploadTask extends DefaultTask
         HttpPost httpPost = new HttpPost(new URI(url));
 
         httpPost.addHeader("X-Api-Token", getApiKey());
+        httpPost.setHeader("User-Agent", Constants.USER_AGENT);
         httpPost.setEntity(
                 MultipartEntityBuilder.create()
                         .addTextBody("metadata", jsonMetadata)
@@ -232,6 +236,7 @@ public class CurseUploadTask extends DefaultTask
 
         httpGet.setHeader("X-Api-Token", getApiKey());
         httpGet.setHeader("If-None-Match", etag);
+        httpGet.setHeader("User-Agent", Constants.USER_AGENT);
 
         HttpResponse response = httpclient.execute(httpGet);
 

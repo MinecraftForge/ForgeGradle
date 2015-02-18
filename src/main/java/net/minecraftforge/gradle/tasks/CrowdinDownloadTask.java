@@ -11,6 +11,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import joptsimple.internal.Strings;
+import net.minecraftforge.gradle.common.Constants;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
@@ -86,6 +87,7 @@ public class CrowdinDownloadTask extends DefaultTask
         URL url = new URL(String.format(EXPORT_URL, projectId, key));
         
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestProperty("User-Agent", Constants.USER_AGENT);
         con.setInstanceFollowRedirects(true);
         
         try
@@ -111,6 +113,7 @@ public class CrowdinDownloadTask extends DefaultTask
         URL url = new URL(String.format(DOWNLOAD_URL, projectId, key));
         
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestProperty("User-Agent", Constants.USER_AGENT);
         con.setInstanceFollowRedirects(true);
 
         InputStream stream = con.getInputStream();

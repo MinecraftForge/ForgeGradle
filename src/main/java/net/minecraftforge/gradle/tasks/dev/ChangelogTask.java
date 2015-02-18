@@ -18,6 +18,7 @@ import java.util.Map.Entry;
 
 import javax.xml.bind.DatatypeConverter;
 
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedString;
 
@@ -112,6 +113,7 @@ public class ChangelogTask extends DefaultTask
     {
         URLConnection con = null;
         con = url.openConnection();
+        con.setRequestProperty("User-Agent", Constants.USER_AGENT);
         if (auth != null)
         {
             getProject().getLogger().debug(auth);

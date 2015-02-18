@@ -38,6 +38,7 @@ public class Constants
     public static final OS               OPERATING_SYSTEM = OS.CURRENT;
     public static final SystemArch       SYSTEM_ARCH      = getArch();
     public static final String           HASH_FUNC        = "MD5";
+    public static final String           USER_AGENT       = "ForgeGradle_1.2";
 
     // extension nam
     public static final String EXT_NAME_MC      = "minecraft";
