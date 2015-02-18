@@ -170,8 +170,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         getExtension().mcpJson = JsonFactory.GSON.fromJson(
                 getWithEtag(Constants.MCP_JSON_URL, jsonCache, etagFile),
                 new TypeToken<Map<String, Map<String, int[]>>>() {}.getType() );
-        
-        System.out.println("JSON SET!!!!!");
     }
 
     public void afterEvaluate()
