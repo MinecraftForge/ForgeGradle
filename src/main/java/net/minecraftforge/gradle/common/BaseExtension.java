@@ -22,6 +22,7 @@ public class BaseExtension
     protected boolean                         mappingsSet     = false;
     protected String                          mappingsChannel = null;
     protected int                             mappingsVersion = -1;
+    protected String                          customVersion   = null;
 
     public BaseExtension(BasePlugin<? extends BaseExtension> plugin)
     {
@@ -94,7 +95,7 @@ public class BaseExtension
 
     public String getMappings()
     {
-        return mappingsChannel + "_" + mappingsVersion;
+        return mappingsChannel + "_" + (customVersion == null ? mappingsVersion : customVersion);
     }
 
     public String getMappingsChannel()
@@ -111,9 +112,9 @@ public class BaseExtension
             return mappingsChannel.substring(0, underscore);
     }
 
-    public int getMappingsVersion()
+    public String getMappingsVersion()
     {
-        return mappingsVersion;
+        return customVersion == null ? ""+mappingsVersion : customVersion;
     }
 
     public boolean mappingsSet()
@@ -137,15 +138,21 @@ public class BaseExtension
             throw new IllegalArgumentException("Mappings must be in format 'channel_version'. eg: snapshot_20140910");
         }
 
-        try
+        int index = mappings.lastIndexOf('_');
+        mappingsChannel = mappings.substring(0, index);
+        customVersion = mappings.substring(index + 1);
+        
+        if (!customVersion.equals("custom"))
         {
-            int index = mappings.lastIndexOf('_');
-            mappingsChannel = mappings.substring(0, index);
-            mappingsVersion = Integer.parseInt(mappings.substring(index + 1));
-        }
-        catch (NumberFormatException e)
-        {
-            throw new GradleConfigurationException("The mappings version must be a number! like channel_###!");
+            try
+            {
+                mappingsVersion = Integer.parseInt(customVersion);
+                customVersion = null;
+            }
+            catch (NumberFormatException e)
+            {
+                throw new GradleConfigurationException("The mappings version must be a number! eg: channel_### or channel_custom (for custom mappings).");
+            }
         }
 
         mappingsSet = true;
@@ -161,7 +168,7 @@ public class BaseExtension
     protected void checkMappings()
     {
         // mappings or mc version are null
-        if (!mappingsSet || "null".equals(version) || Strings.isNullOrEmpty(version))
+        if (!mappingsSet || "null".equals(version) || Strings.isNullOrEmpty(version) || customVersion != null)
             return;
 
         // check if it exists

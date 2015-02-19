@@ -37,7 +37,7 @@ public class ExtensionMcpMappingTest
         this.ext.setVersion(VERSION_17);
         this.ext.setMappings("snapshot_20140925");
         assertEquals(this.ext.getMappingsChannel(), "snapshot");
-        assertEquals(this.ext.getMappingsVersion(), 20140925);
+        assertEquals(this.ext.getMappingsVersion(), "20140925");
     }
 
     @Test
@@ -46,7 +46,7 @@ public class ExtensionMcpMappingTest
         this.ext.setVersion(VERSION_17);
         this.ext.setMappings("stable_12");
         assertEquals(this.ext.getMappingsChannel(), "stable");
-        assertEquals(this.ext.getMappingsVersion(), 12);
+        assertEquals(this.ext.getMappingsVersion(), "12");
     }
 
     @Test
@@ -55,7 +55,7 @@ public class ExtensionMcpMappingTest
         this.ext.setVersion(VERSION_18);
         this.ext.setMappings("snapshot_20150218");
         assertEquals(this.ext.getMappingsChannel(), "snapshot");
-        assertEquals(this.ext.getMappingsVersion(), 20150218);
+        assertEquals(this.ext.getMappingsVersion(), "20150218");
     }
 
     @Test
@@ -64,7 +64,7 @@ public class ExtensionMcpMappingTest
         this.ext.setVersion(VERSION_18);
         this.ext.setMappings("stable_15");
         assertEquals(this.ext.getMappingsChannel(), "stable");
-        assertEquals(this.ext.getMappingsVersion(), 15);
+        assertEquals(this.ext.getMappingsVersion(), "15");
     }
 
     @Test
@@ -73,7 +73,7 @@ public class ExtensionMcpMappingTest
         this.ext.setVersion(VERSION_17);
         this.ext.setMappings("snapshot_nodoc_20140925");
         assertEquals(this.ext.getMappingsChannelNoSubtype(), "snapshot");
-        assertEquals(this.ext.getMappingsVersion(), 20140925);
+        assertEquals(this.ext.getMappingsVersion(), "20140925");
     }
 
     @Test
@@ -82,7 +82,7 @@ public class ExtensionMcpMappingTest
         this.ext.setVersion(VERSION_17);
         this.ext.setMappings("stable_nodoc_12");
         assertEquals(this.ext.getMappingsChannelNoSubtype(), "stable");
-        assertEquals(this.ext.getMappingsVersion(), 12);
+        assertEquals(this.ext.getMappingsVersion(), "12");
     }
 
     @Test(expected = GradleConfigurationException.class)
@@ -105,7 +105,7 @@ public class ExtensionMcpMappingTest
         this.ext.setMappings("snapshot_20140925");
         this.ext.setVersion(VERSION_17);
         assertEquals(this.ext.getMappingsChannel(), "snapshot");
-        assertEquals(this.ext.getMappingsVersion(), 20140925);
+        assertEquals(this.ext.getMappingsVersion(), "20140925");
     }
 
     @Test(expected = GradleConfigurationException.class)
@@ -120,5 +120,20 @@ public class ExtensionMcpMappingTest
     {
         this.ext.setVersion(VERSION_17);
         this.ext.setMappings("stable_20140925");
+    }
+    
+    @Test(expected = GradleConfigurationException.class)
+    public void testInvalidCustom()
+    {
+        this.ext.setVersion(VERSION_17);
+        this.ext.setMappings("abrar_blahblah");
+    }
+    
+    public void testValidCustom()
+    {
+        this.ext.setVersion(VERSION_17);
+        this.ext.setMappings("abrar_custom");
+        assertEquals(this.ext.getMappingsChannel(), "abrar");
+        assertEquals(this.ext.getMappingsVersion(), "custom");
     }
 }

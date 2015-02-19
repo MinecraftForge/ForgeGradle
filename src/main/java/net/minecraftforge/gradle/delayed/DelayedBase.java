@@ -97,7 +97,7 @@ public abstract class DelayedBase<V> extends Closure<V>
         {
             patern = patern.replace("{MAPPING_CHANNEL}", exten.getMappingsChannel());
             patern = patern.replace("{MAPPING_CHANNEL_DOC}", exten.getMappingsChannelNoSubtype());
-            patern = patern.replace("{MAPPING_VERSION}", ""+exten.getMappingsVersion());
+            patern = patern.replace("{MAPPING_VERSION}", exten.getMappingsVersion());
         }
 
         patern = patern.replace("{JENKINS_SERVER}",        jenk.getServer());
