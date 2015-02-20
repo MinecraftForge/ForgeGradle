@@ -42,7 +42,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     public void applyPlugin()
     {
         super.applyPlugin();
-        
+
         setVersionInfoJson(); // stuff for version parsing
 
         // add the binPatching task
@@ -84,8 +84,19 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
             @Override
             public void execute(Object arg0)
             {
+                // find the file
                 File f = new File(ECLIPSE_LOCATION);
-                if (f.exists())// && f.length() == 0)
+                if (!f.exists()) // folder doesnt exist
+                {
+                    return;
+                }
+                File[] files = f.listFiles();
+                if (files.length < 1) // empty folder
+                    return; 
+                
+                f = new File(files[0], ".location");
+                
+                if (f.exists()) // if .location exists
                 {
                     String projectDir = "URI//" + project.getProjectDir().toURI().toString();
                     try
