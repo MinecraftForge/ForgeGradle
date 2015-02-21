@@ -180,14 +180,10 @@ public class CreateStartTask extends JavaCompile
         resource = resource.replace("@@BOUNCERSERVER@@", getServerBounce());
 
         // because there are different versions of authlib
-        if (!"1.7.2".equals(getVersion()))
+        if (!getVersion().startsWith("1.7"))
         {
             resource = resource.replace("//@@USERTYPE@@", "argMap.put(\"userType\", auth.getUserType().getName());");
-            resource = resource.replace("//@@USERPROP@@", "argMap.put(\"userPropertiesMap\", new GsonBuilder().registerTypeAdapter(com.mojang.authlib.properties.PropertyMap.class, new com.mojang.authlib.properties.PropertyMap.Serializer()).create().toJson(auth.getUserProperties()));");
-        }
-        else
-        {
-            resource = resource.replace("//@@USERPROP@@", "argMap.put(\"userProperties\", (new Gson()).toJson(auth.getUserProperties()));");
+            resource = resource.replace("//@@USERPROP@@", "argMap.put(\"userProperties\", new GsonBuilder().registerTypeAdapter(com.mojang.authlib.properties.PropertyMap.class, new com.mojang.authlib.properties.PropertyMap.Serializer()).create().toJson(auth.getUserProperties()));");
         }
 
         out.getParentFile().mkdirs();
