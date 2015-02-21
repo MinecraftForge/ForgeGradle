@@ -11,6 +11,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import joptsimple.internal.Strings;
+import net.minecraftforge.gradle.common.Constants;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
@@ -19,6 +20,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFiles;
 import org.gradle.api.tasks.TaskAction;
 
+import com.google.common.base.Throwables;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
@@ -85,6 +87,7 @@ public class CrowdinDownloadTask extends DefaultTask
         URL url = new URL(String.format(EXPORT_URL, projectId, key));
         
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestProperty("User-Agent", Constants.USER_AGENT);
         con.setInstanceFollowRedirects(true);
         
         try
@@ -94,7 +97,7 @@ public class CrowdinDownloadTask extends DefaultTask
         catch (Throwable e)
         {
             // just in case people dont have internet at the moment.
-            throw new RuntimeException(e.getLocalizedMessage());
+            Throwables.propagate(e);
         }
         
         int reponse = con.getResponseCode();
@@ -110,6 +113,7 @@ public class CrowdinDownloadTask extends DefaultTask
         URL url = new URL(String.format(DOWNLOAD_URL, projectId, key));
         
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestProperty("User-Agent", Constants.USER_AGENT);
         con.setInstanceFollowRedirects(true);
 
         InputStream stream = con.getInputStream();
@@ -126,7 +130,7 @@ public class CrowdinDownloadTask extends DefaultTask
                     continue;
                 }
 
-                getLogger().info("Extracting file: " + entry.getName());
+                getLogger().debug("Extracting file: " + entry.getName());
                 File out = new File(output, entry.getName());
                 Files.createParentDirs(out);
                 Files.touch(out);

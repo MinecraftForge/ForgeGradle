@@ -9,6 +9,8 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import net.minecraftforge.gradle.common.Constants;
+
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
 
@@ -47,6 +49,7 @@ public class EtagDownloadTask extends DefaultTask
         {
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setInstanceFollowRedirects(true);
+            con.setRequestProperty("User-Agent", Constants.USER_AGENT);
             con.setRequestProperty("If-None-Match", etag);
 
             con.connect();

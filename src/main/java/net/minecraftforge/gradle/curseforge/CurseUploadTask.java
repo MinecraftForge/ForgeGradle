@@ -1,29 +1,26 @@
 package net.minecraftforge.gradle.curseforge;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+
+import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
+import com.google.common.io.ByteStreams;
+import com.google.common.io.Files;
+
 import gnu.trove.TIntArrayList;
 import gnu.trove.TIntHashSet;
 import gnu.trove.TObjectIntHashMap;
 import groovy.lang.Closure;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
-import java.util.TreeSet;
-
 import net.minecraftforge.gradle.StringUtils;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.json.curse.CurseError;
 import net.minecraftforge.gradle.json.curse.CurseMetadata;
 import net.minecraftforge.gradle.json.curse.CurseMetadataChild;
+import net.minecraftforge.gradle.json.curse.CurseProjectDep;
+import net.minecraftforge.gradle.json.curse.CurseRelations;
 import net.minecraftforge.gradle.json.curse.CurseReply;
 import net.minecraftforge.gradle.json.curse.CurseVersion;
 
@@ -38,43 +35,83 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.ByteStreams;
-import com.google.common.io.Files;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class CurseUploadTask extends DefaultTask
 {
-    Object               projectId;
-    Object               artifact;
-    Object               displayName;
-    Collection<Object>   additionalArtifacts = new ArrayList<Object>();
-    String               apiKey;
-    Set<Object>          gameVersions  = new TreeSet<Object>();
-    Object               releaseType;
-    Object               changelog;
-    
-    TIntArrayList        fileIds;
 
-    private final String UPLOAD_URL    = "https://minecraft.curseforge.com/api/projects/%s/upload-file";
-    private final String VERSION_URL   = "https://minecraft.curseforge.com/api/game/versions";
-    private final File   VERSION_CACHE = new File(getProject().getGradle().getGradleUserHomeDir() + "/caches/minecraft/curseVersions.json");
+    public static final Collection<String> validReleaseTypes  = ImmutableList.of("alpha", "beta", "release");
+    public static final Collection<String> validRelationTypes = ImmutableList.of("embeddedLibrary", "optionalLibrary", "requiredLibrary", "tool", "incompatible");
+
+    Object projectId;
+    Object artifact;
+    Object displayName;
+    Collection<Object>  additionalArtifacts = new ArrayList<Object>();
+    Map<Object, Object> curseProjectDeps    = new HashMap<Object, Object>();
+    String apiKey;
+    Set<Object> gameVersions = new TreeSet<Object>();
+    Object releaseType;
+    Object changelog;
+
+    TIntArrayList fileIds;
+
+    private static final String UPLOAD_URL    = "https://minecraft.curseforge.com/api/projects/%s/upload-file";
+    private static final String VERSION_URL   = "https://minecraft.curseforge.com/api/game/versions";
+    private final        File   VERSION_CACHE = new File(getProject().getGradle().getGradleUserHomeDir() + "/caches/minecraft/curseVersions.json");
 
     @TaskAction
     public void doTask() throws IOException, URISyntaxException
     {
         CurseMetadata meta = new CurseMetadata();
         meta.releaseType = getReleaseType();
-        meta.changelog = getChangelog() == null ? "" : getChangelog();
+        meta.changelog = getChangelog();
         meta.gameVersions = resolveGameVersion();
-        if (displayName != null) meta.displayName = getDisplayName();
+        meta.displayName = getDisplayName();
+        if (!curseProjectDeps.isEmpty())
+        {
+            meta.relations = new CurseRelations();
+            for (Map.Entry<Object, Object> entry : curseProjectDeps.entrySet())
+            {
+                CurseProjectDep dep = new CurseProjectDep(
+                        resolveString(entry.getKey()),
+                        resolveString(entry.getValue())
+                );
+                meta.relations.projects.add(dep);
+            }
+        }
+
+        checkNotNull(meta.releaseType, "Curse releaseType cannot be null. Valid types are: " + validReleaseTypes);
+        checkArgument(validReleaseTypes.contains(meta.releaseType),
+                meta.releaseType + " is not a valid Curse relase type. Valid types are: " + validReleaseTypes);
+
+        if (meta.relations != null)
+        {
+            for (CurseProjectDep projectDep : meta.relations.projects)
+            {
+                checkNotNull(projectDep.slug, "Curse project relation slug cannot be null");
+                checkNotNull(projectDep.type, "Curse project relation type cannot be null");
+                checkArgument(validRelationTypes.contains(projectDep.type),
+                        projectDep.type + " is not a valid Curse project relation type. Valid types are: " + validRelationTypes);
+            }
+        }
+
         String url = String.format(UPLOAD_URL, getProjectId());
-
-        if (meta.releaseType == null)
-            throw new IllegalArgumentException("Release type must be defined!");
-
         String metaJson = JsonFactory.GSON.toJson(meta);
+
         int parentId = uploadFile(metaJson, url, resolveFile(getArtifact()));
-        
+
         fileIds = new TIntArrayList(additionalArtifacts.size() + 1);
         fileIds.add(parentId);
 
@@ -105,6 +142,7 @@ public class CurseUploadTask extends DefaultTask
         HttpPost httpPost = new HttpPost(new URI(url));
 
         httpPost.addHeader("X-Api-Token", getApiKey());
+        httpPost.setHeader("User-Agent", Constants.USER_AGENT);
         httpPost.setEntity(
                 MultipartEntityBuilder.create()
                         .addTextBody("metadata", jsonMetadata)
@@ -169,7 +207,9 @@ public class CurseUploadTask extends DefaultTask
         }
 
         if (out.isEmpty())
+        {
             throw new IllegalArgumentException("No valid game version set for CurseForge upload!");
+        }
 
         return out.toArray();
     }
@@ -196,6 +236,7 @@ public class CurseUploadTask extends DefaultTask
 
         httpGet.setHeader("X-Api-Token", getApiKey());
         httpGet.setHeader("If-None-Match", etag);
+        httpGet.setHeader("User-Agent", Constants.USER_AGENT);
 
         HttpResponse response = httpclient.execute(httpGet);
 
@@ -251,6 +292,11 @@ public class CurseUploadTask extends DefaultTask
             obj = resolveString(((Closure) obj).call());
         }
 
+        if (obj == null)
+        {
+            return null;
+        }
+
         return obj.toString();
     }
 
@@ -299,12 +345,12 @@ public class CurseUploadTask extends DefaultTask
 
     public String getReleaseType()
     {
+        if (releaseType == null)
+        {
+            return null;
+        }
         this.releaseType = StringUtils.lower(resolveString(releaseType));
-
-        if (!"alpha".equals(releaseType) && !"beta".equals(releaseType) && !"release".equals(releaseType))
-            throw new IllegalArgumentException("The release type must be either 'alpha', 'beta', or 'release'! '" + releaseType + "' is not a valid type!");
-
-        return (String)releaseType;
+        return (String) releaseType;
     }
 
     public void setReleaseType(Object releaseType)
@@ -314,6 +360,10 @@ public class CurseUploadTask extends DefaultTask
 
     public String getChangelog()
     {
+        if (changelog == null)
+        {
+            return "";
+        }
         return (String) (changelog = resolveString(changelog));
     }
 
@@ -330,13 +380,19 @@ public class CurseUploadTask extends DefaultTask
     public void setArtifact(Object artifact)
     {
         if (artifact instanceof AbstractArchiveTask)
+        {
             dependsOn(artifact);
+        }
 
         this.artifact = artifact;
     }
-    
+
     public String getDisplayName()
     {
+        if (displayName == null)
+        {
+            return null;
+        }
         return (String) (displayName = resolveString(displayName));
     }
 
@@ -353,7 +409,9 @@ public class CurseUploadTask extends DefaultTask
     public void additionalArtifact(Object obj)
     {
         if (obj instanceof AbstractArchiveTask)
+        {
             dependsOn(obj);
+        }
 
         additionalArtifacts.add(obj);
     }
@@ -361,17 +419,42 @@ public class CurseUploadTask extends DefaultTask
     public void additionalArtifact(Object... obj)
     {
         for (Object o : obj)
+        {
             additionalArtifact(o);
+        }
     }
-    
+
     public int getFileId()
     {
         return fileIds.get(0);
     }
-    
+
     public int[] getFileIds()
     {
         return fileIds.toNativeArray();
+    }
+
+    /**
+     * Add a related project with the default relation type of {@code requiredLibrary}
+     *
+     * @param projectSlug The project slug
+     */
+    public void relatedProject(Object projectSlug)
+    {
+        curseProjectDeps.put(projectSlug, "requiredLibrary");
+    }
+
+    /**
+     * Add a related project
+     *
+     * @param map A map where each entry key is the project slug, and the entry value is the relation type.
+     */
+    public void relatedProject(Map<Object, Object> map)
+    {
+        for (Map.Entry<Object, Object> entry : map.entrySet())
+        {
+            curseProjectDeps.put(entry.getKey(), entry.getValue());
+        }
     }
 
     private File resolveFile(Object object)
@@ -379,12 +462,20 @@ public class CurseUploadTask extends DefaultTask
         checkNotNull(object, "Configured a null artifact!");
 
         if (object instanceof File)
-            return (File)object;
+        {
+            return (File) object;
+        }
         else if (object instanceof AbstractArchiveTask)
-            return ((AbstractArchiveTask)object).getArchivePath();
+        {
+            return ((AbstractArchiveTask) object).getArchivePath();
+        }
         else if (object instanceof DelayedFile)
-            return ((DelayedFile)object).call();
+        {
+            return ((DelayedFile) object).call();
+        }
         else
+        {
             return getProject().file(object);
+        }
     }
 }

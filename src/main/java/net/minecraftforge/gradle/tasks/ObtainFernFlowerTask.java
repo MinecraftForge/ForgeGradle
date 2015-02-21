@@ -9,6 +9,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import net.minecraftforge.gradle.StringUtils;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedString;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
@@ -42,10 +43,11 @@ public class ObtainFernFlowerTask extends CachedTask
         File ff = getFfJar();
         String url = getMcpUrl();
 
-        getLogger().info("Downloading " + url);
-        getLogger().info("Fernflower output location " + ff);
+        getLogger().debug("Downloading " + url);
+        getLogger().debug("Fernflower output location " + ff);
 
         HttpURLConnection connect = (HttpURLConnection) (new URL(url)).openConnection();
+        connect.setRequestProperty("User-Agent", Constants.USER_AGENT);
         connect.setInstanceFollowRedirects(true);
 
         final ZipInputStream zin = new ZipInputStream(connect.getInputStream());

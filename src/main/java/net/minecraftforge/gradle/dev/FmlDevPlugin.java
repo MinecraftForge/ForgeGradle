@@ -33,7 +33,6 @@ import net.minecraftforge.gradle.tasks.dev.GeneratePatches;
 import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
 import net.minecraftforge.gradle.tasks.dev.SubprojectTask;
 
-import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -41,7 +40,6 @@ import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.java.archives.Manifest;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.Delete;
-import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
 
 public class FmlDevPlugin extends DevBasePlugin
@@ -84,7 +82,7 @@ public class FmlDevPlugin extends DevBasePlugin
 
         // the master task.
         task = makeTask("buildPackages");
-        task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "packageUserDev", "packageSrc", "genJavadocs");
+        task.dependsOn("launch4j", "createChangelog", "packageUniversal", "packageInstaller", "packageUserDev", "packageSrc");
         task.setGroup("FML");
 
         // clean decompile task
@@ -461,29 +459,6 @@ public class FmlDevPlugin extends DevBasePlugin
             classZip.setArchiveName("binaries.jar");
         }
 
-        final SubprojectTask javadocJar = makeTask("genJavadocs", SubprojectTask.class);
-        {
-            javadocJar.setBuildFile(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"));
-            javadocJar.setTasks("jar");
-            javadocJar.setConfigureTask(new Action<Task>() {
-                public void execute(Task obj)
-                {
-                    Jar task = (Jar) obj;
-                    File file = delayedFile(DevConstants.JAVADOC_TMP).call();
-                    task.setDestinationDir(file.getParentFile());
-                    task.setArchiveName(file.getName());
-                }
-            });
-            javadocJar.onlyIf(new Closure<Boolean>(this.project) {
-                @Override
-                public Boolean call(Object o)
-                {
-                    return getExtension().getMakeJavadoc();
-                }
-            });
-            javadocJar.dependsOn("generateProjects", "extractFmlSources");
-        }
-
         ExtractS2SRangeTask range = makeTask("userDevExtractRange", ExtractS2SRangeTask.class);
         {
             range.setLibsFromProject(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"), "compile", true);
@@ -516,7 +491,6 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             userDev.setClassifier("userdev");
             userDev.from(delayedFile(DevConstants.JSON_DEV));
-            //userDev.from(delayedFile(DevConstants.JAVADOC_TMP));
             userDev.from(new Closure<File>(project) {
                 public File call()
                 {
@@ -635,10 +609,6 @@ public class FmlDevPlugin extends DevBasePlugin
         task.configureProject(getExtension().getCleanProject());
 
         task = (SubprojectTask) project.getTasks().getByName("eclipseFML");
-        task.configureProject(getExtension().getSubprojects());
-        task.configureProject(getExtension().getCleanProject());
-
-        task = (SubprojectTask) project.getTasks().getByName("genJavadocs");
         task.configureProject(getExtension().getSubprojects());
         task.configureProject(getExtension().getCleanProject());
     }

@@ -45,8 +45,8 @@ public class SourceCopyTask extends DefaultTask
     @TaskAction
     public void doTask() throws IOException
     {
-        getLogger().info("INPUTS >> " + source);
-        getLogger().info("OUTPUTS >> " + getOutput());
+        getLogger().debug("INPUTS >> " + source);
+        getLogger().debug("OUTPUTS >> " + getOutput());
 
         // get the include/exclude patterns from the source (this is different than what's returned by getFilter)
         PatternSet patterns = new PatternSet();
@@ -75,13 +75,13 @@ public class SourceCopyTask extends DefaultTask
             repl.put(Pattern.quote(e.getKey()), val.toString());
         }
 
-        getLogger().info("REPLACE >> " + repl);
+        getLogger().debug("REPLACE >> " + repl);
 
         // start traversing tree
         for (DirectoryTree dirTree : source.getSrcDirTrees())
         {
             File dir = dirTree.getDir();
-            getLogger().info("PARSING DIR >> " + dir);
+            getLogger().debug("PARSING DIR >> " + dir);
 
             // handle nonexistant srcDirs
             if (!dir.exists() || !dir.isDirectory())

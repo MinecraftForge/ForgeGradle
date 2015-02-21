@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import net.minecraftforge.gradle.GradleConfigurationException;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.json.LiteLoaderJson;
@@ -184,12 +185,12 @@ public class LiteLoaderPlugin extends UserLibBasePlugin
         LiteLoaderJson loaded = JsonFactory.loadLiteLoaderJson(json);
         VersionObject obj = loaded.versions.get(mcVersion);
         if (obj == null)//|| !obj.latest.hasMcp())
-            throw new RuntimeException("LiteLoader does not have an ForgeGradle compatible edition for Minecraft " + mcVersion);
+            throw new GradleConfigurationException("LiteLoader does not have an ForgeGradle compatible edition for Minecraft " + mcVersion);
 
         llArtifact = obj.latest;
 
         // add the dependency.
-        project.getLogger().info("LiteLoader dep: "+llArtifact.getMcpDepString());
+        project.getLogger().debug("LiteLoader dep: "+llArtifact.getMcpDepString());
         project.getDependencies().add(actualApiName(), llArtifact.getMcpDepString());
     }
 

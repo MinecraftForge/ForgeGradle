@@ -50,6 +50,10 @@ public class CreateStartTask extends JavaCompile
     @Input
     private DelayedFile nativesDir;
     @Input
+    private DelayedFile srgDir;
+    @Input
+    private DelayedFile csvDir;
+    @Input
     private DelayedString version;
     @Input
     private DelayedString clientTweaker;
@@ -77,8 +81,8 @@ public class CreateStartTask extends JavaCompile
         super();
 
         final File clientJava = new File(getTemporaryDir(), "GradleStart.java");
-        final File serverJava = new File(getTemporaryDir(), "net/minecraftforge/gradle/GradleStartServer.java");
-        final File commonJava = new File(getTemporaryDir(), "GradleStartCommon.java");
+        final File serverJava = new File(getTemporaryDir(), "GradleStartServer.java");
+        final File commonJava = new File(getTemporaryDir(), "net/minecraftforge/gradle/GradleStartCommon.java");
 
         // configure compilation
         this.source(getReplaceClosure(clientResource, clientJava), getReplaceClosure(serverResource, serverJava),getReplaceClosure(commonResource, commonJava));
@@ -164,10 +168,12 @@ public class CreateStartTask extends JavaCompile
 
     private void replaceResource(String resource, File out) throws IOException
     {
-        resource = resource.replace("@@MCVERSION@@", getVersion());
-        resource = resource.replace("@@ASSETINDEX@@", getAssetIndex());
-        resource = resource.replace("@@ASSETSDIR@@", getAssetsDir().replace('\\', '/'));
-        resource = resource.replace("@@NATIVESDIR@@", getNativesDir().replace('\\', '/'));
+        resource = resource.replace("@@MCVERSION@@",     getVersion());
+        resource = resource.replace("@@ASSETINDEX@@",    getAssetIndex());
+        resource = resource.replace("@@ASSETSDIR@@",     getAssetsDir().replace('\\', '/'));
+        resource = resource.replace("@@NATIVESDIR@@",    getNativesDir().replace('\\', '/'));
+        resource = resource.replace("@@SRGDIR@@",        getSrgDir().replace('\\', '/'));
+        resource = resource.replace("@@CSVDIR@@",        getCsvDir().replace('\\', '/'));
         resource = resource.replace("@@CLIENTTWEAKER@@", getClientTweaker());
         resource = resource.replace("@@SERVERTWEAKER@@", getServerTweaker());
         resource = resource.replace("@@BOUNCERCLIENT@@", getClientBounce());
@@ -272,16 +278,16 @@ public class CreateStartTask extends JavaCompile
 
                         if (!calcMD5.equals(foundMD5))
                         {
-                            getProject().getLogger().info(" Corrupted Cache!");
-                            getProject().getLogger().info("Checksums found: " + foundMD5);
-                            getProject().getLogger().info("Checksums calculated: " + calcMD5);
+                            getProject().getLogger().warn(" Corrupted Cache!");
+                            getProject().getLogger().debug("Checksums found: " + foundMD5);
+                            getProject().getLogger().debug("Checksums calculated: " + calcMD5);
                             file.delete();
                             getHashFile(file).delete();
                             return true;
                         }
 
-                        getProject().getLogger().info("Checksums found: " + foundMD5);
-                        getProject().getLogger().info("Checksums calculated: " + calcMD5);
+                        getProject().getLogger().debug("Checksums found: " + foundMD5);
+                        getProject().getLogger().debug("Checksums calculated: " + calcMD5);
 
                     }
                     // error? spit it and do the task.
@@ -352,7 +358,7 @@ public class CreateStartTask extends JavaCompile
             else if (m.isAnnotationPresent(InputFile.class))
             {
                 hashes.add(Constants.hash(getProject().file(input.getValue(instance))));
-                getLogger().info(Constants.hash(getProject().file(input.getValue(instance))) + " " + input.getValue(instance));
+                getLogger().debug(Constants.hash(getProject().file(input.getValue(instance))) + " " + input.getValue(instance));
             }
             else if (m.isAnnotationPresent(InputDirectory.class))
             {
@@ -366,7 +372,7 @@ public class CreateStartTask extends JavaCompile
                 {
                     String hash = Constants.hash(file);
                     hashes.add(hash);
-                    getLogger().info(hash + " " + input.getValue(instance));
+                    getLogger().debug(hash + " " + input.getValue(instance));
                 }
             }
             else
@@ -380,7 +386,7 @@ public class CreateStartTask extends JavaCompile
                 if (obj instanceof String)
                 {
                     hashes.add(Constants.hash((String) obj));
-                    getLogger().info(Constants.hash((String) obj) + " " + (String) obj);
+                    getLogger().debug(Constants.hash((String) obj) + " " + (String) obj);
                 }
                 else if (obj instanceof File)
                 {
@@ -392,13 +398,13 @@ public class CreateStartTask extends JavaCompile
                         for (File i : files)
                         {
                             hashes.add(Constants.hash(i));
-                            getLogger().info(Constants.hash(i) + " " + i);
+                            getLogger().debug(Constants.hash(i) + " " + i);
                         }
                     }
                     else
                     {
                         hashes.add(Constants.hash(file));
-                        getLogger().info(Constants.hash(file) + " " + file);
+                        getLogger().debug(Constants.hash(file) + " " + file);
                     }
                 }
                 else
@@ -501,6 +507,26 @@ public class CreateStartTask extends JavaCompile
     public void setNativesDir(DelayedFile nativesDir)
     {
         this.nativesDir = nativesDir;
+    }
+    
+    public String getSrgDir() throws IOException
+    {
+        return srgDir.call().getCanonicalPath();
+    }
+
+    public void setSrgDir(DelayedFile srgDir)
+    {
+        this.srgDir = srgDir;
+    }
+    
+    public String getCsvDir() throws IOException
+    {
+        return csvDir.call().getCanonicalPath();
+    }
+
+    public void setCsvDir(DelayedFile csvDir)
+    {
+        this.csvDir = csvDir;
     }
 
     public String getVersion()

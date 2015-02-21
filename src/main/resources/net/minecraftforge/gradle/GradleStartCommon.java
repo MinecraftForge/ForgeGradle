@@ -38,6 +38,9 @@ public abstract class GradleStartCommon
 
     private Map<String, String> argMap = Maps.newHashMap(); 
     private List<String> extras = Lists.newArrayList();
+    
+    private static final File SRG_DIR = new File("@@SRGDIR@@");
+    private static final File CSV_DIR = new File("@@CSVDIR@@");
 
     protected abstract void setDefaultArguments(Map<String, String> argMap);
     protected abstract void preLaunch(Map<String, String> argMap, List<String> extras);
@@ -46,6 +49,10 @@ public abstract class GradleStartCommon
     
     protected void launch(String[] args) throws Throwable
     {
+        // set system vars for passwords
+        System.setProperty("net.minecraftforge.gradle.GradleStart.srgDir", SRG_DIR.getAbsolutePath());
+        System.setProperty("net.minecraftforge.gradle.GradleStart.csvDir", CSV_DIR.getAbsolutePath());
+        
         // set defaults!
         setDefaultArguments(argMap);
         
@@ -205,7 +212,7 @@ public abstract class GradleStartCommon
             if (!url.getProtocol().startsWith("file")) // because file urls start with file://
                 continue; //         this isnt a file
             
-            File coreMod = new File(url.getFile());
+            File coreMod = new File(url.toURI().getPath());
             Manifest manifest = null;
             
             if (!coreMod.exists())

@@ -112,11 +112,13 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             {
                 TaskExecutionGraph graph = project.getGradle().getTaskGraph();
                 String path = project.getPath();
+                
+                graph.getAllTasks().clear();
 
                 if (graph.hasTask(path + "setupDecompWorkspace"))
                 {
                     getExtension().setDecomp();
-                    setMinecraftDeps(true, true);
+                    configurePostDecomp(true, true);
                 }
                 return null;
             }
@@ -363,7 +365,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             }
         }
         else
-            log.info("RESOLVED: " + depConfig);
+            log.debug("RESOLVED: " + depConfig);
 
         // the natives
         if (project.getConfigurations().getByName(nativeConfig).getState() == State.UNRESOLVED)
@@ -375,7 +377,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             }
         }
         else
-            log.info("RESOLVED: " + nativeConfig);
+            log.debug("RESOLVED: " + nativeConfig);
 
         hasAppliedJson = true;
     }
@@ -635,6 +637,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 task.setAssetIndex(delayedString("{ASSET_INDEX}").forceResolving());
                 task.setAssetsDir(delayedFile("{CACHE_DIR}/minecraft/assets"));
                 task.setNativesDir(delayedFile(NATIVES_DIR));
+                task.setSrgDir(delayedFile("{SRG_DIR}"));
+                task.setCsvDir(delayedFile("{MCP_DATA_DIR}"));
                 task.setVersion(delayedString("{MC_VERSION}"));
                 task.setClientTweaker(delayedString("{RUN_CLIENT_TWEAKER}"));
                 task.setServerTweaker(delayedString("{RUN_SERVER_TWEAKER}"));
@@ -943,7 +947,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             public void execute(Project proj)
             {
                 addFlatRepo(proj, getApiName()+"FlatRepo", repoDir);
-                proj.getLogger().info("Adding repo to " + proj.getPath() + " >> " + repoDir);
+                proj.getLogger().debug("Adding repo to " + proj.getPath() + " >> " + repoDir);
             }
         });
 
@@ -955,7 +959,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         }
 
         // post decompile status thing.
-        configurePostDecomp(getExtension().isDecomp());
+        configurePostDecomp(getExtension().isDecomp(), false);
 
         {
             // stop getting empty dirs
@@ -1063,7 +1067,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     /**
      * Configure tasks and stuff after you know if the decomp file exists or not.
      */
-    protected void configurePostDecomp(boolean decomp)
+    protected void configurePostDecomp(boolean decomp, boolean remove)
     {
         if (decomp)
         {
@@ -1076,7 +1080,12 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             (project.getTasks().getByName("compileApiJava")).dependsOn("deobfBinJar");
         }
 
-        setMinecraftDeps(decomp, false);
+        setMinecraftDeps(decomp, remove);
+        
+        if (decomp && remove)
+        {
+            (project.getTasks().getByName("deobfBinJar")).onlyIf(Constants.CALL_FALSE);
+        }
     }
 
     protected void setMinecraftDeps(boolean decomp, boolean remove)

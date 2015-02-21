@@ -1,12 +1,18 @@
 package net.minecraftforge.gradle.common;
 
+import com.google.common.base.Joiner;
+import com.google.common.io.ByteStreams;
 import groovy.lang.Closure;
+import net.minecraftforge.gradle.StringUtils;
+import net.minecraftforge.gradle.dev.DevExtension;
+import net.minecraftforge.gradle.json.version.OS;
+import org.gradle.api.Project;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.reflect.Constructor;
+import java.io.PrintStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.MessageDigest;
@@ -15,20 +21,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-
-import net.minecraftforge.gradle.StringUtils;
-import net.minecraftforge.gradle.dev.DevExtension;
-import net.minecraftforge.gradle.json.version.OS;
-
-import org.gradle.api.Action;
-import org.gradle.api.Project;
-import org.gradle.api.logging.LogLevel;
-import org.gradle.api.logging.Logger;
-import org.gradle.internal.io.TextStream;
-import org.gradle.util.LineBufferingOutputStream;
-
-import com.google.common.base.Joiner;
-import com.google.common.io.ByteStreams;
 
 public class Constants
 {
@@ -46,6 +38,7 @@ public class Constants
     public static final OS               OPERATING_SYSTEM = OS.CURRENT;
     public static final SystemArch       SYSTEM_ARCH      = getArch();
     public static final String           HASH_FUNC        = "MD5";
+    public static final String           USER_AGENT       = "ForgeGradle_1.2";
 
     // extension nam
     public static final String EXT_NAME_MC      = "minecraft";
@@ -65,9 +58,10 @@ public class Constants
     public static final String ASSETS_INDEX_URL = "https://s3.amazonaws.com/Minecraft.Download/indexes/{ASSET_INDEX}.json";
 
     public static final String LOG              = ".gradle/gradle.log";
-    
+
     // MCP things
-    public static final String CONFIG_MCP_DATA  = "mcpSnapshotDataConfig"; 
+    public static final String CONFIG_MCP_DATA  = "mcpSnapshotDataConfig";
+    public static final String MCP_JSON_URL     = "http://export.mcpbot.bspk.rs/versions.json";
 
     // things in the cache dir.
     public static final String MCP_DATA_DIR     = "{CACHE_DIR}/minecraft/de/oceanlabs/mcp/mcp_{MAPPING_CHANNEL}/{MAPPING_VERSION}/";
@@ -82,7 +76,6 @@ public class Constants
 
     // util
     public static final String NEWLINE = System.getProperty("line.separator");
-
 
     // helper methods
     public static File cacheFile(Project project, String... otherFiles)
@@ -113,7 +106,7 @@ public class Constants
         }
         return list;
     }
-    
+
     public static File getMinecraftDirectory()
     {
         String userDir = System.getProperty("user.home");
@@ -153,11 +146,11 @@ public class Constants
         else
             return hash(file, HASH_FUNC);
     }
-    
+
     public static List<String> hashAll(File file)
     {
         LinkedList<String> list = new LinkedList<String>();
-        
+
         if (file.isDirectory())
         {
             for (File f : file.listFiles())
@@ -165,19 +158,19 @@ public class Constants
         }
         else
             list.add(hash(file));
-        
+
         return list;
     }
 
     public static String hash(File file, String function)
     {
-        
+
         try
         {
             InputStream fis = new FileInputStream(file);
             byte[] array = ByteStreams.toByteArray(fis);
             fis.close();
-            
+
             return hash(array, function);
         }
         catch (Exception e)
@@ -187,7 +180,7 @@ public class Constants
 
         return null;
     }
-    
+
     public static String hashZip(File file, String function)
     {
         try
@@ -202,10 +195,10 @@ public class Constants
                 hasher.update(ByteStreams.toByteArray(zin));
             }
             zin.close();
-            
+
             byte[] hash = hasher.digest();
 
-            
+
             // convert to string
             String result = "";
 
@@ -227,12 +220,12 @@ public class Constants
     {
         return hash(str.getBytes());
     }
-    
+
     public static String hash(byte[] bytes)
     {
         return hash(bytes, HASH_FUNC);
     }
-    
+
     public static String hash(byte[] bytes, String function)
     {
         try
@@ -255,46 +248,16 @@ public class Constants
 
         return null;
     }
-    
-    public static OutputStream createLogger(final Logger logger, final LogLevel level)
-    {
-        try
-        {
-            return createLogger110(logger, level);
-        }
-        catch (Throwable e)
-        {
-            try
-            {
-                Constructor<LineBufferingOutputStream> ctr = LineBufferingOutputStream.class.getConstructor(Action.class); // Gradle 1.8
-                return ctr.newInstance(new Action<String>()
-                {
-                    @Override
-                    public void execute(String arg0)
-                    {
-                        logger.log(level, arg0);
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                throw new RuntimeException(ex);
-            }
-        }
-    }
 
-    private static OutputStream createLogger110(final Logger logger, final LogLevel level) throws Exception
-    {
-        Constructor<LineBufferingOutputStream> ctr = LineBufferingOutputStream.class.getConstructor(TextStream.class); //Gradle 1.10
-        return ctr.newInstance(new TextStream()
-        {
-            @Override public void endOfStream(Throwable arg0){}
-            @Override
-            public void text(String line)
-            {
-                logger.log(level, line);
-            }
-        });
+    public static PrintStream getTaskLogStream(Project project, String name) {
+        final File taskLogs = new File(project.getBuildDir(), "taskLogs");
+        taskLogs.mkdirs();
+        final File logFile = new File(taskLogs, name);
+        logFile.delete(); //Delete the old log
+        try {
+            return new PrintStream(logFile);
+        } catch (FileNotFoundException ignored) {}
+        return null; // Should never get to here
     }
 }
 

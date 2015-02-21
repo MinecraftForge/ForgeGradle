@@ -1,32 +1,28 @@
 package net.minecraftforge.gradle;
 
-import java.util.Map;
-import java.util.HashMap;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import net.minecraftforge.gradle.user.patch.ForgeUserPlugin;
 import net.minecraftforge.gradle.user.patch.UserPatchExtension;
 
 import org.gradle.api.Project;
 import org.gradle.testfixtures.ProjectBuilder;
-
-import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ExtensionVersionTest
+import com.google.common.collect.ImmutableMap;
+
+public class ExtensionForgeVersionTest
 {
-    private Project testProject;
+    private Project            testProject;
     private UserPatchExtension ext;
 
     @Before
     public void setupProject()
     {
-        Map<String, Object> options = new HashMap<String, Object>();
-        options.put("plugin", ForgeUserPlugin.class);
-
         this.testProject = ProjectBuilder.builder().build();
         assertNotNull(this.testProject);
-        this.testProject.apply(options);
+        this.testProject.apply(ImmutableMap.of("plugin", ForgeUserPlugin.class));
 
         this.ext = this.testProject.getExtensions().findByType(UserPatchExtension.class);   // unlike getByType(), does not throw exception
         assertNotNull(this.ext);
@@ -117,35 +113,35 @@ public class ExtensionVersionTest
 
     // Invalid formats
 
-    @Test(expected=RuntimeException.class)
+    @Test(expected = GradleConfigurationException.class)
     public void testInvalidBuild()
     {
         // 1.8 build skipped due to 1.7.10
         this.ext.setVersion("11.14.0.1256-1.8");
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test(expected = GradleConfigurationException.class)
     public void testInvalidBuildWithMcVersion()
     {
         // 1.8 build skipped due to 1.7.10 (with MC version)
         this.ext.setVersion("1.8-11.14.0.1256-1.8");
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test(expected = GradleConfigurationException.class)
     public void testInvalidMcVersion()
     {
         // invalid MC version
         this.ext.setVersion("1.7.10-9.11.1.965");
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test(expected = GradleConfigurationException.class)
     public void testInvalidMcVersionWithBranch()
     {
         // invalid MC version (with branch)
         this.ext.setVersion("1.7.10-11.14.0.1257-1.8");
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test(expected = GradleConfigurationException.class)
     public void testInvalidBranch()
     {
         // invalid branch

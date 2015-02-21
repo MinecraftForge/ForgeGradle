@@ -4,10 +4,15 @@ import groovy.lang.Closure;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import net.minecraftforge.gradle.FileLogListenner;
+import net.minecraftforge.gradle.GradleConfigurationException;
 import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
@@ -32,11 +37,14 @@ import org.gradle.api.tasks.Delete;
 import org.gradle.testfixtures.ProjectBuilder;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 
 public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Project>, IDelayedResolver<K>
 {
@@ -69,7 +77,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 }
                 else
                 {
-                    throw new RuntimeException("Seems you are trying to apply 2 ForgeGradle plugins that are not designed to overlay... Fix your buildscripts.");
+                    throw new GradleConfigurationException("Seems you are trying to apply 2 ForgeGradle plugins that are not designed to overlay... Fix your buildscripts.");
                 }
             }
         }
@@ -100,6 +108,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             }
         });
 
+        // do Mcp Snapshots Stuff
+        setVersionInfoJson();
         project.getConfigurations().create(Constants.CONFIG_MCP_DATA);
 
         // after eval
@@ -151,6 +161,16 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     protected abstract DelayedFile getDevJson();
 
     private static boolean displayBanner = true;
+    
+    private void setVersionInfoJson()
+    {
+        File jsonCache = Constants.cacheFile(project, "caches", "minecraft", "McpMappings.json");
+        File etagFile = new File(jsonCache.getAbsolutePath() + ".etag");
+        
+        getExtension().mcpJson = JsonFactory.GSON.fromJson(
+                getWithEtag(Constants.MCP_JSON_URL, jsonCache, etagFile),
+                new TypeToken<Map<String, Map<String, int[]>>>() {}.getType() );
+    }
 
     public void afterEvaluate()
     {
@@ -411,6 +431,80 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 repo.dirs(dirs);
             }
         });
+    }
+    
+    protected String getWithEtag(String strUrl, File cache, File etagFile)
+    {
+        try
+        {
+            if (project.getGradle().getStartParameter().isOffline()) // dont even try the internet
+                return Files.toString(cache, Charsets.UTF_8);
+            
+
+            String etag;
+            if (etagFile.exists())
+            {
+                etag = Files.toString(etagFile, Charsets.UTF_8);
+            }
+            else
+            {
+                etagFile.getParentFile().mkdirs();
+                etag = "";
+            }
+            
+            URL url = new URL(strUrl);
+            
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setInstanceFollowRedirects(true);
+            con.setRequestProperty("If-None-Match", etag);
+            con.setRequestProperty("User-Agent", Constants.USER_AGENT);
+            con.connect();
+            
+            String out =  null;
+            if (con.getResponseCode() == 304)
+            {
+                out =  Files.toString(cache, Charsets.UTF_8);
+            }
+            else if (con.getResponseCode() == 200)
+            {
+                InputStream stream = con.getInputStream();
+                byte[] data = ByteStreams.toByteArray(stream);
+                Files.write(data, cache);
+                stream.close();
+                
+                // write etag
+                etag = con.getHeaderField("ETag");
+                if (!Strings.isNullOrEmpty(etag))
+                {
+                    Files.write(etag, etagFile, Charsets.UTF_8);
+                }
+                
+                out = new String(data);
+            }
+            else
+            {
+                project.getLogger().error("Etag download for "+strUrl + " failed with code "+con.getResponseCode());
+            }
+            
+            con.disconnect();
+            
+            return out;
+        }
+        catch (Exception e) { }
+        
+        if (cache.exists())
+        {
+            try
+            {
+                return Files.toString(cache, Charsets.UTF_8);
+            }
+            catch (IOException e)
+            {
+                Throwables.propagate(e);
+            }
+        }
+        
+        throw new RuntimeException("Unable to obtain url ("+strUrl + ") with etag!");
     }
 
     @Override
