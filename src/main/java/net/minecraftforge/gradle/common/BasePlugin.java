@@ -440,6 +440,9 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             if (project.getGradle().getStartParameter().isOffline()) // dont even try the internet
                 return Files.toString(cache, Charsets.UTF_8);
             
+            // dude, its been less than a minute since the last time..
+            if (cache.exists() && cache.lastModified() + 60000 >= System.currentTimeMillis())
+                return Files.toString(cache, Charsets.UTF_8);
 
             String etag;
             if (etagFile.exists())
@@ -463,6 +466,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             String out =  null;
             if (con.getResponseCode() == 304)
             {
+                // the existing file is good
+                Files.touch(cache); // touch it to update last-modified time
                 out =  Files.toString(cache, Charsets.UTF_8);
             }
             else if (con.getResponseCode() == 200)
@@ -490,7 +495,10 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             
             return out;
         }
-        catch (Exception e) { }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
         
         if (cache.exists())
         {
