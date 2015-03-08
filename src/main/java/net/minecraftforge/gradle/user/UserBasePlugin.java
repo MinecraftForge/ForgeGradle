@@ -623,6 +623,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.setSrg(delayedFile(REOBF_SRG));
             task.setFieldCsv(delayedFile(FIELD_CSV));
             task.setFieldCsv(delayedFile(METHOD_CSV));
+            task.setMcVersion(delayedString("{MC_VERSION}"));
 
             task.mustRunAfter("test");
             project.getTasks().getByName("assemble").dependsOn(task);
