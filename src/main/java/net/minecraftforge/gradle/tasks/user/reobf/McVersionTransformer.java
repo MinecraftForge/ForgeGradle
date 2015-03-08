@@ -83,11 +83,7 @@ public class McVersionTransformer
                 if (index == -1)
                 {
                     mod.values.add("acceptedMinecraftVersions");
-                    mod.values.add(mcVersion);
-                }
-                else if (Strings.isNullOrEmpty((String)mod.values.get(index+1))) // +1 because its the value
-                {
-                    mod.values.set(index+1, mcVersion);
+                    mod.values.add("["+mcVersion+"]");
                 }
                 
                 break; // break out, im done. There cant be 2 @Mods in a file... can there?

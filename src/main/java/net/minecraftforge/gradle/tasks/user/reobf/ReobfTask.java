@@ -283,7 +283,6 @@ public class ReobfTask extends DefaultTask
         ReobfExceptor exc = null;
         File srg = File.createTempFile("reobf-default", ".srg", getTemporaryDir());
         File extraSrg = File.createTempFile("reobf-extra", ".srg", getTemporaryDir());
-        ;
 
         UserExtension ext = (UserExtension) getProject().getExtensions().getByName(Constants.EXT_NAME_MC);
 
