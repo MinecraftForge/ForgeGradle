@@ -15,7 +15,6 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 
-import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
 
 public class McVersionTransformer
