@@ -641,7 +641,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.addReplacement("@@ASSETSDIR@@", delayedFile("{CACHE_DIR}/minecraft/assets"));
             task.addReplacement("@@NATIVESDIR@@", delayedFile(NATIVES_DIR));
             task.addReplacement("@@SRGDIR@@", delayedFile("{SRG_DIR}"));
-            task.addReplacement("@@CSVDIR@@", delayedFile("MCP_DATA_DIR"));
+            task.addReplacement("@@CSVDIR@@", delayedFile("{MCP_DATA_DIR}"));
             task.addReplacement("@@CLIENTTWEAKER@@", delayedString("{RUN_CLIENT_TWEAKER}"));
             task.addReplacement("@@SERVERTWEAKER@@", delayedString("{RUN_SERVER_TWEAKER}"));
             task.addReplacement("@@BOUNCERCLIENT@@", delayedString("{RUN_BOUNCE_CLIENT}"));
