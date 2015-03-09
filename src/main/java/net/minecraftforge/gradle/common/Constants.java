@@ -154,9 +154,9 @@ public class Constants
         if (file.isDirectory())
         {
             for (File f : file.listFiles())
-                hashAll(f);
+                list.addAll(hashAll(f));
         }
-        else
+        else if (!file.getName().equals(".cache"))
             list.add(hash(file));
 
         return list;
@@ -260,4 +260,3 @@ public class Constants
         return null; // Should never get to here
     }
 }
-

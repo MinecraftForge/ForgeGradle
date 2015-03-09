@@ -55,8 +55,8 @@ public class LiteLoaderPlugin extends UserLibBasePlugin
 
         // override run configs
         CreateStartTask starter = (CreateStartTask) project.getTasks().getByName("makeStart");
-        starter.setClientBounce(delayedString(getClientRunClass()));
-        starter.setServerBounce(delayedString(getServerRunClass()));
+        starter.addReplacement("@@BOUNCERCLIENT@@", delayedString(getClientRunClass()));
+        starter.addReplacement("@@BOUNCERSERVER@@", delayedString(getServerRunClass()));
 
         // packaging
         configurePackaging();
