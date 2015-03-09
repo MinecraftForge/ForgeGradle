@@ -90,7 +90,7 @@ public class McVersionTransformer
         }
         
 
-        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+        ClassWriter writer = new ClassWriter(0);
         node.accept(writer);
         return writer.toByteArray();
     }
