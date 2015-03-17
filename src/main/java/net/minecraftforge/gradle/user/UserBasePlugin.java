@@ -633,9 +633,9 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         {
             // create GradleStart
             CreateStartTask task = makeTask("makeStart", CreateStartTask.class);
-            task.addResource("GradleStart.java", "GradleStart.java");
-            task.addResource("GradleStartServer.java", "GradleStartServer.java");
-            task.addResource("net/minecraftforge/gradle/GradleStartCommon.java", "net/minecraftforge/gradle/GradleStartCommon.java");
+            task.addResource("GradleStart.java");
+            task.addResource("GradleStartServer.java");
+            task.addResource("net/minecraftforge/gradle/GradleStartCommon.java");
             task.addReplacement("@@MCVERSION@@", delayedString("{MC_VERSION}"));
             task.addReplacement("@@ASSETINDEX@@", delayedString("{ASSET_INDEX}"));
             task.addReplacement("@@ASSETSDIR@@", delayedFile("{CACHE_DIR}/minecraft/assets"));
