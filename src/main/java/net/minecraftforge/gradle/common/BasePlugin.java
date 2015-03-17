@@ -442,7 +442,10 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             
             // dude, its been less than 5 minutes since the last time..
             if (cache.exists() && cache.lastModified() + 300000 >= System.currentTimeMillis())
+            {
+                project.getLogger().info("Been less than 5 minutes since grabbing "+strUrl);
                 return Files.toString(cache, Charsets.UTF_8);
+            }
 
             String etag;
             if (etagFile.exists())
