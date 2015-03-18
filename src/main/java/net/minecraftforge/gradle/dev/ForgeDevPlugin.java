@@ -15,6 +15,7 @@ import net.minecraftforge.gradle.delayed.DelayedBase;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.tasks.ApplyS2STask;
+import net.minecraftforge.gradle.tasks.CreateStartTask;
 import net.minecraftforge.gradle.tasks.CrowdinDownloadTask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
@@ -218,17 +219,35 @@ public class ForgeDevPlugin extends DevBasePlugin
             });
             sub.setOutputFile(delayedFile(FML_VERSIONF));
         }
+        
+        CreateStartTask makeStart = makeTask("makeStart", CreateStartTask.class);
+        {
+            makeStart.addResource("GradleStart.java");
+            makeStart.addResource("GradleStartServer.java");
+            makeStart.addResource("net/minecraftforge/gradle/GradleStartCommon.java");
+            makeStart.addResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
+            makeStart.addReplacement("@@MCVERSION@@", delayedString("{MC_VERSION}"));
+            makeStart.addReplacement("@@ASSETINDEX@@", delayedString("{ASSET_INDEX}"));
+            makeStart.addReplacement("@@ASSETSDIR@@", delayedFile("{CACHE_DIR}/minecraft/assets"));
+            makeStart.addReplacement("@@NATIVESDIR@@", delayedFile(Constants.NATIVES_DIR));
+            makeStart.addReplacement("@@CSVDIR@@", delayedFile("{MCP_DATA_DIR}"));
+            makeStart.addReplacement("@@BOUNCERCLIENT@@", delayedString("net.minecraft.launchwrapper.Launch"));
+            makeStart.addReplacement("@@BOUNCERSERVER@@", delayedString("net.minecraft.launchwrapper.Launch"));
+            makeStart.setStartOut(delayedFile(ECLIPSE_CLEAN_START));
+            makeStart.dependsOn("getAssets", "getAssetsIndex", "extractNatives");
+        }
 
         GenDevProjectsTask task = makeTask("generateProjectClean", GenDevProjectsTask.class);
         {
             task.setTargetDir(delayedFile(ECLIPSE_CLEAN));
+            task.addSource(delayedFile(ECLIPSE_CLEAN_START));
             task.setJson(delayedFile(JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
 
             task.setMcVersion(delayedString("{MC_VERSION}"));
             task.setMappingChannel(delayedString("{MAPPING_CHANNEL}"));
             task.setMappingVersion(delayedString("{MAPPING_VERSION}"));
 
-            task.dependsOn("extractNatives");
+            task.dependsOn("extractNatives", makeStart);
         }
 
         task = makeTask("generateProjectForge", GenDevProjectsTask.class);
@@ -238,6 +257,7 @@ public class ForgeDevPlugin extends DevBasePlugin
 
             task.addSource(delayedFile(ECLIPSE_FORGE_SRC));
             task.addSource(delayedFile(FORGE_SOURCES));
+            task.addSource(delayedFile(ECLIPSE_CLEAN_START));
             task.addTestSource(delayedFile(FORGE_TEST_SOURCES));
 
             task.addResource(delayedFile(ECLIPSE_FORGE_RES));
@@ -248,7 +268,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task.setMappingChannel(delayedString("{MAPPING_CHANNEL}"));
             task.setMappingVersion(delayedString("{MAPPING_VERSION}"));
 
-            task.dependsOn("extractNatives","createVersionPropertiesFML");
+            task.dependsOn("extractNatives","createVersionPropertiesFML", makeStart);
         }
 
         makeTask("generateProjects").dependsOn("generateProjectClean", "generateProjectForge");
@@ -727,5 +747,36 @@ public class ForgeDevPlugin extends DevBasePlugin
         task = (SubprojectTask) project.getTasks().getByName("eclipseForge");
         task.configureProject(getExtension().getSubprojects());
         task.configureProject(getExtension().getCleanProject());
+        
+        {
+            // because different versions of authlib
+            CreateStartTask makeStart = (CreateStartTask) project.getTasks().getByName("makeStart");
+            String mcVersion = delayedString("{MC_VERSION}").call();
+            
+            if (mcVersion.startsWith("1.7")) // MC 1.7.X
+            {
+                if (mcVersion.endsWith("10")) // MC 1.7.10
+                {
+                    makeStart.addReplacement("//@@USERTYPE@@", "argMap.put(\"userType\", auth.getUserType().getName());");
+                    makeStart.addReplacement("//@@USERPROP@@", "argMap.put(\"userProperties\", new GsonBuilder().registerTypeAdapter(com.mojang.authlib.properties.PropertyMap.class, new net.minecraftforge.gradle.OldPropertyMapSerializer()).create().toJson(auth.getUserProperties()));");
+                }
+                else
+                {
+                    makeStart.removeResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
+                }
+                
+                makeStart.addReplacement("@@CLIENTTWEAKER@@", delayedString("cpw.mods.fml.common.launcher.FMLTweaker"));
+                makeStart.addReplacement("@@SERVERTWEAKER@@", delayedString("cpw.mods.fml.common.launcher.FMLServerTweaker"));
+            }
+            else // MC 1.8 +
+            {
+                makeStart.removeResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
+                makeStart.addReplacement("//@@USERTYPE@@", "argMap.put(\"userType\", auth.getUserType().getName());");
+                makeStart.addReplacement("//@@USERPROP@@", "argMap.put(\"userProperties\", new GsonBuilder().registerTypeAdapter(com.mojang.authlib.properties.PropertyMap.class, new com.mojang.authlib.properties.PropertyMap.Serializer()).create().toJson(auth.getUserProperties()));");
+                
+                makeStart.addReplacement("@@CLIENTTWEAKER@@", delayedString("net.minecraftforge.fml.common.launcher.FMLTweaker"));
+                makeStart.addReplacement("@@SERVERTWEAKER@@", delayedString("net.minecraftforge.fml.common.launcher.FMLServerTweaker"));
+            }
+        }
     }
 }

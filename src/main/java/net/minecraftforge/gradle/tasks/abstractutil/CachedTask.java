@@ -133,8 +133,8 @@ public abstract class CachedTask extends DefaultTask
                         if (!calcMD5.equals(foundMD5))
                         {
                             getProject().getLogger().info(" Corrupted Cache!");
-                            getProject().getLogger().debug("Checksums found: " + foundMD5);
-                            getProject().getLogger().debug("Checksums calculated: " + calcMD5);
+                            getProject().getLogger().info("Checksums found: " + foundMD5);
+                            getProject().getLogger().info("Checksums calculated: " + calcMD5);
                             file.delete();
                             getHashFile(file).delete();
                             return true;
@@ -266,7 +266,7 @@ public abstract class CachedTask extends DefaultTask
                 }
                 else
                 {
-                    hashes.add(obj.toString());
+                    hashes.add(Constants.hash(obj.toString()));
                 }
                     
             }

@@ -17,7 +17,6 @@ public final class UserConstants
 
     static final String        FORGE_JAVADOC_URL     = Constants.FORGE_MAVEN + "/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-javadoc.zip";
 
-    static final String        NATIVES_DIR           = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_natives/{MC_VERSION}";
     static final String        NATIVES_DIR_OLD       = "{BUILD_DIR}/natives";
     static final String        SOURCES_DIR           = "{BUILD_DIR}/sources";
 

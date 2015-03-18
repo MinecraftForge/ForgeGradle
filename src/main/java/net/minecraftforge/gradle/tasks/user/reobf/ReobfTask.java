@@ -10,6 +10,7 @@ import java.util.List;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
+import net.minecraftforge.gradle.delayed.DelayedString;
 import net.minecraftforge.gradle.delayed.DelayedThingy;
 import net.minecraftforge.gradle.extrastuff.ReobfExceptor;
 import net.minecraftforge.gradle.user.UserConstants;
@@ -43,6 +44,9 @@ public class ReobfTask extends DefaultTask
     @Input
     private boolean                                   useRetroGuard = false;
 
+    @Input
+    private DelayedString                             mcVersion;
+
     @InputFile
     private DelayedFile                               srg;
 
@@ -68,7 +72,7 @@ public class ReobfTask extends DefaultTask
 
     @Input
     private List<String>                              extraSrg      = Lists.newArrayList();
-    
+
     private List<Object>                              extraSrgFiles = Lists.newArrayList();
 
     @SuppressWarnings("serial")
@@ -112,7 +116,7 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Configures the task to sign the archive produced for each of the given tasks (which must be archive tasks).
-     * @param tasks 
+     * @param tasks
      */
     public void reobf(Task... tasks)
     {
@@ -135,8 +139,8 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Configures the task to sign each of the given artifacts
-     * @param publishArtifact 
-     * @param artifactSpec 
+     * @param publishArtifact
+     * @param artifactSpec
      */
     public void reobf(PublishArtifact publishArtifact, Closure<Object> artifactSpec)
     {
@@ -149,7 +153,7 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Configures the task to sign each of the given artifacts
-     * @param publishArtifacts 
+     * @param publishArtifacts
      */
     public void reobf(PublishArtifact... publishArtifacts)
     {
@@ -167,8 +171,8 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Configures the task to reobf each of the given files
-     * @param file 
-     * @param artifactSpec 
+     * @param file
+     * @param artifactSpec
      */
     public void reobf(File file, Closure<Object> artifactSpec)
     {
@@ -180,7 +184,7 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Configures the task to reobf each of the given files
-     * @param files 
+     * @param files
      */
     public void reobf(File... files)
     {
@@ -192,8 +196,8 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Configures the task to obfuscate every artifact of the given configurations
-     * @param configuration 
-     * @param artifactSpec 
+     * @param configuration
+     * @param artifactSpec
      */
     public void reobf(Configuration configuration, final Closure<Object> artifactSpec)
     {
@@ -230,7 +234,7 @@ public class ReobfTask extends DefaultTask
 
     /**
      * Configures the task to obfuscate every artifact of the given configurations
-     * @param configurations 
+     * @param configurations
      */
     public void reobf(Configuration... configurations)
     {
@@ -278,7 +282,7 @@ public class ReobfTask extends DefaultTask
         // do stuff.
         ReobfExceptor exc = null;
         File srg = File.createTempFile("reobf-default", ".srg", getTemporaryDir());
-        File extraSrg = File.createTempFile("reobf-extra", ".srg", getTemporaryDir());;
+        File extraSrg = File.createTempFile("reobf-extra", ".srg", getTemporaryDir());
 
         UserExtension ext = (UserExtension) getProject().getExtensions().getByName(Constants.EXT_NAME_MC);
 
@@ -304,7 +308,7 @@ public class ReobfTask extends DefaultTask
                 writer.write(line);
                 writer.newLine();
             }
-            
+
             writer.flush();
             writer.close();
         }
@@ -407,6 +411,16 @@ public class ReobfTask extends DefaultTask
         this.useRetroGuard = useRG;
     }
 
+    public String getMcVersion()
+    {
+        return mcVersion == null ? null : mcVersion.call();
+    }
+
+    public void setMcVersion(DelayedString mcVersion)
+    {
+        this.mcVersion = mcVersion;
+    }
+
     public File getDeobfFile()
     {
         return deobfFile == null ? null : deobfFile.call();
@@ -446,17 +460,17 @@ public class ReobfTask extends DefaultTask
     {
         this.extraSrg = extraSrg;
     }
-    
+
     public void addExtraSrgFile(Object thing)
     {
         extraSrgFiles.add(thing);
     }
-    
+
     @InputFiles
     public FileCollection getExtraSrgFiles()
     {
         List<File> files = new ArrayList<File>(extraSrgFiles.size());
-        
+
         for (Object thing : getProject().files(extraSrgFiles))
         {
             File f = getProject().file(thing);
@@ -475,7 +489,7 @@ public class ReobfTask extends DefaultTask
                 files.add(f.getAbsoluteFile());
             }
         }
-        
+
         return getProject().files(files);
     }
 
@@ -496,12 +510,12 @@ public class ReobfTask extends DefaultTask
 
     public void setSrgSrg()
     {
-        this.srg = new DelayedFile(getProject(), UserConstants.REOBF_SRG, ((UserExtension)getProject().getExtensions().getByName(Constants.EXT_NAME_MC)).plugin);
+        this.srg = new DelayedFile(getProject(), UserConstants.REOBF_SRG, ((UserExtension) getProject().getExtensions().getByName(Constants.EXT_NAME_MC)).plugin);
     }
 
     public void setSrgMcp()
     {
-        this.srg = new DelayedFile(getProject(), UserConstants.REOBF_NOTCH_SRG, ((UserExtension)getProject().getExtensions().getByName(Constants.EXT_NAME_MC)).plugin);
+        this.srg = new DelayedFile(getProject(), UserConstants.REOBF_NOTCH_SRG, ((UserExtension) getProject().getExtensions().getByName(Constants.EXT_NAME_MC)).plugin);
     }
 
     public File getFieldCsv()

@@ -46,7 +46,6 @@ import org.gradle.api.tasks.GroovySourceSet;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.ScalaSourceSet;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.api.tasks.compile.GroovyCompile;
@@ -287,17 +286,11 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         // special native stuff
         ExtractConfigTask extractNatives = makeTask("extractNatives", ExtractConfigTask.class);
-        extractNatives.setOut(delayedFile(NATIVES_DIR));
+        extractNatives.setOut(delayedFile(Constants.NATIVES_DIR));
         extractNatives.setConfig(CONFIG_NATIVES);
         extractNatives.exclude("META-INF/**", "META-INF/**");
         extractNatives.doesCache();
         extractNatives.dependsOn("extractUserDev");
-
-        // backwards compat natives copy
-        Sync copyNatives = makeTask("copyNativesLegacy", Sync.class);
-        copyNatives.from(delayedFile(NATIVES_DIR));
-        copyNatives.into(delayedFile(NATIVES_DIR_OLD));
-        copyNatives.dependsOn("extractNatives");
 
         // special gradleStart stuff
         project.getDependencies().add(CONFIG_START, project.files(delayedFile(getStartDir())));
@@ -623,31 +616,36 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.setSrg(delayedFile(REOBF_SRG));
             task.setFieldCsv(delayedFile(FIELD_CSV));
             task.setFieldCsv(delayedFile(METHOD_CSV));
+            task.setMcVersion(delayedString("{MC_VERSION}"));
 
             task.mustRunAfter("test");
             project.getTasks().getByName("assemble").dependsOn(task);
             project.getTasks().getByName("uploadArchives").dependsOn(task);
         }
 
-        // create start task and add it to the classpath and stuff
         {
-            // create task
-            CreateStartTask task =  makeTask("makeStart", CreateStartTask.class);
-            {
-                task.setAssetIndex(delayedString("{ASSET_INDEX}").forceResolving());
-                task.setAssetsDir(delayedFile("{CACHE_DIR}/minecraft/assets"));
-                task.setNativesDir(delayedFile(NATIVES_DIR));
-                task.setSrgDir(delayedFile("{SRG_DIR}"));
-                task.setCsvDir(delayedFile("{MCP_DATA_DIR}"));
-                task.setVersion(delayedString("{MC_VERSION}"));
-                task.setClientTweaker(delayedString("{RUN_CLIENT_TWEAKER}"));
-                task.setServerTweaker(delayedString("{RUN_SERVER_TWEAKER}"));
-                task.setClientBounce(delayedString("{RUN_BOUNCE_CLIENT}"));
-                task.setServerBounce(delayedString("{RUN_BOUNCE_SERVER}"));
-                task.setStartOut(delayedFile(getStartDir()));
-
-                task.dependsOn("extractUserDev", "getAssets", "getAssetsIndex", "copyNativesLegacy");
-            }
+            // create GradleStart
+            CreateStartTask task = makeTask("makeStart", CreateStartTask.class);
+            task.addResource("GradleStart.java");
+            task.addResource("GradleStartServer.java");
+            task.addResource("net/minecraftforge/gradle/GradleStartCommon.java");
+            task.addResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
+            task.addReplacement("@@MCVERSION@@", delayedString("{MC_VERSION}"));
+            task.addReplacement("@@ASSETINDEX@@", delayedString("{ASSET_INDEX}"));
+            task.addReplacement("@@ASSETSDIR@@", delayedFile("{CACHE_DIR}/minecraft/assets"));
+            task.addReplacement("@@NATIVESDIR@@", delayedFile(Constants.NATIVES_DIR));
+            task.addReplacement("@@SRGDIR@@", delayedFile("{SRG_DIR}"));
+            task.addReplacement("@@CSVDIR@@", delayedFile("{MCP_DATA_DIR}"));
+            task.addReplacement("@@CLIENTTWEAKER@@", delayedString("{RUN_CLIENT_TWEAKER}"));
+            task.addReplacement("@@SERVERTWEAKER@@", delayedString("{RUN_SERVER_TWEAKER}"));
+            task.addReplacement("@@BOUNCERCLIENT@@", delayedString("{RUN_BOUNCE_CLIENT}"));
+            task.addReplacement("@@BOUNCERSERVER@@", delayedString("{RUN_BOUNCE_SERVER}"));
+            task.setStartOut(delayedFile(getStartDir()));
+            task.compileResources(CONFIG_DEPS);
+            
+            // see delayed task config for some more config
+            
+            task.dependsOn("extractUserDev", "getAssets", "getAssetsIndex", "extractNatives");
         }
 
         createPostDecompTasks();
@@ -1014,6 +1012,30 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             File out = recomp.call();
             repackageTask.setArchiveName(out.getName());
             repackageTask.setDestinationDir(out.getParentFile());
+        }
+        
+        {
+            // because different versions of authlib
+            CreateStartTask task = (CreateStartTask) project.getTasks().getByName("makeStart");
+            
+            if (getMcVersion(getExtension()).startsWith("1.7")) // MC 1.7.X
+            {
+                if (getMcVersion(getExtension()).endsWith("10")) // MC 1.7.10
+                {
+                    task.addReplacement("//@@USERTYPE@@", "argMap.put(\"userType\", auth.getUserType().getName());");
+                    task.addReplacement("//@@USERPROP@@", "argMap.put(\"userProperties\", new GsonBuilder().registerTypeAdapter(com.mojang.authlib.properties.PropertyMap.class, new net.minecraftforge.gradle.OldPropertyMapSerializer()).create().toJson(auth.getUserProperties()));");
+                }
+                else
+                {
+                    task.removeResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
+                }
+            }
+            else // MC 1.8 +
+            {
+                task.removeResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
+                task.addReplacement("//@@USERTYPE@@", "argMap.put(\"userType\", auth.getUserType().getName());");
+                task.addReplacement("//@@USERPROP@@", "argMap.put(\"userProperties\", new GsonBuilder().registerTypeAdapter(com.mojang.authlib.properties.PropertyMap.class, new com.mojang.authlib.properties.PropertyMap.Serializer()).create().toJson(auth.getUserProperties()));");
+            }
         }
 
         // Add the mod and stuff to the classpath of the exec tasks.

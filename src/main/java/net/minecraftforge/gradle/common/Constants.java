@@ -2,10 +2,12 @@ package net.minecraftforge.gradle.common;
 
 import com.google.common.base.Joiner;
 import com.google.common.io.ByteStreams;
+
 import groovy.lang.Closure;
 import net.minecraftforge.gradle.StringUtils;
 import net.minecraftforge.gradle.dev.DevExtension;
 import net.minecraftforge.gradle.json.version.OS;
+
 import org.gradle.api.Project;
 
 import java.io.File;
@@ -64,6 +66,7 @@ public class Constants
     public static final String MCP_JSON_URL     = "http://export.mcpbot.bspk.rs/versions.json";
 
     // things in the cache dir.
+    public static final String NATIVES_DIR      = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_natives/{MC_VERSION}";
     public static final String MCP_DATA_DIR     = "{CACHE_DIR}/minecraft/de/oceanlabs/mcp/mcp_{MAPPING_CHANNEL}/{MAPPING_VERSION}/";
     public static final String JAR_CLIENT_FRESH = "{CACHE_DIR}/minecraft/net/minecraft/minecraft/{MC_VERSION}/minecraft-{MC_VERSION}.jar";
     public static final String JAR_SERVER_FRESH = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_server/{MC_VERSION}/minecraft_server-{MC_VERSION}.jar";
@@ -154,9 +157,9 @@ public class Constants
         if (file.isDirectory())
         {
             for (File f : file.listFiles())
-                hashAll(f);
+                list.addAll(hashAll(f));
         }
-        else
+        else if (!file.getName().equals(".cache"))
             list.add(hash(file));
 
         return list;
@@ -260,4 +263,3 @@ public class Constants
         return null; // Should never get to here
     }
 }
-

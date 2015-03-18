@@ -326,7 +326,8 @@ public class ObfArtifact extends AbstractPublishArtifact
 
         // ready artifacts
         File output = getFile();
-        File toObfTemp = File.createTempFile("reobfed", ".jar", caller.getTemporaryDir());
+        File toObfTemp = File.createTempFile("toObf", ".jar", caller.getTemporaryDir());
+        File toInjectTemp = File.createTempFile("toInject", ".jar", caller.getTemporaryDir());
         Files.copy(toObf, toObfTemp);
 
         // ready Srg
@@ -344,12 +345,16 @@ public class ObfArtifact extends AbstractPublishArtifact
 
         // obfuscate!
         if (caller.getUseRetroGuard())
-            applyRetroGuard(toObfTemp, output, srg, extraSrg, extraSrgFiles);
+            applyRetroGuard(toObfTemp, toInjectTemp, srg, extraSrg, extraSrgFiles);
         else
-            applySpecialSource(toObfTemp, output, srg, extraSrg, extraSrgFiles);
+            applySpecialSource(toObfTemp, toInjectTemp, srg, extraSrg, extraSrgFiles);
 
+        // inject mcVersion!
+        new McVersionTransformer(toInjectTemp, output).transform(caller.getMcVersion());
+        
         // delete temporary files
         toObfTemp.delete();
+        toInjectTemp.delete();
         if (isTempSrg)
             srg.delete();
 
