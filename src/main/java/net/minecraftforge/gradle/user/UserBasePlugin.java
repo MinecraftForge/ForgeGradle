@@ -636,6 +636,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.addResource("GradleStart.java");
             task.addResource("GradleStartServer.java");
             task.addResource("net/minecraftforge/gradle/GradleStartCommon.java");
+            task.addResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
             task.addReplacement("@@MCVERSION@@", delayedString("{MC_VERSION}"));
             task.addReplacement("@@ASSETINDEX@@", delayedString("{ASSET_INDEX}"));
             task.addReplacement("@@ASSETSDIR@@", delayedFile("{CACHE_DIR}/minecraft/assets"));
@@ -1020,12 +1021,28 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             repackageTask.setDestinationDir(out.getParentFile());
         }
         
-        if (!getMcVersion(getExtension()).startsWith("1.7"))
         {
             // because different versions of authlib
             CreateStartTask task = (CreateStartTask) project.getTasks().getByName("makeStart");
-            task.addReplacement("//@@USERTYPE@@", "argMap.put(\"userType\", auth.getUserType().getName());");
-            task.addReplacement("//@@USERPROP@@", "argMap.put(\"userProperties\", new GsonBuilder().registerTypeAdapter(com.mojang.authlib.properties.PropertyMap.class, new com.mojang.authlib.properties.PropertyMap.Serializer()).create().toJson(auth.getUserProperties()));");
+            
+            if (getMcVersion(getExtension()).startsWith("1.7")) // MC 1.7.X
+            {
+                if (getMcVersion(getExtension()).endsWith("10")) // MC 1.7.10
+                {
+                    task.addReplacement("//@@USERTYPE@@", "argMap.put(\"userType\", auth.getUserType().getName());");
+                    task.addReplacement("//@@USERPROP@@", "argMap.put(\"userProperties\", new GsonBuilder().registerTypeAdapter(com.mojang.authlib.properties.PropertyMap.class, new net.minecraftforge.gradle.OldPropertyMapSerializer()).create().toJson(auth.getUserProperties()));");
+                }
+                else
+                {
+                    task.removeResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
+                }
+            }
+            else // MC 1.8 +
+            {
+                task.removeResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
+                task.addReplacement("//@@USERTYPE@@", "argMap.put(\"userType\", auth.getUserType().getName());");
+                task.addReplacement("//@@USERPROP@@", "argMap.put(\"userProperties\", new GsonBuilder().registerTypeAdapter(com.mojang.authlib.properties.PropertyMap.class, new com.mojang.authlib.properties.PropertyMap.Serializer()).create().toJson(auth.getUserProperties()));");
+            }
         }
 
         // Add the mod and stuff to the classpath of the exec tasks.

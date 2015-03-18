@@ -113,6 +113,11 @@ public class CreateStartTask extends CachedTask
         resources.put(outName, getResource(resource));
     }
     
+    public void removeResource(String key)
+    {
+        resources.remove(key);
+    }
+    
     public void addResource(String resource, String outName)
     {
         if (!outName.startsWith("/")) // append slash if it isnt there
