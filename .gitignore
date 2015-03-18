@@ -18,4 +18,8 @@ out
 *.idea
 *.iml
 
+#mkdocs
+site
+
+# testing
 /repo/

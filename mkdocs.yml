@@ -1,0 +1,5 @@
+site_name: ForgeGradle
+theme: readthedocs
+pages:
+    - index.md
+    - cookbook.md
