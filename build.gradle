@@ -81,6 +81,10 @@ dependencies {
 }
 
 compileJava {
+  if(System.env.JDK6_HOME != null) {
+    options.fork = true
+    options.bootClasspath = "$System.env.JDK6_HOME/jre/lib/rt.jar"
+  }
 	options.deprecation = true
 	options.compilerArgs += ["-Werror"]
 	//options.compilerArgs += ["-Werror", "-Xlint:unchecked"]
