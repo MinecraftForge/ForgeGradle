@@ -186,6 +186,13 @@ public class GenDevProjectsTask extends DefaultTask
             a(o, "}");
         }
         
+        // and now start stuff
+        a(o, 
+                "",
+                "jar { exclude \'GradleStart*\', \'net/minecraftforge/gradle/**\' }",
+                ""
+         );
+        
         // and now eclipse hacking
         a(o,
                 "def links = []",

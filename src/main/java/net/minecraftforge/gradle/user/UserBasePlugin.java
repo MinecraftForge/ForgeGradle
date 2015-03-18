@@ -46,7 +46,6 @@ import org.gradle.api.tasks.GroovySourceSet;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.ScalaSourceSet;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.api.tasks.compile.GroovyCompile;
@@ -287,17 +286,11 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         // special native stuff
         ExtractConfigTask extractNatives = makeTask("extractNatives", ExtractConfigTask.class);
-        extractNatives.setOut(delayedFile(NATIVES_DIR));
+        extractNatives.setOut(delayedFile(Constants.NATIVES_DIR));
         extractNatives.setConfig(CONFIG_NATIVES);
         extractNatives.exclude("META-INF/**", "META-INF/**");
         extractNatives.doesCache();
         extractNatives.dependsOn("extractUserDev");
-
-        // backwards compat natives copy
-        Sync copyNatives = makeTask("copyNativesLegacy", Sync.class);
-        copyNatives.from(delayedFile(NATIVES_DIR));
-        copyNatives.into(delayedFile(NATIVES_DIR_OLD));
-        copyNatives.dependsOn("extractNatives");
 
         // special gradleStart stuff
         project.getDependencies().add(CONFIG_START, project.files(delayedFile(getStartDir())));
@@ -640,7 +633,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.addReplacement("@@MCVERSION@@", delayedString("{MC_VERSION}"));
             task.addReplacement("@@ASSETINDEX@@", delayedString("{ASSET_INDEX}"));
             task.addReplacement("@@ASSETSDIR@@", delayedFile("{CACHE_DIR}/minecraft/assets"));
-            task.addReplacement("@@NATIVESDIR@@", delayedFile(NATIVES_DIR));
+            task.addReplacement("@@NATIVESDIR@@", delayedFile(Constants.NATIVES_DIR));
             task.addReplacement("@@SRGDIR@@", delayedFile("{SRG_DIR}"));
             task.addReplacement("@@CSVDIR@@", delayedFile("{MCP_DATA_DIR}"));
             task.addReplacement("@@CLIENTTWEAKER@@", delayedString("{RUN_CLIENT_TWEAKER}"));
@@ -652,7 +645,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             
             // see delayed task config for some more config
             
-            task.dependsOn("extractUserDev", "getAssets", "getAssetsIndex", "copyNativesLegacy");
+            task.dependsOn("extractUserDev", "getAssets", "getAssetsIndex", "extractNatives");
         }
 
         createPostDecompTasks();

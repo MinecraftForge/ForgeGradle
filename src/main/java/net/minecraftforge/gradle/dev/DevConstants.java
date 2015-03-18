@@ -97,12 +97,15 @@ final class DevConstants
     static final String WORKSPACE           = "eclipse";
     static final String ECLIPSE_CLEAN       = WORKSPACE + "/Clean";
     static final String ECLIPSE_CLEAN_SRC   = ECLIPSE_CLEAN + "/src/main/java";
+    static final String ECLIPSE_CLEAN_START = ECLIPSE_CLEAN + "/src/main/start";
     static final String ECLIPSE_CLEAN_RES   = ECLIPSE_CLEAN + "/src/main/resources";
     static final String ECLIPSE_FML         = WORKSPACE + "/FML";
     static final String ECLIPSE_FML_SRC     = ECLIPSE_FML + "/src/main/java";
+    static final String ECLIPSE_FML_START   = ECLIPSE_FML + "/src/main/start";
     static final String ECLIPSE_FML_RES     = ECLIPSE_FML + "/src/main/resources";
     static final String ECLIPSE_FORGE       = WORKSPACE + "/Forge";
     static final String ECLIPSE_FORGE_SRC   = ECLIPSE_FORGE + "/src/main/java";
+    static final String ECLIPSE_FORGE_START = ECLIPSE_FORGE + "/src/main/start";
     static final String ECLIPSE_FORGE_RES   = ECLIPSE_FORGE + "/src/main/resources";
     static final String ECLIPSE_CDN         = WORKSPACE + "/cauldron";
     static final String ECLIPSE_CDN_SRC     = ECLIPSE_CDN + "/src/main/java";
