@@ -350,7 +350,14 @@ public class ObfArtifact extends AbstractPublishArtifact
             applySpecialSource(toObfTemp, toInjectTemp, srg, extraSrg, extraSrgFiles);
 
         // inject mcVersion!
-        new McVersionTransformer(toInjectTemp, output).transform(caller.getMcVersion());
+        if (caller.getMcVersion().startsWith("1.8"))
+        {
+            new McVersionTransformer(toInjectTemp, output).transform(caller.getMcVersion());
+        }
+        else
+        {
+            Files.copy(toInjectTemp, output);
+        }
         
         // delete temporary files
         toObfTemp.delete();
