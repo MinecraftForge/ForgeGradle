@@ -6,5 +6,6 @@ repo_url: https://github.com/MinecraftForge/ForgeGradle
 
 pages:
 - ['index.md', 'Introduction']
-- ['cookbook/common-tasks.md', 'Cook Book', 'Common Tasks']
-- ['cookbook/shading.md', 'Cook Book', 'Shading']
+- ['cookbook.md', 'Cook Book']
+- ['user-guide/shading.md', 'User Guide', 'Shading']
+- ['reference/mcblock.md', 'Adept Reference', "Minecraft{} Block"]

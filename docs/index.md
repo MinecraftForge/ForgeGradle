@@ -9,11 +9,9 @@ ForgeGradle is a Gradle plugin designed for the building of Minecraft mods and p
     - 1.7.10
     - 1.8
  - **MinecraftForge**
-    - 10.12.0.1048
-    - *(all newest to date)*
+    - 10.12.0.1048+
  - **ForgeModLoader**
-    - 7.2.136.885
-    - *(all newest to date)*
+    - 7.2.136.885+
 
 ---
 
