@@ -1,5 +1,10 @@
 site_name: ForgeGradle
-theme: readthedocs
+#theme:
+
+site_description: Documentation for ForgeGradle the gradle plufin for Minecraft
+repo_url: https://github.com/MinecraftForge/ForgeGradle
+
 pages:
-    - index.md
-    - cookbook.md
+- ['index.md', 'Introduction']
+- ['cookbook/common-tasks.md', 'Cook Book', 'Common Tasks']
+- ['cookbook/shading.md', 'Cook Book', 'Shading']
