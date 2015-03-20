@@ -120,9 +120,6 @@ public class CreateStartTask extends CachedTask
     
     public void addResource(String resource, String outName)
     {
-        if (!outName.startsWith("/")) // append slash if it isnt there
-            outName = "/" + outName;
-        
         this.addResource(Resources.getResource(resource), outName);
     }
     
