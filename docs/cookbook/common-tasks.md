@@ -7,7 +7,7 @@ task deobfJar(type: Jar, dependsOn: 'jar') {
     classifier "dev"
 }
 artifacts {
-    archives javadocJar
+    archives deobfJar
 }
 ```
 
@@ -19,7 +19,7 @@ task sourceJar(type: Jar, dependsOn: 'sourceMainJava') {
     classifier "sources"
 }
 artifacts {
-    archives javadocJar
+    archives sourceJar
 }
 ```
 
