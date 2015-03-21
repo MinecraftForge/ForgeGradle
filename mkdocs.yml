@@ -9,3 +9,4 @@ pages:
 - ['cookbook.md', 'Cook Book']
 - ['user-guide/shading.md', 'User Guide', 'Shading']
 - ['reference/mcblock.md', 'Adept Reference', "Minecraft{} Block"]
+- ['reference/tasks.md', 'Adept Reference', "Tasks"]
