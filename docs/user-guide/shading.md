@@ -1,4 +1,14 @@
-**Shading** is relocating and packaging. When you shade a java library, you copy it into your own jar, and then relocate it to another package. This is useful because other projects may include the a different version of the same library you used. If neither project relocated the 3rd library, then when used together the projects could fail with ClassDefNotFOundError, MethodNotFoundError, or other similair errors. While you can use other methods to shade libraries into your jar like the gradle shadow plugin, the way explained here is exclusive to ForgeGradle and uses no other plugins or dependencies. It should be obvious that this is only necessary when you require a library at runtime, and this section assumes that you already know to define the dependency without shading.
+#Shading
+
+## What?
+To **Shade** a library is to take the contents files of said library, put them in your own jar, *and* change their package.This is different from ***packaging*** which is simply shipping the libraries files in side your own jar without relocating them to a different package. The term ***fatjar*** is commonly used to refer to jars that have the application as well as its dependencies packaged or shaded into them.
+
+## Why?
+When a mod uses a 3rd party library like EJML or something else, it is usually necessary for this library to be present at runtime to avoid ClassDefNotFoundErrors. Minecraft and Forge have some libraries that they use and are guaranteed to be present at runtime such as GSON and Google Guava, but what about extra libraries that are not already included? **Shading** is one way to ensure that these extra libraries are present at runtime.
+
+*Packaging fixes this problem as well. Put the libraries in your own jar so they exist at runtime, and everything is perfect. Why relocate? The answer to this question lies in the fact that other people make different mods. Perhaps you packaged AbrarLib 1.0 that has only 1 class named abrar.lib.AbrarClass with your mod. Lets say someone else made a different mod that packaged AbrarLib 2.0 that has 2 classes, abrar.lib.AbrarClass and abrar.lib.AbrarHelper. When your mod tries to reference AbrarClass? What about when the other mod tries to use AbrarClass? It is not guaranteed that both will work correctly, both could break in unpredictable ways. Relocating fixes this problem. The AbrarLib file shaded into your mod would have the name my.mod.abrarlib.AbrarClass, and the AbrarLib files in the other mod would have the names other.mod.abrarlib.AbrarClass and other.mod.abrarlib.AbrarHelper. Because the classes have different names, there is no longer any confusion between the two. This is why we shade instead of package runtime dependencies.
+
+## How?
 
 ```
 configurations {
@@ -33,4 +43,3 @@ minecraft {
 }
 ```
 This is the section that tells Gradle what package you want to relocate where. This takes advantage of ForgeGradle's reobfuscation mechanism, and thus these lines only take effect at the reobfuscation step of the build. These **srgExtra** strings are indeed SRG lines, and can be specified for individual classes, fields, or methods as well as packages. This section can be located anywhere in the build.gradle.
-

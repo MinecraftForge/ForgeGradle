@@ -56,8 +56,8 @@ def getVersionAppendage() {
 version = "1.2.3_"+getVersionAppendage()
 ```
 
-## Shading
-In this example, the EJML library is bieng shaded. This can be done with almost any jar you cand efine as a dependency. Each library has a different package its files are in, in this case EJMLs root package is ```org.ejml```, and I want to relocate it to ```your.new.package.here.ejml```. Notice that the periods have been replaced with slashes.
+### Shading
+In this example, the EJML library is being shaded. This can be done with almost any jar you can define as a dependency. Each library has a different package its files are in, in this case EJMLs root package is ```org.ejml```, and I want to relocate it to ```your.new.package.here.ejml```. Notice that the periods have been replaced with slashes.
 ```
 minecraft {
     srgExtra "PK:org/ejml your/new/package/here/ejml"
