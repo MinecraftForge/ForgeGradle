@@ -8,6 +8,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
@@ -120,7 +121,7 @@ public class CreateStartTask extends CachedTask
     
     public void addResource(String resource, String outName)
     {
-        this.addResource(Resources.getResource(resource), outName);
+        this.addResource(Constants.getResource(resource), outName);
     }
     
     public void addResource(String thing)
