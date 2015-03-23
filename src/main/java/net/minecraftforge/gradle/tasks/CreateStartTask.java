@@ -70,14 +70,15 @@ public class CreateStartTask extends CachedTask
         {
             File compiled = getStartOut();
             compiled.mkdirs();
-            
-            this.getAnt().invokeMethod("javac", ImmutableMap.of(
-                        "srcDir", resourceDir.getCanonicalPath(),
-                        "destDir", compiled.getCanonicalPath(),
-                        "failonerror", true,
-                        "includeantruntime", false,
-                        "classpath", getProject().getConfigurations().getByName(classpath).getAsPath()
-                    ));
+
+            this.getAnt().invokeMethod("javac", ImmutableMap.builder()
+                    .put("srcDir", resourceDir.getCanonicalPath())
+                    .put("destDir", compiled.getCanonicalPath())
+                    .put("failonerror", true)
+                    .put("includeantruntime", false)
+                    .put("classpath", getProject().getConfigurations().getByName(classpath).getAsPath())
+                    .put("encoding", "utf-8")
+                    .build());
         }
         
     }
