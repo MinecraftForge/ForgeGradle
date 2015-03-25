@@ -252,14 +252,38 @@ public class Constants
         return null;
     }
 
-    public static PrintStream getTaskLogStream(Project project, String name) {
+    public static PrintStream getTaskLogStream(Project project, String name)
+    {
         final File taskLogs = new File(project.getBuildDir(), "taskLogs");
         taskLogs.mkdirs();
         final File logFile = new File(taskLogs, name);
         logFile.delete(); //Delete the old log
-        try {
+        try
+        {
             return new PrintStream(logFile);
-        } catch (FileNotFoundException ignored) {}
+        }
+        catch (FileNotFoundException ignored)
+        {}
         return null; // Should never get to here
+    }
+    
+    /**
+     * Throws a null runtime exception if the resource isnt found.
+     * @param resource
+     * @return URL
+     */
+    public static URL getResource(String resource)
+    {
+        ClassLoader loader = BaseExtension.class.getClassLoader();
+        
+        if (loader == null)
+            throw new RuntimeException("ClassLoader is null! IMPOSSIBRU");
+        
+        URL url = loader.getResource(resource);
+        
+        if (url == null)
+            throw new RuntimeException("Resource "+resource+" not found");
+        
+        return url;
     }
 }

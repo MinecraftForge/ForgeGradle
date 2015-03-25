@@ -8,6 +8,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
@@ -69,14 +70,15 @@ public class CreateStartTask extends CachedTask
         {
             File compiled = getStartOut();
             compiled.mkdirs();
-            
-            this.getAnt().invokeMethod("javac", ImmutableMap.of(
-                        "srcDir", resourceDir.getCanonicalPath(),
-                        "destDir", compiled.getCanonicalPath(),
-                        "failonerror", true,
-                        "includeantruntime", false,
-                        "classpath", getProject().getConfigurations().getByName(classpath).getAsPath()
-                    ));
+
+            this.getAnt().invokeMethod("javac", ImmutableMap.builder()
+                    .put("srcDir", resourceDir.getCanonicalPath())
+                    .put("destDir", compiled.getCanonicalPath())
+                    .put("failonerror", true)
+                    .put("includeantruntime", false)
+                    .put("classpath", getProject().getConfigurations().getByName(classpath).getAsPath())
+                    .put("encoding", "utf-8")
+                    .build());
         }
         
     }
@@ -120,10 +122,7 @@ public class CreateStartTask extends CachedTask
     
     public void addResource(String resource, String outName)
     {
-        if (!outName.startsWith("/")) // append slash if it isnt there
-            outName = "/" + outName;
-        
-        this.addResource(Resources.getResource(resource), outName);
+        this.addResource(Constants.getResource(resource), outName);
     }
     
     public void addResource(String thing)
