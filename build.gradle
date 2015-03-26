@@ -4,7 +4,7 @@ apply plugin: 'eclipse'
 apply plugin: 'maven'
 
 group = 'net.minecraftforge.gradle'
-version = '1.3-SNAPSHOT'
+version = '2.0-SNAPSHOT'
 archivesBaseName = 'ForgeGradle'
 targetCompatibility = '1.6'
 sourceCompatibility = '1.6'
@@ -26,6 +26,8 @@ repositories {
         url = "https://oss.sonatype.org/content/repositories/snapshots/"
     }
     mavenCentral()
+    
+    // because of the GradleStart stuff
     maven {
         name = "mojang"
         url = "https://libraries.minecraft.net/"
@@ -34,7 +36,8 @@ repositories {
 
 jar {
     manifest {
-        attributes 'version':project.version, 'javaCompliance': project.targetCompatibility
+        attributes 'version':project.version
+        attributes 'javaCompliance': project.targetCompatibility
         attributes 'group':project.group
     }
 }
@@ -90,6 +93,10 @@ javadoc {
 	classpath += configurations.compileOnly
 }
 
+test {
+    exclude "**", "*" // disable tests, temporarily atleast
+}
+
 artifacts { archives jar }
 
 //These should add a compile time only dependancies to eclipse, ide, and javac, but NOT to the generated POM on maven.
@@ -132,8 +139,8 @@ uploadArchives {
 
                         licenses {
                             license {
-                                name 'Eclipse Public License (EPL), Version 1.0'
-                                url 'http://www.eclipse.org/legal/epl-v10.html'
+                                name 'Lesser GNU Public License, Version 2.1'
+                                url 'https://www.gnu.org/licenses/lgpl-2.1.html'
                                 distribution 'repo'
                             }
                         }

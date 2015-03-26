@@ -64,10 +64,18 @@ import com.google.common.io.Files;
 
 public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin<T>
 {
+    private void die()
+    {
+        throw new RuntimeException("ForgeGradle 2.0 is unreleased. You shouldnt be using it.");
+    }
+    
     @SuppressWarnings("serial")
     @Override
     public void applyPlugin()
     {
+        // just for fun :P
+        die();
+        
         this.applyExternalPlugin("java");
         this.applyExternalPlugin("maven");
         this.applyExternalPlugin("eclipse");

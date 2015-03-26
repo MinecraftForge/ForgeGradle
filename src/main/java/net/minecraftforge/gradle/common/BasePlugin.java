@@ -37,6 +37,7 @@ import org.gradle.api.tasks.Delete;
 import org.gradle.testfixtures.ProjectBuilder;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
@@ -49,8 +50,7 @@ import com.google.gson.reflect.TypeToken;
 public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Project>, IDelayedResolver<K>
 {
     public Project    project;
-    @SuppressWarnings("rawtypes")
-    public BasePlugin otherPlugin;
+    public BasePlugin<?> otherPlugin;
     public Version    version;
     public AssetIndex assetIndex;
 
@@ -59,6 +59,16 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     public final void apply(Project arg)
     {
         project = arg;
+        
+        // check for gradle version
+        {
+            List<String> split = Splitter.on('.').splitToList(project.getGradle().getGradleVersion());
+            int major = Integer.parseInt(split.get(0));
+            int minor = Integer.parseInt(split.get(1));
+            
+            if (major <= 1 || (major == 2 && minor < 3))
+                throw new RuntimeException("ForgeGradle 2.0 requires Gradle 2.3 or above.");
+        }
 
         // search for overlays..
         for (Plugin p : project.getPlugins())
@@ -215,7 +225,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         task = makeTask("downloadServer", DownloadTask.class);
         {
             task.setOutput(delayedFile(Constants.JAR_SERVER_FRESH));
-            task.setUrl(delayedString(Constants.MC_SERVER_URL));
+            task.setUrl(delayedString(Constants.MC_SERVER_URL)); 
         }
 
         ObtainFernFlowerTask mcpTask = makeTask("downloadMcpTools", ObtainFernFlowerTask.class);
