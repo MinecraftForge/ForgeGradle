@@ -113,6 +113,11 @@ public class UserPatchExtension extends UserExtension
             String forgeVersion = matcher.group(1);
             ForgeBuild build = versionInfo.number.get(Integer.valueOf(matcher.group(2)));
             
+            if (build == null)
+            {
+                throw new GradleConfigurationException("No such version exists!");
+            }
+            
             boolean branchMatches = false;
             if (branch == null)
                 branchMatches = Strings.isNullOrEmpty(build.branch);
@@ -149,6 +154,11 @@ public class UserPatchExtension extends UserExtension
             String forgeVersion = matcher.group(2);
             ForgeBuild build = versionInfo.number.get(Integer.valueOf(matcher.group(3)));
             
+            if (build == null)
+            {
+                throw new GradleConfigurationException("No such version exists!");
+            }
+            
             boolean branchMatches = false;
             if (branch == null)
                 branchMatches = Strings.isNullOrEmpty(build.branch);
@@ -176,7 +186,7 @@ public class UserPatchExtension extends UserExtension
             return;
         }
         
-        throw new GradleConfigurationException("Invalid version notation! The following are valid notations. Buildnumber, version, version-branch, mcversion-version-branch, and pomotion");
+        throw new GradleConfigurationException("Invalid version notation, or version doesnt exist! The following are valid notations. Buildnumber, version, version-branch, mcversion-version-branch, and pomotion");
     }
     
     private boolean isAllNums(String in)

@@ -97,6 +97,11 @@ sourceSets.main.compileClasspath += [ configurations.compileOnly ]
 idea.module.scopes.PROVIDED.plus += [ configurations.compileOnly ]
 eclipse.classpath.plusConfigurations += [ configurations.compileOnly ]
 
+test {
+    if (project.hasProperty("filesmaven")) // disable this test when on the forge jenkins
+        exclude "**/ExtensionMcpMappingTest*"
+}
+
 uploadArchives {
     repositories {
         if (project.hasProperty("filesmaven")) {
