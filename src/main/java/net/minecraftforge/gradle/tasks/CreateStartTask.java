@@ -78,6 +78,8 @@ public class CreateStartTask extends CachedTask
                     .put("includeantruntime", false)
                     .put("classpath", getProject().getConfigurations().getByName(classpath).getAsPath())
                     .put("encoding", "utf-8")
+                    .put("source", "1.6")
+                    .put("target", "1.6")
                     .build());
         }
         
