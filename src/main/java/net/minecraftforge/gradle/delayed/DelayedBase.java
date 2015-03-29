@@ -15,29 +15,19 @@ public abstract class DelayedBase<V> extends Closure<V>
     private V resolved;
     protected String pattern;
     public boolean resolveOnce = true;
-    @SuppressWarnings("rawtypes")
-    protected IDelayedResolver[] resolvers;
-    public static final IDelayedResolver<BaseExtension> RESOLVER = new IDelayedResolver<BaseExtension>()
-    {
-        @Override
-        public String resolve(String pattern, Project project, BaseExtension extension)
-        {
-            return pattern;
-        }
-    };
+    protected IDelayedResolver<? extends BaseExtension> resolver;
 
-    @SuppressWarnings("unchecked")
     public DelayedBase(Project owner, String pattern)
     {
-        this(owner, pattern, RESOLVER);
+        this(owner, pattern, null);
     }
 
-    public DelayedBase(Project owner, String pattern, IDelayedResolver<? extends BaseExtension>... resolvers)
+    public DelayedBase(Project owner, String pattern, IDelayedResolver<? extends BaseExtension> resolver)
     {
         super(owner);
         this.project = owner;
         this.pattern = pattern;
-        this.resolvers = resolvers;
+        this.resolver = resolver;
     }
 
     public abstract V resolveDelayed();
@@ -51,6 +41,18 @@ public abstract class DelayedBase<V> extends Closure<V>
         }
         
         return resolved;
+    }
+    
+    @Override
+    public final V call(Object obj)
+    {
+        return call();
+    }
+    
+    @Override
+    public final V call(Object... objects)
+    {
+        return call();
     }
 
     @Override
@@ -66,8 +68,10 @@ public abstract class DelayedBase<V> extends Closure<V>
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public static String resolve(String patern, Project project, IDelayedResolver... resolvers)
+    protected static String resolve(String patern, Project project, IDelayedResolver resolver)
     {
+        // TODO: NUKE AWAY!
+        
         project.getLogger().debug("Resolving: " + patern);
         BaseExtension exten = (BaseExtension)project.getExtensions().getByName(EXT_NAME_MC);
         JenkinsExtension jenk = (JenkinsExtension)project.getExtensions().getByName(EXT_NAME_JENKINS);
@@ -79,9 +83,9 @@ public abstract class DelayedBase<V> extends Closure<V>
         }
         
         // resolvers first
-        for (IDelayedResolver r : resolvers)
+        if (resolver != null)
         {
-            patern = r.resolve(patern, project, exten);
+            patern = resolver.resolve(patern, project, exten);
         }
 
         patern = patern.replace("{MC_VERSION}", exten.getVersion());

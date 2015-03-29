@@ -22,9 +22,9 @@ public class DelayedFile extends DelayedBase<File>
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public DelayedFile(Project owner, String pattern, IDelayedResolver... resolvers)
+    public DelayedFile(Project owner, String pattern, IDelayedResolver resolver)
     {
-        super(owner, pattern, resolvers);
+        super(owner, pattern, resolver);
         file = null;
     }
 
@@ -34,12 +34,12 @@ public class DelayedFile extends DelayedBase<File>
         if (file != null)
             return file;
         else
-            return project.file(DelayedBase.resolve(pattern, project, resolvers));
+            return project.file(DelayedBase.resolve(pattern, project, resolver));
     }
 
     public DelayedFileTree toZipTree()
     {
-        return new DelayedFileTree(project, pattern, true, resolvers);
+        return new DelayedFileTree(project, pattern, true, resolver);
     }
     
     public DelayedFile forceResolving()

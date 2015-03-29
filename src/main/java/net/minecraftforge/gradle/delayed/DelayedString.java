@@ -11,15 +11,15 @@ public class DelayedString extends DelayedBase<String>
     }
     
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public DelayedString(Project owner, String pattern, IDelayedResolver... resolvers)
+    public DelayedString(Project owner, String pattern, IDelayedResolver resolver)
     {
-        super(owner, pattern, resolvers);
+        super(owner, pattern, resolver);
     }
 
     @Override
     public String resolveDelayed()
     {
-        return DelayedBase.resolve(pattern, project, resolvers);
+        return DelayedBase.resolve(pattern, project, resolver);
     }
     
     public DelayedString forceResolving()

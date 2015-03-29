@@ -23,15 +23,15 @@ public class DelayedFileTree extends DelayedBase<FileTree>
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public DelayedFileTree(Project owner, String pattern, IDelayedResolver... resolvers)
+    public DelayedFileTree(Project owner, String pattern, IDelayedResolver resolver)
     {
-        super(owner, pattern, resolvers);
+        super(owner, pattern, resolver);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public DelayedFileTree(Project owner, String pattern, boolean zipTree, IDelayedResolver... resolvers)
+    public DelayedFileTree(Project owner, String pattern, boolean zipTree, IDelayedResolver resolver)
     {
-        super(owner, pattern, resolvers);
+        super(owner, pattern, resolver);
         this.zipTree = zipTree;
     }
 
@@ -40,8 +40,8 @@ public class DelayedFileTree extends DelayedBase<FileTree>
     {
         if (zipTree)
             //resolved = project.zipTree(DelayedString.resolve(pattern, project, resolvers));
-            return new FileTreeAdapter(new ZipFileTree(project.file(DelayedBase.resolve(pattern, project, resolvers))));
+            return new FileTreeAdapter(new ZipFileTree(project.file(DelayedBase.resolve(pattern, project, resolver))));
         else
-            return project.fileTree(DelayedBase.resolve(pattern, project, resolvers));
+            return project.fileTree(DelayedBase.resolve(pattern, project, resolver));
     }
 }
