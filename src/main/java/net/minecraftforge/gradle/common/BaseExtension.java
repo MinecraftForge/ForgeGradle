@@ -67,7 +67,7 @@ public class BaseExtension
     {
         setRunDir(value + "/..");
         project.getLogger().warn("The assetDir is deprecated!  I actually just did all this generalizing stuff just now.. Use runDir instead! runDir set to " + runDir);
-        project.getLogger().warn("The runDir should be the location where you want MC to be run, usually he parent of the asset dir");
+        project.getLogger().warn("The runDir should be the location where you want MC to be run, usually the parent of the asset dir");
     }
 
     public LinkedList<String> getSrgExtra()
