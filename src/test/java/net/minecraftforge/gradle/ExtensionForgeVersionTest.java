@@ -48,14 +48,15 @@ public class ExtensionForgeVersionTest
         assertEquals(this.ext.getApiVersion(), "1.6.4-9.11.1.965");
     }
 
-    @Test
-    public void testValidPromotionWithBranch()
-    {
-        // promotion (with branch)
-        this.ext.setVersion("1.7.10-latest-new");
-        assertEquals(this.ext.getVersion(), "1.7.10");
-        assertEquals(this.ext.getApiVersion(), "1.7.10-10.13.1.1216-new");
-    }
+// branched promotions ahve been deprecated
+//    @Test
+//    public void testValidPromotionWithBranch()
+//    {
+//        // promotion (with branch)
+//        this.ext.setVersion("1.7.10-latest-new");
+//        assertEquals(this.ext.getVersion(), "1.7.10");
+//        assertEquals(this.ext.getApiVersion(), "1.7.10-10.13.1.1216-new");
+//    }
 
     @Test
     public void testValidBuildNumberNoBranch()

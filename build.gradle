@@ -93,16 +93,19 @@ javadoc {
 	classpath += configurations.compileOnly
 }
 
-test {
-    exclude "**", "*" // disable tests, temporarily atleast
-}
-
 artifacts { archives jar }
 
 //These should add a compile time only dependancies to eclipse, ide, and javac, but NOT to the generated POM on maven.
 sourceSets.main.compileClasspath += [ configurations.compileOnly ]
 idea.module.scopes.PROVIDED.plus += [ configurations.compileOnly ]
 eclipse.classpath.plusConfigurations += [ configurations.compileOnly ]
+
+test {
+    if (project.hasProperty("filesmaven")) // disable this test when on the forge jenkins
+        exclude "**/ExtensionMcpMappingTest*"
+
+    exclude "**", "*" // disable tests, temporarily atleast
+}
 
 uploadArchives {
     repositories {

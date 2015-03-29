@@ -638,6 +638,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.addResource("GradleStartServer.java");
             task.addResource("net/minecraftforge/gradle/GradleStartCommon.java");
             task.addResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
+            task.addResource("net/minecraftforge/gradle/tweakers/CoremodTweaker.java");
+            task.addResource("net/minecraftforge/gradle/tweakers/AccessTransformerTweaker.java");
             task.addReplacement("@@MCVERSION@@", delayedString("{MC_VERSION}"));
             task.addReplacement("@@ASSETINDEX@@", delayedString("{ASSET_INDEX}"));
             task.addReplacement("@@ASSETSDIR@@", delayedFile("{CACHE_DIR}/minecraft/assets"));

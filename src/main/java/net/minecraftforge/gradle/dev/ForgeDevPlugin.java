@@ -226,6 +226,8 @@ public class ForgeDevPlugin extends DevBasePlugin
             makeStart.addResource("GradleStartServer.java");
             makeStart.addResource("net/minecraftforge/gradle/GradleStartCommon.java");
             makeStart.addResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
+            makeStart.addResource("net/minecraftforge/gradle/tweakers/CoremodTweaker.java");
+            makeStart.addResource("net/minecraftforge/gradle/tweakers/AccessTransformerTweaker.java");
             makeStart.addReplacement("@@MCVERSION@@", delayedString("{MC_VERSION}"));
             makeStart.addReplacement("@@ASSETINDEX@@", delayedString("{ASSET_INDEX}"));
             makeStart.addReplacement("@@ASSETSDIR@@", delayedFile("{CACHE_DIR}/minecraft/assets"));
