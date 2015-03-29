@@ -45,7 +45,7 @@ public class ExtensionForgeVersionTest
         // promotion
         this.ext.setVersion("1.6.4-recommended");
         assertEquals(this.ext.getVersion(), "1.6.4");
-        assertEquals(this.ext.getApiVersion(), "1.6.4-9.11.1.965");
+        assertEquals(this.ext.getApiVersion(), "1.6.4-9.11.1.1345");
     }
 
 // branched promotions ahve been deprecated
