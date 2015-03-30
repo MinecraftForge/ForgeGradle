@@ -231,7 +231,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             makeStart.addReplacement("@@MCVERSION@@", delayedString("{MC_VERSION}"));
             makeStart.addReplacement("@@ASSETINDEX@@", delayedString("{ASSET_INDEX}"));
             makeStart.addReplacement("@@ASSETSDIR@@", delayedFile("{CACHE_DIR}/minecraft/assets"));
-            makeStart.addReplacement("@@NATIVESDIR@@", delayedFile(Constants.NATIVES_DIR));
+            makeStart.addReplacement("@@NATIVESDIR@@", delayedFile(Constants.DIR_NATIVES));
             makeStart.addReplacement("@@CSVDIR@@", delayedFile("{MCP_DATA_DIR}"));
             makeStart.addReplacement("@@BOUNCERCLIENT@@", delayedString("net.minecraft.launchwrapper.Launch"));
             makeStart.addReplacement("@@BOUNCERSERVER@@", delayedString("net.minecraft.launchwrapper.Launch"));

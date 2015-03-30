@@ -22,6 +22,8 @@ import net.minecraftforge.gradle.json.version.AssetIndex;
 import net.minecraftforge.gradle.json.version.Version;
 import net.minecraftforge.gradle.tasks.DownloadAssetsTask;
 import net.minecraftforge.gradle.tasks.ExtractConfigTask;
+import net.minecraftforge.gradle.tasks.GenSrgTask;
+import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.ObtainFernFlowerTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DownloadTask;
 import net.minecraftforge.gradle.tasks.abstractutil.EtagDownloadTask;
@@ -112,9 +114,9 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         project.allprojects(new Action<Project>() {
             public void execute(Project proj)
             {
-                addMavenRepo(proj, "forge", FORGE_MAVEN);
+                addMavenRepo(proj, "forge", URL_FORGE_MAVEN);
                 proj.getRepositories().mavenCentral();
-                addMavenRepo(proj, "minecraft", LIBRARY_URL);
+                addMavenRepo(proj, "minecraft", URL_LIBRARY);
             }
         });
 
@@ -151,7 +153,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         });
 
         // some default tasks
-        makeObtainTasks();
+        makeCommonTasks();
 
         // at last, apply the child plugins
         applyPlugin();
@@ -177,7 +179,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         File etagFile = new File(jsonCache.getAbsolutePath() + ".etag");
         
         getExtension().mcpJson = JsonFactory.GSON.fromJson(
-                getWithEtag(MCP_JSON_URL, jsonCache, etagFile),
+                getWithEtag(URL_MCP_JSON, jsonCache, etagFile),
                 new TypeToken<Map<String, Map<String, int[]>>>() {}.getType() );
     }
 
@@ -215,29 +217,21 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     }
 
     @SuppressWarnings("serial")
-    private void makeObtainTasks()
+    private void makeCommonTasks()
     {
         // download tasks
-        DownloadTask task;
-
-        task = makeTask("downloadClient", DownloadTask.class);
+        DownloadTask dlClient = makeTask("downloadClient", DownloadTask.class);
         {
-            task.setOutput(delayedFile(JAR_CLIENT_FRESH));
-            task.setUrl(delayedString(MC_JAR_URL));
+            dlClient.setOutput(delayedFile(JAR_CLIENT_FRESH));
+            dlClient.setUrl(delayedString(URL_MC_JAR));
         }
 
-        task = makeTask("downloadServer", DownloadTask.class);
+        DownloadTask dlServer = makeTask("downloadServer", DownloadTask.class);
         {
-            task.setOutput(delayedFile(JAR_SERVER_FRESH));
-            task.setUrl(delayedString(MC_SERVER_URL)); 
+            dlServer.setOutput(delayedFile(JAR_SERVER_FRESH));
+            dlServer.setUrl(delayedString(URL_MC_SERVER)); 
         }
-
-        ObtainFernFlowerTask mcpTask = makeTask("downloadFernFlower", ObtainFernFlowerTask.class);
-        {
-            mcpTask.setMcpUrl(delayedString(FF_URL));
-            mcpTask.setFfJar(delayedFile(FERNFLOWER));
-        }
-
+        
         EtagDownloadTask etagDlTask = makeTask("getAssetsIndex", EtagDownloadTask.class);
         {
             etagDlTask.setUrl(delayedString(ASSETS_INDEX_URL));
@@ -258,19 +252,11 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 }
             });
         }
-
-        DownloadAssetsTask assets = makeTask("getAssets", DownloadAssetsTask.class);
-        {
-            assets.setAssetsDir(delayedFile(ASSETS));
-            assets.setIndex(getAssetIndexClosure());
-            assets.setIndexName(delayedString("{ASSET_INDEX}"));
-            assets.dependsOn("getAssetsIndex");
-        }
-
+        
         etagDlTask = makeTask("getVersionJson", EtagDownloadTask.class);
         {
-            etagDlTask.setUrl(delayedString(MC_JSON_URL));
-            etagDlTask.setFile(delayedFile(VERSION_JSON));
+            etagDlTask.setUrl(delayedString(URL_MC_JSON));
+            etagDlTask.setFile(delayedFile(JSON_VERSION));
             etagDlTask.setDieWithError(false);
             etagDlTask.doLast(new Closure<Boolean>(project) // normalizes to linux endings
             {
@@ -279,7 +265,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 {
                     try
                     {
-                        File json = delayedFile(VERSION_JSON).call();
+                        File json = delayedFile(JSON_VERSION).call();
                         if (!json.exists())
                             return true;
 
@@ -299,6 +285,21 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 }
             });
         }
+        
+        // special DL.. because fernflower.
+        ObtainFernFlowerTask ffTask = makeTask("downloadFernFlower", ObtainFernFlowerTask.class);
+        {
+            ffTask.setMcpUrl(delayedString(URL_FF));
+            ffTask.setFfJar(delayedFile(FERNFLOWER));
+        }
+
+        DownloadAssetsTask getAssets = makeTask("getAssets", DownloadAssetsTask.class);
+        {
+            getAssets.setAssetsDir(delayedFile(ASSETS));
+            getAssets.setIndex(getAssetIndexClosure());
+            getAssets.setIndexName(delayedString("{ASSET_INDEX}"));
+            getAssets.dependsOn("getAssetsIndex");
+        }
 
         Delete clearCache = makeTask("cleanCache", Delete.class);
         {
@@ -307,20 +308,41 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             clearCache.setDescription("Cleares the ForgeGradle cache. DONT RUN THIS unless you want a fresh start, or the dev tells you to.");
         }
 
-        // extract MCP mappings
         ExtractConfigTask extractMcpMappings = makeTask("extractMcpMappings", ExtractConfigTask.class);
         {
-            extractMcpMappings.setOut(delayedFile(MCP_MAPPINGS_DIR));
+            extractMcpMappings.setOut(delayedFile(DIR_MCP_MAPPINGS));
             extractMcpMappings.setConfig(CONFIG_MAPPINGS);
             extractMcpMappings.setDoesCache(true);
         }
         
-        // special MCP srgs
         ExtractConfigTask extractMcpData = makeTask("extractMcpData", ExtractConfigTask.class);
         {
-            extractMcpData.setOut(delayedFile(MCP_DATA_DIR));
+            extractMcpData.setOut(delayedFile(DIR_MCP_DATA));
             extractMcpData.setConfig(CONFIG_MCP_DATA);
             extractMcpData.setDoesCache(true);
+        }
+        
+        GenSrgTask genSrgs = makeTask("genSrgs", GenSrgTask.class);
+        {
+            genSrgs.setInSrg(delayedFile(MCP_DATA_SRG));
+            genSrgs.setInExc(delayedFile(MCP_DATA_EXC));
+            genSrgs.setMethodsCsv(delayedFile(CSV_METHOD));
+            genSrgs.setFieldsCsv(delayedFile(CSV_FIELD));
+            genSrgs.setNotchToSrg(delayedFile(Constants.SRG_NOTCH_TO_SRG));
+            genSrgs.setNotchToMcp(delayedFile(Constants.SRG_NOTCH_TO_MCP));
+            genSrgs.setMcpToSrg(delayedFile(SRG_MCP_TO_SRG));
+            genSrgs.setMcpToNotch(delayedFile(SRG_MCP_TO_NOTCH));
+            genSrgs.setSrgExc(delayedFile(EXC_SRG));
+            genSrgs.setMcpExc(delayedFile(EXC_MCP));
+            genSrgs.dependsOn(extractMcpData, extractMcpMappings);
+        }
+        
+        MergeJarsTask merge = makeTask("mergeJars", MergeJarsTask.class);
+        {
+            merge.setClient(delayedFile(JAR_CLIENT_FRESH));
+            merge.setServer(delayedFile(JAR_SERVER_FRESH));
+            merge.setOutJar(delayedFile(JAR_MERGED));
+            merge.dependsOn(dlClient, dlServer);
         }
     }
 
@@ -544,7 +566,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         if (version != null)
             pattern = pattern.replace("{ASSET_INDEX}", version.getAssets());
 
-        pattern = pattern.replace("{MCP_DATA_DIR}", MCP_MAPPINGS_DIR);
+        pattern = pattern.replace("{MCP_DATA_DIR}", DIR_MCP_MAPPINGS);
 
         return pattern;
     }

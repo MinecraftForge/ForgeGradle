@@ -3,15 +3,11 @@ package net.minecraftforge.gradle.tasks;
 import groovy.lang.Closure;
 
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,7 +19,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-import net.minecraftforge.gradle.delayed.DelayedString;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
 import org.gradle.api.tasks.Input;
@@ -47,92 +45,36 @@ import com.google.common.io.ByteStreams;
 public class MergeJarsTask extends CachedTask
 {
     @InputFile
-    private Closure<File>                     mergeCfg;
+    private Object client;
 
     @InputFile
-    private Closure<File>                     client;
-
-    @InputFile
-    private Closure<File>                     server;
-    
-    @Input
-    private DelayedString                     mcVersion;
+    private Object server;
 
     @OutputFile
     @Cached
-    private Closure<File>                     outJar;
-    
-    @SuppressWarnings("rawtypes")
-    private Class                             sideClass, sideOnlyClass;
+    private Object outJar;
 
-    private static HashSet<String>            copyToServer = new HashSet<String>();
-    private static HashSet<String>            copyToClient = new HashSet<String>();
-    private static HashSet<String>            dontAnnotate = new HashSet<String>();
-    private static HashSet<String>            dontProcess  = new HashSet<String>();
-    private static final boolean              DEBUG        = false;
+    private final Class<Side> sideClass = net.minecraftforge.fml.relauncher.Side.class;
+    private final Class<SideOnly> sideOnlyClass = net.minecraftforge.fml.relauncher.SideOnly.class;
+
+    @Input
+    private final HashSet<String> copyToServer = Sets.newHashSet();
+    @Input
+    private final HashSet<String> copyToClient = Sets.newHashSet();
+    @Input
+    private final HashSet<String> dontAnnotate = Sets.newHashSet();
+    @Input
+    private final HashSet<String> dontProcess = Sets.newHashSet();
+
+    private static final boolean DEBUG = false;
 
     @TaskAction
     public void doTask() throws IOException
     {
-        // set classes.
-        if (getMcVersion().startsWith("1.8"))
-        {
-            sideClass = net.minecraftforge.fml.relauncher.Side.class;
-            sideOnlyClass = net.minecraftforge.fml.relauncher.SideOnly.class;
-        }
-        else
-        {
-            sideClass = cpw.mods.fml.relauncher.Side.class;
-            sideOnlyClass = cpw.mods.fml.relauncher.SideOnly.class;
-        }
-        
-        readConfig(getMergeCfg());
         processJar(getClient(), getServer(), getOutJar());
     }
 
-    private boolean readConfig(File mapFile)
-    {
-        try
-        {
-            FileInputStream fstream = new FileInputStream(mapFile);
-            DataInputStream in = new DataInputStream(fstream);
-            BufferedReader br = new BufferedReader(new InputStreamReader(in));
-
-            String line;
-            while ((line = br.readLine()) != null)
-            {
-                line = line.split("#")[0];
-                char cmd = line.charAt(0);
-                line = line.substring(1).trim();
-
-                switch (cmd)
-                    {
-                        case '!':
-                            dontAnnotate.add(line);
-                            break;
-                        case '<':
-                            copyToClient.add(line);
-                            break;
-                        case '>':
-                            copyToServer.add(line);
-                            break;
-                        case '^':
-                            dontProcess.add(line);
-                            break;
-                    }
-            }
-
-            in.close();
-            return true;
-        }
-        catch (Exception e)
-        {
-            getLogger().error("Error: " + e.getMessage());
-            return false;
-        }
-    }
-
-    public void processJar(File clientInFile, File serverInFile, File outFile) throws IOException
+    private void processJar(File clientInFile, File serverInFile, File outFile) throws IOException
     {
         ZipFile cInJar = null;
         ZipFile sInJar = null;
@@ -312,7 +254,8 @@ public class MergeJarsTask extends CachedTask
     private HashMap<String, ZipEntry> getClassEntries(ZipFile inFile, ZipOutputStream outFile, HashSet<String> resources) throws IOException
     {
         HashMap<String, ZipEntry> ret = new HashMap<String, ZipEntry>();
-        master: for (ZipEntry entry : Collections.list(inFile.entries()))
+        master:
+        for (ZipEntry entry : Collections.list(inFile.entries()))
         {
             String entryName = entry.getName();
             // Always skip the manifest
@@ -323,11 +266,11 @@ public class MergeJarsTask extends CachedTask
             if (entry.isDirectory())
             {
                 /*
-                if (!resources.contains(entryName))
-                {
-                    outFile.putNextEntry(entry);
-                }
-                */
+                 * if (!resources.contains(entryName))
+                 * {
+                 * outFile.putNextEntry(entry);
+                 * }
+                 */
                 continue;
             }
 
@@ -357,9 +300,9 @@ public class MergeJarsTask extends CachedTask
         return ret;
     }
 
-    // @TODO: rewrite.
-    public static byte[] getClassBytes(String name) throws IOException
+    private byte[] getClassBytes(String name) throws IOException
     {
+        // @TODO: rewrite.
         InputStream classStream = null;
         try
         {
@@ -402,7 +345,8 @@ public class MergeJarsTask extends CachedTask
         List<FieldNode> sFields = sClass.fields;
 
         int serverFieldIdx = 0;
-        if (DEBUG) System.out.printf("B: Server List: %s\nB: Client List: %s\n", Lists.transform(sFields, FieldName.instance), Lists.transform(cFields, FieldName.instance));
+        if (DEBUG)
+            System.out.printf("B: Server List: %s\nB: Client List: %s\n", Lists.transform(sFields, FieldName.instance), Lists.transform(cFields, FieldName.instance));
         for (int clientFieldIdx = 0; clientFieldIdx < cFields.size(); clientFieldIdx++)
         {
             FieldNode clientField = cFields.get(clientFieldIdx);
@@ -440,7 +384,8 @@ public class MergeJarsTask extends CachedTask
                             }
                             serverField.visibleAnnotations.add(getSideAnn(false));
                             cFields.add(clientFieldIdx, serverField);
-                            if (DEBUG) System.out.printf("1. Server List: %s\n1. Client List: %s\nIdx: %d %d\n", Lists.transform(sFields, FieldName.instance), Lists.transform(cFields, FieldName.instance), serverFieldIdx, clientFieldIdx);
+                            if (DEBUG)
+                                System.out.printf("1. Server List: %s\n1. Client List: %s\nIdx: %d %d\n", Lists.transform(sFields, FieldName.instance), Lists.transform(cFields, FieldName.instance), serverFieldIdx, clientFieldIdx);
                         }
                     }
                     else
@@ -451,7 +396,8 @@ public class MergeJarsTask extends CachedTask
                         }
                         clientField.visibleAnnotations.add(getSideAnn(true));
                         sFields.add(serverFieldIdx, clientField);
-                        if (DEBUG) System.out.printf("2. Server List: %s\n2. Client List: %s\nIdx: %d %d\n", Lists.transform(sFields, FieldName.instance), Lists.transform(cFields, FieldName.instance), serverFieldIdx, clientFieldIdx);
+                        if (DEBUG)
+                            System.out.printf("2. Server List: %s\n2. Client List: %s\nIdx: %d %d\n", Lists.transform(sFields, FieldName.instance), Lists.transform(cFields, FieldName.instance), serverFieldIdx, clientFieldIdx);
                     }
                 }
             }
@@ -463,11 +409,13 @@ public class MergeJarsTask extends CachedTask
                 }
                 clientField.visibleAnnotations.add(getSideAnn(true));
                 sFields.add(serverFieldIdx, clientField);
-                if (DEBUG) System.out.printf("3. Server List: %s\n3. Client List: %s\nIdx: %d %d\n", Lists.transform(sFields, FieldName.instance), Lists.transform(cFields, FieldName.instance), serverFieldIdx, clientFieldIdx);
+                if (DEBUG)
+                    System.out.printf("3. Server List: %s\n3. Client List: %s\nIdx: %d %d\n", Lists.transform(sFields, FieldName.instance), Lists.transform(cFields, FieldName.instance), serverFieldIdx, clientFieldIdx);
             }
             serverFieldIdx++;
         }
-        if (DEBUG) System.out.printf("A. Server List: %s\nA. Client List: %s\n", Lists.transform(sFields, FieldName.instance), Lists.transform(cFields, FieldName.instance));
+        if (DEBUG)
+            System.out.printf("A. Server List: %s\nA. Client List: %s\n", Lists.transform(sFields, FieldName.instance), Lists.transform(cFields, FieldName.instance));
         if (sFields.size() != cFields.size())
         {
             for (int x = cFields.size(); x < sFields.size(); x++)
@@ -481,15 +429,20 @@ public class MergeJarsTask extends CachedTask
                 cFields.add(x++, sF);
             }
         }
-        if (DEBUG) System.out.printf("E. Server List: %s\nE. Client List: %s\n", Lists.transform(sFields, FieldName.instance), Lists.transform(cFields, FieldName.instance));
+        if (DEBUG)
+            System.out.printf("E. Server List: %s\nE. Client List: %s\n", Lists.transform(sFields, FieldName.instance), Lists.transform(cFields, FieldName.instance));
     }
 
-    private static class FieldName implements Function<FieldNode, String> {
+    private static class FieldName implements Function<FieldNode, String>
+    {
         public static FieldName instance = new FieldName();
-        public String apply(FieldNode in) {
+
+        public String apply(FieldNode in)
+        {
             return in.name;
         }
     }
+
     private void processMethods(ClassNode cClass, ClassNode sClass)
     {
         List<MethodNode> cMethods = cClass.methods;
@@ -588,8 +541,8 @@ public class MergeJarsTask extends CachedTask
     private class MethodWrapper
     {
         private MethodNode node;
-        public boolean     client;
-        public boolean     server;
+        public boolean client;
+        public boolean server;
 
         public MethodWrapper(MethodNode node)
         {
@@ -634,7 +587,7 @@ public class MergeJarsTask extends CachedTask
 
     public File getClient()
     {
-        return client.call();
+        return getProject().file(client);
     }
 
     public void setClient(Closure<File> client)
@@ -642,19 +595,9 @@ public class MergeJarsTask extends CachedTask
         this.client = client;
     }
 
-    public File getMergeCfg()
-    {
-        return mergeCfg.call();
-    }
-
-    public void setMergeCfg(Closure<File> mergeCfg)
-    {
-        this.mergeCfg = mergeCfg;
-    }
-
     public File getOutJar()
     {
-        return outJar.call();
+        return getProject().file(outJar);
     }
 
     public void setOutJar(Closure<File> outJar)
@@ -664,21 +607,31 @@ public class MergeJarsTask extends CachedTask
 
     public File getServer()
     {
-        return this.server.call();
+        return getProject().file(server);
     }
 
     public void setServer(Closure<File> server)
     {
         this.server = server;
     }
-
-    public String getMcVersion()
+    
+    public void copyToServer(Object obj)
     {
-        return mcVersion.call();
+        copyToServer.add(Constants.resolveString(obj));
     }
-
-    public void setMcVersion(DelayedString mcVersion)
+    
+    public void copyToClient(Object obj)
     {
-        this.mcVersion = mcVersion;
+        copyToClient.add(Constants.resolveString(obj));
+    }
+    
+    public void dontAnnotate(Object obj)
+    {
+        dontAnnotate.add(Constants.resolveString(obj));
+    }
+    
+    public void dontProcess(Object obj)
+    {
+        dontAnnotate.add(Constants.resolveString(obj));
     }
 }

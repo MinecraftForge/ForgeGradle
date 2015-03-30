@@ -79,7 +79,15 @@ compileJava {
 	options.deprecation = true
 	options.compilerArgs += ["-Werror"]
 	//options.compilerArgs += ["-Werror", "-Xlint:unchecked"]
+
+	// ignore non-compiling things in the dev packages
 	exclude "**/*DevPlugin.java", "**/DevBasePlugin.java", "**/tasks/dev/*", "**/tasks/dev/**"
+
+	// ignore all of the user too, just for fun
+	exclude "**/user/*", "**/user/**"
+
+	// and curse..
+	exclude "**/curseforge/*"
 }
 
 jar {
@@ -100,6 +108,10 @@ artifacts { archives jar }
 sourceSets.main.compileClasspath += [ configurations.compileOnly ]
 idea.module.scopes.PROVIDED.plus += [ configurations.compileOnly ]
 eclipse.classpath.plusConfigurations += [ configurations.compileOnly ]
+
+compileTestJava {
+    exclude "**/*" // bcause excluding the users broke the tests
+}
 
 test {
     if (project.hasProperty("filesmaven")) // disable this test when on the forge jenkins

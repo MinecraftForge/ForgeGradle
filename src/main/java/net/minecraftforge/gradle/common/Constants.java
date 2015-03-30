@@ -89,34 +89,52 @@ public class Constants
 //    patern = patern.replace("{JENKINS_AUTH_PASSWORD}", jenk.getAuthPassword());
 
     // urls
-    public static final String MC_JSON_URL      = "http://s3.amazonaws.com/Minecraft.Download/versions/" + REPLACE_MC_VERSION + "/" + REPLACE_MC_VERSION + ".json";
-    public static final String MC_JAR_URL       = "http://s3.amazonaws.com/Minecraft.Download/versions/" + REPLACE_MC_VERSION + "/" + REPLACE_MC_VERSION + ".jar";
-    public static final String MC_SERVER_URL    = "http://s3.amazonaws.com/Minecraft.Download/versions/" + REPLACE_MC_VERSION + "/minecraft_server." + REPLACE_MC_VERSION + ".jar";
-    public static final String FF_URL           = "http://files.minecraftforge.net/fernflower-fix-1.0.zip";
-    public static final String ASSETS_URL       = "http://resources.download.minecraft.net";
-    public static final String LIBRARY_URL      = "https://libraries.minecraft.net/";
-    public static final String FORGE_MAVEN      = "http://files.minecraftforge.net/maven";
+    public static final String URL_MC_JSON      = "http://s3.amazonaws.com/Minecraft.Download/versions/" + REPLACE_MC_VERSION + "/" + REPLACE_MC_VERSION + ".json";
+    public static final String URL_MC_JAR       = "http://s3.amazonaws.com/Minecraft.Download/versions/" + REPLACE_MC_VERSION + "/" + REPLACE_MC_VERSION + ".jar";
+    public static final String URL_MC_SERVER    = "http://s3.amazonaws.com/Minecraft.Download/versions/" + REPLACE_MC_VERSION + "/minecraft_server." + REPLACE_MC_VERSION + ".jar";
+    public static final String URL_FF           = "http://files.minecraftforge.net/fernflower-fix-1.0.zip";
+    public static final String URL_ASSETS       = "http://resources.download.minecraft.net";
+    public static final String URL_LIBRARY      = "https://libraries.minecraft.net/";
+    public static final String URL_FORGE_MAVEN  = "http://files.minecraftforge.net/maven";
     public static final String ASSETS_INDEX_URL = "https://s3.amazonaws.com/Minecraft.Download/indexes/" + REPLACE_ASSET_INDEX + ".json";
+    public static final String URL_MCP_JSON     = "http://export.mcpbot.bspk.rs/versions.json";
 
     public static final String LOG              = ".gradle/gradle.log";
 
-    // MCP things
+    // configs
     public static final String CONFIG_MCP_DATA  = "mcpDataConfig";
     public static final String CONFIG_MAPPINGS  = "mcpSnapshotConfig";
-    public static final String MCP_JSON_URL     = "http://export.mcpbot.bspk.rs/versions.json";
 
     // things in the cache dir.
-    public static final String NATIVES_DIR      = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_natives/" + REPLACE_MC_VERSION + "";
-    public static final String MCP_DATA_DIR     = "{CACHE_DIR}/minecraft/de/oceanlabs/mcp/mcp/" + REPLACE_MC_VERSION + "/";
-    public static final String MCP_MAPPINGS_DIR = "{CACHE_DIR}/minecraft/de/oceanlabs/mcp/mcp_" + REPLACE_MCP_CHANNEL +"/" + REPLACE_MCP_VERSION + "/";
-    public static final String JAR_CLIENT_FRESH = "{CACHE_DIR}/minecraft/net/minecraft/minecraft/" + REPLACE_MC_VERSION + "/minecraft-" + REPLACE_MC_VERSION + ".jar";
-    public static final String JAR_SERVER_FRESH = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_server/" + REPLACE_MC_VERSION + "/minecraft_server-" + REPLACE_MC_VERSION + ".jar";
-    public static final String JAR_MERGED       = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_merged/" + REPLACE_MC_VERSION + "/minecraft_merged-" + REPLACE_MC_VERSION + ".jar";
-    public static final String FERNFLOWER       = "{CACHE_DIR}/minecraft/fernflower-fixed.jar";
-    public static final String EXCEPTOR         = "{CACHE_DIR}/minecraft/exceptor.jar";
-    public static final String ASSETS           = "{CACHE_DIR}/minecraft/assets";
-    public static final String JSONS_DIR        = "{CACHE_DIR}/minecraft/versionJsons";
-    public static final String VERSION_JSON     = JSONS_DIR + "/" + REPLACE_MC_VERSION + ".json";
+    public static final String DIR_MCP_DATA     = "{CACHE_DIR}/de/oceanlabs/mcp/mcp/" + REPLACE_MC_VERSION;
+    public static final String DIR_MCP_MAPPINGS = "{CACHE_DIR}/de/oceanlabs/mcp/mcp_" + REPLACE_MCP_CHANNEL +"/" + REPLACE_MCP_VERSION;
+    public static final String JAR_CLIENT_FRESH = "{CACHE_DIR}/net/minecraft/minecraft/" + REPLACE_MC_VERSION + "/minecraft-" + REPLACE_MC_VERSION + ".jar";
+    public static final String JAR_SERVER_FRESH = "{CACHE_DIR}/net/minecraft/minecraft/" + REPLACE_MC_VERSION + "/minecraft_server-" + REPLACE_MC_VERSION + ".jar";
+    public static final String JAR_MERGED       = "{CACHE_DIR}/net/minecraft/minecraft/" + REPLACE_MC_VERSION + "/minecraft_merged-" + REPLACE_MC_VERSION + ".jar";
+    public static final String DIR_NATIVES      = "{CACHE_DIR}/net/minecraft/minecraft/" + REPLACE_MC_VERSION + "/natives";
+    public static final String FERNFLOWER       = "{CACHE_DIR}/fernflower-fixed.jar";
+    public static final String ASSETS           = "{CACHE_DIR}/assets";
+    public static final String DIR_JSONS        = "{CACHE_DIR}/versionJsons";
+    public static final String JSON_VERSION     = DIR_JSONS + "/" + REPLACE_MC_VERSION + ".json";
+    
+    // mcp data constants
+    public static final String MCP_DATA_SRG       = DIR_MCP_DATA+"/joined.srg";
+    public static final String MCP_DATA_EXC       = DIR_MCP_DATA+"/joined.exc";
+    public static final String MCP_DATA_EXC_JSON  = DIR_MCP_DATA+"/exceptor.json";
+    public static final String MCP_DATA_STYLE     = DIR_MCP_DATA+"/astyle.cfg";
+    public static final String MCP_PATCHES_CLIENT = DIR_MCP_DATA+"/patches/minecraft_ff";
+    public static final String MCP_PATCHES_SERVER = DIR_MCP_DATA+"/patches/minecraft_server_ff";
+    
+    // generated off of MCP data constants
+    public static final String CSV_METHOD        = DIR_MCP_MAPPINGS+"/methods.csv";
+    public static final String CSV_FIELD         = DIR_MCP_MAPPINGS+"/fields.csv";
+    public static final String CSV_PARAM         = DIR_MCP_MAPPINGS+"/params.csv";
+    public static final String SRG_NOTCH_TO_SRG  = DIR_MCP_MAPPINGS+"/srgs/notch-srg.srg";
+    public static final String SRG_NOTCH_TO_MCP  = DIR_MCP_MAPPINGS+"/srgs/notch-mcp.srg";
+    public static final String SRG_MCP_TO_SRG    = DIR_MCP_MAPPINGS+"/srgs/mcp-srg.srg";
+    public static final String SRG_MCP_TO_NOTCH  = DIR_MCP_MAPPINGS+"/srgs/mcp-notch.srg";
+    public static final String EXC_SRG           = DIR_MCP_MAPPINGS+"/srgs/srg.exc";
+    public static final String EXC_MCP           = DIR_MCP_MAPPINGS+"/srgs/mcp.exc";
 
     // util
     public static final String NEWLINE = System.getProperty("line.separator");

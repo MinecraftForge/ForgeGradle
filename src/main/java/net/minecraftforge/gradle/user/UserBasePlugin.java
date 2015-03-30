@@ -287,7 +287,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         // special native stuff
         ExtractConfigTask extractNatives = makeTask("extractNatives", ExtractConfigTask.class);
-        extractNatives.setOut(delayedFile(Constants.NATIVES_DIR));
+        extractNatives.setOut(delayedFile(Constants.DIR_NATIVES));
         extractNatives.setConfig(CONFIG_NATIVES);
         extractNatives.exclude("META-INF/**", "META-INF/**");
         extractNatives.doesCache();
@@ -334,7 +334,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         {
             try
             {
-                version = JsonFactory.loadVersion(file, delayedFile(Constants.JSONS_DIR).call());
+                version = JsonFactory.loadVersion(file, delayedFile(Constants.DIR_JSONS).call());
             }
             catch (Exception e)
             {
@@ -636,7 +636,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.addReplacement("@@MCVERSION@@", delayedString(Constants.REPLACE_MC_VERSION));
             task.addReplacement("@@ASSETINDEX@@", delayedString("{ASSET_INDEX}"));
             task.addReplacement("@@ASSETSDIR@@", delayedFile("{CACHE_DIR}/minecraft/assets"));
-            task.addReplacement("@@NATIVESDIR@@", delayedFile(Constants.NATIVES_DIR));
+            task.addReplacement("@@NATIVESDIR@@", delayedFile(Constants.DIR_NATIVES));
             task.addReplacement("@@SRGDIR@@", delayedFile("{SRG_DIR}"));
             task.addReplacement("@@CSVDIR@@", delayedFile("{MCP_DATA_DIR}"));
             task.addReplacement("@@CLIENTTWEAKER@@", delayedString("{RUN_CLIENT_TWEAKER}"));

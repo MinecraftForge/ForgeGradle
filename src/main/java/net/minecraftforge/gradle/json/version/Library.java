@@ -68,7 +68,7 @@ public class Library
 
     public String getUrl()
     {
-        return url == null ? Constants.LIBRARY_URL : url; 
+        return url == null ? Constants.URL_LIBRARY : url; 
     }
 
     @Override

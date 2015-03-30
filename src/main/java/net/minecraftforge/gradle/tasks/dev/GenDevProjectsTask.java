@@ -103,7 +103,7 @@ public class GenDevProjectsTask extends DefaultTask
             "    maven",
             "    {",
             "        name 'minecraft'",
-            "        url '" + Constants.LIBRARY_URL + "'",
+            "        url '" + Constants.URL_LIBRARY + "'",
             "    }",
             "}",
             "",

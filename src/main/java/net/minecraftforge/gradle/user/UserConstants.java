@@ -15,7 +15,7 @@ public final class UserConstants
     public static final String CONFIG_DEPS           = "minecraftDeps";
     public static final String CONFIG_MC             = "minecraft";
 
-    static final String        FORGE_JAVADOC_URL     = Constants.FORGE_MAVEN + "/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-javadoc.zip";
+    static final String        FORGE_JAVADOC_URL     = Constants.URL_FORGE_MAVEN + "/net/minecraftforge/forge/{API_VERSION}/forge-{API_VERSION}-javadoc.zip";
 
     static final String        NATIVES_DIR_OLD       = "{BUILD_DIR}/natives";
     static final String        SOURCES_DIR           = "{BUILD_DIR}/sources";
@@ -29,17 +29,6 @@ public final class UserConstants
     static final String        EXC_JSON              = CONF_DIR + "/exceptor.json";
 
     public static final String MAPPING_APPENDAGE     = "{MAPPING_CHANNEL}/{MAPPING_VERSION}/";
-
-    public static final String DEOBF_SRG_SRG         = "{SRG_DIR}/notch-srg.srg";
-    public static final String DEOBF_MCP_SRG         = "{SRG_DIR}/notch-mcp.srg";
-    public static final String REOBF_SRG             = "{SRG_DIR}/mcp-srg.srg";
-    public static final String REOBF_NOTCH_SRG       = "{SRG_DIR}/mcp-notch.srg";
-    public static final String EXC_SRG               = "{SRG_DIR}/srg.exc";
-    public static final String EXC_MCP               = "{SRG_DIR}/mcp.exc";
-
-    public static final String METHOD_CSV            = "{MCP_DATA_DIR}/methods.csv";
-    public static final String FIELD_CSV             = "{MCP_DATA_DIR}/fields.csv";
-    public static final String PARAM_CSV             = "{MCP_DATA_DIR}/params.csv";
 
     static final String        DIRTY_DIR             = "{BUILD_DIR}/dirtyArtifacts";
 
