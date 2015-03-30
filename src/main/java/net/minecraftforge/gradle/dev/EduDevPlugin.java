@@ -410,9 +410,9 @@ public class EduDevPlugin extends DevBasePlugin
             task3.setDeobfDataLzma(delayedFile(DEOBF_DATA));
             task3.setOutJar(delayedFile(BINPATCH_TMP));
             task3.setSrg(delayedFile(JOINED_SRG));
-            task3.addPatchList(delayedFileTree(EXTRA_PATCH_DIR));
-            task3.addPatchList(delayedFileTree(FORGE_PATCH_DIR));
-            task3.addPatchList(delayedFileTree(FML_PATCH_DIR));
+            task3.addPatchList(delayedTree(EXTRA_PATCH_DIR));
+            task3.addPatchList(delayedTree(FORGE_PATCH_DIR));
+            task3.addPatchList(delayedTree(FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData");
         }
     }
@@ -449,10 +449,10 @@ public class EduDevPlugin extends DevBasePlugin
             uni.getInputs().file(delayedFile(EXTRA_JSON_REL));
             uni.getOutputs().upToDateWhen(Constants.CALL_FALSE);
             uni.from(delayedZipTree(BINPATCH_TMP));
-            uni.from(delayedFileTree(EXTRA_RESOURCES));
-            uni.from(delayedFileTree(FORGE_RESOURCES));
-            uni.from(delayedFileTree(FML_RESOURCES));
-            uni.from(delayedFileTree(EXTRACTED_RES));
+            uni.from(delayedTree(EXTRA_RESOURCES));
+            uni.from(delayedTree(FORGE_RESOURCES));
+            uni.from(delayedTree(FML_RESOURCES));
+            uni.from(delayedTree(EXTRACTED_RES));
             uni.from(delayedFile(FML_VERSIONF));
             uni.from(delayedFile(FML_LICENSE));
             uni.from(delayedFile(FML_CREDITS));

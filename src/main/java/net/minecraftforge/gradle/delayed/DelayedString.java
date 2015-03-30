@@ -1,24 +1,22 @@
 package net.minecraftforge.gradle.delayed;
 
-import org.gradle.api.Project;
 
 @SuppressWarnings("serial")
 public class DelayedString extends DelayedBase<String>
 {
-    public DelayedString(Project owner, String pattern)
+    public DelayedString(String pattern)
     {
-        super(owner, pattern);
+        super(pattern);
     }
     
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public DelayedString(Project owner, String pattern, IDelayedResolver resolver)
+    public DelayedString(TokenReplacer replacer)
     {
-        super(owner, pattern, resolver);
+        super(replacer);
     }
 
     @Override
-    public String resolveDelayed()
+    public String resolveDelayed(String replaced)
     {
-        return DelayedBase.resolve(pattern, project, resolver);
+        return replaced;
     }
 }

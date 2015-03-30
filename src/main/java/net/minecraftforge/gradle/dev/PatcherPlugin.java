@@ -1,7 +1,5 @@
 package net.minecraftforge.gradle.dev;
 
-import org.gradle.api.Project;
-
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 
@@ -52,9 +50,10 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
     }
 
     @Override
-    public String resolve(String pattern, Project project, PatcherExtension exten)
+    protected void addReplaceTokens(PatcherExtension ext)
     {
-        return super.resolve(pattern, project, exten);
+        // TODO Auto-generated method stub
+        
     }
 
 }

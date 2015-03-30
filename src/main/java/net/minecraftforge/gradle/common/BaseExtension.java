@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 
 import joptsimple.internal.Strings;
 import net.minecraftforge.gradle.GradleConfigurationException;
+import net.minecraftforge.gradle.delayed.TokenReplacer;
 
 import org.gradle.api.Project;
 
@@ -42,6 +43,8 @@ public class BaseExtension
     public void setVersion(String version)
     {
         this.version = version;
+        
+        TokenReplacer.addReplacement(Constants.REPLACE_MC_VERSION, version);
         
         mcpVersion = MCP_VERSION_MAP.get(version);
         if (mcpVersion == null)
@@ -131,6 +134,10 @@ public class BaseExtension
         {
             mappingsChannel = null;
             mappingsVersion = -1;
+            
+            TokenReplacer.addReplacement(Constants.REPLACE_MCP_CHANNEL, mappingsChannel);
+            TokenReplacer.addReplacement(Constants.REPLACE_MCP_VERSION, getMappingsVersion());
+            
             return;
         }
 
@@ -159,6 +166,9 @@ public class BaseExtension
         }
 
         mappingsSet = true;
+        
+        TokenReplacer.addReplacement(Constants.REPLACE_MCP_CHANNEL, mappingsChannel);
+        TokenReplacer.addReplacement(Constants.REPLACE_MCP_VERSION, getMappingsVersion());
 
         // check
         checkMappings();

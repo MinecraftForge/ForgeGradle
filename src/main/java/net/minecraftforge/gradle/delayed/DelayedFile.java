@@ -7,38 +7,46 @@ import org.gradle.api.Project;
 @SuppressWarnings("serial")
 public class DelayedFile extends DelayedBase<File>
 {
-    private final File file;
+    protected final File hardcoded;
+    protected transient final Project project;
     
     public DelayedFile(File file)
     {
-        super(null, null);
-        this.file = file;
+        super((TokenReplacer)null);
+        hardcoded = file;
+        project = null;
     }
     
-    public DelayedFile(Project owner, String pattern)
+    public DelayedFile(Project project, String pattern)
     {
-        super(owner, pattern);
-        file = null;
+        super(pattern);
+        hardcoded = null;
+        this.project = project;
     }
-
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public DelayedFile(Project owner, String pattern, IDelayedResolver resolver)
+    
+    public DelayedFile(Project project, TokenReplacer replacer)
     {
-        super(owner, pattern, resolver);
-        file = null;
+        super(replacer);
+        hardcoded = null;
+        this.project = project;
+        
     }
 
     @Override
-    public File resolveDelayed()
+    public File resolveDelayed(String replaced)
     {
-        if (file != null)
-            return file;
-        else
-            return project.file(DelayedBase.resolve(pattern, project, resolver));
+        if (hardcoded != null)
+            return hardcoded;
+        
+        return project.file(replaced);
     }
 
     public DelayedFileTree toZipTree()
     {
-        return new DelayedFileTree(project, pattern, true, resolver);
+        if (hardcoded != null)
+            return new DelayedFileTree(hardcoded);
+        else
+            return new DelayedFileTree(project, replacer);
+        
     }
 }

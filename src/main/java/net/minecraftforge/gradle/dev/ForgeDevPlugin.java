@@ -404,8 +404,8 @@ public class ForgeDevPlugin extends DevBasePlugin
             task3.setDeobfDataLzma(delayedFile(DEOBF_DATA));
             task3.setOutJar(delayedFile(BINPATCH_TMP));
             task3.setSrg(delayedFile(NOTCH_2_SRG_SRG));
-            task3.addPatchList(delayedFileTree(FORGE_PATCH_DIR));
-            task3.addPatchList(delayedFileTree(FML_PATCH_DIR));
+            task3.addPatchList(delayedTree(FORGE_PATCH_DIR));
+            task3.addPatchList(delayedTree(FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData");
         }
 
@@ -459,8 +459,8 @@ public class ForgeDevPlugin extends DevBasePlugin
             uni.getInputs().file(delayedFile(JSON_REL));
             uni.getOutputs().upToDateWhen(Constants.CALL_FALSE);
             uni.from(delayedZipTree(BINPATCH_TMP));
-            uni.from(delayedFileTree(FML_RESOURCES));
-            uni.from(delayedFileTree(FORGE_RESOURCES));
+            uni.from(delayedTree(FML_RESOURCES));
+            uni.from(delayedTree(FORGE_RESOURCES));
             uni.from(delayedZipTree(CROWDIN_ZIP));
             uni.from(delayedFile(FML_VERSIONF));
             uni.from(delayedFile(FML_LICENSE));
@@ -634,13 +634,13 @@ public class ForgeDevPlugin extends DevBasePlugin
             });
             userDev.from(delayedFile(CHANGELOG));
             userDev.from(delayedZipTree(BINPATCH_TMP), new CopyInto("", "devbinpatches.pack.lzma"));
-            userDev.from(delayedFileTree("{FML_DIR}/src/main/resources"), new CopyInto("src/main/resources"));
-            userDev.from(delayedFileTree("src/main/resources"), new CopyInto("src/main/resources"));
+            userDev.from(delayedTree("{FML_DIR}/src/main/resources"), new CopyInto("src/main/resources"));
+            userDev.from(delayedTree("src/main/resources"), new CopyInto("src/main/resources"));
             userDev.from(delayedZipTree(CROWDIN_ZIP), new CopyInto("src/main/resources"));
             userDev.from(delayedZipTree(DevConstants.USERDEV_SRG_SRC), new CopyInto("src/main/java"));
             userDev.from(delayedFile(DEOBF_DATA), new CopyInto("src/main/resources/"));
-            userDev.from(delayedFileTree("{FML_CONF_DIR}"), new CopyInto("conf", "astyle.cfg", "exceptor.json", "*.csv", "!packages.csv"));
-            userDev.from(delayedFileTree("{FML_CONF_DIR}/patches"), new CopyInto("conf"));
+            userDev.from(delayedTree("{FML_CONF_DIR}"), new CopyInto("conf", "astyle.cfg", "exceptor.json", "*.csv", "!packages.csv"));
+            userDev.from(delayedTree("{FML_CONF_DIR}/patches"), new CopyInto("conf"));
             userDev.from(delayedFile(MERGE_CFG), new CopyInto("conf"));
             userDev.from(delayedFile(NOTCH_2_SRG_SRG), new CopyInto("conf"));
             userDev.from(delayedFile(SRG_EXC), new CopyInto("conf"));

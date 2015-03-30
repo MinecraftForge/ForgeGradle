@@ -52,7 +52,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
             task.setOutJar(delayedFile(JAR_BINPATCHED));
             task.setPatches(delayedFile(BINPATCHES));
             task.setClassesJar(delayedFile(BINARIES_JAR));
-            task.setResources(delayedFileTree(RES_DIR));
+            task.setResources(delayedTree(RES_DIR));
             task.dependsOn("mergeJars");
 
             project.getTasks().getByName("deobfBinJar").dependsOn(task);

@@ -1,5 +1,7 @@
 package net.minecraftforge.gradle.delayed;
 
+import java.io.File;
+
 import net.minecraftforge.gradle.ZipFileTree;
 
 import org.gradle.api.Project;
@@ -9,39 +11,55 @@ import org.gradle.api.internal.file.collections.FileTreeAdapter;
 @SuppressWarnings("serial")
 public class DelayedFileTree extends DelayedBase<FileTree>
 {
-    private boolean zipTree = false;
-
-    public DelayedFileTree(Project owner, String pattern)
+    protected final File hardcoded;
+    protected transient final Project project;
+    
+    public DelayedFileTree(File file)
     {
-        super(owner, pattern);
+        super((TokenReplacer)null);
+        hardcoded = file;
+        project = null;
     }
-
-    public DelayedFileTree(Project owner, String pattern, boolean zipTree)
+    
+    public DelayedFileTree(Project project, String pattern)
     {
-        super(owner, pattern);
-        this.zipTree = zipTree;
+        super(pattern);
+        hardcoded = null;
+        this.project = project;
     }
-
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public DelayedFileTree(Project owner, String pattern, IDelayedResolver resolver)
+    
+    public DelayedFileTree(Project project, TokenReplacer replacer)
     {
-        super(owner, pattern, resolver);
-    }
-
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public DelayedFileTree(Project owner, String pattern, boolean zipTree, IDelayedResolver resolver)
-    {
-        super(owner, pattern, resolver);
-        this.zipTree = zipTree;
+        super(replacer);
+        hardcoded = null;
+        this.project = project;
+        
     }
 
     @Override
-    public FileTree resolveDelayed()
+    public FileTree resolveDelayed(String replaced)
     {
-        if (zipTree)
-            //resolved = project.zipTree(DelayedString.resolve(pattern, project, resolvers));
-            return new FileTreeAdapter(new ZipFileTree(project.file(DelayedBase.resolve(pattern, project, resolver))));
+        String name;
+        File file;
+        
+        if (hardcoded != null)
+        {
+            name = hardcoded.getName();
+            file = hardcoded;
+        }
         else
-            return project.fileTree(DelayedBase.resolve(pattern, project, resolver));
+        {
+            name = replaced;
+            file = project.file(replaced);
+        }
+        
+        if (name.endsWith(".jar") || name.endsWith(".zip"))
+        {
+            return new FileTreeAdapter(new ZipFileTree(file));
+        }
+        else
+        {
+            return project.fileTree(file);
+        }
     }
 }
