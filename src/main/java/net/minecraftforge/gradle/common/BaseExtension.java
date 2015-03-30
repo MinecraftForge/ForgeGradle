@@ -10,8 +10,12 @@ import net.minecraftforge.gradle.GradleConfigurationException;
 
 import org.gradle.api.Project;
 
+import com.google.common.collect.ImmutableMap;
+
 public class BaseExtension
 {
+    protected static final transient Map<String, String> MCP_VERSION_MAP = ImmutableMap.of("1.8", "9.10");
+    
     protected transient Project               project;
     protected String                          version         = "null";
     protected String                          mcpVersion      = "unknown";
@@ -38,6 +42,10 @@ public class BaseExtension
     public void setVersion(String version)
     {
         this.version = version;
+        
+        mcpVersion = MCP_VERSION_MAP.get(version);
+        if (mcpVersion == null)
+            mcpVersion = "unknown";
 
         // maybe they set the mappings first
         checkMappings();

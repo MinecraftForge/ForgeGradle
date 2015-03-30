@@ -34,14 +34,6 @@ repositories {
     }
 }
 
-jar {
-    manifest {
-        attributes 'version':project.version
-        attributes 'javaCompliance': project.targetCompatibility
-        attributes 'group':project.group
-    }
-}
-
 configurations {
     deployerJars
     compileOnly
@@ -87,6 +79,15 @@ compileJava {
 	options.deprecation = true
 	options.compilerArgs += ["-Werror"]
 	//options.compilerArgs += ["-Werror", "-Xlint:unchecked"]
+	exclude "**/*DevPlugin.java", "**/DevBasePlugin.java", "**/tasks/dev/*", "**/tasks/dev/**"
+}
+
+jar {
+    manifest {
+        attributes 'version':project.version
+        attributes 'javaCompliance': project.targetCompatibility
+        attributes 'group':project.group
+    }
 }
 
 javadoc {

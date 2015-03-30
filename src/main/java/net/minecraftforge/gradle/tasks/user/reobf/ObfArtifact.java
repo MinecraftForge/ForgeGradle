@@ -26,7 +26,6 @@ import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedThingy;
 import net.minecraftforge.gradle.extrastuff.ReobfExceptor;
-import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
 
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.artifacts.PublishArtifact;
@@ -383,7 +382,7 @@ public class ObfArtifact extends AbstractPublishArtifact
         JointProvider inheritanceProviders = new JointProvider();
         inheritanceProviders.add(new JarProvider(inputJar));
         if (classpath != null)
-            inheritanceProviders.add(new ClassLoaderProvider(new URLClassLoader(ObfuscateTask.toUrls(classpath))));
+            inheritanceProviders.add(new ClassLoaderProvider(new URLClassLoader(Constants.toUrls(classpath))));
         mapping.setFallbackInheritanceProvider(inheritanceProviders);
 
         // remap jar
@@ -479,7 +478,7 @@ public class ObfArtifact extends AbstractPublishArtifact
         ClassLoader loader = BasePlugin.class.getClassLoader(); // dunno.. maybe this will load the classes??
         if (classpath != null)
         {
-            loader = new URLClassLoader(ObfuscateTask.toUrls(classpath), BasePlugin.class.getClassLoader());
+            loader = new URLClassLoader(Constants.toUrls(classpath), BasePlugin.class.getClassLoader());
         }
 
         // the name provider

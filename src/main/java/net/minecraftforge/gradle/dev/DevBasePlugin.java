@@ -52,7 +52,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-public abstract class DevBasePlugin extends BasePlugin<DevExtension>
+public abstract class DevBasePlugin extends BasePlugin<PatcherExtension>
 {
     private AntPathMatcher antMatcher = new AntPathMatcher();
     protected static final String[] JAVA_FILES = new String[] { "**.java", "*.java", "**/*.java" };
@@ -340,12 +340,12 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
         }
     }
 
-    protected Class<DevExtension> getExtensionClass()
+    protected Class<PatcherExtension> getExtensionClass()
     {
-        return DevExtension.class;
+        return PatcherExtension.class;
     }
 
-    protected DevExtension getOverlayExtension()
+    protected PatcherExtension getOverlayExtension()
     {
         // never happens.
         return null;
@@ -379,7 +379,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
     }
 
     @Override
-    public String resolve(String pattern, Project project, DevExtension exten)
+    public String resolve(String pattern, Project project, PatcherExtension exten)
     {
         pattern = super.resolve(pattern, project, exten);
         

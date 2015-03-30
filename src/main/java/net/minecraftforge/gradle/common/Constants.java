@@ -7,21 +7,25 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import net.minecraftforge.gradle.StringUtils;
-import net.minecraftforge.gradle.dev.DevExtension;
+import net.minecraftforge.gradle.dev.PatcherExtension;
 import net.minecraftforge.gradle.json.version.OS;
 
 import org.gradle.api.Project;
+import org.gradle.api.file.FileCollection;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;
@@ -120,7 +124,7 @@ public class Constants
     // helper methods
     public static List<String> getClassPath()
     {
-        URL[] urls = ((URLClassLoader) DevExtension.class.getClassLoader()).getURLs();
+        URL[] urls = ((URLClassLoader) PatcherExtension.class.getClassLoader()).getURLs();
 
         ArrayList<String> list = new ArrayList<String>();
         for (URL url : urls)
@@ -128,6 +132,16 @@ public class Constants
             list.add(url.getPath());
         }
         return list;
+    }
+    
+    public static URL[] toUrls(FileCollection collection) throws MalformedURLException
+    {
+        ArrayList<URL> urls = new ArrayList<URL>();
+
+        for (File file : collection.getFiles())
+            urls.add(file.toURI().toURL());
+
+        return urls.toArray(new URL[urls.size()]);
     }
 
     public static File getMinecraftDirectory()
@@ -305,5 +319,65 @@ public class Constants
             throw new RuntimeException("Resource "+resource+" not found");
         
         return url;
+    }
+
+    /**
+     * Resolves the supplied object to a string.
+     * If the input is null, this will return null.
+     * Closures and callables are called with no arguments.
+     * Arrays use Arrays.toString().
+     * File objects return their absolute paths.
+     * All other objects have their toString run.
+     * @return resovled string
+     */
+    @SuppressWarnings("rawtypes")
+    public static String resolveString(Object obj)
+    {
+        if (obj == null)
+            return null;
+
+        // stop early if its the right type. no need to do more expensive checks
+        if (obj instanceof String)
+            return (String) obj;
+
+        if (obj instanceof Closure)
+            return resolveString(((Closure) obj).call()); // yes recursive.
+        if (obj instanceof Callable)
+        {
+            try
+            {
+                return resolveString(((Callable) obj).call());
+            }
+            catch (Exception e)
+            {
+                return null;
+            }
+        }
+        else if (obj instanceof File)
+            return ((File) obj).getAbsolutePath();
+
+        // arrays
+        else if (obj.getClass().isArray())
+        {
+            if (obj instanceof Object[])
+                return Arrays.toString(((Object[]) obj));
+            else if (obj instanceof byte[])
+                return Arrays.toString(((byte[]) obj));
+            else if (obj instanceof char[])
+                return Arrays.toString(((char[]) obj));
+            else if (obj instanceof int[])
+                return Arrays.toString(((int[]) obj));
+            else if (obj instanceof float[])
+                return Arrays.toString(((float[]) obj));
+            else if (obj instanceof double[])
+                return Arrays.toString(((double[]) obj));
+            else if (obj instanceof long[])
+                return Arrays.toString(((long[]) obj));
+            else
+                return obj.getClass().getSimpleName();
+        }
+
+        else
+            return obj.toString();
     }
 }

@@ -13,9 +13,9 @@ import net.md_5.specialsource.RemapperProcessor;
 import net.md_5.specialsource.provider.ClassLoaderProvider;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
-import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
 
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.InputFile;
@@ -61,7 +61,7 @@ public class SingleDeobfTask extends CachedTask
         // ensure that inheritance provider is used
         JointProvider inheritanceProviders = new JointProvider();
         inheritanceProviders.add(new JarProvider(input));
-        inheritanceProviders.add(new ClassLoaderProvider(new URLClassLoader(ObfuscateTask.toUrls(getClasspath()))));
+        inheritanceProviders.add(new ClassLoaderProvider(new URLClassLoader(Constants.toUrls(getClasspath()))));
         mapping.setFallbackInheritanceProvider(inheritanceProviders);
 
         // remap jar

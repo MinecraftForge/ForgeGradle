@@ -4,6 +4,7 @@ import static net.minecraftforge.gradle.common.Constants.EXT_NAME_JENKINS;
 import static net.minecraftforge.gradle.common.Constants.EXT_NAME_MC;
 import groovy.lang.Closure;
 import net.minecraftforge.gradle.common.BaseExtension;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.common.JenkinsExtension;
 
 import org.gradle.api.Project;
@@ -87,18 +88,18 @@ public abstract class DelayedBase<V> extends Closure<V>
             patern = resolver.resolve(patern, project, exten);
         }
 
-        patern = patern.replace("{MC_VERSION}", exten.getVersion());
+        patern = patern.replace(Constants.REPLACE_MC_VERSION, exten.getVersion());
         patern = patern.replace("{MC_VERSION_SAFE}", exten.getVersion().replace('-', '_'));
         patern = patern.replace("{MCP_VERSION}", exten.getMcpVersion());
-        patern = patern.replace("{CACHE_DIR}", project.getGradle().getGradleUserHomeDir().getAbsolutePath().replace('\\', '/') + "/caches");
+        patern = patern.replace(Constants.REPLACE_CACHE_DIR, project.getGradle().getGradleUserHomeDir().getAbsolutePath().replace('\\', '/') + "/caches/minecraft");
         patern = patern.replace("{BUILD_DIR}", project.getBuildDir().getAbsolutePath().replace('\\', '/'));
         patern = patern.replace("{BUILD_NUM}", build);
         patern = patern.replace("{PROJECT}", project.getName());
         patern = patern.replace("{RUN_DIR}", exten.getRunDir().replace('\\', '/'));
         
-        patern = patern.replace("{MAPPING_CHANNEL}", exten.getMappingsChannel());
+        patern = patern.replace(Constants.REPLACE_MCP_CHANNEL, exten.getMappingsChannel());
         patern = patern.replace("{MAPPING_CHANNEL_DOC}", exten.getMappingsChannelNoSubtype());
-        patern = patern.replace("{MAPPING_VERSION}", exten.getMappingsVersion());
+        patern = patern.replace(Constants.REPLACE_MCP_VERSION, exten.getMappingsVersion());
 
         patern = patern.replace("{JENKINS_SERVER}",        jenk.getServer());
         patern = patern.replace("{JENKINS_JOB}",           jenk.getJob());

@@ -5,11 +5,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.LinkedList;
 
 import net.md_5.specialsource.Jar;
@@ -18,6 +15,7 @@ import net.md_5.specialsource.JarRemapper;
 import net.md_5.specialsource.provider.ClassLoaderProvider;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.dev.FmlDevPlugin;
 import net.minecraftforge.gradle.extrastuff.ReobfExceptor;
@@ -129,7 +127,7 @@ public class ObfuscateTask extends DefaultTask
         inheritanceProviders.add(new JarProvider(input));
 
         if (classpath != null)
-            inheritanceProviders.add(new ClassLoaderProvider(new URLClassLoader(toUrls(classpath))));
+            inheritanceProviders.add(new ClassLoaderProvider(new URLClassLoader(Constants.toUrls(classpath))));
 
         mapping.setFallbackInheritanceProvider(inheritanceProviders);
 
@@ -141,16 +139,6 @@ public class ObfuscateTask extends DefaultTask
 
         // remap jar
         remapper.remapJar(input, getOutJar());
-    }
-
-    public static URL[] toUrls(FileCollection collection) throws MalformedURLException
-    {
-        ArrayList<URL> urls = new ArrayList<URL>();
-
-        for (File file : collection.getFiles())
-            urls.add(file.toURI().toURL());
-
-        return urls.toArray(new URL[urls.size()]);
     }
 
     public File getOutJar()

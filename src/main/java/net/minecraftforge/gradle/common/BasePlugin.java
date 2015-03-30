@@ -37,7 +37,6 @@ import org.gradle.api.tasks.Delete;
 import org.gradle.testfixtures.ProjectBuilder;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
@@ -174,7 +173,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     
     private void setVersionInfoJson()
     {
-        File jsonCache = delayedFile(REPLACE_CACHE_DIR + "/McpMappings.json").call();
+        File jsonCache = cacheFile("McpMappings.json");
         File etagFile = new File(jsonCache.getAbsolutePath() + ".etag");
         
         getExtension().mcpJson = JsonFactory.GSON.fromJson(
@@ -205,16 +204,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         if (!displayBanner)
             return;
         
-        // dont care about anything older than 1.8 because FG 2.0 is only 1.8.3+
-        Map<String, String> mcpVersionMap = ImmutableMap.of("1.8", "9.10");
-        String mcpVersion = mcpVersionMap.get(mcVersion);
-        
         project.getLogger().lifecycle("****************************");
         project.getLogger().lifecycle(" Powered By MCP:             ");
         project.getLogger().lifecycle(" http://mcp.ocean-labs.de/   ");
         project.getLogger().lifecycle(" Searge, ProfMobius, Fesh0r, ");
         project.getLogger().lifecycle(" R4wk, ZeuX, IngisKahn, bspkrs");
-        project.getLogger().lifecycle(" MCP Data version : " + mcpVersion == null ? "unknown" : mcpVersion);
+        project.getLogger().lifecycle(" MCP Data version : " + getExtension().getMcpVersion());
         project.getLogger().lifecycle("****************************");
         displayBanner = false;
     }
@@ -307,7 +302,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         Delete clearCache = makeTask("cleanCache", Delete.class);
         {
-            clearCache.delete(delayedFile("{CACHE_DIR}/minecraft"));
+            clearCache.delete(delayedFile(REPLACE_CACHE_DIR));
             clearCache.setGroup("ForgeGradle");
             clearCache.setDescription("Cleares the ForgeGradle cache. DONT RUN THIS unless you want a fresh start, or the dev tells you to.");
         }
@@ -574,9 +569,9 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         return new DelayedFileTree(project, path, true, this);
     }
     
-    protected String buildString(String... pieces)
+    protected File cacheFile(String path)
     {
-        return Joiner.on("").join(pieces);
+        return new File(project.getGradle().getGradleUserHomeDir(), "caches/minecraft/" + path);
     }
 
 }
