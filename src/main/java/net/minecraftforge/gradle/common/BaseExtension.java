@@ -22,7 +22,8 @@ public class BaseExtension
     protected boolean                         mappingsSet     = false;
     protected String                          mappingsChannel = null;
     protected int                             mappingsVersion = -1;
-    protected String                          customVersion   = null;
+    // custom version for custom mappings
+    protected String                          mappingsCustom   = null;
 
     public BaseExtension(BasePlugin<? extends BaseExtension> plugin)
     {
@@ -62,14 +63,6 @@ public class BaseExtension
         return this.runDir;
     }
 
-    @Deprecated
-    public void setAssetDir(String value)
-    {
-        setRunDir(value + "/..");
-        project.getLogger().warn("The assetDir is deprecated!  I actually just did all this generalizing stuff just now.. Use runDir instead! runDir set to " + runDir);
-        project.getLogger().warn("The runDir should be the location where you want MC to be run, usually he parent of the asset dir");
-    }
-
     public LinkedList<String> getSrgExtra()
     {
         return srgExtra;
@@ -93,9 +86,12 @@ public class BaseExtension
         }
     }
 
+    /**
+     * @return channel_version
+     */
     public String getMappings()
     {
-        return mappingsChannel + "_" + (customVersion == null ? mappingsVersion : customVersion);
+        return mappingsChannel + "_" + (mappingsCustom == null ? mappingsVersion : mappingsCustom);
     }
 
     public String getMappingsChannel()
@@ -103,6 +99,10 @@ public class BaseExtension
         return mappingsChannel;
     }
 
+    /**
+     * Strips the _nodoc and _verbose channel subtypes from the channel name.
+     * @return channel without subtype
+     */
     public String getMappingsChannelNoSubtype()
     {
         int underscore = mappingsChannel.indexOf('_');
@@ -114,12 +114,7 @@ public class BaseExtension
 
     public String getMappingsVersion()
     {
-        return customVersion == null ? ""+mappingsVersion : customVersion;
-    }
-
-    public boolean mappingsSet()
-    {
-        return mappingsSet;
+        return mappingsCustom == null ? ""+mappingsVersion : mappingsCustom;
     }
 
     public void setMappings(String mappings)
@@ -135,19 +130,19 @@ public class BaseExtension
 
         if (!mappings.contains("_"))
         {
-            throw new IllegalArgumentException("Mappings must be in format 'channel_version'. eg: snapshot_20140910");
+            throw new IllegalArgumentException("Mappings must be in format 'channel_version' or 'custom_something'. eg: snapshot_20140910 custom_AbrarIsCool");
         }
 
         int index = mappings.lastIndexOf('_');
         mappingsChannel = mappings.substring(0, index);
-        customVersion = mappings.substring(index + 1);
+        mappingsCustom = mappings.substring(index + 1);
         
-        if (!customVersion.equals("custom"))
+        if (!mappingsCustom.equals("custom"))
         {
             try
             {
-                mappingsVersion = Integer.parseInt(customVersion);
-                customVersion = null;
+                mappingsVersion = Integer.parseInt(mappingsCustom);
+                mappingsCustom = null;
             }
             catch (NumberFormatException e)
             {
@@ -168,7 +163,7 @@ public class BaseExtension
     protected void checkMappings()
     {
         // mappings or mc version are null
-        if (!mappingsSet || "null".equals(version) || Strings.isNullOrEmpty(version) || customVersion != null)
+        if (mappingsChannel == null || "null".equals(version) || Strings.isNullOrEmpty(version) || mappingsCustom != null)
             return;
 
         // check if it exists

@@ -309,7 +309,7 @@ public class ExtractS2SRangeTask extends DefaultTask
             if (!buildscript.exists())
                 return null;
 
-            Project proj = BasePlugin.getProject(buildscript, getProject());
+            Project proj = BasePlugin.buildProject(buildscript, getProject());
             libs = proj.getConfigurations().getByName(projectConfig);
 
             if (includeJar)

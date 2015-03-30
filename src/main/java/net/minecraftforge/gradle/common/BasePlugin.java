@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.common;
 
+import static net.minecraftforge.gradle.common.Constants.*;
 import groovy.lang.Closure;
 
 import java.io.File;
@@ -7,7 +8,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +37,7 @@ import org.gradle.api.tasks.Delete;
 import org.gradle.testfixtures.ProjectBuilder;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
@@ -93,7 +94,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         }
 
         // logging
-        FileLogListenner listener = new FileLogListenner(project.file(Constants.LOG));
+        FileLogListenner listener = new FileLogListenner(project.file(LOG));
         project.getLogging().addStandardOutputListener(listener);
         project.getLogging().addStandardErrorListener(listener);
         project.getGradle().addBuildListener(listener);
@@ -105,22 +106,23 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         }
 
         // extension objects
-        project.getExtensions().create(Constants.EXT_NAME_MC, getExtensionClass(), this);
-        project.getExtensions().create(Constants.EXT_NAME_JENKINS, JenkinsExtension.class, project);
+        project.getExtensions().create(EXT_NAME_MC, getExtensionClass(), this);
+        project.getExtensions().create(EXT_NAME_JENKINS, JenkinsExtension.class, project);
 
         // repos
         project.allprojects(new Action<Project>() {
             public void execute(Project proj)
             {
-                addMavenRepo(proj, "forge", Constants.FORGE_MAVEN);
+                addMavenRepo(proj, "forge", FORGE_MAVEN);
                 proj.getRepositories().mavenCentral();
-                addMavenRepo(proj, "minecraft", Constants.LIBRARY_URL);
+                addMavenRepo(proj, "minecraft", LIBRARY_URL);
             }
         });
 
         // do Mcp Snapshots Stuff
         setVersionInfoJson();
-        project.getConfigurations().create(Constants.CONFIG_MCP_DATA);
+        project.getConfigurations().create(CONFIG_MCP_DATA);
+        project.getConfigurations().create(CONFIG_MAPPINGS);
 
         // after eval
         project.afterEvaluate(new Action<Project>() {
@@ -137,7 +139,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 {
                     if (version != null)
                     {
-                        File index = delayedFile(Constants.ASSETS + "/indexes/" + version.getAssets() + ".json").call();
+                        File index = delayedFile(ASSETS + "/indexes/" + version.getAssets() + ".json").call();
                         if (index.exists())
                             parseAssetIndex();
                     }
@@ -146,8 +148,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 {
                     Throwables.propagate(e);
                 }
-
-                finalCall();
             }
         });
 
@@ -174,40 +174,49 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     
     private void setVersionInfoJson()
     {
-        File jsonCache = Constants.cacheFile(project, "caches", "minecraft", "McpMappings.json");
+        File jsonCache = delayedFile(REPLACE_CACHE_DIR + "/McpMappings.json").call();
         File etagFile = new File(jsonCache.getAbsolutePath() + ".etag");
         
         getExtension().mcpJson = JsonFactory.GSON.fromJson(
-                getWithEtag(Constants.MCP_JSON_URL, jsonCache, etagFile),
+                getWithEtag(MCP_JSON_URL, jsonCache, etagFile),
                 new TypeToken<Map<String, Map<String, int[]>>>() {}.getType() );
     }
 
     public void afterEvaluate()
     {
-        if (getExtension().mappingsSet())
-        {
-            project.getDependencies().add(Constants.CONFIG_MCP_DATA, ImmutableMap.of(
-                    "group", "de.oceanlabs.mcp",
-                    "name", delayedString("mcp_{MAPPING_CHANNEL}").call(),
-                    "version",  delayedString("{MAPPING_VERSION}-{MC_VERSION}").call(),
-                    "ext", "zip"
-                    ));
-        }
+        String mcVersion = delayedString(REPLACE_MC_VERSION).call();
+        
+        project.getDependencies().add(CONFIG_MAPPINGS, ImmutableMap.of(
+                "group", "de.oceanlabs.mcp",
+                "name", delayedString("mcp_"+REPLACE_MCP_CHANNEL).call(),
+                "version", delayedString(REPLACE_MCP_VERSION+"-"+mcVersion).call(),
+                "ext", "zip"
+                ));
+        
+        project.getDependencies().add(CONFIG_MCP_DATA, ImmutableMap.of(
+                "group", "de.oceanlabs.mcp",
+                "name", "mcp",
+                "version", mcVersion,
+                "classifier", "srg",
+                "ext", "zip"
+                ));
+        
 
         if (!displayBanner)
             return;
+        
+        // dont care about anything older than 1.8 because FG 2.0 is only 1.8.3+
+        Map<String, String> mcpVersionMap = ImmutableMap.of("1.8", "9.10");
+        String mcpVersion = mcpVersionMap.get(mcVersion);
+        
         project.getLogger().lifecycle("****************************");
         project.getLogger().lifecycle(" Powered By MCP:             ");
         project.getLogger().lifecycle(" http://mcp.ocean-labs.de/   ");
         project.getLogger().lifecycle(" Searge, ProfMobius, Fesh0r, ");
         project.getLogger().lifecycle(" R4wk, ZeuX, IngisKahn, bspkrs");
-        project.getLogger().lifecycle(delayedString(" MCP Data version : {MCP_VERSION}").call());
+        project.getLogger().lifecycle(" MCP Data version : " + mcpVersion == null ? "unknown" : mcpVersion);
         project.getLogger().lifecycle("****************************");
         displayBanner = false;
-    }
-
-    public void finalCall()
-    {
     }
 
     @SuppressWarnings("serial")
@@ -218,26 +227,26 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         task = makeTask("downloadClient", DownloadTask.class);
         {
-            task.setOutput(delayedFile(Constants.JAR_CLIENT_FRESH));
-            task.setUrl(delayedString(Constants.MC_JAR_URL));
+            task.setOutput(delayedFile(JAR_CLIENT_FRESH));
+            task.setUrl(delayedString(MC_JAR_URL));
         }
 
         task = makeTask("downloadServer", DownloadTask.class);
         {
-            task.setOutput(delayedFile(Constants.JAR_SERVER_FRESH));
-            task.setUrl(delayedString(Constants.MC_SERVER_URL)); 
+            task.setOutput(delayedFile(JAR_SERVER_FRESH));
+            task.setUrl(delayedString(MC_SERVER_URL)); 
         }
 
-        ObtainFernFlowerTask mcpTask = makeTask("downloadMcpTools", ObtainFernFlowerTask.class);
+        ObtainFernFlowerTask mcpTask = makeTask("downloadFernFlower", ObtainFernFlowerTask.class);
         {
-            mcpTask.setMcpUrl(delayedString(Constants.MCP_URL));
-            mcpTask.setFfJar(delayedFile(Constants.FERNFLOWER));
+            mcpTask.setMcpUrl(delayedString(FF_URL));
+            mcpTask.setFfJar(delayedFile(FERNFLOWER));
         }
 
         EtagDownloadTask etagDlTask = makeTask("getAssetsIndex", EtagDownloadTask.class);
         {
-            etagDlTask.setUrl(delayedString(Constants.ASSETS_INDEX_URL));
-            etagDlTask.setFile(delayedFile(Constants.ASSETS + "/indexes/{ASSET_INDEX}.json"));
+            etagDlTask.setUrl(delayedString(ASSETS_INDEX_URL));
+            etagDlTask.setFile(delayedFile(ASSETS + "/indexes/{ASSET_INDEX}.json"));
             etagDlTask.setDieWithError(false);
 
             etagDlTask.doLast(new Action<Task>() {
@@ -257,7 +266,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         DownloadAssetsTask assets = makeTask("getAssets", DownloadAssetsTask.class);
         {
-            assets.setAssetsDir(delayedFile(Constants.ASSETS));
+            assets.setAssetsDir(delayedFile(ASSETS));
             assets.setIndex(getAssetIndexClosure());
             assets.setIndexName(delayedString("{ASSET_INDEX}"));
             assets.dependsOn("getAssetsIndex");
@@ -265,8 +274,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         etagDlTask = makeTask("getVersionJson", EtagDownloadTask.class);
         {
-            etagDlTask.setUrl(delayedString(Constants.MC_JSON_URL));
-            etagDlTask.setFile(delayedFile(Constants.VERSION_JSON));
+            etagDlTask.setUrl(delayedString(MC_JSON_URL));
+            etagDlTask.setFile(delayedFile(VERSION_JSON));
             etagDlTask.setDieWithError(false);
             etagDlTask.doLast(new Closure<Boolean>(project) // normalizes to linux endings
             {
@@ -275,7 +284,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 {
                     try
                     {
-                        File json = delayedFile(Constants.VERSION_JSON).call();
+                        File json = delayedFile(VERSION_JSON).call();
                         if (!json.exists())
                             return true;
 
@@ -303,18 +312,26 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             clearCache.setDescription("Cleares the ForgeGradle cache. DONT RUN THIS unless you want a fresh start, or the dev tells you to.");
         }
 
-        // special userDev stuff
+        // extract MCP mappings
+        ExtractConfigTask extractMcpMappings = makeTask("extractMcpMappings", ExtractConfigTask.class);
+        {
+            extractMcpMappings.setOut(delayedFile(MCP_MAPPINGS_DIR));
+            extractMcpMappings.setConfig(CONFIG_MAPPINGS);
+            extractMcpMappings.setDoesCache(true);
+        }
+        
+        // special MCP srgs
         ExtractConfigTask extractMcpData = makeTask("extractMcpData", ExtractConfigTask.class);
         {
-            extractMcpData.setOut(delayedFile(Constants.MCP_DATA_DIR));
-            extractMcpData.setConfig(Constants.CONFIG_MCP_DATA);
+            extractMcpData.setOut(delayedFile(MCP_DATA_DIR));
+            extractMcpData.setConfig(CONFIG_MCP_DATA);
             extractMcpData.setDoesCache(true);
         }
     }
 
     public void parseAssetIndex() throws JsonSyntaxException, JsonIOException, IOException
     {
-        assetIndex = JsonFactory.loadAssetsIndex(delayedFile(Constants.ASSETS + "/indexes/{ASSET_INDEX}.json").call());
+        assetIndex = JsonFactory.loadAssetsIndex(delayedFile(ASSETS + "/indexes/{ASSET_INDEX}.json").call());
     }
 
     @SuppressWarnings("serial")
@@ -353,7 +370,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         if (otherPlugin != null && canOverlayPlugin())
             return getOverlayExtension();
         else
-            return (K) project.getExtensions().getByName(Constants.EXT_NAME_MC);
+            return (K) project.getExtensions().getByName(EXT_NAME_MC);
     }
 
     /**
@@ -375,19 +392,15 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     @SuppressWarnings("unchecked")
     public static <T extends Task> T makeTask(Project proj, String name, Class<T> type)
     {
-        HashMap<String, Object> map = new HashMap<String, Object>();
-        map.put("name", name);
-        map.put("type", type);
-        return (T) proj.task(map, name);
+        return (T) proj.task(ImmutableMap.of("name", name, "type", type), name);
     }
 
-    public static Project getProject(File buildFile, Project parent)
+    public static Project buildProject(File buildFile, Project parent)
     {
         ProjectBuilder builder = ProjectBuilder.builder();
         if (buildFile != null)
         {
-            builder = builder.withProjectDir(buildFile.getParentFile())
-                    .withName(buildFile.getParentFile().getName());
+            builder = builder.withProjectDir(buildFile.getParentFile()).withName(buildFile.getParentFile().getName());
         }
         else
         {
@@ -403,10 +416,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         if (buildFile != null)
         {
-            HashMap<String, String> map = new HashMap<String, String>();
-            map.put("from", buildFile.getAbsolutePath());
-
-            project.apply(map);
+            project.apply(ImmutableMap.of("from", buildFile.getAbsolutePath()));
         }
 
         return project;
@@ -414,9 +424,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
     public void applyExternalPlugin(String plugin)
     {
-        HashMap<String, Object> map = new HashMap<String, Object>();
-        map.put("plugin", plugin);
-        project.apply(map);
+        project.apply(ImmutableMap.of("plugin", plugin));
     }
 
     public MavenArtifactRepository addMavenRepo(Project proj, final String name, final String url)
@@ -450,8 +458,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             if (project.getGradle().getStartParameter().isOffline()) // dont even try the internet
                 return Files.toString(cache, Charsets.UTF_8);
             
-            // dude, its been less than 5 minutes since the last time..
-            if (cache.exists() && cache.lastModified() + 300000 >= System.currentTimeMillis())
+            // dude, its been less than 1 minute since the last time..
+            if (cache.exists() && cache.lastModified() + 60000 >= System.currentTimeMillis())
                 return Files.toString(cache, Charsets.UTF_8);
 
             String etag;
@@ -469,7 +477,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setInstanceFollowRedirects(true);
-            con.setRequestProperty("User-Agent", Constants.USER_AGENT);
+            con.setRequestProperty("User-Agent", USER_AGENT);
+            con.setIfModifiedSince(cache.lastModified());
             
             if (!Strings.isNullOrEmpty(etag))
             {
@@ -482,7 +491,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             if (con.getResponseCode() == 304)
             {
                 // the existing file is good
-                Files.touch(cache); // touch it to update last-modified time
+                Files.touch(cache); // touch it to update last-modified time, to wait another minute
                 out =  Files.toString(cache, Charsets.UTF_8);
             }
             else if (con.getResponseCode() == 200)
@@ -540,8 +549,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         if (version != null)
             pattern = pattern.replace("{ASSET_INDEX}", version.getAssets());
 
-        if (exten.mappingsSet())
-            pattern = pattern.replace("{MCP_DATA_DIR}", Constants.MCP_DATA_DIR);
+        pattern = pattern.replace("{MCP_DATA_DIR}", MCP_MAPPINGS_DIR);
 
         return pattern;
     }
@@ -564,6 +572,11 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     protected DelayedFileTree delayedZipTree(String path)
     {
         return new DelayedFileTree(project, path, true, this);
+    }
+    
+    protected String buildString(String... pieces)
+    {
+        return Joiner.on("").join(pieces);
     }
 
 }

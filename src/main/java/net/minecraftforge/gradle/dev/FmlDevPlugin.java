@@ -106,7 +106,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task2.setExceptorJson(delayedFile(DevConstants.EXC_JSON));
             task2.addTransformerClean(delayedFile(DevConstants.FML_RESOURCES + "/fml_at.cfg"));
             task2.setApplyMarkers(true);
-            task2.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
+            task2.dependsOn("downloadFernFlower", "mergeJars", "genSrgs");
         }
 
         DecompileTask task3 = makeTask("decompile", DecompileTask.class);
@@ -116,7 +116,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task3.setFernFlower(delayedFile(Constants.FERNFLOWER));
             task3.setPatch(delayedFile(DevConstants.MCP_PATCH_DIR));
             task3.setAstyleConfig(delayedFile(DevConstants.ASTYLE_CFG));
-            task3.dependsOn("downloadMcpTools", "deobfuscateJar");
+            task3.dependsOn("downloadFernFlower", "deobfuscateJar");
         }
 
         RemapSourcesTask remapTask = makeTask("remapCleanJar", RemapSourcesTask.class);
@@ -555,7 +555,7 @@ public class FmlDevPlugin extends DevBasePlugin
     {
         if (project == null)
         {
-            project = BasePlugin.getProject(null, null);
+            project = BasePlugin.buildProject(null, null);
         }
 
         String fullVersion = runGit(project, workDir, "describe", "--long", "--match=[^(jenkins)]*");
@@ -589,7 +589,7 @@ public class FmlDevPlugin extends DevBasePlugin
         }
 
         StringBuilder out = new StringBuilder();
-        out.append(DelayedBase.resolve("{MC_VERSION_SAFE}", project)).append('-'); // Somehow configure this?
+        out.append(DelayedBase.resolve("{MC_VERSION_SAFE}", project, null)).append('-'); // Somehow configure this?
         out.append(major).append('.').append(minor).append('.').append(revision).append('.').append(build);
         if (branch != null)
         {

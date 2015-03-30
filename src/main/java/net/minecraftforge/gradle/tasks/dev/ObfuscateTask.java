@@ -49,7 +49,7 @@ public class ObfuscateTask extends DefaultTask
     public void doTask() throws IOException
     {
         getLogger().debug("Building child project model...");
-        Project childProj = FmlDevPlugin.getProject(getBuildFile(), getProject());
+        Project childProj = FmlDevPlugin.buildProject(getBuildFile(), getProject());
         for (Action<Project> act : configureProject)
         {
             if (act != null)

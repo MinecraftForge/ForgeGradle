@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import net.minecraftforge.gradle.GradleConfigurationException;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.json.LiteLoaderJson;
@@ -180,7 +181,7 @@ public class LiteLoaderPlugin extends UserLibBasePlugin
             return;
         }
 
-        String mcVersion = delayedString("{MC_VERSION}").call();
+        String mcVersion = delayedString(Constants.REPLACE_MC_VERSION).call();
 
         LiteLoaderJson loaded = JsonFactory.loadLiteLoaderJson(json);
         VersionObject obj = loaded.versions.get(mcVersion);

@@ -177,7 +177,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
             task6.setMcpExc(delayedFile(DevConstants.MCP_EXC));
             task6.setDoesCache(false);
             
-            task6.dependsOn("extractMcpData");
+            task6.dependsOn("extractMcpData", "extractMcpMappings");
         }
     }
 

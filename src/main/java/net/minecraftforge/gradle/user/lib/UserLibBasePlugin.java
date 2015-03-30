@@ -1,6 +1,7 @@
 package net.minecraftforge.gradle.user.lib;
 
 import net.minecraftforge.gradle.GradleConfigurationException;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
@@ -74,7 +75,7 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
     @Override
     protected String getApiCacheDir(UserExtension exten)
     {
-        return "{CACHE_DIR}/minecraft/net/minecraft/minecraft_merged/{MC_VERSION}";
+        return "{CACHE_DIR}/minecraft/net/minecraft/minecraft_merged/"+Constants.REPLACE_MC_VERSION;
     }
 
     @Override

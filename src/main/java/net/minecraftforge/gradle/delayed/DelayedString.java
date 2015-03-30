@@ -21,10 +21,4 @@ public class DelayedString extends DelayedBase<String>
     {
         return DelayedBase.resolve(pattern, project, resolver);
     }
-    
-    public DelayedString forceResolving()
-    {
-        resolveOnce = false;
-        return this;
-    }
 }

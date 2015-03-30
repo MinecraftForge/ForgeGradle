@@ -5,6 +5,7 @@ import groovy.lang.Closure;
 import java.io.File;
 import java.io.IOException;
 
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedString;
 
@@ -31,7 +32,7 @@ public class FMLVersionPropTask extends DefaultTask
         else
             fullVersion = this.version.call();
 
-        String mcVersion = new DelayedString(getProject(), "{MC_VERSION}").call();
+        String mcVersion = new DelayedString(getProject(), Constants.REPLACE_MC_VERSION).call();
         fullVersion = fullVersion.substring(mcVersion.length());
         String[] v =fullVersion.split("-")[1].split("\\.");
         String data =
@@ -39,7 +40,7 @@ public class FMLVersionPropTask extends DefaultTask
         "fmlbuild.minor.number="    + v[1] + "\n" +
         "fmlbuild.revision.number=" + v[2] + "\n" +
         "fmlbuild.build.number="    + v[3] + "\n" +
-        "fmlbuild.mcversion=" + new DelayedString(getProject(), "{MC_VERSION}").call() + "\n" +
+        "fmlbuild.mcversion=" + new DelayedString(getProject(), Constants.REPLACE_MC_VERSION).call() + "\n" +
         "fmlbuild.mcpversion=" + new DelayedString(getProject(), "{MCP_VERSION}").call() + "\n";
         //fmlbuild.deobfuscation.hash -- Not actually used anywhere
         Files.write(data.getBytes(Charsets.UTF_8), getOutputFile());

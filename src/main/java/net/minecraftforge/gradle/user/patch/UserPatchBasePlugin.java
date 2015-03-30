@@ -139,7 +139,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     
     protected void setVersionInfoJson()
     {
-        File jsonCache = Constants.cacheFile(project, "caches", "minecraft", getApiName()+"Versions.json");
+        File jsonCache = delayedFile(Constants.REPLACE_CACHE_DIR + "/{API_NAME}Versions.json").call();
         File etagFile = new File(jsonCache.getAbsolutePath() + ".etag");
         
         ForgeVersion version = JsonFactory.GSON.fromJson(getWithEtag(getVersionsJsonUrl(), jsonCache, etagFile), ForgeVersion.class);

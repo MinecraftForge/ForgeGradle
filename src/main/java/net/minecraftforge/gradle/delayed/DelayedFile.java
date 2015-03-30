@@ -41,10 +41,4 @@ public class DelayedFile extends DelayedBase<File>
     {
         return new DelayedFileTree(project, pattern, true, resolver);
     }
-    
-    public DelayedFile forceResolving()
-    {
-        resolveOnce = false;
-        return this;
-    }
 }

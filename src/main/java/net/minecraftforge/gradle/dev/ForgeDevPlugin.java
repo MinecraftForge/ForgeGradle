@@ -106,7 +106,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task2.addTransformerClean(delayedFile(FML_RESOURCES + "/fml_at.cfg"));
             task2.addTransformerClean(delayedFile(FORGE_RESOURCES + "/forge_at.cfg"));
             task2.setApplyMarkers(true);
-            task2.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
+            task2.dependsOn("downloadFernFlower", "mergeJars", "genSrgs");
         }
 
         DecompileTask task3 = makeTask("decompile", DecompileTask.class);
@@ -116,7 +116,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task3.setFernFlower(delayedFile(Constants.FERNFLOWER));
             task3.setPatch(delayedFile(MCP_PATCH_DIR));
             task3.setAstyleConfig(delayedFile(ASTYLE_CFG));
-            task3.dependsOn("downloadMcpTools", "deobfuscateJar");
+            task3.dependsOn("downloadFernFlower", "deobfuscateJar");
         }
 
         ProcessSrcJarTask task4 = makeTask("fmlPatchJar", ProcessSrcJarTask.class);

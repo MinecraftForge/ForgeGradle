@@ -25,7 +25,7 @@ public class SubprojectTask extends DefaultTask
     @TaskAction
     public void doTask() throws IOException
     {
-        Project childProj = FmlDevPlugin.getProject(getBuildFile(), getProject());
+        Project childProj = FmlDevPlugin.buildProject(getBuildFile(), getProject());
         
         // configure the project
         for (Action<Project> act : configureProject)

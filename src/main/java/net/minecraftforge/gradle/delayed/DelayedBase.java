@@ -14,7 +14,6 @@ public abstract class DelayedBase<V> extends Closure<V>
     protected Project project;
     private V resolved;
     protected String pattern;
-    public boolean resolveOnce = true;
     protected IDelayedResolver<? extends BaseExtension> resolver;
 
     public DelayedBase(Project owner, String pattern)
@@ -35,7 +34,7 @@ public abstract class DelayedBase<V> extends Closure<V>
     @Override
     public final V call()
     {
-        if (resolved == null || !resolveOnce)
+        if (resolved == null)
         {
             resolved = resolveDelayed();
         }
@@ -68,7 +67,7 @@ public abstract class DelayedBase<V> extends Closure<V>
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    protected static String resolve(String patern, Project project, IDelayedResolver resolver)
+    public static String resolve(String patern, Project project, IDelayedResolver resolver)
     {
         // TODO: NUKE AWAY!
         
@@ -97,12 +96,9 @@ public abstract class DelayedBase<V> extends Closure<V>
         patern = patern.replace("{PROJECT}", project.getName());
         patern = patern.replace("{RUN_DIR}", exten.getRunDir().replace('\\', '/'));
         
-        if (exten.mappingsSet())
-        {
-            patern = patern.replace("{MAPPING_CHANNEL}", exten.getMappingsChannel());
-            patern = patern.replace("{MAPPING_CHANNEL_DOC}", exten.getMappingsChannelNoSubtype());
-            patern = patern.replace("{MAPPING_VERSION}", exten.getMappingsVersion());
-        }
+        patern = patern.replace("{MAPPING_CHANNEL}", exten.getMappingsChannel());
+        patern = patern.replace("{MAPPING_CHANNEL_DOC}", exten.getMappingsChannelNoSubtype());
+        patern = patern.replace("{MAPPING_VERSION}", exten.getMappingsVersion());
 
         patern = patern.replace("{JENKINS_SERVER}",        jenk.getServer());
         patern = patern.replace("{JENKINS_JOB}",           jenk.getJob());

@@ -245,20 +245,13 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         pattern = pattern.replace("{USER_DEV}", this.getUserDevCacheDir(exten));
         pattern = pattern.replace("{SRG_DIR}", this.getSrgCacheDir(exten));
         pattern = pattern.replace("{API_CACHE_DIR}", this.getApiCacheDir(exten));
-        pattern = pattern.replace("{MC_VERSION}", getMcVersion(exten));
+        pattern = pattern.replace(Constants.REPLACE_MC_VERSION, getMcVersion(exten));
 
         // do run config stuff.
         pattern = pattern.replace("{RUN_CLIENT_TWEAKER}", getClientTweaker());
         pattern = pattern.replace("{RUN_SERVER_TWEAKER}", getServerTweaker());
         pattern = pattern.replace("{RUN_BOUNCE_CLIENT}", getClientRunClass());
         pattern = pattern.replace("{RUN_BOUNCE_SERVER}", getServerRunClass());
-
-        if (!exten.mappingsSet())
-        {
-            // no mappings set?remove these tokens
-            pattern = pattern.replace("{MAPPING_CHANNEL}", "");
-            pattern = pattern.replace("{MAPPING_VERSION}", "");
-        }
 
         if (hasApiVersion())
             pattern = pattern.replace("{API_VERSION}", getApiVersion(exten));
@@ -571,7 +564,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.setMcpToNotch(delayedFile(REOBF_NOTCH_SRG));
             task.setSrgExc(delayedFile(EXC_SRG));
             task.setMcpExc(delayedFile(EXC_MCP));
-            task.dependsOn("extractUserDev", "extractMcpData");
+            task.dependsOn("extractUserDev", "extractMcpData", "extractMcpMappings");
         }
 
         {
@@ -580,12 +573,12 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.setServer(delayedFile(JAR_SERVER_FRESH));
             task.setOutJar(delayedFile(JAR_MERGED));
             task.setMergeCfg(delayedFile(MERGE_CFG));
-            task.setMcVersion(delayedString("{MC_VERSION}"));
+            task.setMcVersion(delayedString(Constants.REPLACE_MC_VERSION));
             task.dependsOn("extractUserDev", "downloadClient", "downloadServer");
         }
 
         {
-            String name = getBinDepName() + "-" + (hasApiVersion() ? "{API_VERSION}" : "{MC_VERSION}") + ".jar";
+            String name = getBinDepName() + "-" + (hasApiVersion() ? "{API_VERSION}" : Constants.REPLACE_MC_VERSION) + ".jar";
 
             ProcessJarTask task = makeTask("deobfBinJar", ProcessJarTask.class);
             task.setSrg(delayedFile(DEOBF_MCP_SRG));
@@ -599,11 +592,11 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.setApplyMarkers(false);
             task.setStripSynthetics(true);
             configureDeobfuscation(task);
-            task.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
+            task.dependsOn("downloadFernFlower", "mergeJars", "genSrgs");
         }
 
         {
-            String name = "{API_NAME}-" + (hasApiVersion() ? "{API_VERSION}" : "{MC_VERSION}") + "-"+ CLASSIFIER_DEOBF_SRG +".jar";
+            String name = "{API_NAME}-" + (hasApiVersion() ? "{API_VERSION}" : Constants.REPLACE_MC_VERSION) + "-"+ CLASSIFIER_DEOBF_SRG +".jar";
 
             ProcessJarTask task = makeTask("deobfuscateJar", ProcessJarTask.class);
             task.setSrg(delayedFile(DEOBF_SRG_SRG));
@@ -614,7 +607,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.setOutDirtyJar(delayedFile(DIRTY_DIR + "/" + name));
             task.setApplyMarkers(true);
             configureDeobfuscation(task);
-            task.dependsOn("downloadMcpTools", "mergeJars", "genSrgs");
+            task.dependsOn("downloadFernFlower", "mergeJars", "genSrgs");
         }
 
         {
@@ -624,7 +617,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.setSrg(delayedFile(REOBF_SRG));
             task.setFieldCsv(delayedFile(FIELD_CSV));
             task.setFieldCsv(delayedFile(METHOD_CSV));
-            task.setMcVersion(delayedString("{MC_VERSION}"));
+            task.setMcVersion(delayedString(Constants.REPLACE_MC_VERSION));
 
             task.mustRunAfter("test");
             project.getTasks().getByName("assemble").dependsOn(task);
@@ -640,7 +633,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.addResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
             task.addResource("net/minecraftforge/gradle/tweakers/CoremodTweaker.java");
             task.addResource("net/minecraftforge/gradle/tweakers/AccessTransformerTweaker.java");
-            task.addReplacement("@@MCVERSION@@", delayedString("{MC_VERSION}"));
+            task.addReplacement("@@MCVERSION@@", delayedString(Constants.REPLACE_MC_VERSION));
             task.addReplacement("@@ASSETINDEX@@", delayedString("{ASSET_INDEX}"));
             task.addReplacement("@@ASSETSDIR@@", delayedFile("{CACHE_DIR}/minecraft/assets"));
             task.addReplacement("@@NATIVESDIR@@", delayedFile(Constants.NATIVES_DIR));
@@ -679,7 +672,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             decomp.setFernFlower(delayedFile(FERNFLOWER));
             decomp.setPatch(delayedFile(MCP_PATCH_DIR));
             decomp.setAstyleConfig(delayedFile(ASTYLE_CFG));
-            decomp.dependsOn("downloadMcpTools", "deobfuscateJar", "genSrgs");
+            decomp.dependsOn("downloadFernFlower", "deobfuscateJar", "genSrgs");
         }
 
         // Remap to MCP names
@@ -916,12 +909,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     @Override
     public final void afterEvaluate()
     {
-        String mcversion = getMcVersion(getExtension());
-        if (!getExtension().mappingsSet() && mcversion.startsWith("1.8"))
-        {
-            getExtension().setMappings("snapshot_20141001"); //Default snapshots for 1.8
-        }
-
         super.afterEvaluate();
 
         // version checks
@@ -1189,7 +1176,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 else
                     pattern += "{API_NAME}";
 
-                pattern += "-" + (hasApiVersion() ? "{API_VERSION}" : "{MC_VERSION}");
+                pattern += "-" + (hasApiVersion() ? "{API_VERSION}" : Constants.REPLACE_MC_VERSION);
 
                 if (!Strings.isNullOrEmpty(classifier))
                     pattern+= "-"+classifier;
