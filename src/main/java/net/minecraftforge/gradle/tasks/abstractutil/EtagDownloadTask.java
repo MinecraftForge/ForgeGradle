@@ -99,6 +99,7 @@ public class EtagDownloadTask extends DefaultTask
         }
         else
         {
+            this.setDidWork(false);
             getLogger().error(error);
         }
     }

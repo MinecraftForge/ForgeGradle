@@ -113,7 +113,7 @@ public class FmlDevPlugin extends DevBasePlugin
         {
             task3.setInJar(delayedFile(DevConstants.JAR_SRG_FML));
             task3.setOutJar(delayedFile(DevConstants.ZIP_DECOMP_FML));
-            task3.setFernFlower(delayedFile(Constants.FERNFLOWER));
+            task3.setFernFlower(delayedFile(Constants.JAR_FERNFLOWER));
             task3.setPatch(delayedFile(DevConstants.MCP_PATCH_DIR));
             task3.setAstyleConfig(delayedFile(DevConstants.ASTYLE_CFG));
             task3.dependsOn("downloadFernFlower", "deobfuscateJar");

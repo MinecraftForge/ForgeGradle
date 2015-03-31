@@ -24,6 +24,17 @@ public class TokenReplacer
         replaceMap.put(key, value);
     }
     
+    public static boolean hasReplacement(String key)
+    {
+        // strip off the {}
+        if (key.charAt(0) == '{' && key.charAt(key.length()-1) == '}')
+        {
+            key = key.substring(1, key.length()-1);
+        }
+        
+        return replaceMap.containsKey(key);
+    }
+    
     private final String input;
     private String outCache;
     

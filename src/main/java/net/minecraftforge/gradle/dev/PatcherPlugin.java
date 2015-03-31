@@ -24,13 +24,6 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
     {
         
     }
-    
-    @Override
-    protected DelayedFile getDevJson()
-    {
-        // maybe can nuke this...
-        return null;
-    }
 
     @Override
     protected void addReplaceTokens(PatcherExtension ext)

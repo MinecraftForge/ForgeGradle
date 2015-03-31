@@ -19,7 +19,6 @@ import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.delayed.DelayedString;
 import net.minecraftforge.gradle.delayed.TokenReplacer;
 import net.minecraftforge.gradle.json.JsonFactory;
-import net.minecraftforge.gradle.json.version.AssetIndex;
 import net.minecraftforge.gradle.json.version.Version;
 import net.minecraftforge.gradle.tasks.DownloadAssetsTask;
 import net.minecraftforge.gradle.tasks.ExtractConfigTask;
@@ -49,16 +48,12 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
 public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Project>
 {
     public Project project;
     public BasePlugin<?> otherPlugin;
-    public Version version;
-    protected AssetIndex assetIndex;
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
@@ -150,20 +145,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 addReplaceTokens(getExtension());
 
                 afterEvaluate();
-
-                try
-                {
-                    if (version != null)
-                    {
-                        File index = delayedFile(ASSETS + "/indexes/" + version.getAssets() + ".json").call();
-                        if (index.exists())
-                            parseAssetIndex();
-                    }
-                }
-                catch (Exception e)
-                {
-                    Throwables.propagate(e);
-                }
             }
         });
 
@@ -183,8 +164,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
      * @return TRUE if this can be applied upon another base plugin.
      */
     public abstract boolean canOverlayPlugin();
-
-    protected abstract DelayedFile getDevJson();
 
     /**
      * Adds token replacements to the TokenReplacer using {@link TokenReplacer.addReplacement(String, String)} The base plugin scatters these arround in the
@@ -250,18 +229,19 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             dlServer.setUrl(delayedString(URL_MC_SERVER));
         }
         
-        EtagDownloadTask etagDlTask = makeTask("getVersionJson", EtagDownloadTask.class);
+        EtagDownloadTask getVersionJson = makeTask("getVersionJson", EtagDownloadTask.class);
         {
-            etagDlTask.setUrl(delayedString(URL_MC_JSON));
-            etagDlTask.setFile(delayedFile(JSON_VERSION));
-            etagDlTask.setDieWithError(false);
-            etagDlTask.doLast(new Closure<Boolean>(project) // normalizes to linux endings
+            getVersionJson.setUrl(delayedString(URL_MC_JSON));
+            getVersionJson.setFile(delayedFile(JSON_VERSION));
+            getVersionJson.setDieWithError(false);
+            getVersionJson.doLast(new Closure<Boolean>(project) // normalizes to linux endings
             {
                 @Override
                 public Boolean call()
                 {
                     try
                     {
+                        // normalize the line endings...
                         File json = delayedFile(JSON_VERSION).call();
                         if (!json.exists())
                             return true;
@@ -273,6 +253,13 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                             buf = buf.append(line).append('\n');
                         }
                         Files.write(buf.toString().getBytes(Charsets.UTF_8), json);
+                        
+                        // grab the AssetIndex if it isnt already there
+                        if (!TokenReplacer.hasReplacement(REPLACE_ASSET_INDEX))
+                        {
+                            Version version = JsonFactory.loadVersion(json, json.getParentFile());
+                            TokenReplacer.addReplacement(REPLACE_ASSET_INDEX, version.getAssets());
+                        }
                     }
                     catch (Throwable t)
                     {
@@ -283,40 +270,19 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             });
         }
 
-        etagDlTask = makeTask("getAssetsIndex", EtagDownloadTask.class);
+        EtagDownloadTask getAssetsIndex = makeTask("getAssetsIndex", EtagDownloadTask.class);
         {
-            etagDlTask.setUrl(delayedString(ASSETS_INDEX_URL));
-            etagDlTask.setFile(delayedFile(ASSETS + "/indexes/{ASSET_INDEX}.json"));
-            etagDlTask.setDieWithError(false);
-
-            etagDlTask.doLast(new Action<Task>() {
-                public void execute(Task task)
-                {
-                    try
-                    {
-                        parseAssetIndex();
-                    }
-                    catch (Exception e)
-                    {
-                        Throwables.propagate(e);
-                    }
-                }
-            });
-        }
-
-        // special DL.. because fernflower.
-        ObtainFernFlowerTask ffTask = makeTask("downloadFernFlower", ObtainFernFlowerTask.class);
-        {
-            ffTask.setMcpUrl(delayedString(URL_FF));
-            ffTask.setFfJar(delayedFile(FERNFLOWER));
+            getAssetsIndex.setUrl(delayedString(ASSETS_INDEX_URL));
+            getAssetsIndex.setFile(delayedFile(JSON_ASSET_INDEX));
+            getAssetsIndex.setDieWithError(false);
+            getAssetsIndex.dependsOn(getVersionJson);
         }
 
         DownloadAssetsTask getAssets = makeTask("getAssets", DownloadAssetsTask.class);
         {
-            getAssets.setAssetsDir(delayedFile(ASSETS));
-            getAssets.setIndex(getAssetIndexClosure());
-            getAssets.setIndexName(delayedString("{ASSET_INDEX}"));
-            getAssets.dependsOn("getAssetsIndex");
+            getAssets.setAssetsDir(delayedFile(DIR_ASSETS));
+            getAssets.setAssetsIndex(delayedFile(JSON_ASSET_INDEX));
+            getAssets.dependsOn(getAssetsIndex);
         }
 
         Delete clearCache = makeTask("cleanCache", Delete.class);
@@ -324,6 +290,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             clearCache.delete(delayedFile(REPLACE_CACHE_DIR));
             clearCache.setGroup("ForgeGradle");
             clearCache.setDescription("Cleares the ForgeGradle cache. DONT RUN THIS unless you want a fresh start, or the dev tells you to.");
+        }
+        
+        ObtainFernFlowerTask ffTask = makeTask("downloadFernFlower", ObtainFernFlowerTask.class);
+        {
+            ffTask.setMcpUrl(delayedString(URL_FF));
+            ffTask.setFfJar(delayedFile(JAR_FERNFLOWER));
         }
 
         ExtractConfigTask extractMcpMappings = makeTask("extractMcpMappings", ExtractConfigTask.class);
@@ -362,27 +334,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             merge.setOutJar(delayedFile(JAR_MERGED));
             merge.dependsOn(dlClient, dlServer);
         }
-    }
-
-    public void parseAssetIndex() throws JsonSyntaxException, JsonIOException, IOException
-    {
-        assetIndex = JsonFactory.loadAssetsIndex(delayedFile(ASSETS + "/indexes/{ASSET_INDEX}.json").call());
-    }
-
-    @SuppressWarnings("serial")
-    public Closure<AssetIndex> getAssetIndexClosure()
-    {
-        return new Closure<AssetIndex>(this, null) {
-            public AssetIndex call(Object... obj)
-            {
-                return getAssetIndex();
-            }
-        };
-    }
-
-    public AssetIndex getAssetIndex()
-    {
-        return assetIndex;
     }
 
     /**

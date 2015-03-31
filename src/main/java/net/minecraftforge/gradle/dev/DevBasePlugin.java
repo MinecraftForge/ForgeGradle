@@ -157,7 +157,7 @@ public abstract class DevBasePlugin extends BasePlugin<PatcherExtension>
 
         CopyAssetsTask task5 = makeTask("copyAssets", CopyAssetsTask.class);
         {
-            task5.setAssetsDir(delayedFile(Constants.ASSETS));
+            task5.setAssetsDir(delayedFile(Constants.DIR_ASSETS));
             task5.setOutputDir(delayedFile(DevConstants.ECLIPSE_ASSETS));
             task5.setAssetIndex(getAssetIndexClosure());
             task5.dependsOn("getAssets", "extractWorkspace");

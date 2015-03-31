@@ -1,6 +1,6 @@
 package net.minecraftforge.gradle.user;
 
-import static net.minecraftforge.gradle.common.Constants.FERNFLOWER;
+import static net.minecraftforge.gradle.common.Constants.JAR_FERNFLOWER;
 import static net.minecraftforge.gradle.common.Constants.JAR_CLIENT_FRESH;
 import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
 import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_FRESH;
@@ -669,7 +669,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         {
             decomp.setInJar(delayedDirtyFile(null, CLASSIFIER_DEOBF_SRG, "jar", false));
             decomp.setOutJar(decompOut);
-            decomp.setFernFlower(delayedFile(FERNFLOWER));
+            decomp.setFernFlower(delayedFile(JAR_FERNFLOWER));
             decomp.setPatch(delayedFile(MCP_PATCH_DIR));
             decomp.setAstyleConfig(delayedFile(ASTYLE_CFG));
             decomp.dependsOn("downloadFernFlower", "deobfuscateJar", "genSrgs");

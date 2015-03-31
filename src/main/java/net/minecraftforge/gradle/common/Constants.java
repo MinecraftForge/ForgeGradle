@@ -5,11 +5,14 @@ import groovy.lang.Closure;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -112,8 +115,9 @@ public class Constants
     public static final String JAR_SERVER_FRESH = "{CACHE_DIR}/net/minecraft/minecraft/" + REPLACE_MC_VERSION + "/minecraft_server-" + REPLACE_MC_VERSION + ".jar";
     public static final String JAR_MERGED       = "{CACHE_DIR}/net/minecraft/minecraft/" + REPLACE_MC_VERSION + "/minecraft_merged-" + REPLACE_MC_VERSION + ".jar";
     public static final String DIR_NATIVES      = "{CACHE_DIR}/net/minecraft/minecraft/" + REPLACE_MC_VERSION + "/natives";
-    public static final String FERNFLOWER       = "{CACHE_DIR}/fernflower-fixed.jar";
-    public static final String ASSETS           = "{CACHE_DIR}/assets";
+    public static final String JAR_FERNFLOWER   = "{CACHE_DIR}/fernflower-fixed.jar";
+    public static final String DIR_ASSETS       = "{CACHE_DIR}/assets";
+    public static final String JSON_ASSET_INDEX = DIR_ASSETS + "/indexes/" + REPLACE_ASSET_INDEX + ".json";
     public static final String DIR_JSONS        = "{CACHE_DIR}/versionJsons";
     public static final String JSON_VERSION     = DIR_JSONS + "/" + REPLACE_MC_VERSION + ".json";
     
@@ -193,6 +197,56 @@ public class Constants
             return SystemArch.BIT_32;
         }
     }
+    
+    /**
+     * This method uses the channels API which uses direct filesystem copies instead of loading it into 
+     * ram and then outputting it.
+     * @param in
+     * @param out created with directories if needed
+     * @throws IOException In case anything goes wrong with the file IO
+     */
+    public static void copyFile(File in, File out) throws IOException
+    {
+        // make dirs just in case
+        out.getParentFile().mkdirs();
+        
+        FileInputStream fis = new FileInputStream(in);
+        FileOutputStream fout = new FileOutputStream(out);
+
+        FileChannel source = fis.getChannel();
+        FileChannel dest = fout.getChannel();
+
+        long size = source.size();
+        source.transferTo(0, size, dest);
+        
+        fis.close();
+        fout.close();
+    }
+    
+    /**
+     * This method uses the channels API which uses direct filesystem copies instead of loading it into 
+     * ram and then outputting it.
+     * @param in
+     * @param out created with directories if needed
+     * @param size If you have it earlier
+     * @throws IOException In case anything goes wrong with the file IO
+     */
+    public static void copyFile(File in, File out, long size) throws IOException
+    {
+        // make dirs just in case
+        out.getParentFile().mkdirs();
+        
+        FileInputStream fis = new FileInputStream(in);
+        FileOutputStream fout = new FileOutputStream(out);
+
+        FileChannel source = fis.getChannel();
+        FileChannel dest = fout.getChannel();
+
+        source.transferTo(0, size, dest);
+        
+        fis.close();
+        fout.close();
+    }
 
     public static String hash(File file)
     {
@@ -219,7 +273,6 @@ public class Constants
 
     public static String hash(File file, String function)
     {
-
         try
         {
             InputStream fis = new FileInputStream(file);

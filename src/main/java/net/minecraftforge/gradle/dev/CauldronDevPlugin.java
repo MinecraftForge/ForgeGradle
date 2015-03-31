@@ -116,7 +116,7 @@ public class CauldronDevPlugin extends DevBasePlugin
         {
             task3.setInJar(delayedFile(JAR_SRG_CDN));
             task3.setOutJar(delayedFile(ZIP_DECOMP_CDN));
-            task3.setFernFlower(delayedFile(Constants.FERNFLOWER));
+            task3.setFernFlower(delayedFile(Constants.JAR_FERNFLOWER));
             task3.setPatch(delayedFile(MCP_PATCH_DIR));
             task3.setAstyleConfig(delayedFile(ASTYLE_CFG));
             task3.dependsOn("downloadFernFlower", "deobfuscateJar");
