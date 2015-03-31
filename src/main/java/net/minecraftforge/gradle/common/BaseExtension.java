@@ -44,7 +44,7 @@ public class BaseExtension
     {
         this.version = version;
         
-        TokenReplacer.addReplacement(Constants.REPLACE_MC_VERSION, version);
+        TokenReplacer.putReplacement(Constants.REPLACE_MC_VERSION, version);
         
         mcpVersion = MCP_VERSION_MAP.get(version);
         if (mcpVersion == null)
@@ -135,8 +135,8 @@ public class BaseExtension
             mappingsChannel = null;
             mappingsVersion = -1;
             
-            TokenReplacer.addReplacement(Constants.REPLACE_MCP_CHANNEL, mappingsChannel);
-            TokenReplacer.addReplacement(Constants.REPLACE_MCP_VERSION, getMappingsVersion());
+            TokenReplacer.putReplacement(Constants.REPLACE_MCP_CHANNEL, mappingsChannel);
+            TokenReplacer.putReplacement(Constants.REPLACE_MCP_VERSION, getMappingsVersion());
             
             return;
         }
@@ -167,8 +167,8 @@ public class BaseExtension
 
         mappingsSet = true;
         
-        TokenReplacer.addReplacement(Constants.REPLACE_MCP_CHANNEL, mappingsChannel);
-        TokenReplacer.addReplacement(Constants.REPLACE_MCP_VERSION, getMappingsVersion());
+        TokenReplacer.putReplacement(Constants.REPLACE_MCP_CHANNEL, mappingsChannel);
+        TokenReplacer.putReplacement(Constants.REPLACE_MCP_VERSION, getMappingsVersion());
 
         // check
         checkMappings();

@@ -96,19 +96,6 @@ public class ForgeDevPlugin extends DevBasePlugin
 
     protected void createJarProcessTasks()
     {
-        ProcessJarTask task2 = makeTask("deobfuscateJar", ProcessJarTask.class);
-        {
-            task2.setInJar(delayedFile(Constants.JAR_MERGED));
-            task2.setOutCleanJar(delayedFile(JAR_SRG_FORGE));
-            task2.setSrg(delayedFile(NOTCH_2_SRG_SRG));
-            task2.setExceptorCfg(delayedFile(JOINED_EXC));
-            task2.setExceptorJson(delayedFile(EXC_JSON));
-            task2.addTransformerClean(delayedFile(FML_RESOURCES + "/fml_at.cfg"));
-            task2.addTransformerClean(delayedFile(FORGE_RESOURCES + "/forge_at.cfg"));
-            task2.setApplyMarkers(true);
-            task2.dependsOn("downloadFernFlower", "mergeJars", "genSrgs");
-        }
-
         DecompileTask task3 = makeTask("decompile", DecompileTask.class);
         {
             task3.setInJar(delayedFile(JAR_SRG_FORGE));

@@ -112,8 +112,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         }
         
         // set the obvious replacements
-        TokenReplacer.addReplacement(REPLACE_CACHE_DIR, cacheFile("").getAbsolutePath());
-        TokenReplacer.addReplacement(REPLACE_BUILD_DIR, project.getBuildDir().getAbsolutePath());
+        TokenReplacer.putReplacement(REPLACE_CACHE_DIR, cacheFile("").getAbsolutePath());
+        TokenReplacer.putReplacement(REPLACE_BUILD_DIR, project.getBuildDir().getAbsolutePath());
 
         // extension objects
         project.getExtensions().create(EXT_NAME_MC, (Class<K>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0], this);
@@ -216,20 +216,27 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     @SuppressWarnings("serial")
     private void makeCommonTasks()
     {
-        // download tasks
-        DownloadTask dlClient = makeTask("downloadClient", DownloadTask.class);
+        DownloadTask dlClient = makeTask(TASK_DL_CLIENT, DownloadTask.class);
         {
             dlClient.setOutput(delayedFile(JAR_CLIENT_FRESH));
             dlClient.setUrl(delayedString(URL_MC_JAR));
         }
 
-        DownloadTask dlServer = makeTask("downloadServer", DownloadTask.class);
+        DownloadTask dlServer = makeTask(TASK_DL_SERVER, DownloadTask.class);
         {
             dlServer.setOutput(delayedFile(JAR_SERVER_FRESH));
             dlServer.setUrl(delayedString(URL_MC_SERVER));
         }
         
-        EtagDownloadTask getVersionJson = makeTask("getVersionJson", EtagDownloadTask.class);
+        MergeJarsTask merge = makeTask(TASK_MERGE_JARS, MergeJarsTask.class);
+        {
+            merge.setClient(delayedFile(JAR_CLIENT_FRESH));
+            merge.setServer(delayedFile(JAR_SERVER_FRESH));
+            merge.setOutJar(delayedFile(JAR_MERGED));
+            merge.dependsOn(dlClient, dlServer);
+        }
+        
+        EtagDownloadTask getVersionJson = makeTask(TASK_DL_VERSION_JSON, EtagDownloadTask.class);
         {
             getVersionJson.setUrl(delayedString(URL_MC_JSON));
             getVersionJson.setFile(delayedFile(JSON_VERSION));
@@ -258,7 +265,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                         if (!TokenReplacer.hasReplacement(REPLACE_ASSET_INDEX))
                         {
                             Version version = JsonFactory.loadVersion(json, json.getParentFile());
-                            TokenReplacer.addReplacement(REPLACE_ASSET_INDEX, version.getAssets());
+                            TokenReplacer.putReplacement(REPLACE_ASSET_INDEX, version.getAssets());
                         }
                     }
                     catch (Throwable t)
@@ -270,7 +277,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             });
         }
 
-        EtagDownloadTask getAssetsIndex = makeTask("getAssetsIndex", EtagDownloadTask.class);
+        EtagDownloadTask getAssetsIndex = makeTask(TASK_DL_ASSET_INDEX, EtagDownloadTask.class);
         {
             getAssetsIndex.setUrl(delayedString(ASSETS_INDEX_URL));
             getAssetsIndex.setFile(delayedFile(JSON_ASSET_INDEX));
@@ -278,41 +285,28 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             getAssetsIndex.dependsOn(getVersionJson);
         }
 
-        DownloadAssetsTask getAssets = makeTask("getAssets", DownloadAssetsTask.class);
+        DownloadAssetsTask getAssets = makeTask(TASK_DL_ASSETS, DownloadAssetsTask.class);
         {
             getAssets.setAssetsDir(delayedFile(DIR_ASSETS));
             getAssets.setAssetsIndex(delayedFile(JSON_ASSET_INDEX));
             getAssets.dependsOn(getAssetsIndex);
         }
 
-        Delete clearCache = makeTask("cleanCache", Delete.class);
-        {
-            clearCache.delete(delayedFile(REPLACE_CACHE_DIR));
-            clearCache.setGroup("ForgeGradle");
-            clearCache.setDescription("Cleares the ForgeGradle cache. DONT RUN THIS unless you want a fresh start, or the dev tells you to.");
-        }
-        
-        ObtainFernFlowerTask ffTask = makeTask("downloadFernFlower", ObtainFernFlowerTask.class);
-        {
-            ffTask.setMcpUrl(delayedString(URL_FF));
-            ffTask.setFfJar(delayedFile(JAR_FERNFLOWER));
-        }
-
-        ExtractConfigTask extractMcpMappings = makeTask("extractMcpMappings", ExtractConfigTask.class);
-        {
-            extractMcpMappings.setOut(delayedFile(DIR_MCP_MAPPINGS));
-            extractMcpMappings.setConfig(CONFIG_MAPPINGS);
-            extractMcpMappings.setDoesCache(true);
-        }
-
-        ExtractConfigTask extractMcpData = makeTask("extractMcpData", ExtractConfigTask.class);
+        ExtractConfigTask extractMcpData = makeTask(TASK_EXTRACT_MCP, ExtractConfigTask.class);
         {
             extractMcpData.setOut(delayedFile(DIR_MCP_DATA));
             extractMcpData.setConfig(CONFIG_MCP_DATA);
             extractMcpData.setDoesCache(true);
         }
 
-        GenSrgTask genSrgs = makeTask("genSrgs", GenSrgTask.class);
+        ExtractConfigTask extractMcpMappings = makeTask(TASK_EXTRACT_MAPPINGS, ExtractConfigTask.class);
+        {
+            extractMcpMappings.setOut(delayedFile(DIR_MCP_MAPPINGS));
+            extractMcpMappings.setConfig(CONFIG_MAPPINGS);
+            extractMcpMappings.setDoesCache(true);
+        }
+
+        GenSrgTask genSrgs = makeTask(TASK_GENERATE_SRGS, GenSrgTask.class);
         {
             genSrgs.setInSrg(delayedFile(MCP_DATA_SRG));
             genSrgs.setInExc(delayedFile(MCP_DATA_EXC));
@@ -326,14 +320,20 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             genSrgs.setMcpExc(delayedFile(EXC_MCP));
             genSrgs.dependsOn(extractMcpData, extractMcpMappings);
         }
-
-        MergeJarsTask merge = makeTask("mergeJars", MergeJarsTask.class);
+        
+        ObtainFernFlowerTask ffTask = makeTask(TASK_DL_FERNFLOWER, ObtainFernFlowerTask.class);
         {
-            merge.setClient(delayedFile(JAR_CLIENT_FRESH));
-            merge.setServer(delayedFile(JAR_SERVER_FRESH));
-            merge.setOutJar(delayedFile(JAR_MERGED));
-            merge.dependsOn(dlClient, dlServer);
+            ffTask.setMcpUrl(delayedString(URL_FF));
+            ffTask.setFfJar(delayedFile(JAR_FERNFLOWER));
         }
+        
+        Delete clearCache = makeTask(TASK_CLEAN_CACHE, Delete.class);
+        {
+            clearCache.delete(delayedFile(REPLACE_CACHE_DIR));
+            clearCache.setGroup("ForgeGradle");
+            clearCache.setDescription("Cleares the ForgeGradle cache. DONT RUN THIS unless you want a fresh start, or the dev tells you to.");
+        }
+        
     }
 
     /**

@@ -683,7 +683,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             remap.setFieldsCsv(delayedFile(FIELD_CSV));
             remap.setMethodsCsv(delayedFile(METHOD_CSV));
             remap.setParamsCsv(delayedFile(PARAM_CSV));
-            remap.setDoesJavadocs(true);
+            remap.setAddsJavadocs(true);
             remap.dependsOn(decomp);
         }
 

@@ -139,6 +139,19 @@ public class Constants
     public static final String SRG_MCP_TO_NOTCH  = DIR_MCP_MAPPINGS+"/srgs/mcp-notch.srg";
     public static final String EXC_SRG           = DIR_MCP_MAPPINGS+"/srgs/srg.exc";
     public static final String EXC_MCP           = DIR_MCP_MAPPINGS+"/srgs/mcp.exc";
+    
+    // task names
+    public static final String TASK_DL_CLIENT        = "downloadClient";
+    public static final String TASK_DL_SERVER        = "downloadServer";
+    public static final String TASK_MERGE_JARS       = "mergeJars";
+    public static final String TASK_DL_VERSION_JSON  = "getVersionJson";
+    public static final String TASK_DL_ASSET_INDEX   = "getAssetIndex";
+    public static final String TASK_DL_ASSETS        = "getAssets";
+    public static final String TASK_EXTRACT_MCP      = "extractMcpData";
+    public static final String TASK_EXTRACT_MAPPINGS = "extractMcpMappings";
+    public static final String TASK_GENERATE_SRGS    = "genSrgs";
+    public static final String TASK_DL_FERNFLOWER    = "getFernFlower";
+    public static final String TASK_CLEAN_CACHE      = "cleanCache";
 
     // util
     public static final String NEWLINE = System.getProperty("line.separator");

@@ -13,7 +13,7 @@ public class TokenReplacer
     
     private static Map<String, String> replaceMap = Maps.newHashMap();
     
-    public static void addReplacement(String key, String value)
+    public static void putReplacement(String key, String value)
     {
         // strip off the {}
         if (key.charAt(0) == '{' && key.charAt(key.length()-1) == '}')

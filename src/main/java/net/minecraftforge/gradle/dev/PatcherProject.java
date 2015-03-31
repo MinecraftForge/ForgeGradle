@@ -1,10 +1,12 @@
 package net.minecraftforge.gradle.dev;
 
-import static net.minecraftforge.gradle.common.Constants.resolveString;
+import static net.minecraftforge.gradle.dev.PatcherConstants.*;
 import groovy.lang.Closure;
 
 import java.io.File;
 import java.io.Serializable;
+
+import net.minecraftforge.gradle.common.Constants;
 
 import org.gradle.api.Project;
 
@@ -191,7 +193,7 @@ public class PatcherProject implements Serializable
 
     public File getSourcesDir()
     {
-        return getFile(sourcesDir, "src/main/java");
+        return getFile(sourcesDir, DEFAULT_SOURCES_DIR);
     }
 
     /**
@@ -216,7 +218,7 @@ public class PatcherProject implements Serializable
 
     public File getResourcesDir()
     {
-        return getFile(resourcesDir, "src/test/resources");
+        return getFile(resourcesDir, DEFAULT_RESOURCES_DIR);
     }
 
     /**
@@ -241,7 +243,7 @@ public class PatcherProject implements Serializable
     
     public File getTestSourcesDir()
     {
-        return getFile(testSourcesDir, "src/test/java");
+        return getFile(testSourcesDir,DEFAULT_TEST_SOURCES_DIR);
     }
 
     /**
@@ -266,7 +268,7 @@ public class PatcherProject implements Serializable
 
     public File getTestResourcesDir()
     {
-        return getFile(testResourcesDir, "src/test/resources");
+        return getFile(testResourcesDir, DEFAULT_TEST_RESOURCES_DIR);
     }
 
     /**
@@ -300,7 +302,7 @@ public class PatcherProject implements Serializable
      */
     public void setMainClass(Object mainClass)
     {
-        this.mainClass = resolveString(mainClass);
+        this.mainClass = Constants.resolveString(mainClass);
     }
     
     public void mainClass(Object mainClass)
@@ -319,7 +321,7 @@ public class PatcherProject implements Serializable
      */
     public void setTweakClass(Object tweakClass)
     {
-        this.tweakClass = resolveString(tweakClass);
+        this.tweakClass = Constants.resolveString(tweakClass);
     }
     
     public void tweakClass(Object mainClass)
