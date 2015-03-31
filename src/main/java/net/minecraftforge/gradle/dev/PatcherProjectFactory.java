@@ -14,6 +14,8 @@ public class PatcherProjectFactory implements NamedDomainObjectFactory<PatcherPr
     @Override
     public PatcherProject create(String name)
     {
-        return new PatcherProject(name, plugin);
+        PatcherProject proj = new PatcherProject(name, plugin);
+        plugin.createProject(proj);
+        return proj;
     }
 }

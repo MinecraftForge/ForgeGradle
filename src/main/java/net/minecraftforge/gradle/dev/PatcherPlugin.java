@@ -5,41 +5,51 @@ import net.minecraftforge.gradle.delayed.DelayedFile;
 
 public class PatcherPlugin extends BasePlugin<PatcherExtension>
 {
-
     @Override
     public void applyPlugin()
     {
+        // create and add the namedDomainObjectContainer to the extension object
         getExtension().setProjectContainer(project.container(PatcherProject.class, new PatcherProjectFactory(this)));
         
-        
-        //project.getExtensions().add("patcherProjects", );
+        makeTasks();
     }
     
-    @Override
-    protected Class<PatcherExtension> getExtensionClass()
+    protected void makeTasks()
     {
-        // TODO Auto-generated method stub
-        return PatcherExtension.class;
+        
+    }
+    
+    
+    protected void createProject(PatcherProject project)
+    {
+        
     }
     
     @Override
     protected DelayedFile getDevJson()
     {
-        // TODO Auto-generated method stub
+        // maybe can nuke this...
         return null;
     }
-    
 
     @Override
-    public void applyOverlayPlugin()
+    protected void addReplaceTokens(PatcherExtension ext)
     {
-        // nothing
+        // use this? or not use this?
     }
-
+    
+    // overlay plugin stuff I dont care about.
+    
     @Override
     public boolean canOverlayPlugin()
     {
         return false;
+    }
+    
+    @Override
+    public void applyOverlayPlugin()
+    {
+        // nothing
     }
 
     @Override
@@ -48,12 +58,4 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         // cant overlay remember?
         return null;
     }
-
-    @Override
-    protected void addReplaceTokens(PatcherExtension ext)
-    {
-        // TODO Auto-generated method stub
-        
-    }
-
 }

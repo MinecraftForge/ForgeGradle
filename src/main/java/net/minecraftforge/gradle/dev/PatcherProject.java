@@ -1,6 +1,7 @@
 package net.minecraftforge.gradle.dev;
 
 import static net.minecraftforge.gradle.common.Constants.resolveString;
+import groovy.lang.Closure;
 
 import java.io.File;
 import java.io.Serializable;
@@ -17,15 +18,16 @@ public class PatcherProject implements Serializable
     private String patchAfter;
     private String generateFrom = "clean";
 
-    private Object rootDir;
-    private Object patchDir;
-    private Object sourcesDir;
-    private Object resourcesDir;
-    private Object testSourcesDir;
-    private Object testResourcesDir;
+    private File rootDir;
+    private File patchDir;
+    private File sourcesDir;
+    private File resourcesDir;
+    private File testSourcesDir;
+    private File testResourcesDir;
 
-    private Object mainClass;
-    private Object tweakClass;
+    // TODO: do something about these.. are they even needed???
+    private String mainClass;
+    private String tweakClass;
 
     protected PatcherProject(String name, PatcherPlugin plugin)
     {
@@ -141,7 +143,7 @@ public class PatcherProject implements Serializable
 
     public File getRootDir()
     {
-        return (File) (rootDir = project.file(rootDir));
+        return rootDir;
     }
 
     /**
@@ -150,7 +152,7 @@ public class PatcherProject implements Serializable
      */
     public void setRootDir(Object rootDir)
     {
-        this.rootDir = rootDir;
+        this.rootDir = project.file(rootDir);
     }
     
     /**
@@ -164,7 +166,7 @@ public class PatcherProject implements Serializable
 
     public File getPatchDir()
     {
-        return (File) (patchDir = getFile(patchDir, "patches"));
+        return patchDir;
     }
 
     /**
@@ -174,7 +176,7 @@ public class PatcherProject implements Serializable
      */
     public void setPatchDir(Object patchDir)
     {
-        this.patchDir = patchDir;
+        this.patchDir = project.file(patchDir);
     }
     
     /**
@@ -189,7 +191,7 @@ public class PatcherProject implements Serializable
 
     public File getSourcesDir()
     {
-        return (File) (sourcesDir = getFile(sourcesDir, "src/main/java"));
+        return getFile(sourcesDir, "src/main/java");
     }
 
     /**
@@ -199,12 +201,22 @@ public class PatcherProject implements Serializable
      */
     public void setSourcesDir(Object sourcesDir)
     {
-        this.sourcesDir = sourcesDir;
+        this.sourcesDir = project.file(sourcesDir);
+    }
+    
+    /**
+     * The directory where the non-patch sources for this project are.
+     * By defualt this is rootDir/src/main/java
+     * @param sourcesDir
+     */
+    public void sourcesDir(Object sourcesDir)
+    {
+        setSourcesDir(sourcesDir);
     }
 
     public File getResourcesDir()
     {
-        return (File) (resourcesDir = getFile(resourcesDir, "src/main/resources"));
+        return getFile(resourcesDir, "src/test/resources");
     }
 
     /**
@@ -214,12 +226,22 @@ public class PatcherProject implements Serializable
      */
     public void setResourcesDir(Object resourcesDir)
     {
-        this.resourcesDir = resourcesDir;
+        this.resourcesDir = project.file(resourcesDir);
     }
-
+    
+    /**
+     * The directory where the non-patch resources for this project are.
+     * By defualt this is rootDir/src/main/resources
+     * @param resourcesDir
+     */
+    public void resourcesDir(Object resourcesDir)
+    {
+        setResourcesDir(resourcesDir);
+    }
+    
     public File getTestSourcesDir()
     {
-        return (File) (testSourcesDir = getFile(testSourcesDir, "src/test/java"));
+        return getFile(testSourcesDir, "src/test/java");
     }
 
     /**
@@ -229,12 +251,22 @@ public class PatcherProject implements Serializable
      */
     public void setTestSourcesDir(Object testSourcesDir)
     {
-        this.testSourcesDir = testSourcesDir;
+        this.testSourcesDir = project.file(testSourcesDir);
+    }
+    
+    /**
+     * The directory where the test sourcess for this project are.
+     * By defualt this is rootDir/src/test/sources
+     * @param testSourcesDir
+     */
+    public void testSourcesDir(Object testSourcesDir)
+    {
+        setSourcesDir(testSourcesDir);
     }
 
     public File getTestResourcesDir()
     {
-        return (File) (testResourcesDir = getFile(testResourcesDir, "src/test/resources"));
+        return getFile(testResourcesDir, "src/test/resources");
     }
 
     /**
@@ -244,12 +276,22 @@ public class PatcherProject implements Serializable
      */
     public void setTestResourcesDir(Object testResourcesDir)
     {
-        this.testResourcesDir = testResourcesDir;
+        this.testResourcesDir = project.file(testResourcesDir);
+    }
+    
+    /**
+     * The directory where the non-patch resources for this project are.
+     * By defualt this is rootDir/src/test/resources
+     * @param testResources
+     */
+    public void testResourcesDir(Object testResourcesDir)
+    {
+        setTestResourcesDir(testResourcesDir);
     }
 
     public String getMainClass()
     {
-        return (String) (mainClass = resolveString(mainClass));
+        return mainClass;
     }
 
     /**
@@ -258,12 +300,17 @@ public class PatcherProject implements Serializable
      */
     public void setMainClass(Object mainClass)
     {
-        this.mainClass = mainClass;
+        this.mainClass = resolveString(mainClass);
+    }
+    
+    public void mainClass(Object mainClass)
+    {
+        setMainClass(mainClass);
     }
 
     public String getTweakClass()
     {
-        return (String) (tweakClass = resolveString(tweakClass));
+        return tweakClass;
     }
 
     /**
@@ -272,14 +319,74 @@ public class PatcherProject implements Serializable
      */
     public void setTweakClass(Object tweakClass)
     {
-        this.tweakClass = tweakClass;
+        this.tweakClass = resolveString(tweakClass);
     }
-
-    private File getFile(Object field, String defaultPath)
+    
+    public void tweakClass(Object mainClass)
+    {
+        setTweakClass(mainClass);
+    }
+    
+    private File getFile(File field, String defaultPath)
     {
         if (field == null && rootDir != null)
             return new File(getRootDir(), defaultPath);
         else
             return ((File) field);
+    }
+    
+    @SuppressWarnings("serial")
+    protected Closure<File> getDelayedSourcesDir()
+    {
+        return new Closure<File>(project, this) {
+            public File call()
+            {
+                return getSourcesDir();
+            }
+        };
+    }
+    
+    @SuppressWarnings("serial")
+    protected Closure<File> getDelayedResourcesDir()
+    {
+        return new Closure<File>(project, this) {
+            public File call()
+            {
+                return getResourcesDir();
+            }
+        };
+    }
+    
+    @SuppressWarnings("serial")
+    protected Closure<File> getDelayedTestSourcesDir()
+    {
+        return new Closure<File>(project, this) {
+            public File call()
+            {
+                return getTestSourcesDir();
+            }
+        };
+    }
+    
+    @SuppressWarnings("serial")
+    protected Closure<File> getDelayedTestResourcesDir()
+    {
+        return new Closure<File>(project, this) {
+            public File call()
+            {
+                return getTestResourcesDir();
+            }
+        };
+    }
+    
+    @SuppressWarnings("serial")
+    protected Closure<File> getDelayedPatchesDir()
+    {
+        return new Closure<File>(project, this) {
+            public File call()
+            {
+                return getPatchDir();
+            }
+        };
     }
 }

@@ -6,6 +6,7 @@ import groovy.lang.Closure;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.ParameterizedType;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
@@ -59,7 +60,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     public Version version;
     protected AssetIndex assetIndex;
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public final void apply(Project arg)
     {
@@ -120,8 +121,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         TokenReplacer.addReplacement(REPLACE_BUILD_DIR, project.getBuildDir().getAbsolutePath());
 
         // extension objects
-        project.getExtensions().create(EXT_NAME_MC, getExtensionClass(), this);
-        project.getExtensions().create(EXT_NAME_JENKINS, JenkinsExtension.class, project);
+        project.getExtensions().create(EXT_NAME_MC, (Class<K>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0], this);
 
         // repos
         project.allprojects(new Action<Project>() {
@@ -199,9 +199,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         File jsonCache = cacheFile("McpMappings.json");
         File etagFile = new File(jsonCache.getAbsolutePath() + ".etag");
 
-        getExtension().mcpJson = JsonFactory.GSON.fromJson(
-                getWithEtag(URL_MCP_JSON, jsonCache, etagFile),
-                new TypeToken<Map<String, Map<String, int[]>>>() {}.getType());
+        getExtension().mcpJson = JsonFactory.GSON.fromJson(getWithEtag(URL_MCP_JSON, jsonCache, etagFile), new TypeToken<Map<String, Map<String, int[]>>>() {}.getType());
     }
 
     public void afterEvaluate()
@@ -251,29 +249,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             dlServer.setOutput(delayedFile(JAR_SERVER_FRESH));
             dlServer.setUrl(delayedString(URL_MC_SERVER));
         }
-
-        EtagDownloadTask etagDlTask = makeTask("getAssetsIndex", EtagDownloadTask.class);
-        {
-            etagDlTask.setUrl(delayedString(ASSETS_INDEX_URL));
-            etagDlTask.setFile(delayedFile(ASSETS + "/indexes/{ASSET_INDEX}.json"));
-            etagDlTask.setDieWithError(false);
-
-            etagDlTask.doLast(new Action<Task>() {
-                public void execute(Task task)
-                {
-                    try
-                    {
-                        parseAssetIndex();
-                    }
-                    catch (Exception e)
-                    {
-                        Throwables.propagate(e);
-                    }
-                }
-            });
-        }
-
-        etagDlTask = makeTask("getVersionJson", EtagDownloadTask.class);
+        
+        EtagDownloadTask etagDlTask = makeTask("getVersionJson", EtagDownloadTask.class);
         {
             etagDlTask.setUrl(delayedString(URL_MC_JSON));
             etagDlTask.setFile(delayedFile(JSON_VERSION));
@@ -302,6 +279,27 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                         Throwables.propagate(t);
                     }
                     return true;
+                }
+            });
+        }
+
+        etagDlTask = makeTask("getAssetsIndex", EtagDownloadTask.class);
+        {
+            etagDlTask.setUrl(delayedString(ASSETS_INDEX_URL));
+            etagDlTask.setFile(delayedFile(ASSETS + "/indexes/{ASSET_INDEX}.json"));
+            etagDlTask.setDieWithError(false);
+
+            etagDlTask.doLast(new Action<Task>() {
+                public void execute(Task task)
+                {
+                    try
+                    {
+                        parseAssetIndex();
+                    }
+                    catch (Exception e)
+                    {
+                        Throwables.propagate(e);
+                    }
                 }
             });
         }
@@ -385,16 +383,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     public AssetIndex getAssetIndex()
     {
         return assetIndex;
-    }
-
-    /**
-     * This extension object will have the name "minecraft"
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    protected Class<K> getExtensionClass()
-    {
-        return (Class<K>) BaseExtension.class;
     }
 
     /**
