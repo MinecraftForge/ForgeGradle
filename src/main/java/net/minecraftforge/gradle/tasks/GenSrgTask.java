@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 import net.minecraftforge.srg2source.rangeapplier.MethodData;
@@ -89,14 +90,14 @@ public class GenSrgTask extends CachedTask
     {
 
         // read methods
-        CSVReader csvReader = RemapSourcesTask.getReader(methodCsv);
+        CSVReader csvReader = Constants.getReader(methodCsv);
         for (String[] s : csvReader.readAll())
         {
             methodMap.put(s[0], s[1]);
         }
 
         // read fields
-        csvReader = RemapSourcesTask.getReader(fieldCsv);
+        csvReader = Constants.getReader(fieldCsv);
         for (String[] s : csvReader.readAll())
         {
             fieldMap.put(s[0], s[1]);

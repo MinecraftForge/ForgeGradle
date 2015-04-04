@@ -233,6 +233,15 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             merge.setClient(delayedFile(JAR_CLIENT_FRESH));
             merge.setServer(delayedFile(JAR_SERVER_FRESH));
             merge.setOutJar(delayedFile(JAR_MERGED));
+            merge.dontProcess("org/bouncycastle");
+            merge.dontProcess("org/apache");
+            merge.dontProcess("com/google");
+            merge.dontProcess("com/mojang/authlib");
+            merge.dontProcess("com/mojang/util");
+            merge.dontProcess("gnu/trove");
+            merge.dontProcess("io/netty");
+            merge.dontProcess("javax/annotation");
+            merge.dontProcess("argo");
             merge.dependsOn(dlClient, dlServer);
         }
         

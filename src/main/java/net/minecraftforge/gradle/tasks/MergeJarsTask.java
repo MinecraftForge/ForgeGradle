@@ -632,6 +632,6 @@ public class MergeJarsTask extends CachedTask
     
     public void dontProcess(Object obj)
     {
-        dontAnnotate.add(Constants.resolveString(obj));
+        dontProcess.add(Constants.resolveString(obj));
     }
 }

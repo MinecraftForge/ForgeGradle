@@ -1,6 +1,5 @@
 package net.minecraftforge.gradle.extrastuff;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -40,7 +39,7 @@ public class FFPatcher
     private static final String CONSTRUCTOR_CALL_REGEX = "(?<name>this|super)\\((?<body>.*?)\\)(?<end>;)";
     private static final String VALUE_FIELD_REGEX = "private static final %s\\[\\] [$\\w\\d]+ = new %s\\[\\]\\{.*?\\};";
 
-    public static String processFile(String fileName, String text, boolean fixInterfaces) throws IOException
+    public static String processFile(String text)
     {
         StringBuffer out = new StringBuffer();
         Matcher m = SYNTHETICS.matcher(text);
@@ -64,19 +63,16 @@ public class FFPatcher
         text = text.replaceAll(NEWLINES, Constants.NEWLINE);
         text = text.replaceAll(EMPTY_SUPER, "");
 
-        if (fixInterfaces)
+        // fix interfaces (added 1.7.10+)
+        out = new StringBuffer();
+        m = ABSTRACT.matcher(text);
+        while (m.find())
         {
-            out = new StringBuffer();
-            m = ABSTRACT.matcher(text);
-            while (m.find())
-            {
-                m.appendReplacement(out, abstract_replacement(m).replace("$", "\\$"));
-            }
-            m.appendTail(out);
-            text = out.toString();
+            m.appendReplacement(out, abstract_replacement(m).replace("$", "\\$"));
         }
+        m.appendTail(out);
 
-        return text;
+        return out.toString();
     }
 
     private static int processClass(List<String> lines, String indent, int startIndex, String qualifiedName, String simpleName)

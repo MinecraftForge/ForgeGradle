@@ -17,6 +17,7 @@ import com.google.gson.reflect.TypeToken;
 
 public class GLConstantFixer
 {
+    //@formatter:off
     private static final String[] PACKAGES = {
             "GL11",
             "GL12",
@@ -30,19 +31,20 @@ public class GLConstantFixer
             "ARBVertexBufferObject",
             "ARBShaderObjects"
     };
+    //@formatter:on
 
     private final List<GLConstantGroup> json;
-    public static final Pattern CALL_REGEX = Pattern.compile("(" + Joiner.on("|").join(PACKAGES) + ")\\.([\\w]+)\\(.+\\)");
-    public static final Pattern CONSTANT_REGEX = Pattern.compile("(?<![-.\\w])\\d+(?![.\\w])");
-    private static final String ADD_AFTER = "org.lwjgl.opengl.GL11";
-    private static final String CHECK = "org.lwjgl.opengl.";
-    private static final String IMPORT_CHECK = "import " + CHECK;
-    private static final String IMPORT_REPLACE = "import " + ADD_AFTER + ";";
+    private static final Pattern        CALL_REGEX     = Pattern.compile("(" + Joiner.on("|").join(PACKAGES) + ")\\.([\\w]+)\\(.+\\)");
+    private static final Pattern        CONSTANT_REGEX = Pattern.compile("(?<![-.\\w])\\d+(?![.\\w])");
+    private static final String         ADD_AFTER      = "org.lwjgl.opengl.GL11";
+    private static final String         CHECK          = "org.lwjgl.opengl.";
+    private static final String         IMPORT_CHECK   = "import " + CHECK;
+    private static final String         IMPORT_REPLACE = "import " + ADD_AFTER + ";";
 
     public GLConstantFixer() throws IOException
     {
         String text = Resources.toString(Resources.getResource(GLConstantFixer.class, "gl.json"), Charset.defaultCharset());
-        json = JsonFactory.GSON.fromJson(text, new TypeToken<List<GLConstantGroup>>(){}.getType());
+        json = JsonFactory.GSON.fromJson(text, new TypeToken<List<GLConstantGroup>>() {}.getType());
     }
 
     public String fixOGL(String text)
@@ -131,7 +133,7 @@ public class GLConstantFixer
         return out.toString();
     }
 
-    private String updateImports(String text, String imp)
+    private static String updateImports(String text, String imp)
     {
         if (!text.contains("import " + imp + ";"))
         {

@@ -156,11 +156,6 @@ public class RemapSourcesTask extends EditJarTask
         matcher.appendTail(buf);
         return buf.toString();
     }
-
-    public static CSVReader getReader(File file) throws IOException
-    {
-        return new CSVReader(Files.newReader(file, Charset.defaultCharset()), CSVParser.DEFAULT_SEPARATOR, CSVParser.DEFAULT_QUOTE_CHARACTER, CSVParser.NULL_CHARACTER, 1, false);
-    }
     
     public File getMethodsCsv()
     {

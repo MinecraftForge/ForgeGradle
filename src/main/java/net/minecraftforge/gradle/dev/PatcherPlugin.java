@@ -1,12 +1,12 @@
 package net.minecraftforge.gradle.dev;
 
 import static net.minecraftforge.gradle.common.Constants.*;
-import static net.minecraftforge.gradle.dev.PatcherConstants.*;
+import static net.minecraftforge.gradle.dev.PatcherConstants.JAR_DECOMP;
+import static net.minecraftforge.gradle.dev.PatcherConstants.JAR_DEOBF;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
-import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 
 public class PatcherPlugin extends BasePlugin<PatcherExtension>
 {
@@ -39,7 +39,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             decompileJar.setInJar(delayedFile(JAR_DEOBF));
             decompileJar.setOutJar(delayedFile(JAR_DECOMP));
             decompileJar.setFernFlower(delayedFile(Constants.JAR_FERNFLOWER));
-            decompileJar.setPatch(delayedFile(MCP_PATCHES_CLIENT));
+            decompileJar.setPatches(delayedFile(MCP_PATCHES_CLIENT));
             decompileJar.setAstyleConfig(delayedFile(MCP_DATA_STYLE));
             decompileJar.setDoesCache(false);
             decompileJar.dependsOn(TASK_DL_FERNFLOWER, deobfJar);
@@ -47,17 +47,17 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         
         // Clean project stuff
         
-        RemapSourcesTask remapCleanTask = makeTask("remapCleanJar", RemapSourcesTask.class);
-        {
-            remapCleanTask.setInJar(delayedFile(JAR_DECOMP));
-            remapCleanTask.setOutJar(delayedFile(JAR_REMAPPED));
-            remapCleanTask.setMethodsCsv(delayedFile(Constants.CSV_METHOD));
-            remapCleanTask.setFieldsCsv(delayedFile(Constants.CSV_FIELD));
-            remapCleanTask.setParamsCsv(delayedFile(Constants.CSV_PARAM));
-            remapCleanTask.setAddsJavadocs(false);
-            remapCleanTask.setDoesCache(false);
-            remapCleanTask.dependsOn(decompileJar);
-        }
+//        RemapSourcesTask remapCleanTask = makeTask("remapCleanJar", RemapSourcesTask.class);
+//        {
+//            remapCleanTask.setInJar(delayedFile(JAR_DECOMP));
+//            remapCleanTask.setOutJar(delayedFile(JAR_REMAPPED));
+//            remapCleanTask.setMethodsCsv(delayedFile(Constants.CSV_METHOD));
+//            remapCleanTask.setFieldsCsv(delayedFile(Constants.CSV_FIELD));
+//            remapCleanTask.setParamsCsv(delayedFile(Constants.CSV_PARAM));
+//            remapCleanTask.setAddsJavadocs(false);
+//            remapCleanTask.setDoesCache(false);
+//            remapCleanTask.dependsOn(decompileJar);
+//        }
     }
     
     protected void createProject(PatcherProject project)

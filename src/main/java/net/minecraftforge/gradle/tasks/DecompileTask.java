@@ -1,12 +1,8 @@
 package net.minecraftforge.gradle.tasks;
 
-import static net.minecraftforge.gradle.common.Constants.EXT_NAME_MC;
 import groovy.lang.Closure;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -14,18 +10,16 @@ import java.io.Writer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.regex.Pattern;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 
-import net.minecraftforge.gradle.common.BaseExtension;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.extrastuff.FFPatcher;
 import net.minecraftforge.gradle.extrastuff.FmlCleanup;
 import net.minecraftforge.gradle.extrastuff.GLConstantFixer;
@@ -34,82 +28,100 @@ import net.minecraftforge.gradle.patching.ContextualPatch;
 import net.minecraftforge.gradle.patching.ContextualPatch.HunkReport;
 import net.minecraftforge.gradle.patching.ContextualPatch.PatchReport;
 import net.minecraftforge.gradle.patching.ContextualPatch.PatchStatus;
-import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
+import net.minecraftforge.gradle.tasks.abstractutil.EditJarTask;
 
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.logging.LogLevel;
+import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.OutputFile;
-import org.gradle.api.tasks.TaskAction;
 import org.gradle.process.JavaExecSpec;
 
 import com.github.abrarsyed.jastyle.ASFormatter;
-import com.github.abrarsyed.jastyle.FileWildcardFilter;
 import com.github.abrarsyed.jastyle.OptParser;
 import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
-import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
-public class DecompileTask extends CachedTask
+public class DecompileTask extends EditJarTask
 {
     @InputFile
-    private DelayedFile inJar;
+    private Object fernFlower;
+
+    @InputFiles
+    private Object patchDir;
 
     @InputFile
-    private DelayedFile fernFlower;
-
-    private DelayedFile patch;
-
-    @InputFile
-    private DelayedFile astyleConfig;
-
-    @OutputFile
-    @Cached
-    private DelayedFile outJar;
-
-    private HashMap<String, String> sourceMap   = new HashMap<String, String>();
-    private HashMap<String, byte[]> resourceMap = new HashMap<String, byte[]>();
+    private Object astyleConfig;
 
     private static final Pattern BEFORE = Pattern.compile("(?m)((case|default).+(?:\\r\\n|\\r|\\n))(?:\\r\\n|\\r|\\n)");
     private static final Pattern AFTER  = Pattern.compile("(?m)(?:\\r\\n|\\r|\\n)((?:\\r\\n|\\r|\\n)[ \\t]+(case|default))");
 
-    /**
-     * This method outputs to the cleanSrc
-     */
-    @TaskAction
-    protected void doMCPStuff() throws Throwable
+    @Override
+    public void doStuffBefore() throws Exception
     {
-        // define files.
-        File temp = new File(getTemporaryDir(), getInJar().getName());
-
+        File in = getInJar();
+        
+        // this sets the resolvedInJar so that this new file is
+        // read and loaded later in the task.
+        resolvedInJar = new File(getTemporaryDir(), in.getName());
+        
         getLogger().info("Decompiling Jar");
         decompile(getInJar(), getTemporaryDir(), getFernFlower());
+    }
+    
+    @Override
+    public String asRead(String file)
+    {
+        return FFPatcher.processFile(file);
+    }
 
-        getLogger().info("Loading decompiled jar");
-        readJarAndFix(temp);
-
-        saveJar(new File(getTemporaryDir(), getInJar().getName() + ".fixed.jar"));
-
-        getLogger().info("Applying MCP patches");
-        if (getPatch().isFile())
+    @Override
+    public void doStuffMiddle(Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws Exception
+    {
+        Multimap<String, File> patchesMap = ArrayListMultimap.create();
+        for (File f : getPatches())
         {
-            applySingleMcpPatch(getPatch());
+            String name = f.getName();
+            int patchIndex = name.indexOf(".patch");
+
+            // 6 is the length of ".patch" + 3 to account for .## at the end of the file.
+            if (patchIndex < 0 || patchIndex < name.length() - 9)
+                continue;
+
+            patchesMap.put(name.substring(0, patchIndex), f);
         }
-        else
+        
+        // setup formatter
+        ASFormatter formatter = new ASFormatter();
+        OptParser parser = new OptParser(formatter);
+        parser.parseOptionFile(getAstyleConfig());
+        
+        GLConstantFixer oglFixer = new GLConstantFixer();
+        
+        // START THREADING
+        ExecutorCompletionService<ThreadTaskOutput> executor = new ExecutorCompletionService<ThreadTaskOutput>(
+                Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()));
+        
+        // add tasks
+        for (Entry<String, String> entry : sourceMap.entrySet())
         {
-            applyPatchDirectory(getPatch());
+            // do that string replace because the patchFile names are seperated with . and not /
+            Collection<File> patchFiles = patchesMap.get(entry.getKey().replace('\\', '/').replace('/', '.'));
+            executor.submit(new ThreadTask(entry.getKey(), entry.getValue(), formatter, oglFixer, patchFiles));
         }
-
-        saveJar(new File(getTemporaryDir(), getInJar().getName() + ".patched.jar"));
-
-        getLogger().info("Cleaning source");
-        applyMcpCleanup(getAstyleConfig());
-
-        getLogger().info("Saving Jar");
-        saveJar(getOutJar());
+        
+        // grab thread outputs
+        Future<ThreadTaskOutput> future = null;
+        while((future = executor.take()) != null)
+        {
+            ThreadTaskOutput output = future.get();
+            sourceMap.put(output.name, output.outString);
+            printPatchErrors(getLogger(), output.patchErrors);
+        }
     }
 
     private void decompile(final File inJar, final File outJar, final File fernFlower)
@@ -151,124 +163,53 @@ public class DecompileTask extends CachedTask
         });
     }
 
-    private void readJarAndFix(final File jar) throws IOException
-    {
-        // begin reading jar
-        final ZipInputStream zin = new ZipInputStream(new FileInputStream(jar));
-        ZipEntry entry = null;
-        String fileStr;
-
-        BaseExtension exten = (BaseExtension)getProject().getExtensions().getByName(EXT_NAME_MC);
-        boolean fixInterfaces = !exten.getVersion().equals("1.7.2");
-
-        while ((entry = zin.getNextEntry()) != null)
-        {
-            // no META or dirs. wel take care of dirs later.
-            if (entry.getName().contains("META-INF"))
-            {
-                continue;
-            }
-
-            // resources or directories.
-            if (entry.isDirectory() || !entry.getName().endsWith(".java"))
-            {
-                resourceMap.put(entry.getName(), ByteStreams.toByteArray(zin));
-            }
-            else
-            {
-                // source!
-                fileStr = new String(ByteStreams.toByteArray(zin), Charset.defaultCharset());
-
-                // fix
-                fileStr = FFPatcher.processFile(new File(entry.getName()).getName(), fileStr, fixInterfaces);
-
-                sourceMap.put(entry.getName(), fileStr);
-            }
-        }
-
-        zin.close();
-    }
-
-    private void applySingleMcpPatch(File patchFile) throws Throwable
-    {
-        ContextualPatch patch = ContextualPatch.create(Files.toString(patchFile, Charset.defaultCharset()), new ContextProvider(sourceMap));
-        printPatchErrors(patch.patch(false));
-    }
-
-    private void printPatchErrors(List<PatchReport> errors) throws Throwable
+    private static void printPatchErrors(Logger logger, List<PatchReport> errors) throws Exception
     {
         boolean fuzzed = false;
         for (PatchReport report : errors)
         {
             if (!report.getStatus().isSuccess())
             {
-                getLogger().log(LogLevel.ERROR, "Patching failed: " + report.getTarget(), report.getFailure());
+                logger.log(LogLevel.ERROR, "Patching failed: " + report.getTarget(), report.getFailure());
 
                 for (HunkReport hunk : report.getHunks())
                 {
                     if (!hunk.getStatus().isSuccess())
                     {
-                        getLogger().error("Hunk " + hunk.getHunkID() + " failed!");
+                        logger.error("Hunk " + hunk.getHunkID() + " failed!");
                     }
                 }
 
-                throw report.getFailure();
+                Throwables.propagate(report.getFailure());
             }
             else if (report.getStatus() == PatchStatus.Fuzzed) // catch fuzzed patches
             {
-                getLogger().log(LogLevel.INFO, "Patching fuzzed: " + report.getTarget(), report.getFailure());
+                logger.log(LogLevel.INFO, "Patching fuzzed: " + report.getTarget(), report.getFailure());
                 fuzzed = true;
 
                 for (HunkReport hunk : report.getHunks())
                 {
                     if (!hunk.getStatus().isSuccess())
                     {
-                        getLogger().info("Hunk " + hunk.getHunkID() + " fuzzed " + hunk.getFuzz() + "!");
+                        logger.info("Hunk " + hunk.getHunkID() + " fuzzed " + hunk.getFuzz() + "!");
                     }
                 }
             }
             else
             {
-                getLogger().debug("Patch succeeded: " + report.getTarget());
+                logger.debug("Patch succeeded: " + report.getTarget());
             }
         }
         if (fuzzed)
-            getLogger().lifecycle("Patches Fuzzed!");
+            logger.lifecycle("Patches Fuzzed!");
     }
 
-    private void applyPatchDirectory(File patchDir) throws Throwable
-    {
-        Multimap<String, File> patches = ArrayListMultimap.create();
-        for (File f : patchDir.listFiles(new FileWildcardFilter("*.patch")))
-        {
-            String base = f.getName();
-            patches.put(base, f);
-            for(File e : patchDir.listFiles(new FileWildcardFilter(base + ".*")))
-            {
-                patches.put(base, e);
-            }
-        }
-
-        for (String key : patches.keySet())
-        {
-            ContextualPatch patch = findPatch(patches.get(key));
-            if (patch == null)
-            {
-                getLogger().lifecycle("Patch not found for set: " + key); //This should never happen, but whatever
-            }
-            else
-            {
-                printPatchErrors(patch.patch(false));
-            }
-        }
-    }
-
-    private ContextualPatch findPatch(Collection<File> files) throws Throwable
+    private static ContextualPatch findPatch(Collection<File> files, ContextProvider provider) throws Exception
     {
         ContextualPatch patch = null;
         for (File f : files)
         {
-            patch = ContextualPatch.create(Files.toString(f, Charset.defaultCharset()), new ContextProvider(sourceMap));
+            patch = ContextualPatch.create(Files.toString(f, Charset.defaultCharset()), provider);
             List<PatchReport> errors = patch.patch(true);
 
             boolean success = true;
@@ -281,206 +222,154 @@ public class DecompileTask extends CachedTask
         return patch;
     }
 
-    private void applyMcpCleanup(File conf) throws IOException
-    {
-        ASFormatter formatter = new ASFormatter();
-        OptParser parser = new OptParser(formatter);
-        parser.parseOptionFile(conf);
-
-        Reader reader;
-        Writer writer;
-
-        GLConstantFixer fixer = new GLConstantFixer();
-        ArrayList<String> files = new ArrayList<String>(sourceMap.keySet());
-        Collections.sort(files); // Just to make sure we have the same order.. shouldn't matter on anything but lets be careful.
-
-        for (String file : files)
-        {
-            String text = sourceMap.get(file);
-
-            getLogger().debug("Processing file: " + file);
-
-            getLogger().debug("processing comments");
-            text = McpCleanup.stripComments(text);
-
-            getLogger().debug("fixing imports comments");
-            text = McpCleanup.fixImports(text);
-
-            getLogger().debug("various other cleanup");
-            text = McpCleanup.cleanup(text);
-
-            getLogger().debug("fixing OGL constants");
-            text = fixer.fixOGL(text);
-
-            getLogger().debug("formatting source");
-            reader = new StringReader(text);
-            writer = new StringWriter();
-            formatter.format(reader, writer);
-            reader.close();
-            writer.flush();
-            writer.close();
-            text = writer.toString();
-
-            getLogger().debug("applying FML transformations");
-            text = BEFORE.matcher(text).replaceAll("$1");
-            text = AFTER.matcher(text).replaceAll("$1");
-            text = FmlCleanup.renameClass(text);
-
-            sourceMap.put(file, text);
-        }
-    }
-
-    private void saveJar(File output) throws IOException
-    {
-        ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(output));
-
-        // write in resources
-        for (Map.Entry<String, byte[]> entry : resourceMap.entrySet())
-        {
-            zout.putNextEntry(new ZipEntry(entry.getKey()));
-            zout.write(entry.getValue());
-            zout.closeEntry();
-        }
-
-        // write in sources
-        for (Map.Entry<String, String> entry : sourceMap.entrySet())
-        {
-            zout.putNextEntry(new ZipEntry(entry.getKey()));
-            zout.write(entry.getValue().getBytes());
-            zout.closeEntry();
-        }
-
-        zout.close();
-    }
-
-    public HashMap<String, String> getSourceMap()
-    {
-        return sourceMap;
-    }
-
-    public void setSourceMap(HashMap<String, String> sourceMap)
-    {
-        this.sourceMap = sourceMap;
-    }
-
     public File getAstyleConfig()
     {
-        return astyleConfig.call();
+        return getProject().file(astyleConfig);
     }
 
-    public void setAstyleConfig(DelayedFile astyleConfig)
+    public void setAstyleConfig(Object astyleConfig)
     {
         this.astyleConfig = astyleConfig;
     }
 
     public File getFernFlower()
     {
-        return fernFlower.call();
+        return getProject().file(fernFlower);
     }
 
-    public void setFernFlower(DelayedFile fernFlower)
+    public void setFernFlower(Object fernFlower)
     {
         this.fernFlower = fernFlower;
-    }
-
-    public File getInJar()
-    {
-        return inJar.call();
-    }
-
-    public void setInJar(DelayedFile inJar)
-    {
-        this.inJar = inJar;
-    }
-
-    public File getOutJar()
-    {
-        return outJar.call();
-    }
-
-    public void setOutJar(DelayedFile outJar)
-    {
-        this.outJar = outJar;
     }
 
     @InputFiles
     public FileCollection getPatches()
     {
-         File patches = patch.call();
-         if (patches.isDirectory())
-             return getProject().fileTree(patches);
-         else
-             return getProject().files(patches);
+        return getProject().fileTree(patchDir);
     }
 
-    public File getPatch()
+    public void setPatches(Object patchesDir)
     {
-        return patch.call();
-    }
-
-    public void setPatch(DelayedFile patch)
-    {
-        this.patch = patch;
-    }
-
-    public HashMap<String, byte[]> getResourceMap()
-    {
-        return resourceMap;
-    }
-
-    public void setResourceMap(HashMap<String, byte[]> resourceMap)
-    {
-        this.resourceMap = resourceMap;
+        this.patchDir = patchesDir;
     }
 
     /**
      * A private inner class to be used with the MCPPatches only.
      */
-    private class ContextProvider implements ContextualPatch.IContextProvider
+    private static class ContextProvider implements ContextualPatch.IContextProvider
     {
-        private Map<String, String> fileMap;
+        private static final Pattern LINE_PATTERN = Pattern.compile("\r\n|\r|\n");
+        private List<String> data;
 
-        private final int STRIP = 1;
-
-        public ContextProvider(Map<String, String> fileMap)
+        public ContextProvider(String file)
         {
-            this.fileMap = fileMap;
-        }
-
-        private String strip(String target)
-        {
-            target = target.replace('\\', '/');
-            int index = 0;
-            for (int x = 0; x < STRIP; x++)
-            {
-                index = target.indexOf('/', index) + 1;
-            }
-            return target.substring(index);
+            data = Splitter.on(LINE_PATTERN).splitToList(file);;
         }
 
         @Override
         public List<String> getData(String target)
         {
-            target = strip(target);
-
-            if (fileMap.containsKey(target))
-            {
-                String[] lines = fileMap.get(target).split("\r\n|\r|\n");
-                List<String> ret = new ArrayList<String>();
-                for (String line : lines)
-                {
-                    ret.add(line);
-                }
-                return ret;
-            }
-
-            return null;
+            return data;
         }
 
         @Override
         public void setData(String target, List<String> data)
         {
-            fileMap.put(strip(target), Joiner.on(Constants.NEWLINE).join(data));
+            this.data = data;
+        }
+        
+        public String getAsString()
+        {
+            return Joiner.on(Constants.NEWLINE).join(data);
         }
     }
+    
+    private static class ThreadTaskOutput
+    {
+        public final String name;
+        public final String outString;
+        public final List<PatchReport> patchErrors;
+        public ThreadTaskOutput(String name, String outString, List<PatchReport> patchErrors)
+        {
+            this.name = name;
+            this.outString = outString;
+            if (patchErrors == null)
+                this.patchErrors = new ArrayList<PatchReport>(0);
+            else
+                this.patchErrors = patchErrors;
+        }
+    }
+    
+    private static class ThreadTask implements Callable<ThreadTaskOutput>
+    {
+        private final ASFormatter formatter;
+        private final GLConstantFixer oglFixer;
+        private final Collection<File> patchFiles;
+        private final String inputName;
+        private final String inputSource;
+        
+        public ThreadTask(String inputName, String inputSource, ASFormatter formatter, GLConstantFixer oglFixer, Collection<File> patchFiles)
+        {
+            super();
+            this.inputName = inputName;
+            this.inputSource = inputSource;
+            this.formatter = formatter;
+            this.oglFixer = oglFixer;
+            this.patchFiles = patchFiles;
+        }
+        
+        @Override
+        public ThreadTaskOutput call() throws Exception
+        {
+            String workingString = inputSource;
+            
+            // patch the file
+            List<PatchReport> patchErrors = null;
+            if (!patchFiles.isEmpty())
+            {
+                ContextProvider provider = new ContextProvider(workingString);
+                ContextualPatch patch = findPatch(patchFiles, provider);
+                patchErrors = patch.patch(false);
+                workingString = provider.getAsString();
+            }
+            
+            //getLogger().debug("Processing file: " + file);
+
+            //getLogger().debug("processing comments");
+            workingString = McpCleanup.stripComments(workingString);
+
+            //getLogger().debug("fixing imports comments");
+            workingString = McpCleanup.fixImports(workingString);
+
+            //getLogger().debug("various other cleanup");
+            workingString = McpCleanup.cleanup(workingString);
+
+            //getLogger().debug("fixing OGL constants");
+            workingString = oglFixer.fixOGL(workingString);
+
+            //getLogger().debug("formatting source");
+            Reader reader = new StringReader(workingString);
+            Writer writer = new StringWriter();
+            formatter.format(reader, writer);
+            reader.close();
+            writer.flush();
+            writer.close();
+            workingString = writer.toString();
+
+            //getLogger().debug("applying FML transformations");
+            workingString = BEFORE.matcher(workingString).replaceAll("$1");
+            workingString = AFTER.matcher(workingString).replaceAll("$1");
+            workingString = FmlCleanup.renameClass(workingString);
+            
+            return new ThreadTaskOutput(inputName, workingString, patchErrors);
+        }
+    }
+
+    //@formatter:off
+    
+    @Override
+    public void doStuffAfter() throws Exception { }
+
+    @Override
+    protected boolean storeJarInRam() { return false; }
 }

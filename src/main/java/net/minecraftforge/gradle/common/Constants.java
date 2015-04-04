@@ -30,8 +30,12 @@ import net.minecraftforge.gradle.json.version.OS;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 
+import au.com.bytecode.opencsv.CSVParser;
+import au.com.bytecode.opencsv.CSVReader;
+
 import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;
+import com.google.common.io.Files;
 
 public class Constants
 {
@@ -209,6 +213,17 @@ public class Constants
         {
             return SystemArch.BIT_32;
         }
+    }
+    
+    /**
+     * This method constructs,, configures and returns a CSV reader instance to be used to read MCP CSV files.
+     * @param file File to read
+     * @return a configured CSVReader 
+     * @throws IOException
+     */
+    public static CSVReader getReader(File file) throws IOException
+    {
+        return new CSVReader(Files.newReader(file, Charset.defaultCharset()), CSVParser.DEFAULT_SEPARATOR, CSVParser.DEFAULT_QUOTE_CHARACTER, CSVParser.NULL_CHARACTER, 1, false);
     }
     
     /**
