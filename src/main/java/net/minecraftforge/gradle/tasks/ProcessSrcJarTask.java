@@ -5,12 +5,12 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.patching.ContextualPatch;
 import net.minecraftforge.gradle.patching.ContextualPatch.PatchStatus;
 import net.minecraftforge.gradle.tasks.abstractutil.EditJarTask;
@@ -19,6 +19,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.OutputFiles;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
@@ -31,25 +32,25 @@ public class ProcessSrcJarTask extends EditJarTask
     @Input
     private int                  maxFuzz = 0;
 
-    private ContextProvider      PROVIDER;
-
     @Override
-    public String asRead(String file)
+    public void doStuffMiddle(Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws Exception
     {
-        return file;
-    }
+        ContextProvider provider = new ContextProvider(sourceMap);
 
-    @Override
-    public void doStuffBefore()
-    {
-        PROVIDER = new ContextProvider(sourceMap);
-    }
-
-    @Override
-    public void doStuffMiddle() throws Exception
-    {
         for (ResourceHolder stage : stages)
         {
+            if (stage.patchDir != null)
+            {
+                getLogger().lifecycle("Applying {} patches", stage.name);
+                applyPatchStage(stage.name, stage.getPatchFiles(), provider);
+            }
+            
+            if (stage.patchedJar != null)
+            {
+                getLogger().lifecycle("Exporting {} patched jar", stage.name);
+                saveJar(stage.getPatchedJar(), sourceMap, resourceMap);
+            }
+            
             if (!stage.srcDirs.isEmpty())
             {
                 getLogger().lifecycle("Injecting {} files", stage.name);
@@ -58,8 +59,8 @@ public class ProcessSrcJarTask extends EditJarTask
                     String relative = rel.getRelative();
 
                     // overwrite duplicates
-//                    if (sourceMap.containsKey(relative) || resourceMap.containsKey(relative))
-//                        continue; //ignore duplicates.
+                    //                    if (sourceMap.containsKey(relative) || resourceMap.containsKey(relative))
+                    //                        continue; //ignore duplicates.
 
                     if (relative.endsWith(".java"))
                     {
@@ -71,19 +72,13 @@ public class ProcessSrcJarTask extends EditJarTask
                     }
                 }
             }
-            
-            if (stage.patchDir != null)
-            {
-                getLogger().lifecycle("Applying {} patches", stage.name);
-                applyPatchStage(stage.name, stage.getPatchFiles());
-            }
         }
     }
 
-    public void applyPatchStage(String stage, FileCollection patchFiles) throws Exception
+    public void applyPatchStage(String stage, FileCollection patchFiles, ContextProvider provider) throws Exception
     {
         getLogger().info("Reading patches for stage {}", stage);
-        ArrayList<PatchedFile> patches = readPatches(patchFiles);
+        ArrayList<PatchedFile> patches = readPatches(patchFiles, provider);
 
         boolean fuzzed = false;
 
@@ -104,7 +99,7 @@ public class ProcessSrcJarTask extends EditJarTask
                     {
                         reject.delete();
                     }
-                    getLogger().log(LogLevel.ERROR, "Patching failed: {} {}", PROVIDER.strip(report.getTarget()), report.getFailure().getMessage());
+                    getLogger().log(LogLevel.ERROR, "Patching failed: {} {}", provider.strip(report.getTarget()), report.getFailure().getMessage());
                     // now spit the hunks
                     int failed = 0;
                     for (ContextualPatch.HunkReport hunk : report.getHunks())
@@ -132,7 +127,7 @@ public class ProcessSrcJarTask extends EditJarTask
                 // catch fuzzed patches
                 else if (report.getStatus() == ContextualPatch.PatchStatus.Fuzzed)
                 {
-                    getLogger().log(LogLevel.INFO, "Patching fuzzed: {}", PROVIDER.strip(report.getTarget()));
+                    getLogger().log(LogLevel.INFO, "Patching fuzzed: {}", provider.strip(report.getTarget()));
 
                     // set the boolean for later use
                     fuzzed = true;
@@ -154,7 +149,7 @@ public class ProcessSrcJarTask extends EditJarTask
                 // sucesful patches
                 else
                 {
-                    getLogger().info("Patch succeeded: {}", PROVIDER.strip(report.getTarget()));
+                    getLogger().info("Patch succeeded: {}", provider.strip(report.getTarget()));
                 }
             }
         }
@@ -165,7 +160,7 @@ public class ProcessSrcJarTask extends EditJarTask
         }
     }
 
-    private ArrayList<PatchedFile> readPatches(FileCollection patchFiles) throws IOException
+    private ArrayList<PatchedFile> readPatches(FileCollection patchFiles, ContextProvider provider) throws IOException
     {
         ArrayList<PatchedFile> patches = new ArrayList<PatchedFile>();
 
@@ -173,17 +168,17 @@ public class ProcessSrcJarTask extends EditJarTask
         {
             if (file.getPath().endsWith(".patch"))
             {
-                patches.add(readPatch(file));
+                patches.add(readPatch(file, provider));
             }
         }
 
         return patches;
     }
 
-    private PatchedFile readPatch(File file) throws IOException
+    private PatchedFile readPatch(File file, ContextProvider provider) throws IOException
     {
         getLogger().debug("Reading patch file: {}", file);
-        return new PatchedFile(file);
+        return new PatchedFile(file, provider);
     }
 
     @InputFiles
@@ -218,12 +213,27 @@ public class ProcessSrcJarTask extends EditJarTask
         return col;
     }
 
-    public void addStage(String name, DelayedFile patchDir, DelayedFile... injects)
+    @Cached
+    @OutputFiles
+    public FileCollection getAllPatchedJars()
     {
-        stages.add(new ResourceHolder(name, patchDir, Arrays.asList(injects)));
+        FileCollection col = null;
+
+        for (ResourceHolder holder : stages)
+            if (col == null)
+                col = holder.getInjects();
+            else
+                col = getProject().files(col, holder.getPatchedJar());
+
+        return col;
     }
-    
-    public void addStage(String name, DelayedFile patchDir)
+
+    public void addStage(String name, Object patchDir, Object outputJar, Object... injects)
+    {
+        stages.add(new ResourceHolder(name, patchDir, outputJar, Arrays.asList(injects)));
+    }
+
+    public void addStage(String name, Object patchDir)
     {
         stages.add(new ResourceHolder(name, patchDir));
     }
@@ -248,10 +258,10 @@ public class ProcessSrcJarTask extends EditJarTask
         public final File            fileToPatch;
         public final ContextualPatch patch;
 
-        public PatchedFile(File file) throws IOException
+        public PatchedFile(File file, ContextProvider provider) throws IOException
         {
             this.fileToPatch = file;
-            this.patch = ContextualPatch.create(Files.toString(file, Charset.defaultCharset()), PROVIDER).setAccessC14N(true).setMaxFuzz(getMaxFuzz());
+            this.patch = ContextualPatch.create(Files.toString(file, Charset.defaultCharset()), provider).setAccessC14N(true).setMaxFuzz(getMaxFuzz());
         }
 
         public File makeRejectFile()
@@ -317,22 +327,25 @@ public class ProcessSrcJarTask extends EditJarTask
      */
     private final class ResourceHolder
     {
-        final String            name;
-        final DelayedFile       patchDir;
-        final List<DelayedFile> srcDirs;
+        final String               name;
+        private final Object       patchDir;
+        private final Object       patchedJar;
+        private final List<Object> srcDirs;
 
-        public ResourceHolder(String name, DelayedFile patchDir, List<DelayedFile> srcDirs)
+        public ResourceHolder(String name, Object patchDir, Object outputJar, List<Object> srcDirs)
         {
             this.name = name;
             this.patchDir = patchDir;
             this.srcDirs = srcDirs;
+            this.patchedJar = outputJar;
         }
-        
-        public ResourceHolder(String name, DelayedFile patchDir)
+
+        public ResourceHolder(String name, Object patchDir)
         {
             this.name = name;
             this.patchDir = patchDir;
-            this.srcDirs = new ArrayList<DelayedFile>(0);
+            this.srcDirs = Collections.emptyList();
+            this.patchedJar = null;
         }
 
         public FileCollection getPatchFiles()
@@ -349,8 +362,8 @@ public class ProcessSrcJarTask extends EditJarTask
         public FileCollection getInjects()
         {
             ArrayList<FileCollection> trees = new ArrayList<FileCollection>(srcDirs.size());
-            for (DelayedFile f : srcDirs)
-                trees.add(getProject().fileTree(f.call()));
+            for (Object o : srcDirs)
+                trees.add(getProject().fileTree(o));
             return getProject().files(trees);
         }
 
@@ -358,10 +371,13 @@ public class ProcessSrcJarTask extends EditJarTask
         {
             LinkedList<RelFile> files = new LinkedList<RelFile>();
 
-            for (DelayedFile df : srcDirs)
+            for (Object o : srcDirs)
             {
-                File dir = df.call();
+                File dir = getProject().file(o);
                 
+                if (!dir.exists())
+                    continue;
+
                 if (dir.isDirectory())
                 {
                     for (File f : getProject().fileTree(dir))
@@ -375,6 +391,14 @@ public class ProcessSrcJarTask extends EditJarTask
                 }
             }
             return files;
+        }
+
+        public File getPatchedJar()
+        {
+            if (patchedJar == null)
+                return null;
+            else
+                return getProject().file(patchedJar);
         }
     }
 
@@ -394,4 +418,10 @@ public class ProcessSrcJarTask extends EditJarTask
             return file.getCanonicalPath().substring(root.getCanonicalPath().length() + 1).replace('\\', '/');
         }
     }
+
+    //@formatter:off
+    
+    @Override protected boolean storeJarInRam() { return true; }
+    @Override public String asRead(String file) { return file; }
+    @Override public void doStuffBefore() { }
 }

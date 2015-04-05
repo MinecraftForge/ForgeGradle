@@ -157,7 +157,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
     public abstract void applyPlugin();
 
-    public abstract void applyOverlayPlugin();
+    protected abstract void applyOverlayPlugin();
 
     /**
      * return true if this plugin can be applied over another BasePlugin.
@@ -181,7 +181,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         getExtension().mcpJson = JsonFactory.GSON.fromJson(getWithEtag(URL_MCP_JSON, jsonCache, etagFile), new TypeToken<Map<String, Map<String, int[]>>>() {}.getType());
     }
 
-    public void afterEvaluate()
+    protected void afterEvaluate()
     {
         String mcVersion = delayedString(REPLACE_MC_VERSION).call();
 

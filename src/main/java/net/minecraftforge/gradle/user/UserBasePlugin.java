@@ -580,7 +580,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         {
             String name = getBinDepName() + "-" + (hasApiVersion() ? "{API_VERSION}" : Constants.REPLACE_MC_VERSION) + ".jar";
 
-            ProcessJarTask task = makeTask("deobfBinJar", ProcessJarTask.class);
+            DeobfuscateJarTask task = makeTask("deobfBinJar", DeobfuscateJarTask.class);
             task.setSrg(delayedFile(DEOBF_MCP_SRG));
             task.setExceptorJson(delayedFile(EXC_JSON));
             task.setExceptorCfg(delayedFile(EXC_MCP));
@@ -598,7 +598,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         {
             String name = "{API_NAME}-" + (hasApiVersion() ? "{API_VERSION}" : Constants.REPLACE_MC_VERSION) + "-"+ CLASSIFIER_DEOBF_SRG +".jar";
 
-            ProcessJarTask task = makeTask("deobfuscateJar", ProcessJarTask.class);
+            DeobfuscateJarTask task = makeTask("deobfuscateJar", DeobfuscateJarTask.class);
             task.setSrg(delayedFile(DEOBF_SRG_SRG));
             task.setExceptorJson(delayedFile(EXC_JSON));
             task.setExceptorCfg(delayedFile(EXC_SRG));
@@ -1090,7 +1090,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     {
         if (decomp)
         {
-            ((ReobfTask) project.getTasks().getByName("reobf")).setDeobfFile(((ProcessJarTask) project.getTasks().getByName("deobfuscateJar")).getDelayedOutput());
+            ((ReobfTask) project.getTasks().getByName("reobf")).setDeobfFile(((DeobfuscateJarTask) project.getTasks().getByName("deobfuscateJar")).getDelayedOutput());
             ((ReobfTask) project.getTasks().getByName("reobf")).setRecompFile(delayedDirtyFile(getSrcDepName(), null, "jar"));
         }
         else
@@ -1136,7 +1136,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
      * Add Forge/FML ATs here.
      * This happens during normal evaluation, and NOT AfterEvaluate.
      */
-    protected abstract void configureDeobfuscation(ProcessJarTask task);
+    protected abstract void configureDeobfuscation(DeobfuscateJarTask task);
 
     /**
      *
@@ -1168,7 +1168,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             @Override
             public File resolveDelayed()
             {
-                ProcessJarTask decompDeobf = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
+                DeobfuscateJarTask decompDeobf = (DeobfuscateJarTask) project.getTasks().getByName("deobfuscateJar");
                 pattern = (decompDeobf.isClean() ? "{API_CACHE_DIR}/"+(usesMappings ? MAPPING_APPENDAGE : "") : DIRTY_DIR) + "/";
 
                 if (!Strings.isNullOrEmpty(name))

@@ -18,11 +18,10 @@ public class PatcherProjectFactory implements NamedDomainObjectFactory<PatcherPr
     {
         if (name.equalsIgnoreCase("clean"))
         {
-            throw new GradleConfigurationException("You cannot create a priject with the name '"+name+"'");
+            throw new GradleConfigurationException("You cannot create a project with the name '"+name+"'");
         }
         
         PatcherProject proj = new PatcherProject(name, plugin);
-        plugin.createProject(proj);
         return proj;
     }
 }

@@ -2,7 +2,7 @@ package net.minecraftforge.gradle.user.patch;
 
 import static net.minecraftforge.gradle.user.patch.UserPatchConstants.*;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.tasks.ProcessJarTask;
+import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 
 public class ForgeUserPlugin extends UserPatchBasePlugin
@@ -20,7 +20,7 @@ public class ForgeUserPlugin extends UserPatchBasePlugin
     }
 
     @Override
-    protected void configureDeobfuscation(ProcessJarTask task)
+    protected void configureDeobfuscation(DeobfuscateJarTask task)
     {
         task.addTransformerClean(delayedFile(FML_AT));
         task.addTransformerClean(delayedFile(FORGE_AT));

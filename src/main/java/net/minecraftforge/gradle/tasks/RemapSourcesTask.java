@@ -1,8 +1,6 @@
 package net.minecraftforge.gradle.tasks;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -17,13 +15,11 @@ import net.minecraftforge.gradle.tasks.abstractutil.EditJarTask;
 
 import org.gradle.api.tasks.InputFile;
 
-import au.com.bytecode.opencsv.CSVParser;
 import au.com.bytecode.opencsv.CSVReader;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 
 public class RemapSourcesTask extends EditJarTask
 {
@@ -52,7 +48,7 @@ public class RemapSourcesTask extends EditJarTask
     public void doStuffBefore() throws Exception
     {
         // read CSV files
-        CSVReader reader = getReader(getMethodsCsv());
+        CSVReader reader = Constants.getReader(getMethodsCsv());
         for (String[] s : reader.readAll())
         {
             methods.put(s[0], s[1]);
@@ -60,7 +56,7 @@ public class RemapSourcesTask extends EditJarTask
                 methodDocs.put(s[0], s[3]);
         }
 
-        reader = getReader(getFieldsCsv());
+        reader = Constants.getReader(getFieldsCsv());
         for (String[] s : reader.readAll())
         {
             fields.put(s[0], s[1]);
@@ -68,11 +64,17 @@ public class RemapSourcesTask extends EditJarTask
                 fieldDocs.put(s[0], s[3]);
         }
 
-        reader = getReader(getParamsCsv());
+        reader = Constants.getReader(getParamsCsv());
         for (String[] s : reader.readAll())
         {
             params.put(s[0], s[1]);
         }
+    }
+    
+    @Override
+    protected boolean storeJarInRam()
+    {
+        return false;
     }
 
     @Override
@@ -121,7 +123,7 @@ public class RemapSourcesTask extends EditJarTask
         }
     }
 
-    private void insetAboveAnnotations(List<String> list, String line)
+    private static void insetAboveAnnotations(List<String> list, String line)
     {
         int back = 0;
         while (list.get(list.size() - 1 - back).trim().startsWith("@"))
@@ -196,14 +198,11 @@ public class RemapSourcesTask extends EditJarTask
     {
         this.addsJavadocs = javadoc;
     }
+    
+    @Override
+    public void doStuffMiddle(Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws Exception { }
 
     @Override
-    public void doStuffAfter() throws Exception
-    {
-    }
+    public void doStuffAfter() throws Exception { }
 
-    @Override
-    public void doStuffMiddle() throws Exception
-    {
-    }
 }

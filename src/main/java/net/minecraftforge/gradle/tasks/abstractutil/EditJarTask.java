@@ -11,7 +11,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.delayed.DelayedFile;
 
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
@@ -23,14 +22,14 @@ import com.google.common.io.ByteStreams;
 public abstract class EditJarTask extends CachedTask
 {
     @InputFile
-    protected DelayedFile inJar;
+    private Object inJar;
 
-    @OutputFile
     @Cached
-    protected DelayedFile outJar;
+    @OutputFile
+    private Object outJar;
 
-    protected File        resolvedInJar;
-    protected File        resolvedOutJar;
+    protected File   resolvedInJar;
+    protected File   resolvedOutJar;
 
     @TaskAction
     public void doTask() throws Throwable
@@ -190,20 +189,20 @@ public abstract class EditJarTask extends CachedTask
 
     public File getInJar()
     {
-        return inJar.call();
+        return getProject().file(inJar);
     }
 
-    public void setInJar(DelayedFile inJar)
+    public void setInJar(Object inJar)
     {
         this.inJar = inJar;
     }
 
     public File getOutJar()
     {
-        return outJar.call();
+        return getProject().file(outJar);
     }
 
-    public void setOutJar(DelayedFile outJar)
+    public void setOutJar(Object outJar)
     {
         this.outJar = outJar;
     }

@@ -1,13 +1,17 @@
 package net.minecraftforge.gradle.dev;
 
 import groovy.lang.Closure;
+
+import java.io.File;
+
 import net.minecraftforge.gradle.common.BaseExtension;
 
 import org.gradle.api.NamedDomainObjectContainer;
 
 public class PatcherExtension extends BaseExtension
 {
-    private String installerVersion = "null";
+    private File                                       workspaceDir;
+    private String                                     installerVersion = "null";
     private NamedDomainObjectContainer<PatcherProject> projectContainer;
 
     public PatcherExtension(PatcherPlugin plugin)
@@ -39,5 +43,15 @@ public class PatcherExtension extends BaseExtension
     public void projects(Closure closure)
     {
         projectContainer.configure(closure);
+    }
+
+    public File getWorkspaceDir()
+    {
+        return workspaceDir;
+    }
+
+    public void setWorkspaceDir(Object workspaceDir)
+    {
+        this.workspaceDir = project.file(workspaceDir);
     }
 }

@@ -20,7 +20,7 @@ import net.minecraftforge.gradle.tasks.CrowdinDownloadTask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
-import net.minecraftforge.gradle.tasks.ProcessJarTask;
+import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DelayedJar;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
@@ -97,7 +97,7 @@ public class FmlDevPlugin extends DevBasePlugin
     protected void createJarProcessTasks()
     {
 
-        ProcessJarTask task2 = makeTask("deobfuscateJar", ProcessJarTask.class);
+        DeobfuscateJarTask task2 = makeTask("deobfuscateJar", DeobfuscateJarTask.class);
         {
             task2.setInJar(delayedFile(Constants.JAR_MERGED));
             task2.setOutCleanJar(delayedFile(DevConstants.JAR_SRG_FML));

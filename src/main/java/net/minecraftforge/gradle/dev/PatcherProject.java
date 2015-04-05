@@ -10,6 +10,8 @@ import net.minecraftforge.gradle.common.Constants;
 
 import org.gradle.api.Project;
 
+import com.google.common.base.Strings;
+
 public class PatcherProject implements Serializable
 {
     private static final long serialVersionUID = 1L;
@@ -17,8 +19,8 @@ public class PatcherProject implements Serializable
     private final transient Project project;
 
     private final String name;
-    private String patchAfter;
-    private String generateFrom = "clean";
+    private String patchAfter = "clean";
+    private String generateFrom;
 
     private File rootDir;
     private File patchDir;
@@ -58,7 +60,10 @@ public class PatcherProject implements Serializable
      */
     public void setPatchAfter(String patchAfter)
     {
-        this.patchAfter = patchAfter;
+        if (Strings.isNullOrEmpty(patchAfter))
+            this.patchAfter = "clean";
+        else
+            this.patchAfter = patchAfter;
     }
 
     /**
@@ -382,7 +387,7 @@ public class PatcherProject implements Serializable
     }
     
     @SuppressWarnings("serial")
-    protected Closure<File> getDelayedPatchesDir()
+    protected Closure<File> getDelayedPatchDir()
     {
         return new Closure<File>(project, this) {
             public File call()

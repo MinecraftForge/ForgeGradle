@@ -55,6 +55,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
@@ -62,47 +63,47 @@ import com.google.common.io.LineProcessor;
 
 import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
 
-public class ProcessJarTask extends CachedTask
+public class DeobfuscateJarTask extends CachedTask
 {
     @InputFile
     @Optional
-    private DelayedFile            fieldCsv;
+    private Object            fieldCsv;
     @InputFile
     @Optional
-    private DelayedFile            methodCsv;
+    private Object            methodCsv;
 
     @InputFile
-    private DelayedFile            inJar;
+    private Object            inJar;
 
     @InputFile
-    private DelayedFile            srg;
+    private Object            srg;
 
     @InputFile
-    private DelayedFile            exceptorCfg;
+    private Object            exceptorCfg;
 
     @Optional
     @Input
     private boolean stripSynthetics = false;
 
     @InputFile
-    private DelayedFile exceptorJson;
+    private Object exceptorJson;
 
     @Input
     private boolean applyMarkers = false;
 
-    private DelayedFile outCleanJar; // clean = pure forge, or pure FML
-    private DelayedFile outDirtyJar = new DelayedFile(getProject(), "{BUILD_DIR}/processed.jar"); // dirty = has any other ATs
+    private Object outCleanJar; // clean = pure forge, or pure FML
+    private Object outDirtyJar = new DelayedFile(getProject(), "{BUILD_DIR}/processed.jar"); // dirty = has any other ATs
 
     @InputFiles
-    private ArrayList<DelayedFile> ats         = new ArrayList<DelayedFile>();
+    private ArrayList<Object> ats         = Lists.newArrayList();
 
-    private DelayedFile log;
+    private Object log;
 
     private boolean isClean = true;
 
-    public void addTransformerClean(DelayedFile... obj)
+    public void addTransformerClean(Object... obj)
     {
-        for (DelayedFile object : obj)
+        for (Object object : obj)
         {
             ats.add(object);
         }
@@ -137,7 +138,7 @@ public class ProcessJarTask extends CachedTask
 
         // make the ATs list.. its a Set to avoid duplication.
         Set<File> ats = new HashSet<File>();
-        for (DelayedFile obj : this.ats)
+        for (Object obj : this.ats)
         {
             ats.add(getProject().file(obj).getCanonicalFile());
         }
@@ -415,7 +416,7 @@ public class ProcessJarTask extends CachedTask
 
     public File getExceptorCfg()
     {
-        return exceptorCfg.call();
+        return getProject().file(exceptorCfg);
     }
 
     public void setExceptorCfg(DelayedFile exceptorCfg)
@@ -428,7 +429,7 @@ public class ProcessJarTask extends CachedTask
         if (exceptorJson == null)
             return null;
         else
-            return exceptorJson.call();
+            return getProject().file(exceptorJson);
     }
 
     public void setExceptorJson(DelayedFile exceptorJson)
@@ -448,7 +449,7 @@ public class ProcessJarTask extends CachedTask
 
     public File getInJar()
     {
-        return inJar.call();
+        return getProject().file(inJar);
     }
 
     public void setInJar(DelayedFile inJar)
@@ -461,37 +462,37 @@ public class ProcessJarTask extends CachedTask
         if (log == null)
             return null;
         else
-            return log.call();
+            return getProject().file(log);
     }
 
-    public void setLog(DelayedFile Log)
+    public void setLog(Object log)
     {
-        this.log = Log;
+        this.log = log;
     }
 
     public File getSrg()
     {
-        return srg.call();
+        return getProject().file(srg);
     }
 
-    public void setSrg(DelayedFile srg)
+    public void setSrg(Object srg)
     {
         this.srg = srg;
     }
 
     public File getOutCleanJar()
     {
-        return outCleanJar.call();
+        return getProject().file(outCleanJar);
     }
 
-    public void setOutCleanJar(DelayedFile outJar)
+    public void setOutCleanJar(Object outJar)
     {
         this.outCleanJar = outJar;
     }
 
     public File getOutDirtyJar()
     {
-        return outDirtyJar.call();
+        return getProject().file(outDirtyJar);
     }
 
     public void setOutDirtyJar(DelayedFile outDirtyJar)
@@ -509,7 +510,7 @@ public class ProcessJarTask extends CachedTask
      * Unlike getOutputJar() this method does not resolve the files.
      * @return DelayedFIle that will resolve to
      */
-    public DelayedFile getDelayedOutput()
+    public Object getDelayedOutput()
     {
         return isClean ? outCleanJar : outDirtyJar;
     }
@@ -522,7 +523,7 @@ public class ProcessJarTask extends CachedTask
     @OutputFile
     public File getOutJar()
     {
-        return getDelayedOutput().call();
+        return getProject().file(getDelayedOutput());
     }
 
     public FileCollection getAts()
@@ -532,7 +533,7 @@ public class ProcessJarTask extends CachedTask
 
     public File getFieldCsv()
     {
-        return fieldCsv == null ? null : fieldCsv.call();
+        return fieldCsv == null ? null : getProject().file(fieldCsv);
     }
 
     public void setFieldCsv(DelayedFile fieldCsv)
@@ -542,7 +543,7 @@ public class ProcessJarTask extends CachedTask
 
     public File getMethodCsv()
     {
-        return methodCsv == null ? null : methodCsv.call();
+        return methodCsv == null ? null : getProject().file(methodCsv);
     }
 
     public void setMethodCsv(DelayedFile methodCsv)

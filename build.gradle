@@ -88,9 +88,6 @@ compileJava {
 
 	// and curse..
 	exclude "**/curseforge/*"
-
-	// and hey I broke some more stuff
-	exclude "**/RemapSourcesTask.java", "**/ProcessSrcJarTask.java"
 }
 
 jar {

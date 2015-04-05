@@ -22,7 +22,7 @@ import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.json.JsonFactory;
 import net.minecraftforge.gradle.json.forgeversion.ForgeVersion;
-import net.minecraftforge.gradle.tasks.ProcessJarTask;
+import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.user.ApplyBinPatchesTask;
@@ -57,7 +57,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
 
             project.getTasks().getByName("deobfBinJar").dependsOn(task);
 
-            ProcessJarTask deobf = (ProcessJarTask) project.getTasks().getByName("deobfBinJar").dependsOn(task);;
+            DeobfuscateJarTask deobf = (DeobfuscateJarTask) project.getTasks().getByName("deobfBinJar").dependsOn(task);;
             deobf.setInJar(delayedFile(JAR_BINPATCHED));
             deobf.dependsOn(task);
         }
@@ -152,8 +152,8 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     protected void delayedTaskConfig()
     {
         // add src ATs
-        ProcessJarTask binDeobf = (ProcessJarTask) project.getTasks().getByName("deobfBinJar");
-        ProcessJarTask decompDeobf = (ProcessJarTask) project.getTasks().getByName("deobfuscateJar");
+        DeobfuscateJarTask binDeobf = (DeobfuscateJarTask) project.getTasks().getByName("deobfBinJar");
+        DeobfuscateJarTask decompDeobf = (DeobfuscateJarTask) project.getTasks().getByName("deobfuscateJar");
 
         // ATs from the ExtensionObject
         Object[] extAts = getExtension().getAccessTransformers().toArray();

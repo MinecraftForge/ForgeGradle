@@ -10,7 +10,7 @@ import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.DecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
-import net.minecraftforge.gradle.tasks.ProcessJarTask;
+import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DelayedJar;
@@ -92,7 +92,7 @@ public class EduDevPlugin extends DevBasePlugin
 
     protected void createJarProcessTasks()
     {
-        ProcessJarTask task2 = makeTask("deobfuscateJar", ProcessJarTask.class);
+        DeobfuscateJarTask task2 = makeTask("deobfuscateJar", DeobfuscateJarTask.class);
         {
             task2.setInJar(delayedFile(Constants.JAR_MERGED));
             task2.setOutCleanJar(delayedFile(JAR_SRG_EDU));

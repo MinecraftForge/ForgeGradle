@@ -19,9 +19,14 @@ public final class PatcherConstants
     static final String JAR_DEOBF                  = DIR_LOCAL_CACHE + "/deobfuscated.jar";
     static final String JAR_DECOMP                 = DIR_LOCAL_CACHE + "/decompiled.jar";
     static final String JAR_REMAPPED               = DIR_LOCAL_CACHE + "/remapped-clean.jar";
-    
-    static final String REPLACE_PROJECT_NAME       = "{PROJECT_NAME}";
-    static final String JAR_PATCHED_PROJECT        = DIR_LOCAL_CACHE + "/patched-" + REPLACE_PROJECT_NAME +".jar";
-    static final String JAR_REMAPPED_PROJECT       = DIR_LOCAL_CACHE + "/remapped-" + REPLACE_PROJECT_NAME +".jar";
-    static final String JAR_RRETROMAPPED_PROJECT   = DIR_LOCAL_CACHE + "/retromapped-" + REPLACE_PROJECT_NAME +".jar";
+
+    static final String JAR_PATCHED_PROJECT        = DIR_LOCAL_CACHE + "/patched-%s.jar";
+    static final String JAR_REMAPPED_PROJECT       = DIR_LOCAL_CACHE + "/remapped-%s.jar";
+    static final String JAR_RRETROMAPPED_PROJECT   = DIR_LOCAL_CACHE + "/retromapped-%s.jar";
+
+    static final String TASK_SETUP                 = "setup";
+    static final String TASK_DEOBF_JAR             = "deobfuscateJar";
+    static final String TASK_PATCH_JAR             = "patchJar";
+    static final String TASK_PROJECT_REMAP_JAR     = "remap%sJar";
+    static final String TASK_PROJECT_EXTRACT_JAR   = "extract%sJar";
 }
