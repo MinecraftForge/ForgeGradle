@@ -73,7 +73,7 @@ public abstract class EditJarTask extends CachedTask
      * @param file current contents of the file
      * @return new new contents of the file
      */
-    public abstract String asRead(String file);
+    public abstract String asRead(String name, String file) throws Exception;
 
     /**
      * Do Stuff after the jar is read, but before it is written.
@@ -96,7 +96,7 @@ public abstract class EditJarTask extends CachedTask
      */
     protected abstract boolean storeJarInRam();
 
-    private final void readAndStoreJarInRam(File jar, Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws IOException
+    private final void readAndStoreJarInRam(File jar, Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws Exception
     {
         ZipInputStream zin = new ZipInputStream(new FileInputStream(jar));
         ZipEntry entry = null;
@@ -120,7 +120,7 @@ public abstract class EditJarTask extends CachedTask
                 // source!
                 fileStr = new String(ByteStreams.toByteArray(zin), Constants.CHARSET);
 
-                fileStr = asRead(fileStr);
+                fileStr = asRead(entry.getName(), fileStr);
 
                 sourceMap.put(entry.getName(), fileStr);
             }
@@ -152,7 +152,7 @@ public abstract class EditJarTask extends CachedTask
         zout.close();
     }
     
-    private void copyJar(File input, File output) throws IOException
+    private void copyJar(File input, File output) throws Exception
     {
         // begin reading jar
         ZipInputStream zin = new ZipInputStream(new FileInputStream(input));
@@ -178,7 +178,7 @@ public abstract class EditJarTask extends CachedTask
             {
                 // source
                 zout.putNextEntry(new JarEntry(entry));
-                zout.write(asRead(new String(ByteStreams.toByteArray(zin), Constants.CHARSET)).getBytes());
+                zout.write(asRead(entry.getName(), new String(ByteStreams.toByteArray(zin), Constants.CHARSET)).getBytes());
                 zout.closeEntry();
             }
         }

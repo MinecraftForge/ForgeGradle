@@ -17,7 +17,7 @@ import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.CreateStartTask;
 import net.minecraftforge.gradle.tasks.CrowdinDownloadTask;
-import net.minecraftforge.gradle.tasks.DecompileTask;
+import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
@@ -96,7 +96,7 @@ public class ForgeDevPlugin extends DevBasePlugin
 
     protected void createJarProcessTasks()
     {
-        DecompileTask task3 = makeTask("decompile", DecompileTask.class);
+        PostDecompileTask task3 = makeTask("decompile", PostDecompileTask.class);
         {
             task3.setInJar(delayedFile(JAR_SRG_FORGE));
             task3.setOutJar(delayedFile(ZIP_DECOMP_FORGE));

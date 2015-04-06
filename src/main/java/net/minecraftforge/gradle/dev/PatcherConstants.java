@@ -18,6 +18,7 @@ public final class PatcherConstants
     static final String DIR_LOCAL_CACHE            = Constants.REPLACE_BUILD_DIR + "/localCache";
     static final String JAR_DEOBF                  = DIR_LOCAL_CACHE + "/deobfuscated.jar";
     static final String JAR_DECOMP                 = DIR_LOCAL_CACHE + "/decompiled.jar";
+    static final String JAR_DECOMP_POST            = DIR_LOCAL_CACHE + "/decompiled-processed.jar";
     static final String JAR_REMAPPED               = DIR_LOCAL_CACHE + "/remapped-clean.jar";
 
     static final String JAR_PATCHED_PROJECT        = DIR_LOCAL_CACHE + "/patched-%s.jar";

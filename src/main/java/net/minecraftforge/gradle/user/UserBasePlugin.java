@@ -665,7 +665,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         final DelayedFile recompSrc = delayedFile(RECOMP_SRC_DIR);
         final DelayedFile recompCls = delayedFile(RECOMP_CLS_DIR);
 
-        DecompileTask decomp = makeTask("decompile", DecompileTask.class);
+        PostDecompileTask decomp = makeTask("decompile", PostDecompileTask.class);
         {
             decomp.setInJar(delayedDirtyFile(null, CLASSIFIER_DEOBF_SRG, "jar", false));
             decomp.setOutJar(decompOut);

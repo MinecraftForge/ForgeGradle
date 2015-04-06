@@ -10,7 +10,8 @@ import java.util.List;
 import net.minecraftforge.gradle.GradleConfigurationException;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.tasks.DecompileTask;
+import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
+import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
@@ -68,24 +69,32 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             deobfJar.dependsOn(TASK_MERGE_JARS, TASK_GENERATE_SRGS);
         }
         
-        DecompileTask decompileJar = makeTask("decompileJar", DecompileTask.class);
+        ApplyFernFlowerTask decompileJar = makeTask("decompileJar", ApplyFernFlowerTask.class);
         {
             decompileJar.setInJar(delayedFile(JAR_DEOBF));
             decompileJar.setOutJar(delayedFile(JAR_DECOMP));
-            decompileJar.setFernFlower(delayedFile(Constants.JAR_FERNFLOWER));
-            decompileJar.setPatches(delayedFile(MCP_PATCHES_CLIENT));
-            decompileJar.setAstyleConfig(delayedFile(MCP_DATA_STYLE));
+            decompileJar.setFernflower(delayedFile(Constants.JAR_FERNFLOWER));
             decompileJar.setDoesCache(false);
             decompileJar.dependsOn(TASK_DL_FERNFLOWER, deobfJar);
         }
         
+        PostDecompileTask postDecompileJar = makeTask("sourceProcessJar", PostDecompileTask.class);
+        {
+            postDecompileJar.setInJar(delayedFile(JAR_DECOMP));
+            postDecompileJar.setOutJar(delayedFile(JAR_DECOMP_POST));
+            postDecompileJar.setPatches(delayedFile(MCP_PATCHES_CLIENT));
+            postDecompileJar.setAstyleConfig(delayedFile(MCP_DATA_STYLE));
+            postDecompileJar.setDoesCache(false);
+            postDecompileJar.dependsOn(decompileJar);
+        }
+        
         ProcessSrcJarTask patchJar = makeTask(TASK_PATCH_JAR, ProcessSrcJarTask.class);
         {
-            patchJar.setInJar(delayedFile(JAR_DECOMP));
+            patchJar.setInJar(delayedFile(JAR_DECOMP_POST));
             patchJar.setOutJar(new File(project.getBuildDir(), "tmp/unneededPatched.jar"));
             patchJar.setDoesCache(false);
             patchJar.setMaxFuzz(2);
-            patchJar.dependsOn(decompileJar);
+            patchJar.dependsOn(postDecompileJar);
         }
 
 
@@ -100,7 +109,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             remapCleanTask.setParamsCsv(delayedFile(Constants.CSV_PARAM));
             remapCleanTask.setAddsJavadocs(false);
             remapCleanTask.setDoesCache(false);
-            remapCleanTask.dependsOn(decompileJar);
+            remapCleanTask.dependsOn(postDecompileJar);
         }
     }
     
@@ -133,6 +142,8 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
     
     public void afterEvaluate()
     {
+        super.afterEvaluate();
+        
         List<PatcherProject> patchersList = sortByPatching(getExtension().getProjects());
         
         Task setupTask = project.getTasks().getByName(TASK_SETUP);

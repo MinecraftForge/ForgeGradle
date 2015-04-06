@@ -78,7 +78,7 @@ public class RemapSourcesTask extends EditJarTask
     }
 
     @Override
-    public String asRead(String text)
+    public String asRead(String name, String text)
     {
         ArrayList<String> newLines = new ArrayList<String>();
         for (String line : StringUtils.lines(text))

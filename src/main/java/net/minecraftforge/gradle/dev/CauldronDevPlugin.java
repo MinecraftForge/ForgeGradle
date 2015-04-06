@@ -11,7 +11,7 @@ import net.minecraftforge.gradle.CopyInto;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.ApplyS2STask;
-import net.minecraftforge.gradle.tasks.DecompileTask;
+import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
@@ -112,7 +112,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             task2.dependsOn("downloadFernFlower", "mergeJars");
         }
 
-        DecompileTask task3 = makeTask("decompile", DecompileTask.class);
+        PostDecompileTask task3 = makeTask("decompile", PostDecompileTask.class);
         {
             task3.setInJar(delayedFile(JAR_SRG_CDN));
             task3.setOutJar(delayedFile(ZIP_DECOMP_CDN));

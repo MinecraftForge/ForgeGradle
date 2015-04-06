@@ -58,10 +58,6 @@ public class ProcessSrcJarTask extends EditJarTask
                 {
                     String relative = rel.getRelative();
 
-                    // overwrite duplicates
-                    //                    if (sourceMap.containsKey(relative) || resourceMap.containsKey(relative))
-                    //                        continue; //ignore duplicates.
-
                     if (relative.endsWith(".java"))
                     {
                         sourceMap.put(relative, Files.toString(rel.file, Charset.defaultCharset()));
@@ -422,6 +418,6 @@ public class ProcessSrcJarTask extends EditJarTask
     //@formatter:off
     
     @Override protected boolean storeJarInRam() { return true; }
-    @Override public String asRead(String file) { return file; }
+    @Override public String asRead(String fileName, String file) { return file; }
     @Override public void doStuffBefore() { }
 }

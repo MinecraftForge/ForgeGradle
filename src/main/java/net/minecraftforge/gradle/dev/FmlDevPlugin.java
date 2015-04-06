@@ -17,7 +17,7 @@ import net.minecraftforge.gradle.delayed.DelayedBase;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.CrowdinDownloadTask;
-import net.minecraftforge.gradle.tasks.DecompileTask;
+import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
@@ -109,7 +109,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task2.dependsOn("downloadFernFlower", "mergeJars", "genSrgs");
         }
 
-        DecompileTask task3 = makeTask("decompile", DecompileTask.class);
+        PostDecompileTask task3 = makeTask("decompile", PostDecompileTask.class);
         {
             task3.setInJar(delayedFile(DevConstants.JAR_SRG_FML));
             task3.setOutJar(delayedFile(DevConstants.ZIP_DECOMP_FML));
