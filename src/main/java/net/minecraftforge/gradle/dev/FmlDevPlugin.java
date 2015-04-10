@@ -28,10 +28,10 @@ import net.minecraftforge.gradle.tasks.abstractutil.FileFilterTask;
 import net.minecraftforge.gradle.tasks.dev.ChangelogTask;
 import net.minecraftforge.gradle.tasks.dev.FMLVersionPropTask;
 import net.minecraftforge.gradle.tasks.dev.GenBinaryPatches;
-import net.minecraftforge.gradle.tasks.dev.GenDevProjectsTask;
 import net.minecraftforge.gradle.tasks.dev.GeneratePatches;
 import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
 import net.minecraftforge.gradle.tasks.dev.SubprojectTask;
+import net.minecraftforge.gradle.tasks.patcher.GenDevProjectsTask;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;

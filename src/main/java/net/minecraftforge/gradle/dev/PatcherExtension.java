@@ -54,4 +54,15 @@ public class PatcherExtension extends BaseExtension
     {
         this.workspaceDir = project.file(workspaceDir);
     }
+    
+    @SuppressWarnings("serial")
+    protected Closure<File> getDelayedWorkspaceDir()
+    {
+        return new Closure<File>(null) {
+            public File call()
+            {
+                return getWorkspaceDir();
+            }
+        };
+    }
 }

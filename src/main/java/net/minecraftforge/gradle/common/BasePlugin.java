@@ -119,6 +119,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         project.getExtensions().create(EXT_NAME_MC, (Class<K>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0], this);
 
         // repos
+        // TODO: move to userdev
         project.allprojects(new Action<Project>() {
             public void execute(Project proj)
             {

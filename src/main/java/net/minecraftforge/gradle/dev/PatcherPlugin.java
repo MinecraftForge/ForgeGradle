@@ -11,10 +11,11 @@ import net.minecraftforge.gradle.GradleConfigurationException;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
-import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
+import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
+import net.minecraftforge.gradle.tasks.patcher.GenDevProjectsTask;
 
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
@@ -96,7 +97,16 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             patchJar.setMaxFuzz(2);
             patchJar.dependsOn(postDecompileJar);
         }
-
+        
+        GenDevProjectsTask createProjects = makeTask(TASK_GEN_PROJECTS, GenDevProjectsTask.class);
+        {
+            createProjects.setWorkspaceDir(getExtension().getDelayedWorkspaceDir());
+            createProjects.addRepo("minecraft", Constants.URL_LIBRARY);
+            createProjects.putProject("clean", null, null, null, null);
+            createProjects.setJavaLevel("1.6");
+            
+            //TODO: add MC libs
+        }
 
         // Clean project stuff
 
@@ -127,11 +137,19 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             remapTask.dependsOn(TASK_PATCH_JAR);
         }
         
+        
+        ((GenDevProjectsTask) project.getTasks().getByName(TASK_GEN_PROJECTS)).putProject(patcher.getName(),
+                patcher.getDelayedSourcesDir(),
+                patcher.getDelayedResourcesDir(),
+                patcher.getDelayedTestSourcesDir(),
+                patcher.getDelayedTestResourcesDir());
     }
     
     protected void removeProject(PatcherProject patcher)
     {
         project.getTasks().remove(project.getTasks().getByName(String.format(TASK_PROJECT_REMAP_JAR, patcher.getName())));
+        
+        ((GenDevProjectsTask) project.getTasks().getByName(TASK_GEN_PROJECTS)).removeProject(patcher.getName());
     }
 
     @Override
