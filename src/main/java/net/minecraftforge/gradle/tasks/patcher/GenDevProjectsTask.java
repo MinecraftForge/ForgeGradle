@@ -24,17 +24,26 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
+import com.google.common.io.Resources;
 
 public class GenDevProjectsTask extends DefaultTask
 {
     //@formatter:off
-    @Input private String                javaLevel;
-    private Object                       workspaceDir;
-    private static final String          INDENT       = "    "; // 4 spaces
-    @Input private final List<Repo>      repositories = Lists.newArrayList();
-    @Input private final List<String>    dependencies = Lists.newArrayList();
+    @Input private String                 javaLevel;
+    private Object                        workspaceDir;
+    @Input private final String           resource;
+    @Input private final List<Repo>       repositories = Lists.newArrayList();
+    @Input private final List<String>     dependencies = Lists.newArrayList();
     private final Map<String, DevProject> projects     = Maps.newHashMap();
+    private static final String           INDENT       = "    "; // 4 spaces
     //@formatter:on
+
+
+    public GenDevProjectsTask() throws IOException
+    {
+        super();
+        resource = Resources.toString(Resources.getResource(GenDevProjectsTask.class, "globalGradle"), Constants.CHARSET);
+    }
 
     @TaskAction
     public void executeTask() throws IOException
@@ -56,122 +65,63 @@ public class GenDevProjectsTask extends DefaultTask
 
     private void generateRootBuild(File output) throws IOException
     {
+        int repoStart, repoEnd;
+        int depStart, depEnd;
+        int jLevelStart, jLevelEnd;
+
+        {
+            int startIndex = resource.indexOf("@@");
+            int endIndex = resource.indexOf("@@", startIndex+2);
+            
+            System.out.println("start: "+startIndex + "    end: "+endIndex);
+
+            repoStart = startIndex;
+            repoEnd = endIndex + 3; // account for the ending newline
+
+            startIndex = resource.indexOf("@@", endIndex+2);
+            endIndex = resource.indexOf("@@", startIndex+2);
+            
+            System.out.println("start: "+startIndex + "    end: "+endIndex);
+
+            depStart = startIndex;
+            depEnd = endIndex + 3; // account for the ending newline
+
+            startIndex = resource.indexOf("@@", endIndex+2);
+            endIndex = resource.indexOf("@@", startIndex+2);
+            
+            System.out.println("start: "+startIndex + "    end: "+endIndex);
+
+            jLevelStart = startIndex;
+            jLevelEnd = endIndex + 2; // keep the line ending this time.
+        }
+
         StringBuilder builder = new StringBuilder();
 
-        //@formatter:off
-        
-        // create util tasks
-        lines(builder,
-                "",
-                "task eclipse",
-                "task cleanEclipse",
-                "task idea",
-                "task cleanIdea",
-                ""
-        );
-        
-        
-        // start subprojects
-        append(builder, "subprojects { ", NEWLINE);
-        
-        // plugins
-        lines(builder, 1,
-                "apply plugin: 'java'",
-                "apply plugin: 'eclipse'",
-                "apply plugin: 'idea'",
-                "",
-                // set task dependencies
-                "rootProject.tasks.eclipse.dependsOn tasks.eclipse",
-                "rootProject.tasks.cleanEclipse.dependsOn tasks.cleanEclipse",
-                "rootProject.tasks.idea.dependsOn tasks.idea",
-                "rootProject.tasks.cleanIdea.dependsOn tasks.cleanIdea",
-                ""
-        );
-        
-        
+        builder.append(resource.subSequence(0, repoStart));
+
         // repositories
-        append(builder, INDENT, "repositories {", NEWLINE);
-        append(builder, INDENT, INDENT, "mavenCentral()", NEWLINE);
         for (Repo repo : repositories)
         {
             lines(builder, 2,
                     "maven {",
-                    "    name '"+repo.name + "'",
-                    "    url '" +repo.url + "'",
-                    "}"
-            );
+                    "    name '" + repo.name + "'",
+                    "    url '" + repo.url + "'",
+                    "}");
         }
-        append(builder, INDENT, "}", NEWLINE, NEWLINE);
-        
+
+        builder.append(resource.subSequence(repoEnd, depStart));
+
         // dependencies
-        append(builder, INDENT, "dependencies {", NEWLINE);
         for (String dep : dependencies)
         {
             append(builder, INDENT, INDENT, dep, NEWLINE);
         }
-        append(builder, INDENT, "}", NEWLINE, NEWLINE);
-        
-        // set java level
-        append(builder, INDENT, "compileJava { sourceCompatibility = targetCompatibility = ", javaLevel, " }", NEWLINE);
-        
-        // ignore gradleStart just in case
-        lines(builder, 1,
-              "",
-              "jar { exclude \'GradleStart*\', \'net/minecraftforge/gradle/**\' }",
-              ""
-        );
-        
-        // eclipse hacks.
-        // why? because eclipse doesnt like 2 srcDirs with the same name "java" (src/main/java)
-        lines(builder, 1,
-                "def links = []",
-                "def dupes = []",
-                "eclipse.project.file.withXml { provider ->",
-                "    def node = provider.asNode()",
-                "    links = []",
-                "    dupes = []",
-                "    node.linkedResources.link.each { child ->",
-                "        def path = child.location.text()",
-                "        if (path in dupes) {",
-                "            child.replaceNode {}",
-                "        } else {",
-                "            dupes.add(path)",
-                "            def newName = path.split('/')[-2..-1].join('/')",
-                "            links += newName",
-                "            child.replaceNode {",
-                "                link{",
-                "                    name(newName)",
-                "                    type('2')",
-                "                    location(path)",
-                "                }",
-                "            }",
-                "        }",
-                "    }",
-                "}",
-                "",
-                "eclipse.classpath.file.withXml {",
-                "    def node = it.asNode()",
-                "    node.classpathentry.each { child -> ",
-                "        if (child.@kind == 'src' && !child.@path.contains('/')) child.replaceNode {}",
-                "        if (child.@path in links) links.remove(child.@path)",
-                "    }",
-                "    links.each { link -> node.appendNode('classpathentry', [kind:'src', path:link]) }",
-                "}",
-                "tasks.eclipseClasspath.dependsOn 'eclipseProject' //Make them run in correct order"
-        );
-        
-        // TODO: idea hacks.. if any... maybe add a contentRoot?
-        // ideafix.. just in case
-        lines(builder, 1,
-                "",
-                "idea { module { inheritOutputDirs = true } }",
-                ""
-        );
-        
-        //@formatter:on
 
-        // end subprojects
-        append(builder, "}", NEWLINE);
+        builder.append(resource.subSequence(depEnd, jLevelStart));
+        
+        builder.append(getJavaLevel());
+        
+        builder.append(resource.subSequence(jLevelEnd, resource.length()));
 
         Files.write(builder.toString(), output, Constants.CHARSET);
     }
@@ -211,14 +161,6 @@ public class GenDevProjectsTask extends DefaultTask
 
         // write
         Files.write(builder.toString(), output, Constants.CHARSET);
-    }
-
-    private static void lines(StringBuilder out, CharSequence... lines)
-    {
-        for (CharSequence line : lines)
-        {
-            out.append(line).append(NEWLINE);
-        }
     }
 
     private static void lines(StringBuilder out, int indentLevel, CharSequence... lines)
@@ -351,7 +293,7 @@ public class GenDevProjectsTask extends DefaultTask
     {
         projects.put(name, new DevProject(getProject(), name, externalSrcDir, externalResDir, externalTestSrcDir, externalTestResDir));
     }
-    
+
     public void removeProject(String name)
     {
         projects.remove(name);
