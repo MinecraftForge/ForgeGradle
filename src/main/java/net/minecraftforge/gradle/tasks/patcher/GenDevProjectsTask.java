@@ -73,26 +73,26 @@ public class GenDevProjectsTask extends DefaultTask
             int startIndex = resource.indexOf("@@");
             int endIndex = resource.indexOf("@@", startIndex+2);
             
-            System.out.println("start: "+startIndex + "    end: "+endIndex);
+            //System.out.println("start: "+startIndex + "    end: "+endIndex);
 
             repoStart = startIndex;
-            repoEnd = endIndex + 3; // account for the ending newline
+            repoEnd = endIndex + 3; // account for the ending newline and @@
 
             startIndex = resource.indexOf("@@", endIndex+2);
             endIndex = resource.indexOf("@@", startIndex+2);
             
-            System.out.println("start: "+startIndex + "    end: "+endIndex);
+            //System.out.println("start: "+startIndex + "    end: "+endIndex);
 
             depStart = startIndex;
-            depEnd = endIndex + 3; // account for the ending newline
+            depEnd = endIndex + 3; // account for the ending newline and @@
 
             startIndex = resource.indexOf("@@", endIndex+2);
             endIndex = resource.indexOf("@@", startIndex+2);
             
-            System.out.println("start: "+startIndex + "    end: "+endIndex);
+            //System.out.println("start: "+startIndex + "    end: "+endIndex);
 
             jLevelStart = startIndex;
-            jLevelEnd = endIndex + 2; // keep the line ending this time.
+            jLevelEnd = endIndex + 2; // keep the line ending this time, only account for @@
         }
 
         StringBuilder builder = new StringBuilder();

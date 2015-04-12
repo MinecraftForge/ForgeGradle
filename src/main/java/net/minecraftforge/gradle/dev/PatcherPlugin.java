@@ -20,6 +20,7 @@ import net.minecraftforge.gradle.tasks.patcher.GenDevProjectsTask;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Task;
+import org.gradle.api.tasks.Copy;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -50,9 +51,9 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             
         });
         
-        makeTasks();
+        makeTask(TASK_SETUP);
         
-        makeTask("setup");
+        makeTasks();
     }
     
     protected void makeTasks()
@@ -121,6 +122,28 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             remapCleanTask.setDoesCache(false);
             remapCleanTask.dependsOn(postDecompileJar);
         }
+        
+        Object delayedRemapped = delayedTree(JAR_REMAPPED);
+        Copy extract = makeTask("extractCleanSources", Copy.class);
+        {
+            extract.from(delayedRemapped);
+            extract.into(getExtension().getDelayedSubWorkspaceDir("clean/src/main/java"));
+            extract.include("*.java", "**/*.java");
+            extract.dependsOn(remapCleanTask, TASK_GEN_PROJECTS);
+        }
+        
+        extract = makeTask("extractCleanResources", Copy.class);
+        {
+            extract.from(delayedRemapped);
+            extract.into(getExtension().getDelayedSubWorkspaceDir("clean/src/main/resources"));
+            extract.exclude("*.java", "**/*.java");
+            extract.dependsOn(remapCleanTask, TASK_GEN_PROJECTS);
+        }
+        
+        // add setup depends
+        Task setupTask = project.getTasks().getByName(TASK_SETUP);
+        setupTask.dependsOn("extractCleanSources");
+        setupTask.dependsOn("extractCleanResources");
     }
     
     protected void createProject(PatcherProject patcher)
@@ -137,17 +160,38 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             remapTask.dependsOn(TASK_PATCH_JAR);
         }
         
-        
         ((GenDevProjectsTask) project.getTasks().getByName(TASK_GEN_PROJECTS)).putProject(patcher.getName(),
                 patcher.getDelayedSourcesDir(),
                 patcher.getDelayedResourcesDir(),
                 patcher.getDelayedTestSourcesDir(),
                 patcher.getDelayedTestResourcesDir());
+        
+        
+        Object delayedRemapped = delayedTree(String.format(JAR_REMAPPED_PROJECT, patcher.getName()));
+        
+        Copy extract = makeTask(String.format(TASK_PROJECT_EXTRACT_SRC, patcher.getName()), Copy.class);
+        {
+            extract.from(delayedRemapped);
+            extract.into(getExtension().getDelayedSubWorkspaceDir(patcher.getName() + "/src/main/java"));
+            extract.include("*.java", "**/*.java");
+            extract.dependsOn(remapTask, TASK_GEN_PROJECTS);
+        }
+        
+        extract = makeTask(String.format(TASK_PROJECT_EXTRACT_RES, patcher.getName()), Copy.class);
+        {
+            extract.from(delayedRemapped);
+            extract.into(getExtension().getDelayedSubWorkspaceDir(patcher.getName() + "/src/main/resources"));
+            extract.exclude("*.java", "**/*.java");
+            extract.dependsOn(remapTask, TASK_GEN_PROJECTS);
+        }
     }
     
     protected void removeProject(PatcherProject patcher)
     {
         project.getTasks().remove(project.getTasks().getByName(String.format(TASK_PROJECT_REMAP_JAR, patcher.getName())));
+        
+        project.getTasks().remove(project.getTasks().getByName(String.format(TASK_PROJECT_EXTRACT_SRC, patcher.getName())));
+        project.getTasks().remove(project.getTasks().getByName(String.format(TASK_PROJECT_EXTRACT_RES, patcher.getName())));
         
         ((GenDevProjectsTask) project.getTasks().getByName(TASK_GEN_PROJECTS)).removeProject(patcher.getName());
     }
@@ -178,7 +222,8 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                     patcher.getDelayedResourcesDir());
             
             // TODO: make it the project creation tasks
-            setupTask.dependsOn(String.format(TASK_PROJECT_REMAP_JAR, patcher.getName()));
+            setupTask.dependsOn(String.format(TASK_PROJECT_EXTRACT_SRC, patcher.getName()));
+            setupTask.dependsOn(String.format(TASK_PROJECT_EXTRACT_RES, patcher.getName()));
             
             // get Ats
             for (File at : project.fileTree(patcher.getResourcesDir()))
@@ -244,8 +289,6 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
     }
     
     //@formatter:off
-    
-    //formatter:off
     @Override public boolean canOverlayPlugin() { return false; }
     @Override protected void applyOverlayPlugin() { }
     @Override protected PatcherExtension getOverlayExtension() { return null; }

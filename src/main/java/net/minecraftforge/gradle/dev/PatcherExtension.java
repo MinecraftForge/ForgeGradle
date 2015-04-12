@@ -65,4 +65,15 @@ public class PatcherExtension extends BaseExtension
             }
         };
     }
+    
+    @SuppressWarnings("serial")
+    protected Closure<File> getDelayedSubWorkspaceDir(final String path)
+    {
+        return new Closure<File>(null) {
+            public File call()
+            {
+                return new File(getWorkspaceDir(), path);
+            }
+        };
+    }
 }

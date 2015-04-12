@@ -30,5 +30,6 @@ public final class PatcherConstants
     static final String TASK_DEOBF_JAR             = "deobfuscateJar";
     static final String TASK_PATCH_JAR             = "patchJar";
     static final String TASK_PROJECT_REMAP_JAR     = "remap%sJar";
-    static final String TASK_PROJECT_EXTRACT_JAR   = "extract%sJar";
+    static final String TASK_PROJECT_EXTRACT_SRC   = "extract%sSources";
+    static final String TASK_PROJECT_EXTRACT_RES   = "extract%sResources";
 }
