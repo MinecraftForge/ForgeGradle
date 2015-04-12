@@ -27,7 +27,9 @@ subprojects {
 		sourceCompatibility = targetCompatibility = "@@javaLevel@@"
 	}
 	
-	jar { exclude \'GradleStart*\', \'net/minecraftforge/gradle/**\' }
+	jar {
+		exclude 'GradleStart*', 'net/minecraftforge/gradle/**'
+	}
 	
 	def links = []
 	def dupes = []

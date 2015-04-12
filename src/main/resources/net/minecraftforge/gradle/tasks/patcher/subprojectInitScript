@@ -1,0 +1,8 @@
+useLogger(new CustomEventLogger())
+
+class CustomEventLogger extends BuildAdapter implements TaskExecutionListener
+{
+    void beforeExecute(Task task) { println "SubprojectCall -> $task.path" }
+    void afterExecute(Task task, TaskState state) { }
+    void buildFinished(BuildResult result) { }
+}

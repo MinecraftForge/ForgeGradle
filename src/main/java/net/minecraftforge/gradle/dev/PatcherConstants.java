@@ -27,6 +27,7 @@ public final class PatcherConstants
 
     static final String TASK_SETUP                 = "setup";
     static final String TASK_GEN_PROJECTS          = "genProjects";
+    static final String TASK_GEN_IDES              = "genIDEProjects";
     static final String TASK_DEOBF_JAR             = "deobfuscateJar";
     static final String TASK_PATCH_JAR             = "patchJar";
     static final String TASK_PROJECT_REMAP_JAR     = "remap%sJar";

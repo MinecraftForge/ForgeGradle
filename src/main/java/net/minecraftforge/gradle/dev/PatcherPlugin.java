@@ -16,6 +16,7 @@ import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.patcher.GenDevProjectsTask;
+import net.minecraftforge.gradle.tasks.patcher.SubprojectCall;
 
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
@@ -51,7 +52,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             
         });
         
-        makeTask(TASK_SETUP);
+        makeTask(TASK_SETUP).dependsOn(TASK_GEN_IDES);
         
         makeTasks();
     }
@@ -108,6 +109,13 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             
             //TODO: add MC libs
         }
+        
+        SubprojectCall makeIdeProjects = makeTask(TASK_GEN_IDES, SubprojectCall.class);
+        {
+            makeIdeProjects.setProjectDir(getExtension().getDelayedWorkspaceDir());
+            makeIdeProjects.setCallLine("cleanEclipse cleanIdea eclipse idea");
+            makeIdeProjects.dependsOn(createProjects);
+        }
 
         // Clean project stuff
 
@@ -141,9 +149,8 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         }
         
         // add setup depends
-        Task setupTask = project.getTasks().getByName(TASK_SETUP);
-        setupTask.dependsOn("extractCleanSources");
-        setupTask.dependsOn("extractCleanResources");
+        makeIdeProjects.dependsOn("extractCleanSources");
+        makeIdeProjects.dependsOn("extractCleanResources");
     }
     
     protected void createProject(PatcherProject patcher)
@@ -209,6 +216,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         List<PatcherProject> patchersList = sortByPatching(getExtension().getProjects());
         
         Task setupTask = project.getTasks().getByName(TASK_SETUP);
+        Task ideTask = project.getTasks().getByName(TASK_GEN_IDES);
         ProcessSrcJarTask patchJar = (ProcessSrcJarTask) project.getTasks().getByName(TASK_PATCH_JAR);
         DeobfuscateJarTask deobfJar = (DeobfuscateJarTask) project.getTasks().getByName(TASK_DEOBF_JAR);
         
@@ -222,8 +230,8 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                     patcher.getDelayedResourcesDir());
             
             // TODO: make it the project creation tasks
-            setupTask.dependsOn(String.format(TASK_PROJECT_EXTRACT_SRC, patcher.getName()));
-            setupTask.dependsOn(String.format(TASK_PROJECT_EXTRACT_RES, patcher.getName()));
+            ideTask.dependsOn(String.format(TASK_PROJECT_EXTRACT_SRC, patcher.getName()));
+            ideTask.dependsOn(String.format(TASK_PROJECT_EXTRACT_RES, patcher.getName()));
             
             // get Ats
             for (File at : project.fileTree(patcher.getResourcesDir()))
