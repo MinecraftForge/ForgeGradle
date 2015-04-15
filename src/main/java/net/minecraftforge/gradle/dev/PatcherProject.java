@@ -1,6 +1,9 @@
 package net.minecraftforge.gradle.dev;
 
-import static net.minecraftforge.gradle.dev.PatcherConstants.*;
+import static net.minecraftforge.gradle.dev.PatcherConstants.DEFAULT_RESOURCES_DIR;
+import static net.minecraftforge.gradle.dev.PatcherConstants.DEFAULT_SOURCES_DIR;
+import static net.minecraftforge.gradle.dev.PatcherConstants.DEFAULT_TEST_RESOURCES_DIR;
+import static net.minecraftforge.gradle.dev.PatcherConstants.DEFAULT_TEST_SOURCES_DIR;
 import groovy.lang.Closure;
 
 import java.io.File;
@@ -19,6 +22,7 @@ public class PatcherProject implements Serializable
     private final transient Project project;
 
     private final String name;
+    private final String capName;
     private String patchAfter = "clean";
     private String generateFrom;
 
@@ -29,7 +33,6 @@ public class PatcherProject implements Serializable
     private File testSourcesDir;
     private File testResourcesDir;
 
-    // TODO: do something about these.. are they even needed???
     private String mainClass;
     private String tweakClass;
 
@@ -38,11 +41,20 @@ public class PatcherProject implements Serializable
         this.name = name;
         this.project = plugin.project;
         rootDir = project.getProjectDir();
+        
+        // make capName
+        char char1 = name.charAt(0);
+        capName = Character.toUpperCase(char1) + name.substring(1);
     }
 
     public String getName()
     {
         return name;
+    }
+    
+    public String getCapName()
+    {
+        return capName;
     }
 
     /**
@@ -340,6 +352,28 @@ public class PatcherProject implements Serializable
             return new File(getRootDir(), defaultPath);
         else
             return ((File) field);
+    }
+    
+    @SuppressWarnings("serial")
+    protected Closure<String> getDelayedMainClass()
+    {
+        return new Closure<String>(project, this) {
+            public String call()
+            {
+                return getMainClass();
+            }
+        };
+    }
+    
+    @SuppressWarnings("serial")
+    protected Closure<String> getDelayedTweakClass()
+    {
+        return new Closure<String>(project, this) {
+            public String call()
+            {
+                return getTweakClass();
+            }
+        };
     }
     
     @SuppressWarnings("serial")

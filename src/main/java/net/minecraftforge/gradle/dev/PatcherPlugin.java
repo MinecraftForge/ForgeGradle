@@ -2,6 +2,7 @@ package net.minecraftforge.gradle.dev;
 
 import static net.minecraftforge.gradle.common.Constants.*;
 import static net.minecraftforge.gradle.dev.PatcherConstants.*;
+import groovy.lang.Closure;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -11,6 +12,7 @@ import net.minecraftforge.gradle.GradleConfigurationException;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
+import net.minecraftforge.gradle.tasks.CreateStartTask;
 import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
 import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
@@ -132,25 +134,47 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         }
         
         Object delayedRemapped = delayedTree(JAR_REMAPPED);
-        Copy extract = makeTask("extractCleanSources", Copy.class);
+        
+        Copy extractSrc = makeTask("extractCleanSources", Copy.class);
         {
-            extract.from(delayedRemapped);
-            extract.into(getExtension().getDelayedSubWorkspaceDir("clean/src/main/java"));
-            extract.include("*.java", "**/*.java");
-            extract.dependsOn(remapCleanTask, TASK_GEN_PROJECTS);
+            extractSrc.from(delayedRemapped);
+            extractSrc.into(subWorkspace("clean" + DIR_EXTRACTED_RES));
+            extractSrc.include("*.java", "**/*.java");
+            extractSrc.dependsOn(remapCleanTask, TASK_GEN_PROJECTS);
         }
         
-        extract = makeTask("extractCleanResources", Copy.class);
+        Copy extractRes = makeTask("extractCleanResources", Copy.class);
         {
-            extract.from(delayedRemapped);
-            extract.into(getExtension().getDelayedSubWorkspaceDir("clean/src/main/resources"));
-            extract.exclude("*.java", "**/*.java");
-            extract.dependsOn(remapCleanTask, TASK_GEN_PROJECTS);
+            extractRes.from(delayedRemapped);
+            extractRes.into(subWorkspace("clean" + DIR_EXTRACTED_RES));
+            extractRes.exclude("*.java", "**/*.java");
+            extractRes.dependsOn(remapCleanTask, TASK_GEN_PROJECTS);
         }
+        
+        CreateStartTask makeStart = makeTask("makeCleanStart", CreateStartTask.class);
+        {
+            for (String resource : GRADLE_START_RESOURCES)
+            {
+                makeStart.addResource(resource);
+            }
+            
+            makeStart.addReplacement("@@ASSETINDEX@@", delayedString(REPLACE_ASSET_INDEX));
+            makeStart.addReplacement("@@ASSETSDIR@@", delayedFile(DIR_ASSETS));
+            makeStart.addReplacement("@@NATIVESDIR@@", delayedFile(Constants.DIR_NATIVES));
+            makeStart.addReplacement("@@CSVDIR@@", delayedFile(DIR_MCP_DATA));
+            makeStart.addReplacement("@@BOUNCERCLIENT@@", "net.minecraft.client.main.Main");
+            makeStart.addReplacement("@@TWEAKERCLIENT@@", "");
+            makeStart.addReplacement("@@BOUNCERSERVER@@", "net.minecraft.server.MinecraftServer");
+            makeStart.addReplacement("@@TWEAKERSERVER@@", "");
+            makeStart.setStartOut(subWorkspace("clean" + DIR_EXTRACTED_START));
+            makeStart.setDoesCache(false);
+            makeStart.dependsOn(TASK_DL_ASSET_INDEX, TASK_DL_ASSETS);
+        }
+        
+        // net.minecraft.client.main.Main
         
         // add setup depends
-        makeIdeProjects.dependsOn("extractCleanSources");
-        makeIdeProjects.dependsOn("extractCleanResources");
+        makeIdeProjects.dependsOn(extractSrc, extractRes);
     }
     
     protected void createProject(PatcherProject patcher)
@@ -167,7 +191,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             remapTask.dependsOn(TASK_PATCH_JAR);
         }
         
-        ((GenDevProjectsTask) project.getTasks().getByName(TASK_GEN_PROJECTS)).putProject(patcher.getName(),
+        ((GenDevProjectsTask) project.getTasks().getByName(TASK_GEN_PROJECTS)).putProject(patcher.getCapName(),
                 patcher.getDelayedSourcesDir(),
                 patcher.getDelayedResourcesDir(),
                 patcher.getDelayedTestSourcesDir(),
@@ -176,31 +200,51 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         
         Object delayedRemapped = delayedTree(String.format(JAR_REMAPPED_PROJECT, patcher.getName()));
         
-        Copy extract = makeTask(String.format(TASK_PROJECT_EXTRACT_SRC, patcher.getName()), Copy.class);
+        Copy extract = makeTask(String.format(TASK_PROJECT_EXTRACT_SRC, patcher.getCapName()), Copy.class);
         {
             extract.from(delayedRemapped);
-            extract.into(getExtension().getDelayedSubWorkspaceDir(patcher.getName() + "/src/main/java"));
+            extract.into(subWorkspace(patcher.getName() + DIR_EXTRACTED_SRC));
             extract.include("*.java", "**/*.java");
             extract.dependsOn(remapTask, TASK_GEN_PROJECTS);
         }
         
-        extract = makeTask(String.format(TASK_PROJECT_EXTRACT_RES, patcher.getName()), Copy.class);
+        extract = makeTask(String.format(TASK_PROJECT_EXTRACT_RES, patcher.getCapName()), Copy.class);
         {
             extract.from(delayedRemapped);
-            extract.into(getExtension().getDelayedSubWorkspaceDir(patcher.getName() + "/src/main/resources"));
+            extract.into(subWorkspace(patcher.getName() + DIR_EXTRACTED_RES));
             extract.exclude("*.java", "**/*.java");
             extract.dependsOn(remapTask, TASK_GEN_PROJECTS);
+        }
+        
+        CreateStartTask makeStart = makeTask(String.format(TASK_PROJECT_MAKE_START, patcher.getCapName()), CreateStartTask.class);
+        {
+            for (String resource : GRADLE_START_RESOURCES)
+            {
+                makeStart.addResource(resource);
+            }
+            
+            makeStart.addReplacement("@@ASSETINDEX@@", delayedString(REPLACE_ASSET_INDEX));
+            makeStart.addReplacement("@@ASSETSDIR@@", delayedFile(DIR_ASSETS));
+            makeStart.addReplacement("@@NATIVESDIR@@", delayedFile(Constants.DIR_NATIVES));
+            makeStart.addReplacement("@@CSVDIR@@", delayedFile(DIR_MCP_DATA));
+            makeStart.addReplacement("@@BOUNCERCLIENT@@", "net.minecraft.client.main.Main");
+            makeStart.addReplacement("@@TWEAKERCLIENT@@", "");
+            makeStart.addReplacement("@@BOUNCERSERVER@@", "net.minecraft.server.MinecraftServer");
+            makeStart.addReplacement("@@TWEAKERSERVER@@", "");
+            makeStart.setStartOut(subWorkspace(patcher.getName() + DIR_EXTRACTED_START));
+            makeStart.setDoesCache(false);
+            makeStart.dependsOn(TASK_DL_ASSET_INDEX, TASK_DL_ASSETS);
         }
     }
     
     protected void removeProject(PatcherProject patcher)
     {
-        project.getTasks().remove(project.getTasks().getByName(String.format(TASK_PROJECT_REMAP_JAR, patcher.getName())));
+        project.getTasks().remove(project.getTasks().getByName(String.format(TASK_PROJECT_REMAP_JAR, patcher.getCapName())));
+        project.getTasks().remove(project.getTasks().getByName(String.format(TASK_PROJECT_EXTRACT_SRC, patcher.getCapName())));
+        project.getTasks().remove(project.getTasks().getByName(String.format(TASK_PROJECT_EXTRACT_RES, patcher.getCapName())));
+        project.getTasks().remove(project.getTasks().getByName(String.format(TASK_PROJECT_MAKE_START, patcher.getCapName())));
         
-        project.getTasks().remove(project.getTasks().getByName(String.format(TASK_PROJECT_EXTRACT_SRC, patcher.getName())));
-        project.getTasks().remove(project.getTasks().getByName(String.format(TASK_PROJECT_EXTRACT_RES, patcher.getName())));
-        
-        ((GenDevProjectsTask) project.getTasks().getByName(TASK_GEN_PROJECTS)).removeProject(patcher.getName());
+        ((GenDevProjectsTask) project.getTasks().getByName(TASK_GEN_PROJECTS)).removeProject(patcher.getCapName());
     }
 
     @Override
@@ -215,7 +259,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         
         List<PatcherProject> patchersList = sortByPatching(getExtension().getProjects());
         
-        Task setupTask = project.getTasks().getByName(TASK_SETUP);
+        //Task setupTask = project.getTasks().getByName(TASK_SETUP);
         Task ideTask = project.getTasks().getByName(TASK_GEN_IDES);
         ProcessSrcJarTask patchJar = (ProcessSrcJarTask) project.getTasks().getByName(TASK_PATCH_JAR);
         DeobfuscateJarTask deobfJar = (DeobfuscateJarTask) project.getTasks().getByName(TASK_DEOBF_JAR);
@@ -230,8 +274,9 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                     patcher.getDelayedResourcesDir());
             
             // TODO: make it the project creation tasks
-            ideTask.dependsOn(String.format(TASK_PROJECT_EXTRACT_SRC, patcher.getName()));
-            ideTask.dependsOn(String.format(TASK_PROJECT_EXTRACT_RES, patcher.getName()));
+            ideTask.dependsOn(String.format(TASK_PROJECT_EXTRACT_SRC, patcher.getCapName()));
+            ideTask.dependsOn(String.format(TASK_PROJECT_EXTRACT_RES, patcher.getCapName()));
+            ideTask.dependsOn(String.format(TASK_PROJECT_MAKE_START, patcher.getCapName()));
             
             // get Ats
             for (File at : project.fileTree(patcher.getResourcesDir()))
@@ -294,6 +339,11 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         }
         
         return list;
+    }
+    
+    private Closure<File> subWorkspace(String path)
+    {
+        return getExtension().getDelayedSubWorkspaceDir(path);
     }
     
     //@formatter:off

@@ -174,51 +174,24 @@ public abstract class GradleStartCommon
         LOGGER.info("Extra: " + extras);
     }
 
-    /* ----------- REFLECTION HELPER --------- */
-
-    private static final String MC_VERSION   = "@@MCVERSION@@";
-    private static final String FML_PACK_OLD = "cpw.mods";
-    private static final String FML_PACK_NEW = "net.minecraftforge";
-
-    @SuppressWarnings("rawtypes")
-    protected static Class getFmlClass(String classname) throws ClassNotFoundException
-    {
-        return getFmlClass(classname, GradleStartCommon.class.getClassLoader());
-    }
-
-    @SuppressWarnings("rawtypes")
-    public static Class getFmlClass(String classname, ClassLoader loader) throws ClassNotFoundException
-    {
-        if (!classname.startsWith("fml")) // dummy check myself
-            throw new IllegalArgumentException("invalid FML classname");
-
-        if (MC_VERSION.startsWith("1.7"))
-            classname = FML_PACK_OLD + "." + classname;
-        else
-            classname = FML_PACK_NEW + "." + classname;
-
-        return Class.forName(classname, true, loader);
-    }
-
     /* ----------- COREMOD AND AT HACK --------- */
 
     // coremod hack
     private static final String            COREMOD_VAR        = "fml.coreMods.load";
     private static final String            COREMOD_MF         = "FMLCorePlugin";
     // AT hack
-    private static final String            MOD_ATD_CLASS      = "fml.common.asm.transformers.ModAccessTransformer";
+    private static final String            MOD_ATD_CLASS      = "net.minecraftforge.fml.common.asm.transformers.ModAccessTransformer";
     private static final String            MOD_AT_METHOD      = "addJar";
 
     public static final Map<String, File> coreMap            = Maps.newHashMap();
 
-    @SuppressWarnings("unchecked")
     private void searchCoremods() throws Exception
     {
         // intialize AT hack Method
         Method atRegistrar = null;
         try
         {
-            atRegistrar = getFmlClass(MOD_ATD_CLASS).getDeclaredMethod(MOD_AT_METHOD, JarFile.class);
+            atRegistrar = Class.forName(MOD_ATD_CLASS).getDeclaredMethod(MOD_AT_METHOD, JarFile.class);
         }
         catch (Throwable t)
         {}

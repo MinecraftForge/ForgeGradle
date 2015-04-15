@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
 
 import org.gradle.api.tasks.Input;
@@ -33,7 +32,7 @@ public class CreateStartTask extends CachedTask
     
     @Cached
     @OutputDirectory
-    private DelayedFile startOut;
+    private Object startOut;
     
     private String classpath;
     private boolean compile;
@@ -82,7 +81,7 @@ public class CreateStartTask extends CachedTask
                     .put("target", "1.6")
                     .build());
         }
-        
+
     }
     
     @SuppressWarnings("rawtypes")
@@ -145,13 +144,13 @@ public class CreateStartTask extends CachedTask
     
     public File getStartOut()
     {
-        File dir = startOut.call();
+        File dir = getProject().file(startOut);
         if (!dir.exists())
             dir.mkdirs();
-        return startOut.call();
+        return dir;
     }
 
-    public void setStartOut(DelayedFile outputFile)
+    public void setStartOut(Object outputFile)
     {
         this.startOut = outputFile;
     }

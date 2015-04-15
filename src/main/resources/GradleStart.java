@@ -1,13 +1,6 @@
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.IOException;
 import java.lang.reflect.Field;
-import java.math.BigInteger;
 import java.net.Proxy;
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,27 +8,15 @@ import net.minecraftforge.gradle.GradleStartCommon;
 
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
-import com.google.common.io.Files;
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonSyntaxException;
 import com.mojang.authlib.Agent;
 import com.mojang.authlib.exceptions.AuthenticationException;
+import com.mojang.authlib.properties.PropertyMap;
 import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
 import com.mojang.authlib.yggdrasil.YggdrasilUserAuthentication;
 
 public class GradleStart extends GradleStartCommon
 {
-    private static final Gson GSON;
-    static
-    {
-        GsonBuilder builder = new GsonBuilder();
-        builder.enableComplexMapKeySerialization();
-        builder.setPrettyPrinting();
-        GSON = builder.create();
-    }
-
     public static void main(String[] args) throws Throwable
     {
         // hack natives.
@@ -54,7 +35,7 @@ public class GradleStart extends GradleStartCommon
     @Override
     protected String getTweakClass()
     {
-        return "@@CLIENTTWEAKER@@";
+        return "@@TWEAKERCLIENT@@";
     }
     
     @Override
@@ -80,7 +61,7 @@ public class GradleStart extends GradleStartCommon
 
         if (!Strings.isNullOrEmpty(argMap.get("assetIndex")))
         {
-            setupAssets(argMap);
+            //setupAssets(argMap);
         }
     }
 
@@ -127,152 +108,7 @@ public class GradleStart extends GradleStartCommon
         argMap.put("accessToken", auth.getAuthenticatedToken());
         argMap.put("uuid", auth.getSelectedProfile().getId().toString().replace("-", ""));
         argMap.put("username", auth.getSelectedProfile().getName());
-        //@@USERTYPE@@
-        //@@USERPROP@@
-    }
-    
-
-    private void setupAssets(Map<String, String> argMap)
-    {
-        if (Strings.isNullOrEmpty(argMap.get("assetsDir")))
-        {
-            throw new IllegalArgumentException("assetsDir is null when assetIndex is not! THIS IS BAD COMMAND LINE ARGUMENTS, fix them");
-        }
-        File assets = new File(argMap.get("assetsDir"));
-        File objects = new File(assets, "objects");
-        File assetIndex = new File(new File(assets, "indexes"), argMap.get("assetIndex") + ".json");
-        try
-        {
-            AssetIndex index = loadAssetsIndex(assetIndex);
-            if (!index.virtual)
-                return;
-
-            File assetVirtual = new File(new File(assets, "virtual"), argMap.get("assetIndex"));
-            argMap.put("assetsDir", assetVirtual.getAbsolutePath());
-
-            GradleStartCommon.LOGGER.info("Setting up virtual assets in: " + assetVirtual.getAbsolutePath());
-
-            Map<String, String> existing = gatherFiles(assetVirtual);
-
-            for (Map.Entry<String, AssetIndex.AssetEntry> e : index.objects.entrySet())
-            {
-                String key = e.getKey();
-                String hash = e.getValue().hash.toLowerCase();
-                File virtual = new File(assetVirtual, key);
-                File source = new File(new File(objects, hash.substring(0, 2)), hash);
-
-                if (existing.containsKey(key))
-                {
-                    if (existing.get(key).equals(hash))
-                    {
-                        existing.remove(key);
-                    }
-                    else
-                    {
-                        GradleStartCommon.LOGGER.info("  " + key + ": INVALID HASH");
-                        virtual.delete();
-                    }
-                }
-                else
-                {
-                    if (!source.exists())
-                    {
-                        GradleStartCommon.LOGGER.info("  " + key + ": NEW MISSING " + hash);
-                    }
-                    else
-                    {
-                        GradleStartCommon.LOGGER.info("  " + key + ": NEW ");
-                        File parent = virtual.getParentFile();
-                        if (!parent.exists())
-                            parent.mkdirs();
-                        Files.copy(source, virtual);
-                    }
-                }
-            }
-
-            for (String key : existing.keySet())
-            {
-                GradleStartCommon.LOGGER.info("  " + key + ": REMOVED");
-                File virtual = new File(assetVirtual, key);
-                virtual.delete();
-            }
-        }
-        catch (Throwable t)
-        {
-            Throwables.propagate(t);
-        }
-    }
-
-    private AssetIndex loadAssetsIndex(File json) throws JsonSyntaxException, JsonIOException, IOException
-    {
-        FileReader reader = new FileReader(json);
-        AssetIndex a =  GSON.fromJson(reader, AssetIndex.class);
-        reader.close();
-        return a;
-    }
-
-    private static class AssetIndex
-    {
-        public boolean            virtual;
-        public Map<String, AssetEntry> objects;
-
-        public static class AssetEntry
-        {
-            public String  hash;
-        }
-    }
-
-    private String getDigest(File file)
-    {
-        DigestInputStream input = null;
-        try
-        {
-            input = new DigestInputStream(new FileInputStream(file), MessageDigest.getInstance("SHA"));
-            byte[] buffer = new byte[65536];
-            int read;
-            do
-            {
-                read = input.read(buffer);
-            } while (read > 0);
-        }
-        catch (Exception ignored)
-        {
-            return null;
-        }
-        finally
-        {
-            if (input != null)
-            {
-                try {
-                    input.close();
-                } catch (Exception e) {}
-            }
-        }
-        return String.format("%1$040x", new BigInteger(1, input.getMessageDigest().digest()));
-    }
-
-    private Map<String, String> gatherFiles(File base)
-    {
-        Map<String, String> ret = new HashMap<String, String>();
-        gatherDir(ret, base, base);
-        return ret;
-    }
-    private void gatherDir(Map<String, String> map, File base, File target)
-    {
-        if (!target.exists() || !target.isDirectory())
-            return;
-        for (File f : target.listFiles())
-        {
-            if (f.isDirectory())
-            {
-                gatherDir(map, base, f);
-            }
-            else
-            {
-                String path = base.toURI().relativize(f.toURI()).getPath().replace("\\", "/");
-                String checksum = getDigest(f).toLowerCase();
-                map.put(path, checksum);
-            }
-        }
+        argMap.put("userType", auth.getUserType().getName());
+        argMap.put("userProperties", new GsonBuilder().registerTypeAdapter(PropertyMap.class, new PropertyMap.Serializer()).create().toJson(auth.getUserProperties()));
     }
 }

@@ -18,25 +18,20 @@ import org.apache.logging.log4j.Logger;
 public class CoremodTweaker implements ITweaker
 {
     protected static final Logger LOGGER             = LogManager.getLogger("GradleStart");
-    private static final String   COREMOD_CLASS      = "fml.relauncher.CoreModManager";
+    private static final String   COREMOD_CLASS      = "net.minecraftforge.fml.relauncher.CoreModManager";
     private static final String   TWEAKER_SORT_FIELD = "tweakSorting";
 
     @Override
-    public void acceptOptions(List<String> args, File gameDir, File assetsDir, String profile)
-    {
-    }
-
     @SuppressWarnings("unchecked")
-    @Override
     public void injectIntoClassLoader(LaunchClassLoader classLoader)
     {
         try
         {
-            Field coreModList = GradleStartCommon.getFmlClass("fml.relauncher.CoreModManager", classLoader).getDeclaredField("loadPlugins");
+            Field coreModList = Class.forName("net.minecraftforge.fml.relauncher.CoreModManager", true, classLoader).getDeclaredField("loadPlugins");
             coreModList.setAccessible(true);
 
             // grab constructor.
-            Class<ITweaker> clazz = (Class<ITweaker>) GradleStartCommon.getFmlClass("fml.relauncher.CoreModManager$FMLPluginWrapper", classLoader);
+            Class<ITweaker> clazz = (Class<ITweaker>) Class.forName("net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper", true, classLoader);
             Constructor<ITweaker> construct = (Constructor<ITweaker>) clazz.getConstructors()[0];
             construct.setAccessible(true);
 
@@ -89,7 +84,7 @@ public class CoremodTweaker implements ITweaker
         // make sure its after the deobf tweaker
         try
         {
-            Field f = GradleStartCommon.getFmlClass(COREMOD_CLASS, classLoader).getDeclaredField(TWEAKER_SORT_FIELD);
+            Field f = Class.forName(COREMOD_CLASS, true, classLoader).getDeclaredField(TWEAKER_SORT_FIELD);
             f.setAccessible(true);
             ((Map<String, Integer>) f.get(null)).put(atTweaker, Integer.valueOf(1001));
         }
@@ -100,17 +95,8 @@ public class CoremodTweaker implements ITweaker
         }
     }
 
-    @Override
-    public String getLaunchTarget()
-    {
-        // if it gets here... something went terribly wrong..
-        return null;
-    }
-
-    @Override
-    public String[] getLaunchArguments()
-    {
-        // if it gets here... something went terribly wrong.
-        return new String[0];
-    }
+    //@formatter:off
+    @Override public String getLaunchTarget() { return null;}
+    @Override public String[] getLaunchArguments() { return new String[0]; }
+    @Override public void acceptOptions(List<String> args, File gameDir, File assetsDir, String profile) { }
 }

@@ -50,11 +50,11 @@ public class Constants
         }
     }
 
-    public static final OS               OPERATING_SYSTEM = OS.CURRENT;
-    public static final SystemArch       SYSTEM_ARCH      = getArch();
-    public static final Charset          CHARSET = Charsets.UTF_8;
-    public static final String           HASH_FUNC        = "MD5";
-    public static final String           USER_AGENT       = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11";
+    public static final OS          OPERATING_SYSTEM = OS.CURRENT;
+    public static final SystemArch  SYSTEM_ARCH      = getArch();
+    public static final Charset     CHARSET          = Charsets.UTF_8;
+    public static final String      HASH_FUNC        = "MD5";
+    public static final String      USER_AGENT       = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11";
 
     // extension names
     public static final String EXT_NAME_MC      = "minecraft";
@@ -124,6 +124,14 @@ public class Constants
     public static final String JSON_ASSET_INDEX = DIR_ASSETS + "/indexes/" + REPLACE_ASSET_INDEX + ".json";
     public static final String DIR_JSONS        = "{CACHE_DIR}/versionJsons";
     public static final String JSON_VERSION     = DIR_JSONS + "/" + REPLACE_MC_VERSION + ".json";
+    
+    public static final String[] GRADLE_START_RESOURCES = new String[] {
+        "GradleStart.java",
+        "GradleStartServer.java",
+        "net/minecraftforge/gradle/GradleStartCommon.java",
+        "net/minecraftforge/gradle/tweakers/CoremodTweaker.java",
+        "net/minecraftforge/gradle/tweakers/AccessTransformerTweaker.java"
+    };
     
     // mcp data constants
     public static final String MCP_DATA_SRG       = DIR_MCP_DATA+"/joined.srg";

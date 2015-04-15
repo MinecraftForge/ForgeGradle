@@ -215,13 +215,14 @@ public class ForgeDevPlugin extends DevBasePlugin
             makeStart.addResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
             makeStart.addResource("net/minecraftforge/gradle/tweakers/CoremodTweaker.java");
             makeStart.addResource("net/minecraftforge/gradle/tweakers/AccessTransformerTweaker.java");
-            makeStart.addReplacement("@@MCVERSION@@", delayedString("{MC_VERSION}"));
             makeStart.addReplacement("@@ASSETINDEX@@", delayedString("{ASSET_INDEX}"));
             makeStart.addReplacement("@@ASSETSDIR@@", delayedFile("{CACHE_DIR}/minecraft/assets"));
             makeStart.addReplacement("@@NATIVESDIR@@", delayedFile(Constants.DIR_NATIVES));
             makeStart.addReplacement("@@CSVDIR@@", delayedFile("{MCP_DATA_DIR}"));
-            makeStart.addReplacement("@@BOUNCERCLIENT@@", delayedString("net.minecraft.launchwrapper.Launch"));
-            makeStart.addReplacement("@@BOUNCERSERVER@@", delayedString("net.minecraft.launchwrapper.Launch"));
+            makeStart.addReplacement("@@TWEAKERCLIENT@@", "");
+            makeStart.addReplacement("@@TWEAKERSERVER@@", "");
+            makeStart.addReplacement("@@BOUNCERCLIENT@@", "net.minecraft.launchwrapper.Launch");
+            makeStart.addReplacement("@@BOUNCERSERVER@@", "net.minecraft.launchwrapper.Launch");
             makeStart.setStartOut(delayedFile(ECLIPSE_CLEAN_START));
             makeStart.dependsOn("getAssets", "getAssetsIndex", "extractNatives");
         }

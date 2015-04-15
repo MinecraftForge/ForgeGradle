@@ -13,7 +13,7 @@ public class GradleStartServer extends GradleStartCommon
     @Override
     protected String getTweakClass()
     {
-        return "@@SERVERTWEAKER@@";
+        return "@@TWEAKERSERVER@@";
     }
     
     @Override

@@ -15,6 +15,12 @@ public final class PatcherConstants
     static final String DEFAULT_TEST_SOURCES_DIR   = "src/test/java";
     static final String DEFAULT_TEST_RESOURCES_DIR = "src/test/resources";
 
+    // constants for paths in the workspace dir
+    static final String DIR_EXTRACTED_SRC          = "/src/main/java";
+    static final String DIR_EXTRACTED_RES          = "/src/main/resource";
+    static final String DIR_EXTRACTED_START        = "/src/main/start";
+
+    // jars and caches
     static final String DIR_LOCAL_CACHE            = Constants.REPLACE_BUILD_DIR + "/localCache";
     static final String JAR_DEOBF                  = DIR_LOCAL_CACHE + "/deobfuscated.jar";
     static final String JAR_DECOMP                 = DIR_LOCAL_CACHE + "/decompiled.jar";
@@ -25,6 +31,7 @@ public final class PatcherConstants
     static final String JAR_REMAPPED_PROJECT       = DIR_LOCAL_CACHE + "/remapped-%s.jar";
     static final String JAR_RRETROMAPPED_PROJECT   = DIR_LOCAL_CACHE + "/retromapped-%s.jar";
 
+    // tasks
     static final String TASK_SETUP                 = "setup";
     static final String TASK_GEN_PROJECTS          = "genProjects";
     static final String TASK_GEN_IDES              = "genIDEProjects";
@@ -33,4 +40,5 @@ public final class PatcherConstants
     static final String TASK_PROJECT_REMAP_JAR     = "remap%sJar";
     static final String TASK_PROJECT_EXTRACT_SRC   = "extract%sSources";
     static final String TASK_PROJECT_EXTRACT_RES   = "extract%sResources";
+    static final String TASK_PROJECT_MAKE_START    = "make%sStart";
 }
