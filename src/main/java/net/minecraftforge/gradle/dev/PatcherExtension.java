@@ -10,7 +10,8 @@ import org.gradle.api.NamedDomainObjectContainer;
 
 public class PatcherExtension extends BaseExtension
 {
-    private File                                       workspaceDir;
+    private Object                                     versionJson;
+    private Object                                     workspaceDir;
     private String                                     installerVersion = "null";
     private NamedDomainObjectContainer<PatcherProject> projectContainer;
 
@@ -44,15 +45,33 @@ public class PatcherExtension extends BaseExtension
     {
         projectContainer.configure(closure);
     }
+    
+    public File getVersionJson()
+    {
+        if (versionJson == null)
+            return null;
+        
+        return (File) (versionJson = project.file(versionJson));
+    }
+
+    public void setversionJson(Object versionJson)
+    {
+        this.versionJson = versionJson;
+    }
 
     public File getWorkspaceDir()
     {
-        return workspaceDir;
+        if (workspaceDir == null)
+        {
+            return null;
+        }
+        
+        return (File) (workspaceDir = project.file(workspaceDir));
     }
 
     public void setWorkspaceDir(Object workspaceDir)
     {
-        this.workspaceDir = project.file(workspaceDir);
+        this.workspaceDir = workspaceDir;
     }
     
     @SuppressWarnings("serial")

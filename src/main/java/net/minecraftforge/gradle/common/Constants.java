@@ -109,8 +109,10 @@ public class Constants
     public static final String LOG              = ".gradle/gradle.log";
 
     // configs
-    public static final String CONFIG_MCP_DATA  = "mcpDataConfig";
-    public static final String CONFIG_MAPPINGS  = "mcpSnapshotConfig";
+    public static final String CONFIG_MCP_DATA  = "forgeGradleMcpData";
+    public static final String CONFIG_MAPPINGS  = "forgeGradleMcpMappings";
+    public static final String CONFIG_NATIVES   = "forgeGradleMcNatives";
+    public static final String CONFIG_MC_DEPS   = "forgeGradleMcDeps";
 
     // things in the cache dir.
     public static final String DIR_MCP_DATA     = "{CACHE_DIR}/de/oceanlabs/mcp/mcp/" + REPLACE_MC_VERSION;
@@ -156,6 +158,7 @@ public class Constants
     public static final String TASK_DL_CLIENT        = "downloadClient";
     public static final String TASK_DL_SERVER        = "downloadServer";
     public static final String TASK_MERGE_JARS       = "mergeJars";
+    public static final String TASK_EXTRACT_NATIVES  = "extractNatives";
     public static final String TASK_DL_VERSION_JSON  = "getVersionJson";
     public static final String TASK_DL_ASSET_INDEX   = "getAssetIndex";
     public static final String TASK_DL_ASSETS        = "getAssets";

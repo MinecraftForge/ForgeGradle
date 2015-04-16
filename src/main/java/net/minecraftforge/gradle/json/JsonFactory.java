@@ -40,7 +40,7 @@ public class JsonFactory
         GSON = builder.create();
     }
 
-    public static Version loadVersion(File json, File inheritanceDir) throws JsonSyntaxException, JsonIOException, IOException
+    public static Version loadVersion(File json, File... inheritanceDirs) throws JsonSyntaxException, JsonIOException, IOException
     {
         FileReader reader = new FileReader(json);
         Version v =  GSON.fromJson(reader, Version.class);
@@ -48,13 +48,25 @@ public class JsonFactory
         
         if (!Strings.isNullOrEmpty(v.inheritsFrom))
         {
-            File parentFile = new File(inheritanceDir, v.inheritsFrom + ".json");
-            if (!parentFile.exists())
+            boolean found = false;
+            
+            for (File inheritDir : inheritanceDirs)
             {
-                throw new FileNotFoundException("Inherited json file (" + v.inheritsFrom + ") not found! Myabe you are running in offline mode?");
+                File parentFile = new File(inheritDir, v.inheritsFrom + ".json");
+                
+                if (parentFile.exists())
+                {
+                    Version parent = loadVersion(new File(inheritDir, v.inheritsFrom + ".json"), inheritanceDirs);
+                    v.extendFrom(parent);
+                    break;
+                }
             }
-            Version parent = loadVersion(new File(inheritanceDir, v.inheritsFrom + ".json"), inheritanceDir);
-            v.extendFrom(parent);
+            
+            // still didnt find the inherited
+            if (!found)
+            {
+                throw new FileNotFoundException("Inherited json file (" + v.inheritsFrom + ") not found! Maybe you are running in offline mode?");
+            }
         }
         
         return v;

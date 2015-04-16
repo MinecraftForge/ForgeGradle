@@ -11,6 +11,8 @@ import java.util.List;
 import net.minecraftforge.gradle.GradleConfigurationException;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.json.version.Library;
+import net.minecraftforge.gradle.json.version.Version;
 import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
 import net.minecraftforge.gradle.tasks.CreateStartTask;
 import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
@@ -108,8 +110,6 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             createProjects.addRepo("minecraft", Constants.URL_LIBRARY);
             createProjects.putProject("clean", null, null, null, null);
             createProjects.setJavaLevel("1.6");
-            
-            //TODO: add MC libs
         }
         
         SubprojectCall makeIdeProjects = makeTask(TASK_GEN_IDES, SubprojectCall.class);
@@ -168,10 +168,8 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             makeStart.addReplacement("@@TWEAKERSERVER@@", "");
             makeStart.setStartOut(subWorkspace("clean" + DIR_EXTRACTED_START));
             makeStart.setDoesCache(false);
-            makeStart.dependsOn(TASK_DL_ASSET_INDEX, TASK_DL_ASSETS);
+            makeStart.dependsOn(TASK_DL_ASSET_INDEX, TASK_DL_ASSETS, TASK_EXTRACT_NATIVES);
         }
-        
-        // net.minecraft.client.main.Main
         
         // add setup depends
         makeIdeProjects.dependsOn(extractSrc, extractRes);
@@ -179,7 +177,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
     
     protected void createProject(PatcherProject patcher)
     {
-        RemapSourcesTask remapTask = makeTask(String.format(TASK_PROJECT_REMAP_JAR, patcher.getName()), RemapSourcesTask.class);
+        RemapSourcesTask remapTask = makeTask(getProjectTask(TASK_PROJECT_REMAP_JAR, patcher), RemapSourcesTask.class);
         {
             remapTask.setInJar(delayedFile(String.format(JAR_PATCHED_PROJECT, patcher.getName())));
             remapTask.setOutJar(delayedFile(String.format(JAR_REMAPPED_PROJECT, patcher.getName())));
@@ -200,23 +198,23 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         
         Object delayedRemapped = delayedTree(String.format(JAR_REMAPPED_PROJECT, patcher.getName()));
         
-        Copy extract = makeTask(String.format(TASK_PROJECT_EXTRACT_SRC, patcher.getCapName()), Copy.class);
+        Copy extract = makeTask(getProjectTask(TASK_PROJECT_EXTRACT_SRC, patcher), Copy.class);
         {
             extract.from(delayedRemapped);
-            extract.into(subWorkspace(patcher.getName() + DIR_EXTRACTED_SRC));
+            extract.into(subWorkspace(patcher.getCapName() + DIR_EXTRACTED_SRC));
             extract.include("*.java", "**/*.java");
             extract.dependsOn(remapTask, TASK_GEN_PROJECTS);
         }
         
-        extract = makeTask(String.format(TASK_PROJECT_EXTRACT_RES, patcher.getCapName()), Copy.class);
+        extract = makeTask(getProjectTask(TASK_PROJECT_EXTRACT_RES, patcher), Copy.class);
         {
             extract.from(delayedRemapped);
-            extract.into(subWorkspace(patcher.getName() + DIR_EXTRACTED_RES));
+            extract.into(subWorkspace(patcher.getCapName() + DIR_EXTRACTED_RES));
             extract.exclude("*.java", "**/*.java");
             extract.dependsOn(remapTask, TASK_GEN_PROJECTS);
         }
         
-        CreateStartTask makeStart = makeTask(String.format(TASK_PROJECT_MAKE_START, patcher.getCapName()), CreateStartTask.class);
+        CreateStartTask makeStart = makeTask(getProjectTask(TASK_PROJECT_MAKE_START, patcher), CreateStartTask.class);
         {
             for (String resource : GRADLE_START_RESOURCES)
             {
@@ -231,7 +229,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             makeStart.addReplacement("@@TWEAKERCLIENT@@", "");
             makeStart.addReplacement("@@BOUNCERSERVER@@", "net.minecraft.server.MinecraftServer");
             makeStart.addReplacement("@@TWEAKERSERVER@@", "");
-            makeStart.setStartOut(subWorkspace(patcher.getName() + DIR_EXTRACTED_START));
+            makeStart.setStartOut(subWorkspace(patcher.getCapName() + DIR_EXTRACTED_START));
             makeStart.setDoesCache(false);
             makeStart.dependsOn(TASK_DL_ASSET_INDEX, TASK_DL_ASSETS);
         }
@@ -239,10 +237,10 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
     
     protected void removeProject(PatcherProject patcher)
     {
-        project.getTasks().remove(project.getTasks().getByName(String.format(TASK_PROJECT_REMAP_JAR, patcher.getCapName())));
-        project.getTasks().remove(project.getTasks().getByName(String.format(TASK_PROJECT_EXTRACT_SRC, patcher.getCapName())));
-        project.getTasks().remove(project.getTasks().getByName(String.format(TASK_PROJECT_EXTRACT_RES, patcher.getCapName())));
-        project.getTasks().remove(project.getTasks().getByName(String.format(TASK_PROJECT_MAKE_START, patcher.getCapName())));
+        project.getTasks().remove(project.getTasks().getByName(getProjectTask(TASK_PROJECT_REMAP_JAR, patcher)));
+        project.getTasks().remove(project.getTasks().getByName(getProjectTask(TASK_PROJECT_EXTRACT_SRC, patcher)));
+        project.getTasks().remove(project.getTasks().getByName(getProjectTask(TASK_PROJECT_EXTRACT_RES, patcher)));
+        project.getTasks().remove(project.getTasks().getByName(getProjectTask(TASK_PROJECT_MAKE_START, patcher)));
         
         ((GenDevProjectsTask) project.getTasks().getByName(TASK_GEN_PROJECTS)).removeProject(patcher.getCapName());
     }
@@ -257,6 +255,35 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
     {
         super.afterEvaluate();
         
+        // validate files
+        File versionJson = getExtension().getVersionJson();
+        
+        {
+            File workspaceDir = getExtension().getWorkspaceDir();
+            
+            if (workspaceDir == null)
+            {
+                throw new GradleConfigurationException("A workspaceDir must be specified! eg: minecraft { workspaceDir = 'someDir' }");
+            }
+            
+            if (versionJson == null || !versionJson.exists())
+            {
+                throw new GradleConfigurationException("The versionJson could not be found! Are you sure its correct?");
+            }
+        }
+
+        Version version = parseAndStoreVersion(versionJson, versionJson.getParentFile(), delayedFile(Constants.DIR_JSONS).call());
+
+        GenDevProjectsTask createProjects = (GenDevProjectsTask) project.getTasks().getByName(TASK_GEN_PROJECTS);
+        for (Library lib : version.getLibraries())
+        {
+            if (lib.applies() && lib.extract == null)
+            {
+                createProjects.addCompileDep(lib.getArtifactName());
+            }
+        }
+
+
         List<PatcherProject> patchersList = sortByPatching(getExtension().getProjects());
         
         //Task setupTask = project.getTasks().getByName(TASK_SETUP);
@@ -344,6 +371,11 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
     private Closure<File> subWorkspace(String path)
     {
         return getExtension().getDelayedSubWorkspaceDir(path);
+    }
+    
+    private String getProjectTask(String taskname, PatcherProject project)
+    {
+        return String.format(taskname, project.getCapName());
     }
     
     //@formatter:off

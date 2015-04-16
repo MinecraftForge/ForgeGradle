@@ -33,6 +33,8 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.artifacts.Configuration.State;
+import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.repositories.FlatDirectoryArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.tasks.Delete;
@@ -133,6 +135,10 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         setVersionInfoJson();
         project.getConfigurations().create(CONFIG_MCP_DATA);
         project.getConfigurations().create(CONFIG_MAPPINGS);
+        
+        // set other useful configs
+        project.getConfigurations().create(CONFIG_MC_DEPS);
+        project.getConfigurations().create(CONFIG_NATIVES);
 
         // after eval
         project.afterEvaluate(new Action<Project>() {
@@ -274,8 +280,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                         // grab the AssetIndex if it isnt already there
                         if (!TokenReplacer.hasReplacement(REPLACE_ASSET_INDEX))
                         {
-                            Version version = JsonFactory.loadVersion(json, json.getParentFile());
-                            TokenReplacer.putReplacement(REPLACE_ASSET_INDEX, version.getAssets());
+                            JsonFactory.loadVersion(json, json.getParentFile());
                         }
                     }
                     catch (Throwable t)
@@ -285,6 +290,15 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                     return true;
                 }
             });
+        }
+        
+        ExtractConfigTask extractNatives = makeTask(TASK_EXTRACT_NATIVES, ExtractConfigTask.class);
+        {
+            extractNatives.setOut(delayedFile(DIR_NATIVES));
+            extractNatives.setConfig(CONFIG_NATIVES);
+            extractNatives.exclude("META-INF/**", "META-INF/**");
+            extractNatives.doesCache();
+            extractNatives.dependsOn(getVersionJson);
         }
 
         EtagDownloadTask getAssetsIndex = makeTask(TASK_DL_ASSET_INDEX, EtagDownloadTask.class);
@@ -343,7 +357,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             clearCache.setGroup("ForgeGradle");
             clearCache.setDescription("Cleares the ForgeGradle cache. DONT RUN THIS unless you want a fresh start, or the dev tells you to.");
         }
-        
     }
 
     /**
@@ -527,6 +540,82 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         }
 
         throw new RuntimeException("Unable to obtain url (" + strUrl + ") with etag!");
+    }
+    
+    /**
+     * Parses the version json in the provided file, and saves it in memory.
+     * Also populates the McDeps and natives configurations.
+     * Also sets the ASSET_INDEX replacement string
+     * Does nothing (returns null) if the file is not found, but hard-crashes if it could not be parsed.
+     * @param file version file to parse
+     * @param inheritanceDirs folders to look for the parent json
+     */
+    protected Version parseAndStoreVersion(File file, File... inheritanceDirs)
+    {
+        if (!file.exists())
+            return null;
+        
+        Version version = null;
+        
+        try
+        {
+            version = JsonFactory.loadVersion(file, delayedFile(Constants.DIR_JSONS).call());
+        }
+        catch (Exception e)
+        {
+            project.getLogger().error("" + file + " could not be parsed");
+            Throwables.propagate(e);
+        }
+        
+        if (version == null)
+        {
+            try
+            {
+                version = JsonFactory.loadVersion(file, delayedFile(Constants.DIR_JSONS).call());
+            }
+            catch (Exception e)
+            {
+                project.getLogger().error("" + file + " could not be parsed");
+                Throwables.propagate(e);
+            }
+        }
+
+        // apply the dep info.
+        DependencyHandler handler = project.getDependencies();
+
+        // actual dependencies
+        if (project.getConfigurations().getByName(CONFIG_NATIVES).getState() == State.UNRESOLVED)
+        {
+            for (net.minecraftforge.gradle.json.version.Library lib : version.getLibraries())
+            {
+                if (lib.natives == null)
+                    handler.add(CONFIG_NATIVES, lib.getArtifactName());
+            }
+        }
+        else
+            project.getLogger().debug("RESOLVED: " + CONFIG_NATIVES);
+
+        // the natives
+        if (project.getConfigurations().getByName(CONFIG_MC_DEPS).getState() == State.UNRESOLVED)
+        {
+            for (net.minecraftforge.gradle.json.version.Library lib : version.getLibraries())
+            {
+                if (lib.natives != null)
+                    handler.add(CONFIG_MC_DEPS, lib.getArtifactName());
+            }
+        }
+        else
+            project.getLogger().debug("RESOLVED: " + CONFIG_MC_DEPS);
+        
+        // set asset index
+        TokenReplacer.putReplacement(REPLACE_ASSET_INDEX, version.getAssets());
+        
+        return version;
+    }
+    
+    protected Version parseAndStoreVersion(File file)
+    {
+        return parseAndStoreVersion(file, delayedFile(DIR_JSONS).call());
     }
 
     // DELAYED STUFF ONLY ------------------------------------------------------------------------
