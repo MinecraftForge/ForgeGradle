@@ -9,7 +9,7 @@ final class DevConstants
 
     }
 
-    static final String INSTALLER_URL       = "http://files.minecraftforge.net/installer/forge-installer-{INSTALLER_VERSION}-shrunk.jar";
+    static final String INSTALLER_URL       = "http://files.minecraftforge.net/maven/net/minecraftforge/installer/installer-{INSTALLER_VERSION}-shrunk.jar";
     static final String LAUNCH4J_URL        = "http://files.minecraftforge.net/launch4j/launch4j-3.0.0-"+Constants.OPERATING_SYSTEM+"-"+Constants.SYSTEM_ARCH+".zip";
 
     static final String DEOBF_DATA          = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/deobfuscation_data-{MC_VERSION}.lzma";
@@ -151,7 +151,7 @@ final class DevConstants
     // USED ONLY FOR Cauldron.. BUT ITS BUKKIT STUFF
     static final String BUKKIT_SOURCES     = "{BUKKIT_DIR}/src/main/java";
     static final String EXTRACTED_RES      = "{BUILD_DIR}/extractedResources";
-    
+
     // CrowdIn Stuff
     static final String CROWDIN_ZIP        = "{BUILD_DIR}/crowdin-localizations.zip";
     static final String CROWDIN_FORGEID    = "minecraft-forge";
