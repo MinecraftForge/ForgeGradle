@@ -28,6 +28,7 @@ import net.minecraftforge.gradle.tasks.CopyAssetsTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DownloadTask;
+import net.minecraftforge.gradle.tasks.abstractutil.EtagDownloadTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.dev.CompressLZMA;
 import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
@@ -85,10 +86,10 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
                 project.getTasks().getByName("uploadArchives").dependsOn("launch4j");
             }
 
-            task1 = makeTask("downloadBaseInstaller", DownloadTask.class);
+            EtagDownloadTask task2 = makeTask("downloadBaseInstaller", EtagDownloadTask.class);
             {
-                task1.setOutput(delayedFile(DevConstants.INSTALLER_BASE));
-                task1.setUrl(delayedString(DevConstants.INSTALLER_URL));
+                task2.setFile(delayedFile(DevConstants.INSTALLER_BASE));
+                task2.setUrl(delayedString(DevConstants.INSTALLER_URL));
             }
 
             task1 = makeTask("downloadL4J", DownloadTask.class);
