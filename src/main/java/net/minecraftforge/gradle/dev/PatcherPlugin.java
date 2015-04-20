@@ -16,10 +16,12 @@ import net.minecraftforge.gradle.json.version.Version;
 import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
 import net.minecraftforge.gradle.tasks.CreateStartTask;
 import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
+import net.minecraftforge.gradle.tasks.GenEclipseRunTask;
 import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.patcher.GenDevProjectsTask;
+import net.minecraftforge.gradle.tasks.patcher.GenIdeaRunTask;
 import net.minecraftforge.gradle.tasks.patcher.SubprojectCall;
 
 import org.gradle.api.Action;
@@ -56,7 +58,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             
         });
         
-        makeTask(TASK_SETUP).dependsOn(TASK_GEN_IDES);
+        makeTask(TASK_SETUP);
         
         makeTasks();
     }
@@ -108,7 +110,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         {
             createProjects.setWorkspaceDir(getExtension().getDelayedWorkspaceDir());
             createProjects.addRepo("minecraft", Constants.URL_LIBRARY);
-            createProjects.putProject("clean", null, null, null, null);
+            createProjects.putProject("Clean", null, null, null, null);
             createProjects.setJavaLevel("1.6");
         }
         
@@ -119,7 +121,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             makeIdeProjects.dependsOn(createProjects);
         }
 
-        // Clean project stuff
+        // Clean project ONLY stuff ---------------------------------------------------------------
 
         RemapSourcesTask remapCleanTask = makeTask("remapCleanJar", RemapSourcesTask.class);
         {
@@ -138,7 +140,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         Copy extractSrc = makeTask("extractCleanSources", Copy.class);
         {
             extractSrc.from(delayedRemapped);
-            extractSrc.into(subWorkspace("clean" + DIR_EXTRACTED_RES));
+            extractSrc.into(subWorkspace("Clean" + DIR_EXTRACTED_SRC));
             extractSrc.include("*.java", "**/*.java");
             extractSrc.dependsOn(remapCleanTask, TASK_GEN_PROJECTS);
         }
@@ -146,7 +148,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         Copy extractRes = makeTask("extractCleanResources", Copy.class);
         {
             extractRes.from(delayedRemapped);
-            extractRes.into(subWorkspace("clean" + DIR_EXTRACTED_RES));
+            extractRes.into(subWorkspace("Clean" + DIR_EXTRACTED_RES));
             extractRes.exclude("*.java", "**/*.java");
             extractRes.dependsOn(remapCleanTask, TASK_GEN_PROJECTS);
         }
@@ -166,13 +168,54 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             makeStart.addReplacement("@@TWEAKERCLIENT@@", "");
             makeStart.addReplacement("@@BOUNCERSERVER@@", "net.minecraft.server.MinecraftServer");
             makeStart.addReplacement("@@TWEAKERSERVER@@", "");
-            makeStart.setStartOut(subWorkspace("clean" + DIR_EXTRACTED_START));
+            makeStart.setStartOut(subWorkspace("Clean" + DIR_EXTRACTED_START));
             makeStart.setDoesCache(false);
             makeStart.dependsOn(TASK_DL_ASSET_INDEX, TASK_DL_ASSETS, TASK_EXTRACT_NATIVES);
         }
         
-        // add setup depends
+        GenEclipseRunTask eclipseRunConfigClient = makeTask("makeEclipseCleanRunClient", GenEclipseRunTask.class);
+        {
+            eclipseRunConfigClient.setMainClass("net.minecraft.client.main.Main");
+            eclipseRunConfigClient.setProjectName("Clean");
+            eclipseRunConfigClient.setOutputFile(subWorkspace("Clean/Clean Client.launch"));
+            eclipseRunConfigClient.setRunDir("${workspace_loc}/run");
+            eclipseRunConfigClient.dependsOn(makeStart, makeIdeProjects);
+        }
+        
+        GenEclipseRunTask eclipseRunConfigServer = makeTask("makeEclipseCleanRunServer", GenEclipseRunTask.class);
+        {
+            eclipseRunConfigServer.setMainClass("net.minecraft.server.MinecraftServer");
+            eclipseRunConfigServer.setProjectName("Clean");
+            eclipseRunConfigServer.setOutputFile(subWorkspace("Clean/Clean Server.launch"));
+            eclipseRunConfigServer.setRunDir("${workspace_loc}/run");
+            eclipseRunConfigServer.dependsOn(makeStart, makeIdeProjects);
+        }
+        
+        GenIdeaRunTask ideaRunConfigClient = makeTask("makeIdeaCleanRunClient", GenIdeaRunTask.class);
+        {
+            ideaRunConfigClient.setMainClass("net.minecraft.client.main.Main");
+            ideaRunConfigClient.setProjectName("Clean");
+            ideaRunConfigClient.setConfigName("Clean Client");
+            ideaRunConfigClient.setOutputFile(subWorkspace("/.idea/runConfigurations/Clean_Client.xml"));
+            ideaRunConfigClient.setRunDir("file://$PROJECT_DIR$/run");
+            ideaRunConfigClient.dependsOn(makeStart, makeIdeProjects);
+        }
+        
+        GenIdeaRunTask ideaRunConfigServer = makeTask("makeIdeaCleanRunServer", GenIdeaRunTask.class);
+        {
+            ideaRunConfigServer.setMainClass("net.minecraft.server.MinecraftServer");
+            ideaRunConfigServer.setProjectName("Clean");
+            ideaRunConfigServer.setConfigName("Clean Server");
+            ideaRunConfigServer.setOutputFile(subWorkspace("/.idea/runConfigurations/Clean_Server.xml"));
+            ideaRunConfigServer.setRunDir("file://$PROJECT_DIR$/run");
+            ideaRunConfigServer.dependsOn(makeStart, makeIdeProjects);
+        }
+        
+        // add depends
         makeIdeProjects.dependsOn(extractSrc, extractRes);
+        
+        Task setupTask = project.getTasks().getByName(TASK_SETUP);
+        setupTask.dependsOn(eclipseRunConfigClient, eclipseRunConfigServer, ideaRunConfigClient, ideaRunConfigServer);
     }
     
     protected void createProject(PatcherProject patcher)
@@ -225,13 +268,55 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             makeStart.addReplacement("@@ASSETSDIR@@", delayedFile(DIR_ASSETS));
             makeStart.addReplacement("@@NATIVESDIR@@", delayedFile(Constants.DIR_NATIVES));
             makeStart.addReplacement("@@CSVDIR@@", delayedFile(DIR_MCP_DATA));
-            makeStart.addReplacement("@@BOUNCERCLIENT@@", "net.minecraft.client.main.Main");
-            makeStart.addReplacement("@@TWEAKERCLIENT@@", "");
-            makeStart.addReplacement("@@BOUNCERSERVER@@", "net.minecraft.server.MinecraftServer");
-            makeStart.addReplacement("@@TWEAKERSERVER@@", "");
+            makeStart.addReplacement("@@BOUNCERCLIENT@@", patcher.getDelayedMainClassClient());
+            makeStart.addReplacement("@@TWEAKERCLIENT@@", patcher.getDelayedTweakClassClient());
+            makeStart.addReplacement("@@BOUNCERSERVER@@", patcher.getDelayedMainClassServer());
+            makeStart.addReplacement("@@TWEAKERSERVER@@",  patcher.getDelayedTweakClassServer());
             makeStart.setStartOut(subWorkspace(patcher.getCapName() + DIR_EXTRACTED_START));
             makeStart.setDoesCache(false);
             makeStart.dependsOn(TASK_DL_ASSET_INDEX, TASK_DL_ASSETS);
+        }
+        
+        GenEclipseRunTask eclipseRunConfigClient = makeTask(getProjectTask(TASK_PROJECT_RUNE_CLIENT, patcher), GenEclipseRunTask.class);
+        {
+            eclipseRunConfigClient.setMainClass(patcher.getDelayedMainClassClient());
+            eclipseRunConfigClient.setArguments(patcher.getDelayedRunArgsClient());
+            eclipseRunConfigClient.setProjectName(patcher.getCapName());
+            eclipseRunConfigClient.setOutputFile(subWorkspace(patcher.getCapName() + "/"+patcher.getCapName()+" Client.launch"));
+            eclipseRunConfigClient.setRunDir("${workspace_loc}/run");
+            eclipseRunConfigClient.dependsOn(makeStart, TASK_GEN_IDES);
+        }
+        
+        GenEclipseRunTask eclipseRunConfigServer = makeTask(getProjectTask(TASK_PROJECT_RUNE_SERVER, patcher), GenEclipseRunTask.class);
+        {
+            eclipseRunConfigServer.setMainClass(patcher.getDelayedMainClassServer());
+            eclipseRunConfigServer.setArguments(patcher.getDelayedRunArgsServer());
+            eclipseRunConfigServer.setProjectName(patcher.getCapName());
+            eclipseRunConfigServer.setOutputFile(subWorkspace(patcher.getCapName() + "/"+patcher.getCapName()+" Server.launch"));
+            eclipseRunConfigServer.setRunDir("${workspace_loc}/run");
+            eclipseRunConfigServer.dependsOn(makeStart, TASK_GEN_IDES);
+        }
+        
+        GenIdeaRunTask ideaRunConfigClient = makeTask(getProjectTask(TASK_PROJECT_RUNJ_CLIENT, patcher), GenIdeaRunTask.class);
+        {
+            ideaRunConfigClient.setMainClass(patcher.getDelayedMainClassClient());
+            ideaRunConfigClient.setArguments(patcher.getDelayedRunArgsClient());
+            ideaRunConfigClient.setProjectName(patcher.getCapName());
+            ideaRunConfigClient.setConfigName(patcher.getCapName() + " Client");
+            ideaRunConfigClient.setOutputFile(subWorkspace("/.idea/runConfigurations/"+patcher.getCapName()+"Client.xml"));
+            ideaRunConfigClient.setRunDir("file://$PROJECT_DIR$/run");
+            ideaRunConfigClient.dependsOn(makeStart, TASK_GEN_IDES);
+        }
+        
+        GenIdeaRunTask ideaRunConfigServer = makeTask(getProjectTask(TASK_PROJECT_RUNJ_SERVER, patcher), GenIdeaRunTask.class);
+        {
+            ideaRunConfigServer.setMainClass(patcher.getDelayedMainClassServer());
+            ideaRunConfigServer.setArguments(patcher.getDelayedRunArgsServer());
+            ideaRunConfigServer.setProjectName(patcher.getCapName());
+            ideaRunConfigServer.setConfigName(patcher.getCapName() + " Server");
+            ideaRunConfigServer.setOutputFile(subWorkspace("/.idea/runConfigurations/"+patcher.getCapName()+"Server.xml"));
+            ideaRunConfigServer.setRunDir("file://$PROJECT_DIR$/run");
+            ideaRunConfigServer.dependsOn(makeStart, TASK_GEN_IDES);
         }
     }
     
@@ -241,6 +326,10 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         project.getTasks().remove(project.getTasks().getByName(getProjectTask(TASK_PROJECT_EXTRACT_SRC, patcher)));
         project.getTasks().remove(project.getTasks().getByName(getProjectTask(TASK_PROJECT_EXTRACT_RES, patcher)));
         project.getTasks().remove(project.getTasks().getByName(getProjectTask(TASK_PROJECT_MAKE_START, patcher)));
+        project.getTasks().remove(project.getTasks().getByName(getProjectTask(TASK_PROJECT_RUNE_CLIENT, patcher)));
+        project.getTasks().remove(project.getTasks().getByName(getProjectTask(TASK_PROJECT_RUNE_SERVER, patcher)));
+        project.getTasks().remove(project.getTasks().getByName(getProjectTask(TASK_PROJECT_RUNJ_CLIENT, patcher)));
+        project.getTasks().remove(project.getTasks().getByName(getProjectTask(TASK_PROJECT_RUNJ_SERVER, patcher)));
         
         ((GenDevProjectsTask) project.getTasks().getByName(TASK_GEN_PROJECTS)).removeProject(patcher.getCapName());
     }
@@ -286,7 +375,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
         List<PatcherProject> patchersList = sortByPatching(getExtension().getProjects());
         
-        //Task setupTask = project.getTasks().getByName(TASK_SETUP);
+        Task setupTask = project.getTasks().getByName(TASK_SETUP);
         Task ideTask = project.getTasks().getByName(TASK_GEN_IDES);
         ProcessSrcJarTask patchJar = (ProcessSrcJarTask) project.getTasks().getByName(TASK_PATCH_JAR);
         DeobfuscateJarTask deobfJar = (DeobfuscateJarTask) project.getTasks().getByName(TASK_DEOBF_JAR);
@@ -303,7 +392,10 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             // TODO: make it the project creation tasks
             ideTask.dependsOn(String.format(TASK_PROJECT_EXTRACT_SRC, patcher.getCapName()));
             ideTask.dependsOn(String.format(TASK_PROJECT_EXTRACT_RES, patcher.getCapName()));
-            ideTask.dependsOn(String.format(TASK_PROJECT_MAKE_START, patcher.getCapName()));
+            setupTask.dependsOn(String.format(TASK_PROJECT_RUNE_CLIENT, patcher.getCapName()));
+            setupTask.dependsOn(String.format(TASK_PROJECT_RUNE_SERVER, patcher.getCapName()));
+            setupTask.dependsOn(String.format(TASK_PROJECT_RUNJ_CLIENT, patcher.getCapName()));
+            setupTask.dependsOn(String.format(TASK_PROJECT_RUNJ_SERVER, patcher.getCapName()));
             
             // get Ats
             for (File at : project.fileTree(patcher.getResourcesDir()))

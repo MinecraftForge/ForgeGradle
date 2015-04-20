@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -29,6 +31,9 @@ import net.minecraftforge.gradle.json.version.OS;
 
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
 import au.com.bytecode.opencsv.CSVParser;
 import au.com.bytecode.opencsv.CSVReader;
@@ -235,6 +240,21 @@ public class Constants
     public static CSVReader getReader(File file) throws IOException
     {
         return new CSVReader(Files.newReader(file, Charset.defaultCharset()), CSVParser.DEFAULT_SEPARATOR, CSVParser.DEFAULT_QUOTE_CHARACTER, CSVParser.NULL_CHARACTER, 1, false);
+    }
+    
+    public static Element addXml(Node parent, String name, Map<String, String> values)
+    {
+        Document doc = parent.getOwnerDocument();
+        if (doc == null)
+            doc = (Document) parent;
+        
+        Element e = doc.createElement(name);
+        for (Entry<String, String> entry : values.entrySet())
+        {
+            e.setAttribute(entry.getKey(), entry.getValue());
+        }
+        parent.appendChild(e);
+        return e;
     }
     
     /**

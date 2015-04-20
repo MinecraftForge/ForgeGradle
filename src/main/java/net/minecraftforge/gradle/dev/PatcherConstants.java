@@ -41,4 +41,8 @@ public final class PatcherConstants
     static final String TASK_PROJECT_MAKE_START    = "make%sStart";
     static final String TASK_GEN_PROJECTS          = "genGradleProjects";
     static final String TASK_GEN_IDES              = "genIdeProjects";
+    static final String TASK_PROJECT_RUNE_CLIENT   = "makeEclipse%sRunClient";
+    static final String TASK_PROJECT_RUNE_SERVER   = "makeEclipse%sRunServer";
+    static final String TASK_PROJECT_RUNJ_CLIENT   = "makeIdea%sRunClient";
+    static final String TASK_PROJECT_RUNJ_SERVER   = "makeIdea%sRunServer";
 }

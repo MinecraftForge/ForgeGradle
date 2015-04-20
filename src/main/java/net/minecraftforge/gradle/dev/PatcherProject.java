@@ -33,8 +33,12 @@ public class PatcherProject implements Serializable
     private File testSourcesDir;
     private File testResourcesDir;
 
-    private String mainClass;
-    private String tweakClass;
+    private String mainClassClient = "GradleStart";
+    private String mainClassServer = "GradleStartServer";
+    private String tweakClassClient = "";
+    private String tweakClassServer = "";
+    private String runArgsClient = "";
+    private String runArgsServer = "";
 
     protected PatcherProject(String name, PatcherPlugin plugin)
     {
@@ -308,42 +312,118 @@ public class PatcherProject implements Serializable
         setTestResourcesDir(testResourcesDir);
     }
 
-    public String getMainClass()
+    public String getMainClassClient()
     {
-        return mainClass;
+        return mainClassClient;
     }
 
     /**
      * This is used for the run configs and the manifest of the universal jar.
      * @param mainClass
      */
-    public void setMainClass(Object mainClass)
+    public void setMainClassClient(Object mainClass)
     {
-        this.mainClass = Constants.resolveString(mainClass);
+        this.mainClassClient = Constants.resolveString(mainClass);
     }
     
-    public void mainClass(Object mainClass)
+    public void mainClassClient(Object mainClass)
     {
-        setMainClass(mainClass);
+        setMainClassClient(mainClass);
     }
 
-    public String getTweakClass()
+    public String getTweakClassClient()
     {
-        return tweakClass;
+        return tweakClassClient;
     }
 
     /**
      * This is used for the run configs and the manifest of the universal jar.
      * @param tweakClass
      */
-    public void setTweakClass(Object tweakClass)
+    public void setTweakClassClient(Object tweakClass)
     {
-        this.tweakClass = Constants.resolveString(tweakClass);
+        this.tweakClassClient = Constants.resolveString(tweakClass);
     }
     
-    public void tweakClass(Object mainClass)
+    public void tweakClassClient(Object mainClass)
     {
-        setTweakClass(mainClass);
+        setTweakClassClient(mainClass);
+    }
+    
+    public String getRunArgsClient()
+    {
+        return runArgsClient;
+    }
+
+    /**
+     * This is used for the run configs and the manifest of the universal jar.
+     * @param runArgs
+     */
+    public void setRunArgsClient(Object runArgs)
+    {
+        this.runArgsClient = Constants.resolveString(runArgs);
+    }
+    
+    public void runArgsClient(Object mainClass)
+    {
+        setRunArgsClient(mainClass);
+    }
+    
+    public String getMainClassServer()
+    {
+        return mainClassServer;
+    }
+
+    /**
+     * This is used for the run configs and the manifest of the universal jar.
+     * @param mainClass
+     */
+    public void setMainClassServer(Object mainClass)
+    {
+        this.mainClassServer = Constants.resolveString(mainClass);
+    }
+    
+    public void mainClassServer(Object mainClass)
+    {
+        setMainClassServer(mainClass);
+    }
+
+    public String getTweakClassServer()
+    {
+        return tweakClassServer;
+    }
+
+    /**
+     * This is used for the run configs and the manifest of the universal jar.
+     * @param tweakClass
+     */
+    public void setTweakClassServer(Object tweakClass)
+    {
+        this.tweakClassServer = Constants.resolveString(tweakClass);
+    }
+    
+    public void tweakClassServer(Object mainClass)
+    {
+        setTweakClassServer(mainClass);
+    }
+    
+    public String getRunArgsServer()
+    {
+        return runArgsServer;
+    }
+
+    /**
+     * This is used for the run configs and the manifest of the universal jar.
+     * @param runArgs
+     */
+    public void setRunArgsServer(Object runArgs)
+    {
+        this.runArgsServer = Constants.resolveString(runArgs);
+    }
+    
+    public void runArgsServer(Object mainClass)
+    {
+        setRunArgsServer(mainClass);
     }
     
     private File getFile(File field, String defaultPath)
@@ -355,23 +435,67 @@ public class PatcherProject implements Serializable
     }
     
     @SuppressWarnings("serial")
-    protected Closure<String> getDelayedMainClass()
+    protected Closure<String> getDelayedMainClassClient()
     {
         return new Closure<String>(project, this) {
             public String call()
             {
-                return getMainClass();
+                return getMainClassClient();
             }
         };
     }
     
     @SuppressWarnings("serial")
-    protected Closure<String> getDelayedTweakClass()
+    protected Closure<String> getDelayedTweakClassClient()
     {
         return new Closure<String>(project, this) {
             public String call()
             {
-                return getTweakClass();
+                return getTweakClassClient();
+            }
+        };
+    }
+    
+    @SuppressWarnings("serial")
+    protected Closure<String> getDelayedRunArgsClient()
+    {
+        return new Closure<String>(project, this) {
+            public String call()
+            {
+                return getRunArgsClient();
+            }
+        };
+    }
+    
+    @SuppressWarnings("serial")
+    protected Closure<String> getDelayedMainClassServer()
+    {
+        return new Closure<String>(project, this) {
+            public String call()
+            {
+                return getMainClassServer();
+            }
+        };
+    }
+    
+    @SuppressWarnings("serial")
+    protected Closure<String> getDelayedTweakClassServer()
+    {
+        return new Closure<String>(project, this) {
+            public String call()
+            {
+                return getTweakClassServer();
+            }
+        };
+    }
+    
+    @SuppressWarnings("serial")
+    protected Closure<String> getDelayedRunArgsServer()
+    {
+        return new Closure<String>(project, this) {
+            public String call()
+            {
+                return getRunArgsServer();
             }
         };
     }
