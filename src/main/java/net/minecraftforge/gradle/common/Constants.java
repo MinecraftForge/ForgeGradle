@@ -147,6 +147,7 @@ public class Constants
     public static final String MCP_DATA_STYLE     = DIR_MCP_DATA+"/astyle.cfg";
     public static final String MCP_PATCHES_CLIENT = DIR_MCP_DATA+"/patches/minecraft_ff";
     public static final String MCP_PATCHES_SERVER = DIR_MCP_DATA+"/patches/minecraft_server_ff";
+    public static final String MCP_PATCHES_MERGED = DIR_MCP_DATA+"/patches/minecraft_merged_ff";
     
     // generated off of MCP data constants
     public static final String CSV_METHOD        = DIR_MCP_MAPPINGS+"/methods.csv";

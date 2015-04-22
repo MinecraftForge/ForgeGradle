@@ -6,6 +6,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +68,10 @@ public class PostDecompileTask extends EditJarTask
         for (File f : getPatches())
         {
             String name = f.getName();
+            
+            if (name.contains("Enum")) // because version of FF is awesome and dont need dat
+                continue;
+            
             int patchIndex = name.indexOf(".patch");
 
             // 6 is the length of ".patch" + 3 to account for .## at the end of the file.
@@ -85,19 +90,20 @@ public class PostDecompileTask extends EditJarTask
     @Override
     public String asRead(String name, String file) throws Exception
     {
+        getLogger().debug("Processing file: " + file);
+        
         file = FFPatcher.processFile(file);
         
         // patch the file
-        Collection<File> patchFiles = patchesMap.get(name);
+        Collection<File> patchFiles = patchesMap.get(name.replace('/', '.'));
         if (!patchFiles.isEmpty())
         {
+            getLogger().debug("applying MCP patches");
             ContextProvider provider = new ContextProvider(file);
-            ContextualPatch patch = findPatch(patchFiles, new ContextProvider(file));
+            ContextualPatch patch = findPatch(patchFiles, provider);
             patchErrors.addAll(patch.patch(false));
             file = provider.getAsString();
         }
-        
-        getLogger().debug("Processing file: " + file);
 
         getLogger().debug("processing comments");
         file = McpCleanup.stripComments(file);
@@ -136,7 +142,8 @@ public class PostDecompileTask extends EditJarTask
         {
             if (!report.getStatus().isSuccess())
             {
-                getLogger().log(LogLevel.ERROR, "Patching failed: " + report.getTarget(), report.getFailure());
+                //getLogger().log(LogLevel.ERROR, "Patching failed: " + report.getTarget(), report.getFailure());
+                getLogger().error("Patching failed: " + report.getTarget());
 
                 for (HunkReport hunk : report.getHunks())
                 {
@@ -146,7 +153,7 @@ public class PostDecompileTask extends EditJarTask
                     }
                 }
 
-                Throwables.propagate(report.getFailure());
+                //Throwables.propagate(report.getFailure());
             }
             else if (report.getStatus() == PatchStatus.Fuzzed) // catch fuzzed patches
             {
@@ -175,7 +182,7 @@ public class PostDecompileTask extends EditJarTask
         ContextualPatch patch = null;
         for (File f : files)
         {
-            patch = ContextualPatch.create(Files.toString(f, Charset.defaultCharset()), provider);
+            patch = ContextualPatch.create(Files.toString(f, Constants.CHARSET), provider);
             List<PatchReport> errors = patch.patch(true);
 
             boolean success = true;
@@ -214,18 +221,19 @@ public class PostDecompileTask extends EditJarTask
      */
     private static class ContextProvider implements ContextualPatch.IContextProvider
     {
-        private static final Pattern LINE_PATTERN = Pattern.compile("\r\n|\r|\n");
         private List<String> data;
 
         public ContextProvider(String file)
         {
-            data = Splitter.on(LINE_PATTERN).splitToList(file);;
+            data = Splitter.on('\n').splitToList(file);
         }
 
         @Override
         public List<String> getData(String target)
         {
-            return data;
+            List<String> out = new ArrayList<String>(data.size() + 5);
+            out.addAll(data);
+            return out;
         }
 
         @Override
@@ -242,9 +250,6 @@ public class PostDecompileTask extends EditJarTask
 
 
     //@formatter:off
-
     @Override public void doStuffMiddle(Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws Exception { }
-
-
     @Override protected boolean storeJarInRam() { return false; }
 }

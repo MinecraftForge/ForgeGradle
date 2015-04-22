@@ -14,8 +14,10 @@ import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.json.version.Library;
 import net.minecraftforge.gradle.json.version.Version;
 import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
+import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.CreateStartTask;
 import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
+import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.GenEclipseRunTask;
 import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
@@ -91,7 +93,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         {
             postDecompileJar.setInJar(delayedFile(JAR_DECOMP));
             postDecompileJar.setOutJar(delayedFile(JAR_DECOMP_POST));
-            postDecompileJar.setPatches(delayedFile(MCP_PATCHES_CLIENT));
+            postDecompileJar.setPatches(delayedFile(MCP_PATCHES_MERGED));
             postDecompileJar.setAstyleConfig(delayedFile(MCP_DATA_STYLE));
             postDecompileJar.setDoesCache(false);
             postDecompileJar.dependsOn(decompileJar);
@@ -333,12 +335,6 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         
         ((GenDevProjectsTask) project.getTasks().getByName(TASK_GEN_PROJECTS)).removeProject(patcher.getCapName());
     }
-
-    @Override
-    protected void addReplaceTokens(PatcherExtension ext)
-    {
-        // use this? or not use this?
-    }
     
     public void afterEvaluate()
     {
@@ -471,6 +467,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
     }
     
     //@formatter:off
+    @Override protected void addReplaceTokens(PatcherExtension ext) { }
     @Override public boolean canOverlayPlugin() { return false; }
     @Override protected void applyOverlayPlugin() { }
     @Override protected PatcherExtension getOverlayExtension() { return null; }
