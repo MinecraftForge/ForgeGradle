@@ -20,29 +20,44 @@ public final class PatcherConstants
     static final String DIR_EXTRACTED_RES          = "/src/main/resource";
     static final String DIR_EXTRACTED_START        = "/src/main/start";
 
-    // jars and caches
+    static final String REPLACE_PROJECT_NAME       = "{NAME}";
+    static final String REPLACE_PROJECT_CAP_NAME   = "{CAPNAME}";
+
+    // cached stuff
     static final String DIR_LOCAL_CACHE            = Constants.REPLACE_BUILD_DIR + "/localCache";
     static final String JAR_DEOBF                  = DIR_LOCAL_CACHE + "/deobfuscated.jar";
     static final String JAR_DECOMP                 = DIR_LOCAL_CACHE + "/decompiled.jar";
     static final String JAR_DECOMP_POST            = DIR_LOCAL_CACHE + "/decompiled-processed.jar";
     static final String JAR_REMAPPED               = DIR_LOCAL_CACHE + "/remapped-clean.jar";
 
-    static final String JAR_PATCHED_PROJECT        = DIR_LOCAL_CACHE + "/patched-%s.jar";
-    static final String JAR_REMAPPED_PROJECT       = DIR_LOCAL_CACHE + "/remapped-%s.jar";
-    static final String JAR_RRETROMAPPED_PROJECT   = DIR_LOCAL_CACHE + "/retromapped-%s.jar";
+    // cached project stuff
+    static final String DIR_PROJECT_CACHE          = DIR_LOCAL_CACHE + "/" + REPLACE_PROJECT_CAP_NAME + "/";
+    static final String JAR_PROJECT_PATCHED        = DIR_PROJECT_CACHE + "/patched.zip";
+    static final String JAR_PROJECT_RECOMPILED     = DIR_PROJECT_CACHE + "/recompiled.jar";
+    static final String JAR_PROJECT_REMAPPED       = DIR_PROJECT_CACHE + "/mcp-named.zip";
+    static final String JAR_PROJECT_RETROMAPPED    = DIR_PROJECT_CACHE + "/retromapped-to-srg.zip";
+    static final String RANGEMAP_PROJECT           = DIR_PROJECT_CACHE + "/rangemap.txt";
+    static final String EXC_PROJECT                = DIR_PROJECT_CACHE + "/extracted.exc";
 
     // tasks
     static final String TASK_SETUP                 = "setup";
-    static final String TASK_DEOBF_JAR             = "deobfuscateJar";
-    static final String TASK_PATCH_JAR             = "patchJar";
-    static final String TASK_PROJECT_REMAP_JAR     = "remap%sJar";
-    static final String TASK_PROJECT_EXTRACT_SRC   = "extract%sSources";
-    static final String TASK_PROJECT_EXTRACT_RES   = "extract%sResources";
-    static final String TASK_PROJECT_MAKE_START    = "make%sStart";
+    static final String TASK_DEOBF                 = "deobfuscateJar";
+    static final String TASK_DECOMP                = "decompileJar";
+    static final String TASK_POST_DECOMP           = "sourceProcessJar";
+    static final String TASK_PATCH                 = "patchJar";
     static final String TASK_GEN_PROJECTS          = "genGradleProjects";
     static final String TASK_GEN_IDES              = "genIdeProjects";
-    static final String TASK_PROJECT_RUNE_CLIENT   = "makeEclipse%sRunClient";
-    static final String TASK_PROJECT_RUNE_SERVER   = "makeEclipse%sRunServer";
-    static final String TASK_PROJECT_RUNJ_CLIENT   = "makeIdea%sRunClient";
-    static final String TASK_PROJECT_RUNJ_SERVER   = "makeIdea%sRunServer";
+
+    // project tasks
+    static final String TASK_PROJECT_REMAP_JAR     = "remap" + REPLACE_PROJECT_CAP_NAME + "Jar";
+    static final String TASK_PROJECT_EXTRACT_SRC   = "extract" + REPLACE_PROJECT_CAP_NAME + "Sources";
+    static final String TASK_PROJECT_EXTRACT_RES   = "extract" + REPLACE_PROJECT_CAP_NAME + "Resources";
+    static final String TASK_PROJECT_MAKE_START    = "make" + REPLACE_PROJECT_CAP_NAME + "Start";
+    static final String TASK_PROJECT_RUNE_CLIENT   = "makeEclipse" + REPLACE_PROJECT_CAP_NAME + "RunClient";
+    static final String TASK_PROJECT_RUNE_SERVER   = "makeEclipse" + REPLACE_PROJECT_CAP_NAME + "RunServer";
+    static final String TASK_PROJECT_RUNJ_CLIENT   = "makeIdea" + REPLACE_PROJECT_CAP_NAME + "RunClient";
+    static final String TASK_PROJECT_RUNJ_SERVER   = "makeIdea" + REPLACE_PROJECT_CAP_NAME + "RunServer";
+    static final String TASK_PROJECT_COMPILE       = "makeJar" + REPLACE_PROJECT_CAP_NAME + "";
+    static final String TASK_PROJECT_GEN_EXC       = "extractExc" + REPLACE_PROJECT_CAP_NAME + "";
+    static final String TASK_PROJECT_RANGEMAP      = "extract" + REPLACE_PROJECT_CAP_NAME + "Rangemap";
 }

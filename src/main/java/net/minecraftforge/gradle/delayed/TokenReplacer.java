@@ -77,7 +77,7 @@ public class TokenReplacer
                 saveOutCache = false;
                 
                 // eventually remove.. or keep forever?
-                throw new RuntimeException("THIS SHOULDNT BE HAPENNING!?!?!  should it?");
+                throw new RuntimeException("MISSING REPLACEMENT DATA FOR "+key);
             }
             else
             {

@@ -131,6 +131,8 @@ public abstract class EditJarTask extends CachedTask
 
     protected static void saveJar(File output, Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws IOException
     {
+        output.getParentFile().mkdirs();
+        
         JarOutputStream zout = new JarOutputStream(new FileOutputStream(output));
 
         // write in resources
