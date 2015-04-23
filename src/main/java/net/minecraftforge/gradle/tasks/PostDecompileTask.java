@@ -221,11 +221,12 @@ public class PostDecompileTask extends EditJarTask
      */
     private static class ContextProvider implements ContextualPatch.IContextProvider
     {
+        private static final Pattern LINE_PATTERN = Pattern.compile("\r\n|\r|\n");
         private List<String> data;
 
         public ContextProvider(String file)
         {
-            data = Splitter.on('\n').splitToList(file);
+            data = Splitter.on(LINE_PATTERN).splitToList(file);
         }
 
         @Override
