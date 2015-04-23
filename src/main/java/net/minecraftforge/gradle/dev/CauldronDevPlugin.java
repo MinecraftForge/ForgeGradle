@@ -337,13 +337,13 @@ public class CauldronDevPlugin extends DevBasePlugin
         ExtractS2SRangeTask extractRange = makeTask("extractRangeCauldron", ExtractS2SRangeTask.class);
         {
             extractRange.setLibsFromProject(delayedFile(ECLIPSE_CDN + "/build.gradle"), "compile", true);
-            extractRange.addIn(delayedFile(ECLIPSE_CDN_SRC));
+            extractRange.addSource(delayedFile(ECLIPSE_CDN_SRC));
             extractRange.setRangeMap(rangeMapDirty);
         }
 
         ApplyS2STask applyS2S = makeTask("retroMapCauldron", ApplyS2STask.class);
         {
-            applyS2S.addIn(delayedFile(ECLIPSE_CDN_SRC));
+            applyS2S.addSource(delayedFile(ECLIPSE_CDN_SRC));
             applyS2S.setOut(delayedFile(PATCH_DIRTY));
             applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
             applyS2S.addExc(delayedFile(MCP_EXC));
@@ -366,13 +366,13 @@ public class CauldronDevPlugin extends DevBasePlugin
         extractRange = makeTask("extractRangeClean", ExtractS2SRangeTask.class);
         {
             extractRange.setLibsFromProject(delayedFile(ECLIPSE_CLEAN + "/build.gradle"), "compile", true);
-            extractRange.addIn(delayedFile(REMAPPED_CLEAN));
+            extractRange.addSource(delayedFile(REMAPPED_CLEAN));
             extractRange.setRangeMap(rangeMapClean);
         }
 
         applyS2S = makeTask("retroMapClean", ApplyS2STask.class);
         {
-            applyS2S.addIn(delayedFile(REMAPPED_CLEAN));
+            applyS2S.addSource(delayedFile(REMAPPED_CLEAN));
             applyS2S.setOut(delayedFile(PATCH_CLEAN));
             applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
             applyS2S.addExc(delayedFile(MCP_EXC));

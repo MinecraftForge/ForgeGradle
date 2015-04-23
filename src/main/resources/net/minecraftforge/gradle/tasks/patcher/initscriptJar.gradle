@@ -4,8 +4,8 @@ allprojects { project ->
 
     afterEvaluate {
         project.tasks.jar {
-            destinationDir = project.file("@RECOMP_DIR@/"+project.name);
-            archiveName = "recompiled.jar";
+            destinationDir = project.file("@RECOMP_DIR@");
+            archiveName = "@JAR_NAME@";
         }
     }
 }

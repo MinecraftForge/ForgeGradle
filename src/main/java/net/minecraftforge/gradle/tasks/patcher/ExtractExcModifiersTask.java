@@ -21,7 +21,7 @@ import com.google.common.base.Throwables;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
-public class ExtractExcTask extends DefaultTask
+public class ExtractExcModifiersTask extends DefaultTask
 {
     @InputFile
     private Object inJar;
@@ -67,26 +67,6 @@ public class ExtractExcTask extends DefaultTask
         zin.close();
         writer.close();
     }
-
-    public File getInJar()
-    {
-        return getProject().file(inJar);
-    }
-
-    public void setInJar(Object inJar)
-    {
-        this.inJar = inJar;
-    }
-
-    public File getOutExc()
-    {
-        return getProject().file(outExc);
-    }
-
-    public void setOutExc(Object outExc)
-    {
-        this.outExc = outExc;
-    }
     
     private static class GenerateMapClassAdapter extends ClassVisitor
     {
@@ -129,5 +109,25 @@ public class ExtractExcTask extends DefaultTask
             }
             return super.visitMethod(access, name, desc, signature, exceptions);
         }
+    }
+
+    public File getInJar()
+    {
+        return getProject().file(inJar);
+    }
+
+    public void setInJar(Object inJar)
+    {
+        this.inJar = inJar;
+    }
+
+    public File getOutExc()
+    {
+        return getProject().file(outExc);
+    }
+
+    public void setOutExc(Object outExc)
+    {
+        this.outExc = outExc;
     }
 }

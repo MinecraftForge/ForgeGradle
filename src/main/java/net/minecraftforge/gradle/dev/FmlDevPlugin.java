@@ -274,7 +274,7 @@ public class FmlDevPlugin extends DevBasePlugin
         ExtractS2SRangeTask task = makeTask("extractRange", ExtractS2SRangeTask.class);
         {
             task.setLibsFromProject(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"), "compile", true);
-            task.addIn(delayedFile(DevConstants.ECLIPSE_FML_SRC));
+            task.addSource(delayedFile(DevConstants.ECLIPSE_FML_SRC));
             //task.addIn(delayedFile(DevConstants.FML_SOURCES));
             task.setExcOutput(delayedFile(DevConstants.EXC_MODIFIERS_DIRTY));
             task.setRangeMap(rangeMap);
@@ -282,7 +282,7 @@ public class FmlDevPlugin extends DevBasePlugin
 
         ApplyS2STask task4 = makeTask("retroMapSources", ApplyS2STask.class);
         {
-            task4.addIn(delayedFile(DevConstants.ECLIPSE_FML_SRC));
+            task4.addSource(delayedFile(DevConstants.ECLIPSE_FML_SRC));
             task4.setOut(delayedFile(DevConstants.PATCH_DIRTY));
             task4.addSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
             task4.addExc(delayedFile(DevConstants.MCP_EXC));
@@ -462,14 +462,14 @@ public class FmlDevPlugin extends DevBasePlugin
         ExtractS2SRangeTask range = makeTask("userDevExtractRange", ExtractS2SRangeTask.class);
         {
             range.setLibsFromProject(delayedFile(DevConstants.ECLIPSE_FML + "/build.gradle"), "compile", true);
-            range.addIn(delayedFile(DevConstants.FML_SOURCES));
+            range.addSource(delayedFile(DevConstants.FML_SOURCES));
             range.setRangeMap(delayedFile(DevConstants.USERDEV_RANGEMAP));
             range.dependsOn("generateProjects", "extractFmlSources");
         }
 
         ApplyS2STask s2s = makeTask("userDevSrgSrc", ApplyS2STask.class);
         {
-            s2s.addIn(delayedFile(DevConstants.FML_SOURCES));
+            s2s.addSource(delayedFile(DevConstants.FML_SOURCES));
             s2s.setOut(delayedFile(DevConstants.USERDEV_SRG_SRC));
             s2s.addSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
             s2s.addExc(delayedFile(DevConstants.JOINED_EXC));

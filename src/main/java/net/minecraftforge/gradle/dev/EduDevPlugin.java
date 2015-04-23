@@ -316,13 +316,13 @@ public class EduDevPlugin extends DevBasePlugin
         ExtractS2SRangeTask extractRange = makeTask("extractRangeMcEdu", ExtractS2SRangeTask.class);
         {
             extractRange.setLibsFromProject(delayedFile(ECLIPSE_EDU + "/build.gradle"), "compile", true);
-            extractRange.addIn(delayedFile(ECLIPSE_EDU_SRC));
+            extractRange.addSource(delayedFile(ECLIPSE_EDU_SRC));
             extractRange.setRangeMap(rangeMapDirty);
         }
 
         ApplyS2STask applyS2S = makeTask("retroMapMcEdu", ApplyS2STask.class);
         {
-            applyS2S.addIn(delayedFile(ECLIPSE_EDU_SRC));
+            applyS2S.addSource(delayedFile(ECLIPSE_EDU_SRC));
             applyS2S.setOut(delayedFile(PATCH_DIRTY));
             applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
             applyS2S.addExc(delayedFile(MCP_EXC));
@@ -345,13 +345,13 @@ public class EduDevPlugin extends DevBasePlugin
         extractRange = makeTask("extractRangeClean", ExtractS2SRangeTask.class);
         {
             extractRange.setLibsFromProject(delayedFile(ECLIPSE_CLEAN + "/build.gradle"), "compile", true);
-            extractRange.addIn(delayedFile(REMAPPED_CLEAN));
+            extractRange.addSource(delayedFile(REMAPPED_CLEAN));
             extractRange.setRangeMap(rangeMapClean);
         }
 
         applyS2S = makeTask("retroMapClean", ApplyS2STask.class);
         {
-            applyS2S.addIn(delayedFile(REMAPPED_CLEAN));
+            applyS2S.addSource(delayedFile(REMAPPED_CLEAN));
             applyS2S.setOut(delayedFile(PATCH_CLEAN));
             applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
             applyS2S.addExc(delayedFile(MCP_EXC));

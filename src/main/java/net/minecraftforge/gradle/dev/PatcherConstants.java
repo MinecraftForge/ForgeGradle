@@ -60,4 +60,5 @@ public final class PatcherConstants
     static final String TASK_PROJECT_COMPILE       = "makeJar" + REPLACE_PROJECT_CAP_NAME + "";
     static final String TASK_PROJECT_GEN_EXC       = "extractExc" + REPLACE_PROJECT_CAP_NAME + "";
     static final String TASK_PROJECT_RANGEMAP      = "extract" + REPLACE_PROJECT_CAP_NAME + "Rangemap";
+    static final String TASK_PROJECT_RETROMAP      = "retromap" + REPLACE_PROJECT_CAP_NAME;
 }

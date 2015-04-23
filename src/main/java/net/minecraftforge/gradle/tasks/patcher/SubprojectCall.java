@@ -33,12 +33,12 @@ public class SubprojectCall extends DefaultTask
     
     @TaskAction
     public void doTask() throws IOException
-    {
+    {        
         // extract custom initscript
         File initscript = new File(getTemporaryDir(), "subprojectLogging.gradle");
         {
             OutputStream os = new FileOutputStream(initscript);
-            Resources.copy(Resources.getResource(SubprojectCall.class, "subprojectInitScript"), os);
+            Resources.copy(Resources.getResource(SubprojectCall.class, "initscriptLogger.gradle"), os);
             os.close();
         }
         
@@ -67,6 +67,10 @@ public class SubprojectCall extends DefaultTask
         // get current Gradle instance
         Gradle gradle = getProject().getGradle();
         
+        getProject().getLogger().lifecycle("------------------------ ");
+        getProject().getLogger().lifecycle("--------SUB-CALL-------- ");
+        getProject().getLogger().lifecycle("------------------------ ");
+        
         // connect to project
         ProjectConnection connection = GradleConnector.newConnector()
                 .useGradleUserHomeDir(gradle.getGradleUserHomeDir())
@@ -91,6 +95,10 @@ public class SubprojectCall extends DefaultTask
                 .setStandardError(System.err)
                 .withArguments(args.toArray(new String[args.size()]))
                 .run();
+        
+        getProject().getLogger().lifecycle("------------------------ ");
+        getProject().getLogger().lifecycle("------END-SUB-CALL------ ");
+        getProject().getLogger().lifecycle("------------------------ ");
     }
 
     public File getProjectDir()

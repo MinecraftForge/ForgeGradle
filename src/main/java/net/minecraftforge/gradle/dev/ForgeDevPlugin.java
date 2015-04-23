@@ -291,14 +291,14 @@ public class ForgeDevPlugin extends DevBasePlugin
         ExtractS2SRangeTask extractRange = makeTask("extractRangeForge", ExtractS2SRangeTask.class);
         {
             extractRange.setLibsFromProject(delayedFile(ECLIPSE_FORGE + "/build.gradle"), "compile", true);
-            extractRange.addIn(delayedFile(ECLIPSE_FORGE_SRC));
+            extractRange.addSource(delayedFile(ECLIPSE_FORGE_SRC));
             extractRange.setExcOutput(delayedFile(EXC_MODIFIERS_DIRTY));
             extractRange.setRangeMap(rangeMapDirty);
         }
 
         ApplyS2STask applyS2S = makeTask("retroMapForge", ApplyS2STask.class);
         {
-            applyS2S.addIn(delayedFile(ECLIPSE_FORGE_SRC));
+            applyS2S.addSource(delayedFile(ECLIPSE_FORGE_SRC));
             applyS2S.setOut(delayedFile(PATCH_DIRTY));
             applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
             applyS2S.addExc(delayedFile(MCP_EXC));
@@ -323,14 +323,14 @@ public class ForgeDevPlugin extends DevBasePlugin
         extractRange = makeTask("extractRangeClean", ExtractS2SRangeTask.class);
         {
             extractRange.setLibsFromProject(delayedFile(ECLIPSE_CLEAN + "/build.gradle"), "compile", true);
-            extractRange.addIn(delayedFile(REMAPPED_CLEAN));
+            extractRange.addSource(delayedFile(REMAPPED_CLEAN));
             extractRange.setExcOutput(delayedFile(EXC_MODIFIERS_CLEAN));
             extractRange.setRangeMap(rangeMapClean);
         }
 
         applyS2S = makeTask("retroMapClean", ApplyS2STask.class);
         {
-            applyS2S.addIn(delayedFile(REMAPPED_CLEAN));
+            applyS2S.addSource(delayedFile(REMAPPED_CLEAN));
             applyS2S.setOut(delayedFile(PATCH_CLEAN));
             applyS2S.addSrg(delayedFile(MCP_2_SRG_SRG));
             applyS2S.addExc(delayedFile(MCP_EXC));
@@ -568,16 +568,16 @@ public class ForgeDevPlugin extends DevBasePlugin
         ExtractS2SRangeTask range = makeTask("userDevExtractRange", ExtractS2SRangeTask.class);
         {
             range.setLibsFromProject(delayedFile(DevConstants.ECLIPSE_FORGE + "/build.gradle"), "compile", true);
-            range.addIn(delayedFile(DevConstants.FML_SOURCES));
-            range.addIn(delayedFile(DevConstants.FORGE_SOURCES));
+            range.addSource(delayedFile(DevConstants.FML_SOURCES));
+            range.addSource(delayedFile(DevConstants.FORGE_SOURCES));
             range.setRangeMap(delayedFile(DevConstants.USERDEV_RANGEMAP));
             range.dependsOn("extractForgeSources", "generateProjects");
         }
 
         ApplyS2STask s2s = makeTask("userDevSrgSrc", ApplyS2STask.class);
         {
-            s2s.addIn(delayedFile(DevConstants.FORGE_SOURCES));
-            s2s.addIn(delayedFile(DevConstants.FML_SOURCES));
+            s2s.addSource(delayedFile(DevConstants.FORGE_SOURCES));
+            s2s.addSource(delayedFile(DevConstants.FML_SOURCES));
             s2s.setOut(delayedFile(DevConstants.USERDEV_SRG_SRC));
             s2s.addSrg(delayedFile(DevConstants.MCP_2_SRG_SRG));
             s2s.addExc(delayedFile(DevConstants.JOINED_EXC));

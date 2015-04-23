@@ -584,28 +584,28 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         DependencyHandler handler = project.getDependencies();
 
         // actual dependencies
-        if (project.getConfigurations().getByName(CONFIG_NATIVES).getState() == State.UNRESOLVED)
-        {
-            for (net.minecraftforge.gradle.json.version.Library lib : version.getLibraries())
-            {
-                if (lib.natives == null)
-                    handler.add(CONFIG_NATIVES, lib.getArtifactName());
-            }
-        }
-        else
-            project.getLogger().debug("RESOLVED: " + CONFIG_NATIVES);
-
-        // the natives
         if (project.getConfigurations().getByName(CONFIG_MC_DEPS).getState() == State.UNRESOLVED)
         {
             for (net.minecraftforge.gradle.json.version.Library lib : version.getLibraries())
             {
-                if (lib.natives != null)
+                if (lib.natives == null)
                     handler.add(CONFIG_MC_DEPS, lib.getArtifactName());
             }
         }
         else
             project.getLogger().debug("RESOLVED: " + CONFIG_MC_DEPS);
+
+        // the natives
+        if (project.getConfigurations().getByName(CONFIG_NATIVES).getState() == State.UNRESOLVED)
+        {
+            for (net.minecraftforge.gradle.json.version.Library lib : version.getLibraries())
+            {
+                if (lib.natives != null)
+                    handler.add(CONFIG_NATIVES, lib.getArtifactName());
+            }
+        }
+        else
+            project.getLogger().debug("RESOLVED: " + CONFIG_NATIVES);
         
         // set asset index
         TokenReplacer.putReplacement(REPLACE_ASSET_INDEX, version.getAssets());

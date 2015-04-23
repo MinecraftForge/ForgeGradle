@@ -25,6 +25,10 @@ public class SubprojectTask extends DefaultTask
     @TaskAction
     public void doTask() throws IOException
     {
+        getProject().getLogger().lifecycle(" ------------------------ ");
+        getProject().getLogger().lifecycle(" --------SUB-CALL-------- ");
+        getProject().getLogger().lifecycle(" ------------------------ ");
+        
         Project childProj = FmlDevPlugin.buildProject(getBuildFile(), getProject());
         
         // configure the project
@@ -46,6 +50,10 @@ public class SubprojectTask extends DefaultTask
         }
 
         System.gc();
+        
+        getProject().getLogger().lifecycle(" ------------------------ ");
+        getProject().getLogger().lifecycle(" ------END-SUB-CALL------ ");
+        getProject().getLogger().lifecycle(" ------------------------ ");
     }
 
     private void executeTask(AbstractTask task)

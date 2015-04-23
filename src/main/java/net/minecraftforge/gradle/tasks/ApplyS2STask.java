@@ -1,20 +1,23 @@
 package net.minecraftforge.gradle.tasks;
 
-import com.google.common.base.Charsets;
-import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.io.Files;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
 import joptsimple.internal.Strings;
 import net.minecraftforge.gradle.SequencedInputSupplier;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.srg2source.rangeapplier.RangeApplier;
 import net.minecraftforge.srg2source.util.io.FolderSupplier;
 import net.minecraftforge.srg2source.util.io.InputSupplier;
 import net.minecraftforge.srg2source.util.io.OutputSupplier;
 import net.minecraftforge.srg2source.util.io.ZipInputSupplier;
 import net.minecraftforge.srg2source.util.io.ZipOutputSupplier;
+
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.InputFile;
@@ -23,13 +26,11 @@ import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFiles;
 import org.gradle.api.tasks.TaskAction;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import com.google.common.base.Charsets;
+import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.io.Files;
 
 public class ApplyS2STask extends DefaultTask
 {
@@ -41,20 +42,20 @@ public class ApplyS2STask extends DefaultTask
     private final List<Object> exc = new LinkedList<Object>();
 
     @InputFile
-    private DelayedFile rangeMap;
+    private Object rangeMap;
 
     @Optional
     @InputFile
-    private DelayedFile excModifiers;
+    private Object excModifiers;
 
     // stuff defined on the tasks..
-    private final List<DelayedFile> in = new LinkedList<DelayedFile>();
-    private DelayedFile out;
+    private final List<Object> in = new LinkedList<Object>();
+    private Object out;
 
     @TaskAction
     public void doTask() throws IOException
     {
-        List<File> ins = getIn();
+        List<File> ins = getSource();
         File out = getOut();
         File rangemap = getRangeMap();
         File rangelog = File.createTempFile("rangelog", ".txt", this.getTemporaryDir());
@@ -266,20 +267,20 @@ public class ApplyS2STask extends DefaultTask
     }
 
     @InputFiles
-    public FileCollection getIns()
+    public FileCollection getSources()
     {
         return getProject().files(in);
     }
 
-    public List<File> getIn()
+    public List<File> getSource()
     {
         List<File> files = new LinkedList<File>();
-        for (DelayedFile f : in)
-            files.add(f.call());
+        for (Object f : in)
+            files.add(getProject().file(f));
         return files;
     }
 
-    public void addIn(DelayedFile in)
+    public void addSource(Object in)
     {
         this.in.add(in);
     }
@@ -296,10 +297,10 @@ public class ApplyS2STask extends DefaultTask
 
     public File getOut()
     {
-        return out.call();
+        return getProject().file(out);
     }
 
-    public void setOut(DelayedFile out)
+    public void setOut(Object out)
     {
         this.out = out;
     }
@@ -309,7 +310,7 @@ public class ApplyS2STask extends DefaultTask
         return getProject().files(srg);
     }
 
-    public void addSrg(DelayedFile srg)
+    public void addSrg(Object srg)
     {
         this.srg.add(srg);
     }
@@ -329,7 +330,7 @@ public class ApplyS2STask extends DefaultTask
         return getProject().files(exc);
     }
 
-    public void addExc(DelayedFile exc)
+    public void addExc(Object exc)
     {
         this.exc.add(exc);
     }
@@ -346,21 +347,21 @@ public class ApplyS2STask extends DefaultTask
 
     public File getRangeMap()
     {
-        return rangeMap.call();
+        return getProject().file(rangeMap);
     }
 
-    public void setRangeMap(DelayedFile rangeMap)
+    public void setRangeMap(Object rangeMap)
     {
         this.rangeMap = rangeMap;
     }
 
-    public void setExcModifiers(DelayedFile value)
+    public void setExcModifiers(Object value)
     {
         this.excModifiers = value;
     }
 
     public File getExcModifiers()
     {
-        return this.excModifiers == null ? null : this.excModifiers.call();
+        return this.excModifiers == null ? null : this.getProject().file(excModifiers);
     }
 }

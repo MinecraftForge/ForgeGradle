@@ -8,7 +8,6 @@ import java.util.List;
 
 import net.minecraftforge.gradle.SequencedInputSupplier;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.srg2source.ast.RangeExtractor;
 import net.minecraftforge.srg2source.util.io.FolderSupplier;
 import net.minecraftforge.srg2source.util.io.InputSupplier;
@@ -20,20 +19,22 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import com.google.common.collect.Lists;
+
 public class ExtractS2SRangeTask extends DefaultTask
 {
     @InputFiles
-    private FileCollection libs;
+    private List<Object> libs = Lists.newArrayList();
 
-    private final List<DelayedFile> in = new LinkedList<DelayedFile>();
+    private final List<Object> sources = Lists.newArrayList();
 
     @OutputFile
-    private DelayedFile rangeMap;
+    private Object rangeMap;
 
     @TaskAction
     public void doTask() throws IOException
     {
-        List<File> ins = getIn();
+        List<File> ins = getSource();
         File rangemap = getRangeMap();
 
         InputSupplier inSup;
@@ -61,7 +62,16 @@ public class ExtractS2SRangeTask extends DefaultTask
     private void generateRangeMap(InputSupplier inSup, File rangeMap)
     {
         RangeExtractor extractor = new RangeExtractor();
-        extractor.addLibs(getLibs().getAsPath()).setSrc(inSup);
+        
+        for (File f : getLibs())
+        {
+            //System.out.println("lib: "+f);
+            extractor.addLibs(f);
+        }
+        
+        extractor.setSrc(inSup);
+        
+        //extractor.addLibs(getLibs().getAsPath()).setSrc(inSup);
 
         PrintStream stream = new PrintStream(Constants.getTaskLogStream(getProject(), this.getName() + ".log"));
         extractor.setOutLogger(stream);
@@ -90,10 +100,10 @@ public class ExtractS2SRangeTask extends DefaultTask
 
     public File getRangeMap()
     {
-        return rangeMap.call();
+        return getProject().file(rangeMap);
     }
 
-    public void setRangeMap(DelayedFile out)
+    public void setRangeMap(Object out)
     {
         this.rangeMap = out;
     }
@@ -103,7 +113,7 @@ public class ExtractS2SRangeTask extends DefaultTask
     {
         FileCollection collection = null;
         
-        for (File f : getIn())
+        for (File f : getSource())
         {
             FileCollection col;
             if (f.isDirectory())
@@ -124,26 +134,46 @@ public class ExtractS2SRangeTask extends DefaultTask
         return collection;
     }
 
-    public List<File> getIn()
+    public List<File> getSource()
     {
         List<File> files = new LinkedList<File>();
-        for (DelayedFile f : in)
-            files.add(f.call());
+        for (Object o : sources)
+            files.add(getProject().file(o));
         return files;
     }
 
-    public void addIn(DelayedFile in)
+    public void addSource(Object in)
     {
-        this.in.add(in);
+        this.sources.add(in);
     }
 
     public FileCollection getLibs()
     {
-        return libs;
+        FileCollection collection = null;
+        
+        for (Object o : libs)
+        {
+            FileCollection col;
+            if (o instanceof FileCollection)
+            {
+                col = (FileCollection) o;
+            }
+            else
+            {
+                col = getProject().files(o);
+            }
+            
+            if (collection == null)
+                collection = col;
+            else
+                collection = collection.plus(col);
+        }
+        
+        return collection;
     }
 
-    public void setLibs(FileCollection libs)
+    public void addLibs(Object libs)
     {
-        this.libs = libs;
+        this.libs.add(libs);
     }
 }
