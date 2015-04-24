@@ -17,10 +17,10 @@ import net.minecraftforge.gradle.tasks.abstractutil.DelayedJar;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.dev.FMLVersionPropTask;
 import net.minecraftforge.gradle.tasks.dev.GenBinaryPatches;
-import net.minecraftforge.gradle.tasks.dev.GeneratePatches;
 import net.minecraftforge.gradle.tasks.dev.ObfuscateTask;
 import net.minecraftforge.gradle.tasks.dev.SubprojectTask;
 import net.minecraftforge.gradle.tasks.patcher.GenDevProjectsTask;
+import net.minecraftforge.gradle.tasks.patcher.GeneratePatches;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;

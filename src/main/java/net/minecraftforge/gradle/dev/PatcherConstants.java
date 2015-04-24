@@ -31,7 +31,7 @@ public final class PatcherConstants
     static final String JAR_REMAPPED               = DIR_LOCAL_CACHE + "/remapped-clean.jar";
 
     // cached project stuff
-    static final String DIR_PROJECT_CACHE          = DIR_LOCAL_CACHE + "/" + REPLACE_PROJECT_CAP_NAME + "/";
+    static final String DIR_PROJECT_CACHE          = DIR_LOCAL_CACHE + "/" + REPLACE_PROJECT_CAP_NAME;
     static final String JAR_PROJECT_PATCHED        = DIR_PROJECT_CACHE + "/patched.zip";
     static final String JAR_PROJECT_RECOMPILED     = DIR_PROJECT_CACHE + "/recompiled.jar";
     static final String JAR_PROJECT_REMAPPED       = DIR_PROJECT_CACHE + "/mcp-named.zip";
@@ -61,4 +61,5 @@ public final class PatcherConstants
     static final String TASK_PROJECT_GEN_EXC       = "extractExc" + REPLACE_PROJECT_CAP_NAME + "";
     static final String TASK_PROJECT_RANGEMAP      = "extract" + REPLACE_PROJECT_CAP_NAME + "Rangemap";
     static final String TASK_PROJECT_RETROMAP      = "retromap" + REPLACE_PROJECT_CAP_NAME;
+    static final String TASK_PROJECT_GEN_PATCHES   = "gen" + REPLACE_PROJECT_CAP_NAME + "Patches";
 }

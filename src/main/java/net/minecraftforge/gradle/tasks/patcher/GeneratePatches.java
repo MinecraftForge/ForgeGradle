@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.tasks.dev;
+package net.minecraftforge.gradle.tasks.patcher;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -12,7 +12,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.srg2source.util.io.FolderSupplier;
 import net.minecraftforge.srg2source.util.io.InputSupplier;
 import net.minecraftforge.srg2source.util.io.ZipInputSupplier;
@@ -37,13 +36,13 @@ import com.google.common.io.Files;
 public class GeneratePatches extends DefaultTask
 {
     @OutputDirectory
-    DelayedFile patchDir;
+    Object patchDir;
 
     @InputFiles
-    DelayedFile changed;
+    Object changed;
 
     @InputFiles
-    DelayedFile original;
+    Object original;
 
     @Input
     String originalPrefix = "";
@@ -60,7 +59,7 @@ public class GeneratePatches extends DefaultTask
         getPatchDir().mkdirs();
 
         // fix and create patches.
-        processFiles(getSupplier(original.call()), getSupplier(changed.call()));
+        processFiles(getSupplier(getProject().file(original)), getSupplier(getProject().file(changed)));
         
         removeOld(getPatchDir());
     }
@@ -91,11 +90,19 @@ public class GeneratePatches extends DefaultTask
             @Override
             public void visitFile(FileVisitDetails f)
             {
-                File file = f.getFile();
-                if (!created.contains(file))
+                File file;
+                try
                 {
-                    getLogger().debug("Removed patch: " + f.getRelativePath());
-                    file.delete();
+                    file = f.getFile().getCanonicalFile();
+                    if (!created.contains(file))
+                    {
+                        getLogger().debug("Removed patch: " + f.getRelativePath());
+                        file.delete();
+                    }
+                }
+                catch (IOException e)
+                {
+                    // impossibru
                 }
             }
         });
@@ -147,7 +154,7 @@ public class GeneratePatches extends DefaultTask
     {
         getLogger().debug("Diffing: " + relative);
 
-        File patchFile = new File(getPatchDir(), relative + ".patch");
+        File patchFile = new File(getPatchDir(), relative + ".patch").getCanonicalFile();
 
         if (changed == null)
         {
@@ -195,38 +202,38 @@ public class GeneratePatches extends DefaultTask
 
     public FileCollection getChanged()
     {
-        File f = changed.call();
+        File f = getProject().file(changed);
         if (f.isDirectory())
             return getProject().fileTree(f);
         else
             return getProject().files(f);
     }
 
-    public void setChanged(DelayedFile changed)
+    public void setChanged(Object changed)
     {
         this.changed = changed;
     }
 
     public FileCollection getOriginal()
     {
-        File f = original.call();
+        File f = getProject().file(original);
         if (f.isDirectory())
             return getProject().fileTree(f);
         else
             return getProject().files(f);
     }
 
-    public void setOriginal(DelayedFile original)
+    public void setOriginal(Object original)
     {
         this.original = original;
     }
 
     public File getPatchDir()
     {
-        return patchDir.call();
+        return getProject().file(patchDir);
     }
 
-    public void setPatchDir(DelayedFile patchDir)
+    public void setPatchDir(Object patchDir)
     {
         this.patchDir = patchDir;
     }

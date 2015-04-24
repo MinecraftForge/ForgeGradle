@@ -24,7 +24,7 @@ public class PatcherProject implements Serializable
     private final String name;
     private final String capName;
     private String patchAfter = "clean";
-    private String generateFrom;
+    private String genPatchesFrom;
 
     private File rootDir;
     private File patchDir;
@@ -39,6 +39,9 @@ public class PatcherProject implements Serializable
     private String tweakClassServer = "";
     private String runArgsClient = "";
     private String runArgsServer = "";
+    
+    private String patchPrefixOriginal = "";
+    private String patchPrefixChanged = "";
 
     protected PatcherProject(String name, PatcherPlugin plugin)
     {
@@ -115,9 +118,9 @@ public class PatcherProject implements Serializable
     /**
      * @return NULL to not generate patches, "clean" to generate from the clean project.
      */
-    public String getGenerateFrom()
+    public String getGenPatchesFrom()
     {
-        return generateFrom;
+        return genPatchesFrom;
     }
 
     /**
@@ -126,9 +129,9 @@ public class PatcherProject implements Serializable
      * To generate patches against the "clean" project, specify "clean" ast the argument.
      * @param generateFrom
      */
-    public void setGenerateFrom(String generateFrom)
+    public void setGenPatchesFrom(String generateFrom)
     {
-        this.generateFrom = generateFrom;
+        this.genPatchesFrom = generateFrom;
     }
 
     /**
@@ -137,9 +140,9 @@ public class PatcherProject implements Serializable
      * To generate patches against the "clean" project, specify "clean" ast the argument.
      * @param patcher
      */
-    public void setGenerateFrom(PatcherProject patcher)
+    public void setGenPatchesFrom(PatcherProject patcher)
     {
-        this.generateFrom = patcher.getName();
+        this.genPatchesFrom = patcher.getName();
     }
 
     /**
@@ -148,9 +151,14 @@ public class PatcherProject implements Serializable
      * To generate patches against the "clean" project, specify "clean" ast the argument.
      * @param generateFrom
      */
-    public void generateFrom(String generateFrom)
+    public void genPatchesFrom(String generateFrom)
     {
-        setGenerateFrom(generateFrom);
+        setGenPatchesFrom(generateFrom);
+    }
+    
+    protected boolean doesGenPatches()
+    {
+        return genPatchesFrom != null;
     }
 
     /**
@@ -161,7 +169,7 @@ public class PatcherProject implements Serializable
      */
     public void generateFrom(PatcherProject patcher)
     {
-        setGenerateFrom(patcher);
+        setGenPatchesFrom(patcher);
     }
 
     public File getRootDir()
@@ -426,6 +434,44 @@ public class PatcherProject implements Serializable
         setRunArgsServer(mainClass);
     }
     
+    public String getPatchPrefixOriginal()
+    {
+        return patchPrefixOriginal;
+    }
+
+    /**
+     * This is used for the run configs and the manifest of the universal jar.
+     * @param runArgs
+     */
+    public void setPatchPrefixOriginal(Object patchPrefixOriginal)
+    {
+        this.patchPrefixOriginal = Constants.resolveString(patchPrefixOriginal);
+    }
+    
+    public void patchPrefixOriginal(Object patchPrefixOriginal)
+    {
+        setPatchPrefixOriginal(patchPrefixOriginal);
+    }
+    
+    public String getPatchPrefixChanged()
+    {
+        return patchPrefixChanged;
+    }
+
+    /**
+     * This is used for the run configs and the manifest of the universal jar.
+     * @param runArgs
+     */
+    public void setPatchPrefixChanged(Object patchPrefixChanged)
+    {
+        this.patchPrefixChanged = Constants.resolveString(patchPrefixChanged);
+    }
+    
+    public void patchPrefixChanged(Object patchPrefixChanged)
+    {
+        setPatchPrefixChanged(patchPrefixChanged);
+    }
+    
     private File getFile(File field, String defaultPath)
     {
         if (field == null && rootDir != null)
@@ -433,6 +479,10 @@ public class PatcherProject implements Serializable
         else
             return ((File) field);
     }
+    
+    // ------------------------
+    // DELAYED GETTERS
+    // ------------------------
     
     @SuppressWarnings("serial")
     protected Closure<String> getDelayedMainClassClient()

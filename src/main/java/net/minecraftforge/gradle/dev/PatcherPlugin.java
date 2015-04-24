@@ -26,6 +26,7 @@ import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.patcher.ExtractExcModifiersTask;
 import net.minecraftforge.gradle.tasks.patcher.GenDevProjectsTask;
 import net.minecraftforge.gradle.tasks.patcher.GenIdeaRunTask;
+import net.minecraftforge.gradle.tasks.patcher.GeneratePatches;
 import net.minecraftforge.gradle.tasks.patcher.SubprojectCall;
 
 import org.gradle.api.Action;
@@ -35,6 +36,7 @@ import org.gradle.api.tasks.Copy;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
 
@@ -133,7 +135,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
     {
         RemapSourcesTask remapCleanTask = makeTask("remapCleanJar", RemapSourcesTask.class);
         {
-            remapCleanTask.setInJar(delayedFile(JAR_DECOMP));
+            remapCleanTask.setInJar(delayedFile(JAR_DECOMP_POST));
             remapCleanTask.setOutJar(delayedFile(JAR_REMAPPED));
             remapCleanTask.setMethodsCsv(delayedFile(Constants.CSV_METHOD));
             remapCleanTask.setFieldsCsv(delayedFile(Constants.CSV_FIELD));
@@ -434,6 +436,8 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         Task ideTask = project.getTasks().getByName(TASK_GEN_IDES);
         ProcessSrcJarTask patchJar = (ProcessSrcJarTask) project.getTasks().getByName(TASK_PATCH);
         DeobfuscateJarTask deobfJar = (DeobfuscateJarTask) project.getTasks().getByName(TASK_DEOBF);
+        List<File> addedExcs = Lists.newArrayListWithCapacity(patchersList.size());
+        List<File> addedSrgs = Lists.newArrayListWithCapacity(patchersList.size());
         
         for (PatcherProject patcher : patchersList)
         {
@@ -463,12 +467,56 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             
             // get EXCs and SRGs for retromapping
             ApplyS2STask retromap = (ApplyS2STask) project.getTasks().getByName(projectString(TASK_PROJECT_RETROMAP, patcher));
+            
+            // add from previous projects
+            for (File f : addedExcs)
+                retromap.addExc(f);
+            for (File f : addedSrgs)
+                retromap.addSrg(f);
+            
+            // add from this project
             for (File f : project.fileTree(patcher.getResourcesDir()).getFiles())
             {
                 if (f.getPath().endsWith(".exc"))
+                {
                     retromap.addExc(f);
+                    addedExcs.add(f);
+                }
                 else if (f.getPath().endsWith(".srg"))
+                {
                     retromap.addSrg(f);
+                    addedSrgs.add(f);
+                }
+            }
+            
+            
+            // create genPatches task for it.. if necessary
+            if (patcher.doesGenPatches())
+            {
+                GeneratePatches genPatches = makeTask(projectString(TASK_PROJECT_GEN_PATCHES, patcher), GeneratePatches.class);
+                genPatches.setPatchDir(patcher.getPatchDir());
+                genPatches.setChanged(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, patcher)));
+                genPatches.setOriginalPrefix(patcher.getPatchPrefixOriginal());
+                genPatches.setChangedPrefix(patcher.getPatchPrefixChanged());
+                genPatches.dependsOn(projectString(TASK_PROJECT_RETROMAP, patcher));
+                
+                genPatches.getOutputs().upToDateWhen(CALL_FALSE);
+                
+                //genPatches.setGroup("Forge"); // TODO: set the groups of some stuff
+                
+                PatcherProject genFrom = getExtension().getProjects().findByName(patcher.getGenPatchesFrom());
+                if ("clean".equals(patcher.getGenPatchesFrom().toLowerCase()))
+                {
+                    genPatches.setOriginal(delayedFile(JAR_DECOMP_POST)); // SRG named vanilla..
+                }
+                else if (genFrom == null)
+                    throw new GradleConfigurationException("");
+                else
+                {
+                    // valid project
+                    genPatches.setOriginal(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, genFrom)));
+                    genPatches.dependsOn(projectString(TASK_PROJECT_RETROMAP, genFrom));
+                }
             }
         }
     }
