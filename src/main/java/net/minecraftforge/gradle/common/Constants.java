@@ -64,6 +64,8 @@ public class Constants
     // extension names
     public static final String EXT_NAME_MC      = "minecraft";
     public static final String EXT_NAME_JENKINS = "jenkins";
+    
+    public static final String GROUP_FG         = "ForgeGradle";
 
     @SuppressWarnings("serial")
     public static final Closure<Boolean> CALL_FALSE = new Closure<Boolean>(null){ public Boolean call(Object o){ return false; }};

@@ -9,6 +9,7 @@ import groovy.lang.Closure;
 import java.io.File;
 import java.io.Serializable;
 
+import net.minecraftforge.gradle.GradleConfigurationException;
 import net.minecraftforge.gradle.common.Constants;
 
 import org.gradle.api.Project;
@@ -470,6 +471,19 @@ public class PatcherProject implements Serializable
     public void patchPrefixChanged(Object patchPrefixChanged)
     {
         setPatchPrefixChanged(patchPrefixChanged);
+    }
+    
+    // ------------------------
+    // HELPERS
+    // ------------------------
+    
+    /**
+     * Validates the object to ensure its been configured correctly and isnt missing something.
+     */
+    protected void validate()
+    {
+        if (rootDir == null && patchDir == null)
+            throw new GradleConfigurationException("PatchDir not specified for project '"+ name +"'");
     }
     
     private File getFile(File field, String defaultPath)

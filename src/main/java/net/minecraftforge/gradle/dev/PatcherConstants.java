@@ -41,6 +41,8 @@ public final class PatcherConstants
 
     // tasks
     static final String TASK_SETUP                 = "setup";
+    static final String TASK_CLEAN                 = "clean";
+    static final String TASK_GEN_PATCHES           = "genPatches";
     static final String TASK_DEOBF                 = "deobfuscateJar";
     static final String TASK_DECOMP                = "decompileJar";
     static final String TASK_POST_DECOMP           = "sourceProcessJar";

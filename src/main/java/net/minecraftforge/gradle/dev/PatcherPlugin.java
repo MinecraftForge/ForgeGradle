@@ -33,6 +33,7 @@ import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Task;
 import org.gradle.api.tasks.Copy;
+import org.gradle.api.tasks.Delete;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -66,7 +67,22 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             
         });
         
-        makeTask(TASK_SETUP);
+        // top level tasks
+        {
+            Task task = makeTask(TASK_SETUP);
+            task.setGroup(GROUP_FG);
+            task.setDescription("Sets up all the projects complete with run configurations for both Eclipse and Intellij");
+            
+            Delete cleanTask = makeTask(TASK_CLEAN, Delete.class);
+            cleanTask.delete(getExtension().getDelayedWorkspaceDir());
+            cleanTask.delete(project.getBuildDir());
+            cleanTask.setGroup(GROUP_FG);
+            cleanTask.setDescription("Completely cleans the workspace for a fresh build. Deletes the 'build' folder and the specified workspaceDir");
+            
+            task = makeTask(TASK_GEN_PATCHES);
+            task.setGroup(GROUP_FG);
+            task.setDescription("Generates patches for all the configured projects. (requires that setup was run before hand)");
+        }
         
         makeGeneralTasks();
         makeCleanTasks();
@@ -433,6 +449,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         List<PatcherProject> patchersList = sortByPatching(getExtension().getProjects());
         
         Task setupTask = project.getTasks().getByName(TASK_SETUP);
+        Task genPatchesTask = project.getTasks().getByName(TASK_GEN_PATCHES);
         Task ideTask = project.getTasks().getByName(TASK_GEN_IDES);
         ProcessSrcJarTask patchJar = (ProcessSrcJarTask) project.getTasks().getByName(TASK_PATCH);
         DeobfuscateJarTask deobfJar = (DeobfuscateJarTask) project.getTasks().getByName(TASK_DEOBF);
@@ -441,6 +458,8 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         
         for (PatcherProject patcher : patchersList)
         {
+            patcher.validate(); // validate it first
+            
             patchJar.addStage(
                     patcher.getName(),
                     patcher.getDelayedPatchDir(), 
@@ -489,7 +508,6 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                 }
             }
             
-            
             // create genPatches task for it.. if necessary
             if (patcher.doesGenPatches())
             {
@@ -500,20 +518,21 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                 genPatches.setChangedPrefix(patcher.getPatchPrefixChanged());
                 genPatches.dependsOn(projectString(TASK_PROJECT_RETROMAP, patcher));
                 
-                genPatches.getOutputs().upToDateWhen(CALL_FALSE);
+                //genPatches.getOutputs().upToDateWhen(CALL_FALSE);
                 
-                //genPatches.setGroup("Forge"); // TODO: set the groups of some stuff
+                genPatches.setGroup(GROUP_FG);
+                genPatches.setDescription("Generates patches for the '"+patcher.getName()+"' project");
                 
-                PatcherProject genFrom = getExtension().getProjects().findByName(patcher.getGenPatchesFrom());
+                // add to global task
+                genPatchesTask.dependsOn(genPatches);
+                
                 if ("clean".equals(patcher.getGenPatchesFrom().toLowerCase()))
                 {
                     genPatches.setOriginal(delayedFile(JAR_DECOMP_POST)); // SRG named vanilla..
                 }
-                else if (genFrom == null)
-                    throw new GradleConfigurationException("");
                 else
                 {
-                    // valid project
+                    PatcherProject genFrom = getExtension().getProjects().getByName(patcher.getGenPatchesFrom());
                     genPatches.setOriginal(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, genFrom)));
                     genPatches.dependsOn(projectString(TASK_PROJECT_RETROMAP, genFrom));
                 }
