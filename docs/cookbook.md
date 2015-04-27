@@ -50,7 +50,7 @@ def getVersionAppendage() {
 
     def proc = "git rev-parse --short HEAD".execute()
     proc.waitFor()
-    return "DEV." + proc.exitValue() ? prox.text.trim() : "GITBORK"
+    return "DEV." + proc.exitValue() ? "GITBORK" : proc.text.trim()
 }
 
 version = "1.2.3_"+getVersionAppendage()
