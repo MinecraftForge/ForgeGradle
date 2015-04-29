@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.tasks.patcher;
+package net.minecraftforge.gradle.patcher;
 
 import static net.minecraftforge.gradle.common.Constants.addXml;
 
@@ -27,7 +27,7 @@ import org.w3c.dom.Element;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 
-public class GenIdeaRunTask extends DefaultTask
+class TaskGenIdeaRun extends DefaultTask
 {
     //@formatter:off
     @Input           private Object configName;
@@ -36,6 +36,10 @@ public class GenIdeaRunTask extends DefaultTask
     @Input           private Object runDir;
     @Input @Optional private Object arguments;
     @OutputFile      private Object outputFile;
+    //@formatter:on
+
+    //@formatter:off
+    public TaskGenIdeaRun() { super(); }
     //@formatter:on
 
     @TaskAction

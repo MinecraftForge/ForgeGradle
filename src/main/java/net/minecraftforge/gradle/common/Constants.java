@@ -25,7 +25,7 @@ import java.util.concurrent.Callable;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import net.minecraftforge.gradle.dev.PatcherExtension;
+import net.minecraftforge.gradle.patcher.PatcherExtension;
 import net.minecraftforge.gradle.util.StringUtils;
 import net.minecraftforge.gradle.util.json.version.OS;
 

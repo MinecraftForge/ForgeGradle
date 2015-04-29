@@ -15,15 +15,15 @@ import net.minecraftforge.gradle.old.tasks.dev.FMLVersionPropTask;
 import net.minecraftforge.gradle.old.tasks.dev.GenBinaryPatches;
 import net.minecraftforge.gradle.old.tasks.dev.ObfuscateTask;
 import net.minecraftforge.gradle.old.tasks.dev.SubprojectTask;
+import net.minecraftforge.gradle.patcher.TaskGenSubprojects;
+import net.minecraftforge.gradle.patcher.TaskGenPatches;
 import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.ExtractTask;
 import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
-import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
+import net.minecraftforge.gradle.tasks.DeobfuscateJar;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
-import net.minecraftforge.gradle.tasks.RemapSourcesTask;
-import net.minecraftforge.gradle.tasks.patcher.GenDevProjectsTask;
-import net.minecraftforge.gradle.tasks.patcher.GeneratePatches;
+import net.minecraftforge.gradle.tasks.RemapSources;
 import net.minecraftforge.gradle.util.CopyInto;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
 
@@ -99,7 +99,7 @@ public class CauldronDevPlugin extends DevBasePlugin
 
     protected void createJarProcessTasks()
     {
-        DeobfuscateJarTask task2 = makeTask("deobfuscateJar", DeobfuscateJarTask.class);
+        DeobfuscateJar task2 = makeTask("deobfuscateJar", DeobfuscateJar.class);
         {
             task2.setInJar(delayedFile(Constants.JAR_MERGED));
             task2.setOutCleanJar(delayedFile(JAR_SRG_CDN));
@@ -134,7 +134,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             task4.dependsOn("decompile", "compressDeobfData", "createVersionPropertiesFML");
         }
 
-        RemapSourcesTask task6 = makeTask("remapCleanJar", RemapSourcesTask.class);
+        RemapSources task6 = makeTask("remapCleanJar", RemapSources.class);
         {
             task6.setInJar(delayedFile(ZIP_FORGED_CDN));
             task6.setOutJar(delayedFile(REMAPPED_CLEAN));
@@ -157,7 +157,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             task4.dependsOn("forgePatchJar", "remapCleanJar");
         }
 
-        task6 = makeTask("remapCauldronJar", RemapSourcesTask.class);
+        task6 = makeTask("remapCauldronJar", RemapSources.class);
         {
             task6.setInJar(delayedFile(ZIP_PATCHED_CDN));
             task6.setOutJar(delayedFile(ZIP_RENAMED_CDN));
@@ -271,7 +271,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             }
         }
 
-        GenDevProjectsTask task = makeTask("generateProjectClean", GenDevProjectsTask.class);
+        TaskGenSubprojects task = makeTask("generateProjectClean", TaskGenSubprojects.class);
         {
             task.setTargetDir(delayedFile(ECLIPSE_CLEAN));
             task.setJson(delayedFile(EXTRA_JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
@@ -285,7 +285,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             task.dependsOn("extractNatives");
         }
 
-        task = makeTask("generateProjectCauldron", GenDevProjectsTask.class);
+        task = makeTask("generateProjectCauldron", TaskGenSubprojects.class);
         {
             task.setJson(delayedFile(EXTRA_JSON_DEV));
             task.setTargetDir(delayedFile(ECLIPSE_CDN));
@@ -381,7 +381,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             applyS2S.dependsOn("genSrgs", extractRange);
         }
 
-        GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
+        TaskGenPatches task2 = makeTask("genPatches", TaskGenPatches.class);
         {
             task2.setPatchDir(delayedFile(EXTRA_PATCH_DIR));
             task2.setOriginal(delayedFile(ECLIPSE_CLEAN_SRC));

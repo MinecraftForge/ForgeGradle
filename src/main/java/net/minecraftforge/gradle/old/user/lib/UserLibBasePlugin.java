@@ -2,7 +2,7 @@ package net.minecraftforge.gradle.old.user.lib;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.old.tasks.user.reobf.ReobfTask;
-import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
+import net.minecraftforge.gradle.tasks.DeobfuscateJar;
 import net.minecraftforge.gradle.user.UserBasePlugin;
 import net.minecraftforge.gradle.user.UserConstants;
 import net.minecraftforge.gradle.user.UserExtension;
@@ -121,7 +121,7 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
     }
 
     @Override
-    protected final void configureDeobfuscation(DeobfuscateJarTask task)
+    protected final void configureDeobfuscation(DeobfuscateJar task)
     {
         // no access transformers...
     }

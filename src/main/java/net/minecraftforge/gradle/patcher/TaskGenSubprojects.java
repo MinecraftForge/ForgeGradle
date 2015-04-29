@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.tasks.patcher;
+package net.minecraftforge.gradle.patcher;
 
 import static net.minecraftforge.gradle.common.Constants.NEWLINE;
 
@@ -26,7 +26,7 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
-public class GenDevProjectsTask extends DefaultTask
+class TaskGenSubprojects extends DefaultTask
 {
     //@formatter:off
     @Input private String                 javaLevel;
@@ -38,11 +38,10 @@ public class GenDevProjectsTask extends DefaultTask
     private static final String           INDENT       = "    "; // 4 spaces
     //@formatter:on
 
-
-    public GenDevProjectsTask() throws IOException
+    public TaskGenSubprojects() throws IOException
     {
         super();
-        resource = Resources.toString(Resources.getResource(GenDevProjectsTask.class, "globalGradle"), Constants.CHARSET);
+        resource = Resources.toString(Resources.getResource(TaskGenSubprojects.class, "globalGradle"), Constants.CHARSET);
     }
 
     @TaskAction

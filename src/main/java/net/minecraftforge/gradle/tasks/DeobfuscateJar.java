@@ -64,7 +64,7 @@ import com.google.common.io.LineProcessor;
 
 import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
 
-public class DeobfuscateJarTask extends CachedTask
+public class DeobfuscateJar extends CachedTask
 {
     @InputFile
     @Optional

@@ -12,6 +12,7 @@ import java.util.Date;
 
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.old.tasks.CrowdinDownloadTask;
 import net.minecraftforge.gradle.old.tasks.DelayedJar;
 import net.minecraftforge.gradle.old.tasks.FileFilterTask;
 import net.minecraftforge.gradle.old.tasks.dev.ChangelogTask;
@@ -19,16 +20,15 @@ import net.minecraftforge.gradle.old.tasks.dev.FMLVersionPropTask;
 import net.minecraftforge.gradle.old.tasks.dev.GenBinaryPatches;
 import net.minecraftforge.gradle.old.tasks.dev.ObfuscateTask;
 import net.minecraftforge.gradle.old.tasks.dev.SubprojectTask;
+import net.minecraftforge.gradle.patcher.TaskGenSubprojects;
+import net.minecraftforge.gradle.patcher.TaskGenPatches;
 import net.minecraftforge.gradle.tasks.ApplyS2STask;
-import net.minecraftforge.gradle.tasks.CrowdinDownloadTask;
 import net.minecraftforge.gradle.tasks.ExtractTask;
 import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
-import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
-import net.minecraftforge.gradle.tasks.RemapSourcesTask;
-import net.minecraftforge.gradle.tasks.patcher.GenDevProjectsTask;
-import net.minecraftforge.gradle.tasks.patcher.GeneratePatches;
+import net.minecraftforge.gradle.tasks.DeobfuscateJar;
+import net.minecraftforge.gradle.tasks.RemapSources;
 import net.minecraftforge.gradle.util.CopyInto;
 import net.minecraftforge.gradle.util.delayed.DelayedBase;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
@@ -97,7 +97,7 @@ public class FmlDevPlugin extends DevBasePlugin
     protected void createJarProcessTasks()
     {
 
-        DeobfuscateJarTask task2 = makeTask("deobfuscateJar", DeobfuscateJarTask.class);
+        DeobfuscateJar task2 = makeTask("deobfuscateJar", DeobfuscateJar.class);
         {
             task2.setInJar(delayedFile(Constants.JAR_MERGED));
             task2.setOutCleanJar(delayedFile(DevConstants.JAR_SRG_FML));
@@ -119,7 +119,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task3.dependsOn("downloadFernFlower", "deobfuscateJar");
         }
 
-        RemapSourcesTask remapTask = makeTask("remapCleanJar", RemapSourcesTask.class);
+        RemapSources remapTask = makeTask("remapCleanJar", RemapSources.class);
         {
             remapTask.setInJar(delayedFile(DevConstants.ZIP_DECOMP_FML));
             remapTask.setOutJar(delayedFile(DevConstants.REMAPPED_CLEAN));
@@ -141,7 +141,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task5.dependsOn("decompile");
         }
 
-        remapTask = makeTask("remapDirtyJar", RemapSourcesTask.class);
+        remapTask = makeTask("remapDirtyJar", RemapSources.class);
         {
             remapTask.setInJar(delayedFile(DevConstants.ZIP_PATCHED_FML));
             remapTask.setOutJar(delayedFile(DevConstants.REMAPPED_DIRTY));
@@ -213,7 +213,7 @@ public class FmlDevPlugin extends DevBasePlugin
 
     private void createProjectTasks()
     {
-        GenDevProjectsTask task = makeTask("generateProjectClean", GenDevProjectsTask.class);
+        TaskGenSubprojects task = makeTask("generateProjectClean", TaskGenSubprojects.class);
         {
             task.setTargetDir(delayedFile(DevConstants.ECLIPSE_CLEAN));
             task.setJson(delayedFile(DevConstants.JSON_DEV)); // Change to FmlConstants.JSON_BASE eventually, so that it's the base vanilla json
@@ -225,7 +225,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task.dependsOn("extractNatives");
         }
 
-        task = makeTask("generateProjectFML", GenDevProjectsTask.class);
+        task = makeTask("generateProjectFML", TaskGenSubprojects.class);
         {
             task.setJson(delayedFile(DevConstants.JSON_DEV));
             task.setTargetDir(delayedFile(DevConstants.ECLIPSE_FML));
@@ -301,7 +301,7 @@ public class FmlDevPlugin extends DevBasePlugin
             }
         }
 
-        GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
+        TaskGenPatches task2 = makeTask("genPatches", TaskGenPatches.class);
         {
             task2.setPatchDir(delayedFile(DevConstants.FML_PATCH_DIR));
             task2.setOriginal(delayedFile(DevConstants.ZIP_DECOMP_FML));

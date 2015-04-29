@@ -1,8 +1,8 @@
-package net.minecraftforge.gradle.dev;
+package net.minecraftforge.gradle.patcher;
 
 import net.minecraftforge.gradle.common.Constants;
 
-public final class PatcherConstants
+final class PatcherConstants
 {
     // @formatter:off
     private PatcherConstants() {}

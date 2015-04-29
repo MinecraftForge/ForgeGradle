@@ -2,7 +2,7 @@ package net.minecraftforge.gradle.old.user.patch;
 
 import static net.minecraftforge.gradle.old.user.patch.UserPatchConstants.*;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
+import net.minecraftforge.gradle.tasks.DeobfuscateJar;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 
 import org.gradle.api.Project;
@@ -30,7 +30,7 @@ public class FmlUserPlugin extends UserPatchBasePlugin
     }
 
     @Override
-    protected void configureDeobfuscation(DeobfuscateJarTask task)
+    protected void configureDeobfuscation(DeobfuscateJar task)
     {
         task.addTransformerClean(delayedFile(FML_AT));       
     }

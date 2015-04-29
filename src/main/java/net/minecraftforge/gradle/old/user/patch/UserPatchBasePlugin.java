@@ -13,9 +13,9 @@ import java.util.List;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.old.tasks.user.ApplyBinPatchesTask;
-import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
+import net.minecraftforge.gradle.tasks.DeobfuscateJar;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
-import net.minecraftforge.gradle.tasks.RemapSourcesTask;
+import net.minecraftforge.gradle.tasks.RemapSources;
 import net.minecraftforge.gradle.user.UserBasePlugin;
 import net.minecraftforge.gradle.user.UserConstants;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
@@ -50,7 +50,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
 
             project.getTasks().getByName("deobfBinJar").dependsOn(task);
 
-            DeobfuscateJarTask deobf = (DeobfuscateJarTask) project.getTasks().getByName("deobfBinJar").dependsOn(task);;
+            DeobfuscateJar deobf = (DeobfuscateJar) project.getTasks().getByName("deobfBinJar").dependsOn(task);;
             deobf.setInJar(delayedFile(JAR_BINPATCHED));
             deobf.dependsOn(task);
         }
@@ -66,7 +66,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
             patch.setOutJar(processed);
             configurePatching(patch);
 
-            RemapSourcesTask remap = (RemapSourcesTask) project.getTasks().getByName("remapJar");
+            RemapSources remap = (RemapSources) project.getTasks().getByName("remapJar");
             remap.setInJar(processed);
             remap.dependsOn(patch);
         }
@@ -145,8 +145,8 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     protected void delayedTaskConfig()
     {
         // add src ATs
-        DeobfuscateJarTask binDeobf = (DeobfuscateJarTask) project.getTasks().getByName("deobfBinJar");
-        DeobfuscateJarTask decompDeobf = (DeobfuscateJarTask) project.getTasks().getByName("deobfuscateJar");
+        DeobfuscateJar binDeobf = (DeobfuscateJar) project.getTasks().getByName("deobfBinJar");
+        DeobfuscateJar decompDeobf = (DeobfuscateJar) project.getTasks().getByName("deobfuscateJar");
 
         // ATs from the ExtensionObject
         Object[] extAts = getExtension().getAccessTransformers().toArray();

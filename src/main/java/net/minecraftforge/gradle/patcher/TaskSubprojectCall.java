@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.tasks.patcher;
+package net.minecraftforge.gradle.patcher;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -24,12 +24,16 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
-public class SubprojectCall extends DefaultTask
+class TaskSubprojectCall extends DefaultTask
 {
     private Object projectDir;
     private Object callLine;
     private final List<URL> initResources = Lists.newArrayList();
     private final Map<String, Object> replacements = Maps.newHashMap();
+    
+    //@formatter:off
+    public TaskSubprojectCall() { super(); }
+    //@formatter:on
     
     @TaskAction
     public void doTask() throws IOException
@@ -38,7 +42,7 @@ public class SubprojectCall extends DefaultTask
         File initscript = new File(getTemporaryDir(), "subprojectLogging.gradle");
         {
             OutputStream os = new FileOutputStream(initscript);
-            Resources.copy(Resources.getResource(SubprojectCall.class, "initscriptLogger.gradle"), os);
+            Resources.copy(Resources.getResource(TaskSubprojectCall.class, "initscriptLogger.gradle"), os);
             os.close();
         }
         

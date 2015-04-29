@@ -28,7 +28,7 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
-public class GenSrgTask extends CachedTask
+public class GenSrgs extends CachedTask
 {
     @InputFile
     private DelayedFile inSrg;

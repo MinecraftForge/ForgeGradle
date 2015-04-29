@@ -20,14 +20,14 @@ import java.util.zip.ZipOutputStream;
 
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.dev.PatcherExtension;
 import net.minecraftforge.gradle.old.tasks.dev.CompressLZMA;
 import net.minecraftforge.gradle.old.tasks.dev.ObfuscateTask;
+import net.minecraftforge.gradle.patcher.PatcherExtension;
 import net.minecraftforge.gradle.tasks.CopyAssetsTask;
-import net.minecraftforge.gradle.tasks.DownloadTask;
+import net.minecraftforge.gradle.tasks.Download;
 import net.minecraftforge.gradle.tasks.ExtractTask;
-import net.minecraftforge.gradle.tasks.GenSrgTask;
-import net.minecraftforge.gradle.tasks.MergeJarsTask;
+import net.minecraftforge.gradle.tasks.GenSrgs;
+import net.minecraftforge.gradle.tasks.MergeJars;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import net.minecraftforge.gradle.util.json.JsonFactory;
 import net.minecraftforge.gradle.util.json.version.Library;
@@ -75,7 +75,7 @@ public abstract class DevBasePlugin extends BasePlugin<PatcherExtension>
             task.into(delayedFile(DevConstants.WORKSPACE));
         }
 
-        DownloadTask task1;
+        Download task1;
         if (hasInstaller())
         {
             // apply L4J
@@ -86,13 +86,13 @@ public abstract class DevBasePlugin extends BasePlugin<PatcherExtension>
                 project.getTasks().getByName("uploadArchives").dependsOn("launch4j");
             }
 
-            task1 = makeTask("downloadBaseInstaller", DownloadTask.class);
+            task1 = makeTask("downloadBaseInstaller", Download.class);
             {
                 task1.setOutput(delayedFile(DevConstants.INSTALLER_BASE));
                 task1.setUrl(delayedString(DevConstants.INSTALLER_URL));
             }
 
-            task1 = makeTask("downloadL4J", DownloadTask.class);
+            task1 = makeTask("downloadL4J", Download.class);
             {
                 task1.setOutput(delayedFile(DevConstants.LAUNCH4J));
                 task1.setUrl(delayedString(DevConstants.LAUNCH4J_URL));
@@ -106,7 +106,7 @@ public abstract class DevBasePlugin extends BasePlugin<PatcherExtension>
             }
         }
 
-        task1 = makeTask("updateJson", DownloadTask.class);
+        task1 = makeTask("updateJson", Download.class);
         {
             task1.getOutputs().upToDateWhen(Constants.CALL_FALSE);
             task1.setUrl(delayedString(Constants.URL_MC_JSON));
@@ -146,7 +146,7 @@ public abstract class DevBasePlugin extends BasePlugin<PatcherExtension>
             task3.dependsOn("genSrgs");
         }
 
-        MergeJarsTask task4 = makeTask("mergeJars", MergeJarsTask.class);
+        MergeJars task4 = makeTask("mergeJars", MergeJars.class);
         {
             task4.setClient(delayedFile(Constants.JAR_CLIENT_FRESH));
             task4.setServer(delayedFile(Constants.JAR_SERVER_FRESH));
@@ -164,7 +164,7 @@ public abstract class DevBasePlugin extends BasePlugin<PatcherExtension>
             task5.dependsOn("getAssets", "extractWorkspace");
         }
 
-        GenSrgTask task6 = makeTask("genSrgs", GenSrgTask.class);
+        GenSrgs task6 = makeTask("genSrgs", GenSrgs.class);
         {
             task6.setInSrg(delayedFile(DevConstants.JOINED_SRG));
             task6.setInExc(delayedFile(DevConstants.JOINED_EXC));
@@ -323,7 +323,7 @@ public abstract class DevBasePlugin extends BasePlugin<PatcherExtension>
                     String path = lib.getPathNatives();
                     String taskName = "downloadNatives-" + lib.getArtifactName().split(":")[1];
 
-                    DownloadTask task = makeTask(taskName, DownloadTask.class);
+                    Download task = makeTask(taskName, Download.class);
                     {
                         task.setOutput(delayedFile("{CACHE_DIR}/minecraft/" + path));
                         task.setUrl(delayedString(lib.getUrl() + path));

@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.obf;
+package net.minecraftforge.gradle.old.obf;
 
 import java.io.File;
 

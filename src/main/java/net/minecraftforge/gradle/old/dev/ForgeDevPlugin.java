@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.List;
 
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.old.tasks.CrowdinDownloadTask;
 import net.minecraftforge.gradle.old.tasks.DelayedJar;
 import net.minecraftforge.gradle.old.tasks.FileFilterTask;
 import net.minecraftforge.gradle.old.tasks.dev.ChangelogTask;
@@ -20,17 +21,16 @@ import net.minecraftforge.gradle.old.tasks.dev.ObfuscateTask;
 import net.minecraftforge.gradle.old.tasks.dev.SubmoduleChangelogTask;
 import net.minecraftforge.gradle.old.tasks.dev.SubprojectTask;
 import net.minecraftforge.gradle.old.tasks.dev.VersionJsonTask;
+import net.minecraftforge.gradle.patcher.TaskGenSubprojects;
+import net.minecraftforge.gradle.patcher.TaskGenPatches;
 import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.CreateStartTask;
-import net.minecraftforge.gradle.tasks.CrowdinDownloadTask;
 import net.minecraftforge.gradle.tasks.ExtractTask;
 import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
-import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
-import net.minecraftforge.gradle.tasks.RemapSourcesTask;
-import net.minecraftforge.gradle.tasks.patcher.GenDevProjectsTask;
-import net.minecraftforge.gradle.tasks.patcher.GeneratePatches;
+import net.minecraftforge.gradle.tasks.DeobfuscateJar;
+import net.minecraftforge.gradle.tasks.RemapSources;
 import net.minecraftforge.gradle.util.CopyInto;
 import net.minecraftforge.gradle.util.delayed.DelayedBase;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
@@ -116,7 +116,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task4.dependsOn("decompile", "compressDeobfData", "createVersionPropertiesFML");
         }
 
-        RemapSourcesTask remapTask = makeTask("remapCleanJar", RemapSourcesTask.class);
+        RemapSources remapTask = makeTask("remapCleanJar", RemapSources.class);
         {
             remapTask.setInJar(delayedFile(ZIP_FMLED_FORGE));
             remapTask.setOutJar(delayedFile(REMAPPED_CLEAN));
@@ -138,7 +138,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task4.dependsOn("fmlPatchJar");
         }
 
-        remapTask = makeTask("remapSourcesJar", RemapSourcesTask.class);
+        remapTask = makeTask("remapSourcesJar", RemapSources.class);
         {
             remapTask.setInJar(delayedFile(ZIP_PATCHED_FORGE));
             remapTask.setOutJar(delayedFile(ZIP_RENAMED_FORGE));
@@ -227,7 +227,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             makeStart.dependsOn("getAssets", "getAssetsIndex", "extractNatives");
         }
 
-        GenDevProjectsTask task = makeTask("generateProjectClean", GenDevProjectsTask.class);
+        TaskGenSubprojects task = makeTask("generateProjectClean", TaskGenSubprojects.class);
         {
             task.setTargetDir(delayedFile(ECLIPSE_CLEAN));
             task.addSource(delayedFile(ECLIPSE_CLEAN_START));
@@ -240,7 +240,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task.dependsOn("extractNatives", makeStart);
         }
 
-        task = makeTask("generateProjectForge", GenDevProjectsTask.class);
+        task = makeTask("generateProjectForge", TaskGenSubprojects.class);
         {
             task.setJson(delayedFile(JSON_DEV));
             task.setTargetDir(delayedFile(ECLIPSE_FORGE));
@@ -352,7 +352,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             }
         }
 
-        GeneratePatches task2 = makeTask("genPatches", GeneratePatches.class);
+        TaskGenPatches task2 = makeTask("genPatches", TaskGenPatches.class);
         {
             task2.setPatchDir(delayedFile(FORGE_PATCH_DIR));
             task2.setOriginal(delayedFile(PATCH_CLEAN)); // was ECLIPSE_CLEAN_SRC

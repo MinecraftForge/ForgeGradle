@@ -18,7 +18,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-public class DownloadTask extends CachedTask
+public class Download extends CachedTask
 {
     @Input
     private DelayedString url;

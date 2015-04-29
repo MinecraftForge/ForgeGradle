@@ -1,9 +1,9 @@
-package net.minecraftforge.gradle.dev;
+package net.minecraftforge.gradle.patcher;
 
-import static net.minecraftforge.gradle.dev.PatcherConstants.DEFAULT_RESOURCES_DIR;
-import static net.minecraftforge.gradle.dev.PatcherConstants.DEFAULT_SOURCES_DIR;
-import static net.minecraftforge.gradle.dev.PatcherConstants.DEFAULT_TEST_RESOURCES_DIR;
-import static net.minecraftforge.gradle.dev.PatcherConstants.DEFAULT_TEST_SOURCES_DIR;
+import static net.minecraftforge.gradle.patcher.PatcherConstants.DEFAULT_RESOURCES_DIR;
+import static net.minecraftforge.gradle.patcher.PatcherConstants.DEFAULT_SOURCES_DIR;
+import static net.minecraftforge.gradle.patcher.PatcherConstants.DEFAULT_TEST_RESOURCES_DIR;
+import static net.minecraftforge.gradle.patcher.PatcherConstants.DEFAULT_TEST_SOURCES_DIR;
 import groovy.lang.Closure;
 
 import java.io.File;

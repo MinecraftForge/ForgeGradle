@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.dev;
+package net.minecraftforge.gradle.patcher;
 
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 

@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle;
+package net.minecraftforge.gradle.old;
 
 import java.io.IOException;
 

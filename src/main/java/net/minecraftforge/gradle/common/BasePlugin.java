@@ -13,11 +13,11 @@ import java.util.List;
 import java.util.Map;
 
 import net.minecraftforge.gradle.tasks.DownloadAssetsTask;
-import net.minecraftforge.gradle.tasks.DownloadTask;
+import net.minecraftforge.gradle.tasks.Download;
 import net.minecraftforge.gradle.tasks.EtagDownloadTask;
 import net.minecraftforge.gradle.tasks.ExtractConfigTask;
-import net.minecraftforge.gradle.tasks.GenSrgTask;
-import net.minecraftforge.gradle.tasks.MergeJarsTask;
+import net.minecraftforge.gradle.tasks.GenSrgs;
+import net.minecraftforge.gradle.tasks.MergeJars;
 import net.minecraftforge.gradle.tasks.ObtainFernFlowerTask;
 import net.minecraftforge.gradle.util.FileLogListenner;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
@@ -224,19 +224,19 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     @SuppressWarnings("serial")
     private void makeCommonTasks()
     {
-        DownloadTask dlClient = makeTask(TASK_DL_CLIENT, DownloadTask.class);
+        Download dlClient = makeTask(TASK_DL_CLIENT, Download.class);
         {
             dlClient.setOutput(delayedFile(JAR_CLIENT_FRESH));
             dlClient.setUrl(delayedString(URL_MC_JAR));
         }
 
-        DownloadTask dlServer = makeTask(TASK_DL_SERVER, DownloadTask.class);
+        Download dlServer = makeTask(TASK_DL_SERVER, Download.class);
         {
             dlServer.setOutput(delayedFile(JAR_SERVER_FRESH));
             dlServer.setUrl(delayedString(URL_MC_SERVER));
         }
         
-        MergeJarsTask merge = makeTask(TASK_MERGE_JARS, MergeJarsTask.class);
+        MergeJars merge = makeTask(TASK_MERGE_JARS, MergeJars.class);
         {
             merge.setClient(delayedFile(JAR_CLIENT_FRESH));
             merge.setServer(delayedFile(JAR_SERVER_FRESH));
@@ -331,7 +331,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             extractMcpMappings.setDoesCache(true);
         }
 
-        GenSrgTask genSrgs = makeTask(TASK_GENERATE_SRGS, GenSrgTask.class);
+        GenSrgs genSrgs = makeTask(TASK_GENERATE_SRGS, GenSrgs.class);
         {
             genSrgs.setInSrg(delayedFile(MCP_DATA_SRG));
             genSrgs.setInExc(delayedFile(MCP_DATA_EXC));
@@ -389,10 +389,9 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         return makeTask(project, name, type);
     }
 
-    @SuppressWarnings("unchecked")
     public static <T extends Task> T makeTask(Project proj, String name, Class<T> type)
     {
-        return (T) proj.task(ImmutableMap.of("name", name, "type", type), name);
+        return (T) proj.getTasks().create(name, type);
     }
 
     public static Project buildProject(File buildFile, Project parent)

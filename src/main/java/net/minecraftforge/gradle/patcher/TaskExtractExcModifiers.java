@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.tasks.patcher;
+package net.minecraftforge.gradle.patcher;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -21,13 +21,17 @@ import com.google.common.base.Throwables;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
-public class ExtractExcModifiersTask extends DefaultTask
+class TaskExtractExcModifiers extends DefaultTask
 {
     @InputFile
     private Object inJar;
     
     @OutputFile
     private Object outExc;
+    
+    //@formatter:off
+    public TaskExtractExcModifiers() { super(); }
+    //@formatter:on
     
     @TaskAction
     public void doStuff() throws IOException

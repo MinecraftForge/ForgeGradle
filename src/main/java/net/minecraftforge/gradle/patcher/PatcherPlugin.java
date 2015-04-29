@@ -1,7 +1,7 @@
-package net.minecraftforge.gradle.dev;
+package net.minecraftforge.gradle.patcher;
 
 import static net.minecraftforge.gradle.common.Constants.*;
-import static net.minecraftforge.gradle.dev.PatcherConstants.*;
+import static net.minecraftforge.gradle.patcher.PatcherConstants.*;
 import groovy.lang.Closure;
 
 import java.io.File;
@@ -14,17 +14,12 @@ import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
 import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.CreateStartTask;
-import net.minecraftforge.gradle.tasks.DeobfuscateJarTask;
+import net.minecraftforge.gradle.tasks.DeobfuscateJar;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.GenEclipseRunTask;
 import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
-import net.minecraftforge.gradle.tasks.RemapSourcesTask;
-import net.minecraftforge.gradle.tasks.patcher.ExtractExcModifiersTask;
-import net.minecraftforge.gradle.tasks.patcher.GenDevProjectsTask;
-import net.minecraftforge.gradle.tasks.patcher.GenIdeaRunTask;
-import net.minecraftforge.gradle.tasks.patcher.GeneratePatches;
-import net.minecraftforge.gradle.tasks.patcher.SubprojectCall;
+import net.minecraftforge.gradle.tasks.RemapSources;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 import net.minecraftforge.gradle.util.json.version.Library;
 import net.minecraftforge.gradle.util.json.version.Version;
@@ -91,7 +86,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
     
     protected void makeGeneralSetupTasks()
     {
-        DeobfuscateJarTask deobfJar = makeTask(TASK_DEOBF, DeobfuscateJarTask.class);
+        DeobfuscateJar deobfJar = makeTask(TASK_DEOBF, DeobfuscateJar.class);
         {
             deobfJar.setInJar(delayedFile(Constants.JAR_MERGED));
             deobfJar.setOutCleanJar(delayedFile(JAR_DEOBF));
@@ -132,7 +127,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             patchJar.dependsOn(postDecompileJar);
         }
         
-        GenDevProjectsTask createProjects = makeTask(TASK_GEN_PROJECTS, GenDevProjectsTask.class);
+        TaskGenSubprojects createProjects = makeTask(TASK_GEN_PROJECTS, TaskGenSubprojects.class);
         {
             createProjects.setWorkspaceDir(getExtension().getDelayedWorkspaceDir());
             createProjects.addRepo("minecraft", Constants.URL_LIBRARY);
@@ -140,7 +135,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             createProjects.setJavaLevel("1.6");
         }
         
-        SubprojectCall makeIdeProjects = makeTask(TASK_GEN_IDES, SubprojectCall.class);
+        TaskSubprojectCall makeIdeProjects = makeTask(TASK_GEN_IDES, TaskSubprojectCall.class);
         {
             makeIdeProjects.setProjectDir(getExtension().getDelayedWorkspaceDir());
             makeIdeProjects.setCallLine("cleanEclipse cleanIdea eclipse idea");
@@ -150,7 +145,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
     
     protected void makePackagingTasks()
     {
-        GeneratePatches genUserdevPatches = makeTask(TASK_GEN_PATCHES_USERDEV, GeneratePatches.class);
+        TaskGenPatches genUserdevPatches = makeTask(TASK_GEN_PATCHES_USERDEV, TaskGenPatches.class);
         {
             genUserdevPatches.setPatchDir(delayedFile(DIR_USERDEV_PATCHES));
             genUserdevPatches.addOriginalSource(delayedFile(JAR_DECOMP_POST)); // add vanilla source
@@ -160,7 +155,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
     
     protected void makeCleanTasks()
     {
-        RemapSourcesTask remapCleanTask = makeTask("remapCleanJar", RemapSourcesTask.class);
+        RemapSources remapCleanTask = makeTask("remapCleanJar", RemapSources.class);
         {
             remapCleanTask.setInJar(delayedFile(JAR_DECOMP_POST));
             remapCleanTask.setOutJar(delayedFile(JAR_REMAPPED));
@@ -228,7 +223,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             eclipseServer.dependsOn(makeStart, TASK_GEN_IDES);
         }
         
-        GenIdeaRunTask ideaClient = makeTask("makeIdeaCleanRunClient", GenIdeaRunTask.class);
+        TaskGenIdeaRun ideaClient = makeTask("makeIdeaCleanRunClient", TaskGenIdeaRun.class);
         {
             ideaClient.setMainClass("net.minecraft.client.main.Main");
             ideaClient.setProjectName("Clean");
@@ -238,7 +233,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             ideaClient.dependsOn(makeStart, TASK_GEN_IDES);
         }
         
-        GenIdeaRunTask ideaServer = makeTask("makeIdeaCleanRunServer", GenIdeaRunTask.class);
+        TaskGenIdeaRun ideaServer = makeTask("makeIdeaCleanRunServer", TaskGenIdeaRun.class);
         {
             ideaServer.setMainClass("net.minecraft.server.MinecraftServer");
             ideaServer.setProjectName("Clean");
@@ -255,7 +250,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
     
     protected void createProject(PatcherProject patcher)
     {
-        RemapSourcesTask remapTask = makeTask(projectString(TASK_PROJECT_REMAP_JAR, patcher), RemapSourcesTask.class);
+        RemapSources remapTask = makeTask(projectString(TASK_PROJECT_REMAP_JAR, patcher), RemapSources.class);
         {
             remapTask.setInJar(delayedFile(projectString(JAR_PROJECT_PATCHED, patcher)));
             remapTask.setOutJar(delayedFile(projectString(JAR_PROJECT_REMAPPED, patcher)));
@@ -267,7 +262,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             remapTask.dependsOn(TASK_PATCH);
         }
         
-        ((GenDevProjectsTask) project.getTasks().getByName(TASK_GEN_PROJECTS)).putProject(patcher.getCapName(),
+        ((TaskGenSubprojects) project.getTasks().getByName(TASK_GEN_PROJECTS)).putProject(patcher.getCapName(),
                 patcher.getDelayedSourcesDir(),
                 patcher.getDelayedResourcesDir(),
                 patcher.getDelayedTestSourcesDir(),
@@ -332,7 +327,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             eclipseRunServer.dependsOn(makeStart, TASK_GEN_IDES);
         }
         
-        GenIdeaRunTask ideaRunClient = makeTask(projectString(TASK_PROJECT_RUNJ_CLIENT, patcher), GenIdeaRunTask.class);
+        TaskGenIdeaRun ideaRunClient = makeTask(projectString(TASK_PROJECT_RUNJ_CLIENT, patcher), TaskGenIdeaRun.class);
         {
             ideaRunClient.setMainClass(patcher.getDelayedMainClassClient());
             ideaRunClient.setArguments(patcher.getDelayedRunArgsClient());
@@ -343,7 +338,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             ideaRunClient.dependsOn(makeStart, TASK_GEN_IDES);
         }
         
-        GenIdeaRunTask ideaRunServer = makeTask(projectString(TASK_PROJECT_RUNJ_SERVER, patcher), GenIdeaRunTask.class);
+        TaskGenIdeaRun ideaRunServer = makeTask(projectString(TASK_PROJECT_RUNJ_SERVER, patcher), TaskGenIdeaRun.class);
         {
             ideaRunServer.setMainClass(patcher.getDelayedMainClassServer());
             ideaRunServer.setArguments(patcher.getDelayedRunArgsServer());
@@ -356,17 +351,17 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         
         /// TASKS THAT ARN'T PART OF THE SETUP
         
-        SubprojectCall compile = makeTask(projectString(TASK_PROJECT_COMPILE, patcher), SubprojectCall.class);
+        TaskSubprojectCall compile = makeTask(projectString(TASK_PROJECT_COMPILE, patcher), TaskSubprojectCall.class);
         {
             compile.setProjectDir(subWorkspace(patcher.getCapName()));
             compile.setCallLine("jar");
-            compile.addInitScript(Resources.getResource(SubprojectCall.class, "initscriptJar.gradle"));
+            compile.addInitScript(Resources.getResource(TaskSubprojectCall.class, "initscriptJar.gradle"));
             compile.addReplacement("@RECOMP_DIR@", delayedFile(projectString(DIR_PROJECT_CACHE, patcher)));
             compile.addReplacement("@JAR_NAME@", JAR_PROJECT_RECOMPILED.substring(DIR_PROJECT_CACHE.length() + 1));
             compile.mustRunAfter(TASK_GEN_PROJECTS);
         }
         
-        ExtractExcModifiersTask extractExc = makeTask(projectString(TASK_PROJECT_GEN_EXC, patcher), ExtractExcModifiersTask.class);
+        TaskExtractExcModifiers extractExc = makeTask(projectString(TASK_PROJECT_GEN_EXC, patcher), TaskExtractExcModifiers.class);
         {
             extractExc.setInJar(delayedFile(projectString(JAR_PROJECT_RECOMPILED, patcher)));
             extractExc.setOutExc(delayedFile(projectString(EXC_PROJECT, patcher)));
@@ -419,7 +414,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         project.getTasks().remove(project.getTasks().getByName(projectString(TASK_PROJECT_RUNJ_CLIENT, patcher)));
         project.getTasks().remove(project.getTasks().getByName(projectString(TASK_PROJECT_RUNJ_SERVER, patcher)));
         
-        ((GenDevProjectsTask) project.getTasks().getByName(TASK_GEN_PROJECTS)).removeProject(patcher.getCapName());
+        ((TaskGenSubprojects) project.getTasks().getByName(TASK_GEN_PROJECTS)).removeProject(patcher.getCapName());
     }
     
     public void afterEvaluate()
@@ -447,7 +442,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             File versionJson = getExtension().getVersionJson();
             Version version = parseAndStoreVersion(versionJson, versionJson.getParentFile(), delayedFile(Constants.DIR_JSONS).call());
 
-            GenDevProjectsTask createProjects = (GenDevProjectsTask) project.getTasks().getByName(TASK_GEN_PROJECTS);
+            TaskGenSubprojects createProjects = (TaskGenSubprojects) project.getTasks().getByName(TASK_GEN_PROJECTS);
             Set<String> repos = Sets.newHashSet();
             
             for (Library lib : version.getLibraries())
@@ -476,9 +471,9 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         Task setupTask = project.getTasks().getByName(TASK_SETUP);
         Task ideTask = project.getTasks().getByName(TASK_GEN_IDES);
         Task genPatchesTask = project.getTasks().getByName(TASK_GEN_PATCHES);
-        GeneratePatches userdevPatches = (GeneratePatches) project.getTasks().getByName(TASK_GEN_PATCHES_USERDEV);
+        TaskGenPatches userdevPatches = (TaskGenPatches) project.getTasks().getByName(TASK_GEN_PATCHES_USERDEV);
         ProcessSrcJarTask patchJar = (ProcessSrcJarTask) project.getTasks().getByName(TASK_PATCH);
-        DeobfuscateJarTask deobfJar = (DeobfuscateJarTask) project.getTasks().getByName(TASK_DEOBF);
+        DeobfuscateJar deobfJar = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF);
         List<File> addedExcs = Lists.newArrayListWithCapacity(patchersList.size());
         List<File> addedSrgs = Lists.newArrayListWithCapacity(patchersList.size());
         
@@ -539,7 +534,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             // create genPatches task for it.. if necessary
             if (patcher.doesGenPatches())
             {
-                GeneratePatches genPatches = makeTask(projectString(TASK_PROJECT_GEN_PATCHES, patcher), GeneratePatches.class);
+                TaskGenPatches genPatches = makeTask(projectString(TASK_PROJECT_GEN_PATCHES, patcher), TaskGenPatches.class);
                 genPatches.setPatchDir(patcher.getPatchDir());
                 genPatches.addChangedSource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, patcher)));
                 genPatches.setOriginalPrefix(patcher.getPatchPrefixOriginal());

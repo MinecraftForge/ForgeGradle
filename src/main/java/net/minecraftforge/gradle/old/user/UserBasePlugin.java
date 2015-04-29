@@ -552,7 +552,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     private void tasks()
     {
         {
-            GenSrgTask task = makeTask("genSrgs", GenSrgTask.class);
+            GenSrgs task = makeTask("genSrgs", GenSrgs.class);
             task.setInSrg(delayedFile(PACKAGED_SRG));
             task.setInExc(delayedFile(PACKAGED_EXC));
             task.setMethodsCsv(delayedFile(METHOD_CSV));
@@ -567,7 +567,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         }
 
         {
-            MergeJarsTask task = makeTask("mergeJars", MergeJarsTask.class);
+            MergeJars task = makeTask("mergeJars", MergeJars.class);
             task.setClient(delayedFile(JAR_CLIENT_FRESH));
             task.setServer(delayedFile(JAR_SERVER_FRESH));
             task.setOutJar(delayedFile(JAR_MERGED));
@@ -579,7 +579,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         {
             String name = getBinDepName() + "-" + (hasApiVersion() ? "{API_VERSION}" : Constants.REPLACE_MC_VERSION) + ".jar";
 
-            DeobfuscateJarTask task = makeTask("deobfBinJar", DeobfuscateJarTask.class);
+            DeobfuscateJar task = makeTask("deobfBinJar", DeobfuscateJar.class);
             task.setSrg(delayedFile(DEOBF_MCP_SRG));
             task.setExceptorJson(delayedFile(EXC_JSON));
             task.setExceptorCfg(delayedFile(EXC_MCP));
@@ -597,7 +597,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         {
             String name = "{API_NAME}-" + (hasApiVersion() ? "{API_VERSION}" : Constants.REPLACE_MC_VERSION) + "-"+ CLASSIFIER_DEOBF_SRG +".jar";
 
-            DeobfuscateJarTask task = makeTask("deobfuscateJar", DeobfuscateJarTask.class);
+            DeobfuscateJar task = makeTask("deobfuscateJar", DeobfuscateJar.class);
             task.setSrg(delayedFile(DEOBF_SRG_SRG));
             task.setExceptorJson(delayedFile(EXC_JSON));
             task.setExceptorCfg(delayedFile(EXC_SRG));
@@ -675,7 +675,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         }
 
         // Remap to MCP names
-        RemapSourcesTask remap = makeTask("remapJar", RemapSourcesTask.class);
+        RemapSources remap = makeTask("remapJar", RemapSources.class);
         {
             remap.setInJar(decompOut);
             remap.setOutJar(remapped);
@@ -1089,7 +1089,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     {
         if (decomp)
         {
-            ((ReobfTask) project.getTasks().getByName("reobf")).setDeobfFile(((DeobfuscateJarTask) project.getTasks().getByName("deobfuscateJar")).getDelayedOutput());
+            ((ReobfTask) project.getTasks().getByName("reobf")).setDeobfFile(((DeobfuscateJar) project.getTasks().getByName("deobfuscateJar")).getDelayedOutput());
             ((ReobfTask) project.getTasks().getByName("reobf")).setRecompFile(delayedDirtyFile(getSrcDepName(), null, "jar"));
         }
         else
@@ -1135,7 +1135,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
      * Add Forge/FML ATs here.
      * This happens during normal evaluation, and NOT AfterEvaluate.
      */
-    protected abstract void configureDeobfuscation(DeobfuscateJarTask task);
+    protected abstract void configureDeobfuscation(DeobfuscateJar task);
 
     /**
      *
@@ -1167,7 +1167,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             @Override
             public File resolveDelayed()
             {
-                DeobfuscateJarTask decompDeobf = (DeobfuscateJarTask) project.getTasks().getByName("deobfuscateJar");
+                DeobfuscateJar decompDeobf = (DeobfuscateJar) project.getTasks().getByName("deobfuscateJar");
                 pattern = (decompDeobf.isClean() ? "{API_CACHE_DIR}/"+(usesMappings ? MAPPING_APPENDAGE : "") : DIRTY_DIR) + "/";
 
                 if (!Strings.isNullOrEmpty(name))

@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.tasks.patcher;
+package net.minecraftforge.gradle.patcher;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -35,7 +35,7 @@ import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
-public class GeneratePatches extends DefaultTask
+class TaskGenPatches extends DefaultTask
 {
     //@formatter:off
     @OutputDirectory private Object patchDir;
@@ -43,6 +43,10 @@ public class GeneratePatches extends DefaultTask
     private final List<Object>      changed = new LinkedList<Object>();
     @Input private String           originalPrefix = "";
     @Input private String           changedPrefix = "";
+    //@formatter:on
+    
+    //@formatter:off
+    public TaskGenPatches() { super(); }
     //@formatter:on
 
     private Set<File> created = new HashSet<File>();

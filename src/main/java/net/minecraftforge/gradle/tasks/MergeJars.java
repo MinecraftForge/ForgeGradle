@@ -43,7 +43,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.ByteStreams;
 
-public class MergeJarsTask extends CachedTask
+public class MergeJars extends CachedTask
 {
     @InputFile
     private Object client;
@@ -307,7 +307,7 @@ public class MergeJarsTask extends CachedTask
         InputStream classStream = null;
         try
         {
-            classStream = MergeJarsTask.class.getResourceAsStream("/" + name.replace('.', '/').concat(".class"));
+            classStream = MergeJars.class.getResourceAsStream("/" + name.replace('.', '/').concat(".class"));
             return ByteStreams.toByteArray(classStream);
         }
         finally
