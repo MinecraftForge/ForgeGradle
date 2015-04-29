@@ -11,9 +11,9 @@ import java.util.List;
 import java.util.Map;
 
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.patching.ContextualPatch;
-import net.minecraftforge.gradle.patching.ContextualPatch.PatchStatus;
-import net.minecraftforge.gradle.tasks.abstractutil.EditJarTask;
+import net.minecraftforge.gradle.util.caching.Cached;
+import net.minecraftforge.gradle.util.patching.ContextualPatch;
+import net.minecraftforge.gradle.util.patching.ContextualPatch.PatchStatus;
 
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.logging.LogLevel;

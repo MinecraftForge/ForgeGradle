@@ -2,7 +2,7 @@ package net.minecraftforge.gradle;
 
 import java.io.IOException;
 
-import net.minecraftforge.gradle.extrastuff.FFPatcher;
+import net.minecraftforge.gradle.util.mcp.FFPatcher;
 
 import org.junit.Assert;
 import org.junit.Test;

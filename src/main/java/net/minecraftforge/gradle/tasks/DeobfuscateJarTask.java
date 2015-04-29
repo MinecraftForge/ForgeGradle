@@ -33,11 +33,12 @@ import net.md_5.specialsource.RemapperProcessor;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
 import net.minecraftforge.gradle.common.BaseExtension;
-import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.json.JsonFactory;
-import net.minecraftforge.gradle.json.MCInjectorStruct;
-import net.minecraftforge.gradle.json.MCInjectorStruct.InnerClass;
-import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
+import net.minecraftforge.gradle.util.caching.Cached;
+import net.minecraftforge.gradle.util.caching.CachedTask;
+import net.minecraftforge.gradle.util.delayed.DelayedFile;
+import net.minecraftforge.gradle.util.json.JsonFactory;
+import net.minecraftforge.gradle.util.json.MCInjectorStruct;
+import net.minecraftforge.gradle.util.json.MCInjectorStruct.InnerClass;
 
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Input;

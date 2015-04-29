@@ -4,8 +4,8 @@ import java.io.File;
 
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.tasks.user.SingleDeobfTask;
+import net.minecraftforge.gradle.old.tasks.user.SingleDeobfTask;
+import net.minecraftforge.gradle.util.delayed.DelayedFile;
 
 import org.gradle.api.Project;
 import org.gradle.testfixtures.ProjectBuilder;

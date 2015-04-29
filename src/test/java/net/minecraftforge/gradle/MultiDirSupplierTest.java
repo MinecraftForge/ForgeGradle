@@ -9,6 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
+import net.minecraftforge.gradle.util.MultiDirSupplier;
 import net.minecraftforge.srg2source.util.io.InputSupplier;
 
 import org.junit.After;

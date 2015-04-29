@@ -9,8 +9,8 @@ import groovy.lang.Closure;
 import java.io.File;
 import java.io.Serializable;
 
-import net.minecraftforge.gradle.GradleConfigurationException;
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.util.GradleConfigurationException;
 
 import org.gradle.api.Project;
 

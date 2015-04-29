@@ -9,7 +9,8 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
+import net.minecraftforge.gradle.util.caching.Cached;
+import net.minecraftforge.gradle.util.caching.CachedTask;
 
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputDirectory;

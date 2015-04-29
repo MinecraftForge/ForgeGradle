@@ -9,11 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import net.minecraftforge.gradle.GradleConfigurationException;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.json.version.Library;
-import net.minecraftforge.gradle.json.version.Version;
 import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
 import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.CreateStartTask;
@@ -28,6 +25,9 @@ import net.minecraftforge.gradle.tasks.patcher.GenDevProjectsTask;
 import net.minecraftforge.gradle.tasks.patcher.GenIdeaRunTask;
 import net.minecraftforge.gradle.tasks.patcher.GeneratePatches;
 import net.minecraftforge.gradle.tasks.patcher.SubprojectCall;
+import net.minecraftforge.gradle.util.GradleConfigurationException;
+import net.minecraftforge.gradle.util.json.version.Library;
+import net.minecraftforge.gradle.util.json.version.Version;
 
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;

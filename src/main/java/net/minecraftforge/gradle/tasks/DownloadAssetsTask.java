@@ -16,10 +16,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.json.JsonFactory;
-import net.minecraftforge.gradle.json.version.AssetIndex;
-import net.minecraftforge.gradle.json.version.AssetIndex.AssetEntry;
+import net.minecraftforge.gradle.util.delayed.DelayedFile;
+import net.minecraftforge.gradle.util.json.JsonFactory;
+import net.minecraftforge.gradle.util.json.version.AssetIndex;
+import net.minecraftforge.gradle.util.json.version.AssetIndex.AssetEntry;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;

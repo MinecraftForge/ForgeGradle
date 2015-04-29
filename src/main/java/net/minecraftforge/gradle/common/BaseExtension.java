@@ -6,8 +6,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import joptsimple.internal.Strings;
-import net.minecraftforge.gradle.GradleConfigurationException;
-import net.minecraftforge.gradle.delayed.TokenReplacer;
+import net.minecraftforge.gradle.util.GradleConfigurationException;
+import net.minecraftforge.gradle.util.delayed.TokenReplacer;
 
 import org.gradle.api.Project;
 

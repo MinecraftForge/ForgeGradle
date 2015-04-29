@@ -3,7 +3,7 @@ package net.minecraftforge.gradle;
 import java.io.IOException;
 import java.io.InputStream;
 
-import net.minecraftforge.gradle.extrastuff.FmlCleanup;
+import net.minecraftforge.gradle.util.mcp.FmlCleanup;
 
 import org.junit.Assert;
 import org.junit.Test;

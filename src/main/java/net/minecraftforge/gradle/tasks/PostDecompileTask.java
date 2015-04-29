@@ -12,15 +12,15 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.extrastuff.FFPatcher;
-import net.minecraftforge.gradle.extrastuff.FmlCleanup;
-import net.minecraftforge.gradle.extrastuff.GLConstantFixer;
-import net.minecraftforge.gradle.extrastuff.McpCleanup;
-import net.minecraftforge.gradle.patching.ContextualPatch;
-import net.minecraftforge.gradle.patching.ContextualPatch.HunkReport;
-import net.minecraftforge.gradle.patching.ContextualPatch.PatchReport;
-import net.minecraftforge.gradle.patching.ContextualPatch.PatchStatus;
-import net.minecraftforge.gradle.tasks.abstractutil.EditJarTask;
+import net.minecraftforge.gradle.util.caching.Cached;
+import net.minecraftforge.gradle.util.mcp.FFPatcher;
+import net.minecraftforge.gradle.util.mcp.FmlCleanup;
+import net.minecraftforge.gradle.util.mcp.GLConstantFixer;
+import net.minecraftforge.gradle.util.mcp.McpCleanup;
+import net.minecraftforge.gradle.util.patching.ContextualPatch;
+import net.minecraftforge.gradle.util.patching.ContextualPatch.HunkReport;
+import net.minecraftforge.gradle.util.patching.ContextualPatch.PatchReport;
+import net.minecraftforge.gradle.util.patching.ContextualPatch.PatchStatus;
 
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.logging.LogLevel;

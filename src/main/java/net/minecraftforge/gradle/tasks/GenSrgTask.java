@@ -10,8 +10,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
+import net.minecraftforge.gradle.util.caching.Cached;
+import net.minecraftforge.gradle.util.caching.CachedTask;
+import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import net.minecraftforge.srg2source.rangeapplier.MethodData;
 import net.minecraftforge.srg2source.rangeapplier.SrgContainer;
 

@@ -7,11 +7,10 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.minecraftforge.gradle.StringUtils;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.extrastuff.JavadocAdder;
-import net.minecraftforge.gradle.tasks.abstractutil.EditJarTask;
+import net.minecraftforge.gradle.util.StringUtils;
+import net.minecraftforge.gradle.util.delayed.DelayedFile;
+import net.minecraftforge.gradle.util.mcp.JavadocAdder;
 
 import org.gradle.api.tasks.InputFile;
 

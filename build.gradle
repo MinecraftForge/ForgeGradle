@@ -87,13 +87,7 @@ compileJava {
 	//options.compilerArgs += ["-Werror", "-Xlint:unchecked"]
 
 	// ignore non-compiling things in the dev packages
-	exclude "**/*DevPlugin.java", "**/DevBasePlugin.java", "**/tasks/dev/*", "**/tasks/dev/**"
-
-	// ignore all of the user too, just for fun
-	exclude "**/user/*", "**/user/**"
-
-	// and curse..
-	exclude "**/curseforge/*"
+	exclude "**/old/**", "**/old/*"
 }
 
 jar {

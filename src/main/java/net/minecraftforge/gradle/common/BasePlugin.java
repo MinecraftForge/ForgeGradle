@@ -12,21 +12,21 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
-import net.minecraftforge.gradle.FileLogListenner;
-import net.minecraftforge.gradle.GradleConfigurationException;
-import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.delayed.DelayedFileTree;
-import net.minecraftforge.gradle.delayed.DelayedString;
-import net.minecraftforge.gradle.delayed.TokenReplacer;
-import net.minecraftforge.gradle.json.JsonFactory;
-import net.minecraftforge.gradle.json.version.Version;
 import net.minecraftforge.gradle.tasks.DownloadAssetsTask;
+import net.minecraftforge.gradle.tasks.DownloadTask;
+import net.minecraftforge.gradle.tasks.EtagDownloadTask;
 import net.minecraftforge.gradle.tasks.ExtractConfigTask;
 import net.minecraftforge.gradle.tasks.GenSrgTask;
 import net.minecraftforge.gradle.tasks.MergeJarsTask;
 import net.minecraftforge.gradle.tasks.ObtainFernFlowerTask;
-import net.minecraftforge.gradle.tasks.abstractutil.DownloadTask;
-import net.minecraftforge.gradle.tasks.abstractutil.EtagDownloadTask;
+import net.minecraftforge.gradle.util.FileLogListenner;
+import net.minecraftforge.gradle.util.GradleConfigurationException;
+import net.minecraftforge.gradle.util.delayed.DelayedFile;
+import net.minecraftforge.gradle.util.delayed.DelayedFileTree;
+import net.minecraftforge.gradle.util.delayed.DelayedString;
+import net.minecraftforge.gradle.util.delayed.TokenReplacer;
+import net.minecraftforge.gradle.util.json.JsonFactory;
+import net.minecraftforge.gradle.util.json.version.Version;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
@@ -587,7 +587,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         // actual dependencies
         if (project.getConfigurations().getByName(CONFIG_MC_DEPS).getState() == State.UNRESOLVED)
         {
-            for (net.minecraftforge.gradle.json.version.Library lib : version.getLibraries())
+            for (net.minecraftforge.gradle.util.json.version.Library lib : version.getLibraries())
             {
                 if (lib.natives == null)
                     handler.add(CONFIG_MC_DEPS, lib.getArtifactName());
@@ -599,7 +599,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         // the natives
         if (project.getConfigurations().getByName(CONFIG_NATIVES).getState() == State.UNRESOLVED)
         {
-            for (net.minecraftforge.gradle.json.version.Library lib : version.getLibraries())
+            for (net.minecraftforge.gradle.util.json.version.Library lib : version.getLibraries())
             {
                 if (lib.natives != null)
                     handler.add(CONFIG_NATIVES, lib.getArtifactName());

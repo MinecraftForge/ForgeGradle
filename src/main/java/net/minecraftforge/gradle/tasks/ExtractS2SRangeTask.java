@@ -6,8 +6,8 @@ import java.io.PrintStream;
 import java.util.LinkedList;
 import java.util.List;
 
-import net.minecraftforge.gradle.SequencedInputSupplier;
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.util.SequencedInputSupplier;
 import net.minecraftforge.srg2source.ast.RangeExtractor;
 import net.minecraftforge.srg2source.util.io.FolderSupplier;
 import net.minecraftforge.srg2source.util.io.InputSupplier;

@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 import joptsimple.internal.Strings;
-import net.minecraftforge.gradle.SequencedInputSupplier;
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.util.SequencedInputSupplier;
 import net.minecraftforge.srg2source.rangeapplier.RangeApplier;
 import net.minecraftforge.srg2source.util.io.FolderSupplier;
 import net.minecraftforge.srg2source.util.io.InputSupplier;

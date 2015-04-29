@@ -1,6 +1,6 @@
 package net.minecraftforge.gradle.dev;
 
-import net.minecraftforge.gradle.GradleConfigurationException;
+import net.minecraftforge.gradle.util.GradleConfigurationException;
 
 import org.gradle.api.NamedDomainObjectFactory;
 

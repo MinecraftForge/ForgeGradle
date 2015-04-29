@@ -13,8 +13,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
-import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.tasks.abstractutil.CachedTask;
+import net.minecraftforge.gradle.util.caching.Cached;
+import net.minecraftforge.gradle.util.caching.CachedTask;
+import net.minecraftforge.gradle.util.delayed.DelayedFile;
 
 import org.apache.shiro.util.AntPathMatcher;
 import org.gradle.api.file.FileCollection;
@@ -29,28 +30,33 @@ import com.google.common.io.ByteStreams;
 public class ExtractConfigTask extends CachedTask
 {
     private final AntPathMatcher antMatcher = new AntPathMatcher();
-    
+
     @Input
     private String config;
-    
+
     @Input
     private List<String> excludes = new LinkedList<String>();
-    
+
     @Input
     private List<Closure<Boolean>> excludeCalls = new LinkedList<Closure<Boolean>>();
-    
+
     @Input
     private List<String> includes = new LinkedList<String>();
-    
+
+    @Input
+    @Optional
+    private boolean clean = false;
+
+    @Cached
     @OutputDirectory
     private DelayedFile out;
-    
+
     @TaskAction
     public void doTask() throws ZipException, IOException
     {
         File outDir = getOut();
         outDir.mkdirs();
-        
+
         for (File source : getConfigFiles())
         {
             getLogger().debug("Extracting: " + source);
@@ -191,5 +197,15 @@ public class ExtractConfigTask extends CachedTask
     protected boolean defaultCache()
     {
         return false;
+    }
+
+    public boolean shouldClean()
+    {
+        return clean;
+    }
+
+    public void setClean(boolean clean)
+    {
+        this.clean = clean;
     }
 }

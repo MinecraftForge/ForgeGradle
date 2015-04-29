@@ -13,7 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import net.minecraftforge.gradle.SequencedInputSupplier;
+import net.minecraftforge.gradle.util.SequencedInputSupplier;
 import net.minecraftforge.srg2source.util.io.FolderSupplier;
 import net.minecraftforge.srg2source.util.io.InputSupplier;
 import net.minecraftforge.srg2source.util.io.ZipInputSupplier;

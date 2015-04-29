@@ -2,8 +2,9 @@ package net.minecraftforge.gradle;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import net.minecraftforge.gradle.user.patch.ForgeUserPlugin;
-import net.minecraftforge.gradle.user.patch.UserPatchExtension;
+import net.minecraftforge.gradle.old.user.patch.ForgeUserPlugin;
+import net.minecraftforge.gradle.old.user.patch.UserPatchExtension;
+import net.minecraftforge.gradle.util.GradleConfigurationException;
 
 import org.gradle.api.Project;
 import org.gradle.testfixtures.ProjectBuilder;
