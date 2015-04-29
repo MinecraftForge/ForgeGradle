@@ -9,9 +9,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import net.minecraftforge.gradle.SequencedInputSupplier;
 import net.minecraftforge.srg2source.util.io.FolderSupplier;
 import net.minecraftforge.srg2source.util.io.InputSupplier;
 import net.minecraftforge.srg2source.util.io.ZipInputSupplier;
@@ -35,20 +37,13 @@ import com.google.common.io.Files;
 
 public class GeneratePatches extends DefaultTask
 {
-    @OutputDirectory
-    Object patchDir;
-
-    @InputFiles
-    Object changed;
-
-    @InputFiles
-    Object original;
-
-    @Input
-    String originalPrefix = "";
-    
-    @Input
-    String changedPrefix = "";
+    //@formatter:off
+    @OutputDirectory private Object patchDir;
+    private final List<Object>      originals = new LinkedList<Object>();
+    private final List<Object>      changed = new LinkedList<Object>();
+    @Input private String           originalPrefix = "";
+    @Input private String           changedPrefix = "";
+    //@formatter:on
 
     private Set<File> created = new HashSet<File>();
 
@@ -59,19 +54,28 @@ public class GeneratePatches extends DefaultTask
         getPatchDir().mkdirs();
 
         // fix and create patches.
-        processFiles(getSupplier(getProject().file(original)), getSupplier(getProject().file(changed)));
+        processFiles(getSupplier(getOriginalSource()), getSupplier(getChangedSource()));
         
         removeOld(getPatchDir());
     }
-
-    private InputSupplier getSupplier(File file) throws IOException
+    
+    private static InputSupplier getSupplier(List<File> files) throws IOException
     {
-        if (file.isDirectory())
-            return new FolderSupplier(file);
-
-        ZipInputSupplier ret = new ZipInputSupplier();
-        ret.readZip(file);
-        return ret;
+        SequencedInputSupplier supplier = new SequencedInputSupplier(files.size() + 1);
+        
+        for (File f : files)
+        {
+            if (f.isDirectory())
+                supplier.add(new FolderSupplier(f));
+            else
+            {
+                ZipInputSupplier supp = new ZipInputSupplier();
+                supp.readZip(f);
+                supplier.add(supp);
+            }
+        }
+        
+        return supplier;
     }
 
     private void removeOld(File dir) throws IOException
@@ -199,33 +203,43 @@ public class GeneratePatches extends DefaultTask
             created.add(patchFile);
         }
     }
-
-    public FileCollection getChanged()
+    
+    @InputFiles
+    public FileCollection getOriginalSources()
     {
-        File f = getProject().file(changed);
-        if (f.isDirectory())
-            return getProject().fileTree(f);
-        else
-            return getProject().files(f);
+        return getProject().files(originals);
     }
 
-    public void setChanged(Object changed)
+    public List<File> getOriginalSource()
     {
-        this.changed = changed;
+        List<File> files = new LinkedList<File>();
+        for (Object f : originals)
+            files.add(getProject().file(f));
+        return files;
     }
 
-    public FileCollection getOriginal()
+    public void addOriginalSource(Object in)
     {
-        File f = getProject().file(original);
-        if (f.isDirectory())
-            return getProject().fileTree(f);
-        else
-            return getProject().files(f);
+        this.originals.add(in);
+    }
+    
+    @InputFiles
+    public FileCollection getChangedSources()
+    {
+        return getProject().files(changed);
     }
 
-    public void setOriginal(Object original)
+    public List<File> getChangedSource()
     {
-        this.original = original;
+        List<File> files = new LinkedList<File>();
+        for (Object f : changed)
+            files.add(getProject().file(f));
+        return files;
+    }
+
+    public void addChangedSource(Object in)
+    {
+        this.changed.add(in);
     }
 
     public File getPatchDir()

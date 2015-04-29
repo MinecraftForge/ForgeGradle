@@ -2,14 +2,16 @@ package net.minecraftforge.gradle;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
 import net.minecraftforge.srg2source.util.io.InputSupplier;
 
-@SuppressWarnings("serial")
-public class SequencedInputSupplier extends LinkedList<InputSupplier> implements InputSupplier
+public class SequencedInputSupplier extends ArrayList<InputSupplier> implements InputSupplier
 {
+    private static final long serialVersionUID = 1L;
+
     public SequencedInputSupplier(InputSupplier supp)
     {
         super();
@@ -19,6 +21,11 @@ public class SequencedInputSupplier extends LinkedList<InputSupplier> implements
     public SequencedInputSupplier()
     {
         super();
+    }
+    
+    public SequencedInputSupplier(int size)
+    {
+        super(size);
     }
 
     @Override

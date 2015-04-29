@@ -84,11 +84,12 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             task.setDescription("Generates patches for all the configured projects. (requires that setup was run before hand)");
         }
         
-        makeGeneralTasks();
+        makeGeneralSetupTasks();
+        makePackagingTasks();
         makeCleanTasks();
     }
     
-    protected void makeGeneralTasks()
+    protected void makeGeneralSetupTasks()
     {
         DeobfuscateJarTask deobfJar = makeTask(TASK_DEOBF, DeobfuscateJarTask.class);
         {
@@ -144,6 +145,16 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             makeIdeProjects.setProjectDir(getExtension().getDelayedWorkspaceDir());
             makeIdeProjects.setCallLine("cleanEclipse cleanIdea eclipse idea");
             makeIdeProjects.dependsOn(createProjects);
+        }
+    }
+    
+    protected void makePackagingTasks()
+    {
+        GeneratePatches genUserdevPatches = makeTask(TASK_GEN_PATCHES_USERDEV, GeneratePatches.class);
+        {
+            genUserdevPatches.setPatchDir(delayedFile(DIR_USERDEV_PATCHES));
+            genUserdevPatches.addOriginalSource(delayedFile(JAR_DECOMP_POST)); // add vanilla source
+            genUserdevPatches.dependsOn(TASK_GEN_PROJECTS);
         }
     }
     
@@ -352,6 +363,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             compile.addInitScript(Resources.getResource(SubprojectCall.class, "initscriptJar.gradle"));
             compile.addReplacement("@RECOMP_DIR@", delayedFile(projectString(DIR_PROJECT_CACHE, patcher)));
             compile.addReplacement("@JAR_NAME@", JAR_PROJECT_RECOMPILED.substring(DIR_PROJECT_CACHE.length() + 1));
+            compile.mustRunAfter(TASK_GEN_PROJECTS);
         }
         
         ExtractExcModifiersTask extractExc = makeTask(projectString(TASK_PROJECT_GEN_EXC, patcher), ExtractExcModifiersTask.class);
@@ -363,6 +375,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         
         ExtractS2SRangeTask extractRangemap = makeTask(projectString(TASK_PROJECT_RANGEMAP, patcher), ExtractS2SRangeTask.class);
         {
+            extractRangemap.addSource(patcher.getDelayedSourcesDir());
             extractRangemap.addSource(subWorkspace(patcher.getCapName() + DIR_EXTRACTED_SRC));
             extractRangemap.setRangeMap(delayedFile(projectString(RANGEMAP_PROJECT, patcher)));
             extractRangemap.addLibs(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPS));
@@ -380,6 +393,18 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             retromap.setExcModifiers(delayedFile(projectString(EXC_PROJECT, patcher)));
             retromap.setRangeMap(delayedFile(projectString(RANGEMAP_PROJECT, patcher)));
             retromap.dependsOn(TASK_GENERATE_SRGS, extractExc, extractRangemap);
+        }
+
+        ApplyS2STask retromapNonMc = makeTask(projectString(TASK_PROJECT_NM_RETROMAP, patcher), ApplyS2STask.class);
+        {
+            retromapNonMc.addSource(patcher.getDelayedSourcesDir());
+            retromapNonMc.setOut(delayedFile(projectString(JAR_PROJECT_RETRO_NONMC, patcher)));
+            retromapNonMc.addSrg(delayedFile(SRG_MCP_TO_SRG));
+            retromapNonMc.addExc(delayedFile(EXC_MCP));
+            retromapNonMc.addExc(delayedFile(EXC_SRG)); // just in case
+            retromapNonMc.setExcModifiers(delayedFile(projectString(EXC_PROJECT, patcher)));
+            retromapNonMc.setRangeMap(delayedFile(projectString(RANGEMAP_PROJECT, patcher)));
+            retromapNonMc.dependsOn(TASK_GENERATE_SRGS, extractExc, extractRangemap);
         }
     }
     
@@ -449,8 +474,9 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         List<PatcherProject> patchersList = sortByPatching(getExtension().getProjects());
         
         Task setupTask = project.getTasks().getByName(TASK_SETUP);
-        Task genPatchesTask = project.getTasks().getByName(TASK_GEN_PATCHES);
         Task ideTask = project.getTasks().getByName(TASK_GEN_IDES);
+        Task genPatchesTask = project.getTasks().getByName(TASK_GEN_PATCHES);
+        GeneratePatches userdevPatches = (GeneratePatches) project.getTasks().getByName(TASK_GEN_PATCHES_USERDEV);
         ProcessSrcJarTask patchJar = (ProcessSrcJarTask) project.getTasks().getByName(TASK_PATCH);
         DeobfuscateJarTask deobfJar = (DeobfuscateJarTask) project.getTasks().getByName(TASK_DEOBF);
         List<File> addedExcs = Lists.newArrayListWithCapacity(patchersList.size());
@@ -458,8 +484,9 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         
         for (PatcherProject patcher : patchersList)
         {
-            patcher.validate(); // validate it first
+            patcher.validate(); // validate project
             
+            // add patching stage
             patchJar.addStage(
                     patcher.getName(),
                     patcher.getDelayedPatchDir(), 
@@ -467,15 +494,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                     patcher.getDelayedSourcesDir(),
                     patcher.getDelayedResourcesDir());
             
-            // TODO: make it the project creation tasks
-            ideTask.dependsOn(projectString(TASK_PROJECT_EXTRACT_SRC, patcher));
-            ideTask.dependsOn(projectString(TASK_PROJECT_EXTRACT_RES, patcher));
-            setupTask.dependsOn(projectString(TASK_PROJECT_RUNE_CLIENT, patcher));
-            setupTask.dependsOn(projectString(TASK_PROJECT_RUNE_SERVER, patcher));
-            setupTask.dependsOn(projectString(TASK_PROJECT_RUNJ_CLIENT, patcher));
-            setupTask.dependsOn(projectString(TASK_PROJECT_RUNJ_SERVER, patcher));
-            
-            // get Ats
+            // Add ATs for deobf
             for (File at : project.fileTree(patcher.getResourcesDir()))
             {
                 if (at.getName().toLowerCase().endsWith("_at.cfg"))
@@ -486,12 +505,19 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             
             // get EXCs and SRGs for retromapping
             ApplyS2STask retromap = (ApplyS2STask) project.getTasks().getByName(projectString(TASK_PROJECT_RETROMAP, patcher));
+            ApplyS2STask retromapNonMc = (ApplyS2STask) project.getTasks().getByName(projectString(TASK_PROJECT_NM_RETROMAP, patcher));
             
             // add from previous projects
             for (File f : addedExcs)
+            {
                 retromap.addExc(f);
+                retromapNonMc.addExc(f);
+            }
             for (File f : addedSrgs)
+            {
                 retromap.addSrg(f);
+                retromapNonMc.addSrg(f);
+            }
             
             // add from this project
             for (File f : project.fileTree(patcher.getResourcesDir()).getFiles())
@@ -499,11 +525,13 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                 if (f.getPath().endsWith(".exc"))
                 {
                     retromap.addExc(f);
+                    retromapNonMc.addExc(f);
                     addedExcs.add(f);
                 }
                 else if (f.getPath().endsWith(".srg"))
                 {
                     retromap.addSrg(f);
+                    retromapNonMc.addSrg(f);
                     addedSrgs.add(f);
                 }
             }
@@ -513,7 +541,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             {
                 GeneratePatches genPatches = makeTask(projectString(TASK_PROJECT_GEN_PATCHES, patcher), GeneratePatches.class);
                 genPatches.setPatchDir(patcher.getPatchDir());
-                genPatches.setChanged(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, patcher)));
+                genPatches.addChangedSource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, patcher)));
                 genPatches.setOriginalPrefix(patcher.getPatchPrefixOriginal());
                 genPatches.setChangedPrefix(patcher.getPatchPrefixChanged());
                 genPatches.dependsOn(projectString(TASK_PROJECT_RETROMAP, patcher));
@@ -528,16 +556,31 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                 
                 if ("clean".equals(patcher.getGenPatchesFrom().toLowerCase()))
                 {
-                    genPatches.setOriginal(delayedFile(JAR_DECOMP_POST)); // SRG named vanilla..
+                    genPatches.addOriginalSource(delayedFile(JAR_DECOMP_POST)); // SRG named vanilla..
                 }
                 else
                 {
                     PatcherProject genFrom = getExtension().getProjects().getByName(patcher.getGenPatchesFrom());
-                    genPatches.setOriginal(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, genFrom)));
-                    genPatches.dependsOn(projectString(TASK_PROJECT_RETROMAP, genFrom));
+                    genPatches.addOriginalSource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, genFrom)));
+                    genPatches.addOriginalSource(delayedFile(projectString(JAR_PROJECT_RETRO_NONMC, genFrom)));
+                    genPatches.dependsOn(projectString(TASK_PROJECT_RETROMAP, genFrom), projectString(TASK_PROJECT_NM_RETROMAP, genFrom));
                 }
             }
+            
+            // add retromapped nonMc jar to userdev patches task
+            userdevPatches.addOriginalSource(delayedFile(projectString(JAR_PROJECT_RETRO_NONMC, patcher)));
+            userdevPatches.dependsOn(retromapNonMc);
+            
+            // add task dependencies
+            ideTask.dependsOn(projectString(TASK_PROJECT_EXTRACT_SRC, patcher), projectString(TASK_PROJECT_EXTRACT_RES, patcher));
+            setupTask.dependsOn(projectString(TASK_PROJECT_RUNE_CLIENT, patcher), projectString(TASK_PROJECT_RUNE_SERVER, patcher));
+            setupTask.dependsOn(projectString(TASK_PROJECT_RUNJ_CLIENT, patcher), projectString(TASK_PROJECT_RUNJ_SERVER, patcher));
         }
+        
+        PatcherProject builtProject = patchersList.get(patchersList.size()-1);
+        
+        userdevPatches.addChangedSource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, builtProject)));
+        userdevPatches.dependsOn(projectString(TASK_PROJECT_RETROMAP, builtProject));
     }
     
     /**

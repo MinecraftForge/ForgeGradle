@@ -26,18 +26,27 @@ public final class PatcherConstants
     // cached stuff
     static final String DIR_LOCAL_CACHE            = Constants.REPLACE_BUILD_DIR + "/localCache";
     static final String JAR_DEOBF                  = DIR_LOCAL_CACHE + "/deobfuscated.jar";
-    static final String JAR_DECOMP                 = DIR_LOCAL_CACHE + "/decompiled.jar";
-    static final String JAR_DECOMP_POST            = DIR_LOCAL_CACHE + "/decompiled-processed.jar";
-    static final String JAR_REMAPPED               = DIR_LOCAL_CACHE + "/remapped-clean.jar";
+    static final String JAR_DECOMP                 = DIR_LOCAL_CACHE + "/decompiled.zip";
+    static final String JAR_DECOMP_POST            = DIR_LOCAL_CACHE + "/decompiled-processed.zip";
+    static final String JAR_REMAPPED               = DIR_LOCAL_CACHE + "/remapped-clean.zip";
 
     // cached project stuff
     static final String DIR_PROJECT_CACHE          = DIR_LOCAL_CACHE + "/" + REPLACE_PROJECT_CAP_NAME;
     static final String JAR_PROJECT_PATCHED        = DIR_PROJECT_CACHE + "/patched.zip";
     static final String JAR_PROJECT_RECOMPILED     = DIR_PROJECT_CACHE + "/recompiled.jar";
     static final String JAR_PROJECT_REMAPPED       = DIR_PROJECT_CACHE + "/mcp-named.zip";
-    static final String JAR_PROJECT_RETROMAPPED    = DIR_PROJECT_CACHE + "/retromapped-to-srg.zip";
+    static final String JAR_PROJECT_RETROMAPPED    = DIR_PROJECT_CACHE + "/retromapped-mc.zip";
+    static final String JAR_PROJECT_RETRO_NONMC    = DIR_PROJECT_CACHE + "/retromapped-nonMc.zip";
     static final String RANGEMAP_PROJECT           = DIR_PROJECT_CACHE + "/rangemap.txt";
     static final String EXC_PROJECT                = DIR_PROJECT_CACHE + "/extracted.exc";
+
+    // stuff for packaging only
+    static final String DIR_PACKAGING              = DIR_LOCAL_CACHE + "/packaging";
+    static final String DIR_USERDEV                = DIR_PACKAGING + "/userdev";
+    static final String DIR_USERDEV_PATCHES        = DIR_USERDEV + "/patches";
+    static final String JAR_USERDEV_SRC            = DIR_USERDEV + "/sources.zip";
+    static final String JAR_USERDEV_RES            = DIR_USERDEV + "/resources.zip";
+    static final String JAR_USERDEV_CLASSES        = DIR_USERDEV + "/classes.jar";
 
     // tasks
     static final String TASK_SETUP                 = "setup";
@@ -49,6 +58,9 @@ public final class PatcherConstants
     static final String TASK_PATCH                 = "patchJar";
     static final String TASK_GEN_PROJECTS          = "genGradleProjects";
     static final String TASK_GEN_IDES              = "genIdeProjects";
+
+    // packaging tasks
+    static final String TASK_GEN_PATCHES_USERDEV   = "genPatchesForUserdev";
 
     // project tasks
     static final String TASK_PROJECT_REMAP_JAR     = "remap" + REPLACE_PROJECT_CAP_NAME + "Jar";
@@ -62,6 +74,7 @@ public final class PatcherConstants
     static final String TASK_PROJECT_COMPILE       = "makeJar" + REPLACE_PROJECT_CAP_NAME + "";
     static final String TASK_PROJECT_GEN_EXC       = "extractExc" + REPLACE_PROJECT_CAP_NAME + "";
     static final String TASK_PROJECT_RANGEMAP      = "extract" + REPLACE_PROJECT_CAP_NAME + "Rangemap";
-    static final String TASK_PROJECT_RETROMAP      = "retromap" + REPLACE_PROJECT_CAP_NAME;
+    static final String TASK_PROJECT_RETROMAP      = "retromapMc" + REPLACE_PROJECT_CAP_NAME;
+    static final String TASK_PROJECT_NM_RETROMAP   = "retromapNonMc" + REPLACE_PROJECT_CAP_NAME;
     static final String TASK_PROJECT_GEN_PATCHES   = "gen" + REPLACE_PROJECT_CAP_NAME + "Patches";
 }

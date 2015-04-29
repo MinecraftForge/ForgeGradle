@@ -192,6 +192,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     {
         String mcVersion = delayedString(REPLACE_MC_VERSION).call();
 
+        // http://files.minecraftforge.net/maven/de/oceanlabs/mcp/mcp/1.7.10/mcp-1.7.10-srg.zip
         project.getDependencies().add(CONFIG_MAPPINGS, ImmutableMap.of(
                 "group", "de.oceanlabs.mcp",
                 "name", delayedString("mcp_" + REPLACE_MCP_CHANNEL).call(),
