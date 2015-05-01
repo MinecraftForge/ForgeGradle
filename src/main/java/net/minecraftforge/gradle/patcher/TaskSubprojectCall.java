@@ -1,9 +1,7 @@
 package net.minecraftforge.gradle.patcher;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,15 +35,7 @@ class TaskSubprojectCall extends DefaultTask
     
     @TaskAction
     public void doTask() throws IOException
-    {        
-        // extract custom initscript
-        File initscript = new File(getTemporaryDir(), "subprojectLogging.gradle");
-        {
-            OutputStream os = new FileOutputStream(initscript);
-            Resources.copy(Resources.getResource(TaskSubprojectCall.class, "initscriptLogger.gradle"), os);
-            os.close();
-        }
-        
+    {
         // resolve replacements
         for (Entry<String, Object> entry : replacements.entrySet())
         {
@@ -85,8 +75,7 @@ class TaskSubprojectCall extends DefaultTask
         //get args
         ArrayList<String> args = new ArrayList<String>(5);
         args.addAll(Splitter.on(' ').splitToList(getCallLine()));
-        args.add("-I" + initscript.getCanonicalPath());
-        
+
         for (File f : initscripts)
         {
             args.add("-I" + f.getCanonicalPath());

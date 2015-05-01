@@ -1,5 +1,7 @@
-apply plugin: "eclipse"
 apply plugin: "idea"
+
+task eclipse
+task cleanEclipse
 
 subprojects {
 	apply plugin: "java"

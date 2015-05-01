@@ -207,25 +207,25 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         
         GenEclipseRunTask eclipseClient = makeTask("makeEclipseCleanRunClient", GenEclipseRunTask.class);
         {
-            eclipseClient.setMainClass("net.minecraft.client.main.Main");
+            eclipseClient.setMainClass("GradleStart");
             eclipseClient.setProjectName("Clean");
             eclipseClient.setOutputFile(subWorkspace("Clean/Clean Client.launch"));
-            eclipseClient.setRunDir("${workspace_loc}/run");
+            eclipseClient.setRunDir("${project_loc}/../run");
             eclipseClient.dependsOn(makeStart, TASK_GEN_IDES);
         }
         
         GenEclipseRunTask eclipseServer = makeTask("makeEclipseCleanRunServer", GenEclipseRunTask.class);
         {
-            eclipseServer.setMainClass("net.minecraft.server.MinecraftServer");
+            eclipseServer.setMainClass("GradleStartServer");
             eclipseServer.setProjectName("Clean");
             eclipseServer.setOutputFile(subWorkspace("Clean/Clean Server.launch"));
-            eclipseServer.setRunDir("${workspace_loc}/run");
+            eclipseServer.setRunDir("${project_loc}/../run");
             eclipseServer.dependsOn(makeStart, TASK_GEN_IDES);
         }
         
         TaskGenIdeaRun ideaClient = makeTask("makeIdeaCleanRunClient", TaskGenIdeaRun.class);
         {
-            ideaClient.setMainClass("net.minecraft.client.main.Main");
+            ideaClient.setMainClass("GradleStart");
             ideaClient.setProjectName("Clean");
             ideaClient.setConfigName("Clean Client");
             ideaClient.setOutputFile(subWorkspace("/.idea/runConfigurations/Clean_Client.xml"));
@@ -235,7 +235,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         
         TaskGenIdeaRun ideaServer = makeTask("makeIdeaCleanRunServer", TaskGenIdeaRun.class);
         {
-            ideaServer.setMainClass("net.minecraft.server.MinecraftServer");
+            ideaServer.setMainClass("GradleStartServer");
             ideaServer.setProjectName("Clean");
             ideaServer.setConfigName("Clean Server");
             ideaServer.setOutputFile(subWorkspace("/.idea/runConfigurations/Clean_Server.xml"));
@@ -244,7 +244,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         }
         
         // add depends
-        project.getTasks().getByName(TASK_GEN_IDES).dependsOn(extractSrc, extractRes);
+        project.getTasks().getByName(TASK_GEN_IDES).dependsOn(extractSrc, extractRes, makeStart);
         project.getTasks().getByName(TASK_SETUP).dependsOn(eclipseClient, eclipseServer, ideaClient, ideaServer);
     }
     
@@ -309,27 +309,27 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         
         GenEclipseRunTask eclipseRunClient = makeTask(projectString(TASK_PROJECT_RUNE_CLIENT, patcher), GenEclipseRunTask.class);
         {
-            eclipseRunClient.setMainClass(patcher.getDelayedMainClassClient());
+            eclipseRunClient.setMainClass("GradleStart");
             eclipseRunClient.setArguments(patcher.getDelayedRunArgsClient());
             eclipseRunClient.setProjectName(patcher.getCapName());
             eclipseRunClient.setOutputFile(subWorkspace(patcher.getCapName() + "/"+patcher.getCapName()+" Client.launch"));
-            eclipseRunClient.setRunDir("${workspace_loc}/run");
+            eclipseRunClient.setRunDir("${project_loc}/../run");
             eclipseRunClient.dependsOn(makeStart, TASK_GEN_IDES);
         }
         
         GenEclipseRunTask eclipseRunServer = makeTask(projectString(TASK_PROJECT_RUNE_SERVER, patcher), GenEclipseRunTask.class);
         {
-            eclipseRunServer.setMainClass(patcher.getDelayedMainClassServer());
+            eclipseRunServer.setMainClass("GradleStartServer");
             eclipseRunServer.setArguments(patcher.getDelayedRunArgsServer());
             eclipseRunServer.setProjectName(patcher.getCapName());
             eclipseRunServer.setOutputFile(subWorkspace(patcher.getCapName() + "/"+patcher.getCapName()+" Server.launch"));
-            eclipseRunServer.setRunDir("${workspace_loc}/run");
+            eclipseRunServer.setRunDir("${project_loc}/../run");
             eclipseRunServer.dependsOn(makeStart, TASK_GEN_IDES);
         }
         
         TaskGenIdeaRun ideaRunClient = makeTask(projectString(TASK_PROJECT_RUNJ_CLIENT, patcher), TaskGenIdeaRun.class);
         {
-            ideaRunClient.setMainClass(patcher.getDelayedMainClassClient());
+            ideaRunClient.setMainClass("GradleStart");
             ideaRunClient.setArguments(patcher.getDelayedRunArgsClient());
             ideaRunClient.setProjectName(patcher.getCapName());
             ideaRunClient.setConfigName(patcher.getCapName() + " Client");
@@ -340,7 +340,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         
         TaskGenIdeaRun ideaRunServer = makeTask(projectString(TASK_PROJECT_RUNJ_SERVER, patcher), TaskGenIdeaRun.class);
         {
-            ideaRunServer.setMainClass(patcher.getDelayedMainClassServer());
+            ideaRunServer.setMainClass("GradleStartServer");
             ideaRunServer.setArguments(patcher.getDelayedRunArgsServer());
             ideaRunServer.setProjectName(patcher.getCapName());
             ideaRunServer.setConfigName(patcher.getCapName() + " Server");
@@ -567,6 +567,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             userdevPatches.dependsOn(retromapNonMc);
             
             // add task dependencies
+            ideTask.dependsOn(projectString(TASK_PROJECT_MAKE_START, patcher));
             ideTask.dependsOn(projectString(TASK_PROJECT_EXTRACT_SRC, patcher), projectString(TASK_PROJECT_EXTRACT_RES, patcher));
             setupTask.dependsOn(projectString(TASK_PROJECT_RUNE_CLIENT, patcher), projectString(TASK_PROJECT_RUNE_SERVER, patcher));
             setupTask.dependsOn(projectString(TASK_PROJECT_RUNJ_CLIENT, patcher), projectString(TASK_PROJECT_RUNJ_SERVER, patcher));

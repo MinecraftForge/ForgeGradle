@@ -49,6 +49,9 @@ class TaskGenSubprojects extends DefaultTask
     {
         File workspace = getWorkspaceDir();
         workspace.mkdirs();
+        
+        // make run dir just in case
+        new File(workspace, "run").mkdirs();
 
         generateRootBuild(new File(workspace, "build.gradle"));
         generateRootSettings(new File(workspace, "settings.gradle"), projects.keySet());
@@ -150,6 +153,7 @@ class TaskGenSubprojects extends DefaultTask
         // why use relatvie paths? so the eclipse hack below can work correctly.
         // add extra sourceDirs
         append(builder, "sourceSets {", NEWLINE);
+        append(builder, INDENT, "main.java.srcDir 'src/main/start'", NEWLINE); // add start dir to gradle sources
         if (src != null )     append(builder, INDENT, "main.java.srcDir '",      relative(workspace, src),     "'", NEWLINE);
         if (res != null )     append(builder, INDENT, "main.resources.srcDir '", relative(workspace, res),     "'", NEWLINE);
         if (testSrc != null ) append(builder, INDENT, "test.java.srcDir '",      relative(workspace, testSrc), "'", NEWLINE);

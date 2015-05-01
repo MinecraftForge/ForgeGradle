@@ -47,7 +47,7 @@ public class GenEclipseRunTask extends DefaultTask
         Document doc = docBuilder.newDocument();
         Element root = addXml(doc, "launchConfiguration", ImmutableMap.of("type", "org.eclipse.jdt.launching.localJavaApplication"));
 
-        addXml(root, "stringAttribute", ImmutableMap.of("key", "org.eclipse.jdt.launching.MAIN_TYPE", "value", getProjectName() + "." + getMainClass()));
+        addXml(root, "stringAttribute", ImmutableMap.of("key", "org.eclipse.jdt.launching.MAIN_TYPE", "value", getMainClass()));
         addXml(root, "stringAttribute", ImmutableMap.of("key", "org.eclipse.jdt.launching.PROJECT_ATTR", "value", getProjectName()));
         addXml(root, "stringAttribute", ImmutableMap.of("key", "org.eclipse.jdt.launching.WORKING_DIRECTORY", "value", getRunDir()));
 
