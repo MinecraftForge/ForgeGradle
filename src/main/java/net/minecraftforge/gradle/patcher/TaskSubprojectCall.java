@@ -87,6 +87,7 @@ class TaskSubprojectCall extends DefaultTask
                 .setStandardInput(System.in)
                 .setStandardError(System.err)
                 .withArguments(args.toArray(new String[args.size()]))
+                .setColorOutput(false)
                 .run();
         
         getProject().getLogger().lifecycle("------------------------ ");
