@@ -54,6 +54,10 @@ public class GenSrgTask extends CachedTask
     @Cached
     @OutputFile
     private DelayedFile mcpToNotch;
+    
+    @Cached
+    @OutputFile
+    private DelayedFile SrgToMcp;
 
     @Cached
     @OutputFile
@@ -138,12 +142,14 @@ public class GenSrgTask extends CachedTask
         // ensure folders exist
         Files.createParentDirs(getNotchToSrg());
         Files.createParentDirs(getNotchToMcp());
+        Files.createParentDirs(getSrgToMcp());
         Files.createParentDirs(getMcpToSrg());
         Files.createParentDirs(getMcpToNotch());
 
         // create streams
-        BufferedWriter notch2Srg = Files.newWriter(getNotchToSrg(), Charsets.UTF_8);
-        BufferedWriter notch2Mcp = Files.newWriter(getNotchToMcp(), Charsets.UTF_8);
+        BufferedWriter notchToSrg = Files.newWriter(getNotchToSrg(), Charsets.UTF_8);
+        BufferedWriter notchToMcp = Files.newWriter(getNotchToMcp(), Charsets.UTF_8);
+        BufferedWriter srgToMcp = Files.newWriter(getSrgToMcp(), Charsets.UTF_8);
         BufferedWriter mcpToSrg = Files.newWriter(getMcpToSrg(), Charsets.UTF_8);
         BufferedWriter mcpToNotch = Files.newWriter(getMcpToNotch(), Charsets.UTF_8);
 
@@ -154,13 +160,17 @@ public class GenSrgTask extends CachedTask
             line = "PK: "+e.getKey()+" "+e.getValue();
 
             // nobody cares about the packages.
-            notch2Srg.write(line);
-            notch2Srg.newLine();
+            notchToSrg.write(line);
+            notchToSrg.newLine();
 
-            notch2Mcp.write(line);
-            notch2Mcp.newLine();
+            notchToMcp.write(line);
+            notchToMcp.newLine();
 
-            // No apckage changes from MCP to SRG names
+            // No package changes from MCP to SRG names
+            //srgToMcp.write(line);
+            //srgToMcp.newLine();
+
+            // No package changes from MCP to SRG names
             //mcpToSrg.write(line);
             //mcpToSrg.newLine();
 
@@ -175,14 +185,18 @@ public class GenSrgTask extends CachedTask
             line = "CL: "+e.getKey()+" "+e.getValue();
 
             // same...
-            notch2Srg.write(line);
-            notch2Srg.newLine();
+            notchToSrg.write(line);
+            notchToSrg.newLine();
 
             // SRG and MCP have the same class names
-            notch2Mcp.write(line);
-            notch2Mcp.newLine();
+            notchToMcp.write(line);
+            notchToMcp.newLine();
 
             line = "CL: "+e.getValue()+" "+e.getValue();
+
+            // deobf: same classes on both sides.
+            srgToMcp.write("CL: "+e.getKey()+" "+e.getValue());
+            srgToMcp.newLine();
 
             // reobf: same classes on both sides.
             mcpToSrg.write("CL: "+e.getValue()+" "+e.getValue());
@@ -199,8 +213,8 @@ public class GenSrgTask extends CachedTask
             line = "FD: "+e.getKey()+" "+e.getValue();
 
             // same...
-            notch2Srg.write("FD: "+e.getKey()+" "+e.getValue());
-            notch2Srg.newLine();
+            notchToSrg.write("FD: "+e.getKey()+" "+e.getValue());
+            notchToSrg.newLine();
 
             temp = e.getValue().substring(e.getValue().lastIndexOf('/')+1);
             mcpName = e.getValue();
@@ -208,10 +222,14 @@ public class GenSrgTask extends CachedTask
                 mcpName = mcpName.replace(temp, fields.get(temp));
 
             // SRG and MCP have the same class names
-            notch2Mcp.write("FD: "+e.getKey()+" "+mcpName);
-            notch2Mcp.newLine();
+            notchToMcp.write("FD: "+e.getKey()+" "+mcpName);
+            notchToMcp.newLine();
 
-            // reobf: same classes on both sides.
+            // srg name -> mcp name
+            srgToMcp.write("FD: "+e.getValue()+" "+mcpName);
+            srgToMcp.newLine();
+
+            // mcp name -> srg name
             mcpToSrg.write("FD: "+mcpName+" "+e.getValue());
             mcpToSrg.newLine();
 
@@ -226,8 +244,8 @@ public class GenSrgTask extends CachedTask
             line = "MD: "+e.getKey()+" "+e.getValue();
 
             // same...
-            notch2Srg.write("MD: "+e.getKey()+" "+e.getValue());
-            notch2Srg.newLine();
+            notchToSrg.write("MD: "+e.getKey()+" "+e.getValue());
+            notchToSrg.newLine();
 
             temp = e.getValue().name.substring(e.getValue().name.lastIndexOf('/')+1);
             mcpName = e.getValue().toString();
@@ -235,10 +253,14 @@ public class GenSrgTask extends CachedTask
                 mcpName = mcpName.replace(temp, methods.get(temp));
 
             // SRG and MCP have the same class names
-            notch2Mcp.write("MD: "+e.getKey()+" "+mcpName);
-            notch2Mcp.newLine();
+            notchToMcp.write("MD: "+e.getKey()+" "+mcpName);
+            notchToMcp.newLine();
 
-            // reobf: same classes on both sides.
+            // srg name -> mcp name
+            srgToMcp.write("MD: "+e.getValue()+" "+mcpName);
+            srgToMcp.newLine();
+
+            // mcp name -> srg name
             mcpToSrg.write("MD: "+mcpName+" "+e.getValue());
             mcpToSrg.newLine();
 
@@ -247,11 +269,14 @@ public class GenSrgTask extends CachedTask
             mcpToNotch.newLine();
         }
 
-        notch2Srg.flush();
-        notch2Srg.close();
+        notchToSrg.flush();
+        notchToSrg.close();
 
-        notch2Mcp.flush();
-        notch2Mcp.close();
+        notchToMcp.flush();
+        notchToMcp.close();
+
+        srgToMcp.flush();
+        srgToMcp.close();
 
         mcpToSrg.flush();
         mcpToSrg.close();
@@ -454,6 +479,16 @@ public class GenSrgTask extends CachedTask
     public void setNotchToMcp(DelayedFile deobfSrg)
     {
         this.notchToMcp = deobfSrg;
+    }
+    
+    public File getSrgToMcp()
+    {
+        return SrgToMcp.call();
+    }
+
+    public void setSrgToMcp(DelayedFile deobfSrg)
+    {
+        this.SrgToMcp = deobfSrg;
     }
 
     public File getMcpToSrg()

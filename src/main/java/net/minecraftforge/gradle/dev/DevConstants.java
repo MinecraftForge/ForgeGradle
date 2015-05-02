@@ -20,6 +20,7 @@ final class DevConstants
     static final String REOBF_TMP           = "{BUILD_DIR}/tmp/recomp_obfed.jar";
     static final String MCP_2_SRG_SRG       = "{BUILD_DIR}/tmp/mcp2srg.srg";
     static final String MCP_2_NOTCH_SRG     = "{BUILD_DIR}/tmp/mcp2notch.srg";
+    static final String SRG_2_MCP_SRG       = "{BUILD_DIR}/tmp/srg2mcp.srg";
     static final String NOTCH_2_MCP_SRG     = "{BUILD_DIR}/tmp/notch2mcp.srg";
     static final String NOTCH_2_SRG_SRG     = "{BUILD_DIR}/tmp/notch2srg.srg";
     static final String SRG_EXC             = "{BUILD_DIR}/tmp/srg.exc";

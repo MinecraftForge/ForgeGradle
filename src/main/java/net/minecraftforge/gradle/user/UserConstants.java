@@ -32,6 +32,7 @@ public final class UserConstants
 
     public static final String DEOBF_SRG_SRG         = "{SRG_DIR}/notch-srg.srg";
     public static final String DEOBF_MCP_SRG         = "{SRG_DIR}/notch-mcp.srg";
+    public static final String DEOBF_SRG_MCP_SRG     = "{SRG_DIR}/srg-mcp.srg";
     public static final String REOBF_SRG             = "{SRG_DIR}/mcp-srg.srg";
     public static final String REOBF_NOTCH_SRG       = "{SRG_DIR}/mcp-notch.srg";
     public static final String EXC_SRG               = "{SRG_DIR}/srg.exc";

@@ -44,10 +44,11 @@ public abstract class GradleStartCommon
     private List<String>        extras          = Lists.newArrayList();
 
     private static final File   SRG_DIR         = new File("@@SRGDIR@@");
-    private static final File   SRG_DEOBF_SRG   = new File("@@SRG_DEOBF_SRG@@");
-    private static final File   SRG_DEOBF_MCP   = new File("@@SRG_DEOBF_MCP@@");
-    private static final File   SRG_REOBF_SRG   = new File("@@SRG_REOBF_SRG@@");
-    private static final File   SRG_REOBF_NOTCH = new File("@@SRG_REOBF_NOTCH@@");
+    private static final File   SRG_NOTCH_SRG   = new File("@@SRG_NOTCH_SRG@@");
+    private static final File   SRG_NOTCH_MCP   = new File("@@SRG_NOTCH_MCP@@");
+    private static final File   SRG_SRG_MCP     = new File("@@SRG_SRG_MCP@@");
+    private static final File   SRG_MCP_SRG     = new File("@@SRG_MCP_SRG@@");
+    private static final File   SRG_MCP_NOTCH   = new File("@@SRG_MCP_NOTCH@@");
     private static final File   CSV_DIR         = new File("@@CSVDIR@@");
 
     protected abstract void setDefaultArguments(Map<String, String> argMap);
@@ -64,10 +65,11 @@ public abstract class GradleStartCommon
         System.setProperty("net.minecraftforge.gradle.GradleStart.srgDir", SRG_DIR.getCanonicalPath());
         
         // set system vars for passwords
-        System.setProperty("net.minecraftforge.gradle.GradleStart.srg.deobf.srg", SRG_DEOBF_SRG.getCanonicalPath());
-        System.setProperty("net.minecraftforge.gradle.GradleStart.srg.deobf.mcp", SRG_DEOBF_MCP.getCanonicalPath());
-        System.setProperty("net.minecraftforge.gradle.GradleStart.srg.reobf.srg", SRG_REOBF_SRG.getCanonicalPath());
-        System.setProperty("net.minecraftforge.gradle.GradleStart.srg.reobf.notch", SRG_REOBF_NOTCH.getCanonicalPath());
+        System.setProperty("net.minecraftforge.gradle.GradleStart.srg.notch-srg", SRG_NOTCH_SRG.getCanonicalPath());
+        System.setProperty("net.minecraftforge.gradle.GradleStart.srg.notch-mcp", SRG_NOTCH_MCP.getCanonicalPath());
+        System.setProperty("net.minecraftforge.gradle.GradleStart.srg.srg-mcp", SRG_SRG_MCP.getCanonicalPath());
+        System.setProperty("net.minecraftforge.gradle.GradleStart.srg.mcp-srg", SRG_MCP_SRG.getCanonicalPath());
+        System.setProperty("net.minecraftforge.gradle.GradleStart.srg.mcp-notch", SRG_MCP_NOTCH.getCanonicalPath());
         System.setProperty("net.minecraftforge.gradle.GradleStart.csvDir", CSV_DIR.getCanonicalPath());
 
         // set defaults!

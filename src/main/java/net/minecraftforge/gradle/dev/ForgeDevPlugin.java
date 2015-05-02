@@ -233,10 +233,11 @@ public class ForgeDevPlugin extends DevBasePlugin
             makeStart.addReplacement("@@ASSETSDIR@@", delayedFile("{CACHE_DIR}/minecraft/assets"));
             makeStart.addReplacement("@@NATIVESDIR@@", delayedFile(Constants.NATIVES_DIR));
             makeStart.addReplacement("@@SRGDIR@@", delayedFile("{BUILD_DIR}/tmp/"));
-            makeStart.addReplacement("@@SRG_DEOBF_SRG@@", delayedFile(DevConstants.NOTCH_2_SRG_SRG));
-            makeStart.addReplacement("@@SRG_DEOBF_MCP@@", delayedFile(DevConstants.NOTCH_2_MCP_SRG));
-            makeStart.addReplacement("@@SRG_REOBF_SRG@@", delayedFile(DevConstants.MCP_2_SRG_SRG));
-            makeStart.addReplacement("@@SRG_REOBF_NOTCH@@", delayedFile(DevConstants.MCP_2_NOTCH_SRG));
+            makeStart.addReplacement("@@SRG_NOTCH_SRG@@", delayedFile(DevConstants.NOTCH_2_SRG_SRG));
+            makeStart.addReplacement("@@SRG_NOTCH_MCP@@", delayedFile(DevConstants.NOTCH_2_MCP_SRG));
+            makeStart.addReplacement("@@SRG_SRG_MCP@@", delayedFile(DevConstants.SRG_2_MCP_SRG));
+            makeStart.addReplacement("@@SRG_MCP_SRG@@", delayedFile(DevConstants.MCP_2_SRG_SRG));
+            makeStart.addReplacement("@@SRG_MCP_NOTCH@@", delayedFile(DevConstants.MCP_2_NOTCH_SRG));
             makeStart.addReplacement("@@CSVDIR@@", delayedFile("{MCP_DATA_DIR}"));
             makeStart.addReplacement("@@BOUNCERCLIENT@@", delayedString("net.minecraft.launchwrapper.Launch"));
             makeStart.addReplacement("@@BOUNCERSERVER@@", delayedString("net.minecraft.launchwrapper.Launch"));
