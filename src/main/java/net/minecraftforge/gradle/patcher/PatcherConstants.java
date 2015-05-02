@@ -17,7 +17,7 @@ final class PatcherConstants
 
     // constants for paths in the workspace dir
     static final String DIR_EXTRACTED_SRC          = "/src/main/java";
-    static final String DIR_EXTRACTED_RES          = "/src/main/resource";
+    static final String DIR_EXTRACTED_RES          = "/src/main/resources";
     static final String DIR_EXTRACTED_START        = "/src/main/start";
 
     static final String REPLACE_PROJECT_NAME       = "{NAME}";

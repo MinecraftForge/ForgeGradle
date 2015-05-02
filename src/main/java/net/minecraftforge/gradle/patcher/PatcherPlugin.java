@@ -215,7 +215,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             eclipseClient.setMainClass("GradleStart");
             eclipseClient.setProjectName("Clean");
             eclipseClient.setOutputFile(subWorkspace("Clean/Clean Client.launch"));
-            eclipseClient.setRunDir("${project_loc}/../run");
+            eclipseClient.setRunDir(subWorkspace("run"));
             eclipseClient.dependsOn(makeStart, TASK_GEN_IDES);
         }
         
@@ -224,7 +224,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             eclipseServer.setMainClass("GradleStartServer");
             eclipseServer.setProjectName("Clean");
             eclipseServer.setOutputFile(subWorkspace("Clean/Clean Server.launch"));
-            eclipseServer.setRunDir("${project_loc}/../run");
+            eclipseServer.setRunDir(subWorkspace("run"));
             eclipseServer.dependsOn(makeStart, TASK_GEN_IDES);
         }
         
@@ -323,7 +323,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             eclipseRunClient.setArguments(patcher.getDelayedRunArgsClient());
             eclipseRunClient.setProjectName(patcher.getCapName());
             eclipseRunClient.setOutputFile(subWorkspace(patcher.getCapName() + "/"+patcher.getCapName()+" Client.launch"));
-            eclipseRunClient.setRunDir("${project_loc}/../run");
+            eclipseRunClient.setRunDir(subWorkspace("run"));
             eclipseRunClient.dependsOn(makeStart, TASK_GEN_IDES);
         }
         
@@ -333,7 +333,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             eclipseRunServer.setArguments(patcher.getDelayedRunArgsServer());
             eclipseRunServer.setProjectName(patcher.getCapName());
             eclipseRunServer.setOutputFile(subWorkspace(patcher.getCapName() + "/"+patcher.getCapName()+" Server.launch"));
-            eclipseRunServer.setRunDir("${project_loc}/../run");
+            eclipseRunServer.setRunDir(subWorkspace("run"));
             eclipseRunServer.dependsOn(makeStart, TASK_GEN_IDES);
         }
         
@@ -425,6 +425,13 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         project.getTasks().remove(project.getTasks().getByName(projectString(TASK_PROJECT_RUNJ_SERVER, patcher)));
         
         ((TaskGenSubprojects) project.getTasks().getByName(TASK_GEN_PROJECTS)).removeProject(patcher.getCapName());
+        
+        
+        project.getTasks().remove(project.getTasks().getByName(projectString(TASK_PROJECT_COMPILE, patcher)));
+        project.getTasks().remove(project.getTasks().getByName(projectString(TASK_PROJECT_GEN_EXC, patcher)));
+        project.getTasks().remove(project.getTasks().getByName(projectString(TASK_PROJECT_RANGEMAP, patcher)));
+        project.getTasks().remove(project.getTasks().getByName(projectString(TASK_PROJECT_RETROMAP, patcher)));
+        project.getTasks().remove(project.getTasks().getByName(projectString(TASK_PROJECT_NM_RETROMAP, patcher)));
     }
     
     public void afterEvaluate()
