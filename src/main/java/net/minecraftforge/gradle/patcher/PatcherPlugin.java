@@ -195,6 +195,11 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             makeStart.addReplacement("@@ASSETINDEX@@", delayedString(REPLACE_ASSET_INDEX));
             makeStart.addReplacement("@@ASSETSDIR@@", delayedFile(DIR_ASSETS));
             makeStart.addReplacement("@@NATIVESDIR@@", delayedFile(Constants.DIR_NATIVES));
+            makeStart.addReplacement("@@SRGDIR@@", delayedFile(DIR_MCP_MAPPINGS + "/srgs/"));
+            makeStart.addReplacement("@@SRG_DEOBF_SRG@@", delayedFile(SRG_NOTCH_TO_SRG));
+            makeStart.addReplacement("@@SRG_DEOBF_MCP@@", delayedFile(SRG_NOTCH_TO_MCP));
+            makeStart.addReplacement("@@SRG_REOBF_SRG@@", delayedFile(SRG_MCP_TO_SRG));
+            makeStart.addReplacement("@@SRG_REOBF_NOTCH@@", delayedFile(SRG_MCP_TO_NOTCH));
             makeStart.addReplacement("@@CSVDIR@@", delayedFile(DIR_MCP_DATA));
             makeStart.addReplacement("@@BOUNCERCLIENT@@", "net.minecraft.client.main.Main");
             makeStart.addReplacement("@@TWEAKERCLIENT@@", "");
@@ -297,6 +302,11 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             makeStart.addReplacement("@@ASSETINDEX@@", delayedString(REPLACE_ASSET_INDEX));
             makeStart.addReplacement("@@ASSETSDIR@@", delayedFile(DIR_ASSETS));
             makeStart.addReplacement("@@NATIVESDIR@@", delayedFile(Constants.DIR_NATIVES));
+            makeStart.addReplacement("@@SRGDIR@@", delayedFile(DIR_MCP_MAPPINGS + "/srgs/"));
+            makeStart.addReplacement("@@SRG_DEOBF_SRG@@", delayedFile(SRG_NOTCH_TO_SRG));
+            makeStart.addReplacement("@@SRG_DEOBF_MCP@@", delayedFile(SRG_NOTCH_TO_MCP));
+            makeStart.addReplacement("@@SRG_REOBF_SRG@@", delayedFile(SRG_MCP_TO_SRG));
+            makeStart.addReplacement("@@SRG_REOBF_NOTCH@@", delayedFile(SRG_MCP_TO_NOTCH));
             makeStart.addReplacement("@@CSVDIR@@", delayedFile(DIR_MCP_DATA));
             makeStart.addReplacement("@@BOUNCERCLIENT@@", patcher.getDelayedMainClassClient());
             makeStart.addReplacement("@@TWEAKERCLIENT@@", patcher.getDelayedTweakClassClient());

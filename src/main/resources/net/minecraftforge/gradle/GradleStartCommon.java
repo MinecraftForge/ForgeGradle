@@ -37,14 +37,18 @@ import com.google.common.io.Files;
 
 public abstract class GradleStartCommon
 {
-    protected static Logger     LOGGER         = LogManager.getLogger("GradleStart");
-    private static final String NO_CORE_SEARCH = "noCoreSearch";
+    protected static Logger     LOGGER          = LogManager.getLogger("GradleStart");
+    private static final String NO_CORE_SEARCH  = "noCoreSearch";
 
-    private Map<String, String> argMap         = Maps.newHashMap();
-    private List<String>        extras         = Lists.newArrayList();
+    private Map<String, String> argMap          = Maps.newHashMap();
+    private List<String>        extras          = Lists.newArrayList();
 
-    private static final File   SRG_DIR        = new File("@@SRGDIR@@");
-    private static final File   CSV_DIR        = new File("@@CSVDIR@@");
+    private static final File   SRG_DIR         = new File("@@SRGDIR@@");
+    private static final File   SRG_DEOBF_SRG   = new File("@@SRG_DEOBF_SRG@@");
+    private static final File   SRG_DEOBF_MCP   = new File("@@SRG_DEOBF_MCP@@");
+    private static final File   SRG_REOBF_SRG   = new File("@@SRG_REOBF_SRG@@");
+    private static final File   SRG_REOBF_NOTCH = new File("@@SRG_REOBF_NOTCH@@");
+    private static final File   CSV_DIR         = new File("@@CSVDIR@@");
 
     protected abstract void setDefaultArguments(Map<String, String> argMap);
 
@@ -56,9 +60,15 @@ public abstract class GradleStartCommon
 
     protected void launch(String[] args) throws Throwable
     {
+        // DEPRECATED, use the properties below instead!
+        System.setProperty("net.minecraftforge.gradle.GradleStart.srgDir", SRG_DIR.getCanonicalPath());
+
         // set system vars for passwords
-        System.setProperty("net.minecraftforge.gradle.GradleStart.srgDir", SRG_DIR.getAbsolutePath());
-        System.setProperty("net.minecraftforge.gradle.GradleStart.csvDir", CSV_DIR.getAbsolutePath());
+        System.setProperty("net.minecraftforge.gradle.GradleStart.srg.deobf.srg", SRG_DEOBF_SRG.getCanonicalPath());
+        System.setProperty("net.minecraftforge.gradle.GradleStart.srg.deobf.mcp", SRG_DEOBF_MCP.getCanonicalPath());
+        System.setProperty("net.minecraftforge.gradle.GradleStart.srg.reobf.srg", SRG_REOBF_SRG.getCanonicalPath());
+        System.setProperty("net.minecraftforge.gradle.GradleStart.srg.reobf.notch", SRG_REOBF_NOTCH.getCanonicalPath());
+        System.setProperty("net.minecraftforge.gradle.GradleStart.csvDir", CSV_DIR.getCanonicalPath());
 
         // set defaults!
         setDefaultArguments(argMap);
@@ -177,13 +187,13 @@ public abstract class GradleStartCommon
     /* ----------- COREMOD AND AT HACK --------- */
 
     // coremod hack
-    private static final String            COREMOD_VAR        = "fml.coreMods.load";
-    private static final String            COREMOD_MF         = "FMLCorePlugin";
+    private static final String           COREMOD_VAR   = "fml.coreMods.load";
+    private static final String           COREMOD_MF    = "FMLCorePlugin";
     // AT hack
-    private static final String            MOD_ATD_CLASS      = "net.minecraftforge.fml.common.asm.transformers.ModAccessTransformer";
-    private static final String            MOD_AT_METHOD      = "addJar";
+    private static final String           MOD_ATD_CLASS = "net.minecraftforge.fml.common.asm.transformers.ModAccessTransformer";
+    private static final String           MOD_AT_METHOD = "addJar";
 
-    public static final Map<String, File> coreMap            = Maps.newHashMap();
+    public static final Map<String, File> coreMap       = Maps.newHashMap();
 
     private void searchCoremods() throws Exception
     {
@@ -345,7 +355,7 @@ public abstract class GradleStartCommon
             }
 
             LOGGER.log(Level.INFO, "Remapping AccessTransformer rules...");
-            
+
             // finally hit the modifiers
             for (Object modifier : modifiers) // these are instances of AccessTransformer.Modifier
             {
