@@ -157,6 +157,7 @@ public class Constants
     public static final String CSV_PARAM         = DIR_MCP_MAPPINGS+"/params.csv";
     public static final String SRG_NOTCH_TO_SRG  = DIR_MCP_MAPPINGS+"/srgs/notch-srg.srg";
     public static final String SRG_NOTCH_TO_MCP  = DIR_MCP_MAPPINGS+"/srgs/notch-mcp.srg";
+    public static final String SRG_SRG_TO_MCP    = DIR_MCP_MAPPINGS+"/srgs/srg-mcp.srg";
     public static final String SRG_MCP_TO_SRG    = DIR_MCP_MAPPINGS+"/srgs/mcp-srg.srg";
     public static final String SRG_MCP_TO_NOTCH  = DIR_MCP_MAPPINGS+"/srgs/mcp-notch.srg";
     public static final String EXC_SRG           = DIR_MCP_MAPPINGS+"/srgs/srg.exc";

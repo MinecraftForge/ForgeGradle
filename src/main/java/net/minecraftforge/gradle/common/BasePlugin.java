@@ -339,6 +339,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             genSrgs.setFieldsCsv(delayedFile(CSV_FIELD));
             genSrgs.setNotchToSrg(delayedFile(Constants.SRG_NOTCH_TO_SRG));
             genSrgs.setNotchToMcp(delayedFile(Constants.SRG_NOTCH_TO_MCP));
+            genSrgs.setSrgToMcp(delayedFile(SRG_SRG_TO_MCP));
             genSrgs.setMcpToSrg(delayedFile(SRG_MCP_TO_SRG));
             genSrgs.setMcpToNotch(delayedFile(SRG_MCP_TO_NOTCH));
             genSrgs.setSrgExc(delayedFile(EXC_SRG));
