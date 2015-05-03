@@ -288,11 +288,17 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
 
         try
         {
-            Copy copyTask = makeTask("extractNatives", Copy.class);
+            ExtractTask extractNatives = makeTask("extractNativesNew", ExtractTask.class);
             {
-                copyTask.exclude("META-INF", "META-INF/**", "META-INF/*");
-                copyTask.into(delayedString(DevConstants.ECLIPSE_NATIVES).call());
-                copyTask.dependsOn("extractWorkspace");
+                extractNatives.exclude("META-INF", "META-INF/**", "META-INF/*");
+                extractNatives.into(delayedFile(Constants.NATIVES_DIR));
+            }
+            
+            Copy copyNatives = makeTask("extractNatives", Copy.class);
+            {
+                copyNatives.exclude("META-INF", "META-INF/**", "META-INF/*");
+                copyNatives.into(delayedFile(DevConstants.ECLIPSE_NATIVES));
+                copyNatives.dependsOn("extractWorkspace", extractNatives);
             }
 
             DelayedFile devJson = getDevJson();
@@ -329,8 +335,8 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
                         task.setUrl(delayedString(lib.getUrl() + path));
                     }
 
-                    copyTask.from(delayedZipTree("{CACHE_DIR}/minecraft/" + path));
-                    copyTask.dependsOn(taskName);
+                    extractNatives.from(delayedFile("{CACHE_DIR}/minecraft/" + path));
+                    extractNatives.dependsOn(taskName);
                 }
             }
 
