@@ -173,7 +173,7 @@ public class GenSrgs extends CachedTask
             line = "CL: "+e.getValue()+" "+e.getValue();
 
             // deobf: same classes on both sides.
-            srgToMcp.write("CL: "+e.getKey()+" "+e.getValue());
+            srgToMcp.write("CL: "+e.getValue()+" "+e.getValue());
             srgToMcp.newLine();
 
             // reobf: same classes on both sides.
