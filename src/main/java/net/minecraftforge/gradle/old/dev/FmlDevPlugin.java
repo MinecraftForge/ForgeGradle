@@ -331,7 +331,7 @@ public class FmlDevPlugin extends DevBasePlugin
             obf.dependsOn("generateProjects", "extractFmlSources", "genSrgs");
         }
 
-        GenBinaryPatches task3 = makeTask("genBinPatches", GenBinaryPatches.class);
+        TaskGenBinPatches task3 = makeTask("genBinPatches", TaskGenBinPatches.class);
         {
             task3.setCleanClient(delayedFile(Constants.JAR_CLIENT_FRESH));
             task3.setCleanServer(delayedFile(Constants.JAR_SERVER_FRESH));
@@ -340,7 +340,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task3.setDeobfDataLzma(delayedFile(DevConstants.DEOBF_DATA));
             task3.setOutJar(delayedFile(DevConstants.BINPATCH_TMP));
             task3.setSrg(delayedFile(DevConstants.NOTCH_2_SRG_SRG));
-            task3.addPatchList(delayedTree(DevConstants.FML_PATCH_DIR));
+            task3.addPatchSet(delayedTree(DevConstants.FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData");
         }
 

@@ -423,7 +423,7 @@ public class CauldronDevPlugin extends DevBasePlugin
             obf.dependsOn("genSrgs");
         }
 
-        GenBinaryPatches task3 = makeTask("genBinPatches", GenBinaryPatches.class);
+        TaskGenBinPatches task3 = makeTask("genBinPatches", TaskGenBinPatches.class);
         {
             task3.setCleanClient(delayedFile(Constants.JAR_CLIENT_FRESH));
             task3.setCleanServer(delayedFile(Constants.JAR_SERVER_FRESH));
@@ -432,9 +432,9 @@ public class CauldronDevPlugin extends DevBasePlugin
             task3.setDeobfDataLzma(delayedFile(DEOBF_DATA));
             task3.setOutJar(delayedFile(BINPATCH_TMP));
             task3.setSrg(delayedFile(JOINED_SRG));
-            task3.addPatchList(delayedTree(EXTRA_PATCH_DIR));
-            task3.addPatchList(delayedTree(FORGE_PATCH_DIR));
-            task3.addPatchList(delayedTree(FML_PATCH_DIR));
+            task3.addPatchSet(delayedTree(EXTRA_PATCH_DIR));
+            task3.addPatchSet(delayedTree(FORGE_PATCH_DIR));
+            task3.addPatchSet(delayedTree(FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData");
         }
 

@@ -145,6 +145,35 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
     
     protected void makePackagingTasks()
     {
+        // for universal and stuff
+
+        TaskReobfuscate obf = makeTask(TASK_REOBFUSCATE, TaskReobfuscate.class);
+        {
+            obf.setSrg(delayedFile(SRG_MCP_TO_NOTCH));
+            obf.setExc(delayedFile(EXC_MCP));
+            obf.setPreFFJar(delayedFile(JAR_DEOBF));
+            obf.setMethodsCsv(delayedFile(CSV_METHOD));
+            obf.setFieldsCsv(delayedFile(CSV_FIELD));
+            obf.setOutJar(delayedFile(JAR_OBFUSCATED));
+            obf.addLibs(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPS));
+            obf.dependsOn(TASK_GENERATE_SRGS);
+        }
+        
+        TaskGenBinPatches genBinPatches = makeTask(TASK_GEN_BIN_PATCHES, TaskGenBinPatches.class);
+        {
+            genBinPatches.setCleanClient(delayedFile(JAR_CLIENT_FRESH));
+            genBinPatches.setCleanServer(delayedFile(JAR_SERVER_FRESH));
+            genBinPatches.setCleanMerged(delayedFile(JAR_MERGED));
+            genBinPatches.setDirtyJar(delayedFile(JAR_OBFUSCATED));
+            genBinPatches.setSrg(delayedFile(SRG_NOTCH_TO_SRG));
+            genBinPatches.setRuntimeBinPatches(delayedFile(BINPATCH_RUN));
+            genBinPatches.setDevBinPatches(delayedFile(BINPATCH_DEV));
+            genBinPatches.dependsOn(obf);
+        }
+        
+        // ------------------------------
+        // for userdev
+        
         TaskGenPatches genUserdevPatches = makeTask(TASK_GEN_PATCHES_USERDEV, TaskGenPatches.class);
         {
             genUserdevPatches.setPatchDir(delayedFile(DIR_USERDEV_PATCHES));
@@ -493,6 +522,8 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         TaskGenPatches userdevPatches = (TaskGenPatches) project.getTasks().getByName(TASK_GEN_PATCHES_USERDEV);
         ProcessSrcJarTask patchJar = (ProcessSrcJarTask) project.getTasks().getByName(TASK_PATCH);
         DeobfuscateJar deobfJar = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF);
+        TaskGenBinPatches binPatches = (TaskGenBinPatches) project.getTasks().getByName(TASK_GEN_BIN_PATCHES);
+        
         List<File> addedExcs = Lists.newArrayListWithCapacity(patchersList.size());
         List<File> addedSrgs = Lists.newArrayListWithCapacity(patchersList.size());
         
@@ -585,6 +616,9 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             userdevPatches.addOriginalSource(delayedFile(projectString(JAR_PROJECT_RETRO_NONMC, patcher)));
             userdevPatches.dependsOn(retromapNonMc);
             
+            // add patch sets to bin patches
+            binPatches.addPatchSet(patcher.getPatchDir());
+            
             // add task dependencies
             ideTask.dependsOn(projectString(TASK_PROJECT_MAKE_START, patcher));
             ideTask.dependsOn(projectString(TASK_PROJECT_EXTRACT_SRC, patcher), projectString(TASK_PROJECT_EXTRACT_RES, patcher));
@@ -592,10 +626,18 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             setupTask.dependsOn(projectString(TASK_PROJECT_RUNJ_CLIENT, patcher), projectString(TASK_PROJECT_RUNJ_SERVER, patcher));
         }
         
-        PatcherProject builtProject = patchersList.get(patchersList.size()-1);
+        // ------------------------------
+        // ------------------------------
+        // PACKAGING
         
-        userdevPatches.addChangedSource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, builtProject)));
-        userdevPatches.dependsOn(projectString(TASK_PROJECT_RETROMAP, builtProject));
+        PatcherProject patcher = patchersList.get(patchersList.size()-1);
+        
+        TaskReobfuscate reobf = (TaskReobfuscate) project.getTasks().getByName(TASK_REOBFUSCATE);
+        reobf.setInJar(delayedFile(projectString(JAR_PROJECT_RECOMPILED, patcher)));
+        reobf.dependsOn(projectString(TASK_PROJECT_COMPILE, patcher));
+        
+        userdevPatches.addChangedSource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, patcher)));
+        userdevPatches.dependsOn(projectString(TASK_PROJECT_RETROMAP, patcher));
     }
     
     /**

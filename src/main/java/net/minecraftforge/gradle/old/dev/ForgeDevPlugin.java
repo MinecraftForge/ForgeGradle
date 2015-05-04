@@ -383,17 +383,17 @@ public class ForgeDevPlugin extends DevBasePlugin
             obf.dependsOn("generateProjects", "extractForgeSources", "genSrgs");
         }
 
-        GenBinaryPatches task3 = makeTask("genBinPatches", GenBinaryPatches.class);
+        TaskGenBinPatches task3 = makeTask("genBinPatches", TaskGenBinPatches.class);
         {
             task3.setCleanClient(delayedFile(Constants.JAR_CLIENT_FRESH));
             task3.setCleanServer(delayedFile(Constants.JAR_SERVER_FRESH));
             task3.setCleanMerged(delayedFile(Constants.JAR_MERGED));
             task3.setDirtyJar(delayedFile(REOBF_TMP));
-            task3.setDeobfDataLzma(delayedFile(DEOBF_DATA));
+            //task3.setDeobfDataLzma(delayedFile(DEOBF_DATA));
             task3.setOutJar(delayedFile(BINPATCH_TMP));
             task3.setSrg(delayedFile(NOTCH_2_SRG_SRG));
-            task3.addPatchList(delayedTree(FORGE_PATCH_DIR));
-            task3.addPatchList(delayedTree(FML_PATCH_DIR));
+            task3.addPatchSet(delayedTree(FORGE_PATCH_DIR));
+            task3.addPatchSet(delayedTree(FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData");
         }
 

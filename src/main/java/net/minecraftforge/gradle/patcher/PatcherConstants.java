@@ -42,8 +42,14 @@ final class PatcherConstants
 
     // stuff for packaging only
     static final String DIR_PACKAGING              = DIR_LOCAL_CACHE + "/packaging";
+    static final String JAR_OBFUSCATED             = DIR_PACKAGING + "/reobfuscated.jar";
+    static final String BINPATCH_RUN               = DIR_PACKAGING + "/binpatches.pack.lzma";
+    
     static final String DIR_USERDEV                = DIR_PACKAGING + "/userdev";
     static final String DIR_USERDEV_PATCHES        = DIR_USERDEV + "/patches";
+    static final String BINPATCH_DEV               = DIR_USERDEV + "/devbinpatches.pack.lzma";
+    
+    // maybe.. havent decided if these will actually be used or not.
     static final String JAR_USERDEV_SRC            = DIR_USERDEV + "/sources.zip";
     static final String JAR_USERDEV_RES            = DIR_USERDEV + "/resources.zip";
     static final String JAR_USERDEV_CLASSES        = DIR_USERDEV + "/classes.jar";
@@ -61,6 +67,8 @@ final class PatcherConstants
 
     // packaging tasks
     static final String TASK_GEN_PATCHES_USERDEV   = "genPatchesForUserdev";
+    static final String TASK_REOBFUSCATE           = "reobfuscate";
+    static final String TASK_GEN_BIN_PATCHES       = "genBinaryPatches";
 
     // project tasks
     static final String TASK_PROJECT_REMAP_JAR     = "remap" + REPLACE_PROJECT_CAP_NAME + "Jar";
