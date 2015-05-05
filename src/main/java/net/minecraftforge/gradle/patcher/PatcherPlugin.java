@@ -171,6 +171,17 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             genBinPatches.dependsOn(obf);
         }
         
+        TaskExtractNew extractObfClasses = makeTask(TASK_EXTRACT_OBF_CLASSES, TaskExtractNew.class);
+        {
+            // why not merged? it contains the SideOnly and stuff that we want in the classes
+            extractObfClasses.addCleanSource(delayedFile(JAR_CLIENT_FRESH));
+            extractObfClasses.addCleanSource(delayedFile(JAR_SERVER_FRESH));
+            extractObfClasses.addDirtySource(delayedFile(JAR_OBFUSCATED));
+            extractObfClasses.setOutput(delayedFile(JAR_OBF_CLASSES));
+            extractObfClasses.setEnding(".class");
+            extractObfClasses.dependsOn(obf);
+        }
+        
         // ------------------------------
         // for userdev
         

@@ -1,9 +1,9 @@
 package net.minecraftforge.gradle.patcher;
 
-import static net.minecraftforge.gradle.patcher.PatcherConstants.DEFAULT_RESOURCES_DIR;
-import static net.minecraftforge.gradle.patcher.PatcherConstants.DEFAULT_SOURCES_DIR;
-import static net.minecraftforge.gradle.patcher.PatcherConstants.DEFAULT_TEST_RESOURCES_DIR;
-import static net.minecraftforge.gradle.patcher.PatcherConstants.DEFAULT_TEST_SOURCES_DIR;
+import static net.minecraftforge.gradle.patcher.PatcherConstants.DEFAULT_RES_DIR;
+import static net.minecraftforge.gradle.patcher.PatcherConstants.DEFAULT_SRC_DIR;
+import static net.minecraftforge.gradle.patcher.PatcherConstants.DEFAULT_TEST_RES_DIR;
+import static net.minecraftforge.gradle.patcher.PatcherConstants.DEFAULT_TEST_SRC_DIR;
 import groovy.lang.Closure;
 
 import java.io.File;
@@ -223,7 +223,7 @@ public class PatcherProject implements Serializable
 
     public File getSourcesDir()
     {
-        return getFile(sourcesDir, DEFAULT_SOURCES_DIR);
+        return getFile(sourcesDir, DEFAULT_SRC_DIR);
     }
 
     /**
@@ -248,7 +248,7 @@ public class PatcherProject implements Serializable
 
     public File getResourcesDir()
     {
-        return getFile(resourcesDir, DEFAULT_RESOURCES_DIR);
+        return getFile(resourcesDir, DEFAULT_RES_DIR);
     }
 
     /**
@@ -273,7 +273,7 @@ public class PatcherProject implements Serializable
     
     public File getTestSourcesDir()
     {
-        return getFile(testSourcesDir,DEFAULT_TEST_SOURCES_DIR);
+        return getFile(testSourcesDir,DEFAULT_TEST_SRC_DIR);
     }
 
     /**
@@ -298,7 +298,7 @@ public class PatcherProject implements Serializable
 
     public File getTestResourcesDir()
     {
-        return getFile(testResourcesDir, DEFAULT_TEST_RESOURCES_DIR);
+        return getFile(testResourcesDir, DEFAULT_TEST_RES_DIR);
     }
 
     /**

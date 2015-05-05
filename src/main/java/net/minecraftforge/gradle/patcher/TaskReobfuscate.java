@@ -30,7 +30,7 @@ import org.gradle.api.tasks.TaskAction;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 
-public class TaskReobfuscate extends DefaultTask
+class TaskReobfuscate extends DefaultTask
 {
     //@formatter:off
     @InputFile  private Object inJar;
@@ -47,6 +47,10 @@ public class TaskReobfuscate extends DefaultTask
     
     @InputFiles
     private List<Object> libs = Lists.newArrayList();
+    
+    //@formatter:off
+    public TaskReobfuscate() { super(); }
+    //@formatter:on
 
     @TaskAction
     public void doTask() throws IOException

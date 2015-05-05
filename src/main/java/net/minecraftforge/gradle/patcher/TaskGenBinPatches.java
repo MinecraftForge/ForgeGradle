@@ -41,7 +41,7 @@ import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
 import com.nothome.delta.Delta;
 
-public class TaskGenBinPatches extends DefaultTask
+class TaskGenBinPatches extends DefaultTask
 {
     //@formatter:off
     @InputFile  private Object cleanClient;
@@ -59,6 +59,10 @@ public class TaskGenBinPatches extends DefaultTask
     private Multimap<String, String> innerClasses = ArrayListMultimap.create();
     private Set<String>              patchedFiles = new HashSet<String>();
     private Delta                    delta        = new Delta();
+
+    //@formatter:off
+    public TaskGenBinPatches() { super(); }
+    //@formatter:on
 
     @TaskAction
     public void doTask() throws Exception
@@ -279,12 +283,12 @@ public class TaskGenBinPatches extends DefaultTask
     {
         this.dirtyJar = dirtyJar;
     }
-    
+
     @InputFiles
     public FileCollection getPatchSets()
     {
         FileCollection collection = null;
-        
+
         for (Object o : patchSets)
         {
             FileCollection col;
@@ -292,7 +296,7 @@ public class TaskGenBinPatches extends DefaultTask
             {
                 col = (FileCollection) o;
             }
-            else if (o instanceof File && ((File)o).isDirectory())
+            else if (o instanceof File && ((File) o).isDirectory())
             {
                 col = getProject().fileTree(o);
             }
@@ -300,13 +304,13 @@ public class TaskGenBinPatches extends DefaultTask
             {
                 col = getProject().files(o);
             }
-            
+
             if (collection == null)
                 collection = col;
             else
                 collection = collection.plus(col);
         }
-        
+
         return collection;
     }
 
