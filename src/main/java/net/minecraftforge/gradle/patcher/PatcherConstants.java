@@ -41,6 +41,7 @@ final class PatcherConstants
     static final String EXC_PROJECT              = DIR_PROJECT_CACHE + "/extracted.exc";
 
     // stuff for packaging only
+    static final String DIR_OUTPUT               = "build/distributions";
     static final String DIR_PACKAGING            = DIR_LOCAL_CACHE + "/packaging";
     static final String JAR_OBFUSCATED           = DIR_PACKAGING + "/reobfuscated.jar";
     static final String BINPATCH_RUN             = DIR_PACKAGING + "/binpatches.pack.lzma";
@@ -70,6 +71,7 @@ final class PatcherConstants
     static final String TASK_REOBFUSCATE         = "reobfuscate";
     static final String TASK_GEN_BIN_PATCHES     = "genBinaryPatches";
     static final String TASK_EXTRACT_OBF_CLASSES = "extractNonMcClasses";
+    static final String TASK_OUTPUT_JAR          = "outputJar";
 
     // project tasks
     static final String TASK_PROJECT_REMAP_JAR   = "remap" + REPLACE_PROJECT_CAP_NAME + "Jar";

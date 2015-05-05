@@ -27,9 +27,12 @@ import net.minecraftforge.gradle.util.json.version.Version;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Task;
+import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.Delete;
+import org.gradle.api.tasks.bundling.Jar;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
@@ -180,6 +183,15 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             extractObfClasses.setOutput(delayedFile(JAR_OBF_CLASSES));
             extractObfClasses.setEnding(".class");
             extractObfClasses.dependsOn(obf);
+        }
+        
+        Jar outputJar = makeTask(TASK_OUTPUT_JAR, Jar.class);
+        {
+            outputJar.from(delayedTree(JAR_OBF_CLASSES));
+            outputJar.from(delayedFile(BINPATCH_RUN));
+            outputJar.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
+            outputJar.getOutputs().upToDateWhen(Constants.CALL_FALSE); // rebuild every time.
+            outputJar.setDestinationDir(new File(DIR_OUTPUT));
         }
         
         // ------------------------------
@@ -534,6 +546,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         ProcessSrcJarTask patchJar = (ProcessSrcJarTask) project.getTasks().getByName(TASK_PATCH);
         DeobfuscateJar deobfJar = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF);
         TaskGenBinPatches binPatches = (TaskGenBinPatches) project.getTasks().getByName(TASK_GEN_BIN_PATCHES);
+        Jar outputJar = (Jar) project.getTasks().getByName(TASK_OUTPUT_JAR);
         
         List<File> addedExcs = Lists.newArrayListWithCapacity(patchersList.size());
         List<File> addedSrgs = Lists.newArrayListWithCapacity(patchersList.size());
@@ -630,6 +643,9 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             // add patch sets to bin patches
             binPatches.addPatchSet(patcher.getPatchDir());
             
+            // add resources to output
+            outputJar.from(patcher.getDelayedResourcesDir());
+            
             // add task dependencies
             ideTask.dependsOn(projectString(TASK_PROJECT_MAKE_START, patcher));
             ideTask.dependsOn(projectString(TASK_PROJECT_EXTRACT_SRC, patcher), projectString(TASK_PROJECT_EXTRACT_RES, patcher));
@@ -642,6 +658,11 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         // PACKAGING
         
         PatcherProject patcher = patchersList.get(patchersList.size()-1);
+        
+        if (Strings.isNullOrEmpty(outputJar.getBaseName()))
+        {
+            outputJar.setBaseName(patcher.getCapName());
+        }
         
         TaskReobfuscate reobf = (TaskReobfuscate) project.getTasks().getByName(TASK_REOBFUSCATE);
         reobf.setInJar(delayedFile(projectString(JAR_PROJECT_RECOMPILED, patcher)));
