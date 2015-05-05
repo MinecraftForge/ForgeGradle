@@ -296,6 +296,7 @@ public abstract class DevBasePlugin extends BasePlugin<DevExtension>
             
             Copy copyNatives = makeTask("extractNatives", Copy.class);
             {
+                copyNatives.from(delayedFile(Constants.NATIVES_DIR));
                 copyNatives.exclude("META-INF", "META-INF/**", "META-INF/*");
                 copyNatives.into(delayedFile(DevConstants.ECLIPSE_NATIVES));
                 copyNatives.dependsOn("extractWorkspace", extractNatives);
