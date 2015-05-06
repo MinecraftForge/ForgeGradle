@@ -31,7 +31,6 @@ import org.gradle.api.tasks.OutputFile;
 import com.github.abrarsyed.jastyle.ASFormatter;
 import com.github.abrarsyed.jastyle.OptParser;
 import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
@@ -219,12 +218,11 @@ public class PostDecompileTask extends EditJarTask
      */
     private static class ContextProvider implements ContextualPatch.IContextProvider
     {
-        private static final Pattern LINE_PATTERN = Pattern.compile("\r\n|\r|\n");
         private List<String> data;
 
         public ContextProvider(String file)
         {
-            data = Splitter.on(LINE_PATTERN).splitToList(file);
+            data = Constants.lines(file);
         }
 
         @Override

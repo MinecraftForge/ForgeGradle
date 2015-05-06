@@ -9,7 +9,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.util.StringUtils;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
@@ -56,7 +55,7 @@ public class ObtainFernFlowerTask extends CachedTask
 
         while ((entry = zin.getNextEntry()) != null)
         {
-            if (StringUtils.lower(entry.getName()).endsWith("fernflower.jar"))
+            if (Constants.lower(entry.getName()).endsWith("fernflower.jar"))
             {
                 ff.getParentFile().mkdirs();
                 Files.touch(ff);

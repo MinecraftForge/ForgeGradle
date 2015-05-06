@@ -40,13 +40,13 @@ import com.google.common.io.ByteStreams;
 public class SignJar extends DefaultTask implements PatternFilterable
 {
     //@formatter:off
-    private final PatternSet   patternSet = new PatternSet();
-    @Input      private Object alias;
-    @Input      private Object storePass;
-    @Input      private Object keyPass;
-    @Input      private Object keyStore;
-    @InputFile  private Object inputFile;
-    @OutputFile private Object outputFile;
+    @Input      private PatternSet patternSet = new PatternSet();
+    @Input      private Object     alias;
+    @Input      private Object     storePass;
+    @Input      private Object     keyPass;
+    @Input      private Object     keyStore;
+    @InputFile  private Object     inputFile;
+    @OutputFile private Object     outputFile;
     //@formatter:on
 
     @TaskAction

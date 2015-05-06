@@ -1,16 +1,15 @@
 package net.minecraftforge.gradle.util.mcp;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.util.StringUtils;
 
 import com.google.code.regexp.Matcher;
 import com.google.code.regexp.Pattern;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 
 public class FFPatcher
 {
@@ -54,8 +53,7 @@ public class FFPatcher
 
         text = text.replaceAll(TRAILINGZERO, "$1$2");
 
-        List<String> lines = new ArrayList<String>();
-        lines.addAll(StringUtils.lines(text));
+        List<String> lines = Lists.newArrayList(Constants.lines(text));
 
         processClass(lines, "", 0, "", ""); // mutates the list
         text = Joiner.on(Constants.NEWLINE).join(lines);

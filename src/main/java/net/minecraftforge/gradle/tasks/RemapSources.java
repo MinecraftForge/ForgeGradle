@@ -8,7 +8,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.util.StringUtils;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import net.minecraftforge.gradle.util.mcp.JavadocAdder;
 
@@ -80,7 +79,7 @@ public class RemapSources extends EditJarTask
     public String asRead(String name, String text)
     {
         ArrayList<String> newLines = new ArrayList<String>();
-        for (String line : StringUtils.lines(text))
+        for (String line : Constants.lines(text))
         {
             // basically all this code is to find the javadocs for a field ebfore replacing it.
             // if we arnt doing javadocs.. screw dat.

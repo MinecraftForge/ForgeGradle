@@ -1,5 +1,15 @@
 package net.minecraftforge.gradle.util.mcp;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import net.minecraftforge.gradle.common.Constants;
+
 import com.google.code.regexp.Matcher;
 import com.google.code.regexp.Pattern;
 import com.google.common.base.Joiner;
@@ -7,12 +17,6 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-
-import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.util.StringUtils;
-
-import java.util.*;
-import java.util.Map.Entry;
 
 public class FmlCleanup
 {
@@ -266,9 +270,9 @@ public class FmlCleanup
         {
             index = findtype;
         }
-        else if (last.containsKey(StringUtils.lower(findtype)))
+        else if (last.containsKey(Constants.lower(findtype)))
         {
-            index = StringUtils.lower(findtype);
+            index = Constants.lower(findtype);
         }
         else if (remap.containsKey(type))
         {
@@ -285,7 +289,7 @@ public class FmlCleanup
                 type = type.replaceAll("\\[\\]\\[\\]", "[]");
             }
 
-            String name = StringUtils.lower(type);
+            String name = Constants.lower(type);
             // Strip single dots that might happen because of inner class references
             name = name.replace(".", "");
             boolean skip_zero = true;
@@ -297,13 +301,13 @@ public class FmlCleanup
                 name = name.replace("[]", "").replace("...", "");
             }
 
-            last.put(StringUtils.lower(type), new Holder(0, skip_zero, name));
-            index = StringUtils.lower(type);
+            last.put(Constants.lower(type), new Holder(0, skip_zero, name));
+            index = Constants.lower(type);
         }
 
         if (Strings.isNullOrEmpty(index))
         {
-            return StringUtils.lower(type);
+            return Constants.lower(type);
         }
 
         Holder holder = last.get(index);

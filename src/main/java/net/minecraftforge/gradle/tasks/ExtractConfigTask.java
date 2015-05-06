@@ -3,129 +3,74 @@ package net.minecraftforge.gradle.tasks;
 import groovy.lang.Closure;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Enumeration;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipException;
-import java.util.zip.ZipFile;
+import java.util.Set;
 
+import net.minecraftforge.gradle.util.ExtractionVisitor;
+import net.minecraftforge.gradle.util.ZipFileTree;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
-import net.minecraftforge.gradle.util.delayed.DelayedFile;
 
-import org.apache.shiro.util.AntPathMatcher;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.FileTreeElement;
+import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.util.PatternFilterable;
+import org.gradle.api.tasks.util.PatternSet;
 
-import com.google.common.io.ByteStreams;
-
-public class ExtractConfigTask extends CachedTask
+public class ExtractConfigTask extends CachedTask implements PatternFilterable
 {
-    private final AntPathMatcher antMatcher = new AntPathMatcher();
 
     @Input
-    private String config;
+    private String     config;
 
     @Input
-    private List<String> excludes = new LinkedList<String>();
+    private PatternSet patternSet       = new PatternSet();
 
     @Input
-    private List<Closure<Boolean>> excludeCalls = new LinkedList<Closure<Boolean>>();
-
-    @Input
-    private List<String> includes = new LinkedList<String>();
+    private boolean    includeEmptyDirs = true;
 
     @Input
     @Optional
-    private boolean clean = false;
+    private boolean    clean            = false;
 
     @Cached
     @OutputDirectory
-    private DelayedFile out;
+    private Object     destinationDir   = null;
 
     @TaskAction
-    public void doTask() throws ZipException, IOException
+    public void doTask() throws IOException
     {
-        File outDir = getOut();
-        outDir.mkdirs();
+        File dest = getDestinationDir();
+
+        if (shouldClean())
+        {
+            delete(dest);
+        }
+
+        dest.mkdirs();
+
+        ExtractionVisitor visitor = new ExtractionVisitor(dest, isIncludeEmptyDirs(), patternSet.getAsSpec());
 
         for (File source : getConfigFiles())
         {
             getLogger().debug("Extracting: " + source);
-
-            ZipFile input = new ZipFile(source);
-            try
-            {
-                Enumeration<? extends ZipEntry> itr = input.entries();
-    
-                while (itr.hasMoreElements())
-                {
-                    ZipEntry entry = itr.nextElement();
-                    if (shouldExtract(entry.getName()))
-                    {
-                        File outFile = new File(outDir, entry.getName());
-                        getLogger().debug("  " + outFile);
-                        if (!entry.isDirectory())
-                        {
-                            File outParent = outFile.getParentFile();
-                            if (!outParent.exists())
-                            {
-                                outParent.mkdirs();
-                            }
-    
-                            FileOutputStream fos = new FileOutputStream(outFile);
-                            InputStream ins = input.getInputStream(entry);
-    
-                            ByteStreams.copy(ins, fos);
-    
-                            fos.close();
-                            ins.close();
-                        }
-                    }
-                }
-            }
-            finally
-            {
-                input.close();
-            }
+            (new ZipFileTree(source)).visit(visitor);
         }
     }
-    
-    private boolean shouldExtract(String path)
+
+    private void delete(File f) throws IOException
     {
-        for (String exclude : excludes)
+        if (f.isDirectory())
         {
-            if (antMatcher.matches(exclude, path))
-            {
-                return false;
-            }
+            for (File c : f.listFiles())
+                delete(c);
         }
-        
-        for (Closure<Boolean> exclude : excludeCalls)
-        {
-            if (exclude.call(path).booleanValue())
-            {
-                return false;
-            }
-        }
-
-        for (String include : includes)
-        {
-            if (antMatcher.matches(include, path))
-            {
-                return true;
-            }
-        }
-
-        return includes.size() == 0; //If it gets to here, then it matches nothing. default to true, if no includes were specified
+        f.delete();
     }
 
     public String getConfig()
@@ -137,62 +82,34 @@ public class ExtractConfigTask extends CachedTask
     {
         this.config = config;
     }
-    
+
     @Optional
     @InputFiles
     public FileCollection getConfigFiles()
     {
         return getProject().getConfigurations().getByName(config);
     }
-
-    public File getOut()
-    {
-        return out.call();
-    }
-
-    public void setOut(DelayedFile out)
-    {
-        this.out = out;
-    }
     
-    public List<String> getIncludes()
+    public void setDestinationDir(Object dest)
     {
-        return includes;
-    }
-    
-    public ExtractConfigTask include(String... paterns)
-    {
-        for (String patern : paterns)
-        {
-            includes.add(patern);
-        }
-        return this;
-    }
-    
-    public List<String> getExcludes()
-    {
-        return excludes;
+        this.destinationDir = dest;
     }
 
-    public ExtractConfigTask exclude(String... paterns)
+    public File getDestinationDir()
     {
-        for (String patern : paterns)
-        {
-            excludes.add(patern);
-        }
-        return this;
+        return getProject().file(destinationDir);
     }
-    
-    public List<Closure<Boolean>> getExcludeCalls()
+
+    public boolean isIncludeEmptyDirs()
     {
-        return excludeCalls;
+        return includeEmptyDirs;
     }
-    
-    public void exclude(Closure<Boolean> c)
+
+    public void setIncludeEmptyDirs(boolean includeEmptyDirs)
     {
-        excludeCalls.add(c);
+        this.includeEmptyDirs = includeEmptyDirs;
     }
-    
+
     @Override
     protected boolean defaultCache()
     {
@@ -207,5 +124,79 @@ public class ExtractConfigTask extends CachedTask
     public void setClean(boolean clean)
     {
         this.clean = clean;
+    }
+
+    @Override
+    public PatternFilterable exclude(String... arg0)
+    {
+        return patternSet.exclude(arg0);
+    }
+
+    @Override
+    public PatternFilterable exclude(Iterable<String> arg0)
+    {
+        return patternSet.exclude(arg0);
+    }
+
+    @Override
+    public PatternFilterable exclude(Spec<FileTreeElement> arg0)
+    {
+        return patternSet.exclude(arg0);
+    }
+
+    @Override
+    @SuppressWarnings("rawtypes")
+    public PatternFilterable exclude(Closure arg0)
+    {
+        return patternSet.exclude(arg0);
+    }
+
+    @Override
+    public Set<String> getExcludes()
+    {
+        return patternSet.getExcludes();
+    }
+
+    @Override
+    public Set<String> getIncludes()
+    {
+        return patternSet.getIncludes();
+    }
+
+    @Override
+    public PatternFilterable include(String... arg0)
+    {
+        return patternSet.include(arg0);
+    }
+
+    @Override
+    public PatternFilterable include(Iterable<String> arg0)
+    {
+        return patternSet.include(arg0);
+    }
+
+    @Override
+    public PatternFilterable include(Spec<FileTreeElement> arg0)
+    {
+        return patternSet.include(arg0);
+    }
+
+    @Override
+    @SuppressWarnings("rawtypes")
+    public PatternFilterable include(Closure arg0)
+    {
+        return patternSet.include(arg0);
+    }
+
+    @Override
+    public PatternFilterable setExcludes(Iterable<String> arg0)
+    {
+        return patternSet.setExcludes(arg0);
+    }
+
+    @Override
+    public PatternFilterable setIncludes(Iterable<String> arg0)
+    {
+        return patternSet.setIncludes(arg0);
     }
 }

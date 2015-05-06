@@ -16,6 +16,7 @@ import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.util.PatternSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,11 +104,22 @@ class CacheUtil
                         LOGGER.debug(Constants.hash(file) + " " + file);
                     }
                 }
+                else if (obj instanceof PatternSet)
+                {
+                    PatternSet set = (PatternSet)obj;
+                    hashes.add(Constants.hash(
+                            "" +
+                            set.isCaseSensitive() + " " +
+                            set.getIncludes().toString() + " " +
+                            set.getExcludes().toString() + " " +
+                            set.getIncludeSpecs().size() + " " +
+                            set.getExcludeSpecs().size()
+                            ));
+                }
                 else
                 {
                     hashes.add(Constants.hash(obj.toString()));
                 }
-
             }
         }
 

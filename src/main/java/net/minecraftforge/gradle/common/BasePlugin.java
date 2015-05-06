@@ -305,7 +305,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         
         ExtractConfigTask extractNatives = makeTask(TASK_EXTRACT_NATIVES, ExtractConfigTask.class);
         {
-            extractNatives.setOut(delayedFile(DIR_NATIVES));
+            extractNatives.setDestinationDir(delayedFile(DIR_NATIVES));
             extractNatives.setConfig(CONFIG_NATIVES);
             extractNatives.exclude("META-INF/**", "META-INF/**");
             extractNatives.doesCache();
@@ -329,14 +329,14 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         ExtractConfigTask extractMcpData = makeTask(TASK_EXTRACT_MCP, ExtractConfigTask.class);
         {
-            extractMcpData.setOut(delayedFile(DIR_MCP_DATA));
+            extractMcpData.setDestinationDir(delayedFile(DIR_MCP_DATA));
             extractMcpData.setConfig(CONFIG_MCP_DATA);
             extractMcpData.setDoesCache(true);
         }
 
         ExtractConfigTask extractMcpMappings = makeTask(TASK_EXTRACT_MAPPINGS, ExtractConfigTask.class);
         {
-            extractMcpMappings.setOut(delayedFile(DIR_MCP_MAPPINGS));
+            extractMcpMappings.setDestinationDir(delayedFile(DIR_MCP_MAPPINGS));
             extractMcpMappings.setConfig(CONFIG_MAPPINGS);
             extractMcpMappings.setDoesCache(true);
         }

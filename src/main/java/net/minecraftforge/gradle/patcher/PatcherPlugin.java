@@ -16,6 +16,7 @@ import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.CreateStartTask;
 import net.minecraftforge.gradle.tasks.DeobfuscateJar;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
+import net.minecraftforge.gradle.tasks.ExtractTask;
 import net.minecraftforge.gradle.tasks.GenEclipseRunTask;
 import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
@@ -28,7 +29,6 @@ import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Task;
 import org.gradle.api.file.DuplicatesStrategy;
-import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.bundling.Jar;
 
@@ -219,21 +219,23 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             remapCleanTask.dependsOn(TASK_POST_DECOMP);
         }
         
-        Object delayedRemapped = delayedTree(JAR_REMAPPED);
+        Object delayedRemapped = delayedFile(JAR_REMAPPED);
         
-        Copy extractSrc = makeTask("extractCleanSources", Copy.class);
+        ExtractTask extractSrc = makeTask("extractCleanSources", ExtractTask.class);
         {
             extractSrc.from(delayedRemapped);
             extractSrc.into(subWorkspace("Clean" + DIR_EXTRACTED_SRC));
             extractSrc.include("*.java", "**/*.java");
+            extractSrc.setDoesCache(false);
             extractSrc.dependsOn(remapCleanTask, TASK_GEN_PROJECTS);
         }
         
-        Copy extractRes = makeTask("extractCleanResources", Copy.class);
+        ExtractTask extractRes = makeTask("extractCleanResources", ExtractTask.class);
         {
             extractRes.from(delayedRemapped);
             extractRes.into(subWorkspace("Clean" + DIR_EXTRACTED_RES));
             extractRes.exclude("*.java", "**/*.java");
+            extractRes.setDoesCache(false);
             extractRes.dependsOn(remapCleanTask, TASK_GEN_PROJECTS);
         }
         
@@ -327,21 +329,23 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                 patcher.getDelayedTestResourcesDir());
         
         
-        Object delayedRemapped = delayedTree(projectString(JAR_PROJECT_REMAPPED, patcher));
+        Object delayedRemapped = delayedFile(projectString(JAR_PROJECT_REMAPPED, patcher));
         
-        Copy extract = makeTask(projectString(TASK_PROJECT_EXTRACT_SRC, patcher), Copy.class);
+        ExtractTask extract = makeTask(projectString(TASK_PROJECT_EXTRACT_SRC, patcher), ExtractTask.class);
         {
             extract.from(delayedRemapped);
             extract.into(subWorkspace(patcher.getCapName() + DIR_EXTRACTED_SRC));
             extract.include("*.java", "**/*.java");
+            extract.setDoesCache(false);
             extract.dependsOn(remapTask, TASK_GEN_PROJECTS);
         }
         
-        extract = makeTask(projectString(TASK_PROJECT_EXTRACT_RES, patcher), Copy.class);
+        extract = makeTask(projectString(TASK_PROJECT_EXTRACT_RES, patcher), ExtractTask.class);
         {
             extract.from(delayedRemapped);
             extract.into(subWorkspace(patcher.getCapName() + DIR_EXTRACTED_RES));
             extract.exclude("*.java", "**/*.java");
+            extract.setDoesCache(false);
             extract.dependsOn(remapTask, TASK_GEN_PROJECTS);
         }
         

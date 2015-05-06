@@ -3,61 +3,50 @@ package net.minecraftforge.gradle.tasks;
 import groovy.lang.Closure;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Enumeration;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+import java.util.Set;
 
+import net.minecraftforge.gradle.util.ExtractionVisitor;
+import net.minecraftforge.gradle.util.ZipFileTree;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
-import net.minecraftforge.gradle.util.delayed.DelayedFile;
 
-import org.apache.shiro.util.AntPathMatcher;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.FileTreeElement;
+import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.util.PatternFilterable;
+import org.gradle.api.tasks.util.PatternSet;
 
-import com.google.common.io.ByteStreams;
-
-public class ExtractTask extends CachedTask
+public class ExtractTask extends CachedTask implements PatternFilterable
 {
-    private final AntPathMatcher antMatcher = new AntPathMatcher();
-    
+
     @InputFiles
-    private LinkedHashSet<DelayedFile> sourcePaths = new LinkedHashSet<DelayedFile>();
-    
+    private LinkedHashSet<Object> sourcePaths      = new LinkedHashSet<Object>();
+
     @Input
-    private List<String> excludes = new LinkedList<String>();
-    
+    private PatternSet            patternSet       = new PatternSet();
+
     @Input
-    private List<Closure<Boolean>> excludeCalls = new LinkedList<Closure<Boolean>>();
-    
-    @Input
-    private List<String> includes = new LinkedList<String>();
-    
-    @Input
-    private boolean includeEmptyDirs = true;
+    private boolean               includeEmptyDirs = true;
 
     @Input
     @Optional
-    private boolean clean = false;  
-    
+    private boolean               clean            = false;
+
     @Cached
     @OutputDirectory
-    private DelayedFile destinationDir = null;
+    private Object                destinationDir   = null;
 
     @TaskAction
     public void doTask() throws IOException
     {
-        File dest = destinationDir.call();
+        File dest = getDestinationDir();
 
         if (shouldClean())
         {
@@ -65,167 +54,55 @@ public class ExtractTask extends CachedTask
         }
 
         dest.mkdirs();
+        
+        ExtractionVisitor visitor = new ExtractionVisitor(dest, isIncludeEmptyDirs(), patternSet.getAsSpec());
 
-        for (DelayedFile source : sourcePaths)
+        for (File source : getSourcePaths())
         {
             getLogger().debug("Extracting: " + source);
-
-            ZipFile input = new ZipFile(source.call());
-            try
-            {
-                Enumeration<? extends ZipEntry> itr = input.entries();
-    
-                while (itr.hasMoreElements())
-                {
-                    ZipEntry entry = itr.nextElement();
-                    if (shouldExtract(entry.getName()))
-                    {
-                        File out = new File(dest, entry.getName());
-                        getLogger().debug("  " + out);
-                        if (entry.isDirectory())
-                        {
-                            if (includeEmptyDirs && !out.exists())
-                            {
-                                out.mkdirs();
-                            }
-                        }
-                        else
-                        {
-                            File outParent = out.getParentFile();
-                            if (!outParent.exists())
-                            {
-                                outParent.mkdirs();
-                            }
-    
-                            FileOutputStream fos = new FileOutputStream(out);
-                            InputStream ins = input.getInputStream(entry);
-    
-                            ByteStreams.copy(ins, fos);
-    
-                            fos.close();
-                            ins.close();
-                        }
-                    }
-                }
-            }
-            finally
-            {
-                input.close();
-            }
+            (new ZipFileTree(source)).visit(visitor);
         }
     }
 
     private void delete(File f) throws IOException
     {
-        if (f.isDirectory()) {
+        if (f.isDirectory())
+        {
             for (File c : f.listFiles())
                 delete(c);
         }
         f.delete();
     }
 
-
-    private boolean shouldExtract(String path)
+    public ExtractTask from(Object... paths)
     {
-        for (String exclude : excludes)
-        {
-            if (antMatcher.matches(exclude, path))
-            {
-                return false;
-            }
-        }
-        
-        for (Closure<Boolean> exclude : excludeCalls)
-        {
-            if (exclude.call(path).booleanValue())
-            {
-                return false;
-            }
-        }
-
-        for (String include : includes)
-        {
-            if (antMatcher.matches(include, path))
-            {
-                return true;
-            }
-        }
-
-        return includes.size() == 0; //If it gets to here, then it matches nothing. default to true, if no includes were specified
-    }
-
-    public ExtractTask from(DelayedFile... paths)
-    {
-        for (DelayedFile path : paths)
+        for (Object path : paths)
         {
             sourcePaths.add(path);
         }
         return this;
     }
 
-    public ExtractTask into(DelayedFile target)
+    public ExtractTask into(Object target)
     {
         destinationDir = target;
         return this;
     }
-    
-    public ExtractTask setDestinationDir(DelayedFile target)
+
+    public ExtractTask setDestinationDir(Object target)
     {
         destinationDir = target;
         return this;
     }
-    
+
     public File getDestinationDir()
     {
-        return destinationDir.call();
+        return getProject().file(destinationDir);
     }
 
-    public List<String> getIncludes()
-    {
-        return includes;
-    }
-    
-    public ExtractTask include(String... paterns)
-    {
-        for (String patern : paterns)
-        {
-            includes.add(patern);
-        }
-        return this;
-    }
-    
-    public List<String> getExcludes()
-    {
-        return excludes;
-    }
-
-    public ExtractTask exclude(String... paterns)
-    {
-        for (String patern : paterns)
-        {
-            excludes.add(patern);
-        }
-        return this;
-    }
-    
-    public List<Closure<Boolean>> getExcludeCalls()
-    {
-        return excludeCalls;
-    }
-    
-    public void exclude(Closure<Boolean> c)
-    {
-        excludeCalls.add(c);
-    }
-    
     public FileCollection getSourcePaths()
     {
-        FileCollection collection = getProject().files(new Object[] {});
-        
-        for (DelayedFile file : sourcePaths)
-            collection = collection.plus(getProject().files(file));
-                
-        return collection;
+        return getProject().files(sourcePaths);
     }
 
     public boolean isIncludeEmptyDirs()
@@ -237,7 +114,7 @@ public class ExtractTask extends CachedTask
     {
         this.includeEmptyDirs = includeEmptyDirs;
     }
-    
+
     @Override
     protected boolean defaultCache()
     {
@@ -252,5 +129,79 @@ public class ExtractTask extends CachedTask
     public void setClean(boolean clean)
     {
         this.clean = clean;
+    }
+
+    @Override
+    public PatternFilterable exclude(String... arg0)
+    {
+        return patternSet.exclude(arg0);
+    }
+
+    @Override
+    public PatternFilterable exclude(Iterable<String> arg0)
+    {
+        return patternSet.exclude(arg0);
+    }
+
+    @Override
+    public PatternFilterable exclude(Spec<FileTreeElement> arg0)
+    {
+        return patternSet.exclude(arg0);
+    }
+
+    @Override
+    @SuppressWarnings("rawtypes")
+    public PatternFilterable exclude(Closure arg0)
+    {
+        return patternSet.exclude(arg0);
+    }
+
+    @Override
+    public Set<String> getExcludes()
+    {
+        return patternSet.getExcludes();
+    }
+
+    @Override
+    public Set<String> getIncludes()
+    {
+        return patternSet.getIncludes();
+    }
+
+    @Override
+    public PatternFilterable include(String... arg0)
+    {
+        return patternSet.include(arg0);
+    }
+
+    @Override
+    public PatternFilterable include(Iterable<String> arg0)
+    {
+        return patternSet.include(arg0);
+    }
+
+    @Override
+    public PatternFilterable include(Spec<FileTreeElement> arg0)
+    {
+        return patternSet.include(arg0);
+    }
+
+    @Override
+    @SuppressWarnings("rawtypes")
+    public PatternFilterable include(Closure arg0)
+    {
+        return patternSet.include(arg0);
+    }
+
+    @Override
+    public PatternFilterable setExcludes(Iterable<String> arg0)
+    {
+        return patternSet.setExcludes(arg0);
+    }
+
+    @Override
+    public PatternFilterable setIncludes(Iterable<String> arg0)
+    {
+        return patternSet.setIncludes(arg0);
     }
 }

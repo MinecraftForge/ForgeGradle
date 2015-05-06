@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
@@ -26,7 +28,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import net.minecraftforge.gradle.patcher.PatcherExtension;
-import net.minecraftforge.gradle.util.StringUtils;
 import net.minecraftforge.gradle.util.json.version.OS;
 
 import org.gradle.api.Project;
@@ -39,7 +40,9 @@ import au.com.bytecode.opencsv.CSVParser;
 import au.com.bytecode.opencsv.CSVReader;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
+import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
 
 public class Constants
@@ -51,7 +54,7 @@ public class Constants
 
         public String toString()
         {
-            return StringUtils.lower(name()).replace("bit_", "");
+            return lower(name()).replace("bit_", "");
         }
     }
 
@@ -224,7 +227,7 @@ public class Constants
 
     private static SystemArch getArch()
     {
-        String name = StringUtils.lower(System.getProperty("os.arch"));
+        String name = lower(System.getProperty("os.arch"));
         if (name.contains("64"))
         {
             return SystemArch.BIT_64;
@@ -232,6 +235,24 @@ public class Constants
         else
         {
             return SystemArch.BIT_32;
+        }
+    }
+    
+    public static String lower(String string)
+    {
+        return string.toLowerCase(Locale.ENGLISH);
+    }
+    
+    public static List<String> lines(final String text)
+    {
+        try
+        {
+            return ImmutableList.copyOf(CharStreams.readLines(new StringReader(text)));
+        }
+        catch (IOException e)
+        {
+            // IMPOSSIBRU
+            return ImmutableList.of();
         }
     }
     
