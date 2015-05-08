@@ -200,8 +200,17 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         TaskGenPatches genUserdevPatches = makeTask(TASK_GEN_PATCHES_USERDEV, TaskGenPatches.class);
         {
             genUserdevPatches.setPatchDir(delayedFile(DIR_USERDEV_PATCHES));
-            genUserdevPatches.addOriginalSource(delayedFile(JAR_DECOMP_POST)); // add vanilla source
-            genUserdevPatches.dependsOn(TASK_GEN_PROJECTS);
+            genUserdevPatches.addOriginalSource(delayedFile(JAR_DECOMP_POST)); // add vanilla SRG named source
+            genUserdevPatches.dependsOn(TASK_POST_DECOMP);
+        }
+        
+        TaskExtractNew extractNonMcSources = makeTask(TASK_EXTRACT_OBF_SOURCES, TaskExtractNew.class);
+        {
+            // why not merged? it contains the SideOnly and stuff that we want in the classes
+            extractNonMcSources.addCleanSource(delayedFile(JAR_DECOMP_POST));
+            extractNonMcSources.setOutput(delayedFile(JAR_USERDEV_SOURCES));
+            extractNonMcSources.setEnding(".java");
+            extractNonMcSources.dependsOn(TASK_POST_DECOMP);
         }
     }
     
@@ -458,7 +467,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             retromap.dependsOn(TASK_GENERATE_SRGS, extractExc, extractRangemap);
         }
 
-        ApplyS2STask retromapNonMc = makeTask(projectString(TASK_PROJECT_NM_RETROMAP, patcher), ApplyS2STask.class);
+        ApplyS2STask retromapNonMc = makeTask(projectString(TASK_PROJECT_RETRO_NONMC, patcher), ApplyS2STask.class);
         {
             retromapNonMc.addSource(patcher.getDelayedSourcesDir());
             retromapNonMc.setOut(delayedFile(projectString(JAR_PROJECT_RETRO_NONMC, patcher)));
@@ -489,7 +498,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         project.getTasks().remove(project.getTasks().getByName(projectString(TASK_PROJECT_GEN_EXC, patcher)));
         project.getTasks().remove(project.getTasks().getByName(projectString(TASK_PROJECT_RANGEMAP, patcher)));
         project.getTasks().remove(project.getTasks().getByName(projectString(TASK_PROJECT_RETROMAP, patcher)));
-        project.getTasks().remove(project.getTasks().getByName(projectString(TASK_PROJECT_NM_RETROMAP, patcher)));
+        project.getTasks().remove(project.getTasks().getByName(projectString(TASK_PROJECT_RETRO_NONMC, patcher)));
     }
     
     public void afterEvaluate()
@@ -546,7 +555,6 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         Task setupTask = project.getTasks().getByName(TASK_SETUP);
         Task ideTask = project.getTasks().getByName(TASK_GEN_IDES);
         Task genPatchesTask = project.getTasks().getByName(TASK_GEN_PATCHES);
-        TaskGenPatches userdevPatches = (TaskGenPatches) project.getTasks().getByName(TASK_GEN_PATCHES_USERDEV);
         ProcessSrcJarTask patchJar = (ProcessSrcJarTask) project.getTasks().getByName(TASK_PATCH);
         DeobfuscateJar deobfJar = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF);
         TaskGenBinPatches binPatches = (TaskGenBinPatches) project.getTasks().getByName(TASK_GEN_BIN_PATCHES);
@@ -578,7 +586,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             
             // get EXCs and SRGs for retromapping
             ApplyS2STask retromap = (ApplyS2STask) project.getTasks().getByName(projectString(TASK_PROJECT_RETROMAP, patcher));
-            ApplyS2STask retromapNonMc = (ApplyS2STask) project.getTasks().getByName(projectString(TASK_PROJECT_NM_RETROMAP, patcher));
+            ApplyS2STask retromapNonMc = (ApplyS2STask) project.getTasks().getByName(projectString(TASK_PROJECT_RETRO_NONMC, patcher));
             
             // add from previous projects
             for (File f : addedExcs)
@@ -636,13 +644,9 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                     PatcherProject genFrom = getExtension().getProjects().getByName(patcher.getGenPatchesFrom());
                     genPatches.addOriginalSource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, genFrom)));
                     genPatches.addOriginalSource(delayedFile(projectString(JAR_PROJECT_RETRO_NONMC, genFrom)));
-                    genPatches.dependsOn(projectString(TASK_PROJECT_RETROMAP, genFrom), projectString(TASK_PROJECT_NM_RETROMAP, genFrom));
+                    genPatches.dependsOn(projectString(TASK_PROJECT_RETROMAP, genFrom), projectString(TASK_PROJECT_RETRO_NONMC, genFrom));
                 }
             }
-            
-            // add retromapped nonMc jar to userdev patches task
-            userdevPatches.addOriginalSource(delayedFile(projectString(JAR_PROJECT_RETRO_NONMC, patcher)));
-            userdevPatches.dependsOn(retromapNonMc);
             
             // add patch sets to bin patches
             binPatches.addPatchSet(patcher.getPatchDir());
@@ -672,8 +676,14 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         reobf.setInJar(delayedFile(projectString(JAR_PROJECT_RECOMPILED, patcher)));
         reobf.dependsOn(projectString(TASK_PROJECT_COMPILE, patcher));
         
+        TaskGenPatches userdevPatches = (TaskGenPatches) project.getTasks().getByName(TASK_GEN_PATCHES_USERDEV);
         userdevPatches.addChangedSource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, patcher)));
         userdevPatches.dependsOn(projectString(TASK_PROJECT_RETROMAP, patcher));
+        
+        TaskExtractNew userdevSources = (TaskExtractNew) project.getTasks().getByName(TASK_EXTRACT_OBF_SOURCES);
+        userdevSources.addDirtySource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, patcher)));
+        userdevSources.addDirtySource(delayedFile(projectString(JAR_PROJECT_RETRO_NONMC, patcher)));
+        userdevSources.dependsOn(projectString(TASK_PROJECT_RETROMAP, patcher), projectString(TASK_PROJECT_RETRO_NONMC, patcher));
     }
     
     /**

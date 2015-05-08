@@ -48,12 +48,10 @@ final class PatcherConstants
 
     static final String DIR_USERDEV              = DIR_PACKAGING + "/userdev";
     static final String DIR_USERDEV_PATCHES      = DIR_USERDEV + "/patches";
+    static final String JAR_USERDEV_SOURCES      = DIR_USERDEV + "/sources.zip";
+    static final String JAR_USERDEV_RES          = DIR_USERDEV + "/resources.zip";
     static final String BINPATCH_DEV             = DIR_USERDEV + "/devbinpatches.pack.lzma";
     static final String JAR_OBF_CLASSES          = DIR_USERDEV + "/classes.jar";
-
-    // maybe.. havent decided if these will actually be used or not.
-    static final String JAR_USERDEV_SRC          = DIR_USERDEV + "/sources.zip";
-    static final String JAR_USERDEV_RES          = DIR_USERDEV + "/resources.zip";
 
     // tasks
     static final String TASK_SETUP               = "setup";
@@ -67,11 +65,12 @@ final class PatcherConstants
     static final String TASK_GEN_IDES            = "genIdeProjects";
 
     // packaging tasks
-    static final String TASK_GEN_PATCHES_USERDEV = "genPatchesForUserdev";
     static final String TASK_REOBFUSCATE         = "reobfuscate";
     static final String TASK_GEN_BIN_PATCHES     = "genBinaryPatches";
     static final String TASK_EXTRACT_OBF_CLASSES = "extractNonMcClasses";
     static final String TASK_OUTPUT_JAR          = "outputJar";
+    static final String TASK_GEN_PATCHES_USERDEV = "genPatchesForUserdev";
+    static final String TASK_EXTRACT_OBF_SOURCES = "extractNonMcSources";
 
     // project tasks
     static final String TASK_PROJECT_REMAP_JAR   = "remap" + REPLACE_PROJECT_CAP_NAME + "Jar";
@@ -86,6 +85,6 @@ final class PatcherConstants
     static final String TASK_PROJECT_GEN_EXC     = "extractExc" + REPLACE_PROJECT_CAP_NAME + "";
     static final String TASK_PROJECT_RANGEMAP    = "extract" + REPLACE_PROJECT_CAP_NAME + "Rangemap";
     static final String TASK_PROJECT_RETROMAP    = "retromapMc" + REPLACE_PROJECT_CAP_NAME;
-    static final String TASK_PROJECT_NM_RETROMAP = "retromapNonMc" + REPLACE_PROJECT_CAP_NAME;
+    static final String TASK_PROJECT_RETRO_NONMC = "retromapNonMc" + REPLACE_PROJECT_CAP_NAME;
     static final String TASK_PROJECT_GEN_PATCHES = "gen" + REPLACE_PROJECT_CAP_NAME + "Patches";
 }
