@@ -1,32 +1,43 @@
-package net.minecraftforge.gradle.old.tasks.dev;
+package net.minecraftforge.gradle.patcher;
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 
 import lzma.streams.LzmaOutputStream;
+import net.minecraftforge.gradle.util.caching.Cached;
+import net.minecraftforge.gradle.util.caching.CachedTask;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
 
-import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.io.ByteStreams;
 
-import java.io.*;
-
-public class CompressLZMA extends DefaultTask
+class TaskCompressLZMA extends CachedTask
 {
     @InputFile
-    private DelayedFile inputFile;
+    private Object inputFile;
 
+    @Cached
     @OutputFile
-    private DelayedFile outputFile;
+    private Object outputFile;
+
+    //@formatter:off
+    public TaskCompressLZMA() { }
+    //@formatter:on
 
     @TaskAction
     public void doTask() throws IOException
     {
         final BufferedInputStream in = new BufferedInputStream(new FileInputStream(getInputFile()));
         final OutputStream out = new LzmaOutputStream.Builder(new FileOutputStream(getOutputFile()))
-                                .useEndMarkerMode(true)
-                                .build();
+                .useEndMarkerMode(true)
+                .build();
 
         ByteStreams.copy(in, out);
 
@@ -36,17 +47,22 @@ public class CompressLZMA extends DefaultTask
 
     public File getInputFile()
     {
-        return inputFile.call();
+        return getProject().file(inputFile);
     }
 
     public void setInputFile(DelayedFile inputFile)
     {
         this.inputFile = inputFile;
+
+        if (outputFile == null)
+        {
+            outputFile = inputFile;
+        }
     }
 
     public File getOutputFile()
     {
-        return outputFile.call();
+        return getProject().file(outputFile);
     }
 
     public void setOutputFile(DelayedFile outputFile)

@@ -22,6 +22,9 @@ final class PatcherConstants
 
     static final String REPLACE_PROJECT_NAME     = "{NAME}";
     static final String REPLACE_PROJECT_CAP_NAME = "{CAPNAME}";
+    
+    // the only actually cached thing
+    static final String DEOBF_DATA               = Constants.DIR_MCP_DATA + "/deobfuscation_data-" + Constants.REPLACE_MC_VERSION + ".lzma";
 
     // cached stuff
     static final String DIR_LOCAL_CACHE          = Constants.REPLACE_BUILD_DIR + "/localCache";

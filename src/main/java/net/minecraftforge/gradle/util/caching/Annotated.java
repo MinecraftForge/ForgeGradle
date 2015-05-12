@@ -60,6 +60,8 @@ class Annotated
                 return f.get(instance);
             }
         }
+        
+        method.setAccessible(true);
 
         return method.invoke(instance, new Object[0]);
     }

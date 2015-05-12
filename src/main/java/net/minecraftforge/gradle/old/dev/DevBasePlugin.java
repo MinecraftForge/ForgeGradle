@@ -20,8 +20,8 @@ import java.util.zip.ZipOutputStream;
 
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.old.tasks.dev.CompressLZMA;
 import net.minecraftforge.gradle.old.tasks.dev.ObfuscateTask;
+import net.minecraftforge.gradle.patcher.TaskCompressLZMA;
 import net.minecraftforge.gradle.patcher.PatcherExtension;
 import net.minecraftforge.gradle.tasks.CopyAssetsTask;
 import net.minecraftforge.gradle.tasks.Download;
@@ -139,7 +139,7 @@ public abstract class DevBasePlugin extends BasePlugin<PatcherExtension>
             });
         }
 
-        CompressLZMA task3 = makeTask("compressDeobfData", CompressLZMA.class);
+        TaskCompressLZMA task3 = makeTask("compressDeobfData", TaskCompressLZMA.class);
         {
             task3.setInputFile(delayedFile(DevConstants.NOTCH_2_SRG_SRG));
             task3.setOutputFile(delayedFile(DevConstants.DEOBF_DATA));

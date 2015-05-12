@@ -186,13 +186,22 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             extractObfClasses.dependsOn(obf);
         }
         
+        TaskCompressLZMA compressDeobf = makeTask("compressDeobf", TaskCompressLZMA.class);
+        {
+            compressDeobf.setInputFile(delayedFile(MCP_DATA_SRG)); // SRG_NOTCH_TO_SRG but doesnt require genSrgs task
+            compressDeobf.setOutputFile(delayedFile(DEOBF_DATA));
+            compressDeobf.dependsOn(TASK_EXTRACT_MCP);
+        }
+        
         Jar outputJar = makeTask(TASK_OUTPUT_JAR, Jar.class);
         {
             outputJar.from(delayedTree(JAR_OBF_CLASSES));
             outputJar.from(delayedFile(BINPATCH_RUN));
+            outputJar.from(delayedFile(DEOBF_DATA));
             outputJar.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
             outputJar.getOutputs().upToDateWhen(Constants.CALL_FALSE); // rebuild every time.
             outputJar.setDestinationDir(new File(DIR_OUTPUT));
+            outputJar.dependsOn(genBinPatches, extractObfClasses, compressDeobf);
         }
         
         // ------------------------------
