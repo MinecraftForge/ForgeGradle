@@ -71,6 +71,7 @@ final class PatcherConstants
     static final String TASK_OUTPUT_JAR          = "outputJar";
     static final String TASK_GEN_PATCHES_USERDEV = "genPatchesForUserdev";
     static final String TASK_EXTRACT_OBF_SOURCES = "extractNonMcSources";
+    static final String TASK_COMBINE_RESOURCES   = "combineResources";
 
     // project tasks
     static final String TASK_PROJECT_REMAP_JAR   = "remap" + REPLACE_PROJECT_CAP_NAME + "Jar";

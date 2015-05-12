@@ -38,6 +38,7 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
+import org.gradle.api.tasks.bundling.Zip;
 
 public class PatcherPlugin extends BasePlugin<PatcherExtension>
 {
@@ -211,6 +212,15 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             extractNonMcSources.setOutput(delayedFile(JAR_USERDEV_SOURCES));
             extractNonMcSources.setEnding(".java");
             extractNonMcSources.dependsOn(TASK_POST_DECOMP);
+        }
+
+        Zip combineRes = makeTask(TASK_COMBINE_RESOURCES, Zip.class);
+        {
+            File out = delayedFile(JAR_USERDEV_RES).call();
+            combineRes.setDestinationDir(out.getParentFile());
+            combineRes.setArchiveName(out.getName());
+            combineRes.setIncludeEmptyDirs(false);
+            combineRes.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
         }
     }
     
@@ -559,7 +569,8 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         DeobfuscateJar deobfJar = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF);
         TaskGenBinPatches binPatches = (TaskGenBinPatches) project.getTasks().getByName(TASK_GEN_BIN_PATCHES);
         Jar outputJar = (Jar) project.getTasks().getByName(TASK_OUTPUT_JAR);
-        
+        Zip resourceZip = (Zip) project.getTasks().getByName(TASK_COMBINE_RESOURCES);
+
         List<File> addedExcs = Lists.newArrayListWithCapacity(patchersList.size());
         List<File> addedSrgs = Lists.newArrayListWithCapacity(patchersList.size());
         
@@ -652,6 +663,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             binPatches.addPatchSet(patcher.getPatchDir());
             
             // add resources to output
+            resourceZip.from(patcher.getDelayedResourcesDir());
             outputJar.from(patcher.getDelayedResourcesDir());
             
             // add task dependencies
