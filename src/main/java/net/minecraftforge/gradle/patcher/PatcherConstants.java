@@ -59,11 +59,14 @@ final class PatcherConstants
     static final String EXC_MERGED_USERDEV       = DIR_USERDEV + "/merged.exc";
     static final String AT_MERGED_USERDEV        = DIR_USERDEV + "/merged_at.cfg";
 
-    // tasks
+    // op level tasks
     static final String TASK_SETUP               = "setup";
     static final String TASK_CLEAN               = "clean";
     static final String TASK_GEN_PATCHES         = "genPatches";
     static final String TASK_BUILD               = "build";
+    
+    // internal tasks
+    static final String TASK_SETUP_PROJECTS      = "setupProjects";
     static final String TASK_DEOBF               = "deobfuscateJar";
     static final String TASK_DECOMP              = "decompileJar";
     static final String TASK_POST_DECOMP         = "sourceProcessJar";
@@ -83,6 +86,8 @@ final class PatcherConstants
     static final String TASK_BUILD_USERDEV       = "buildUserdev";
 
     // project tasks
+    static final String TASK_PROJECT_SETUP       = "setupProject" + REPLACE_PROJECT_CAP_NAME;
+    static final String TASK_PROJECT_SETUP_DEV   = "setupDevProject" + REPLACE_PROJECT_CAP_NAME;
     static final String TASK_PROJECT_REMAP_JAR   = "remap" + REPLACE_PROJECT_CAP_NAME + "Jar";
     static final String TASK_PROJECT_EXTRACT_SRC = "extract" + REPLACE_PROJECT_CAP_NAME + "Sources";
     static final String TASK_PROJECT_EXTRACT_RES = "extract" + REPLACE_PROJECT_CAP_NAME + "Resources";

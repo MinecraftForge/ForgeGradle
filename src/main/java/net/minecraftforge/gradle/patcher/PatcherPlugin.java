@@ -143,12 +143,15 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             createProjects.putProject("Clean", null, null, null, null);
             createProjects.setJavaLevel("1.6");
         }
+        
+        Task setupProjects = makeTask(TASK_SETUP_PROJECTS);
+        setupProjects.dependsOn(createProjects);
 
         TaskSubprojectCall makeIdeProjects = makeTask(TASK_GEN_IDES, TaskSubprojectCall.class);
         {
             makeIdeProjects.setProjectDir(getExtension().getDelayedWorkspaceDir());
             makeIdeProjects.setCallLine("cleanEclipse cleanIdea eclipse idea");
-            makeIdeProjects.dependsOn(createProjects);
+            makeIdeProjects.dependsOn(setupProjects);
         }
     }
 
@@ -165,7 +168,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             obf.setFieldsCsv(delayedFile(CSV_FIELD));
             obf.setOutJar(delayedFile(JAR_OBFUSCATED));
             obf.addLibs(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPS));
-            obf.dependsOn(TASK_GENERATE_SRGS);
+            obf.dependsOn(TASK_GENERATE_SRGS, TASK_SETUP_PROJECTS);
         }
 
         TaskGenBinPatches genBinPatches = makeTask(TASK_GEN_BIN_PATCHES, TaskGenBinPatches.class);
@@ -221,7 +224,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             extractNonMcSources.addCleanSource(delayedFile(JAR_DECOMP_POST));
             extractNonMcSources.setOutput(delayedFile(JAR_USERDEV_SOURCES));
             extractNonMcSources.setEnding(".java");
-            extractNonMcSources.dependsOn(TASK_POST_DECOMP);
+            extractNonMcSources.dependsOn(TASK_SETUP_PROJECTS);
         }
 
         Zip combineRes = makeTask(TASK_COMBINE_RESOURCES, Zip.class);
@@ -395,6 +398,11 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             extract.dependsOn(remapTask, TASK_GEN_PROJECTS);
         }
 
+        Task setupTask = makeTask(projectString(TASK_PROJECT_SETUP, patcher));
+        setupTask.dependsOn(projectString(TASK_PROJECT_EXTRACT_SRC, patcher), projectString(TASK_PROJECT_EXTRACT_RES, patcher));
+
+        // Run config generation, not necessary unless its actual dev
+        
         CreateStartTask makeStart = makeTask(projectString(TASK_PROJECT_MAKE_START, patcher), CreateStartTask.class);
         {
             for (String resource : GRADLE_START_RESOURCES)
@@ -462,6 +470,10 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             ideaRunServer.setRunDir("file://$PROJECT_DIR$/run");
             ideaRunServer.dependsOn(makeStart, TASK_GEN_IDES);
         }
+        
+        Task setupDevTask = makeTask(projectString(TASK_PROJECT_SETUP_DEV, patcher));
+        setupDevTask.dependsOn(setupTask, makeStart, TASK_GEN_IDES);
+        setupDevTask.dependsOn(eclipseRunClient, eclipseRunServer, ideaRunClient, ideaRunServer);
 
         /// TASKS THAT ARN'T PART OF THE SETUP
 
@@ -472,7 +484,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             compile.addInitScript(Resources.getResource(TaskSubprojectCall.class, "initscriptJar.gradle"));
             compile.addReplacement("@RECOMP_DIR@", delayedFile(projectString(DIR_PROJECT_CACHE, patcher)));
             compile.addReplacement("@JAR_NAME@", JAR_PROJECT_RECOMPILED.substring(DIR_PROJECT_CACHE.length() + 1));
-            compile.mustRunAfter(TASK_GEN_PROJECTS);
+            compile.mustRunAfter(setupTask);
         }
 
         TaskExtractExcModifiers extractExc = makeTask(projectString(TASK_PROJECT_GEN_EXC, patcher), TaskExtractExcModifiers.class);
@@ -603,7 +615,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         List<PatcherProject> patchersList = sortByPatching(getExtension().getProjects());
 
         Task setupTask = project.getTasks().getByName(TASK_SETUP);
-        Task ideTask = project.getTasks().getByName(TASK_GEN_IDES);
+        Task setupProjectTasks = project.getTasks().getByName(TASK_SETUP_PROJECTS);
         Task genPatchesTask = project.getTasks().getByName(TASK_GEN_PATCHES);
         ProcessSrcJarTask patchJar = (ProcessSrcJarTask) project.getTasks().getByName(TASK_PATCH);
         DeobfuscateJar deobfJar = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF);
@@ -707,10 +719,8 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             outputJar.from(patcher.getDelayedResourcesDir());
 
             // add task dependencies
-            ideTask.dependsOn(projectString(TASK_PROJECT_MAKE_START, patcher));
-            ideTask.dependsOn(projectString(TASK_PROJECT_EXTRACT_SRC, patcher), projectString(TASK_PROJECT_EXTRACT_RES, patcher));
-            setupTask.dependsOn(projectString(TASK_PROJECT_RUNE_CLIENT, patcher), projectString(TASK_PROJECT_RUNE_SERVER, patcher));
-            setupTask.dependsOn(projectString(TASK_PROJECT_RUNJ_CLIENT, patcher), projectString(TASK_PROJECT_RUNJ_SERVER, patcher));
+            setupProjectTasks.dependsOn(projectString(TASK_PROJECT_SETUP, patcher));
+            setupTask.dependsOn(projectString(TASK_PROJECT_SETUP_DEV, patcher));
         }
 
         // ------------------------------
