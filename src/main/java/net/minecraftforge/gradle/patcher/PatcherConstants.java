@@ -22,7 +22,7 @@ final class PatcherConstants
 
     static final String REPLACE_PROJECT_NAME     = "{NAME}";
     static final String REPLACE_PROJECT_CAP_NAME = "{CAPNAME}";
-    
+
     // the only actually cached thing
     static final String DEOBF_DATA               = Constants.DIR_MCP_DATA + "/deobfuscation_data-" + Constants.REPLACE_MC_VERSION + ".lzma";
 
@@ -55,11 +55,15 @@ final class PatcherConstants
     static final String JAR_USERDEV_RES          = DIR_USERDEV + "/resources.zip";
     static final String BINPATCH_DEV             = DIR_USERDEV + "/devbinpatches.pack.lzma";
     static final String JAR_OBF_CLASSES          = DIR_USERDEV + "/classes.jar";
+    static final String SRG_MERGED_USERDEV       = DIR_USERDEV + "/merged.srg";
+    static final String EXC_MERGED_USERDEV       = DIR_USERDEV + "/merged.exc";
+    static final String AT_MERGED_USERDEV        = DIR_USERDEV + "/merged_at.cfg";
 
     // tasks
     static final String TASK_SETUP               = "setup";
     static final String TASK_CLEAN               = "clean";
     static final String TASK_GEN_PATCHES         = "genPatches";
+    static final String TASK_BUILD               = "build";
     static final String TASK_DEOBF               = "deobfuscateJar";
     static final String TASK_DECOMP              = "decompileJar";
     static final String TASK_POST_DECOMP         = "sourceProcessJar";
@@ -72,9 +76,11 @@ final class PatcherConstants
     static final String TASK_GEN_BIN_PATCHES     = "genBinaryPatches";
     static final String TASK_EXTRACT_OBF_CLASSES = "extractNonMcClasses";
     static final String TASK_OUTPUT_JAR          = "outputJar";
-    static final String TASK_GEN_PATCHES_USERDEV = "genPatchesForUserdev";
+    static final String TASK_GEN_PATCHES_USERDEV = "getPatchesForUserdev";
     static final String TASK_EXTRACT_OBF_SOURCES = "extractNonMcSources";
     static final String TASK_COMBINE_RESOURCES   = "combineResources";
+    static final String TASK_MERGE_FILES         = "mergeFiles";
+    static final String TASK_BUILD_USERDEV       = "buildUserdev";
 
     // project tasks
     static final String TASK_PROJECT_REMAP_JAR   = "remap" + REPLACE_PROJECT_CAP_NAME + "Jar";

@@ -14,6 +14,28 @@ public class PatcherExtension extends BaseExtension
     private Object                                     workspaceDir;
     private String                                     installerVersion = "null";
     private NamedDomainObjectContainer<PatcherProject> projectContainer;
+    private boolean                                    buildUserdev     = false;
+    private boolean                                    buildInstaller   = false;
+
+    public boolean isBuildUserdev()
+    {
+        return buildUserdev;
+    }
+
+    public void setBuildUserdev(boolean buildUserdev)
+    {
+        this.buildUserdev = buildUserdev;
+    }
+
+    public boolean isBuildInstaller()
+    {
+        return buildInstaller;
+    }
+
+    public void setBuildInstaller(boolean buildInstaller)
+    {
+        this.buildInstaller = buildInstaller;
+    }
 
     public PatcherExtension(PatcherPlugin plugin)
     {
@@ -44,6 +66,12 @@ public class PatcherExtension extends BaseExtension
     public void projects(Closure closure)
     {
         projectContainer.configure(closure);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public void project(String projName, Closure closure)
+    {
+        project.configure(projectContainer.maybeCreate(projName), closure);
     }
     
     public File getVersionJson()
