@@ -7,12 +7,10 @@ import static org.objectweb.asm.Opcodes.ACC_PROTECTED;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,6 +31,7 @@ import net.md_5.specialsource.RemapperProcessor;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
 import net.minecraftforge.gradle.common.BaseExtension;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
@@ -84,23 +83,26 @@ public class DeobfuscateJar extends CachedTask
 
     @Optional
     @Input
-    private boolean stripSynthetics = false;
+    private boolean           stripSynthetics = false;
 
     @InputFile
-    private Object exceptorJson;
+    private Object            exceptorJson;
 
     @Input
-    private boolean applyMarkers = false;
+    private boolean           applyMarkers    = false;
+    
+    @Input
+    private boolean           failOnAtError   = true;
 
-    private Object outCleanJar; // clean = pure forge, or pure FML
-    private Object outDirtyJar = new DelayedFile(getProject(), "{BUILD_DIR}/processed.jar"); // dirty = has any other ATs
+    private Object            outCleanJar;                                                                 // clean = pure forge, or pure FML
+    private Object            outDirtyJar     = new DelayedFile(getProject(), "{BUILD_DIR}/processed.jar"); // dirty = has any other ATs
 
     @InputFiles
-    private ArrayList<Object> ats         = Lists.newArrayList();
+    private ArrayList<Object> ats             = Lists.newArrayList();
 
-    private Object log;
+    private Object            log;
 
-    private boolean isClean = true;
+    private boolean           isClean         = true;
 
     public void addTransformerClean(Object... obj)
     {
@@ -166,78 +168,39 @@ public class DeobfuscateJar extends CachedTask
 
     private void deobfJar(File inJar, File outJar, File srg, Collection<File> ats) throws IOException
     {
-        getLogger().debug("INPUT: " + inJar);
-        getLogger().debug("OUTPUT: " + outJar);
         // load mapping
         JarMapping mapping = new JarMapping();
         mapping.loadMappings(srg);
 
-        final Map<String, String> renames = Maps.newHashMap();
-        for (File f : new File[]{ getFieldCsv(), getMethodCsv() })
-        {
-            if (f == null) continue;
-            Files.readLines(f, Charsets.UTF_8, new LineProcessor<String>()
-            {
-                @Override
-                public boolean processLine(String line) throws IOException
-                {
-                    String[] pts = line.split(",");
-                    if (!"searge".equals(pts[0]))
-                    {
-                        renames.put(pts[0], pts[1]);
-                    }
-
-                    return true;
-                }
-
-                @Override public String getResult() { return null; }
-            });
-        }
-
         // load in ATs
-        AccessMap accessMap = new AccessMap() {
-            @Override
-            public void addAccessChange(String symbolString, String accessString)
-            {
-                String[] pts = symbolString.split(" ");
-                if (pts.length >= 2)
-                {
-                    int idx = pts[1].indexOf('(');
+        ErroringRemappingAccessMap accessMap = new ErroringRemappingAccessMap(new File[] { getMethodCsv(), getFieldCsv() });
 
-                    String start = pts[1];
-                    String end = "";
-
-                    if (idx != -1)
-                    {
-                        start = pts[1].substring(0, idx);
-                        end = pts[1].substring(idx);
-                    }
-
-                    String rename = renames.get(start);
-                    if (rename != null)
-                    {
-                        pts[1] = rename + end;
-                    }
-                }
-                String joinedString = Joiner.on('.').join(pts);
-                super.addAccessChange(joinedString, accessString);
-            }
-        };
         getLogger().info("Using AccessTransformers...");
-        PrintStream tmp = System.out;
-        System.setOut(new PrintStream(new ByteArrayOutputStream()
-        {
-            @Override public void write(int b) {}
-            @Override public void write(byte[] b, int off, int len) {}
-            @Override public void writeTo(OutputStream out) throws IOException {}
-        }));
+//        PrintStream tmp = System.out;
+//        System.setOut(new PrintStream(new ByteArrayOutputStream()
+//        {
+//            @Override
+//            public void write(int b)
+//            {
+//            }
+//
+//            @Override
+//            public void write(byte[] b, int off, int len)
+//            {
+//            }
+//
+//            @Override
+//            public void writeTo(OutputStream out) throws IOException
+//            {
+//            }
+//        }));
         //Make SS shutup about access maps
         for (File at : ats)
         {
             getLogger().info("" + at);
             accessMap.loadAccessTransformer(at);
         }
-        System.setOut(tmp);
+//        System.setOut(tmp);
 
         // make a processor out of the ATS and mappings.
         RemapperProcessor srgProcessor = new RemapperProcessor(null, mapping, null);
@@ -256,6 +219,20 @@ public class DeobfuscateJar extends CachedTask
 
         // remap jar
         remapper.remapJar(input, outJar);
+        
+        // throw error for broken AT lines
+        if (accessMap.brokenLines.size() > 0 && failOnAtError)
+        {
+            getLogger().error("{} Broken Access Transformer lines:", accessMap.brokenLines.size());
+            for (String line : accessMap.brokenLines.values())
+            {
+                getLogger().error(" ---  {}", line);
+            }
+            
+            // TODO: add info for disabling
+            
+            throw new RuntimeException("Your Access Transformers be broke!");
+        }
     }
 
     private int fixAccess(int access, String target)
@@ -263,20 +240,33 @@ public class DeobfuscateJar extends CachedTask
         int ret = access & ~7;
         int t = 0;
 
-        if      (target.startsWith("public"))    t = ACC_PUBLIC;
-        else if (target.startsWith("private"))   t = ACC_PRIVATE;
-        else if (target.startsWith("protected")) t = ACC_PROTECTED;
+        if (target.startsWith("public"))
+            t = ACC_PUBLIC;
+        else if (target.startsWith("private"))
+            t = ACC_PRIVATE;
+        else if (target.startsWith("protected"))
+            t = ACC_PROTECTED;
 
         switch (access & 7)
-        {
-            case ACC_PRIVATE:   ret |= t; break;
-            case 0:             ret |= (t != ACC_PRIVATE ? t : 0); break;
-            case ACC_PROTECTED: ret |= (t != ACC_PRIVATE && t != 0 ? t : ACC_PROTECTED); break;
-            case ACC_PUBLIC:    ret |= ACC_PUBLIC; break;
-        }
+            {
+                case ACC_PRIVATE:
+                    ret |= t;
+                    break;
+                case 0:
+                    ret |= (t != ACC_PRIVATE ? t : 0);
+                    break;
+                case ACC_PROTECTED:
+                    ret |= (t != ACC_PRIVATE && t != 0 ? t : ACC_PROTECTED);
+                    break;
+                case ACC_PUBLIC:
+                    ret |= ACC_PUBLIC;
+                    break;
+            }
 
-        if      (target.endsWith("-f")) ret &= ~ACC_FINAL;
-        else if (target.endsWith("+f")) ret |= ACC_FINAL;
+        if (target.endsWith("-f"))
+            ret &= ~ACC_FINAL;
+        else if (target.endsWith("+f"))
+            ret |= ACC_FINAL;
         return ret;
     }
 
@@ -289,41 +279,47 @@ public class DeobfuscateJar extends CachedTask
             final Map<String, MCInjectorStruct> struct = JsonFactory.loadMCIJson(getJson);
             for (File at : ats)
             {
-                getLogger().info("loading AT: "+at.getCanonicalPath());
+                getLogger().info("loading AT: " + at.getCanonicalPath());
 
                 Files.readLines(at, Charset.defaultCharset(), new LineProcessor<Object>()
                 {
                     @Override
                     public boolean processLine(String line) throws IOException
                     {
-                        if (line.indexOf('#') != -1) line = line.substring(0, line.indexOf('#'));
+                        if (line.indexOf('#') != -1)
+                            line = line.substring(0, line.indexOf('#'));
                         line = line.trim().replace('.', '/');
-                        if (line.isEmpty()) return true;
+                        if (line.isEmpty())
+                            return true;
 
                         String[] s = line.split(" ");
                         if (s.length == 2 && s[1].indexOf('$') > 0)
                         {
-                             String parent = s[1].substring(0, s[1].indexOf('$'));
-                             for (MCInjectorStruct cls : new MCInjectorStruct[]{struct.get(parent), struct.get(s[1])})
-                             {
-                                 if (cls != null && cls.innerClasses != null)
-                                 {
-                                     for (InnerClass inner : cls.innerClasses)
-                                     {
-                                         if (inner.inner_class.equals(s[1]))
-                                         {
-                                             int access = fixAccess(inner.getAccess(), s[0]);
-                                             inner.access = (access == 0 ? null : Integer.toHexString(access));
-                                         }
-                                     }
-                                 }
-                             }
+                            String parent = s[1].substring(0, s[1].indexOf('$'));
+                            for (MCInjectorStruct cls : new MCInjectorStruct[] { struct.get(parent), struct.get(s[1]) })
+                            {
+                                if (cls != null && cls.innerClasses != null)
+                                {
+                                    for (InnerClass inner : cls.innerClasses)
+                                    {
+                                        if (inner.inner_class.equals(s[1]))
+                                        {
+                                            int access = fixAccess(inner.getAccess(), s[0]);
+                                            inner.access = (access == 0 ? null : Integer.toHexString(access));
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         return true;
                     }
 
-                    @Override public Object getResult() { return null; }
+                    @Override
+                    public Object getResult()
+                    {
+                        return null;
+                    }
                 });
             }
             File jsonTmp = new File(this.getTemporaryDir(), "transformed.json");
@@ -331,7 +327,7 @@ public class DeobfuscateJar extends CachedTask
             Files.write(JsonFactory.GSON.toJson(struct).getBytes(), jsonTmp);
         }
 
-        BaseExtension exten = (BaseExtension)getProject().getExtensions().getByName(EXT_NAME_MC);
+        BaseExtension exten = (BaseExtension) getProject().getExtensions().getByName(EXT_NAME_MC);
         boolean genParams = !exten.getVersion().equals("1.7.2");
         getLogger().debug("INPUT: " + inJar);
         getLogger().debug("OUTPUT: " + outJar);
@@ -399,13 +395,13 @@ public class DeobfuscateJar extends CachedTask
 
             for (FieldNode f : ((List<FieldNode>) node.fields))
             {
-                f.access = f.access & (0xffffffff-Opcodes.ACC_SYNTHETIC);
+                f.access = f.access & (0xffffffff - Opcodes.ACC_SYNTHETIC);
                 //getLogger().lifecycle("Stripping field: "+f.name);
             }
 
             for (MethodNode m : ((List<MethodNode>) node.methods))
             {
-                m.access = m.access & (0xffffffff-Opcodes.ACC_SYNTHETIC);
+                m.access = m.access & (0xffffffff - Opcodes.ACC_SYNTHETIC);
                 //getLogger().lifecycle("Stripping method: "+m.name);
             }
         }
@@ -446,6 +442,16 @@ public class DeobfuscateJar extends CachedTask
     public void setApplyMarkers(boolean applyMarkers)
     {
         this.applyMarkers = applyMarkers;
+    }
+
+    public boolean isFailOnAtError()
+    {
+        return failOnAtError;
+    }
+
+    public void setFailOnAtError(boolean failOnAtError)
+    {
+        this.failOnAtError = failOnAtError;
     }
 
     public File getInJar()
@@ -537,7 +543,7 @@ public class DeobfuscateJar extends CachedTask
         return fieldCsv == null ? null : getProject().file(fieldCsv);
     }
 
-    public void setFieldCsv(DelayedFile fieldCsv)
+    public void setFieldCsv(Object fieldCsv)
     {
         this.fieldCsv = fieldCsv;
     }
@@ -547,7 +553,7 @@ public class DeobfuscateJar extends CachedTask
         return methodCsv == null ? null : getProject().file(methodCsv);
     }
 
-    public void setMethodCsv(DelayedFile methodCsv)
+    public void setMethodCsv(Object methodCsv)
     {
         this.methodCsv = methodCsv;
     }
@@ -571,5 +577,92 @@ public class DeobfuscateJar extends CachedTask
     public void setStripSynthetics(boolean stripSynthetics)
     {
         this.stripSynthetics = stripSynthetics;
+    }
+
+    private static final class ErroringRemappingAccessMap extends AccessMap
+    {
+        private final Map<String, String> renames = Maps.newHashMap();
+        public final Map<String, String> brokenLines = Maps.newHashMap();
+
+        public ErroringRemappingAccessMap(File[] renameCsvs) throws IOException
+        {
+            super();
+
+            for (File f : renameCsvs)
+            {
+                if (f == null)
+                    continue;
+                Files.readLines(f, Charsets.UTF_8, new LineProcessor<String>()
+                {
+                    @Override
+                    public boolean processLine(String line) throws IOException
+                    {
+                        String[] pts = line.split(",");
+                        if (!"searge".equals(pts[0]))
+                        {
+                            renames.put(pts[0], pts[1]);
+                        }
+
+                        return true;
+                    }
+
+                    @Override
+                    public String getResult()
+                    {
+                        return null;
+                    }
+                });
+            }
+        }
+
+        @Override
+        public void loadAccessTransformer(File file) throws IOException
+        {
+            // because SS doesnt close its freaking reader...
+            BufferedReader reader = Files.newReader(file, Constants.CHARSET);
+            loadAccessTransformer(reader);
+            reader.close();
+        }
+
+        @Override
+        public void addAccessChange(String symbolString, String accessString)
+        {
+            String[] pts = symbolString.split(" ");
+            if (pts.length >= 2)
+            {
+                int idx = pts[1].indexOf('(');
+
+                String start = pts[1];
+                String end = "";
+
+                if (idx != -1)
+                {
+                    start = pts[1].substring(0, idx);
+                    end = pts[1].substring(idx);
+                }
+
+                String rename = renames.get(start);
+                if (rename != null)
+                {
+                    pts[1] = rename + end;
+                }
+            }
+            String joinedString = Joiner.on('.').join(pts);
+            super.addAccessChange(joinedString, accessString);
+            // convert  package.class  to  package/class
+            brokenLines.put(joinedString.replace('.', '/'), symbolString);
+        }
+        
+        @Override
+        protected void accessApplied(String key, int oldAccess, int newAccess)
+        {
+            // if the access' are equal, then the line is broken, and we dont want to remove it.
+            if (oldAccess != newAccess)
+            {
+                // key added before is in format: package/class{method/field sig}
+                // and the key here is in format: package/class {method/field sig}
+                brokenLines.remove(key.replace(" ", ""));
+            }
+        }
     }
 }
