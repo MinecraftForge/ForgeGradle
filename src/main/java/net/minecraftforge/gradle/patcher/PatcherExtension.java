@@ -5,6 +5,7 @@ import groovy.lang.Closure;
 import java.io.File;
 
 import net.minecraftforge.gradle.common.BaseExtension;
+import net.minecraftforge.gradle.util.delayed.TokenReplacer;
 
 import org.gradle.api.NamedDomainObjectContainer;
 
@@ -50,6 +51,7 @@ public class PatcherExtension extends BaseExtension
     public void setInstallerVersion(String installerVersion)
     {
         this.installerVersion = installerVersion;
+        TokenReplacer.putReplacement(PatcherConstants.REPLACE_INSTALLER, installerVersion);
     }
 
     public NamedDomainObjectContainer<PatcherProject> getProjects()

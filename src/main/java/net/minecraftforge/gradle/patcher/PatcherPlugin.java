@@ -11,16 +11,8 @@ import java.util.Set;
 
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
-import net.minecraftforge.gradle.tasks.ApplyS2STask;
-import net.minecraftforge.gradle.tasks.CreateStartTask;
-import net.minecraftforge.gradle.tasks.DeobfuscateJar;
-import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
-import net.minecraftforge.gradle.tasks.ExtractTask;
-import net.minecraftforge.gradle.tasks.GenEclipseRunTask;
-import net.minecraftforge.gradle.tasks.PostDecompileTask;
-import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
-import net.minecraftforge.gradle.tasks.RemapSources;
+import net.minecraftforge.gradle.tasks.*;
+import net.minecraftforge.gradle.util.CopyInto;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 import net.minecraftforge.gradle.util.json.version.Library;
 import net.minecraftforge.gradle.util.json.version.Version;
@@ -143,7 +135,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             createProjects.putProject("Clean", null, null, null, null);
             createProjects.setJavaLevel("1.6");
         }
-        
+
         Task setupProjects = makeTask(TASK_SETUP_PROJECTS);
         setupProjects.dependsOn(createProjects);
 
@@ -157,7 +149,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
     protected void makePackagingTasks()
     {
-        // for universal and stuff
+        // for universal
 
         TaskReobfuscate obf = makeTask(TASK_REOBFUSCATE, TaskReobfuscate.class);
         {
@@ -201,19 +193,48 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             compressDeobf.dependsOn(TASK_EXTRACT_MCP);
         }
 
+        TaskProcessJson procJson = makeTask(TASK_PROCESS_JSON, TaskProcessJson.class);
+        {
+            procJson.setInstallerJson(delayedFile(JSON_INSTALLER));
+            procJson.setUniversalJson(delayedFile(JSON_UNIVERSAL));
+            procJson.getOutputs().upToDateWhen(Constants.CALL_FALSE);
+        }
+
         Jar outputJar = makeTask(TASK_OUTPUT_JAR, Jar.class);
         {
             outputJar.from(delayedTree(JAR_OBF_CLASSES));
             outputJar.from(delayedFile(BINPATCH_RUN));
             outputJar.from(delayedFile(DEOBF_DATA));
+            outputJar.from(delayedFile(JSON_UNIVERSAL));
             outputJar.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
             outputJar.getOutputs().upToDateWhen(Constants.CALL_FALSE); // rebuild every time.
             outputJar.setDestinationDir(new File(DIR_OUTPUT));
-            outputJar.dependsOn(genBinPatches, extractObfClasses, compressDeobf);
+            outputJar.dependsOn(genBinPatches, extractObfClasses, compressDeobf, procJson);
         }
-        
+
         // add to build
         project.getTasks().getByName(TASK_BUILD).dependsOn(outputJar);
+
+        // ------------------------------
+        // for installer
+
+        EtagDownloadTask dlInstaller = makeTask("downloadInstaller", EtagDownloadTask.class);
+        {
+            dlInstaller.setUrl(delayedString(INSTALLER_URL));
+            dlInstaller.setDieWithError(true);
+            dlInstaller.setFile(delayedFile(JAR_INSTALLER));
+        }
+
+        Jar installer = makeTask(TASK_BUILD_INSTALLER, Jar.class);
+        {
+            installer.from(outputJar);
+            installer.from(delayedTree(JSON_INSTALLER), new CopyInto("", "!*.json", "!*.png"));
+            installer.setClassifier("installer");
+            installer.setDestinationDir(new File(DIR_OUTPUT));
+            installer.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
+            installer.getOutputs().upToDateWhen(Constants.CALL_FALSE); // rebuild every time.
+            installer.dependsOn(dlInstaller, outputJar, procJson);
+        }
 
         // ------------------------------
         // for userdev
@@ -235,14 +256,14 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             combineRes.setIncludeEmptyDirs(false);
             combineRes.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
         }
-        
+
         TaskMergeFiles mergeFiles = makeTask(TASK_MERGE_FILES, TaskMergeFiles.class);
         {
             mergeFiles.setOutSrg(delayedFile(SRG_MERGED_USERDEV));
             mergeFiles.setOutExc(delayedFile(EXC_MERGED_USERDEV));
             mergeFiles.setOutAt(delayedFile(AT_MERGED_USERDEV));
         }
-        
+
         Zip userdev = makeTask(TASK_BUILD_USERDEV, Zip.class);
         {
             userdev.from(delayedFile(DIR_USERDEV));
@@ -402,7 +423,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         setupTask.dependsOn(projectString(TASK_PROJECT_EXTRACT_SRC, patcher), projectString(TASK_PROJECT_EXTRACT_RES, patcher));
 
         // Run config generation, not necessary unless its actual dev
-        
+
         CreateStartTask makeStart = makeTask(projectString(TASK_PROJECT_MAKE_START, patcher), CreateStartTask.class);
         {
             for (String resource : GRADLE_START_RESOURCES)
@@ -470,7 +491,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             ideaRunServer.setRunDir("file://$PROJECT_DIR$/run");
             ideaRunServer.dependsOn(makeStart, TASK_GEN_IDES);
         }
-        
+
         Task setupDevTask = makeTask(projectString(TASK_PROJECT_SETUP_DEV, patcher));
         setupDevTask.dependsOn(setupTask, makeStart, TASK_GEN_IDES);
         setupDevTask.dependsOn(eclipseRunClient, eclipseRunServer, ideaRunClient, ideaRunServer);
@@ -567,6 +588,12 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             {
                 throw new GradleConfigurationException("The versionJson could not be found! Are you sure its correct?");
             }
+
+            if (((TaskProcessJson) project.getTasks().getByName(TASK_PROCESS_JSON)).isReleaseJsonNull())
+            {
+                throw new GradleConfigurationException("Release json not confgiured! add this to your buildscript:  "
+                        + TASK_PROCESS_JSON + " { releaseJson = 'path/to/release.json' }");
+            }
         }
 
         // use versionJson stuff
@@ -597,18 +624,17 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                 }
             }
         }
-        
+
         // enable installer and userdev
         {
             Task build = project.getTasks().getByName(TASK_BUILD);
             if (getExtension().isBuildUserdev())
             {
-                build.dependsOn(TASK_BUILD_USERDEV);             
+                build.dependsOn(TASK_BUILD_USERDEV);
             }
             if (getExtension().isBuildInstaller())
             {
-                // TODO: build installer
-                //build.dependsOn(TASK_BUILD_USERDEV);             
+                build.dependsOn(TASK_BUILD_INSTALLER);
             }
         }
 
@@ -741,9 +767,9 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         // Why regenerate patches from clean if the built project already has them?
         if ("clean".equals(patcher.getGenPatchesFrom().toLowerCase()))
         {
-           Sync userdevPatches = makeTask(TASK_GEN_PATCHES_USERDEV, Sync.class);
-           userdevPatches.from(patcher.getPatchDir());
-           userdevPatches.into((delayedFile(DIR_USERDEV_PATCHES)));
+            Sync userdevPatches = makeTask(TASK_GEN_PATCHES_USERDEV, Sync.class);
+            userdevPatches.from(patcher.getPatchDir());
+            userdevPatches.into((delayedFile(DIR_USERDEV_PATCHES)));
         }
         else
         {

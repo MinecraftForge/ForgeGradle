@@ -8,6 +8,10 @@ final class PatcherConstants
     private PatcherConstants() {}
     // @formatter:on
 
+    // installer stuff
+    static final String REPLACE_INSTALLER        = "{INSTALLER}";
+    static final String INSTALLER_URL            = "http://files.minecraftforge.net/installer/forge-installer-"+REPLACE_INSTALLER+"-shrunk.jar";
+
     // new project defaults
     static final String DEFAULT_PATCHES_DIR      = "patches";
     static final String DEFAULT_SRC_DIR          = "src/main/java";
@@ -46,8 +50,11 @@ final class PatcherConstants
     // stuff for packaging only
     static final String DIR_OUTPUT               = "build/distributions";
     static final String DIR_PACKAGING            = DIR_LOCAL_CACHE + "/packaging";
+    static final String JAR_INSTALLER            = DIR_PACKAGING + "/installer-fresh.jar";
     static final String JAR_OBFUSCATED           = DIR_PACKAGING + "/reobfuscated.jar";
     static final String BINPATCH_RUN             = DIR_PACKAGING + "/binpatches.pack.lzma";
+    static final String JSON_INSTALLER           = DIR_PACKAGING + "/install_profile.json";
+    static final String JSON_UNIVERSAL           = DIR_PACKAGING + "/version.json";
 
     static final String DIR_USERDEV              = DIR_PACKAGING + "/userdev";
     static final String DIR_USERDEV_PATCHES      = DIR_USERDEV + "/patches";
@@ -59,12 +66,12 @@ final class PatcherConstants
     static final String EXC_MERGED_USERDEV       = DIR_USERDEV + "/merged.exc";
     static final String AT_MERGED_USERDEV        = DIR_USERDEV + "/merged_at.cfg";
 
-    // op level tasks
+    // top level tasks
     static final String TASK_SETUP               = "setup";
     static final String TASK_CLEAN               = "clean";
     static final String TASK_GEN_PATCHES         = "genPatches";
     static final String TASK_BUILD               = "build";
-    
+
     // internal tasks
     static final String TASK_SETUP_PROJECTS      = "setupProjects";
     static final String TASK_DEOBF               = "deobfuscateJar";
@@ -78,12 +85,14 @@ final class PatcherConstants
     static final String TASK_REOBFUSCATE         = "reobfuscate";
     static final String TASK_GEN_BIN_PATCHES     = "genBinaryPatches";
     static final String TASK_EXTRACT_OBF_CLASSES = "extractNonMcClasses";
+    static final String TASK_PROCESS_JSON        = "processJson";
     static final String TASK_OUTPUT_JAR          = "outputJar";
     static final String TASK_GEN_PATCHES_USERDEV = "getPatchesForUserdev";
     static final String TASK_EXTRACT_OBF_SOURCES = "extractNonMcSources";
     static final String TASK_COMBINE_RESOURCES   = "combineResources";
     static final String TASK_MERGE_FILES         = "mergeFiles";
     static final String TASK_BUILD_USERDEV       = "buildUserdev";
+    static final String TASK_BUILD_INSTALLER     = "installer";
 
     // project tasks
     static final String TASK_PROJECT_SETUP       = "setupProject" + REPLACE_PROJECT_CAP_NAME;

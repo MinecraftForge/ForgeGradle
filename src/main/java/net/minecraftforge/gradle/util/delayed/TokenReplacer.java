@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.util.delayed;
 
+import java.io.Serializable;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -7,8 +8,10 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Maps;
 
-public class TokenReplacer
+public class TokenReplacer implements Serializable
 {
+    private static final long serialVersionUID = 1L;
+
     protected static Logger LOGGER = LoggerFactory.getLogger(DelayedBase.class);
     
     private static Map<String, String> replaceMap = Maps.newHashMap();
