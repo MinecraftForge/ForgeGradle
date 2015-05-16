@@ -50,7 +50,7 @@ class TaskGenIdeaRun extends DefaultTask
 
         // root element
         Document doc = docBuilder.newDocument();
-        Element root = addXml(doc, "component", ImmutableMap.of("name", "org.eclipse.jdt.launching.localJavaApplication"));
+        Element root = addXml(doc, "component", ImmutableMap.of("name", "ProjectRunConfigurationManager"));
         root = addXml(root, "configuration", ImmutableMap.of(
                 "default", "false",
                 "name", getConfigName(),
