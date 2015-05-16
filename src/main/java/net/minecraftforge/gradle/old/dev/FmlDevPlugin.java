@@ -12,10 +12,8 @@ import java.util.Date;
 
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.old.tasks.CrowdinDownloadTask;
 import net.minecraftforge.gradle.old.tasks.DelayedJar;
 import net.minecraftforge.gradle.old.tasks.FileFilterTask;
-import net.minecraftforge.gradle.old.tasks.dev.ChangelogTask;
 import net.minecraftforge.gradle.old.tasks.dev.FMLVersionPropTask;
 import net.minecraftforge.gradle.old.tasks.dev.GenBinaryPatches;
 import net.minecraftforge.gradle.old.tasks.dev.ObfuscateTask;
@@ -23,6 +21,8 @@ import net.minecraftforge.gradle.old.tasks.dev.SubprojectTask;
 import net.minecraftforge.gradle.patcher.TaskGenSubprojects;
 import net.minecraftforge.gradle.patcher.TaskGenPatches;
 import net.minecraftforge.gradle.tasks.ApplyS2STask;
+import net.minecraftforge.gradle.tasks.JenkinsChangelog;
+import net.minecraftforge.gradle.tasks.CrowdinDownload;
 import net.minecraftforge.gradle.tasks.ExtractTask;
 import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
@@ -354,14 +354,14 @@ public class FmlDevPlugin extends DevBasePlugin
     @SuppressWarnings("serial")
     private void createPackageTasks()
     {
-        CrowdinDownloadTask crowdin = makeTask("getLocalizations", CrowdinDownloadTask.class);
+        CrowdinDownload crowdin = makeTask("getLocalizations", CrowdinDownload.class);
         {
             crowdin.setOutput(delayedFile(CROWDIN_ZIP));
             crowdin.setProjectId(CROWDIN_FORGEID);
             crowdin.setExtract(false);
         }
 
-        ChangelogTask makeChangelog = makeTask("createChangelog", ChangelogTask.class);
+        JenkinsChangelog makeChangelog = makeTask("createChangelog", JenkinsChangelog.class);
         {
             makeChangelog.getOutputs().upToDateWhen(Constants.CALL_FALSE);
             makeChangelog.setServerRoot(delayedString("{JENKINS_SERVER}"));

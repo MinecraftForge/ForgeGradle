@@ -10,10 +10,8 @@ import java.util.Date;
 import java.util.List;
 
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.old.tasks.CrowdinDownloadTask;
 import net.minecraftforge.gradle.old.tasks.DelayedJar;
 import net.minecraftforge.gradle.old.tasks.FileFilterTask;
-import net.minecraftforge.gradle.old.tasks.dev.ChangelogTask;
 import net.minecraftforge.gradle.old.tasks.dev.FMLVersionPropTask;
 import net.minecraftforge.gradle.old.tasks.dev.ForgeVersionReplaceTask;
 import net.minecraftforge.gradle.old.tasks.dev.GenBinaryPatches;
@@ -23,14 +21,7 @@ import net.minecraftforge.gradle.old.tasks.dev.SubprojectTask;
 import net.minecraftforge.gradle.old.tasks.dev.VersionJsonTask;
 import net.minecraftforge.gradle.patcher.TaskGenSubprojects;
 import net.minecraftforge.gradle.patcher.TaskGenPatches;
-import net.minecraftforge.gradle.tasks.ApplyS2STask;
-import net.minecraftforge.gradle.tasks.CreateStartTask;
-import net.minecraftforge.gradle.tasks.ExtractTask;
-import net.minecraftforge.gradle.tasks.PostDecompileTask;
-import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
-import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
-import net.minecraftforge.gradle.tasks.DeobfuscateJar;
-import net.minecraftforge.gradle.tasks.RemapSources;
+import net.minecraftforge.gradle.tasks.*;
 import net.minecraftforge.gradle.util.CopyInto;
 import net.minecraftforge.gradle.util.delayed.DelayedBase;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
@@ -416,14 +407,14 @@ public class ForgeDevPlugin extends DevBasePlugin
     @SuppressWarnings("serial")
     private void createPackageTasks()
     {
-        CrowdinDownloadTask crowdin = makeTask("getLocalizations", CrowdinDownloadTask.class);
+        CrowdinDownload crowdin = makeTask("getLocalizations", CrowdinDownload.class);
         {
             crowdin.setOutput(delayedFile(CROWDIN_ZIP));
             crowdin.setProjectId(CROWDIN_FORGEID);
             crowdin.setExtract(false);
         }
 
-        ChangelogTask makeChangelog = makeTask("createChangelog", ChangelogTask.class);
+        JenkinsChangelog makeChangelog = makeTask("createChangelog", JenkinsChangelog.class);
         {
             makeChangelog.getOutputs().upToDateWhen(Constants.CALL_FALSE);
             makeChangelog.setServerRoot(delayedString("{JENKINS_SERVER}"));

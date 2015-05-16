@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.old.tasks;
+package net.minecraftforge.gradle.tasks;
 
 import groovy.lang.Closure;
 
@@ -24,72 +24,71 @@ import com.google.common.base.Throwables;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
-public class CrowdinDownloadTask extends DefaultTask
+public class CrowdinDownload extends DefaultTask
 {
     @Input
-    private Object projectId;
+    private Object              projectId;
     @Input
-    private Object apiKey;
+    private Object              apiKey;
     @Input
-    private boolean extract = true;
-    private Object output;
-    
+    private boolean             extract      = true;
+    private Object              output;
+
     // format these with the projectId and apiKey
-    private static final String EXPORT_URL = "https://api.crowdin.net/api/project/%s/export?key=%s";
+    private static final String EXPORT_URL   = "https://api.crowdin.net/api/project/%s/export?key=%s";
     private static final String DOWNLOAD_URL = "https://api.crowdin.net/api/project/%s/download/all.zip?key=%s";
-    
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public CrowdinDownloadTask()
+    public CrowdinDownload()
     {
         super();
-        
+
         this.onlyIf(new Spec() {
 
             @Override
             public boolean isSatisfiedBy(Object arg0)
             {
-                CrowdinDownloadTask task = (CrowdinDownloadTask) arg0;
-                
+                CrowdinDownload task = (CrowdinDownload) arg0;
+
                 // no API key? skip
                 if (Strings.isNullOrEmpty(task.getApiKey()))
                 {
                     getLogger().lifecycle("Crowdin api key is null, skipping task.");
                     return false;
                 }
-                
+
                 // offline? skip.
                 if (getProject().getGradle().getStartParameter().isOffline())
                 {
                     getLogger().lifecycle("Gradle is in offline mode, skipping task.");
                     return false;
                 }
-                
+
                 return true;
             }
-            
+
         });
     }
-    
-    
+
     @TaskAction
     public void doTask() throws IOException
     {
         String project = getProjectId();
         String key = getApiKey();
-        
+
         exportLocalizations(project, key);
         getLocalizations(project, key, getOutput());
     }
-    
+
     private void exportLocalizations(String projectId, String key) throws IOException
     {
         getLogger().debug("Exporting crowdin localizations.");
         URL url = new URL(String.format(EXPORT_URL, projectId, key));
-        
+
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestProperty("User-Agent", Constants.USER_AGENT);
         con.setInstanceFollowRedirects(true);
-        
+
         try
         {
             con.connect();
@@ -99,25 +98,25 @@ public class CrowdinDownloadTask extends DefaultTask
             // just in case people dont have internet at the moment.
             Throwables.propagate(e);
         }
-        
+
         int reponse = con.getResponseCode();
         con.disconnect();
-        
+
         if (reponse == 401)
-            throw new RuntimeException("Invalid Crowdin API-Key");
+            throw new RuntimeException("Invalid Crowdin API-Key!");
     }
-    
+
     private void getLocalizations(String projectId, String key, File output) throws IOException
     {
-        getLogger().info("Downlaoding crowdin localizations.");
+        getLogger().info("Downloading crowdin localizations.");
         URL url = new URL(String.format(DOWNLOAD_URL, projectId, key));
-        
+
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestProperty("User-Agent", Constants.USER_AGENT);
         con.setInstanceFollowRedirects(true);
 
         InputStream stream = con.getInputStream();
-        
+
         if (extract)
         {
             ZipInputStream zStream = new ZipInputStream(con.getInputStream());
@@ -137,7 +136,7 @@ public class CrowdinDownloadTask extends DefaultTask
                 Files.write(ByteStreams.toByteArray(zStream), out);
                 zStream.closeEntry();
             }
-            
+
             zStream.close();
         }
         else
@@ -147,20 +146,19 @@ public class CrowdinDownloadTask extends DefaultTask
             Files.write(ByteStreams.toByteArray(stream), output);
             stream.close();
         }
-        
+
         con.disconnect();
     }
-    
-    
+
     @SuppressWarnings("rawtypes")
     public String getProjectId()
     {
         if (projectId == null)
             throw new NullPointerException("ProjectID must be set for crowdin!");
-        
+
         while (projectId instanceof Closure)
             projectId = ((Closure) projectId).call();
-        
+
         return projectId.toString();
     }
 
@@ -174,10 +172,10 @@ public class CrowdinDownloadTask extends DefaultTask
     {
         while (apiKey instanceof Closure)
             apiKey = ((Closure) apiKey).call();
-        
+
         if (apiKey == null)
             return null;
-        
+
         return apiKey.toString();
     }
 

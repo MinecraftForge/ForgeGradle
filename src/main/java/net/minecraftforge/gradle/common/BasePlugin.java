@@ -12,14 +12,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
-import net.minecraftforge.gradle.tasks.Download;
-import net.minecraftforge.gradle.tasks.DownloadAssetsTask;
-import net.minecraftforge.gradle.tasks.EtagDownloadTask;
-import net.minecraftforge.gradle.tasks.ExtractConfigTask;
-import net.minecraftforge.gradle.tasks.GenSrgs;
-import net.minecraftforge.gradle.tasks.MergeJars;
-import net.minecraftforge.gradle.tasks.ObtainFernFlowerTask;
-import net.minecraftforge.gradle.tasks.SignJar;
+import net.minecraftforge.gradle.tasks.*;
 import net.minecraftforge.gradle.util.FileLogListenner;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
@@ -128,6 +121,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             ext.set("SignJar", SignJar.class);
             ext.set("Download", Download.class);
             ext.set("EtagDownload", EtagDownloadTask.class);
+            ext.set("CrowdinDownload", CrowdinDownload.class);
+            ext.set("JenkinsChangelog", JenkinsChangelog.class);
         }
 
         // repos

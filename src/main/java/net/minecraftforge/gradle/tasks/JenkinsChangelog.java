@@ -1,6 +1,5 @@
-package net.minecraftforge.gradle.old.tasks.dev;
+package net.minecraftforge.gradle.tasks;
 
-import groovy.lang.Closure;
 import groovy.util.MapEntry;
 
 import java.io.File;
@@ -19,8 +18,6 @@ import java.util.Map.Entry;
 import javax.xml.bind.DatatypeConverter;
 
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.util.delayed.DelayedFile;
-import net.minecraftforge.gradle.util.delayed.DelayedString;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
@@ -32,29 +29,22 @@ import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-public class ChangelogTask extends DefaultTask
+public class JenkinsChangelog extends DefaultTask
 {
-    @Input
-    DelayedString serverRoot;
-    
-    @Input
-    DelayedString jobName;
-    
-    @Input
-    DelayedString authName;
-    
-    @Input
-    DelayedString authPassword;
+    //@formatter:off
+    @Input Object serverRoot;
+    @Input Object jobName;
+    @Input Object authName;
+    @Input Object authPassword;
+    @Input Object targetBuild;
+    //@formatter:on
 
-    @Input
-    Closure<String> targetBuild;
-    private int targetBuildResolved = -1;
-    
     @OutputFile
-    DelayedFile output;
+    Object         output;
 
-    private String auth = null;
-    
+    private int    targetBuildResolved = -1;
+    private String auth                = null;
+
     @SuppressWarnings("unchecked")
     @TaskAction
     public void doTask() throws IOException
@@ -67,15 +57,16 @@ public class ChangelogTask extends DefaultTask
 
         List<Map<String, Object>> builds = getBuildInfo();
         getLatestBuild(builds);
-        
+
         StringBuilder out = new StringBuilder();
         out.append("Changelog:\r\n");
         for (Map<String, Object> build : builds)
         {
-            int number = ((Double)build.get("number")).intValue();
-            List<MapEntry> items = (List<MapEntry>)build.get("items");
+            int number = ((Double) build.get("number")).intValue();
+            List<MapEntry> items = (List<MapEntry>) build.get("items");
 
-            if (getTargetBuild() > 0 && number > getTargetBuild()) continue;
+            if (getTargetBuild() > 0 && number > getTargetBuild())
+                continue;
 
             out.append("Build ");
             out.append(build.get("version") == null ? number : build.get("version"));
@@ -83,7 +74,7 @@ public class ChangelogTask extends DefaultTask
 
             for (MapEntry entry : items)
             {
-                String[] lines = ((String)entry.getValue()).trim().split("\n");
+                String[] lines = ((String) entry.getValue()).trim().split("\n");
                 if (lines.length == 1)
                 {
                     out.append('\t').append(entry.getKey()).append(": ").append(lines[0]).append('\n');
@@ -93,15 +84,16 @@ public class ChangelogTask extends DefaultTask
                     out.append('\t').append(entry.getKey()).append(':').append('\n');
                     for (String line : lines)
                     {
-                        out.append('\t').append('\t').append(line).append('\n');   
+                        out.append('\t').append('\t').append(line).append('\n');
                     }
                 }
             }
             out.append('\n');
         }
 
-        Files.write(out.toString().getBytes(), getOutput());
-        getProject().getArtifacts().add("archives", getOutput());
+        File outFile = getOutput();
+        outFile.getParentFile().mkdirs();
+        Files.write(out.toString().getBytes(), outFile);
     }
 
     private String read(String url) throws MalformedURLException, IOException
@@ -124,21 +116,22 @@ public class ChangelogTask extends DefaultTask
 
     private String cleanJson(String data, String part)
     {
-        data = data.replace("," + part + ",", "," );
-        data = data.replace(      part + ",", ""  );
-        data = data.replace("," + part,       ""  );
+        data = data.replace("," + part + ",", ",");
+        data = data.replace(part + ",", "");
+        data = data.replace("," + part, "");
         data = data.replace("{" + part + "}", "{}");
         data = data.replace("[" + part + "]", "[]");
         return data;
     }
 
     private static final Gson GSON_FORMATTER = new GsonBuilder().setPrettyPrinting().create();
+
     @SuppressWarnings("unused")
     private void prettyPrint(Object json)
     {
         getLogger().lifecycle(GSON_FORMATTER.toJson(json));
     }
-    
+
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> getBuildInfo()
     {
@@ -151,18 +144,18 @@ public class ChangelogTask extends DefaultTask
             data = cleanJson(data, "None"); //This kills Gson for some reason
             data = cleanJson(data, "{}"); //Empty entries, just for sanities sake
 
-            List<Map<String, Object>> json = (List<Map<String, Object>>)new Gson().fromJson(data, Map.class).get("allBuilds");
+            List<Map<String, Object>> json = (List<Map<String, Object>>) new Gson().fromJson(data, Map.class).get("allBuilds");
             Collections.sort(json, new Comparator<Map<String, Object>>()
             {
                 @Override
                 public int compare(Map<String, Object> o1, Map<String, Object> o2)
                 {
-                    return (int)((Double)o1.get("number") - (Double)o2.get("number"));
+                    return (int) ((Double) o1.get("number") - (Double) o2.get("number"));
                 }
-        
+
             });
 
-            List<Entry<String, String>> items = new ArrayList<Entry<String,String>>();
+            List<Entry<String, String>> items = new ArrayList<Entry<String, String>>();
             Iterator<Map<String, Object>> bitr = json.iterator();
             while (bitr.hasNext())
             {
@@ -181,7 +174,7 @@ public class ChangelogTask extends DefaultTask
 
                 if (actions.size() == 0)
                 {
-                    build.put("version", versioned ? ((Double)build.get("number")).intValue() : getProject().getVersion());
+                    build.put("version", versioned ? ((Double) build.get("number")).intValue() : getProject().getVersion());
                     versioned = true;
                 }
                 else
@@ -189,15 +182,16 @@ public class ChangelogTask extends DefaultTask
                     build.put("version", actions.get(0).get("text"));
                 }
 
-                for (Map<String, Object> e : (List<Map<String, Object>>)((Map<String, Object>)build.get("changeSet")).get("items"))
+                for (Map<String, Object> e : (List<Map<String, Object>>) ((Map<String, Object>) build.get("changeSet")).get("items"))
                 {
-                    items.add(new MapEntry(((Map<String, String>)e.get("author")).get("fullName"), e.get("comment")));
+                    items.add(new MapEntry(((Map<String, String>) e.get("author")).get("fullName"), e.get("comment")));
                 }
                 build.put("items", items);
 
                 if (build.get("result").equals("SUCCESS"))
                 {
-                    if (items.size() == 0) bitr.remove();
+                    if (items.size() == 0)
+                        bitr.remove();
                     items = new ArrayList<Entry<String, String>>();
                 }
                 else
@@ -215,9 +209,9 @@ public class ChangelogTask extends DefaultTask
                 @Override
                 public int compare(Map<String, Object> o1, Map<String, Object> o2)
                 {
-                    return (int)((Double)o2.get("number") - (Double)o1.get("number"));
+                    return (int) ((Double) o2.get("number") - (Double) o1.get("number"));
                 }
-        
+
             });
             return json;
         }
@@ -245,24 +239,24 @@ public class ChangelogTask extends DefaultTask
             data = cleanJson(data, "None"); //This kills Gson for some reason
             data = cleanJson(data, "{}"); //Empty entries, just for sanities sake
 
-            Map<String, Object> build = (Map<String, Object>)new Gson().fromJson(data, Map.class);
+            Map<String, Object> build = (Map<String, Object>) new Gson().fromJson(data, Map.class);
             if (build.get("number").equals(ver))
             {
                 return;
             }
-            build.put("version", versioned ? "Build " + ((Double)build.get("number")).intValue() : getProject().getVersion());
+            build.put("version", versioned ? "Build " + ((Double) build.get("number")).intValue() : getProject().getVersion());
 
-            List<Entry<String, String>> items = new ArrayList<Entry<String,String>>();
-            for (Map<String, Object> e : (List<Map<String, Object>>)((Map<String, Object>)build.get("changeSet")).get("items"))
+            List<Entry<String, String>> items = new ArrayList<Entry<String, String>>();
+            for (Map<String, Object> e : (List<Map<String, Object>>) ((Map<String, Object>) build.get("changeSet")).get("items"))
             {
-                items.add(new MapEntry(((Map<String, String>)e.get("author")).get("fullName"), e.get("comment")));
+                items.add(new MapEntry(((Map<String, String>) e.get("author")).get("fullName"), e.get("comment")));
             }
             build.put("items", items);
 
             build.remove("result");
             build.remove("changeSet");
             build.remove("actions");
-            
+
             builds.add(0, build);
             //prettyPrint(build);
         }
@@ -272,43 +266,43 @@ public class ChangelogTask extends DefaultTask
             getLogger().lifecycle(data);
         }
     }
-    
+
     public String getServerRoot()
     {
-        return serverRoot.call();
+        return Constants.resolveString(serverRoot);
     }
 
-    public void setServerRoot(DelayedString serverRoot)
+    public void setServerRoot(Object serverRoot)
     {
         this.serverRoot = serverRoot;
     }
 
     public String getJobName()
     {
-        return jobName.call();
+        return Constants.resolveString(jobName);
     }
 
-    public void setJobName(DelayedString jobName)
+    public void setJobName(Object jobName)
     {
         this.jobName = jobName;
     }
 
     public String getAuthName()
     {
-        return authName.call();
+        return Constants.resolveString(authName);
     }
 
-    public void setAuthName(DelayedString authName)
+    public void setAuthName(Object authName)
     {
         this.authName = authName;
     }
 
     public String getAuthPassword()
     {
-        return authPassword.call();
+        return Constants.resolveString(authPassword);
     }
 
-    public void setAuthPassword(DelayedString authPassword)
+    public void setAuthPassword(Object authPassword)
     {
         this.authPassword = authPassword;
     }
@@ -325,7 +319,7 @@ public class ChangelogTask extends DefaultTask
         {
             try
             {
-                targetBuildResolved = Integer.parseInt(targetBuild.call());
+                targetBuildResolved = Integer.parseInt(Constants.resolveString(targetBuild));
                 if (targetBuildResolved <= 0)
                 {
                     targetBuildResolved = Integer.MAX_VALUE;
@@ -340,17 +334,17 @@ public class ChangelogTask extends DefaultTask
         return targetBuildResolved;
     }
 
-    public void setTargetBuild(Closure<String> targetBuild)
+    public void setTargetBuild(Object targetBuild)
     {
         this.targetBuild = targetBuild;
     }
 
     public File getOutput()
     {
-        return output.call();
+        return getProject().file(output);
     }
 
-    public void setOutput(DelayedFile output)
+    public void setOutput(Object output)
     {
         this.output = output;
     }

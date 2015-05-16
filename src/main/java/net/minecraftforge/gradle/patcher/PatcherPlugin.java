@@ -206,6 +206,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             outputJar.from(delayedFile(BINPATCH_RUN));
             outputJar.from(delayedFile(DEOBF_DATA));
             outputJar.from(delayedFile(JSON_UNIVERSAL));
+            outputJar.setBaseName(project.getName());
             outputJar.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
             outputJar.getOutputs().upToDateWhen(Constants.CALL_FALSE); // rebuild every time.
             outputJar.setDestinationDir(new File(DIR_OUTPUT));
@@ -229,6 +230,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         {
             installer.from(outputJar);
             installer.from(delayedTree(JSON_INSTALLER), new CopyInto("", "!*.json", "!*.png"));
+            installer.setBaseName(project.getName());
             installer.setClassifier("installer");
             installer.setDestinationDir(new File(DIR_OUTPUT));
             installer.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
@@ -267,6 +269,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         Zip userdev = makeTask(TASK_BUILD_USERDEV, Zip.class);
         {
             userdev.from(delayedFile(DIR_USERDEV));
+            userdev.setBaseName(project.getName());
             userdev.setClassifier("userdev");
             userdev.setExtension("jar");
             userdev.setDestinationDir(new File(DIR_OUTPUT));
@@ -594,6 +597,11 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                 throw new GradleConfigurationException("Release json not confgiured! add this to your buildscript:  "
                         + TASK_PROCESS_JSON + " { releaseJson = 'path/to/release.json' }");
             }
+            
+            if (Strings.isNullOrEmpty(getExtension().getInstallerVersion()) && getExtension().isBuildInstaller())
+            {
+                throw new GradleConfigurationException("You must specify the installerVersion in the minecraft block if you want to build an installer!");
+            }
         }
 
         // use versionJson stuff
@@ -755,11 +763,6 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
         PatcherProject patcher = patchersList.get(patchersList.size() - 1);
 
-        if (Strings.isNullOrEmpty(outputJar.getBaseName()))
-        {
-            outputJar.setBaseName(patcher.getCapName());
-        }
-
         TaskReobfuscate reobf = (TaskReobfuscate) project.getTasks().getByName(TASK_REOBFUSCATE);
         reobf.setInJar(delayedFile(projectString(JAR_PROJECT_RECOMPILED, patcher)));
         reobf.dependsOn(projectString(TASK_PROJECT_COMPILE, patcher));
@@ -784,6 +787,19 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         userdevSources.addDirtySource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, patcher)));
         userdevSources.addDirtySource(delayedFile(projectString(JAR_PROJECT_RETRO_NONMC, patcher)));
         userdevSources.dependsOn(projectString(TASK_PROJECT_RETROMAP, patcher), projectString(TASK_PROJECT_RETRO_NONMC, patcher));
+        
+        // add version to packaging tasks
+        outputJar.setVersion(project.getVersion().toString());
+        ((Zip)project.getTasks().getByName(TASK_BUILD_USERDEV)).setVersion(project.getVersion().toString());
+        ((Jar)project.getTasks().getByName(TASK_BUILD_INSTALLER)).setVersion(project.getVersion().toString());
+        
+        // add them to the maven artifatcs
+        if (project.getPlugins().hasPlugin("maven"))
+        {
+            project.getArtifacts().add("archives", outputJar);
+            project.getArtifacts().add("archives", project.getTasks().getByName(TASK_BUILD_USERDEV));
+            project.getArtifacts().add("archives", project.getTasks().getByName(TASK_BUILD_INSTALLER));
+        }
     }
 
     /**
