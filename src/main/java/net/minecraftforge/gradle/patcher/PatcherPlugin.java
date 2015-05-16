@@ -65,7 +65,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             task.setGroup(GROUP_FG);
             task.setDescription("Sets up all the projects complete with run configurations for both Eclipse and Intellij");
 
-            Delete cleanTask = makeTask(TASK_CLEAN, Delete.class);
+            Delete cleanTask = maybeMakeTask(TASK_CLEAN, Delete.class);
             cleanTask.delete(getExtension().getDelayedWorkspaceDir());
             cleanTask.delete(project.getBuildDir());
             cleanTask.setGroup(GROUP_FG);
@@ -75,7 +75,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             task.setGroup(GROUP_FG);
             task.setDescription("Generates patches for all the configured projects. (requires that setup was run before hand)");
 
-            task = makeTask(TASK_BUILD);
+            task = maybeMakeTask(TASK_BUILD);
             task.setGroup(GROUP_FG);
             task.setDescription("Builds all output packages. (outputs found in build/distributions)");
         }

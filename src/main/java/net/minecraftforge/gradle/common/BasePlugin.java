@@ -389,10 +389,25 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     {
         return makeTask(name, DefaultTask.class);
     }
+    
+    public DefaultTask maybeMakeTask(String name)
+    {
+        return maybeMakeTask(name, DefaultTask.class);
+    }
 
     public <T extends Task> T makeTask(String name, Class<T> type)
     {
         return makeTask(project, name, type);
+    }
+    
+    public <T extends Task> T maybeMakeTask(String name, Class<T> type)
+    {
+        return maybeMakeTask(project, name, type);
+    }
+    
+    public static <T extends Task> T maybeMakeTask(Project proj, String name, Class<T> type)
+    {
+        return (T) proj.getTasks().maybeCreate(name, type);
     }
 
     public static <T extends Task> T makeTask(Project proj, String name, Class<T> type)
