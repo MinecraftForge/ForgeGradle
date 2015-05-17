@@ -132,21 +132,25 @@ public abstract class GradleStartCommon
             list.addAll(extras);
         }
 
-        String[] out = list.toArray(new String[0]);
+        String[] out = list.toArray(new String[list.size()]);
 
         // final logging.
         StringBuilder b = new StringBuilder();
         b.append('[');
         for (int x = 0; x < out.length; x++)
         {
-            b.append(out[x]).append(", ");
+            b.append(out[x]);
             if ("--accessToken".equalsIgnoreCase(out[x]))
             {
-                b.append("{REDACTED}, ");
+                b.append("{REDACTED}");
                 x++;
             }
+            
+            if (x < out.length-1)
+            {
+                b.append(", ");
+            }
         }
-        b.replace(b.length() - 2, b.length(), "");
         b.append(']');
         GradleStartCommon.LOGGER.info("Running with arguments: " + b.toString());
 
