@@ -94,9 +94,24 @@ jar {
 
 javadoc {
 	classpath += configurations.compileOnly
+
+    // linked javadoc urls.. why not...
+    options.addStringOption '--link', 'https://gradle.org/docs/current/javadoc/'
+    options.addStringOption '--link', 'http://docs.guava-libraries.googlecode.com/git-history/v18.0/javadoc'
+    options.addStringOption '--link', 'http://asm.ow2.org/asm50/javadoc/user/'
+
+	exclude "**/old/**", "**/old/*"
 }
 
-artifacts { archives jar }
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    from javadoc
+    classifier = "javadoc"
+}
+
+artifacts {
+    archives jar
+    archives javadocJar
+}
 
 //These should add a compile time only dependancies to eclipse, ide, and javac, but NOT to the generated POM on maven.
 sourceSets.main.compileClasspath += [ configurations.compileOnly ]

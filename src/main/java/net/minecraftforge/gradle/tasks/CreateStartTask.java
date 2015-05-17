@@ -111,6 +111,8 @@ public class CreateStartTask extends CachedTask
     
     /**
      * Use Resources.getResource() for this
+     * @param resource URL of the resource in the jar
+     * @param outName name of the resource once extracted
      */
     public void addResource(URL resource, String outName)
     {

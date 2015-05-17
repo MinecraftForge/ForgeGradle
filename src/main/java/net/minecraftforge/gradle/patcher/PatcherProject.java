@@ -128,7 +128,7 @@ public class PatcherProject implements Serializable
      * The project from witch the patches for this project will be generated.
      * By default, patches are not generated at all.
      * To generate patches against the "clean" project, specify "clean" ast the argument.
-     * @param generateFrom
+     * @param generateFrom Project to generate patches from
      */
     public void setGenPatchesFrom(String generateFrom)
     {
@@ -139,7 +139,7 @@ public class PatcherProject implements Serializable
      * The project from witch the patches for this project will be generated.
      * By default, patches are not generated at all.
      * To generate patches against the "clean" project, specify "clean" ast the argument.
-     * @param patcher
+     * @param patcher Project to generate patches from
      */
     public void setGenPatchesFrom(PatcherProject patcher)
     {
@@ -150,7 +150,7 @@ public class PatcherProject implements Serializable
      * The project from witch the patches for this project will be generated.
      * By default, patches are not generated at all.
      * To generate patches against the "clean" project, specify "clean" ast the argument.
-     * @param generateFrom
+     * @param generateFrom Project to generate patches from
      */
     public void genPatchesFrom(String generateFrom)
     {
@@ -166,7 +166,7 @@ public class PatcherProject implements Serializable
      * The project from witch the patches for this project will be generated.
      * By default, patches are not generated at all.
      * To generate patches against the "clean" project, specify "clean" ast the argument.
-     * @param patcher
+     * @param patcher Project to generate patches from
      */
     public void generateFrom(PatcherProject patcher)
     {
@@ -180,7 +180,7 @@ public class PatcherProject implements Serializable
 
     /**
      * The root directory of the project. This may or may not be actually used depending on the other directories.
-     * @param rootDir
+     * @param rootDir root directory of the project
      */
     public void setRootDir(Object rootDir)
     {
@@ -189,7 +189,7 @@ public class PatcherProject implements Serializable
     
     /**
      * The root directory of the project. This may or may not be actually used depending on the other directories.
-     * @param rootDir
+     * @param rootDir root directory of the project
      */
     public void rootDir(Object rootDir)
     {
@@ -202,9 +202,9 @@ public class PatcherProject implements Serializable
     }
 
     /**
-     * The directory where the patches are found, and to witch generated patches should be saved.
-     * By defualt this is rootDir/patches
-     * @param patchDir
+     * The directory where the patches are found, and to whitch generated patches should be saved.
+     * By default this is rootDir/patches
+     * @param patchDir patch directory of the project
      */
     public void setPatchDir(Object patchDir)
     {
@@ -213,8 +213,8 @@ public class PatcherProject implements Serializable
     
     /**
      * The directory where the patches are found, and to witch generated patches should be saved.
-     * By defualt this is rootDir/patches
-     * @param patchDir
+     * By default this is rootDir/patches
+     * @param patchDir patch directory of the project
      */
     public void patchDir(Object patchDir)
     {
@@ -228,8 +228,8 @@ public class PatcherProject implements Serializable
 
     /**
      * The directory where the non-patch sources for this project are.
-     * By defualt this is rootDir/src/main/java
-     * @param sourcesDir
+     * By default this is rootDir/src/main/java
+     * @param sourcesDir non-MC source directory of the project
      */
     public void setSourcesDir(Object sourcesDir)
     {
@@ -238,8 +238,8 @@ public class PatcherProject implements Serializable
     
     /**
      * The directory where the non-patch sources for this project are.
-     * By defualt this is rootDir/src/main/java
-     * @param sourcesDir
+     * By default this is rootDir/src/main/java
+     * @param sourcesDir non-MC source directory of the project
      */
     public void sourcesDir(Object sourcesDir)
     {
@@ -253,8 +253,8 @@ public class PatcherProject implements Serializable
 
     /**
      * The directory where the non-patch resources for this project are.
-     * By defualt this is rootDir/src/main/resources
-     * @param resourcesDir
+     * By default this is rootDir/src/main/resources
+     * @param resourcesDir non-MC resource directory of the project
      */
     public void setResourcesDir(Object resourcesDir)
     {
@@ -263,8 +263,8 @@ public class PatcherProject implements Serializable
     
     /**
      * The directory where the non-patch resources for this project are.
-     * By defualt this is rootDir/src/main/resources
-     * @param resourcesDir
+     * By default this is rootDir/src/main/resources
+     * @param resourcesDir non-MC resource directory of the project
      */
     public void resourcesDir(Object resourcesDir)
     {
@@ -278,8 +278,8 @@ public class PatcherProject implements Serializable
 
     /**
      * The directory where the test sourcess for this project are.
-     * By defualt this is rootDir/src/test/sources
-     * @param testSourcesDir
+     * By default this is rootDir/src/test/sources
+     * @param testSourcesDir test source directory of the project
      */
     public void setTestSourcesDir(Object testSourcesDir)
     {
@@ -288,8 +288,8 @@ public class PatcherProject implements Serializable
     
     /**
      * The directory where the test sourcess for this project are.
-     * By defualt this is rootDir/src/test/sources
-     * @param testSourcesDir
+     * By default this is rootDir/src/test/sources
+     * @param testSourcesDir test source directory of the project
      */
     public void testSourcesDir(Object testSourcesDir)
     {
@@ -303,8 +303,8 @@ public class PatcherProject implements Serializable
 
     /**
      * The directory where the non-patch resources for this project are.
-     * By defualt this is rootDir/src/test/resources
-     * @param testResources
+     * By default this is rootDir/src/test/resources
+     * @param testResourcesDir test resource directory of the project
      */
     public void setTestResourcesDir(Object testResourcesDir)
     {
@@ -313,8 +313,8 @@ public class PatcherProject implements Serializable
     
     /**
      * The directory where the non-patch resources for this project are.
-     * By defualt this is rootDir/src/test/resources
-     * @param testResources
+     * By default this is rootDir/src/test/resources
+     * @param testResourcesDir test resource directory of the project
      */
     public void testResourcesDir(Object testResourcesDir)
     {
@@ -328,7 +328,7 @@ public class PatcherProject implements Serializable
 
     /**
      * This is used for the run configs and the manifest of the universal jar.
-     * @param mainClass
+     * @param mainClass main class name
      */
     public void setMainClassClient(Object mainClass)
     {
@@ -347,7 +347,7 @@ public class PatcherProject implements Serializable
 
     /**
      * This is used for the run configs and the manifest of the universal jar.
-     * @param tweakClass
+     * @param tweakClass tweaker class name
      */
     public void setTweakClassClient(Object tweakClass)
     {
@@ -366,7 +366,7 @@ public class PatcherProject implements Serializable
 
     /**
      * This is used for the run configs and the manifest of the universal jar.
-     * @param runArgs
+     * @param runArgs arguments
      */
     public void setRunArgsClient(Object runArgs)
     {
@@ -385,7 +385,7 @@ public class PatcherProject implements Serializable
 
     /**
      * This is used for the run configs and the manifest of the universal jar.
-     * @param mainClass
+     * @param mainClass main class name
      */
     public void setMainClassServer(Object mainClass)
     {
@@ -404,7 +404,7 @@ public class PatcherProject implements Serializable
 
     /**
      * This is used for the run configs and the manifest of the universal jar.
-     * @param tweakClass
+     * @param tweakClass tweaker class name
      */
     public void setTweakClassServer(Object tweakClass)
     {
@@ -423,7 +423,7 @@ public class PatcherProject implements Serializable
 
     /**
      * This is used for the run configs and the manifest of the universal jar.
-     * @param runArgs
+     * @param runArgs arguments
      */
     public void setRunArgsServer(Object runArgs)
     {
@@ -441,8 +441,8 @@ public class PatcherProject implements Serializable
     }
 
     /**
-     * This is used for the run configs and the manifest of the universal jar.
-     * @param runArgs
+     * The path prefix of the "original" path in the patch files.
+     * @param patchPrefixOriginal prefix
      */
     public void setPatchPrefixOriginal(Object patchPrefixOriginal)
     {
@@ -460,8 +460,8 @@ public class PatcherProject implements Serializable
     }
 
     /**
-     * This is used for the run configs and the manifest of the universal jar.
-     * @param runArgs
+     * The path prefix of the "changed" path in the patch files.
+     * @param patchPrefixChanged prefix
      */
     public void setPatchPrefixChanged(Object patchPrefixChanged)
     {

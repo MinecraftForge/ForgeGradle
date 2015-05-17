@@ -21,9 +21,10 @@ public abstract class DelayedBase<V> extends Closure<V>
 
     /**
      * Does something with the replaced token and returns the proper type.
-     * @return
+     * @param replaced NULL if never resolved before, else the previous resolved value
+     * @return The resolved Object V
      */
-    public abstract V resolveDelayed(String replaced);
+    protected abstract V resolveDelayed(String replaced);
     
     @Override
     public final V call()

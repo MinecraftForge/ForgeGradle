@@ -866,7 +866,6 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
     }
 
     //@formatter:off
-    @Override protected void addReplaceTokens(PatcherExtension ext) { }
     @Override public boolean canOverlayPlugin() { return false; }
     @Override protected void applyOverlayPlugin() { }
     @Override protected PatcherExtension getOverlayExtension() { return null; }

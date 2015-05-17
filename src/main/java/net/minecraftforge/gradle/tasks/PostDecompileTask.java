@@ -36,7 +36,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
 
-public class PostDecompileTask extends EditJarTask
+public class PostDecompileTask extends AbstractEditJarTask
 {
     @InputFile
     private Object inJar;

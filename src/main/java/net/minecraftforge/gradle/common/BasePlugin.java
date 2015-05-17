@@ -154,8 +154,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 if (project.getState().getFailure() != null)
                     return;
 
-                addReplaceTokens(getExtension());
-
                 afterEvaluate();
             }
         });
@@ -176,12 +174,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
      * @return TRUE if this can be applied upon another base plugin.
      */
     public abstract boolean canOverlayPlugin();
-
-    /**
-     * Adds token replacements to the TokenReplacer using {@link TokenReplacer.addReplacement(String, String)} The base plugin scatters these arround in the
-     * @param ext extension object
-     */
-    protected abstract void addReplaceTokens(K ext);
 
     private static boolean displayBanner = true;
 
@@ -570,6 +562,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
      * Does nothing (returns null) if the file is not found, but hard-crashes if it could not be parsed.
      * @param file version file to parse
      * @param inheritanceDirs folders to look for the parent json
+     * @return NULL if the file doesnt exist
      */
     protected Version parseAndStoreVersion(File file, File... inheritanceDirs)
     {

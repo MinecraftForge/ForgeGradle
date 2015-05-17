@@ -21,7 +21,7 @@ import org.gradle.api.tasks.TaskAction;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 
-public abstract class EditJarTask extends CachedTask
+public abstract class AbstractEditJarTask extends CachedTask
 {
     @InputFile
     private Object inJar;
@@ -72,15 +72,17 @@ public abstract class EditJarTask extends CachedTask
 
     /**
      * Called as the .java files of the jar are read from the jar
-     * @param file current contents of the file
+     * @param name name of the current entry
+     * @param file current contents of the entry
      * @return new new contents of the file
+     * @throws Exception as a convenience for any potential exceptions thrown in this method
      */
     public abstract String asRead(String name, String file) throws Exception;
 
     /**
      * Do Stuff after the jar is read, but before it is written.
-     * @param sourceMap name->contents  for all java files in the jar
-     * @param resourceMap name->contents  for everything else
+     * @param sourceMap name-&gt;contents  for all java files in the jar
+     * @param resourceMap name-&gt;contents  for everything else
      * @throws Exception for convenience
      */
     public abstract void doStuffMiddle(Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws Exception;
@@ -94,7 +96,7 @@ public abstract class EditJarTask extends CachedTask
     /**
      * Whether to store the contents of the jar in RAM.
      * If this returns false, then the doStuffMiddle method is not called. 
-     * @return
+     * @return store jar in ram
      */
     protected abstract boolean storeJarInRam();
 

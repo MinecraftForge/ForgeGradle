@@ -19,7 +19,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 
-public class RemapSources extends EditJarTask
+public class RemapSources extends AbstractEditJarTask
 {
     @InputFile
     private DelayedFile               methodsCsv;

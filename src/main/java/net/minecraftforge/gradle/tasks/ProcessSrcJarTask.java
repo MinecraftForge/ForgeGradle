@@ -25,7 +25,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 
-public class ProcessSrcJarTask extends EditJarTask
+public class ProcessSrcJarTask extends AbstractEditJarTask
 {
     private List<ResourceHolder> stages  = new LinkedList<ResourceHolder>();
 

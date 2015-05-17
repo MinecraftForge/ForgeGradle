@@ -260,7 +260,7 @@ public class Constants
      * This method constructs,, configures and returns a CSV reader instance to be used to read MCP CSV files.
      * @param file File to read
      * @return a configured CSVReader 
-     * @throws IOException
+     * @throws IOException Propogated from openning the file
      */
     public static CSVReader getReader(File file) throws IOException
     {
@@ -285,7 +285,7 @@ public class Constants
     /**
      * This method uses the channels API which uses direct filesystem copies instead of loading it into 
      * ram and then outputting it.
-     * @param in
+     * @param in file to copy
      * @param out created with directories if needed
      * @throws IOException In case anything goes wrong with the file IO
      */
@@ -310,7 +310,7 @@ public class Constants
     /**
      * This method uses the channels API which uses direct filesystem copies instead of loading it into 
      * ram and then outputting it.
-     * @param in
+     * @param in file to copy
      * @param out created with directories if needed
      * @param size If you have it earlier
      * @throws IOException In case anything goes wrong with the file IO
@@ -458,7 +458,7 @@ public class Constants
     
     /**
      * Throws a null runtime exception if the resource isnt found.
-     * @param resource
+     * @param resource String name of the resource your looking for
      * @return URL
      */
     public static URL getResource(String resource)
@@ -479,11 +479,12 @@ public class Constants
     /**
      * Resolves the supplied object to a string.
      * If the input is null, this will return null.
-     * Closures and callables are called with no arguments.
+     * Closures and Callables are called with no arguments.
      * Arrays use Arrays.toString().
      * File objects return their absolute paths.
      * All other objects have their toString run.
-     * @return resovled string
+     * @param obj Object to resolve
+     * @return resolved string
      */
     @SuppressWarnings("rawtypes")
     public static String resolveString(Object obj)
