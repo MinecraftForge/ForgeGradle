@@ -182,4 +182,5 @@ uploadArchives {
 }
 
 // write out version so its convenient for doc deployment
+file('build').mkdirs()
 file('build/version.txt').text = version;
