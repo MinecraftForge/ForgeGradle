@@ -96,9 +96,9 @@ javadoc {
 	classpath += configurations.compileOnly
 
     // linked javadoc urls.. why not...
-    options.addStringOption '--link', 'https://gradle.org/docs/current/javadoc/'
-    options.addStringOption '--link', 'http://docs.guava-libraries.googlecode.com/git-history/v18.0/javadoc'
-    options.addStringOption '--link', 'http://asm.ow2.org/asm50/javadoc/user/'
+    options.addStringOption 'link', 'https://gradle.org/docs/current/javadoc/'
+    options.addStringOption 'link', 'http://docs.guava-libraries.googlecode.com/git-history/v18.0/javadoc'
+    options.addStringOption 'link', 'http://asm.ow2.org/asm50/javadoc/user/'
 
 	exclude "**/old/**", "**/old/*"
 }
