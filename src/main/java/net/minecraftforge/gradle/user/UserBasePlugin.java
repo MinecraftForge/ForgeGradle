@@ -148,79 +148,100 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     /**
      * Name of the source dependency.  eg: forgeSrc
      * may not include delayed tokens.
+     * @return the name of the recompiled dependency
      */
     protected abstract String getSrcDepName();
     /**
      * Name of the source dependency.  eg: forgeBin
      * may not include delayed tokens.
+     * @return the name of the bin-patched dependency
      */
     protected abstract String getBinDepName();
 
     /**
      * May invoke the extension object, or be hardcoded.
      * may not include delayed tokens.
+     * @return has an api version
      */
     protected abstract boolean hasApiVersion();
     /**
      * May invoke the extension object, or be hardcoded.
      * may not include delayed tokens.
+     * @param exten the extension object
+     * @return the api version
      */
     protected abstract String getApiVersion(T exten);
     /**
      * May invoke the extension object, or be hardcoded.
      * may not include delayed tokens.
+     * @param exten the extension object
+     * @return the MC version
      */
     protected abstract String getMcVersion(T exten);
     /**
      * May invoke the extension object, or be hardcoded.
      * This unlike the others, is evaluated as a delayed file, and may contain various tokens including:
      * {API_NAME} {API_VERSION} {MC_VERSION}
+     * @param exten the extension object
+     * @return the API cache dir
      */
     protected abstract String getApiCacheDir(T exten);
     /**
      * May invoke the extension object, or be hardcoded.
      * This unlike the others, is evaluated as a delayed file, and may contain various tokens including:
      * {API_NAME} {API_VERSION} {MC_VERSION}
+     * @param exten the extension object
+     * @return the SRG cache dir
      */
     protected abstract String getSrgCacheDir(T exten);
     /**
      * May invoke the extension object, or be hardcoded.
      * This unlike the others, is evaluated as a delayed file, and may contain various tokens including:
      * {API_NAME} {API_VERSION} {MC_VERSION}
+     * @param exten the extension object
+     * @return the userdev cache dir
      */
     protected abstract String getUserDevCacheDir(T exten);
     /**
      * This unlike the others, is evaluated as a delayed string, and may contain various tokens including:
      * {API_NAME} {API_VERSION} {MC_VERSION}
+     * @return the userdev dep string
      */
     protected abstract String getUserDev();
 
     /**
      * For run configurations. Is delayed.
+     * @return the client tweaker class name
      */
     protected abstract String getClientTweaker();
     /**
      * For run configurations. Is delayed.
+     * @return the server tweaker class name
      */
     protected abstract String getServerTweaker();
     /**
      * For run configurations
+     * @return the start location
      */
     protected abstract String getStartDir();
     /**
      * For run configurations. Is delayed.
+     * @return the client main class name
      */
     protected abstract String getClientRunClass();
     /**
      * For run configurations
+     * @return the client run arguments
      */
     protected abstract Iterable<String> getClientRunArgs();
     /**
      * For run configurations. Is delayed.
+     * @return the server main class name
      */
     protected abstract String getServerRunClass();
     /**
      * For run configurations
+     * @return the server run arguments
      */
     protected abstract Iterable<String> getServerRunArgs();
 
@@ -1096,6 +1117,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
     /**
      * Configure tasks and stuff after you know if the decomp file exists or not.
+     * @param decomp will decompile this task
+     * @param remove should remove old dependencies or not
      */
     protected void configurePostDecomp(boolean decomp, boolean remove)
     {
@@ -1146,6 +1169,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     /**
      * Add Forge/FML ATs here.
      * This happens during normal evaluation, and NOT AfterEvaluate.
+     * @param task the deobfuscation task
      */
     protected abstract void configureDeobfuscation(ProcessJarTask task);
 
@@ -1157,9 +1181,10 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
     /**
      * Returns a file in the DirtyDir if the deobfuscation task is dirty. Otherwise returns the cached one.
-     * @param classifier
-     * @param ext
-     * @return
+     * @param name the name..
+     * @param classifier the classifier
+     * @param ext the extension
+     * @return delayed file
      */
     protected DelayedFile delayedDirtyFile(final String name, final String classifier, final String ext)
     {
@@ -1168,9 +1193,11 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
     /**
      * Returns a file in the DirtyDir if the deobfuscation task is dirty. Otherwise returns the cached one.
-     * @param classifier
-     * @param ext
-     * @return
+     * @param name the name..
+     * @param classifier the classifier
+     * @param ext the extension
+     * @param usesMappings whether or not MCP mappings are specified
+     * @return delayed file
      */
     @SuppressWarnings("serial")
     protected DelayedFile delayedDirtyFile(final String name, final String classifier, final String ext, final boolean usesMappings)
@@ -1199,10 +1226,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         };
     }
 
-    /**
-     * This extension object will have the name "minecraft"
-     * @return
-     */
     @SuppressWarnings("unchecked")
     protected Class<T> getExtensionClass()
     {

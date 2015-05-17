@@ -275,6 +275,7 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     
     /**
      * THIS HAPPENS EARLY!  no delay tokens or stuff!
+     * @return url of the version json
      */
     protected abstract String getVersionsJsonUrl();
 
@@ -304,17 +305,20 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     /**
      * Add in the desired patching stages.
      * This happens during normal evaluation, and NOT AfterEvaluate.
-     * @param patch
+     * @param patch patching task
      */
     protected abstract void configurePatching(ProcessSrcJarTask patch);
 
     /**
      * Should be with separate with periods.
+     * @return API group
      */
     protected abstract String getApiGroup();
     
     /**
      * Should be with separate with slashes.
+     * @param exten extension object
+     * @return api path
      */
     protected String getApiPath(UserPatchExtension exten)
     {

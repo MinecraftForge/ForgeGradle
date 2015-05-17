@@ -107,7 +107,7 @@ public class SingleDeobfTask extends CachedTask
     /**
      * Whatever works, Closure, file, dir, dependency config.
      * Evaluated with project.file later
-     * @param classpathEntry
+     * @param classpathEntry entry
      */
     public void addClasspath(Object classpathEntry)
     {

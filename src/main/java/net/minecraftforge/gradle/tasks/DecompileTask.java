@@ -78,6 +78,7 @@ public class DecompileTask extends CachedTask
 
     /**
      * This method outputs to the cleanSrc
+     * @throws Throwable Let em throw anything.. I dont care.
      */
     @TaskAction
     protected void doMCPStuff() throws Throwable

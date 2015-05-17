@@ -269,7 +269,7 @@ public class Constants
     
     /**
      * Throws a null runtime exception if the resource isnt found.
-     * @param resource
+     * @param resource String name of the resource your looking for
      * @return URL
      */
     public static URL getResource(String resource)

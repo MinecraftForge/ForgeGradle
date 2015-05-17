@@ -133,8 +133,8 @@ public final class ContextualPatch
     /**
      * @param dryRun true if the method should not make any modifications to files, false otherwise
      * @return List of patch reports. Never null, may be empty.
-     * @throws PatchException
-     * @throws IOException
+     * @throws PatchException for a malformed patch file
+     * @throws IOException because it reads the patch file
      */
     public List<PatchReport> patch(boolean dryRun) throws PatchException, IOException
     {

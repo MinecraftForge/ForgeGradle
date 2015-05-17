@@ -325,7 +325,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
     /**
      * This extension object will have the name "minecraft"
-     * @return
+     * @return extension object class
      */
     @SuppressWarnings("unchecked")
     protected Class<K> getExtensionClass()

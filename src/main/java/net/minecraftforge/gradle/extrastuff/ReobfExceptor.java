@@ -72,7 +72,7 @@ public class ReobfExceptor
     /**
      * reads the Old jar, the EXC, and the CSVS
      * Hopefully, these things wont change.
-     * @throws IOException 
+     * @throws IOException because it reads the srg and jar files
      */
     public void doFirstThings() throws IOException
     {

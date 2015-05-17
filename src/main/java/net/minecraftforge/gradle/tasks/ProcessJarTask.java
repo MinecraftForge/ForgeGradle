@@ -110,7 +110,7 @@ public class ProcessJarTask extends CachedTask
 
     /**
      * adds an access transformer to the deobfuscation of this
-     * @param obj
+     * @param obj access transformers
      */
     public void addTransformer(Object... obj)
     {

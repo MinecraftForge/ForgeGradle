@@ -62,7 +62,7 @@ public class AntPathMatcher
     /**
      * Set the path separator to use for pattern parsing.
      * Default is "/", as in Ant.
-     * @param pathSeparator 
+     * @param pathSeparator separator
      */
     public void setPathSeparator(String pathSeparator)
     {
@@ -445,8 +445,8 @@ public class AntPathMatcher
      * </ul>
      * <p>
      * Assumes that {@link #match} returns <code>true</code> for '<code>pattern</code>' and '<code>path</code>', but does <strong>not</strong> enforce this.
-     * @param pattern 
-     * @param path 
+     * @param pattern pattern
+     * @param path path
      * @return The section of the path matched by the pattern
      */
     public String extractPathWithinPattern(String pattern, String path)
