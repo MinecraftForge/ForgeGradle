@@ -5,7 +5,13 @@ apply plugin: 'maven'
 
 group = 'net.minecraftforge.gradle'
 
-version = '1.2-SNAPSHOT'
+if (project.hasProperty("push_release")) {
+	if (System.env.BUILD_NUMBER == null)
+		throw new IllegalArgumentException('Can not push a release without specifying a build number in $BUILD_NUMBER')
+	version = '1.2.0.' + System.env.BUILD_NUMBER
+} else {
+	version = '1.2-SNAPSHOT'
+}
 	
 archivesBaseName = 'ForgeGradle'
 targetCompatibility = '1.6'
