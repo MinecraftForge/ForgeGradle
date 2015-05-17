@@ -20,10 +20,10 @@ import java.util.zip.ZipOutputStream;
 
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.old.tasks.CopyAssetsTask;
 import net.minecraftforge.gradle.old.tasks.dev.ObfuscateTask;
 import net.minecraftforge.gradle.patcher.TaskCompressLZMA;
 import net.minecraftforge.gradle.patcher.PatcherExtension;
-import net.minecraftforge.gradle.tasks.CopyAssetsTask;
 import net.minecraftforge.gradle.tasks.Download;
 import net.minecraftforge.gradle.tasks.ExtractTask;
 import net.minecraftforge.gradle.tasks.GenSrgs;

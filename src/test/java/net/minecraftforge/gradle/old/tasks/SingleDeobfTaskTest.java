@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.old.obf;
+package net.minecraftforge.gradle.old.tasks;
 
 import java.io.File;
 
@@ -12,7 +12,7 @@ import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ObfuscationTest
+public class SingleDeobfTaskTest
 {
     private static final File EXECUTION_ROOT = new File("build/tmp/testing/obf");
     private static final File TEST_ROOT    = new File("src/test/resources/net/minecraftforge/gradle/obf");

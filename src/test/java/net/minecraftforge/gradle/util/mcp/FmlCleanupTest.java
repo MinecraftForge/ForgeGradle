@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle;
+package net.minecraftforge.gradle.util.mcp;
 
 import java.io.IOException;
 import java.io.InputStream;

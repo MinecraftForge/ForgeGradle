@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.old;
+package net.minecraftforge.gradle.util.mcp;
 
 import java.io.IOException;
 
@@ -21,7 +21,7 @@ public class EnumFixerTest
         String input = readResource(INPUT);
         //String expected = readResource(EXPECTED);
 
-        input = FFPatcher.processFile(INPUT + ".java", input, true);
+        input = FFPatcher.processFile(input);
 
         // check LineByLine...
         String[] expected = readResource(EXPECTED).split("\r\n|\r|\n");
