@@ -11,8 +11,6 @@ import java.net.URL;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
-import net.minecraftforge.gradle.util.delayed.DelayedFile;
-import net.minecraftforge.gradle.util.delayed.DelayedString;
 
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
@@ -21,11 +19,11 @@ import org.gradle.api.tasks.TaskAction;
 public class Download extends CachedTask
 {
     @Input
-    private DelayedString url;
+    private Object url;
 
     @OutputFile
     @Cached
-    private DelayedFile output;
+    private Object output;
 
     @TaskAction
     public void doTask() throws IOException
@@ -34,9 +32,7 @@ public class Download extends CachedTask
         outputFile.getParentFile().mkdirs();
         outputFile.createNewFile();
 
-        getLogger().debug("Downloading " + getUrl() + " to " + outputFile);
-        
-        // TODO: check etags... maybe?
+        getLogger().info("Downloading " + getUrl() + " to " + outputFile);
 
         HttpURLConnection connect = (HttpURLConnection) (new URL(getUrl())).openConnection();
         connect.setRequestProperty("User-Agent", Constants.USER_AGENT);
@@ -63,20 +59,20 @@ public class Download extends CachedTask
 
     public File getOutput()
     {
-        return output.call();
+        return getProject().file(output);
     }
 
-    public void setOutput(DelayedFile output)
+    public void setOutput(Object output)
     {
         this.output = output;
     }
 
     public String getUrl()
     {
-        return url.call();
+        return Constants.resolveString(url);
     }
 
-    public void setUrl(DelayedString url)
+    public void setUrl(Object url)
     {
         this.url = url;
     }

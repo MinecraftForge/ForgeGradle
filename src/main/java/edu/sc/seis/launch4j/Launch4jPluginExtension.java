@@ -13,7 +13,6 @@ public class Launch4jPluginExtension implements Serializable
 {
     private static final long serialVersionUID = 1001523559902066994L;
     
-    private String  launch4jCmd    = "launch4j";
     private String  outputDir      = "launch4j";
     private String  xmlFileName    = "launch4j.xml";
     private String  mainClassName;
@@ -47,10 +46,10 @@ public class Launch4jPluginExtension implements Serializable
 	private String messagesJreVersionError;
     private String messagesLauncherError;
 	
-	private Integer initialHeapSize;
-	private Integer initialHeapPercent;
-	private Integer maxHeapSize;
-	private Integer maxHeapPercent;
+	private int initialHeapSize;
+	private int initialHeapPercent;
+	private int maxHeapSize;
+	private int maxHeapPercent;
 	
 	private static final Pattern JAVA_VERSION_REGEX = Pattern.compile("\\d+(\\.\\d+){0,1}");
 	
@@ -73,16 +72,6 @@ public class Launch4jPluginExtension implements Serializable
                 jreMinVersion = jreMinVersion + ".0";
             }
         }
-    }
-
-    public String getLaunch4jCmd()
-    {
-        return launch4jCmd;
-    }
-
-    public void setLaunch4jCmd(String launch4jCmd)
-    {
-        this.launch4jCmd = launch4jCmd;
     }
 
     public String getOutputDir()
@@ -375,42 +364,42 @@ public class Launch4jPluginExtension implements Serializable
         this.messagesLauncherError = messagesLauncherError;
     }
 
-    public Integer getInitialHeapSize()
+    public int getInitialHeapSize()
     {
         return initialHeapSize;
     }
 
-    public void setInitialHeapSize(Integer initialHeapSize)
+    public void setInitialHeapSize(int initialHeapSize)
     {
         this.initialHeapSize = initialHeapSize;
     }
 
-    public Integer getInitialHeapPercent()
+    public int getInitialHeapPercent()
     {
         return initialHeapPercent;
     }
 
-    public void setInitialHeapPercent(Integer initialHeapPercent)
+    public void setInitialHeapPercent(int initialHeapPercent)
     {
         this.initialHeapPercent = initialHeapPercent;
     }
 
-    public Integer getMaxHeapSize()
+    public int getMaxHeapSize()
     {
         return maxHeapSize;
     }
 
-    public void setMaxHeapSize(Integer maxHeapSize)
+    public void setMaxHeapSize(int maxHeapSize)
     {
         this.maxHeapSize = maxHeapSize;
     }
 
-    public Integer getMaxHeapPercent()
+    public int getMaxHeapPercent()
     {
         return maxHeapPercent;
     }
 
-    public void setMaxHeapPercent(Integer maxHeapPercent)
+    public void setMaxHeapPercent(int maxHeapPercent)
     {
         this.maxHeapPercent = maxHeapPercent;
     }
