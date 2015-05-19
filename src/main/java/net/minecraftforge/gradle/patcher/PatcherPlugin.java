@@ -247,14 +247,14 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         {
             // why not merged? it contains the SideOnly and stuff that we want in the classes
             extractNonMcSources.addCleanSource(delayedFile(JAR_DECOMP_POST));
-            extractNonMcSources.setOutput(delayedFile(JAR_USERDEV_SOURCES));
+            extractNonMcSources.setOutput(delayedFile(ZIP_USERDEV_SOURCES));
             extractNonMcSources.setEnding(".java");
             extractNonMcSources.dependsOn(TASK_SETUP_PROJECTS);
         }
 
         Zip combineRes = makeTask(TASK_COMBINE_RESOURCES, Zip.class);
         {
-            File out = delayedFile(JAR_USERDEV_RES).call();
+            File out = delayedFile(ZIP_USERDEV_RES).call();
             combineRes.setDestinationDir(out.getParentFile());
             combineRes.setArchiveName(out.getName());
             combineRes.setIncludeEmptyDirs(false);
@@ -267,17 +267,27 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             mergeFiles.setOutExc(delayedFile(EXC_MERGED_USERDEV));
             mergeFiles.setOutAt(delayedFile(AT_MERGED_USERDEV));
         }
+        
+        Zip packagePatches = makeTask(TASK_PATCHES_USERDEV, Zip.class);
+        {
+            File out = delayedFile(ZIP_USERDEV_PATCHES).call();
+            packagePatches.from(delayedFile(DIR_USERDEV_PATCHES));
+            packagePatches.setDestinationDir(out.getParentFile());
+            packagePatches.setArchiveName(out.getName());
+        }
 
         Zip userdev = makeTask(TASK_BUILD_USERDEV, Zip.class);
         {
             userdev.from(delayedFile(DIR_USERDEV));
+            userdev.from(getExtension().getDelayedVersionJson()); // cant forge that now can we..
+            userdev.rename(".+-dev\\.json", "dev.json");
             userdev.setBaseName(project.getName());
             userdev.setClassifier("userdev");
             userdev.setExtension("jar");
             userdev.setDestinationDir(new File(DIR_OUTPUT));
             userdev.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
             userdev.getOutputs().upToDateWhen(Constants.CALL_FALSE); // rebuild every time.
-            userdev.dependsOn(TASK_GEN_PATCHES_USERDEV, extractNonMcSources, combineRes, mergeFiles);
+            userdev.dependsOn(packagePatches, extractNonMcSources, combineRes, mergeFiles);
         }
     }
 
@@ -772,17 +782,20 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         // Why regenerate patches from clean if the built project already has them?
         if ("clean".equals(patcher.getGenPatchesFrom().toLowerCase()))
         {
-            Sync userdevPatches = makeTask(TASK_GEN_PATCHES_USERDEV, Sync.class);
-            userdevPatches.from(patcher.getPatchDir());
-            userdevPatches.into((delayedFile(DIR_USERDEV_PATCHES)));
+            ((Zip)(project.getTasks().getByName(TASK_PATCHES_USERDEV))).from(patcher.getPatchDir());
         }
         else
         {
-            TaskGenPatches userdevPatches = makeTask(TASK_GEN_PATCHES_USERDEV, TaskGenPatches.class);
+            //TASK_PATCHES_USERDEV
+            TaskGenPatches userdevPatches = makeTask("genUserdevPatches", TaskGenPatches.class);
             userdevPatches.setPatchDir(delayedFile(DIR_USERDEV_PATCHES));
             userdevPatches.addOriginalSource(delayedFile(JAR_DECOMP_POST)); // add vanilla SRG named source
             userdevPatches.addChangedSource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, patcher)));
             userdevPatches.dependsOn(TASK_POST_DECOMP, projectString(TASK_PROJECT_RETROMAP, patcher));
+            
+            Zip packageUserdev = (Zip)(project.getTasks().getByName(TASK_PATCHES_USERDEV));
+            packageUserdev.from(delayedFile(DIR_USERDEV_PATCHES));
+            packageUserdev.dependsOn(userdevPatches);
         }
 
         TaskExtractNew userdevSources = (TaskExtractNew) project.getTasks().getByName(TASK_EXTRACT_OBF_SOURCES);
