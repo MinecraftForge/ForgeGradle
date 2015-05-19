@@ -226,12 +226,14 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             dlInstaller.setFile(delayedFile(JAR_INSTALLER));
         }
 
-        Jar installer = makeTask(TASK_BUILD_INSTALLER, Jar.class);
+        Zip installer = makeTask(TASK_BUILD_INSTALLER, Zip.class);
         {
             installer.from(outputJar);
-            installer.from(delayedTree(JSON_INSTALLER), new CopyInto("", "!*.json", "!*.png"));
+            installer.from(delayedTree(JAR_INSTALLER), new CopyInto("", "!*.json", "!*.png"));
+            installer.from(delayedTree(JSON_INSTALLER));
             installer.setBaseName(project.getName());
             installer.setClassifier("installer");
+            installer.setExtension("jar");
             installer.setDestinationDir(new File(DIR_OUTPUT));
             installer.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
             installer.getOutputs().upToDateWhen(Constants.CALL_FALSE); // rebuild every time.
@@ -791,7 +793,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         // add version to packaging tasks
         outputJar.setVersion(project.getVersion().toString());
         ((Zip)project.getTasks().getByName(TASK_BUILD_USERDEV)).setVersion(project.getVersion().toString());
-        ((Jar)project.getTasks().getByName(TASK_BUILD_INSTALLER)).setVersion(project.getVersion().toString());
+        ((Zip)project.getTasks().getByName(TASK_BUILD_INSTALLER)).setVersion(project.getVersion().toString());
         
         // add them to the maven artifatcs
         if (project.getPlugins().hasPlugin("maven"))

@@ -38,8 +38,8 @@ class TaskProcessJson extends DefaultTask
     public void doTask() throws IOException
     {
         File inputFile = getReleaseJson();
-        File outFile = getUniversalJson();
-        File truncatedFile = getInstallerJson();
+        File outFile = getInstallerJson();
+        File truncatedFile = getUniversalJson();
 
         String input = Files.toString(inputFile, Constants.CHARSET);
 
@@ -55,7 +55,7 @@ class TaskProcessJson extends DefaultTask
         Gson gson = (new GsonBuilder()).setPrettyPrinting().create();
         input = gson.toJson(gson.fromJson(input, Map.class).get("versionInfo"));
 
-        // write the sueful truncated data
+        // write the useful truncated data
         Files.write(input.getBytes(Constants.CHARSET), truncatedFile);
     }
 
