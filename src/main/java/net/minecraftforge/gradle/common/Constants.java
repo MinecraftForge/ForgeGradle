@@ -59,8 +59,6 @@ public class Constants
     public static final String FORGE_MAVEN      = "http://files.minecraftforge.net/maven";
     public static final String ASSETS_INDEX_URL = "https://s3.amazonaws.com/Minecraft.Download/indexes/{ASSET_INDEX}.json";
 
-    public static final String LOG              = ".gradle/gradle.log";
-
     // MCP things
     public static final String CONFIG_MCP_DATA  = "mcpSnapshotDataConfig";
     public static final String MCP_JSON_URL     = "http://export.mcpbot.bspk.rs/versions.json";
