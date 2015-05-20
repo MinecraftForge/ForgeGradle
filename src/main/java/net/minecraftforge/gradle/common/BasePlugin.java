@@ -83,10 +83,16 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         }
 
         // logging
-        FileLogListenner listener = new FileLogListenner(new File(project.getGradle().getStartParameter().getProjectCacheDir(), "gradle.log"));
-        project.getLogging().addStandardOutputListener(listener);
-        project.getLogging().addStandardErrorListener(listener);
-        project.getGradle().addBuildListener(listener);
+        {
+            File projectCacheDir = project.getGradle().getStartParameter().getProjectCacheDir();
+            if (projectCacheDir == null)
+                projectCacheDir = new File(project.getProjectDir(), ".gradle");
+            
+            FileLogListenner listener = new FileLogListenner(new File(projectCacheDir, "gradle.log"));
+            project.getLogging().addStandardOutputListener(listener);
+            project.getLogging().addStandardErrorListener(listener);
+            project.getGradle().addBuildListener(listener);
+        }
 
         if (project.getBuildDir().getAbsolutePath().contains("!"))
         {
