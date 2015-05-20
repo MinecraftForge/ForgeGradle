@@ -5,23 +5,17 @@ import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PROTECTED;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import groovy.lang.Closure;
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
 
 import net.md_5.specialsource.AccessMap;
 import net.md_5.specialsource.Jar;
@@ -34,7 +28,6 @@ import net.minecraftforge.gradle.common.BaseExtension;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
-import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import net.minecraftforge.gradle.util.json.JsonFactory;
 import net.minecraftforge.gradle.util.json.MCInjectorStruct;
 import net.minecraftforge.gradle.util.json.MCInjectorStruct.InnerClass;
@@ -46,18 +39,11 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.MethodNode;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
 
@@ -81,10 +67,6 @@ public class DeobfuscateJar extends CachedTask
     @InputFile
     private Object            exceptorCfg;
 
-    @Optional
-    @Input
-    private boolean           stripSynthetics = false;
-
     @InputFile
     private Object            exceptorJson;
 
@@ -94,8 +76,7 @@ public class DeobfuscateJar extends CachedTask
     @Input
     private boolean           failOnAtError   = true;
 
-    private Object            outCleanJar;                                                                 // clean = pure forge, or pure FML
-    private Object            outDirtyJar     = new DelayedFile(getProject(), "{BUILD_DIR}/processed.jar"); // dirty = has any other ATs
+    private Object            outJar;
 
     @InputFiles
     private ArrayList<Object> ats             = Lists.newArrayList();
@@ -120,13 +101,11 @@ public class DeobfuscateJar extends CachedTask
     {
         for (Object object : obj)
         {
-            if (object instanceof File)
-                ats.add(new DelayedFile(getProject(), ((File) object).getAbsolutePath()));
-            else if (object instanceof String)
-                ats.add(new DelayedFile(getProject(), (String) object));
-            else
-                ats.add(new DelayedFile(getProject(), object.toString()));
-
+            ats.add(object);
+        }
+        
+        if (obj.length > 0)
+        {
             isClean = false;
         }
     }
@@ -136,8 +115,7 @@ public class DeobfuscateJar extends CachedTask
     {
         // make stuff into files.
         File tempObfJar = new File(getTemporaryDir(), "deobfed.jar"); // courtesy of gradle temp dir.
-        File out = isClean ? getOutCleanJar() : getOutDirtyJar();
-        File tempExcJar = stripSynthetics ? new File(getTemporaryDir(), "excpeted.jar") : out; // courtesy of gradle temp dir.
+        File out = getOutJar();
 
         // make the ATs list.. its a Set to avoid duplication.
         Set<File> ats = new HashSet<File>();
@@ -156,14 +134,7 @@ public class DeobfuscateJar extends CachedTask
 
         // apply exceptor
         getLogger().lifecycle("Applying Exceptor...");
-        applyExceptor(tempObfJar, tempExcJar, getExceptorCfg(), log, ats);
-
-        if (stripSynthetics)
-        {
-            // strip out synthetics that arnt from enums..
-            getLogger().lifecycle("Stripping synthetics...");
-            stripSynthetics(tempExcJar, out);
-        }
+        applyExceptor(tempObfJar, out, getExceptorCfg(), log, ats);
     }
 
     private void deobfJar(File inJar, File outJar, File srg, Collection<File> ats) throws IOException
@@ -347,76 +318,12 @@ public class DeobfuscateJar extends CachedTask
                 genParams);
     }
 
-    private void stripSynthetics(File inJar, File outJar) throws IOException
-    {
-        ZipFile in = new ZipFile(inJar);
-        final ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(outJar)));
-
-        for (ZipEntry e : Collections.list(in.entries()))
-        {
-            if (e.getName().contains("META-INF"))
-                continue;
-
-            if (e.isDirectory())
-            {
-                out.putNextEntry(e);
-            }
-            else
-            {
-                ZipEntry n = new ZipEntry(e.getName());
-                n.setTime(e.getTime());
-                out.putNextEntry(n);
-
-                byte[] data = ByteStreams.toByteArray(in.getInputStream(e));
-
-                // correct source name
-                if (e.getName().endsWith(".class"))
-                    data = stripSynthetics(e.getName(), data);
-
-                out.write(data);
-            }
-        }
-
-        out.flush();
-        out.close();
-        in.close();
-    }
-
-    private byte[] stripSynthetics(String name, byte[] data)
-    {
-        ClassReader reader = new ClassReader(data);
-        ClassNode node = new ClassNode();
-
-        reader.accept(node, 0);
-
-        if ((node.access & Opcodes.ACC_ENUM) == 0 && !node.superName.equals("java/lang/Enum") && (node.access & Opcodes.ACC_SYNTHETIC) == 0)
-        {
-            // ^^ is for ignoring enums.
-
-            for (FieldNode f : ((List<FieldNode>) node.fields))
-            {
-                f.access = f.access & (0xffffffff - Opcodes.ACC_SYNTHETIC);
-                //getLogger().lifecycle("Stripping field: "+f.name);
-            }
-
-            for (MethodNode m : ((List<MethodNode>) node.methods))
-            {
-                m.access = m.access & (0xffffffff - Opcodes.ACC_SYNTHETIC);
-                //getLogger().lifecycle("Stripping method: "+m.name);
-            }
-        }
-
-        ClassWriter writer = new ClassWriter(0);
-        node.accept(writer);
-        return writer.toByteArray();
-    }
-
     public File getExceptorCfg()
     {
         return getProject().file(exceptorCfg);
     }
 
-    public void setExceptorCfg(DelayedFile exceptorCfg)
+    public void setExceptorCfg(Object exceptorCfg)
     {
         this.exceptorCfg = exceptorCfg;
     }
@@ -429,7 +336,7 @@ public class DeobfuscateJar extends CachedTask
             return getProject().file(exceptorJson);
     }
 
-    public void setExceptorJson(DelayedFile exceptorJson)
+    public void setExceptorJson(Object exceptorJson)
     {
         this.exceptorJson = exceptorJson;
     }
@@ -459,7 +366,7 @@ public class DeobfuscateJar extends CachedTask
         return getProject().file(inJar);
     }
 
-    public void setInJar(DelayedFile inJar)
+    public void setInJar(Object inJar)
     {
         this.inJar = inJar;
     }
@@ -487,41 +394,6 @@ public class DeobfuscateJar extends CachedTask
         this.srg = srg;
     }
 
-    public File getOutCleanJar()
-    {
-        return getProject().file(outCleanJar);
-    }
-
-    public void setOutCleanJar(Object outJar)
-    {
-        this.outCleanJar = outJar;
-    }
-
-    public File getOutDirtyJar()
-    {
-        return getProject().file(outDirtyJar);
-    }
-
-    public void setOutDirtyJar(DelayedFile outDirtyJar)
-    {
-        this.outDirtyJar = outDirtyJar;
-    }
-
-    public boolean isClean()
-    {
-        return isClean;
-    }
-
-    /**
-     * returns the actual output DelayedFile depending on Clean status
-     * Unlike getOutputJar() this method does not resolve the files.
-     * @return DelayedFIle that will resolve to
-     */
-    public Object getDelayedOutput()
-    {
-        return isClean ? outCleanJar : outDirtyJar;
-    }
-
     /**
      * returns the actual output file depending on Clean status
      * @return File representing output jar
@@ -530,7 +402,28 @@ public class DeobfuscateJar extends CachedTask
     @OutputFile
     public File getOutJar()
     {
-        return getProject().file(getDelayedOutput());
+        return getProject().file(outJar);
+    }
+
+    public void setOutJar(Object outJar)
+    {
+        this.outJar = outJar;
+    }
+    
+    /**
+     * returns the actual output Object depending on Clean status
+     * Unlike getOutputJar() this method does not resolve the files.
+     * @return Object that will resolve to
+     */
+    @SuppressWarnings("serial")
+    public Closure<File> getDelayedOutput()
+    {
+        return new Closure<File>(getProject(), this) {
+            public File call()
+            {
+                return getOutJar();
+            }
+        };
     }
 
     public FileCollection getAts()
@@ -561,22 +454,17 @@ public class DeobfuscateJar extends CachedTask
     @Override
     protected boolean defaultCache()
     {
-        return isClean();
+        return isClean;
+    }
+    
+    public boolean isClean()
+    {
+        return isClean;
     }
 
     public void setDirty()
     {
         isClean = false;
-    }
-
-    public boolean getStripSynthetics()
-    {
-        return stripSynthetics;
-    }
-
-    public void setStripSynthetics(boolean stripSynthetics)
-    {
-        this.stripSynthetics = stripSynthetics;
     }
 
     private static final class ErroringRemappingAccessMap extends AccessMap

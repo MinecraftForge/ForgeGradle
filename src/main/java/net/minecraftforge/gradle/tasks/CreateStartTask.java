@@ -80,6 +80,7 @@ public class CreateStartTask extends CachedTask
                     .put("encoding", "utf-8")
                     .put("source", "1.6")
                     .put("target", "1.6")
+                    .put("compilerarg", "-Xlint:-options") // to silence the bootstrap classpath warning
                     .build());
         }
 

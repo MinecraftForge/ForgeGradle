@@ -231,7 +231,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         Download dlClient = makeTask(TASK_DL_CLIENT, Download.class);
         {
             dlClient.setOutput(delayedFile(JAR_CLIENT_FRESH));
-            dlClient.setUrl(delayedString(URL_MC_JAR));
+            dlClient.setUrl(delayedString(URL_MC_CLIENT));
         }
 
         Download dlServer = makeTask(TASK_DL_SERVER, Download.class);

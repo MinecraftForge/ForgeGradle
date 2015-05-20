@@ -595,7 +595,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.setFieldCsv(delayedFile(FIELD_CSV));
             task.setMethodCsv(delayedFile(METHOD_CSV));
             task.setInJar(delayedFile(JAR_MERGED));
-            task.setOutCleanJar(delayedFile("{API_CACHE_DIR}/" + MAPPING_APPENDAGE + name));
+            task.setOutJar(delayedFile("{API_CACHE_DIR}/" + MAPPING_APPENDAGE + name));
             task.setOutDirtyJar(delayedFile(DIRTY_DIR + "/" + name));
             task.setApplyMarkers(false);
             task.setStripSynthetics(true);
@@ -611,7 +611,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task.setExceptorJson(delayedFile(EXC_JSON));
             task.setExceptorCfg(delayedFile(EXC_SRG));
             task.setInJar(delayedFile(JAR_MERGED));
-            task.setOutCleanJar(delayedFile("{API_CACHE_DIR}/" + name));
+            task.setOutJar(delayedFile("{API_CACHE_DIR}/" + name));
             task.setOutDirtyJar(delayedFile(DIRTY_DIR + "/" + name));
             task.setApplyMarkers(true);
             configureDeobfuscation(task);

@@ -106,7 +106,7 @@ public class Constants
 
     // urls
     public static final String URL_MC_JSON      = "http://s3.amazonaws.com/Minecraft.Download/versions/" + REPLACE_MC_VERSION + "/" + REPLACE_MC_VERSION + ".json";
-    public static final String URL_MC_JAR       = "http://s3.amazonaws.com/Minecraft.Download/versions/" + REPLACE_MC_VERSION + "/" + REPLACE_MC_VERSION + ".jar";
+    public static final String URL_MC_CLIENT    = "http://s3.amazonaws.com/Minecraft.Download/versions/" + REPLACE_MC_VERSION + "/" + REPLACE_MC_VERSION + ".jar";
     public static final String URL_MC_SERVER    = "http://s3.amazonaws.com/Minecraft.Download/versions/" + REPLACE_MC_VERSION + "/minecraft_server." + REPLACE_MC_VERSION + ".jar";
     public static final String URL_FF           = "http://files.minecraftforge.net/fernflower-fix-1.0.zip";
     public static final String URL_ASSETS       = "http://resources.download.minecraft.net";
