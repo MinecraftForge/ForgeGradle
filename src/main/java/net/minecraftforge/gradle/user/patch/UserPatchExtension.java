@@ -2,6 +2,7 @@ package net.minecraftforge.gradle.user.patch;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -152,7 +153,17 @@ public class UserPatchExtension extends UserExtension
             String mcversion = matcher.group(1);
             
             String forgeVersion = matcher.group(2);
-            ForgeBuild build = versionInfo.number.get(Integer.valueOf(matcher.group(3)));
+            String buildNumber = matcher.group(3);
+            
+            if ("0".equals(buildNumber))
+            {
+                project.getLogger().lifecycle("Assuming custom forge version!");
+                version = mcversion;
+                apiVersion = forgeVersion;
+                return;
+            }
+            
+            ForgeBuild build = versionInfo.number.get(Integer.parseInt(buildNumber));
             
             if (build == null)
             {

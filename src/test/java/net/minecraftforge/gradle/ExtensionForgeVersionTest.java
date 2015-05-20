@@ -148,4 +148,11 @@ public class ExtensionForgeVersionTest
         // invalid branch
         this.ext.setVersion("1.7.10-11.14.0.1256-1.8");
     }
+    
+    @Test
+    public void testZeroBuildnumber()
+    {
+        // 0 as the buildnumber
+        this.ext.setVersion("1.8-11.14.1.0");
+    }
 }
