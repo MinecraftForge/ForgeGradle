@@ -97,7 +97,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         }
 
         // logging
-        FileLogListenner listener = new FileLogListenner(project.file(LOG));
+        FileLogListenner listener = new FileLogListenner(new File(project.getGradle().getStartParameter().getProjectCacheDir(), "gradle.log"));
         project.getLogging().addStandardOutputListener(listener);
         project.getLogging().addStandardErrorListener(listener);
         project.getGradle().addBuildListener(listener);

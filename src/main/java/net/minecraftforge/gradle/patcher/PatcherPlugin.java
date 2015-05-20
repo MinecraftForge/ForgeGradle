@@ -22,7 +22,6 @@ import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Task;
 import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.tasks.Delete;
-import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
 

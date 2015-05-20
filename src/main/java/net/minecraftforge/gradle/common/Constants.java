@@ -66,7 +66,6 @@ public class Constants
 
     // extension names
     public static final String EXT_NAME_MC      = "minecraft";
-    public static final String EXT_NAME_JENKINS = "jenkins";
     
     public static final String GROUP_FG         = "ForgeGradle";
 
@@ -115,8 +114,6 @@ public class Constants
     public static final String URL_FORGE_MAVEN  = "http://files.minecraftforge.net/maven";
     public static final String ASSETS_INDEX_URL = "https://s3.amazonaws.com/Minecraft.Download/indexes/" + REPLACE_ASSET_INDEX + ".json";
     public static final String URL_MCP_JSON     = "http://export.mcpbot.bspk.rs/versions.json";
-
-    public static final String LOG              = ".gradle/gradle.log";
 
     // configs
     public static final String CONFIG_MCP_DATA  = "forgeGradleMcpData";
