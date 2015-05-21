@@ -145,12 +145,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         // do Mcp Snapshots Stuff
         setVersionInfoJson();
-        project.getConfigurations().create(CONFIG_MCP_DATA);
-        project.getConfigurations().create(CONFIG_MAPPINGS);
+        project.getConfigurations().maybeCreate(CONFIG_MCP_DATA);
+        project.getConfigurations().maybeCreate(CONFIG_MAPPINGS);
         
         // set other useful configs
-        project.getConfigurations().create(CONFIG_MC_DEPS);
-        project.getConfigurations().create(CONFIG_NATIVES);
+        project.getConfigurations().maybeCreate(CONFIG_MC_DEPS);
+        project.getConfigurations().maybeCreate(CONFIG_NATIVES);
 
         // after eval
         project.afterEvaluate(new Action<Project>() {

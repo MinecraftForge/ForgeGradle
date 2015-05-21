@@ -22,7 +22,6 @@ import joptsimple.internal.Strings;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.old.tasks.*;
-import net.minecraftforge.gradle.old.tasks.user.SourceCopyTask;
 import net.minecraftforge.gradle.old.tasks.user.reobf.ArtifactSpec;
 import net.minecraftforge.gradle.old.tasks.user.reobf.ReobfTask;
 import net.minecraftforge.gradle.tasks.CreateStartTask;
@@ -33,6 +32,7 @@ import net.minecraftforge.gradle.tasks.GenSrgs;
 import net.minecraftforge.gradle.tasks.MergeJars;
 import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.RemapSources;
+import net.minecraftforge.gradle.user.TaskSourceCopy;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import net.minecraftforge.gradle.util.json.JsonFactory;
 
@@ -872,13 +872,13 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
         // do the special source moving...
-        SourceCopyTask task;
+        TaskSourceCopy task;
 
         // main
         {
             DelayedFile dir = delayedFile(SOURCES_DIR + "/java");
 
-            task = makeTask("sourceMainJava", SourceCopyTask.class);
+            task = makeTask("sourceMainJava", TaskSourceCopy.class);
             task.setSource(main.getJava());
             task.setOutput(dir);
 
@@ -893,7 +893,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             ScalaSourceSet set = (ScalaSourceSet) new DslObject(main).getConvention().getPlugins().get("scala");
             DelayedFile dir = delayedFile(SOURCES_DIR + "/scala");
 
-            task = makeTask("sourceMainScala", SourceCopyTask.class);
+            task = makeTask("sourceMainScala", TaskSourceCopy.class);
             task.setSource(set.getScala());
             task.setOutput(dir);
 
@@ -908,7 +908,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             GroovySourceSet set = (GroovySourceSet) new DslObject(main).getConvention().getPlugins().get("groovy");
             DelayedFile dir = delayedFile(SOURCES_DIR + "/groovy");
 
-            task = makeTask("sourceMainGroovy", SourceCopyTask.class);
+            task = makeTask("sourceMainGroovy", TaskSourceCopy.class);
             task.setSource(set.getGroovy());
             task.setOutput(dir);
 
@@ -1080,7 +1080,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         }
 
         // configure source replacement.
-        for (SourceCopyTask t : project.getTasks().withType(SourceCopyTask.class))
+        for (TaskSourceCopy t : project.getTasks().withType(TaskSourceCopy.class))
         {
             t.replace(getExtension().getReplacements());
             t.include(getExtension().getIncludes());

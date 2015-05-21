@@ -13,7 +13,7 @@ import org.gradle.api.Project;
 
 import com.google.common.collect.ImmutableMap;
 
-public class BaseExtension
+public abstract class BaseExtension
 {
     protected static final transient Map<String, String> MCP_VERSION_MAP = ImmutableMap.of("1.8", "9.10");
     

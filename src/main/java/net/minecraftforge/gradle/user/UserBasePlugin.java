@@ -3,14 +3,26 @@ package net.minecraftforge.gradle.user;
 import static net.minecraftforge.gradle.common.Constants.*;
 import static net.minecraftforge.gradle.user.UserConstants.*;
 import groovy.lang.Closure;
+
+import java.io.File;
+
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
 import net.minecraftforge.gradle.tasks.DeobfuscateJar;
 import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
 
+import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;
+import org.gradle.api.internal.plugins.DslObject;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.GroovySourceSet;
+import org.gradle.api.tasks.ScalaSourceSet;
+import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.compile.GroovyCompile;
+import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.api.tasks.scala.ScalaCompile;
 
 public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin<T>
 {
@@ -36,6 +48,25 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         task.setDescription("DevWorkspace + the deobfuscated Minecraft source linked as a source jar.");
         task.setGroup("ForgeGradle");
 
+        // create configs
+        project.getConfigurations().maybeCreate(CONFIG_MC);
+        project.getConfigurations().maybeCreate(CONFIG_PROVIDED);
+        project.getConfigurations().maybeCreate(CONFIG_START);
+
+        configureCompilation();
+
+        // Quality of life stuff for the users
+        createSourceCopyTasks();
+        
+        // use zinc for scala compilation
+        project.getTasks().withType(ScalaCompile.class, new Action<ScalaCompile>() {
+            @Override
+            public void execute(ScalaCompile t)
+            {
+                t.getScalaCompileOptions().setUseAnt(false);
+            }
+        });
+        
         applyUserPlugin();
     }
 
@@ -135,8 +166,124 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     /**
      * This method is called sufficiently late. Either afterEvaluate or inside a task.
      * This method is called to decide whether or not to use the project-local cache instead of the global cache.
-     * The actual locations of each cache are specified elsewhere. // TODO AD SEE THING
+     * The actual locations of each cache are specified elsewhere. // TODO ADD SEE ANNOTATION
      * @return
      */
     protected abstract boolean useLocalCache();
+    
+    /**
+     * Creates the api SourceSet and configures the classpaths of all the SourceSets to have MC and the MC deps in them.
+     * Also sets the target JDK to java 6
+     */
+    protected void configureCompilation()
+    {
+        // get convention
+        JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+
+        SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        SourceSet test = javaConv.getSourceSets().getByName(SourceSet.TEST_SOURCE_SET_NAME);
+        SourceSet api = javaConv.getSourceSets().create("api");
+
+        api.setCompileClasspath(api.getCompileClasspath()
+                .plus(project.getConfigurations().getByName(CONFIG_MC))
+                .plus(project.getConfigurations().getByName(CONFIG_MC_DEPS))
+                .plus(project.getConfigurations().getByName(CONFIG_START))
+                .plus(project.getConfigurations().getByName(CONFIG_PROVIDED)));
+        main.setCompileClasspath(main.getCompileClasspath().plus(api.getOutput())
+                .plus(project.getConfigurations().getByName(CONFIG_MC))
+                .plus(project.getConfigurations().getByName(CONFIG_MC_DEPS))
+                .plus(project.getConfigurations().getByName(CONFIG_START))
+                .plus(project.getConfigurations().getByName(CONFIG_PROVIDED)));
+        test.setCompileClasspath(test.getCompileClasspath().plus(api.getOutput())
+                .plus(project.getConfigurations().getByName(CONFIG_MC))
+                .plus(project.getConfigurations().getByName(CONFIG_MC_DEPS))
+                .plus(project.getConfigurations().getByName(CONFIG_START))
+                .plus(project.getConfigurations().getByName(CONFIG_PROVIDED)));
+
+        project.getConfigurations().getByName("apiCompile").extendsFrom(project.getConfigurations().getByName("compile"));
+        project.getConfigurations().getByName("testCompile").extendsFrom(project.getConfigurations().getByName("apiCompile"));
+        
+        // set the compile target
+        javaConv.setSourceCompatibility("1.6");
+        javaConv.setTargetCompatibility("1.6");
+    }
+    
+    /**
+     * Creates and partially configures the source replacement tasks. The actual replacements must be configured afterEvaluate.
+     */
+    protected final void createSourceCopyTasks()
+    {
+        JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+        SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+
+        // do the special source moving...
+        TaskSourceCopy task;
+
+        // main
+        {
+            File dir = new File(project.getBuildDir(), SourceSet.MAIN_SOURCE_SET_NAME + "/java");
+
+            task = makeTask("sourceMainJava", TaskSourceCopy.class);
+            task.setSource(main.getJava());
+            task.setOutput(dir);
+            
+            // must get replacements from extension afterEValuate()
+
+            JavaCompile compile = (JavaCompile) project.getTasks().getByName(main.getCompileJavaTaskName());
+            compile.dependsOn("sourceMainJava");
+            compile.setSource(dir);
+        }
+
+        // scala!!!
+        if (project.getPlugins().hasPlugin("scala"))
+        {
+            ScalaSourceSet set = (ScalaSourceSet) new DslObject(main).getConvention().getPlugins().get("scala");
+            File dir = new File(project.getBuildDir(), SourceSet.MAIN_SOURCE_SET_NAME + "/scala");
+
+            task = makeTask("sourceMainScala", TaskSourceCopy.class);
+            task.setSource(set.getScala());
+            task.setOutput(dir);
+            
+            // must get replacements from extension afterEValuate()
+
+            ScalaCompile compile = (ScalaCompile) project.getTasks().getByName(main.getCompileTaskName("scala"));
+            compile.dependsOn("sourceMainScala");
+            compile.setSource(dir);
+        }
+
+        // groovy!!!
+        if (project.getPlugins().hasPlugin("groovy"))
+        {
+            GroovySourceSet set = (GroovySourceSet) new DslObject(main).getConvention().getPlugins().get("groovy");
+            File dir = new File(project.getBuildDir(), SourceSet.MAIN_SOURCE_SET_NAME + "/groovy");
+
+            task = makeTask("sourceMainGroovy", TaskSourceCopy.class);
+            task.setSource(set.getGroovy());
+            task.setOutput(dir);
+            
+            // must get replacements from extension afterEValuate()
+
+            GroovyCompile compile = (GroovyCompile) project.getTasks().getByName(main.getCompileTaskName("groovy"));
+            compile.dependsOn("sourceMainGroovy");
+            compile.setSource(dir);
+        }
+        
+        // Todo: kotlin?  closure?
+    }
+
+    @Override
+    protected void afterEvaluate()
+    {
+        super.afterEvaluate();
+        
+        // configure source replacement.
+        project.getTasks().withType(TaskSourceCopy.class, new Action<TaskSourceCopy>() {
+            @Override
+            public void execute(TaskSourceCopy t)
+            {
+                t.replace(getExtension().getReplacements());
+                t.include(getExtension().getIncludes());
+            }
+        });
+    }
 }

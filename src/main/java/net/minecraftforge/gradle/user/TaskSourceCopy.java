@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.old.tasks.user;
+package net.minecraftforge.gradle.user;
 
 import groovy.lang.Closure;
 
@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
-
-import net.minecraftforge.gradle.util.delayed.DelayedFile;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.DirectoryTree;
@@ -27,7 +25,7 @@ import org.gradle.api.tasks.util.PatternSet;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
-public class SourceCopyTask extends DefaultTask
+public class TaskSourceCopy extends DefaultTask
 {
     @InputFiles
     SourceDirectorySet      source;
@@ -39,15 +37,12 @@ public class SourceCopyTask extends DefaultTask
     ArrayList<String>       includes     = new ArrayList<String>();
 
     @OutputDirectory
-    DelayedFile             output;
+    Object             output;
 
     @SuppressWarnings("unchecked")
     @TaskAction
     public void doTask() throws IOException
     {
-        getLogger().debug("INPUTS >> " + source);
-        getLogger().debug("OUTPUTS >> " + getOutput());
-
         // get the include/exclude patterns from the source (this is different than what's returned by getFilter)
         PatternSet patterns = new PatternSet();
         patterns.setIncludes(source.getIncludes());
@@ -164,10 +159,10 @@ public class SourceCopyTask extends DefaultTask
 
     public File getOutput()
     {
-        return output.call();
+        return getProject().file(output);
     }
 
-    public void setOutput(DelayedFile output)
+    public void setOutput(Object output)
     {
         this.output = output;
     }

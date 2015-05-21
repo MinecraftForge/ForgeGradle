@@ -45,5 +45,4 @@ public class UserExtension extends BaseExtension
     {
         includes.add(path);
     }
-
 }
