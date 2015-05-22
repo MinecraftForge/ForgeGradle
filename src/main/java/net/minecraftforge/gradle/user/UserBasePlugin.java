@@ -15,8 +15,11 @@ import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;
+import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.artifacts.maven.Conf2ScopeMappingContainer;
 import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.MavenPluginConvention;
 import org.gradle.api.tasks.GroovySourceSet;
 import org.gradle.api.tasks.ScalaSourceSet;
 import org.gradle.api.tasks.SourceSet;
@@ -31,7 +34,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     {
         // apply the plugins
         this.applyExternalPlugin("java");
-        this.applyExternalPlugin("maven");
         this.applyExternalPlugin("eclipse");
         this.applyExternalPlugin("idea");
 
@@ -57,7 +59,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         // Quality of life stuff for the users
         createSourceCopyTasks();
-        
+
         // use zinc for scala compilation
         project.getTasks().withType(ScalaCompile.class, new Action<ScalaCompile>() {
             @Override
@@ -66,8 +68,30 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 t.getScalaCompileOptions().setUseAnt(false);
             }
         });
-        
+
         applyUserPlugin();
+    }
+
+    @Override
+    protected void afterEvaluate()
+    {
+        super.afterEvaluate();
+
+        // map configurations (only if the maven or maven publish plugins exist)
+        mapConfigurations();
+
+        // configure source replacement.
+        project.getTasks().withType(TaskSourceCopy.class, new Action<TaskSourceCopy>() {
+            @Override
+            public void execute(TaskSourceCopy t)
+            {
+                t.replace(getExtension().getReplacements());
+                t.include(getExtension().getIncludes());
+            }
+        });
+
+        // add access transformers to deobf tasks
+        addAtsToDeobf();
     }
 
     protected abstract void applyUserPlugin();
@@ -157,20 +181,37 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         return new Closure<DelayedFile>(project, this) {
             public DelayedFile call()
             {
-                String str = useLocalCache() ? localPattern : globalPattern;
+                String str = useLocalCache(getExtension()) ? localPattern : globalPattern;
                 return delayedFile(String.format(str, classifier));
             }
         };
     }
 
     /**
-     * This method is called sufficiently late. Either afterEvaluate or inside a task.
-     * This method is called to decide whether or not to use the project-local cache instead of the global cache.
-     * The actual locations of each cache are specified elsewhere. // TODO ADD SEE ANNOTATION
-     * @return
+     * A boolean used to cache the output of useLocalCache;
+     * @see useLocalCache
      */
-    protected abstract boolean useLocalCache();
-    
+    protected boolean useLocalCache = false;
+
+    /**
+     * This method is called sufficiently late. Either afterEvaluate or inside a task, thus it has the extension object.
+     * This method is called to decide whether or not to use the project-local cache instead of the global cache.
+     * The actual locations of each cache are specified elsewhere.
+     * TODO: add see annotations
+     * @param extension The extension object of this plugin
+     * @return whether or not to use the local cache
+     */
+    protected boolean useLocalCache(T extension)
+    {
+        if (useLocalCache)
+            return true;
+
+        // checks to see if any access transformers were added.
+        useLocalCache = !extension.getAccessTransformers().isEmpty();
+
+        return useLocalCache;
+    }
+
     /**
      * Creates the api SourceSet and configures the classpaths of all the SourceSets to have MC and the MC deps in them.
      * Also sets the target JDK to java 6
@@ -189,12 +230,14 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 .plus(project.getConfigurations().getByName(CONFIG_MC_DEPS))
                 .plus(project.getConfigurations().getByName(CONFIG_START))
                 .plus(project.getConfigurations().getByName(CONFIG_PROVIDED)));
-        main.setCompileClasspath(main.getCompileClasspath().plus(api.getOutput())
+        main.setCompileClasspath(main.getCompileClasspath()
+                .plus(api.getOutput())
                 .plus(project.getConfigurations().getByName(CONFIG_MC))
                 .plus(project.getConfigurations().getByName(CONFIG_MC_DEPS))
                 .plus(project.getConfigurations().getByName(CONFIG_START))
                 .plus(project.getConfigurations().getByName(CONFIG_PROVIDED)));
-        test.setCompileClasspath(test.getCompileClasspath().plus(api.getOutput())
+        test.setCompileClasspath(test.getCompileClasspath()
+                .plus(api.getOutput())
                 .plus(project.getConfigurations().getByName(CONFIG_MC))
                 .plus(project.getConfigurations().getByName(CONFIG_MC_DEPS))
                 .plus(project.getConfigurations().getByName(CONFIG_START))
@@ -202,16 +245,16 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         project.getConfigurations().getByName("apiCompile").extendsFrom(project.getConfigurations().getByName("compile"));
         project.getConfigurations().getByName("testCompile").extendsFrom(project.getConfigurations().getByName("apiCompile"));
-        
+
         // set the compile target
         javaConv.setSourceCompatibility("1.6");
         javaConv.setTargetCompatibility("1.6");
     }
-    
+
     /**
      * Creates and partially configures the source replacement tasks. The actual replacements must be configured afterEvaluate.
      */
-    protected final void createSourceCopyTasks()
+    protected void createSourceCopyTasks()
     {
         JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
         SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
@@ -226,7 +269,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task = makeTask("sourceMainJava", TaskSourceCopy.class);
             task.setSource(main.getJava());
             task.setOutput(dir);
-            
+
             // must get replacements from extension afterEValuate()
 
             JavaCompile compile = (JavaCompile) project.getTasks().getByName(main.getCompileJavaTaskName());
@@ -243,7 +286,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task = makeTask("sourceMainScala", TaskSourceCopy.class);
             task.setSource(set.getScala());
             task.setOutput(dir);
-            
+
             // must get replacements from extension afterEValuate()
 
             ScalaCompile compile = (ScalaCompile) project.getTasks().getByName(main.getCompileTaskName("scala"));
@@ -260,30 +303,77 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             task = makeTask("sourceMainGroovy", TaskSourceCopy.class);
             task.setSource(set.getGroovy());
             task.setOutput(dir);
-            
+
             // must get replacements from extension afterEValuate()
 
             GroovyCompile compile = (GroovyCompile) project.getTasks().getByName(main.getCompileTaskName("groovy"));
             compile.dependsOn("sourceMainGroovy");
             compile.setSource(dir);
         }
-        
+
         // Todo: kotlin?  closure?
     }
 
-    @Override
-    protected void afterEvaluate()
+    protected void mapConfigurations()
     {
-        super.afterEvaluate();
-        
-        // configure source replacement.
-        project.getTasks().withType(TaskSourceCopy.class, new Action<TaskSourceCopy>() {
-            @Override
-            public void execute(TaskSourceCopy t)
+        if (project.getPlugins().hasPlugin("maven"))
+        {
+            MavenPluginConvention mavenConv = (MavenPluginConvention) project.getConvention().getPlugins().get("maven");
+            Conf2ScopeMappingContainer mappings = mavenConv.getConf2ScopeMappings();
+            ConfigurationContainer configs = project.getConfigurations();
+            final int priority = 500; // 500 is more than the compile config which is at 300
+
+            mappings.setSkipUnmappedConfs(true); // dont want unmapped confs bieng compile deps..
+            mappings.addMapping(priority, configs.getByName(CONFIG_PROVIDED), Conf2ScopeMappingContainer.PROVIDED);
+            // TODO: more configs?
+            // TODO: UNTESTED
+        }
+    }
+
+    protected void addAtsToDeobf()
+    {
+
+        // add src ATs
+        DeobfuscateJar binDeobf = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF_BIN);
+        DeobfuscateJar decompDeobf = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF);
+
+        // ATs from the ExtensionObject
+        Object[] extAts = getExtension().getAccessTransformers().toArray();
+        binDeobf.addTransformer(extAts);
+        decompDeobf.addTransformer(extAts);
+
+        // from the resources dirs
+        {
+            JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+
+            SourceSet main = javaConv.getSourceSets().getByName("main");
+            SourceSet api = javaConv.getSourceSets().getByName("api");
+
+            boolean addedAts = false;
+
+            for (File at : main.getResources().getFiles())
             {
-                t.replace(getExtension().getReplacements());
-                t.include(getExtension().getIncludes());
+                if (at.getName().toLowerCase().endsWith("_at.cfg"))
+                {
+                    project.getLogger().lifecycle("Found AccessTransformer in main resources: " + at.getName());
+                    binDeobf.addTransformer(at);
+                    decompDeobf.addTransformer(at);
+                    addedAts = true;
+                }
             }
-        });
+
+            for (File at : api.getResources().getFiles())
+            {
+                if (at.getName().toLowerCase().endsWith("_at.cfg"))
+                {
+                    project.getLogger().lifecycle("Found AccessTransformer in api resources: " + at.getName());
+                    binDeobf.addTransformer(at);
+                    decompDeobf.addTransformer(at);
+                    addedAts = true;
+                }
+            }
+
+            useLocalCache = useLocalCache || addedAts;
+        }
     }
 }

@@ -10,8 +10,9 @@ import net.minecraftforge.gradle.common.BaseExtension;
 
 public class UserExtension extends BaseExtension
 {
-    private HashMap<String, Object>                          replacements = new HashMap<String, Object>();
-    private ArrayList<String>                                includes     = new ArrayList<String>();
+    private HashMap<String, Object> replacements = new HashMap<String, Object>();
+    private ArrayList<String>       includes     = new ArrayList<String>();
+    private ArrayList<Object>       ats          = new ArrayList<Object>();
 
     public UserExtension(UserBasePlugin<UserExtension> plugin)
     {
@@ -44,5 +45,28 @@ public class UserExtension extends BaseExtension
     public void replaceIn(String path)
     {
         includes.add(path);
+    }
+
+    //@formatter:off
+    public void accessT(Object obj) { at(obj); }
+    public void accessTs(Object... obj) { ats(obj); }
+    public void accessTransformer(Object obj) { at(obj); }
+    public void accessTransformers(Object... obj) { ats(obj); }
+    //@formatter:on
+
+    public void at(Object obj)
+    {
+        ats.add(obj);
+    }
+
+    public void ats(Object... obj)
+    {
+        for (Object object : obj)
+            ats.add(object);
+    }
+
+    public List<Object> getAccessTransformers()
+    {
+        return ats;
     }
 }
