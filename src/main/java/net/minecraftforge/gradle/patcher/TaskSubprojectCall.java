@@ -39,7 +39,7 @@ class TaskSubprojectCall extends DefaultTask
         // resolve replacements
         for (Entry<String, Object> entry : replacements.entrySet())
         {
-            replacements.put(entry.getKey(), Constants.resolveString(entry.getValue()));
+            replacements.put(entry.getKey(), Constants.resolveString(entry.getValue()).replace('\\', '/'));
         }
         
         // extract extra initscripts
