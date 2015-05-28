@@ -1,7 +1,6 @@
 package net.minecraftforge.gradle.common;
 
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -16,19 +15,18 @@ import com.google.common.collect.ImmutableMap;
 public abstract class BaseExtension
 {
     protected static final transient Map<String, String> MCP_VERSION_MAP = ImmutableMap.of("1.8", "9.10");
-    
-    protected transient Project               project;
-    protected String                          version         = "null";
-    protected String                          mcpVersion      = "unknown";
-    protected String                          runDir          = "run";
-    private LinkedList<String>                srgExtra        = new LinkedList<String>();
 
-    protected Map<String, Map<String, int[]>> mcpJson;
-    protected boolean                         mappingsSet     = false;
-    protected String                          mappingsChannel = null;
-    protected int                             mappingsVersion = -1;
+    protected transient Project                          project;
+    protected String                                     version;
+    protected String                                     mcpVersion      = "unknown";
+
+    // this should never be touched except by the base plugin in this package
+    Map<String, Map<String, int[]>>                      mcpJson;
+    protected boolean                                    mappingsSet     = false;
+    protected String                                     mappingsChannel = null;
+    protected int                                        mappingsVersion = -1;
     // custom version for custom mappings
-    protected String                          mappingsCustom   = null;
+    protected String                                     mappingsCustom  = null;
 
     public BaseExtension(BasePlugin<? extends BaseExtension> plugin)
     {
@@ -43,12 +41,10 @@ public abstract class BaseExtension
     public void setVersion(String version)
     {
         this.version = version;
-        
+
         TokenReplacer.putReplacement(Constants.REPLACE_MC_VERSION, version);
-        
+
         mcpVersion = MCP_VERSION_MAP.get(version);
-        if (mcpVersion == null)
-            mcpVersion = "unknown";
 
         // maybe they set the mappings first
         checkMappings();
@@ -56,32 +52,12 @@ public abstract class BaseExtension
 
     public String getMcpVersion()
     {
-        return mcpVersion;
+        return mcpVersion == null ? "unknown" : mcpVersion;
     }
 
     public void setMcpVersion(String mcpVersion)
     {
         this.mcpVersion = mcpVersion;
-    }
-
-    public void setRunDir(String value)
-    {
-        this.runDir = value;
-    }
-
-    public String getRunDir()
-    {
-        return this.runDir;
-    }
-
-    public LinkedList<String> getSrgExtra()
-    {
-        return srgExtra;
-    }
-
-    public void srgExtra(String in)
-    {
-        srgExtra.add(in);
     }
 
     public void copyFrom(BaseExtension ext)
@@ -125,7 +101,7 @@ public abstract class BaseExtension
 
     public String getMappingsVersion()
     {
-        return mappingsCustom == null ? ""+mappingsVersion : mappingsCustom;
+        return mappingsCustom == null ? "" + mappingsVersion : mappingsCustom;
     }
 
     public void setMappings(String mappings)
@@ -134,10 +110,10 @@ public abstract class BaseExtension
         {
             mappingsChannel = null;
             mappingsVersion = -1;
-            
+
             TokenReplacer.putReplacement(Constants.REPLACE_MCP_CHANNEL, mappingsChannel);
             TokenReplacer.putReplacement(Constants.REPLACE_MCP_VERSION, getMappingsVersion());
-            
+
             return;
         }
 
@@ -151,7 +127,7 @@ public abstract class BaseExtension
         int index = mappings.lastIndexOf('_');
         mappingsChannel = mappings.substring(0, index);
         mappingsCustom = mappings.substring(index + 1);
-        
+
         if (!mappingsCustom.equals("custom"))
         {
             try
@@ -166,7 +142,7 @@ public abstract class BaseExtension
         }
 
         mappingsSet = true;
-        
+
         TokenReplacer.putReplacement(Constants.REPLACE_MCP_CHANNEL, mappingsChannel);
         TokenReplacer.putReplacement(Constants.REPLACE_MCP_VERSION, getMappingsVersion());
 
@@ -181,7 +157,7 @@ public abstract class BaseExtension
     protected void checkMappings()
     {
         // mappings or mc version are null
-        if (mappingsChannel == null || "null".equals(version) || Strings.isNullOrEmpty(version) || mappingsCustom != null)
+        if (mappingsChannel == null || Strings.isNullOrEmpty(version) || mappingsCustom != null)
             return;
 
         // check if it exists

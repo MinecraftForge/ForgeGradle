@@ -109,6 +109,8 @@ public class GradleStart extends GradleStartCommon
         argMap.put("uuid", auth.getSelectedProfile().getId().toString().replace("-", ""));
         argMap.put("username", auth.getSelectedProfile().getName());
         argMap.put("userType", auth.getUserType().getName());
+        
+        // 1.8 only apperantly.. -_-
         argMap.put("userProperties", new GsonBuilder().registerTypeAdapter(PropertyMap.class, new PropertyMap.Serializer()).create().toJson(auth.getUserProperties()));
     }
 }

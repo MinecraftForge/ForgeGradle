@@ -2,6 +2,7 @@ package net.minecraftforge.gradle.user;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -10,13 +11,25 @@ import net.minecraftforge.gradle.common.BaseExtension;
 
 public class UserExtension extends BaseExtension
 {
+    private LinkedList<String>      srgExtra     = new LinkedList<String>();
     private HashMap<String, Object> replacements = new HashMap<String, Object>();
     private ArrayList<String>       includes     = new ArrayList<String>();
     private ArrayList<Object>       ats          = new ArrayList<Object>();
+    private String                  runDir       = "run";
 
     public UserExtension(UserBasePlugin<UserExtension> plugin)
     {
         super(plugin);
+    }
+
+    public LinkedList<String> getSrgExtra()
+    {
+        return srgExtra;
+    }
+
+    public void srgExtra(String in)
+    {
+        srgExtra.add(in);
     }
 
     public void replace(Object token, Object replacement)
@@ -68,5 +81,15 @@ public class UserExtension extends BaseExtension
     public List<Object> getAccessTransformers()
     {
         return ats;
+    }
+
+    public void setRunDir(String value)
+    {
+        this.runDir = value;
+    }
+
+    public String getRunDir()
+    {
+        return this.runDir;
     }
 }

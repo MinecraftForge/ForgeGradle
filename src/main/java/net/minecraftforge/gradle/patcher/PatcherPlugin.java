@@ -352,7 +352,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
         GenEclipseRunTask eclipseClient = makeTask("makeEclipseCleanRunClient", GenEclipseRunTask.class);
         {
-            eclipseClient.setMainClass("GradleStart");
+            eclipseClient.setMainClass(GRADLE_START_CLIENT);
             eclipseClient.setProjectName("Clean");
             eclipseClient.setOutputFile(subWorkspace("Clean/Clean Client.launch"));
             eclipseClient.setRunDir(subWorkspace("run"));
@@ -361,7 +361,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
         GenEclipseRunTask eclipseServer = makeTask("makeEclipseCleanRunServer", GenEclipseRunTask.class);
         {
-            eclipseServer.setMainClass("GradleStartServer");
+            eclipseServer.setMainClass(GRADLE_START_SERVER);
             eclipseServer.setProjectName("Clean");
             eclipseServer.setOutputFile(subWorkspace("Clean/Clean Server.launch"));
             eclipseServer.setRunDir(subWorkspace("run"));
@@ -370,7 +370,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
         TaskGenIdeaRun ideaClient = makeTask("makeIdeaCleanRunClient", TaskGenIdeaRun.class);
         {
-            ideaClient.setMainClass("GradleStart");
+            ideaClient.setMainClass(GRADLE_START_CLIENT);
             ideaClient.setProjectName("Clean");
             ideaClient.setConfigName("Clean Client");
             ideaClient.setOutputFile(subWorkspace("/.idea/runConfigurations/Clean_Client.xml"));
@@ -380,7 +380,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
         TaskGenIdeaRun ideaServer = makeTask("makeIdeaCleanRunServer", TaskGenIdeaRun.class);
         {
-            ideaServer.setMainClass("GradleStartServer");
+            ideaServer.setMainClass(GRADLE_START_SERVER);
             ideaServer.setProjectName("Clean");
             ideaServer.setConfigName("Clean Server");
             ideaServer.setOutputFile(subWorkspace("/.idea/runConfigurations/Clean_Server.xml"));
@@ -466,7 +466,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
         GenEclipseRunTask eclipseRunClient = makeTask(projectString(TASK_PROJECT_RUNE_CLIENT, patcher), GenEclipseRunTask.class);
         {
-            eclipseRunClient.setMainClass("GradleStart");
+            eclipseRunClient.setMainClass(GRADLE_START_CLIENT);
             eclipseRunClient.setArguments(patcher.getDelayedRunArgsClient());
             eclipseRunClient.setProjectName(patcher.getCapName());
             eclipseRunClient.setOutputFile(subWorkspace(patcher.getCapName() + "/" + patcher.getCapName() + " Client.launch"));
@@ -476,7 +476,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
         GenEclipseRunTask eclipseRunServer = makeTask(projectString(TASK_PROJECT_RUNE_SERVER, patcher), GenEclipseRunTask.class);
         {
-            eclipseRunServer.setMainClass("GradleStartServer");
+            eclipseRunServer.setMainClass(GRADLE_START_SERVER);
             eclipseRunServer.setArguments(patcher.getDelayedRunArgsServer());
             eclipseRunServer.setProjectName(patcher.getCapName());
             eclipseRunServer.setOutputFile(subWorkspace(patcher.getCapName() + "/" + patcher.getCapName() + " Server.launch"));
@@ -486,7 +486,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
         TaskGenIdeaRun ideaRunClient = makeTask(projectString(TASK_PROJECT_RUNJ_CLIENT, patcher), TaskGenIdeaRun.class);
         {
-            ideaRunClient.setMainClass("GradleStart");
+            ideaRunClient.setMainClass(GRADLE_START_CLIENT);
             ideaRunClient.setArguments(patcher.getDelayedRunArgsClient());
             ideaRunClient.setProjectName(patcher.getCapName());
             ideaRunClient.setConfigName(patcher.getCapName() + " Client");
@@ -497,7 +497,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
         TaskGenIdeaRun ideaRunServer = makeTask(projectString(TASK_PROJECT_RUNJ_SERVER, patcher), TaskGenIdeaRun.class);
         {
-            ideaRunServer.setMainClass("GradleStartServer");
+            ideaRunServer.setMainClass(GRADLE_START_SERVER);
             ideaRunServer.setArguments(patcher.getDelayedRunArgsServer());
             ideaRunServer.setProjectName(patcher.getCapName());
             ideaRunServer.setConfigName(patcher.getCapName() + " Server");

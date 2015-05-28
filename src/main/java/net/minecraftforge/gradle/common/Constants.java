@@ -134,6 +134,9 @@ public class Constants
     public static final String DIR_JSONS        = "{CACHE_DIR}/versionJsons";
     public static final String JSON_VERSION     = DIR_JSONS + "/" + REPLACE_MC_VERSION + ".json";
     
+    public static final String GRADLE_START_CLIENT   = "GradleStart";
+    public static final String GRADLE_START_SERVER   = "GradleStartServer";
+    
     public static final String[] GRADLE_START_RESOURCES = new String[] {
         "GradleStart.java",
         "GradleStartServer.java",

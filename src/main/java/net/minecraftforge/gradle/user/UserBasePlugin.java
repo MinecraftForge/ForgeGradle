@@ -5,16 +5,29 @@ import static net.minecraftforge.gradle.user.UserConstants.*;
 import groovy.lang.Closure;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.List;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
+import net.minecraftforge.gradle.tasks.CreateStartTask;
 import net.minecraftforge.gradle.tasks.DeobfuscateJar;
+import net.minecraftforge.gradle.tasks.GenEclipseRunTask;
 import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;
+import org.gradle.api.XmlProvider;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.maven.Conf2ScopeMappingContainer;
 import org.gradle.api.internal.plugins.DslObject;
@@ -26,6 +39,14 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.GroovyCompile;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.scala.ScalaCompile;
+import org.gradle.plugins.ide.idea.model.IdeaModel;
+import org.w3c.dom.DOMException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
 
 public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin<T>
 {
@@ -69,6 +90,10 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             }
         });
 
+        // IDE stuff
+        addEclipseRuns();
+        configureIntellij();
+        
         applyUserPlugin();
     }
 
@@ -96,24 +121,24 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
     protected abstract void applyUserPlugin();
 
-    protected void tasksClient(String globalPattern, String localPattern, String taskSuffix)
+    protected void tasksClient(String globalPattern, String localPattern)
     {
-        makeDecompTasks(globalPattern, localPattern, taskSuffix, delayedFile(JAR_CLIENT_FRESH), delayedFile(MCP_PATCHES_CLIENT));
+        makeDecompTasks(globalPattern, localPattern, delayedFile(JAR_CLIENT_FRESH), TASK_DL_CLIENT, delayedFile(MCP_PATCHES_CLIENT));
     }
 
-    protected void tasksServer(String globalPattern, String localPattern, String taskSuffix)
+    protected void tasksServer(String globalPattern, String localPattern)
     {
-        makeDecompTasks(globalPattern, localPattern, taskSuffix, delayedFile(JAR_SERVER_FRESH), delayedFile(MCP_PATCHES_MERGED));
+        makeDecompTasks(globalPattern, localPattern, delayedFile(JAR_SERVER_FRESH), TASK_DL_SERVER, delayedFile(MCP_PATCHES_SERVER));
     }
 
-    protected void tasksMerged(String globalPattern, String localPattern, String taskSuffix)
+    protected void tasksMerged(String globalPattern, String localPattern)
     {
-        makeDecompTasks(globalPattern, localPattern, taskSuffix, delayedFile(JAR_MERGED), delayedFile(MCP_PATCHES_MERGED));
+        makeDecompTasks(globalPattern, localPattern, delayedFile(JAR_MERGED), TASK_MERGE_JARS, delayedFile(MCP_PATCHES_MERGED));
     }
 
-    private void makeDecompTasks(String globalOutputPattern, String localOutputPattern, String taskSuffix, Object inputJar, Object mcpPatchSet)
+    private void makeDecompTasks(String globalOutputPattern, String localOutputPattern, Object inputJar, String inputTask, Object mcpPatchSet)
     {
-        DeobfuscateJar deobfBin = makeTask(TASK_DEOBF_BIN + taskSuffix, DeobfuscateJar.class);
+        DeobfuscateJar deobfBin = makeTask(TASK_DEOBF_BIN, DeobfuscateJar.class);
         {
             deobfBin.setSrg(delayedFile(SRG_NOTCH_TO_MCP));
             deobfBin.setExceptorJson(delayedFile(MCP_DATA_EXC_JSON));
@@ -121,7 +146,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             deobfBin.setApplyMarkers(false);
             deobfBin.setInJar(inputJar);
             deobfBin.setOutJar(chooseDeobfOutput(globalOutputPattern, localOutputPattern, "Bin"));
-            deobfBin.dependsOn(TASK_MERGE_JARS, TASK_GENERATE_SRGS);
+            deobfBin.dependsOn(inputTask, TASK_GENERATE_SRGS);
         }
 
         Object deobfDecompJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "-deobfDecomp");
@@ -129,7 +154,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         Object postDecompJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "-sources");
         Object recompiledJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "");
 
-        DeobfuscateJar deobfDecomp = makeTask(TASK_DEOBF + taskSuffix, DeobfuscateJar.class);
+        DeobfuscateJar deobfDecomp = makeTask(TASK_DEOBF, DeobfuscateJar.class);
         {
             deobfDecomp.setSrg(delayedFile(SRG_NOTCH_TO_SRG));
             deobfDecomp.setExceptorJson(delayedFile(MCP_DATA_EXC_JSON));
@@ -137,10 +162,10 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             deobfDecomp.setApplyMarkers(false);
             deobfDecomp.setInJar(inputJar);
             deobfBin.setOutJar(deobfDecompJar);
-            deobfDecomp.dependsOn(TASK_MERGE_JARS, TASK_GENERATE_SRGS);
+            deobfDecomp.dependsOn(inputTask, TASK_GENERATE_SRGS); // todo grab correct task to depend on
         }
 
-        ApplyFernFlowerTask decompile = makeTask(TASK_DECOMPILE + taskSuffix, ApplyFernFlowerTask.class);
+        ApplyFernFlowerTask decompile = makeTask(TASK_DECOMPILE, ApplyFernFlowerTask.class);
         {
             decompile.setInJar(deobfDecompJar);
             decompile.setOutJar(decompJar);
@@ -148,7 +173,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             decompile.dependsOn(TASK_DL_FERNFLOWER, deobfDecomp);
         }
 
-        PostDecompileTask postDecomp = makeTask(TASK_POST_DECOMP + taskSuffix, PostDecompileTask.class);
+        PostDecompileTask postDecomp = makeTask(TASK_POST_DECOMP, PostDecompileTask.class);
         {
             postDecomp.setInJar(decompJar);
             postDecomp.setOutJar(postDecompJar);
@@ -157,12 +182,56 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             postDecomp.dependsOn(decompile);
         }
 
-        TaskRecompileMc recompile = makeTask(TASK_RECOMPILE + taskSuffix, TaskRecompileMc.class);
+        TaskRecompileMc recompile = makeTask(TASK_RECOMPILE, TaskRecompileMc.class);
         {
             recompile.setInSources(postDecompJar);
             recompile.setClasspath(CONFIG_MC_DEPS);
             recompile.setOutJar(recompiledJar);
             recompile.dependsOn(postDecomp);
+        }
+
+        // create GradleStart
+        CreateStartTask makeStart = makeTask(TASK_MAKE_START, CreateStartTask.class);
+        {
+            if (this.hasClientRun())
+            {
+                makeStart.addResource("GradleStart.java");
+
+                // 1.7.10 only
+                //makeStart.addResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
+            }
+            if (this.hasServerRun())
+            {
+                makeStart.addResource("GradleStartServer.java");
+            }
+            makeStart.addResource("net/minecraftforge/gradle/GradleStartCommon.java");
+            makeStart.addResource("net/minecraftforge/gradle/tweakers/CoremodTweaker.java");
+            makeStart.addResource("net/minecraftforge/gradle/tweakers/AccessTransformerTweaker.java");
+            makeStart.addReplacement("@@MCVERSION@@", delayedString(REPLACE_MC_VERSION));
+            makeStart.addReplacement("@@ASSETINDEX@@", delayedString(REPLACE_ASSET_INDEX));
+            makeStart.addReplacement("@@ASSETSDIR@@", delayedFile(REPLACE_CACHE_DIR + "/assets"));
+            makeStart.addReplacement("@@NATIVESDIR@@", delayedFile(DIR_NATIVES));
+            makeStart.addReplacement("@@SRGDIR@@", delayedFile(DIR_MCP_MAPPINGS + "/srgs/"));
+            makeStart.addReplacement("@@SRG_NOTCH_SRG@@", delayedFile(SRG_NOTCH_TO_SRG));
+            makeStart.addReplacement("@@SRG_NOTCH_MCP@@", delayedFile(SRG_NOTCH_TO_MCP));
+            makeStart.addReplacement("@@SRG_SRG_MCP@@", delayedFile(SRG_SRG_TO_MCP));
+            makeStart.addReplacement("@@SRG_MCP_SRG@@", delayedFile(SRG_MCP_TO_SRG));
+            makeStart.addReplacement("@@SRG_MCP_NOTCH@@", delayedFile(SRG_MCP_TO_NOTCH));
+            makeStart.addReplacement("@@CSVDIR@@", delayedFile(DIR_MCP_DATA));
+            makeStart.addReplacement("@@CLIENTTWEAKER@@", delayedString(REPLACE_CLIENT_TWEAKER));
+            makeStart.addReplacement("@@SERVERTWEAKER@@", delayedString(REPLACE_SERVER_TWEAKER));
+            makeStart.addReplacement("@@BOUNCERCLIENT@@", delayedString(REPLACE_CLIENT_MAIN));
+            makeStart.addReplacement("@@BOUNCERSERVER@@", delayedString(REPLACE_SERVER_MAIN));
+            makeStart.setStartOut(getStartDir());
+            makeStart.addClasspathConfig(CONFIG_MC);
+            makeStart.addClasspathConfig(CONFIG_MC_DEPS);
+
+            // see delayed task config for some more config regarding MC versions... for 1.7.10 compat
+            // TODO: UNTESTED
+
+            makeStart.mustRunAfter(deobfBin, recompile);
+
+            makeStart.dependsOn(TASK_DL_ASSET_INDEX, TASK_DL_ASSETS, TASK_EXTRACT_NATIVES);
         }
 
         // add setup dependencies
@@ -236,6 +305,11 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 .plus(project.getConfigurations().getByName(CONFIG_MC_DEPS))
                 .plus(project.getConfigurations().getByName(CONFIG_START))
                 .plus(project.getConfigurations().getByName(CONFIG_PROVIDED)));
+        main.setRuntimeClasspath(main.getCompileClasspath()
+                .plus(api.getOutput())
+                .plus(project.getConfigurations().getByName(CONFIG_MC))
+                .plus(project.getConfigurations().getByName(CONFIG_MC_DEPS))
+                .plus(project.getConfigurations().getByName(CONFIG_START)));
         test.setCompileClasspath(test.getCompileClasspath()
                 .plus(api.getOutput())
                 .plus(project.getConfigurations().getByName(CONFIG_MC))
@@ -375,5 +449,261 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
             useLocalCache = useLocalCache || addedAts;
         }
+    }
+
+    /**
+     * This method is called early, and not late.
+     * @return TRUE if a server run config and GradleStartServer should be created.
+     */
+    abstract boolean hasServerRun();
+
+    /**
+     * This method is called early, and not late.
+     * @return TRUE if a client run config and GradleStart should be created.
+     */
+    abstract boolean hasClientRun();
+
+    /**
+     * To be inserted into GradleStart. This method is called early, and not late.
+     */
+    abstract Object getStartDir();
+
+    /**
+     * To be inserted into GradleStart. Is called late afterEvaluate or at runtime.
+     * @return empty string if no tweaker. NEVER NULL.
+     */
+    abstract String getClientTweaker(T ext);
+
+    /**
+     * To be inserted into GradleStartServer. Is called late afterEvaluate or at runtime.
+     * @return empty string if no tweaker. NEVER NULL.
+     */
+    abstract String getServerTweaker(T ext);
+
+    /**
+     * To be inserted into GradleStart. Is called late afterEvaluate or at runtime.
+     * @return empty string if default launchwrapper. NEVER NULL.
+     */
+    abstract String getClientRunClass(T ext);
+
+    /**
+     * For run configurations. Is called late afterEvaluate or at runtime.
+     * @return empty list for no arguments. NEVER NULL.
+     */
+    abstract List<String> getClientRunArgs(T ext);
+
+    /**
+     * To be inserted into GradleStartServer. Is called late afterEvaluate or at runtime.
+     * @return empty string if default launchwrapper. NEVER NULL.
+     */
+    abstract String getServerRunClass(T ext);
+
+    /**
+     * For run configurations. Is called late afterEvaluate or at runtime.
+     * @return empty list for no arguments. NEVER NULL.
+     */
+    abstract List<String> getServerRunArgs(T ext);
+
+    /**
+     * Creates task that generate the eclipse run configs and attaches them to the eclipse task.
+     */
+    protected void addEclipseRuns()
+    {
+        if (this.hasClientRun())
+        {
+            GenEclipseRunTask eclipseClient = makeTask("makeEclipseCleanRunClient", GenEclipseRunTask.class);
+            eclipseClient.setMainClass(GRADLE_START_CLIENT);
+            eclipseClient.setProjectName(project.getName());
+            eclipseClient.setOutputFile(project.file("Client.launch"));
+            eclipseClient.setRunDir(delayedFile(REPLACE_RUN_DIR));
+            eclipseClient.dependsOn(TASK_MAKE_START);
+
+            project.getTasks().getByName("eclipse").dependsOn(eclipseClient);
+        }
+
+        if (this.hasServerRun())
+        {
+            GenEclipseRunTask eclipseServer = makeTask("makeEclipseCleanRunServer", GenEclipseRunTask.class);
+            eclipseServer.setMainClass(GRADLE_START_SERVER);
+            eclipseServer.setProjectName(project.getName());
+            eclipseServer.setOutputFile(project.file("Server.launch"));
+            eclipseServer.setRunDir(delayedFile(REPLACE_RUN_DIR));
+            eclipseServer.dependsOn(TASK_MAKE_START);
+
+            project.getTasks().getByName("eclipse").dependsOn(eclipseServer);
+        }
+
+    }
+
+    /**
+     * Adds the intellij run configs and makes a few other tweaks to the intellij project creation
+     */
+    @SuppressWarnings("serial")
+    protected void configureIntellij()
+    {
+        IdeaModel ideaConv = (IdeaModel) project.getExtensions().getByName("idea");
+
+        ideaConv.getModule().getExcludeDirs().addAll(project.files(".gradle", "build", ".idea", "out").getFiles());
+        ideaConv.getModule().setDownloadJavadoc(true);
+        ideaConv.getModule().setDownloadSources(true);
+
+        // fix the idea bug
+        ideaConv.getModule().setInheritOutputDirs(true);
+
+        Task task = makeTask("genIntellijRuns", DefaultTask.class);
+        task.doLast(new Action<Task>() {
+            @Override
+            public void execute(Task task)
+            {
+                try
+                {
+                    String module = task.getProject().getProjectDir().getCanonicalPath();
+
+                    File root = task.getProject().getProjectDir().getCanonicalFile();
+                    File file = null;
+                    while (file == null && !root.equals(task.getProject().getRootProject().getProjectDir().getCanonicalFile().getParentFile()))
+                    {
+                        file = new File(root, ".idea/workspace.xml");
+                        if (!file.exists())
+                        {
+                            file = null;
+                            // find iws file
+                            for (File f : root.listFiles())
+                            {
+                                if (f.isFile() && f.getName().endsWith(".iws"))
+                                {
+                                    file = f;
+                                    break;
+                                }
+                            }
+                        }
+
+                        root = root.getParentFile();
+                    }
+
+                    if (file == null || !file.exists())
+                        throw new RuntimeException("Intellij workspace file could not be found! are you sure you imported the project into intellij?");
+
+                    DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+                    DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+                    Document doc = docBuilder.parse(file);
+
+                    injectIntellijRuns(doc, module);
+
+                    // write the content into xml file
+                    TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                    Transformer transformer = transformerFactory.newTransformer();
+                    transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+                    transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                    transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+                    transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+
+                    DOMSource source = new DOMSource(doc);
+                    StreamResult result = new StreamResult(file);
+                    //StreamResult result = new StreamResult(System.out);
+
+                    transformer.transform(source, result);
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        if (ideaConv.getWorkspace().getIws() == null)
+            return;
+
+        ideaConv.getWorkspace().getIws().withXml(new Closure<Object>(this, null)
+        {
+            public Object call(Object... obj)
+            {
+                Element root = ((XmlProvider) this.getDelegate()).asElement();
+                Document doc = root.getOwnerDocument();
+                try
+                {
+                    injectIntellijRuns(doc, project.getProjectDir().getCanonicalPath());
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+
+                return null;
+            }
+        });
+    }
+
+    public final void injectIntellijRuns(Document doc, String module) throws DOMException, IOException
+    {
+        Element root = null;
+
+        {
+            NodeList list = doc.getElementsByTagName("component");
+            for (int i = 0; i < list.getLength(); i++)
+            {
+                Element e = (Element) list.item(i);
+                if ("RunManager".equals(e.getAttribute("name")))
+                {
+                    root = e;
+                    break;
+                }
+            }
+        }
+
+        T ext = getExtension();
+
+        String[][] config = new String[][]
+        {
+                this.hasClientRun() ? new String[]
+                {
+                        "Minecraft Client",
+                        GRADLE_START_CLIENT,
+                        Joiner.on(' ').join(getClientRunArgs(ext))
+                } : null,
+
+                this.hasServerRun() ? new String[]
+                {
+                        "Minecraft Server",
+                        GRADLE_START_SERVER,
+                        Joiner.on(' ').join(getServerRunArgs(ext))
+                } : null
+        };
+
+        for (String[] data : config)
+        {
+            if (data == null)
+                continue;
+
+            Element child = addXml(root, "configuration", ImmutableMap.of(
+                    "default", "false",
+                    "name", data[0],
+                    "type", "Application",
+                    "factoryName", "Application",
+                    "default", "false"));
+
+            addXml(child, "extension", ImmutableMap.of(
+                    "name", "coverage",
+                    "enabled", "false",
+                    "sample_coverage", "true",
+                    "runner", "idea"));
+            addXml(child, "option", ImmutableMap.of("name", "MAIN_CLASS_NAME", "value", data[1]));
+            addXml(child, "option", ImmutableMap.of("name", "VM_PARAMETERS", "value", ""));
+            addXml(child, "option", ImmutableMap.of("name", "PROGRAM_PARAMETERS", "value", data[3]));
+            addXml(child, "option", ImmutableMap.of("name", "WORKING_DIRECTORY", "value", "file://" + delayedFile("{RUN_DIR}").call().getCanonicalPath().replace(module, "$PROJECT_DIR$")));
+            addXml(child, "option", ImmutableMap.of("name", "ALTERNATIVE_JRE_PATH_ENABLED", "value", "false"));
+            addXml(child, "option", ImmutableMap.of("name", "ALTERNATIVE_JRE_PATH", "value", ""));
+            addXml(child, "option", ImmutableMap.of("name", "ENABLE_SWING_INSPECTOR", "value", "false"));
+            addXml(child, "option", ImmutableMap.of("name", "ENV_VARIABLES"));
+            addXml(child, "option", ImmutableMap.of("name", "PASS_PARENT_ENVS", "value", "true"));
+            addXml(child, "module", ImmutableMap.of("name", ((IdeaModel) project.getExtensions().getByName("idea")).getModule().getName()));
+            addXml(child, "RunnerSettings", ImmutableMap.of("RunnerId", "Run"));
+            addXml(child, "ConfigurationWrapper", ImmutableMap.of("RunnerId", "Run"));
+        }
+
+        File f = delayedFile(REPLACE_RUN_DIR).call();
+        if (!f.exists())
+            f.mkdirs();
     }
 }
