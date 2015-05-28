@@ -93,7 +93,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         // IDE stuff
         addEclipseRuns();
         configureIntellij();
-        
+
         applyUserPlugin();
     }
 
@@ -117,6 +117,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         // add access transformers to deobf tasks
         addAtsToDeobf();
+
+        // TODO: do some GradleSTart stuff based on the MC version?
     }
 
     protected abstract void applyUserPlugin();
@@ -193,20 +195,11 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         // create GradleStart
         CreateStartTask makeStart = makeTask(TASK_MAKE_START, CreateStartTask.class);
         {
-            if (this.hasClientRun())
+            for (String resource : GRADLE_START_RESOURCES)
             {
-                makeStart.addResource("GradleStart.java");
+                makeStart.addResource(resource);
+            }
 
-                // 1.7.10 only
-                //makeStart.addResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
-            }
-            if (this.hasServerRun())
-            {
-                makeStart.addResource("GradleStartServer.java");
-            }
-            makeStart.addResource("net/minecraftforge/gradle/GradleStartCommon.java");
-            makeStart.addResource("net/minecraftforge/gradle/tweakers/CoremodTweaker.java");
-            makeStart.addResource("net/minecraftforge/gradle/tweakers/AccessTransformerTweaker.java");
             makeStart.addReplacement("@@MCVERSION@@", delayedString(REPLACE_MC_VERSION));
             makeStart.addReplacement("@@ASSETINDEX@@", delayedString(REPLACE_ASSET_INDEX));
             makeStart.addReplacement("@@ASSETSDIR@@", delayedFile(REPLACE_CACHE_DIR + "/assets"));
@@ -241,8 +234,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     }
 
     /**
-     * This method returns a closure that
-     * @return
+     * This method returns an object that resolved to the correct pattern based on the useLocalCache() method
+     * @return useable deobfsucated output file
      */
     @SuppressWarnings("serial")
     private Object chooseDeobfOutput(final String globalPattern, final String localPattern, final String classifier)
@@ -417,6 +410,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         decompDeobf.addTransformer(extAts);
 
         // from the resources dirs
+        if (false) // TODO: ONLY ALLOW IN PATCHER-USER PLUGINS
         {
             JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
 
@@ -455,54 +449,61 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
      * This method is called early, and not late.
      * @return TRUE if a server run config and GradleStartServer should be created.
      */
-    abstract boolean hasServerRun();
+    protected abstract boolean hasServerRun();
 
     /**
      * This method is called early, and not late.
      * @return TRUE if a client run config and GradleStart should be created.
      */
-    abstract boolean hasClientRun();
+    protected abstract boolean hasClientRun();
 
     /**
      * To be inserted into GradleStart. This method is called early, and not late.
+     * @return object that resolves to a file
      */
-    abstract Object getStartDir();
+    protected abstract Object getStartDir();
 
     /**
      * To be inserted into GradleStart. Is called late afterEvaluate or at runtime.
+     * @param ext the Extension object
      * @return empty string if no tweaker. NEVER NULL.
      */
-    abstract String getClientTweaker(T ext);
+    protected abstract String getClientTweaker(T ext);
 
     /**
      * To be inserted into GradleStartServer. Is called late afterEvaluate or at runtime.
+     * @param ext the Extension object
      * @return empty string if no tweaker. NEVER NULL.
      */
-    abstract String getServerTweaker(T ext);
+    protected abstract String getServerTweaker(T ext);
 
     /**
      * To be inserted into GradleStart. Is called late afterEvaluate or at runtime.
+     * @param ext the Extension object
      * @return empty string if default launchwrapper. NEVER NULL.
      */
-    abstract String getClientRunClass(T ext);
+    protected abstract String getClientRunClass(T ext);
 
     /**
      * For run configurations. Is called late afterEvaluate or at runtime.
+     * @param ext the Extension object
      * @return empty list for no arguments. NEVER NULL.
      */
-    abstract List<String> getClientRunArgs(T ext);
+    protected abstract List<String> getClientRunArgs(T ext);
 
     /**
      * To be inserted into GradleStartServer. Is called late afterEvaluate or at runtime.
+     * @param ext the Extension object
      * @return empty string if default launchwrapper. NEVER NULL.
      */
-    abstract String getServerRunClass(T ext);
+    protected abstract String getServerRunClass(T ext);
 
     /**
      * For run configurations. Is called late afterEvaluate or at runtime.
+     * @param ext the Extension object
      * @return empty list for no arguments. NEVER NULL.
      */
-    abstract List<String> getServerRunArgs(T ext);
+    protected abstract List<String> getServerRunArgs(T ext);
 
     /**
      * Creates task that generate the eclipse run configs and attaches them to the eclipse task.
@@ -611,6 +612,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 }
             }
         });
+        task.setGroup(GROUP_FG);
 
         if (ideaConv.getWorkspace().getIws() == null)
             return;

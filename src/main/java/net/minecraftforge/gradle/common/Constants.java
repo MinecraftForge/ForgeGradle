@@ -75,17 +75,19 @@ public class Constants
     // replacement strings
     
     /** MC version in form "#.#.#(-appendage)" where the appendage may be -pre# or something. **/
-    public static final String REPLACE_MC_VERSION   = "{MC_VERSION}";
+    public static final String REPLACE_MC_VERSION        = "{MC_VERSION}";
     /** the folder where to cache.  ~/.gradle/caches/minecraft **/
-    public static final String REPLACE_CACHE_DIR    = "{CACHE_DIR}";
+    public static final String REPLACE_CACHE_DIR         = "{CACHE_DIR}";
+    /** the folder where to cache project specific.  project/.gradle/ **/
+    public static final String REPLACE_PROJECT_CACHE_DIR = "{PROJECT_CACHE_DIR}";
     /** project/build **/
-    public static final String REPLACE_BUILD_DIR    = "{BUILD_DIR}";
+    public static final String REPLACE_BUILD_DIR         = "{BUILD_DIR}";
     /** MCP mapping channel **/
-    public static final String REPLACE_MCP_CHANNEL  = "{MAPPING_CHANNEL}";
+    public static final String REPLACE_MCP_CHANNEL       = "{MAPPING_CHANNEL}";
     /** MCP mapping version **/
-    public static final String REPLACE_MCP_VERSION  = "{MAPPING_VERSION}";
+    public static final String REPLACE_MCP_VERSION       = "{MAPPING_VERSION}";
     /** AssetIndex name **/
-    public static final String REPLACE_ASSET_INDEX  = "{ASSET_INDEX}";
+    public static final String REPLACE_ASSET_INDEX       = "{ASSET_INDEX}";
     
     // -------- only for dev
 //  patern = patern.replace("{MAPPING_CHANNEL_DOC}", exten.getMappingsChannelNoSubtype());
@@ -143,6 +145,9 @@ public class Constants
         "net/minecraftforge/gradle/GradleStartCommon.java",
         "net/minecraftforge/gradle/tweakers/CoremodTweaker.java",
         "net/minecraftforge/gradle/tweakers/AccessTransformerTweaker.java"
+        
+        // 1.7.10 only
+        //makeStart.addResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
     };
     
     // mcp data constants

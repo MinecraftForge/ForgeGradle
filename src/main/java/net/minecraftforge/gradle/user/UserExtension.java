@@ -17,7 +17,7 @@ public class UserExtension extends BaseExtension
     private ArrayList<Object>       ats          = new ArrayList<Object>();
     private String                  runDir       = "run";
 
-    public UserExtension(UserBasePlugin<UserExtension> plugin)
+    public UserExtension(UserBasePlugin<? extends UserExtension> plugin)
     {
         super(plugin);
     }

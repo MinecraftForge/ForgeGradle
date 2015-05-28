@@ -100,10 +100,10 @@ public abstract class GradleStartCommon
         // launch.
         System.gc();
         String bounce = getBounceClass(); // marginally faster. And we need the launch wrapper anyways.
-        if (bounce.endsWith("launchwrapper.Launch"))
+        if (bounce.endsWith("launchwrapper.Launch") || Strings.isNullOrEmpty(bounce))
             Launch.main(args);
         else
-            Class.forName(getBounceClass()).getDeclaredMethod("main", String[].class).invoke(null, new Object[] { args });
+            Class.forName(bounce).getDeclaredMethod("main", String[].class).invoke(null, new Object[] { args });
     }
 
     private String[] getArgs()

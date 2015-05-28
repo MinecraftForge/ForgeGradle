@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
@@ -96,18 +97,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             }
         }
 
-        // logging
-        {
-            File projectCacheDir = project.getGradle().getStartParameter().getProjectCacheDir();
-            if (projectCacheDir == null)
-                projectCacheDir = new File(project.getProjectDir(), ".gradle");
-            
-            FileLogListenner listener = new FileLogListenner(new File(projectCacheDir, "gradle.log"));
-            project.getLogging().addStandardOutputListener(listener);
-            project.getLogging().addStandardErrorListener(listener);
-            project.getGradle().addBuildListener(listener);
-        }
-
 
         if (project.getBuildDir().getAbsolutePath().contains("!"))
         {
@@ -118,9 +107,32 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         // set the obvious replacements
         TokenReplacer.putReplacement(REPLACE_CACHE_DIR, cacheFile("").getAbsolutePath());
         TokenReplacer.putReplacement(REPLACE_BUILD_DIR, project.getBuildDir().getAbsolutePath());
+        
+        // logging
+        {
+            File projectCacheDir = project.getGradle().getStartParameter().getProjectCacheDir();
+            if (projectCacheDir == null)
+                projectCacheDir = new File(project.getProjectDir(), ".gradle");
+            
+            TokenReplacer.putReplacement(REPLACE_PROJECT_CACHE_DIR, projectCacheDir.getAbsolutePath());
+            
+            FileLogListenner listener = new FileLogListenner(new File(projectCacheDir, "gradle.log"));
+            project.getLogging().addStandardOutputListener(listener);
+            project.getLogging().addStandardErrorListener(listener);
+            project.getGradle().addBuildListener(listener);
+        }
 
         // extension objects
-        project.getExtensions().create(EXT_NAME_MC, (Class<K>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0], this);
+        {
+            Type t = getClass().getGenericSuperclass();
+            
+            while (t instanceof Class)
+            {
+                t = ((Class)t).getGenericSuperclass();
+            }
+            
+            project.getExtensions().create(EXT_NAME_MC, (Class<K>) ((ParameterizedType) t).getActualTypeArguments()[0], this);
+        }
         
         // add buildscript usable tasks
         {
@@ -194,6 +206,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
     protected void afterEvaluate()
     {
+        // validate MC version
+        if (Strings.isNullOrEmpty(getExtension().getVersion()))
+        {
+            throw new GradleConfigurationException("You must set the Minecraft version!");
+        }
+        
         String mcVersion = delayedString(REPLACE_MC_VERSION).call();
 
         // http://files.minecraftforge.net/maven/de/oceanlabs/mcp/mcp/1.7.10/mcp-1.7.10-srg.zip
@@ -359,7 +377,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         
         Delete clearCache = makeTask(TASK_CLEAN_CACHE, Delete.class);
         {
-            clearCache.delete(delayedFile(REPLACE_CACHE_DIR));
+            clearCache.delete(delayedFile(REPLACE_CACHE_DIR), delayedFile(REPLACE_PROJECT_CACHE_DIR));
             clearCache.setGroup(GROUP_FG);
             clearCache.setDescription("Cleares the ForgeGradle cache. DONT RUN THIS unless you want a fresh start, or the dev tells you to.");
         }
