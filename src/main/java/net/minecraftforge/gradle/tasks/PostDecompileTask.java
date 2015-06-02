@@ -31,6 +31,7 @@ import org.gradle.api.tasks.OutputFile;
 import com.github.abrarsyed.jastyle.ASFormatter;
 import com.github.abrarsyed.jastyle.OptParser;
 import com.google.common.base.Joiner;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
@@ -39,25 +40,24 @@ import com.google.common.io.Files;
 public class PostDecompileTask extends AbstractEditJarTask
 {
     @InputFile
-    private Object inJar;
+    private Object                       inJar;
 
-    @InputFiles
-    private Object patchDir;
+    private Object                       patchDir;
 
     @InputFile
-    private Object astyleConfig;
+    private Object                       astyleConfig;
 
     @OutputFile
     @Cached
-    private Object outJar;
+    private Object                       outJar;
 
-    private static final Pattern BEFORE = Pattern.compile("(?m)((case|default).+(?:\\r\\n|\\r|\\n))(?:\\r\\n|\\r|\\n)");
-    private static final Pattern AFTER  = Pattern.compile("(?m)(?:\\r\\n|\\r|\\n)((?:\\r\\n|\\r|\\n)[ \\t]+(case|default))");
-    
-    private final Multimap<String, File> patchesMap = ArrayListMultimap.create();
-    private final List<PatchReport> patchErrors = Lists.newArrayList();
-    private final ASFormatter formatter = new ASFormatter();
-    private GLConstantFixer oglFixer;
+    private static final Pattern         BEFORE      = Pattern.compile("(?m)((case|default).+(?:\\r\\n|\\r|\\n))(?:\\r\\n|\\r|\\n)");
+    private static final Pattern         AFTER       = Pattern.compile("(?m)(?:\\r\\n|\\r|\\n)((?:\\r\\n|\\r|\\n)[ \\t]+(case|default))");
+
+    private final Multimap<String, File> patchesMap  = ArrayListMultimap.create();
+    private final List<PatchReport>      patchErrors = Lists.newArrayList();
+    private final ASFormatter            formatter   = new ASFormatter();
+    private GLConstantFixer              oglFixer;
 
     @Override
     public void doStuffBefore() throws Exception
@@ -65,10 +65,10 @@ public class PostDecompileTask extends AbstractEditJarTask
         for (File f : getPatches())
         {
             String name = f.getName();
-            
+
             if (name.contains("Enum")) // because version of FF is awesome and dont need dat
                 continue;
-            
+
             int patchIndex = name.indexOf(".patch");
 
             // 6 is the length of ".patch" + 3 to account for .## at the end of the file.
@@ -77,10 +77,10 @@ public class PostDecompileTask extends AbstractEditJarTask
 
             patchesMap.put(name.substring(0, patchIndex), f);
         }
-        
+
         OptParser parser = new OptParser(formatter);
         parser.parseOptionFile(getAstyleConfig());
-        
+
         oglFixer = new GLConstantFixer();
     }
 
@@ -88,9 +88,9 @@ public class PostDecompileTask extends AbstractEditJarTask
     public String asRead(String name, String file) throws Exception
     {
         getLogger().debug("Processing file: " + file);
-        
+
         file = FFPatcher.processFile(file);
-        
+
         // patch the file
         Collection<File> patchFiles = patchesMap.get(name.replace('/', '.'));
         if (!patchFiles.isEmpty())
@@ -127,7 +127,7 @@ public class PostDecompileTask extends AbstractEditJarTask
         file = BEFORE.matcher(file).replaceAll("$1");
         file = AFTER.matcher(file).replaceAll("$1");
         file = FmlCleanup.renameClass(file);
-        
+
         return file;
     }
 
@@ -150,7 +150,7 @@ public class PostDecompileTask extends AbstractEditJarTask
                     }
                 }
 
-                //Throwables.propagate(report.getFailure());
+                Throwables.propagate(report.getFailure());
             }
             else if (report.getStatus() == PatchStatus.Fuzzed) // catch fuzzed patches
             {
@@ -185,9 +185,11 @@ public class PostDecompileTask extends AbstractEditJarTask
             boolean success = true;
             for (PatchReport rep : errors)
             {
-                if (!rep.getStatus().isSuccess()) success = false;
+                if (!rep.getStatus().isSuccess())
+                    success = false;
             }
-            if (success) break;
+            if (success)
+                break;
         }
         return patch;
     }
@@ -238,15 +240,22 @@ public class PostDecompileTask extends AbstractEditJarTask
         {
             this.data = data;
         }
-        
+
         public String getAsString()
         {
             return Joiner.on(Constants.NEWLINE).join(data);
         }
     }
 
-
     //@formatter:off
-    @Override public void doStuffMiddle(Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws Exception { }
-    @Override protected boolean storeJarInRam() { return false; }
+    @Override
+    public void doStuffMiddle(Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws Exception
+    {
+    }
+
+    @Override
+    protected boolean storeJarInRam()
+    {
+        return false;
+    }
 }
