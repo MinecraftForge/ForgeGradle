@@ -151,7 +151,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             deobfBin.dependsOn(inputTask, TASK_GENERATE_SRGS);
         }
 
-        Object deobfDecompJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "-deobfDecomp");
+        Object deobfDecompJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "-mcpBin");
         Object decompJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "-decomp");
         Object postDecompJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "-sources");
         Object recompiledJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "");
@@ -161,9 +161,9 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             deobfDecomp.setSrg(delayedFile(SRG_NOTCH_TO_SRG));
             deobfDecomp.setExceptorJson(delayedFile(MCP_DATA_EXC_JSON));
             deobfDecomp.setExceptorCfg(delayedFile(EXC_SRG));
-            deobfDecomp.setApplyMarkers(false);
+            deobfDecomp.setApplyMarkers(true);
             deobfDecomp.setInJar(inputJar);
-            deobfBin.setOutJar(deobfDecompJar);
+            deobfDecomp.setOutJar(deobfDecompJar);
             deobfDecomp.dependsOn(inputTask, TASK_GENERATE_SRGS); // todo grab correct task to depend on
         }
 
@@ -189,7 +189,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             recompile.setInSources(postDecompJar);
             recompile.setClasspath(CONFIG_MC_DEPS);
             recompile.setOutJar(recompiledJar);
-            recompile.dependsOn(postDecomp);
+            
+            recompile.dependsOn(postDecomp, TASK_DL_VERSION_JSON);
         }
 
         // create GradleStart
@@ -410,39 +411,39 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         decompDeobf.addTransformer(extAts);
 
         // from the resources dirs
-        if (false) // TODO: ONLY ALLOW IN PATCHER-USER PLUGINS
-        {
-            JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
-
-            SourceSet main = javaConv.getSourceSets().getByName("main");
-            SourceSet api = javaConv.getSourceSets().getByName("api");
-
-            boolean addedAts = false;
-
-            for (File at : main.getResources().getFiles())
-            {
-                if (at.getName().toLowerCase().endsWith("_at.cfg"))
-                {
-                    project.getLogger().lifecycle("Found AccessTransformer in main resources: " + at.getName());
-                    binDeobf.addTransformer(at);
-                    decompDeobf.addTransformer(at);
-                    addedAts = true;
-                }
-            }
-
-            for (File at : api.getResources().getFiles())
-            {
-                if (at.getName().toLowerCase().endsWith("_at.cfg"))
-                {
-                    project.getLogger().lifecycle("Found AccessTransformer in api resources: " + at.getName());
-                    binDeobf.addTransformer(at);
-                    decompDeobf.addTransformer(at);
-                    addedAts = true;
-                }
-            }
-
-            useLocalCache = useLocalCache || addedAts;
-        }
+        // TODO: ONLY ALLOW IN PATCHER-USER PLUGINS
+//        {
+//            JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+//
+//            SourceSet main = javaConv.getSourceSets().getByName("main");
+//            SourceSet api = javaConv.getSourceSets().getByName("api");
+//
+//            boolean addedAts = false;
+//
+//            for (File at : main.getResources().getFiles())
+//            {
+//                if (at.getName().toLowerCase().endsWith("_at.cfg"))
+//                {
+//                    project.getLogger().lifecycle("Found AccessTransformer in main resources: " + at.getName());
+//                    binDeobf.addTransformer(at);
+//                    decompDeobf.addTransformer(at);
+//                    addedAts = true;
+//                }
+//            }
+//
+//            for (File at : api.getResources().getFiles())
+//            {
+//                if (at.getName().toLowerCase().endsWith("_at.cfg"))
+//                {
+//                    project.getLogger().lifecycle("Found AccessTransformer in api resources: " + at.getName());
+//                    binDeobf.addTransformer(at);
+//                    decompDeobf.addTransformer(at);
+//                    addedAts = true;
+//                }
+//            }
+//
+//            useLocalCache = useLocalCache || addedAts;
+//        }
     }
 
     /**
@@ -613,6 +614,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             }
         });
         task.setGroup(GROUP_FG);
+        task.setDescription("Generates the ForgeGradle run confgiurations for intellij Idea");
 
         if (ideaConv.getWorkspace().getIws() == null)
             return;

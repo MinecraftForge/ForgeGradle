@@ -50,7 +50,7 @@ import com.google.gson.reflect.TypeToken;
 
 public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Project>
 {
-    public Project project;
+    public Project       project;
     public BasePlugin<?> otherPlugin;
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -81,12 +81,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                     // found another BasePlugin thats already applied.
                     // do only overlay stuff and return;
                     otherPlugin = (BasePlugin) p;
-                    
+
                     // copy the caches before anything uses them
                     otherPlugin.replacerCache = replacerCache;
                     otherPlugin.stringCache = stringCache;
                     otherPlugin.fileCache = fileCache;
-                    
+
                     applyOverlayPlugin();
                     return;
                 }
@@ -97,25 +97,24 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             }
         }
 
-
         if (project.getBuildDir().getAbsolutePath().contains("!"))
         {
             project.getLogger().error("Build path has !, This will screw over a lot of java things as ! is used to denote archive paths, REMOVE IT if you want to continue");
             throw new RuntimeException("Build path contains !");
         }
-        
+
         // set the obvious replacements
         TokenReplacer.putReplacement(REPLACE_CACHE_DIR, cacheFile("").getAbsolutePath());
         TokenReplacer.putReplacement(REPLACE_BUILD_DIR, project.getBuildDir().getAbsolutePath());
-        
+
         // logging
         {
             File projectCacheDir = project.getGradle().getStartParameter().getProjectCacheDir();
             if (projectCacheDir == null)
                 projectCacheDir = new File(project.getProjectDir(), ".gradle");
-            
+
             TokenReplacer.putReplacement(REPLACE_PROJECT_CACHE_DIR, projectCacheDir.getAbsolutePath());
-            
+
             FileLogListenner listener = new FileLogListenner(new File(projectCacheDir, "gradle.log"));
             project.getLogging().addStandardOutputListener(listener);
             project.getLogging().addStandardErrorListener(listener);
@@ -125,15 +124,15 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         // extension objects
         {
             Type t = getClass().getGenericSuperclass();
-            
+
             while (t instanceof Class)
             {
-                t = ((Class)t).getGenericSuperclass();
+                t = ((Class) t).getGenericSuperclass();
             }
-            
+
             project.getExtensions().create(EXT_NAME_MC, (Class<K>) ((ParameterizedType) t).getActualTypeArguments()[0], this);
         }
-        
+
         // add buildscript usable tasks
         {
             ExtraPropertiesExtension ext = project.getExtensions().getExtraProperties();
@@ -159,7 +158,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         setVersionInfoJson();
         project.getConfigurations().maybeCreate(CONFIG_MCP_DATA);
         project.getConfigurations().maybeCreate(CONFIG_MAPPINGS);
-        
+
         // set other useful configs
         project.getConfigurations().maybeCreate(CONFIG_MC_DEPS);
         project.getConfigurations().maybeCreate(CONFIG_NATIVES);
@@ -211,7 +210,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         {
             throw new GradleConfigurationException("You must set the Minecraft version!");
         }
-        
+
         String mcVersion = delayedString(REPLACE_MC_VERSION).call();
 
         // http://files.minecraftforge.net/maven/de/oceanlabs/mcp/mcp/1.7.10/mcp-1.7.10-srg.zip
@@ -257,7 +256,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             dlServer.setOutput(delayedFile(JAR_SERVER_FRESH));
             dlServer.setUrl(delayedString(URL_MC_SERVER));
         }
-        
+
         MergeJars merge = makeTask(TASK_MERGE_JARS, MergeJars.class);
         {
             merge.setClient(delayedFile(JAR_CLIENT_FRESH));
@@ -273,8 +272,11 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             merge.dontProcess("javax/annotation");
             merge.dontProcess("argo");
             merge.dependsOn(dlClient, dlServer);
+
+            merge.setGroup(null);
+            merge.setDescription(null);
         }
-        
+
         EtagDownloadTask getVersionJson = makeTask(TASK_DL_VERSION_JSON, EtagDownloadTask.class);
         {
             getVersionJson.setUrl(delayedString(URL_MC_JSON));
@@ -299,11 +301,11 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                             buf = buf.append(line).append('\n');
                         }
                         Files.write(buf.toString().getBytes(Charsets.UTF_8), json);
-                        
+
                         // grab the AssetIndex if it isnt already there
                         if (!TokenReplacer.hasReplacement(REPLACE_ASSET_INDEX))
                         {
-                            JsonFactory.loadVersion(json, json.getParentFile());
+                            parseAndStoreVersion(json, json.getParentFile());
                         }
                     }
                     catch (Throwable t)
@@ -314,7 +316,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 }
             });
         }
-        
+
         ExtractConfigTask extractNatives = makeTask(TASK_EXTRACT_NATIVES, ExtractConfigTask.class);
         {
             extractNatives.setDestinationDir(delayedFile(DIR_NATIVES));
@@ -368,13 +370,13 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             genSrgs.setMcpExc(delayedFile(EXC_MCP));
             genSrgs.dependsOn(extractMcpData, extractMcpMappings);
         }
-        
+
         ObtainFernFlowerTask ffTask = makeTask(TASK_DL_FERNFLOWER, ObtainFernFlowerTask.class);
         {
             ffTask.setMcpUrl(delayedString(URL_FF));
             ffTask.setFfJar(delayedFile(JAR_FERNFLOWER));
         }
-        
+
         Delete clearCache = makeTask(TASK_CLEAN_CACHE, Delete.class);
         {
             clearCache.delete(delayedFile(REPLACE_CACHE_DIR), delayedFile(REPLACE_PROJECT_CACHE_DIR));
@@ -406,7 +408,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     {
         return makeTask(name, DefaultTask.class);
     }
-    
+
     public DefaultTask maybeMakeTask(String name)
     {
         return maybeMakeTask(name, DefaultTask.class);
@@ -416,12 +418,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     {
         return makeTask(project, name, type);
     }
-    
+
     public <T extends Task> T maybeMakeTask(String name, Class<T> type)
     {
         return maybeMakeTask(project, name, type);
     }
-    
+
     public static <T extends Task> T maybeMakeTask(Project proj, String name, Class<T> type)
     {
         return (T) proj.getTasks().maybeCreate(name, type);
@@ -579,7 +581,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         throw new RuntimeException("Unable to obtain url (" + strUrl + ") with etag!");
     }
-    
+
     /**
      * Parses the version json in the provided file, and saves it in memory.
      * Also populates the McDeps and natives configurations.
@@ -593,9 +595,9 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     {
         if (!file.exists())
             return null;
-        
+
         Version version = null;
-        
+
         try
         {
             version = JsonFactory.loadVersion(file, delayedFile(Constants.DIR_JSONS).call());
@@ -605,7 +607,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             project.getLogger().error("" + file + " could not be parsed");
             Throwables.propagate(e);
         }
-        
+
         if (version == null)
         {
             try
@@ -645,13 +647,13 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         }
         else
             project.getLogger().debug("RESOLVED: " + CONFIG_NATIVES);
-        
+
         // set asset index
         TokenReplacer.putReplacement(REPLACE_ASSET_INDEX, version.getAssets());
-        
+
         return version;
     }
-    
+
     protected Version parseAndStoreVersion(File file)
     {
         return parseAndStoreVersion(file, delayedFile(DIR_JSONS).call());
@@ -705,5 +707,4 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     {
         return new File(project.getGradle().getGradleUserHomeDir(), "caches/minecraft/" + path);
     }
-
 }

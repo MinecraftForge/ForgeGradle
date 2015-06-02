@@ -127,9 +127,9 @@ public class Constants
     public static final String DIR_MCP_DATA     = "{CACHE_DIR}/de/oceanlabs/mcp/mcp/" + REPLACE_MC_VERSION;
     public static final String DIR_MCP_MAPPINGS = "{CACHE_DIR}/de/oceanlabs/mcp/mcp_" + REPLACE_MCP_CHANNEL +"/" + REPLACE_MCP_VERSION;
     public static final String JAR_CLIENT_FRESH = "{CACHE_DIR}/net/minecraft/minecraft/" + REPLACE_MC_VERSION + "/minecraft-" + REPLACE_MC_VERSION + ".jar";
-    public static final String JAR_SERVER_FRESH = "{CACHE_DIR}/net/minecraft/minecraft/" + REPLACE_MC_VERSION + "/minecraft_server-" + REPLACE_MC_VERSION + ".jar";
-    public static final String JAR_MERGED       = "{CACHE_DIR}/net/minecraft/minecraft/" + REPLACE_MC_VERSION + "/minecraft_merged-" + REPLACE_MC_VERSION + ".jar";
-    public static final String DIR_NATIVES      = "{CACHE_DIR}/net/minecraft/minecraft/" + REPLACE_MC_VERSION + "/natives";
+    public static final String JAR_SERVER_FRESH = "{CACHE_DIR}/net/minecraft/minecraft_server/" + REPLACE_MC_VERSION + "/minecraft_server-" + REPLACE_MC_VERSION + ".jar";
+    public static final String JAR_MERGED       = "{CACHE_DIR}/net/minecraft/minecraft_merged/" + REPLACE_MC_VERSION + "/minecraft_merged-" + REPLACE_MC_VERSION + ".jar";
+    public static final String DIR_NATIVES      = "{CACHE_DIR}/net/minecraft/natives/" + REPLACE_MC_VERSION + "/";
     public static final String JAR_FERNFLOWER   = "{CACHE_DIR}/fernflower-fixed.jar";
     public static final String DIR_ASSETS       = "{CACHE_DIR}/assets";
     public static final String JSON_ASSET_INDEX = DIR_ASSETS + "/indexes/" + REPLACE_ASSET_INDEX + ".json";

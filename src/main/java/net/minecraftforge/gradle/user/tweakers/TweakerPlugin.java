@@ -1,10 +1,11 @@
 package net.minecraftforge.gradle.user.tweakers;
 
-import java.util.List;
-
 import static net.minecraftforge.gradle.common.Constants.REPLACE_CACHE_DIR;
-import static net.minecraftforge.gradle.common.Constants.REPLACE_PROJECT_CACHE_DIR;
 import static net.minecraftforge.gradle.common.Constants.REPLACE_MC_VERSION;
+import static net.minecraftforge.gradle.common.Constants.REPLACE_PROJECT_CACHE_DIR;
+import static net.minecraftforge.gradle.common.Constants.TASK_MERGE_JARS;
+
+import java.util.List;
 
 import net.minecraftforge.gradle.user.UserBasePlugin;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
@@ -22,19 +23,22 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
     protected void applyUserPlugin()
     {
         // patterns
-        String cleanRoot = REPLACE_CACHE_DIR + "/net/minecraft/minecraft/" + REPLACE_MC_VERSION + "/";
+        String cleanRoot = REPLACE_CACHE_DIR + "/net/minecraft/";
         String dirtyRoot = REPLACE_PROJECT_CACHE_DIR + "/minecraft/";
         String cleanSuffix = "%s-" + REPLACE_MC_VERSION + ".jar";
         String dirtySuffix = "%s-" + REPLACE_MC_VERSION + "-PROJECT(" + project.getName() + ").jar";
 
         if (isClient())
         {
-            this.tasksClient(cleanRoot + "Minecraft" + cleanSuffix, dirtyRoot + "Minecraft" + dirtySuffix);
+            this.tasksClient(cleanRoot + "minecraft/"+REPLACE_MC_VERSION+"/minecraft" + cleanSuffix, dirtyRoot + "minecraft" + dirtySuffix);
         }
         else
         {
-            this.tasksClient(cleanRoot + "MinecraftServer" + cleanSuffix, dirtyRoot + "MinecraftServer" + dirtySuffix);
+            this.tasksClient(cleanRoot + "mincraft_server/"+REPLACE_MC_VERSION+"/minecraft_server" + cleanSuffix, dirtyRoot + "minecraft_server" + dirtySuffix);
         }
+
+        // remove the unused merge jars task
+        project.getTasks().remove(project.getTasks().getByName(TASK_MERGE_JARS));
 
         // TODO: configure reobfuscation to use SRG names
     }

@@ -69,11 +69,11 @@ public class TaskRecompileMc extends CachedTask
                 .put("encoding", "utf-8")
                 .put("source", "1.6")
                 .put("target", "1.6")
-                .put("compilerarg", "-Xlint:-options") // to silence the bootstrap classpath warning
+                //.put("compilerarg", "-Xlint:-options") // to silence the bootstrap classpath warning
                 .build());
 
         outJar.getParentFile().mkdirs();
-        createOutput(outJar, tempSrc, tempCls, getInResources());
+        createOutput(outJar, inJar, tempCls, getInResources());
     }
 
     private static void extractSources(File tempDir, File inJar) throws IOException
@@ -84,17 +84,19 @@ public class TaskRecompileMc extends CachedTask
         while ((entry = zin.getNextEntry()) != null)
         {
             // we dont care about directories.. we can make em later when needed
-            if (entry.isDirectory())
+            // we only want java files to compile too, can grab the other resources from the jar later
+            if (entry.isDirectory() || !entry.getName().endsWith(".java"))
                 continue;
 
             File out = new File(tempDir, entry.getName());
+            out.getParentFile().mkdirs();
             Files.asByteSink(out).writeFrom(zin);
         }
 
         zin.close();
     }
 
-    private void createOutput(File outJar, File sourceDir, File classDir, File resourceJar) throws IOException
+    private void createOutput(File outJar, File sourceJar, File classDir, File resourceJar) throws IOException
     {
         Set<String> elementsAdded = Sets.newHashSet();
 
@@ -103,7 +105,7 @@ public class TaskRecompileMc extends CachedTask
 
         Visitor visitor = new Visitor(zout, elementsAdded);
 
-        getProject().fileTree(sourceDir).visit(visitor);
+        new ZipFileTree(sourceJar).visit(visitor);
         getProject().fileTree(classDir).visit(visitor);
 
         if (resourceJar != null)
