@@ -23,6 +23,7 @@ import net.minecraftforge.gradle.tasks.DeobfuscateJar;
 import net.minecraftforge.gradle.tasks.GenEclipseRunTask;
 import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
+import net.minecraftforge.gradle.util.delayed.TokenReplacer;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
@@ -101,6 +102,13 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     protected void afterEvaluate()
     {
         super.afterEvaluate();
+        
+        // add repalcements for run configs and gradle start
+        T ext = getExtension();
+        TokenReplacer.putReplacement(REPLACE_CLIENT_TWEAKER, getClientTweaker(ext));
+        TokenReplacer.putReplacement(REPLACE_SERVER_TWEAKER, getServerTweaker(ext));
+        TokenReplacer.putReplacement(REPLACE_CLIENT_MAIN, getClientRunClass(ext));
+        TokenReplacer.putReplacement(REPLACE_SERVER_MAIN, getServerRunClass(ext));
 
         // map configurations (only if the maven or maven publish plugins exist)
         mapConfigurations();
@@ -151,10 +159,10 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             deobfBin.dependsOn(inputTask, TASK_GENERATE_SRGS);
         }
 
-        Object deobfDecompJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "-mcpBin");
+        Object deobfDecompJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "-srgBin");
         Object decompJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "-decomp");
-        Object postDecompJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "-sources");
-        Object recompiledJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "");
+        Object postDecompJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "Src-sources");
+        Object recompiledJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "Src");
 
         DeobfuscateJar deobfDecomp = makeTask(TASK_DEOBF, DeobfuscateJar.class);
         {
@@ -179,7 +187,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         {
             postDecomp.setInJar(decompJar);
             postDecomp.setOutJar(postDecompJar);
-            postDecomp.setPatches(delayedFile(MCP_PATCHES_MERGED));
+            postDecomp.setPatches(mcpPatchSet);
             postDecomp.setAstyleConfig(delayedFile(MCP_DATA_STYLE));
             postDecomp.dependsOn(decompile);
         }
@@ -230,8 +238,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         // add setup dependencies
         project.getTasks().getByName(TASK_SETUP_CI).dependsOn(deobfBin);
-        project.getTasks().getByName(TASK_SETUP_DEV).dependsOn(deobfBin);
-        project.getTasks().getByName(TASK_SETUP_DECOMP).dependsOn(recompile);
+        project.getTasks().getByName(TASK_SETUP_DEV).dependsOn(deobfBin, makeStart);
+        project.getTasks().getByName(TASK_SETUP_DECOMP).dependsOn(recompile, makeStart);
     }
 
     /**
