@@ -59,6 +59,7 @@ import org.w3c.dom.NodeList;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 
@@ -346,6 +347,9 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         project.getConfigurations().getByName("apiCompile").extendsFrom(project.getConfigurations().getByName("compile"));
         project.getConfigurations().getByName("testCompile").extendsFrom(project.getConfigurations().getByName("apiCompile"));
+        
+        // set compile not to take from libs
+        ((JavaCompile)project.getTasks().getByName(main.getCompileJavaTaskName())).getOptions().setCompilerArgs(ImmutableList.of("-sourcepath", "."));
     }
 
     private void readAndApplyJson(File file, String depConfig, String nativeConfig, Logger log)
