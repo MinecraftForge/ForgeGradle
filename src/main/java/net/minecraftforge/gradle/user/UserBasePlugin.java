@@ -225,7 +225,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             makeStart.addReplacement("@@BOUNCERCLIENT@@", delayedString(REPLACE_CLIENT_MAIN));
             makeStart.addReplacement("@@BOUNCERSERVER@@", delayedString(REPLACE_SERVER_MAIN));
             makeStart.setStartOut(getStartDir());
-            makeStart.addClasspathConfig(CONFIG_MC);
             makeStart.addClasspathConfig(CONFIG_MC_DEPS);
 
             // see delayed task config for some more config regarding MC versions... for 1.7.10 compat

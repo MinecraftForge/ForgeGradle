@@ -444,6 +444,11 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             {
                 makeStart.addResource(resource);
             }
+            
+            for (String resource : GRADLE_START_FML_RES)
+            {
+                makeStart.addResource(resource);
+            }
 
             makeStart.addReplacement("@@ASSETINDEX@@", delayedString(REPLACE_ASSET_INDEX));
             makeStart.addReplacement("@@ASSETSDIR@@", delayedFile(DIR_ASSETS));
@@ -459,6 +464,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             makeStart.addReplacement("@@TWEAKERCLIENT@@", patcher.getDelayedTweakClassClient());
             makeStart.addReplacement("@@BOUNCERSERVER@@", patcher.getDelayedMainClassServer());
             makeStart.addReplacement("@@TWEAKERSERVER@@", patcher.getDelayedTweakClassServer());
+            makeStart.addExtraLine("net.minecraftforge.gradle.GradleForgeHacks.searchCoremods(this);");
             makeStart.setStartOut(subWorkspace(patcher.getCapName() + DIR_EXTRACTED_START));
             makeStart.setDoesCache(false);
             makeStart.dependsOn(TASK_DL_ASSET_INDEX, TASK_DL_ASSETS);

@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -19,8 +20,10 @@ import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
@@ -29,17 +32,22 @@ import com.google.common.io.Resources;
 public class CreateStartTask extends CachedTask
 {
     @Input
-    HashMap<String, String> resources    = Maps.newHashMap();
+    HashMap<String, String>     resources    = Maps.newHashMap();
 
     @Input
-    HashMap<String, Object> replacements = Maps.newHashMap();
+    HashMap<String, Object>     replacements = Maps.newHashMap();
+
+    @Input
+    List<String>                extraLines   = Lists.newArrayList();
 
     @Cached
     @OutputDirectory
-    private Object          startOut;
+    private Object              startOut;
 
-    private Set<String>    classpath    = Sets.newHashSet();
-    private boolean         compile;
+    private Set<String>         classpath    = Sets.newHashSet();
+    private boolean             compile;
+
+    private static final String EXTRA_LINES  = "//@@EXTRALINES@@";
 
     @TaskAction
     public void doStuff() throws IOException
@@ -61,6 +69,13 @@ public class CreateStartTask extends CachedTask
             {
                 out = out.replace(replacement.getKey(), (String) replacement.getValue());
             }
+            
+            // replace extra lines
+            if (!extraLines.isEmpty())
+            {
+                String replacement = Joiner.on('\n').join(extraLines);
+                out = out.replace(EXTRA_LINES, replacement);
+            }
 
             // write file
             File outFile = new File(resourceDir, resEntry.getKey());
@@ -73,13 +88,13 @@ public class CreateStartTask extends CachedTask
         {
             File compiled = getStartOut(); // quas
             compiled.mkdirs(); // wex
-            
+
             // build claspath    exort
             FileCollection col = null;
             for (String s : classpath)
             {
                 FileCollection config = getProject().getConfigurations().getByName(s);
-                
+
                 if (col == null)
                     col = config;
                 else
@@ -92,7 +107,7 @@ public class CreateStartTask extends CachedTask
                     .put("destDir", compiled.getCanonicalPath())
                     .put("failonerror", true)
                     .put("includeantruntime", false)
-                    .put("classpath", col) // because ant knows what a file collection is
+                    .put("classpath", col.getAsPath()) // because ant knows what a file collection is
                     .put("encoding", "utf-8")
                     .put("source", "1.6")
                     .put("target", "1.6")
@@ -154,6 +169,11 @@ public class CreateStartTask extends CachedTask
     public void addReplacement(String token, Object replacement)
     {
         replacements.put(token, replacement);
+    }
+
+    public void addExtraLine(String extra)
+    {
+        this.extraLines.add(extra);
     }
 
     public void addClasspathConfig(String classpathConfig)

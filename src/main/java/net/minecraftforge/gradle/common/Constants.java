@@ -143,11 +143,15 @@ public class Constants
         "GradleStart.java",
         "GradleStartServer.java",
         "net/minecraftforge/gradle/GradleStartCommon.java",
-        "net/minecraftforge/gradle/tweakers/CoremodTweaker.java",
-        "net/minecraftforge/gradle/tweakers/AccessTransformerTweaker.java"
         
         // 1.7.10 only
         //makeStart.addResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
+    };
+
+    public static final String[] GRADLE_START_FML_RES = new String[] {
+        "net/minecraftforge/gradle/GradleForgeHacks.java",
+        "net/minecraftforge/gradle/tweakers/CoremodTweaker.java",
+        "net/minecraftforge/gradle/tweakers/AccessTransformerTweaker.java"
     };
     
     // mcp data constants

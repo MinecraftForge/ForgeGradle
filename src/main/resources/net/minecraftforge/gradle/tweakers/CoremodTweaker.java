@@ -9,7 +9,7 @@ import java.util.Map;
 import net.minecraft.launchwrapper.ITweaker;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.launchwrapper.LaunchClassLoader;
-import net.minecraftforge.gradle.GradleStartCommon;
+import net.minecraftforge.gradle.GradleForgeHacks;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -53,7 +53,7 @@ public class CoremodTweaker implements ITweaker
                 {
                     Object coreMod = pluginField.get(tweaker);
                     Object oldFile = fileField.get(tweaker);
-                    File newFile = GradleStartCommon.coreMap.get(coreMod.getClass().getCanonicalName());
+                    File newFile = GradleForgeHacks.coreMap.get(coreMod.getClass().getCanonicalName());
 
                     LOGGER.info("Injecting location in coremod {}", coreMod.getClass().getCanonicalName());
 
