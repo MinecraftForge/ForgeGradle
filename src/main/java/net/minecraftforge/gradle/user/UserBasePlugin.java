@@ -9,6 +9,7 @@ import groovy.lang.Closure;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -23,7 +24,13 @@ import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.json.JsonFactory;
-import net.minecraftforge.gradle.tasks.*;
+import net.minecraftforge.gradle.tasks.CreateStartTask;
+import net.minecraftforge.gradle.tasks.DecompileTask;
+import net.minecraftforge.gradle.tasks.ExtractConfigTask;
+import net.minecraftforge.gradle.tasks.GenSrgTask;
+import net.minecraftforge.gradle.tasks.MergeJarsTask;
+import net.minecraftforge.gradle.tasks.ProcessJarTask;
+import net.minecraftforge.gradle.tasks.RemapSourcesTask;
 import net.minecraftforge.gradle.tasks.abstractutil.ExtractTask;
 import net.minecraftforge.gradle.tasks.user.SourceCopyTask;
 import net.minecraftforge.gradle.tasks.user.reobf.ArtifactSpec;
@@ -59,8 +66,8 @@ import org.w3c.dom.NodeList;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 
 public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin<T>
@@ -349,7 +356,15 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         project.getConfigurations().getByName("testCompile").extendsFrom(project.getConfigurations().getByName("apiCompile"));
         
         // set compile not to take from libs
-        ((JavaCompile)project.getTasks().getByName(main.getCompileJavaTaskName())).getOptions().setCompilerArgs(ImmutableList.of("-sourcepath", "."));
+        JavaCompile compileTask = ((JavaCompile)project.getTasks().getByName(main.getCompileJavaTaskName()));
+        List<String> args = compileTask.getOptions().getCompilerArgs();
+        if (args == null || args.isEmpty())
+        {
+            args = Lists.newArrayList();
+        }
+        args.add("-sourceoath");
+        args.add(".");
+        compileTask.getOptions().setCompilerArgs(args);
     }
 
     private void readAndApplyJson(File file, String depConfig, String nativeConfig, Logger log)
