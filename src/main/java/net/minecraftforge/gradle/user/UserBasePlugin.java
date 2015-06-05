@@ -362,7 +362,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         {
             args = Lists.newArrayList();
         }
-        args.add("-sourceoath");
+        args.add("-sourcepath");
         args.add(".");
         compileTask.getOptions().setCompilerArgs(args);
     }
