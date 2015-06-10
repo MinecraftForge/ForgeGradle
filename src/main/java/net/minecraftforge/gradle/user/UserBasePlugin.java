@@ -27,6 +27,7 @@ import net.minecraftforge.gradle.util.delayed.TokenReplacer;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.XmlProvider;
 import org.gradle.api.artifacts.ConfigurationContainer;
@@ -125,7 +126,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         // add access transformers to deobf tasks
         addAtsToDeobf();
-
+        
         // TODO: do some GradleSTart stuff based on the MC version?
     }
 
@@ -146,25 +147,25 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         makeDecompTasks(globalPattern, localPattern, delayedFile(JAR_MERGED), TASK_MERGE_JARS, delayedFile(MCP_PATCHES_MERGED));
     }
 
-    private void makeDecompTasks(String globalOutputPattern, String localOutputPattern, Object inputJar, String inputTask, Object mcpPatchSet)
+    private void makeDecompTasks(final String globalPattern, final String localPattern, Object inputJar, String inputTask, Object mcpPatchSet)
     {
-        DeobfuscateJar deobfBin = makeTask(TASK_DEOBF_BIN, DeobfuscateJar.class);
+        final DeobfuscateJar deobfBin = makeTask(TASK_DEOBF_BIN, DeobfuscateJar.class);
         {
             deobfBin.setSrg(delayedFile(SRG_NOTCH_TO_MCP));
             deobfBin.setExceptorJson(delayedFile(MCP_DATA_EXC_JSON));
             deobfBin.setExceptorCfg(delayedFile(EXC_MCP));
             deobfBin.setApplyMarkers(false);
             deobfBin.setInJar(inputJar);
-            deobfBin.setOutJar(chooseDeobfOutput(globalOutputPattern, localOutputPattern, "Bin"));
+            deobfBin.setOutJar(chooseDeobfOutput(globalPattern, localPattern, "Bin"));
             deobfBin.dependsOn(inputTask, TASK_GENERATE_SRGS);
         }
 
-        Object deobfDecompJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "-srgBin");
-        Object decompJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "-decomp");
-        Object postDecompJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "Src-sources");
-        Object recompiledJar = chooseDeobfOutput(globalOutputPattern, localOutputPattern, "Src");
+        final Object deobfDecompJar = chooseDeobfOutput(globalPattern, localPattern, "-srgBin");
+        final Object decompJar = chooseDeobfOutput(globalPattern, localPattern, "-decomp");
+        final Object postDecompJar = chooseDeobfOutput(globalPattern, localPattern, "Src-sources");
+        final Object recompiledJar = chooseDeobfOutput(globalPattern, localPattern, "Src");
 
-        DeobfuscateJar deobfDecomp = makeTask(TASK_DEOBF, DeobfuscateJar.class);
+        final DeobfuscateJar deobfDecomp = makeTask(TASK_DEOBF, DeobfuscateJar.class);
         {
             deobfDecomp.setSrg(delayedFile(SRG_NOTCH_TO_SRG));
             deobfDecomp.setExceptorJson(delayedFile(MCP_DATA_EXC_JSON));
@@ -175,7 +176,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             deobfDecomp.dependsOn(inputTask, TASK_GENERATE_SRGS); // todo grab correct task to depend on
         }
 
-        ApplyFernFlowerTask decompile = makeTask(TASK_DECOMPILE, ApplyFernFlowerTask.class);
+        final ApplyFernFlowerTask decompile = makeTask(TASK_DECOMPILE, ApplyFernFlowerTask.class);
         {
             decompile.setInJar(deobfDecompJar);
             decompile.setOutJar(decompJar);
@@ -183,7 +184,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             decompile.dependsOn(TASK_DL_FERNFLOWER, deobfDecomp);
         }
 
-        PostDecompileTask postDecomp = makeTask(TASK_POST_DECOMP, PostDecompileTask.class);
+        final PostDecompileTask postDecomp = makeTask(TASK_POST_DECOMP, PostDecompileTask.class);
         {
             postDecomp.setInJar(decompJar);
             postDecomp.setOutJar(postDecompJar);
@@ -192,7 +193,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             postDecomp.dependsOn(decompile);
         }
 
-        TaskRecompileMc recompile = makeTask(TASK_RECOMPILE, TaskRecompileMc.class);
+        final TaskRecompileMc recompile = makeTask(TASK_RECOMPILE, TaskRecompileMc.class);
         {
             recompile.setInSources(postDecompJar);
             recompile.setClasspath(CONFIG_MC_DEPS);
@@ -202,7 +203,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         }
 
         // create GradleStart
-        CreateStartTask makeStart = makeTask(TASK_MAKE_START, CreateStartTask.class);
+        final CreateStartTask makeStart = makeTask(TASK_MAKE_START, CreateStartTask.class);
         {
             for (String resource : GRADLE_START_RESOURCES)
             {
@@ -239,6 +240,42 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         project.getTasks().getByName(TASK_SETUP_CI).dependsOn(deobfBin);
         project.getTasks().getByName(TASK_SETUP_DEV).dependsOn(deobfBin, makeStart);
         project.getTasks().getByName(TASK_SETUP_DECOMP).dependsOn(recompile, makeStart);
+        
+        // make dummy task for MC dep
+        final TaskDepDummy dummy = makeTask(TASK_DUMMY_MC, TaskDepDummy.class);
+        dummy.setOutputFile(delayedFile(JAR_DUMMY_MC));
+        project.getDependencies().add(CONFIG_MC, project.files(delayedFile(JAR_DUMMY_MC)).builtBy(dummy));
+        
+        // configure MC compiling. This AfterEvaluate section should happen after the one made in
+        // also configure the dummy task dependencies
+        project.afterEvaluate(new Action<Project>() {
+            @Override
+            public void execute(Project project)
+            {
+                boolean isDecomp = false;
+                
+                if (project.file(recompiledJar).exists())
+                {
+                    isDecomp = true;
+                }
+
+                List<String> tasks = project.getGradle().getStartParameter().getTaskNames();
+                if (tasks.contains(TASK_DEOBF_BIN) || tasks.contains(TASK_SETUP_CI) || tasks.contains(TASK_SETUP_DEV))
+                {
+                    isDecomp = false;
+                    dummy.dependsOn(deobfBin);
+                    dummy.mustRunAfter(TASK_SETUP_CI, TASK_SETUP_DEV);
+                }
+                else if (tasks.contains(TASK_RECOMPILE) || tasks.contains(TASK_SETUP_DECOMP))
+                {
+                    isDecomp = true;
+                    dummy.dependsOn(recompile);
+                    dummy.mustRunAfter(TASK_SETUP_DECOMP);
+                }
+
+                afterDecomp(isDecomp, useLocalCache(getExtension()), CONFIG_MC);
+            }
+        });
     }
 
     /**
@@ -298,13 +335,11 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         api.setCompileClasspath(api.getCompileClasspath()
                 .plus(project.getConfigurations().getByName(CONFIG_MC))
                 .plus(project.getConfigurations().getByName(CONFIG_MC_DEPS))
-                .plus(project.getConfigurations().getByName(CONFIG_START))
                 .plus(project.getConfigurations().getByName(CONFIG_PROVIDED)));
         main.setCompileClasspath(main.getCompileClasspath()
                 .plus(api.getOutput())
                 .plus(project.getConfigurations().getByName(CONFIG_MC))
                 .plus(project.getConfigurations().getByName(CONFIG_MC_DEPS))
-                .plus(project.getConfigurations().getByName(CONFIG_START))
                 .plus(project.getConfigurations().getByName(CONFIG_PROVIDED)));
         main.setRuntimeClasspath(main.getCompileClasspath()
                 .plus(api.getOutput())
@@ -315,8 +350,12 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 .plus(api.getOutput())
                 .plus(project.getConfigurations().getByName(CONFIG_MC))
                 .plus(project.getConfigurations().getByName(CONFIG_MC_DEPS))
-                .plus(project.getConfigurations().getByName(CONFIG_START))
                 .plus(project.getConfigurations().getByName(CONFIG_PROVIDED)));
+        test.setRuntimeClasspath(test.getRuntimeClasspath()
+                .plus(api.getOutput())
+                .plus(project.getConfigurations().getByName(CONFIG_MC))
+                .plus(project.getConfigurations().getByName(CONFIG_MC_DEPS))
+                .plus(project.getConfigurations().getByName(CONFIG_START)));
 
         project.getConfigurations().getByName("apiCompile").extendsFrom(project.getConfigurations().getByName("compile"));
         project.getConfigurations().getByName("testCompile").extendsFrom(project.getConfigurations().getByName("apiCompile"));
@@ -453,6 +492,14 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 //        }
     }
 
+    /**
+     * This method should add the MC dependency to the supplied config, as well as do any extra configuration that requires the provided information.
+     * @param isDecomp Whether to use the recmpield MC artifact
+     * @param useLocalCache Whetehr or not ATs were applied to this artifact
+     * @param mcConfig Which gradle configuration to add the MC dep to
+     */
+    protected abstract void afterDecomp(boolean isDecomp, boolean useLocalCache, String mcConfig);
+    
     /**
      * This method is called early, and not late.
      * @return TRUE if a server run config and GradleStartServer should be created.

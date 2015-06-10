@@ -1,5 +1,7 @@
 package net.minecraftforge.gradle.user;
 
+import net.minecraftforge.gradle.common.Constants;
+
 public class UserConstants
 {
     // @formatter:off
@@ -20,6 +22,10 @@ public class UserConstants
     public static final String TASK_POST_DECOMP       = "fixMcSources";
     public static final String TASK_RECOMPILE         = "recompileMc";
     public static final String TASK_MAKE_START        = "makeStart";
+    
+    // dummy stuff
+    public static final String TASK_DUMMY_MC          = "dummyMcDepTask";
+    public static final String JAR_DUMMY_MC           = Constants.REPLACE_PROJECT_CACHE_DIR+"/dummyMcDep.jar";
 
     static final String        REPLACE_SERVER_TWEAKER = "{RUN_SERVER_TWEAKER}";
     static final String        REPLACE_CLIENT_TWEAKER = "{RUN_CLIENT_TWEAKER}";
