@@ -6,8 +6,10 @@ import static net.minecraftforge.gradle.common.Constants.REPLACE_PROJECT_CACHE_D
 import static net.minecraftforge.gradle.common.Constants.TASK_MERGE_JARS;
 import static net.minecraftforge.gradle.user.UserConstants.CONFIG_MC;
 
+import java.io.File;
 import java.util.List;
 
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.user.UserBasePlugin;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 
@@ -22,9 +24,10 @@ import com.google.common.collect.ImmutableMap;
 public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
 {
     abstract boolean isClient();
-    
+
     private static final String CLEAN_ROOT = REPLACE_CACHE_DIR + "/net/minecraft/";
     private static final String DIRTY_ROOT = REPLACE_PROJECT_CACHE_DIR + "/minecraft/";
+    private static final String MCP_INSERT = Constants.REPLACE_MCP_CHANNEL + "/" + Constants.REPLACE_MC_VERSION;
 
     @Override
     protected void applyUserPlugin()
@@ -35,11 +38,11 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
 
         if (isClient())
         {
-            this.tasksClient(CLEAN_ROOT + "minecraft/"+REPLACE_MC_VERSION+"/minecraft" + cleanSuffix, DIRTY_ROOT + "minecraft" + dirtySuffix);
+            this.tasksClient(CLEAN_ROOT + "minecraft/" + REPLACE_MC_VERSION + "/" + MCP_INSERT + "/minecraft" + cleanSuffix, DIRTY_ROOT + "minecraft" + dirtySuffix);
         }
         else
         {
-            this.tasksClient(CLEAN_ROOT + "mincraft_server/"+REPLACE_MC_VERSION+"/minecraft_server" + cleanSuffix, DIRTY_ROOT + "minecraft_server" + dirtySuffix);
+            this.tasksClient(CLEAN_ROOT + "mincraft_server/" + REPLACE_MC_VERSION + "/" + MCP_INSERT + "/minecraft_server" + cleanSuffix, DIRTY_ROOT + "minecraft_server" + dirtySuffix);
         }
 
         // remove the unused merge jars task
@@ -47,7 +50,7 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
 
         // TODO: configure reobfuscation to use SRG names
     }
-    
+
     @Override
     protected void afterDecomp(final boolean isDecomp, final boolean useLocalCache, final String mcConfig)
     {
@@ -56,24 +59,33 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
             @Override
             public void execute(Project proj)
             {
-                String cleanRoot = CLEAN_ROOT + (isClient() ? "/minecraft" : "/minecraft_server") + "/" + REPLACE_MC_VERSION;
-                String repo = delayedFile( useLocalCache ? DIRTY_ROOT : cleanRoot).call().getAbsolutePath();
-                addFlatRepo(proj, "TweakerMcRepo", delayedFile( useLocalCache ? DIRTY_ROOT : cleanRoot).call());
-                System.out.println("REPO!! ->> "+repo);
+                String cleanRoot = CLEAN_ROOT + (isClient() ? "/minecraft" : "/minecraft_server") + "/" + REPLACE_MC_VERSION + "/" + MCP_INSERT;
+                String repo = delayedFile(useLocalCache ? DIRTY_ROOT : cleanRoot).call().getAbsolutePath();
+                addFlatRepo(proj, "TweakerMcRepo", delayedFile(useLocalCache ? DIRTY_ROOT : cleanRoot).call());
+                System.out.println("REPO!! ->> " + repo);
             }
         });
-        
+
         // add the Mc dep
         String group = "net.minecraft";
-        String artifact =  (isClient() ? "minecraft" : "minecraft_server") + (isDecomp ? "Src" : "Bin");
-        String version = delayedString(REPLACE_MC_VERSION).call() + ( useLocalCache ? "-PROJECT(" + project.getName() + ")" : "");
-        
+        String artifact = (isClient() ? "minecraft" : "minecraft_server") + (isDecomp ? "Src" : "Bin");
+        String version = delayedString(REPLACE_MC_VERSION).call() + (useLocalCache ? "-PROJECT(" + project.getName() + ")" : "");
+
         project.getDependencies().add(CONFIG_MC, ImmutableMap.of("group", group, "name", artifact, "version", version));
     }
 
     @Override
     protected void afterEvaluate()
     {
+        // read version file if exists
+        {
+            File jsonFile = delayedFile(Constants.JSON_VERSION).call();
+            if (jsonFile.exists())
+            {
+                parseAndStoreVersion(jsonFile, jsonFile.getParentFile());
+            }
+        }
+
         super.afterEvaluate();
 
         TweakerExtension ext = getExtension();

@@ -69,19 +69,19 @@ public class DeobfuscateJar extends CachedTask
     private Object            exceptorJson;
 
     @Input
-    private boolean           applyMarkers    = false;
-    
+    private boolean           applyMarkers  = false;
+
     @Input
-    private boolean           failOnAtError   = true;
+    private boolean           failOnAtError = true;
 
     private Object            outJar;
 
     @InputFiles
-    private ArrayList<Object> ats             = Lists.newArrayList();
+    private ArrayList<Object> ats           = Lists.newArrayList();
 
     private Object            log;
 
-    private boolean           isClean         = true;
+    private boolean           isClean       = true;
 
     public void addTransformerClean(Object... obj)
     {
@@ -101,7 +101,7 @@ public class DeobfuscateJar extends CachedTask
         {
             ats.add(object);
         }
-        
+
         if (obj.length > 0)
         {
             isClean = false;
@@ -145,31 +145,31 @@ public class DeobfuscateJar extends CachedTask
         ErroringRemappingAccessMap accessMap = new ErroringRemappingAccessMap(new File[] { getMethodCsv(), getFieldCsv() });
 
         getLogger().info("Using AccessTransformers...");
-//        PrintStream tmp = System.out;
-//        System.setOut(new PrintStream(new ByteArrayOutputStream()
-//        {
-//            @Override
-//            public void write(int b)
-//            {
-//            }
-//
-//            @Override
-//            public void write(byte[] b, int off, int len)
-//            {
-//            }
-//
-//            @Override
-//            public void writeTo(OutputStream out) throws IOException
-//            {
-//            }
-//        }));
+        //        PrintStream tmp = System.out;
+        //        System.setOut(new PrintStream(new ByteArrayOutputStream()
+        //        {
+        //            @Override
+        //            public void write(int b)
+        //            {
+        //            }
+        //
+        //            @Override
+        //            public void write(byte[] b, int off, int len)
+        //            {
+        //            }
+        //
+        //            @Override
+        //            public void writeTo(OutputStream out) throws IOException
+        //            {
+        //            }
+        //        }));
         //Make SS shutup about access maps
         for (File at : ats)
         {
             getLogger().info("" + at);
             accessMap.loadAccessTransformer(at);
         }
-//        System.setOut(tmp);
+        //        System.setOut(tmp);
 
         // make a processor out of the ATS and mappings.
         RemapperProcessor srgProcessor = new RemapperProcessor(null, mapping, null);
@@ -188,7 +188,7 @@ public class DeobfuscateJar extends CachedTask
 
         // remap jar
         remapper.remapJar(input, outJar);
-        
+
         // throw error for broken AT lines
         if (accessMap.brokenLines.size() > 0 && failOnAtError)
         {
@@ -197,9 +197,9 @@ public class DeobfuscateJar extends CachedTask
             {
                 getLogger().error(" ---  {}", line);
             }
-            
+
             // TODO: add info for disabling
-            
+
             throw new RuntimeException("Your Access Transformers be broke!");
         }
     }
@@ -405,7 +405,7 @@ public class DeobfuscateJar extends CachedTask
     {
         this.outJar = outJar;
     }
-    
+
     /**
      * returns the actual output Object depending on Clean status
      * Unlike getOutputJar() this method does not resolve the files.
@@ -452,7 +452,7 @@ public class DeobfuscateJar extends CachedTask
     {
         return isClean;
     }
-    
+
     public boolean isClean()
     {
         return isClean;
@@ -465,8 +465,8 @@ public class DeobfuscateJar extends CachedTask
 
     private static final class ErroringRemappingAccessMap extends AccessMap
     {
-        private final Map<String, String> renames = Maps.newHashMap();
-        public final Map<String, String> brokenLines = Maps.newHashMap();
+        private final Map<String, String> renames     = Maps.newHashMap();
+        public final Map<String, String>  brokenLines = Maps.newHashMap();
 
         public ErroringRemappingAccessMap(File[] renameCsvs) throws IOException
         {
@@ -536,7 +536,7 @@ public class DeobfuscateJar extends CachedTask
             // convert  package.class  to  package/class
             brokenLines.put(joinedString.replace('.', '/'), symbolString);
         }
-        
+
         @Override
         protected void accessApplied(String key, int oldAccess, int newAccess)
         {
