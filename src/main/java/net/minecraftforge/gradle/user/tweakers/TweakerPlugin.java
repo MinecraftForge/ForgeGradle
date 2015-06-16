@@ -4,7 +4,7 @@ import static net.minecraftforge.gradle.common.Constants.REPLACE_CACHE_DIR;
 import static net.minecraftforge.gradle.common.Constants.REPLACE_MC_VERSION;
 import static net.minecraftforge.gradle.common.Constants.REPLACE_PROJECT_CACHE_DIR;
 import static net.minecraftforge.gradle.common.Constants.TASK_MERGE_JARS;
-import static net.minecraftforge.gradle.user.UserConstants.CONFIG_MC;
+import static net.minecraftforge.gradle.user.UserConstants.*;
 
 import java.io.File;
 import java.util.List;
@@ -47,6 +47,10 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
 
         // remove the unused merge jars task
         project.getTasks().remove(project.getTasks().getByName(TASK_MERGE_JARS));
+        
+        // add asset-index task to CI and dev workspace tasks
+        project.getTasks().getByName(TASK_SETUP_CI).dependsOn(Constants.TASK_DL_VERSION_JSON);
+        project.getTasks().getByName(TASK_SETUP_DEV).dependsOn(Constants.TASK_DL_VERSION_JSON);
 
         // TODO: configure reobfuscation to use SRG names
     }

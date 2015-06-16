@@ -20,6 +20,7 @@ public class UserConstants
     public static final String TASK_DEOBF             = "deobfMcSRG";
     public static final String TASK_DECOMPILE         = "decompileMc";
     public static final String TASK_POST_DECOMP       = "fixMcSources";
+    public static final String TASK_REMAP             = "remapMcSources";
     public static final String TASK_RECOMPILE         = "recompileMc";
     public static final String TASK_MAKE_START        = "makeStart";
     

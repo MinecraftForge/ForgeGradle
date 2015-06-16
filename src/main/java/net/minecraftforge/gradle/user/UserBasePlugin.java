@@ -22,6 +22,7 @@ import net.minecraftforge.gradle.tasks.CreateStartTask;
 import net.minecraftforge.gradle.tasks.DeobfuscateJar;
 import net.minecraftforge.gradle.tasks.GenEclipseRunTask;
 import net.minecraftforge.gradle.tasks.PostDecompileTask;
+import net.minecraftforge.gradle.tasks.RemapSources;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import net.minecraftforge.gradle.util.delayed.TokenReplacer;
 
@@ -162,7 +163,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         final Object deobfDecompJar = chooseDeobfOutput(globalPattern, localPattern, "-srgBin");
         final Object decompJar = chooseDeobfOutput(globalPattern, localPattern, "-decomp");
-        final Object postDecompJar = chooseDeobfOutput(globalPattern, localPattern, "Src-sources");
+        final Object postDecompJar = chooseDeobfOutput(globalPattern, localPattern, "-decompFixed");
+        final Object remapped = chooseDeobfOutput(globalPattern, localPattern, "Src-sources");
         final Object recompiledJar = chooseDeobfOutput(globalPattern, localPattern, "Src");
 
         final DeobfuscateJar deobfDecomp = makeTask(TASK_DEOBF, DeobfuscateJar.class);
@@ -192,14 +194,24 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             postDecomp.setAstyleConfig(delayedFile(MCP_DATA_STYLE));
             postDecomp.dependsOn(decompile);
         }
+        
+        final RemapSources remap = makeTask(TASK_REMAP, RemapSources.class);
+        {
+            remap.setInJar(postDecompJar);
+            remap.setOutJar(remapped);
+            remap.setFieldsCsv(delayedFile(CSV_FIELD));
+            remap.setMethodsCsv(delayedFile(CSV_METHOD));
+            remap.setParamsCsv(delayedFile(CSV_PARAM));
+            remap.dependsOn(postDecomp);
+        }
 
         final TaskRecompileMc recompile = makeTask(TASK_RECOMPILE, TaskRecompileMc.class);
         {
-            recompile.setInSources(postDecompJar);
+            recompile.setInSources(remapped);
             recompile.setClasspath(CONFIG_MC_DEPS);
             recompile.setOutJar(recompiledJar);
             
-            recompile.dependsOn(postDecomp, TASK_DL_VERSION_JSON);
+            recompile.dependsOn(remap, TASK_DL_VERSION_JSON);
         }
 
         // create GradleStart
