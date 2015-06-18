@@ -24,6 +24,8 @@ public class UserConstants
     public static final String TASK_RECOMPILE         = "recompileMc";
     public static final String TASK_MAKE_START        = "makeStart";
     
+    public static final String TASK_REOBF             = "reobfJar";
+    
     // dummy stuff
     public static final String TASK_DUMMY_MC          = "dummyMcDepTask";
     public static final String JAR_DUMMY_MC           = Constants.REPLACE_PROJECT_CACHE_DIR+"/dummyMcDep.jar";

@@ -53,6 +53,8 @@ import com.google.common.collect.ImmutableMap;
 
 public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin<T>
 {
+    private boolean madeDecompTasks = false; // to gaurd against stupid programmers
+
     @Override
     public final void applyPlugin()
     {
@@ -80,7 +82,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         project.getConfigurations().maybeCreate(CONFIG_START);
 
         configureCompilation();
-
         // Quality of life stuff for the users
         createSourceCopyTasks();
 
@@ -103,8 +104,14 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     @Override
     protected void afterEvaluate()
     {
+        // to gaurd against stupid programmers
+        if (!madeDecompTasks)
+        {
+            throw new RuntimeException("THE DECOMP TASKS HAVENT BEEN MADE!! STUPID FORGEGRADLE DEVELOPER!!!! :(");
+        }
+
         super.afterEvaluate();
-        
+
         // add repalcements for run configs and gradle start
         T ext = getExtension();
         TokenReplacer.putReplacement(REPLACE_CLIENT_TWEAKER, getClientTweaker(ext));
@@ -127,7 +134,16 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         // add access transformers to deobf tasks
         addAtsToDeobf();
+
+        // add reobf srg lines
+        ((TaskSingleReobf) project.getTasks().getByName(TASK_REOBF)).addExtraSrgLines(getExtension().getSrgExtra());
         
+        // add task depends for reobf
+        if (project.getPlugins().hasPlugin("maven"))
+        {
+            project.getTasks().getByName("uploadArchives").dependsOn(TASK_REOBF);
+        }
+
         // TODO: do some GradleSTart stuff based on the MC version?
     }
 
@@ -150,6 +166,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
     private void makeDecompTasks(final String globalPattern, final String localPattern, Object inputJar, String inputTask, Object mcpPatchSet)
     {
+        madeDecompTasks = true; // to gaurd against stupid programmers
+
         final DeobfuscateJar deobfBin = makeTask(TASK_DEOBF_BIN, DeobfuscateJar.class);
         {
             deobfBin.setSrg(delayedFile(SRG_NOTCH_TO_MCP));
@@ -194,7 +212,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             postDecomp.setAstyleConfig(delayedFile(MCP_DATA_STYLE));
             postDecomp.dependsOn(decompile);
         }
-        
+
         final RemapSources remap = makeTask(TASK_REMAP, RemapSources.class);
         {
             remap.setInJar(postDecompJar);
@@ -210,7 +228,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             recompile.setInSources(remapped);
             recompile.setClasspath(CONFIG_MC_DEPS);
             recompile.setOutJar(recompiledJar);
-            
+
             recompile.dependsOn(remap, TASK_DL_VERSION_JSON);
         }
 
@@ -248,16 +266,37 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             makeStart.dependsOn(TASK_DL_ASSET_INDEX, TASK_DL_ASSETS, TASK_EXTRACT_NATIVES);
         }
 
+        // create reobf task
+        TaskSingleReobf reobf = makeTask(TASK_REOBF, TaskSingleReobf.class);
+        {
+            reobf.setExceptorCfg(delayedFile(EXC_SRG));
+            reobf.setFieldCsv(delayedFile(CSV_FIELD));
+            reobf.setMethodCsv(delayedFile(CSV_METHOD));
+            reobf.setDeobfFile(deobfDecompJar);
+            reobf.setRecompFile(recompiledJar);
+
+            reobf.dependsOn(TASK_GENERATE_SRGS);
+            reobf.mustRunAfter("test");
+
+            // TODO: IMPLEMENT IN SUBLCASSES
+            //task.setSrg(delayedFile(REOBF_SRG));
+            //task.setMcVersion(delayedString(Constants.REPLACE_MC_VERSION));
+        }
+
         // add setup dependencies
         project.getTasks().getByName(TASK_SETUP_CI).dependsOn(deobfBin);
         project.getTasks().getByName(TASK_SETUP_DEV).dependsOn(deobfBin, makeStart);
         project.getTasks().getByName(TASK_SETUP_DECOMP).dependsOn(recompile, makeStart);
-        
+
+        // add build task depends
+        project.getTasks().getByName("build").dependsOn(reobf);
+        project.getTasks().getByName("assemble").dependsOn(reobf);
+
         // make dummy task for MC dep
         final TaskDepDummy dummy = makeTask(TASK_DUMMY_MC, TaskDepDummy.class);
         dummy.setOutputFile(delayedFile(JAR_DUMMY_MC));
         project.getDependencies().add(CONFIG_MC, project.files(delayedFile(JAR_DUMMY_MC)).builtBy(dummy));
-        
+
         // configure MC compiling. This AfterEvaluate section should happen after the one made in
         // also configure the dummy task dependencies
         project.afterEvaluate(new Action<Project>() {
@@ -265,7 +304,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             public void execute(Project project)
             {
                 boolean isDecomp = false;
-                
+
                 if (project.file(recompiledJar).exists())
                 {
                     isDecomp = true;
@@ -470,38 +509,38 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
         // from the resources dirs
         // TODO: ONLY ALLOW IN PATCHER-USER PLUGINS
-//        {
-//            JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
-//
-//            SourceSet main = javaConv.getSourceSets().getByName("main");
-//            SourceSet api = javaConv.getSourceSets().getByName("api");
-//
-//            boolean addedAts = false;
-//
-//            for (File at : main.getResources().getFiles())
-//            {
-//                if (at.getName().toLowerCase().endsWith("_at.cfg"))
-//                {
-//                    project.getLogger().lifecycle("Found AccessTransformer in main resources: " + at.getName());
-//                    binDeobf.addTransformer(at);
-//                    decompDeobf.addTransformer(at);
-//                    addedAts = true;
-//                }
-//            }
-//
-//            for (File at : api.getResources().getFiles())
-//            {
-//                if (at.getName().toLowerCase().endsWith("_at.cfg"))
-//                {
-//                    project.getLogger().lifecycle("Found AccessTransformer in api resources: " + at.getName());
-//                    binDeobf.addTransformer(at);
-//                    decompDeobf.addTransformer(at);
-//                    addedAts = true;
-//                }
-//            }
-//
-//            useLocalCache = useLocalCache || addedAts;
-//        }
+        //        {
+        //            JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+        //
+        //            SourceSet main = javaConv.getSourceSets().getByName("main");
+        //            SourceSet api = javaConv.getSourceSets().getByName("api");
+        //
+        //            boolean addedAts = false;
+        //
+        //            for (File at : main.getResources().getFiles())
+        //            {
+        //                if (at.getName().toLowerCase().endsWith("_at.cfg"))
+        //                {
+        //                    project.getLogger().lifecycle("Found AccessTransformer in main resources: " + at.getName());
+        //                    binDeobf.addTransformer(at);
+        //                    decompDeobf.addTransformer(at);
+        //                    addedAts = true;
+        //                }
+        //            }
+        //
+        //            for (File at : api.getResources().getFiles())
+        //            {
+        //                if (at.getName().toLowerCase().endsWith("_at.cfg"))
+        //                {
+        //                    project.getLogger().lifecycle("Found AccessTransformer in api resources: " + at.getName());
+        //                    binDeobf.addTransformer(at);
+        //                    decompDeobf.addTransformer(at);
+        //                    addedAts = true;
+        //                }
+        //            }
+        //
+        //            useLocalCache = useLocalCache || addedAts;
+        //        }
     }
 
     /**
@@ -511,7 +550,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
      * @param mcConfig Which gradle configuration to add the MC dep to
      */
     protected abstract void afterDecomp(boolean isDecomp, boolean useLocalCache, String mcConfig);
-    
+
     /**
      * This method is called early, and not late.
      * @return TRUE if a server run config and GradleStartServer should be created.

@@ -589,7 +589,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             String name = getBinDepName() + "-" + (hasApiVersion() ? "{API_VERSION}" : Constants.REPLACE_MC_VERSION) + ".jar";
 
             DeobfuscateJar task = makeTask("deobfBinJar", DeobfuscateJar.class);
-            task.setSrg(delayedFile(DEOBF_MCP_SRG));
+            task.setPrimarySrg(delayedFile(DEOBF_MCP_SRG));
             task.setExceptorJson(delayedFile(EXC_JSON));
             task.setExceptorCfg(delayedFile(EXC_MCP));
             task.setFieldCsv(delayedFile(FIELD_CSV));
@@ -607,7 +607,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             String name = "{API_NAME}-" + (hasApiVersion() ? "{API_VERSION}" : Constants.REPLACE_MC_VERSION) + "-"+ CLASSIFIER_DEOBF_SRG +".jar";
 
             DeobfuscateJar task = makeTask("deobfuscateJar", DeobfuscateJar.class);
-            task.setSrg(delayedFile(DEOBF_SRG_SRG));
+            task.setPrimarySrg(delayedFile(DEOBF_SRG_SRG));
             task.setExceptorJson(delayedFile(EXC_JSON));
             task.setExceptorCfg(delayedFile(EXC_SRG));
             task.setInJar(delayedFile(JAR_MERGED));
@@ -622,7 +622,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             ReobfTask task = makeTask("reobf", ReobfTask.class);
             task.dependsOn("genSrgs");
             task.setExceptorCfg(delayedFile(EXC_SRG));
-            task.setSrg(delayedFile(REOBF_SRG));
+            task.setPrimarySrg(delayedFile(REOBF_SRG));
             task.setFieldCsv(delayedFile(FIELD_CSV));
             task.setFieldCsv(delayedFile(METHOD_CSV));
             task.setMcVersion(delayedString(Constants.REPLACE_MC_VERSION));
@@ -1004,7 +1004,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 }
 
             });
-            task.setExtraSrg(getExtension().getSrgExtra());
+            task.setExtraSrgLines(getExtension().getSrgExtra());
         }
 
         // configure output of recompile task

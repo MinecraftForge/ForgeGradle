@@ -24,7 +24,7 @@ public abstract class UserLibBasePlugin extends UserBasePlugin<UserExtension>
         project.getConfigurations().getByName(UserConstants.CONFIG_MC).extendsFrom(config);
         
         // to set the output not notch names
-        ((ReobfTask) project.getTasks().getByName("reobf")).setSrg(delayedFile(UserConstants.REOBF_NOTCH_SRG));
+        ((ReobfTask) project.getTasks().getByName("reobf")).setPrimarySrg(delayedFile(UserConstants.REOBF_NOTCH_SRG));
     }
 
     abstract String actualApiName();

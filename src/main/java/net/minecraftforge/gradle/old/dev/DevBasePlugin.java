@@ -281,7 +281,7 @@ public abstract class DevBasePlugin extends BasePlugin<PatcherExtension>
         if (t != null)
         {
             ObfuscateTask obf = ((ObfuscateTask)t);
-            obf.setExtraSrg(getExtension().getSrgExtra());
+            obf.setExtraSrgLines(getExtension().getSrgExtra());
             obf.configureProject(getExtension().getSubprojects());
             obf.configureProject(getExtension().getDirtyProject());
         }

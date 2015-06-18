@@ -370,7 +370,7 @@ public class ForgeDevPlugin extends DevBasePlugin
 
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
-            obf.setSrg(delayedFile(MCP_2_NOTCH_SRG));
+            obf.setPrimarySrg(delayedFile(MCP_2_NOTCH_SRG));
             obf.setExc(delayedFile(JOINED_EXC));
             obf.setReverse(false);
             obf.setPreFFJar(delayedFile(JAR_SRG_FORGE));
@@ -389,7 +389,7 @@ public class ForgeDevPlugin extends DevBasePlugin
             task3.setDirtyJar(delayedFile(REOBF_TMP));
             //task3.setDeobfDataLzma(delayedFile(DEOBF_DATA));
             task3.setOutJar(delayedFile(BINPATCH_TMP));
-            task3.setSrg(delayedFile(NOTCH_2_SRG_SRG));
+            task3.setPrimarySrg(delayedFile(NOTCH_2_SRG_SRG));
             task3.addPatchSet(delayedTree(FORGE_PATCH_DIR));
             task3.addPatchSet(delayedTree(FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData");

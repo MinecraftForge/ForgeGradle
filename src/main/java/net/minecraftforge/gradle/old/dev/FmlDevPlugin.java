@@ -320,7 +320,7 @@ public class FmlDevPlugin extends DevBasePlugin
 
         ObfuscateTask obf = makeTask("obfuscateJar", ObfuscateTask.class);
         {
-            obf.setSrg(delayedFile(DevConstants.MCP_2_NOTCH_SRG));
+            obf.setPrimarySrg(delayedFile(DevConstants.MCP_2_NOTCH_SRG));
             obf.setExc(delayedFile(DevConstants.SRG_EXC));
             obf.setReverse(false);
             obf.setPreFFJar(delayedFile(DevConstants.JAR_SRG_FML));
@@ -339,7 +339,7 @@ public class FmlDevPlugin extends DevBasePlugin
             task3.setDirtyJar(delayedFile(DevConstants.REOBF_TMP));
             task3.setDeobfDataLzma(delayedFile(DevConstants.DEOBF_DATA));
             task3.setOutJar(delayedFile(DevConstants.BINPATCH_TMP));
-            task3.setSrg(delayedFile(DevConstants.NOTCH_2_SRG_SRG));
+            task3.setPrimarySrg(delayedFile(DevConstants.NOTCH_2_SRG_SRG));
             task3.addPatchSet(delayedTree(DevConstants.FML_PATCH_DIR));
             task3.dependsOn("obfuscateJar", "compressDeobfData");
         }
