@@ -173,6 +173,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             deobfBin.setSrg(delayedFile(SRG_NOTCH_TO_MCP));
             deobfBin.setExceptorJson(delayedFile(MCP_DATA_EXC_JSON));
             deobfBin.setExceptorCfg(delayedFile(EXC_MCP));
+            deobfBin.setFieldCsv(delayedFile(CSV_FIELD));
+            deobfBin.setMethodCsv(delayedFile(CSV_METHOD));
             deobfBin.setApplyMarkers(false);
             deobfBin.setInJar(inputJar);
             deobfBin.setOutJar(chooseDeobfOutput(globalPattern, localPattern, "Bin"));
@@ -564,7 +566,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
     protected abstract boolean hasClientRun();
 
     /**
-     * To be inserted into GradleStart. This method is called early, and not late.
+     * The location where the GradleStart files will be generated to.
      * @return object that resolves to a file
      */
     protected abstract Object getStartDir();
