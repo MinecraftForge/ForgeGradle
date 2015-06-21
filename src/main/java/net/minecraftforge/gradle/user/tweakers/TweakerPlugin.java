@@ -2,9 +2,9 @@ package net.minecraftforge.gradle.user.tweakers;
 
 import static net.minecraftforge.gradle.common.Constants.REPLACE_CACHE_DIR;
 import static net.minecraftforge.gradle.common.Constants.REPLACE_MC_VERSION;
-import static net.minecraftforge.gradle.common.Constants.REPLACE_PROJECT_CACHE_DIR;
 import static net.minecraftforge.gradle.common.Constants.TASK_MERGE_JARS;
 import static net.minecraftforge.gradle.user.UserConstants.CONFIG_MC;
+import static net.minecraftforge.gradle.user.UserConstants.DIR_LOCAL_CACHE;
 import static net.minecraftforge.gradle.user.UserConstants.TASK_SETUP_CI;
 import static net.minecraftforge.gradle.user.UserConstants.TASK_SETUP_DEV;
 
@@ -31,28 +31,27 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
     abstract boolean isClient();
 
     private static final String CLEAN_ROOT = REPLACE_CACHE_DIR + "/net/minecraft/";
-    private static final String DIRTY_ROOT = REPLACE_PROJECT_CACHE_DIR + "/minecraft/";
-    private static final String MCP_INSERT = Constants.REPLACE_MCP_CHANNEL + "/" + Constants.REPLACE_MC_VERSION;
+    private static final String MCP_INSERT = Constants.REPLACE_MCP_CHANNEL + "/" + Constants.REPLACE_MCP_VERSION;
 
     @Override
     protected void applyUserPlugin()
     {
         // patterns
-        String cleanSuffix = "%s-" + REPLACE_MC_VERSION + ".jar";
-        String dirtySuffix = "%s-" + REPLACE_MC_VERSION + "-PROJECT(" + project.getName() + ").jar";
+        String cleanSuffix = "%s-" + REPLACE_MC_VERSION;
+        String dirtySuffix = "%s-" + REPLACE_MC_VERSION + "-PROJECT(" + project.getName() + ")";
 
         if (isClient())
         {
-            this.tasksClient(CLEAN_ROOT + "minecraft/" + REPLACE_MC_VERSION + "/" + MCP_INSERT + "/minecraft" + cleanSuffix, DIRTY_ROOT + "minecraft" + dirtySuffix);
+            this.tasksClient(CLEAN_ROOT + "minecraft/" + REPLACE_MC_VERSION + "/" + MCP_INSERT + "/minecraft" + cleanSuffix, DIR_LOCAL_CACHE + "minecraft" + dirtySuffix);
         }
         else
         {
-            this.tasksClient(CLEAN_ROOT + "mincraft_server/" + REPLACE_MC_VERSION + "/" + MCP_INSERT + "/minecraft_server" + cleanSuffix, DIRTY_ROOT + "minecraft_server" + dirtySuffix);
+            this.tasksClient(CLEAN_ROOT + "mincraft_server/" + REPLACE_MC_VERSION + "/" + MCP_INSERT + "/minecraft_server" + cleanSuffix, DIR_LOCAL_CACHE + "minecraft_server" + dirtySuffix);
         }
 
         // remove the unused merge jars task
         project.getTasks().remove(project.getTasks().getByName(TASK_MERGE_JARS));
-        
+
         // add asset-index task to CI and dev workspace tasks
         project.getTasks().getByName(TASK_SETUP_CI).dependsOn(Constants.TASK_DL_VERSION_JSON);
         project.getTasks().getByName(TASK_SETUP_DEV).dependsOn(Constants.TASK_DL_VERSION_JSON);
@@ -67,8 +66,8 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
             public void execute(Project proj)
             {
                 String cleanRoot = CLEAN_ROOT + (isClient() ? "/minecraft" : "/minecraft_server") + "/" + REPLACE_MC_VERSION + "/" + MCP_INSERT;
-                String repo = delayedFile(useLocalCache ? DIRTY_ROOT : cleanRoot).call().getAbsolutePath();
-                addFlatRepo(proj, "TweakerMcRepo", delayedFile(useLocalCache ? DIRTY_ROOT : cleanRoot).call());
+                String repo = delayedFile(useLocalCache ? DIR_LOCAL_CACHE : cleanRoot).call().getAbsolutePath();
+                addFlatRepo(proj, "TweakerMcRepo", delayedFile(useLocalCache ? DIR_LOCAL_CACHE : cleanRoot).call());
                 System.out.println("REPO!! ->> " + repo);
             }
         });
@@ -105,12 +104,11 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
         // add fml tweaker to manifest
         Jar jarTask = (Jar) project.getTasks().getByName("jar");
         jarTask.getManifest().getAttributes().put("TweakClass", ext.getTweakClass());
-        
 
         // configure reobf
         {
             JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
-            
+
             TaskSingleReobf reobfTask = ((TaskSingleReobf) project.getTasks().getByName(UserConstants.TASK_REOBF));
             reobfTask.setClasspath(javaConv.getSourceSets().getByName("main").getCompileClasspath());
             reobfTask.setPrimarySrg(delayedFile(Constants.SRG_MCP_TO_NOTCH));

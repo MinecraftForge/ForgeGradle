@@ -49,6 +49,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 
 public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin<T>
@@ -177,15 +178,15 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             deobfBin.setMethodCsv(delayedFile(CSV_METHOD));
             deobfBin.setApplyMarkers(false);
             deobfBin.setInJar(inputJar);
-            deobfBin.setOutJar(chooseDeobfOutput(globalPattern, localPattern, "Bin"));
+            deobfBin.setOutJar(chooseDeobfOutput(globalPattern, localPattern, "Bin", ""));
             deobfBin.dependsOn(inputTask, TASK_GENERATE_SRGS);
         }
 
-        final Object deobfDecompJar = chooseDeobfOutput(globalPattern, localPattern, "-srgBin");
-        final Object decompJar = chooseDeobfOutput(globalPattern, localPattern, "-decomp");
-        final Object postDecompJar = chooseDeobfOutput(globalPattern, localPattern, "-decompFixed");
-        final Object remapped = chooseDeobfOutput(globalPattern, localPattern, "Src-sources");
-        final Object recompiledJar = chooseDeobfOutput(globalPattern, localPattern, "Src");
+        final Object deobfDecompJar = chooseDeobfOutput(globalPattern, localPattern, "", "srgBin");
+        final Object decompJar = chooseDeobfOutput(globalPattern, localPattern, "", "decomp");
+        final Object postDecompJar = chooseDeobfOutput(globalPattern, localPattern, "", "decompFixed");
+        final Object remapped = chooseDeobfOutput(globalPattern, localPattern, "Src", "sources");
+        final Object recompiledJar = chooseDeobfOutput(globalPattern, localPattern, "Src", "");
 
         final DeobfuscateJar deobfDecomp = makeTask(TASK_DEOBF, DeobfuscateJar.class);
         {
@@ -336,13 +337,14 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
      * @return useable deobfsucated output file
      */
     @SuppressWarnings("serial")
-    private Object chooseDeobfOutput(final String globalPattern, final String localPattern, final String classifier)
+    private Object chooseDeobfOutput(final String globalPattern, final String localPattern, final String appendage, final String classifier)
     {
         return new Closure<DelayedFile>(project, this) {
             public DelayedFile call()
             {
+                String classAdd = Strings.isNullOrEmpty(classifier) ? "" : "-"+classifier;
                 String str = useLocalCache(getExtension()) ? localPattern : globalPattern;
-                return delayedFile(String.format(str, classifier));
+                return delayedFile(String.format(str, appendage) + classAdd + ".jar");
             }
         };
     }
@@ -499,7 +501,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
 
     protected void addAtsToDeobf()
     {
-
+        // INFO: This method is overriden by PatcherUserBasePlugin to add the reading from resource dirs and depndencies
+        
         // add src ATs
         DeobfuscateJar binDeobf = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF_BIN);
         DeobfuscateJar decompDeobf = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF);
@@ -508,41 +511,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         Object[] extAts = getExtension().getAccessTransformers().toArray();
         binDeobf.addTransformer(extAts);
         decompDeobf.addTransformer(extAts);
-
-        // from the resources dirs
-        // TODO: ONLY ALLOW IN PATCHER-USER PLUGINS
-        //        {
-        //            JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
-        //
-        //            SourceSet main = javaConv.getSourceSets().getByName("main");
-        //            SourceSet api = javaConv.getSourceSets().getByName("api");
-        //
-        //            boolean addedAts = false;
-        //
-        //            for (File at : main.getResources().getFiles())
-        //            {
-        //                if (at.getName().toLowerCase().endsWith("_at.cfg"))
-        //                {
-        //                    project.getLogger().lifecycle("Found AccessTransformer in main resources: " + at.getName());
-        //                    binDeobf.addTransformer(at);
-        //                    decompDeobf.addTransformer(at);
-        //                    addedAts = true;
-        //                }
-        //            }
-        //
-        //            for (File at : api.getResources().getFiles())
-        //            {
-        //                if (at.getName().toLowerCase().endsWith("_at.cfg"))
-        //                {
-        //                    project.getLogger().lifecycle("Found AccessTransformer in api resources: " + at.getName());
-        //                    binDeobf.addTransformer(at);
-        //                    decompDeobf.addTransformer(at);
-        //                    addedAts = true;
-        //                }
-        //            }
-        //
-        //            useLocalCache = useLocalCache || addedAts;
-        //        }
     }
 
     /**

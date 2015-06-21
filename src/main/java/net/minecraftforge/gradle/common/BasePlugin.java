@@ -322,7 +322,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             extractNatives.setDestinationDir(delayedFile(DIR_NATIVES));
             extractNatives.setConfig(CONFIG_NATIVES);
             extractNatives.exclude("META-INF/**", "META-INF/**");
-            extractNatives.doesCache();
+            extractNatives.setDoesCache(true);
             extractNatives.dependsOn(getVersionJson);
         }
 
@@ -368,6 +368,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             genSrgs.setMcpToNotch(delayedFile(SRG_MCP_TO_NOTCH));
             genSrgs.setSrgExc(delayedFile(EXC_SRG));
             genSrgs.setMcpExc(delayedFile(EXC_MCP));
+            genSrgs.setDoesCache(true);
             genSrgs.dependsOn(extractMcpData, extractMcpMappings);
         }
 
@@ -375,6 +376,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         {
             ffTask.setMcpUrl(delayedString(URL_FF));
             ffTask.setFfJar(delayedFile(JAR_FERNFLOWER));
+            ffTask.setDoesCache(true);
         }
 
         Delete clearCache = makeTask(TASK_CLEAN_CACHE, Delete.class);

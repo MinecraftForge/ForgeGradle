@@ -1,6 +1,6 @@
 package net.minecraftforge.gradle.user;
 
-import net.minecraftforge.gradle.common.Constants;
+import static net.minecraftforge.gradle.common.Constants.REPLACE_PROJECT_CACHE_DIR;
 
 public class UserConstants
 {
@@ -23,16 +23,18 @@ public class UserConstants
     public static final String TASK_REMAP             = "remapMcSources";
     public static final String TASK_RECOMPILE         = "recompileMc";
     public static final String TASK_MAKE_START        = "makeStart";
-    
+
     public static final String TASK_REOBF             = "reobfJar";
-    
+
     // dummy stuff
     public static final String TASK_DUMMY_MC          = "dummyMcDepTask";
-    public static final String JAR_DUMMY_MC           = Constants.REPLACE_PROJECT_CACHE_DIR+"/dummyMcDep.jar";
+    public static final String JAR_DUMMY_MC           = REPLACE_PROJECT_CACHE_DIR + "/dummyMcDep.jar";
 
     static final String        REPLACE_SERVER_TWEAKER = "{RUN_SERVER_TWEAKER}";
     static final String        REPLACE_CLIENT_TWEAKER = "{RUN_CLIENT_TWEAKER}";
     static final String        REPLACE_SERVER_MAIN    = "{RUN_SERVER_MAIN}";
     static final String        REPLACE_CLIENT_MAIN    = "{RUN_CLIENT_MAIN}";
     static final String        REPLACE_RUN_DIR        = "{RUN_DIR}";
+
+    public static final String DIR_LOCAL_CACHE        = REPLACE_PROJECT_CACHE_DIR + "/minecraft/";
 }
