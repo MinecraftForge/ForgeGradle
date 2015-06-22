@@ -1,9 +1,9 @@
 package net.minecraftforge.gradle.user.tweakers;
 
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.user.UserExtension;
+import net.minecraftforge.gradle.user.UserBaseExtension;
 
-public class TweakerExtension extends UserExtension
+public class TweakerExtension extends UserBaseExtension
 {
     private Object tweakClass;
     

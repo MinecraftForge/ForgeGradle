@@ -1,9 +1,9 @@
-package net.minecraftforge.gradle.old;
+package net.minecraftforge.gradle.versions;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import net.minecraftforge.gradle.old.user.patch.ForgeUserPlugin;
-import net.minecraftforge.gradle.old.user.patch.UserPatchExtension;
+import net.minecraftforge.gradle.user.tweakers.ClientTweaker;
+import net.minecraftforge.gradle.user.tweakers.TweakerExtension;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 
 import org.gradle.api.Project;
@@ -15,22 +15,23 @@ import com.google.common.collect.ImmutableMap;
 
 public class ExtensionMcpMappingTest
 {
-    private Project            testProject;
-    private UserPatchExtension ext;
+    private Project          testProject;
+    private TweakerExtension ext;
 
     @Before
     public void setupProject()
     {
         this.testProject = ProjectBuilder.builder().build();
         assertNotNull(this.testProject);
-        this.testProject.apply(ImmutableMap.of("plugin", ForgeUserPlugin.class));
+        this.testProject.apply(ImmutableMap.of("plugin", ClientTweaker.class));
 
-        this.ext = this.testProject.getExtensions().findByType(UserPatchExtension.class);   // unlike getByType(), does not throw exception
+        this.ext = this.testProject.getExtensions().findByType(TweakerExtension.class);   // unlike getByType(), does not throw exception
         assertNotNull(this.ext);
+        
+        this.ext.setTweakClass("some.thing.other"); // to ignore any issues regarding this.
     }
-
-    private static final String VERSION_17 = "1.7.10-10.13.2.1291";
-    private static final String VERSION_18 = "1.8-11.14.1.1320";
+    private static final String VERSION_17 = "1.7.10";
+    private static final String VERSION_18 = "1.8";
 
     @Test
     public void testValidSnapshot17()

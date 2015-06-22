@@ -26,15 +26,11 @@ public class UserConstants
 
     public static final String TASK_REOBF             = "reobfJar";
 
-    // dummy stuff
-    public static final String TASK_DUMMY_MC          = "dummyMcDepTask";
-    public static final String JAR_DUMMY_MC           = REPLACE_PROJECT_CACHE_DIR + "/dummyMcDep.jar";
-
     static final String        REPLACE_SERVER_TWEAKER = "{RUN_SERVER_TWEAKER}";
     static final String        REPLACE_CLIENT_TWEAKER = "{RUN_CLIENT_TWEAKER}";
     static final String        REPLACE_SERVER_MAIN    = "{RUN_SERVER_MAIN}";
     static final String        REPLACE_CLIENT_MAIN    = "{RUN_CLIENT_MAIN}";
     static final String        REPLACE_RUN_DIR        = "{RUN_DIR}";
 
-    public static final String DIR_LOCAL_CACHE        = REPLACE_PROJECT_CACHE_DIR + "/minecraft/";
+    public static final String DIR_LOCAL_CACHE        = REPLACE_PROJECT_CACHE_DIR + "/minecraft";
 }

@@ -66,9 +66,7 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
             public void execute(Project proj)
             {
                 String cleanRoot = CLEAN_ROOT + (isClient() ? "/minecraft" : "/minecraft_server") + "/" + REPLACE_MC_VERSION + "/" + MCP_INSERT;
-                String repo = delayedFile(useLocalCache ? DIR_LOCAL_CACHE : cleanRoot).call().getAbsolutePath();
                 addFlatRepo(proj, "TweakerMcRepo", delayedFile(useLocalCache ? DIR_LOCAL_CACHE : cleanRoot).call());
-                System.out.println("REPO!! ->> " + repo);
             }
         });
 

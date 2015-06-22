@@ -1,9 +1,9 @@
-package net.minecraftforge.gradle.old;
+package net.minecraftforge.gradle.versions;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import net.minecraftforge.gradle.old.user.patch.ForgeUserPlugin;
-import net.minecraftforge.gradle.old.user.patch.UserPatchExtension;
+import net.minecraftforge.gradle.user.patcherUser.ForgeExtension;
+import net.minecraftforge.gradle.user.patcherUser.ForgePlugin;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 
 import org.gradle.api.Project;
@@ -15,21 +15,21 @@ import com.google.common.collect.ImmutableMap;
 
 public class ExtensionForgeVersionTest
 {
-    private Project            testProject;
-    private UserPatchExtension ext;
+    private Project        testProject;
+    private ForgeExtension ext;
 
     @Before
     public void setupProject()
     {
         this.testProject = ProjectBuilder.builder().build();
         assertNotNull(this.testProject);
-        this.testProject.apply(ImmutableMap.of("plugin", ForgeUserPlugin.class));
+        this.testProject.apply(ImmutableMap.of("plugin", ForgePlugin.class));
 
-        this.ext = this.testProject.getExtensions().findByType(UserPatchExtension.class);   // unlike getByType(), does not throw exception
+        this.ext = this.testProject.getExtensions().findByType(ForgeExtension.class);   // unlike getByType(), does not throw exception
         assertNotNull(this.ext);
     }
 
-    // Invalid version notation! The following are valid notations. Buildnumber, version, version-branch, mcversion-version-branch, and pomotion (sic)
+    // Invalid version notation! The following are valid notations. BuildNumber, version, version-branch, mcversion-version-branch, and pomotion (sic)
 
     @Test
     public void testValidBuildNumber()
@@ -37,7 +37,7 @@ public class ExtensionForgeVersionTest
         // buildnumber
         this.ext.setVersion("965");
         assertEquals(this.ext.getVersion(), "1.6.4");
-        assertEquals(this.ext.getApiVersion(), "1.6.4-9.11.1.965");
+        assertEquals(this.ext.getForgeVersion(), "9.11.1.965");
     }
 
     @Test
@@ -46,18 +46,8 @@ public class ExtensionForgeVersionTest
         // promotion
         this.ext.setVersion("1.6.4-recommended");
         assertEquals(this.ext.getVersion(), "1.6.4");
-        assertEquals(this.ext.getApiVersion(), "1.6.4-9.11.1.965");
+        assertEquals(this.ext.getForgeVersion(), "9.11.1.1345");
     }
-
-// branched promotions ahve been deprecated
-//    @Test
-//    public void testValidPromotionWithBranch()
-//    {
-//        // promotion (with branch)
-//        this.ext.setVersion("1.7.10-latest-new");
-//        assertEquals(this.ext.getVersion(), "1.7.10");
-//        assertEquals(this.ext.getApiVersion(), "1.7.10-10.13.1.1216-new");
-//    }
 
     @Test
     public void testValidBuildNumberNoBranch()
@@ -65,7 +55,7 @@ public class ExtensionForgeVersionTest
         // buildnumber (no branch)
         this.ext.setVersion("1256");
         assertEquals(this.ext.getVersion(), "1.7.10");
-        assertEquals(this.ext.getApiVersion(), "1.7.10-10.13.2.1256");
+        assertEquals(this.ext.getForgeVersion(), "10.13.2.1256");
     }
 
     @Test
@@ -74,7 +64,7 @@ public class ExtensionForgeVersionTest
         // buildnumber (with branch)
         this.ext.setVersion("1257");
         assertEquals(this.ext.getVersion(), "1.8");
-        assertEquals(this.ext.getApiVersion(), "1.8-11.14.0.1257-1.8");
+        assertEquals(this.ext.getForgeVersion(), "11.14.0.1257-1.8");
     }
 
     @Test
@@ -83,7 +73,7 @@ public class ExtensionForgeVersionTest
         // version
         this.ext.setVersion("10.13.2.1256");
         assertEquals(this.ext.getVersion(), "1.7.10");
-        assertEquals(this.ext.getApiVersion(), "1.7.10-10.13.2.1256");
+        assertEquals(this.ext.getForgeVersion(), "10.13.2.1256");
     }
 
     @Test
@@ -92,7 +82,7 @@ public class ExtensionForgeVersionTest
         // mcversion-version
         this.ext.setVersion("1.7.10-10.13.2.1256");
         assertEquals(this.ext.getVersion(), "1.7.10");
-        assertEquals(this.ext.getApiVersion(), "1.7.10-10.13.2.1256");
+        assertEquals(this.ext.getForgeVersion(), "10.13.2.1256");
     }
 
     @Test
@@ -101,7 +91,7 @@ public class ExtensionForgeVersionTest
         // version-branch
         this.ext.setVersion("11.14.0.1257-1.8");
         assertEquals(this.ext.getVersion(), "1.8");
-        assertEquals(this.ext.getApiVersion(), "1.8-11.14.0.1257-1.8");
+        assertEquals(this.ext.getForgeVersion(), "11.14.0.1257-1.8");
     }
 
     @Test
@@ -110,7 +100,7 @@ public class ExtensionForgeVersionTest
         // mcversion-version-branch
         this.ext.setVersion("1.8-11.14.0.1257-1.8");
         assertEquals(this.ext.getVersion(), "1.8");
-        assertEquals(this.ext.getApiVersion(), "1.8-11.14.0.1257-1.8");
+        assertEquals(this.ext.getForgeVersion(), "11.14.0.1257-1.8");
     }
 
     // Invalid formats

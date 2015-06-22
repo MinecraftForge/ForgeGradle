@@ -1,9 +1,6 @@
 package net.minecraftforge.gradle.user.patcherUser;
 
-import static net.minecraftforge.gradle.common.Constants.DIR_JSONS;
-import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
-import static net.minecraftforge.gradle.common.Constants.TASK_DL_VERSION_JSON;
-import static net.minecraftforge.gradle.common.Constants.TASK_GENERATE_SRGS;
+import static net.minecraftforge.gradle.common.Constants.*;
 import static net.minecraftforge.gradle.user.UserConstants.*;
 import static net.minecraftforge.gradle.user.patcherUser.PatcherUserConstants.*;
 import groovy.lang.Closure;
@@ -14,13 +11,18 @@ import net.minecraftforge.gradle.tasks.DeobfuscateJar;
 import net.minecraftforge.gradle.tasks.ExtractConfigTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSources;
+import net.minecraftforge.gradle.user.UserBaseExtension;
 import net.minecraftforge.gradle.user.UserBasePlugin;
 import net.minecraftforge.gradle.util.delayed.TokenReplacer;
 
+import org.gradle.api.Action;
+import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 
-public abstract class PatcherUserBasePlugin<T extends PatcherUserBaseExtension> extends UserBasePlugin<T>
+import com.google.common.collect.ImmutableMap;
+
+public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends UserBasePlugin<T>
 {
     @Override
     @SuppressWarnings("serial")
@@ -103,8 +105,20 @@ public abstract class PatcherUserBasePlugin<T extends PatcherUserBaseExtension> 
         // add replacements
         T ext = getExtension();
         TokenReplacer.putReplacement(REPLACE_API_GROUP, getApiGroup(ext));
+        TokenReplacer.putReplacement(REPLACE_API_GROUP_DIR, getApiGroup(ext).replace('.', '/'));
         TokenReplacer.putReplacement(REPLACE_API_NAME, getApiName(ext));
         TokenReplacer.putReplacement(REPLACE_API_VERSION, getApiVersion(ext));
+
+        // read version file if exists
+        {
+            File jsonFile = delayedFile(JSON_USERDEV).call();
+            if (jsonFile.exists())
+            {
+                parseAndStoreVersion(jsonFile, delayedFile(DIR_JSONS).call());
+            }
+        }
+
+        super.afterEvaluate();
 
         // add userdev dep
         project.getDependencies().add(CONFIG_USERDEV, delayedString(""
@@ -114,6 +128,27 @@ public abstract class PatcherUserBasePlugin<T extends PatcherUserBaseExtension> 
                 + getUserdevClassifier(ext) + "@"
                 + getUserdevExtension(ext)
                 ));
+    }
+
+    @Override
+    protected void afterDecomp(final boolean isDecomp, final boolean useLocalCache, final String mcConfig)
+    {
+        // add MC repo to all projects
+        project.allprojects(new Action<Project>() {
+            @Override
+            public void execute(Project proj)
+            {
+                addFlatRepo(proj, "TweakerMcRepo", delayedFile(useLocalCache ? DIR_LOCAL_CACHE : DIR_API_JAR_BASE).call());
+            }
+        });
+
+        // add the Mc dep
+        T exten = getExtension();
+        String group = getApiGroup(exten);
+        String artifact = getApiName(exten) + (isDecomp ? "Src" : "Bin");
+        String version = getApiVersion(exten) + (useLocalCache ? "-PROJECT(" + project.getName() + ")" : "");
+
+        project.getDependencies().add(CONFIG_MC, ImmutableMap.of("group", group, "name", artifact, "version", version));
     }
 
     @Override
@@ -163,9 +198,9 @@ public abstract class PatcherUserBasePlugin<T extends PatcherUserBaseExtension> 
     }
 
     @Override
-    protected void afterDecomp(boolean isDecomp, boolean useLocalCache, String mcConfig)
+    protected Object getStartDir()
     {
-        // TODO: add MC dep
+        return delayedFile(DIR_API_BASE + "/start");
     }
 
     public abstract String getApiGroup(T ext);

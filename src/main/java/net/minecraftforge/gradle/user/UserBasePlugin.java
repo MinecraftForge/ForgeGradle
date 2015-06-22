@@ -52,7 +52,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 
-public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin<T>
+public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePlugin<T>
 {
     private boolean madeDecompTasks = false; // to gaurd against stupid programmers
 
@@ -295,11 +295,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         project.getTasks().getByName("build").dependsOn(reobf);
         project.getTasks().getByName("assemble").dependsOn(reobf);
 
-        // make dummy task for MC dep
-        final TaskDepDummy dummy = makeTask(TASK_DUMMY_MC, TaskDepDummy.class);
-        dummy.setOutputFile(delayedFile(JAR_DUMMY_MC));
-        project.getDependencies().add(CONFIG_MC, project.files(delayedFile(JAR_DUMMY_MC)).builtBy(dummy));
-
         // configure MC compiling. This AfterEvaluate section should happen after the one made in
         // also configure the dummy task dependencies
         project.afterEvaluate(new Action<Project>() {
@@ -311,20 +306,6 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
                 if (project.file(recompiledJar).exists())
                 {
                     isDecomp = true;
-                }
-
-                List<String> tasks = project.getGradle().getStartParameter().getTaskNames();
-                if (tasks.contains(TASK_DEOBF_BIN) || tasks.contains(TASK_SETUP_CI) || tasks.contains(TASK_SETUP_DEV))
-                {
-                    isDecomp = false;
-                    dummy.dependsOn(deobfBin);
-                    dummy.mustRunAfter(TASK_SETUP_CI, TASK_SETUP_DEV);
-                }
-                else if (tasks.contains(TASK_RECOMPILE) || tasks.contains(TASK_SETUP_DECOMP))
-                {
-                    isDecomp = true;
-                    dummy.dependsOn(recompile);
-                    dummy.mustRunAfter(TASK_SETUP_DECOMP);
                 }
 
                 afterDecomp(isDecomp, useLocalCache(getExtension()), CONFIG_MC);

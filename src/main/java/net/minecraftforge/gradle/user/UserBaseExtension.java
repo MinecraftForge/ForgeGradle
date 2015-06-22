@@ -9,7 +9,7 @@ import java.util.Map.Entry;
 
 import net.minecraftforge.gradle.common.BaseExtension;
 
-public class UserExtension extends BaseExtension
+public class UserBaseExtension extends BaseExtension
 {
     private LinkedList<String>      srgExtra     = new LinkedList<String>();
     private HashMap<String, Object> replacements = new HashMap<String, Object>();
@@ -17,7 +17,7 @@ public class UserExtension extends BaseExtension
     private ArrayList<Object>       ats          = new ArrayList<Object>();
     private String                  runDir       = "run";
 
-    public UserExtension(UserBasePlugin<? extends UserExtension> plugin)
+    public UserBaseExtension(UserBasePlugin<? extends UserBaseExtension> plugin)
     {
         super(plugin);
     }

@@ -144,7 +144,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         }
 
         // repos
-        // TODO: move to userdev
         project.allprojects(new Action<Project>() {
             public void execute(Project proj)
             {
@@ -211,20 +210,18 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             throw new GradleConfigurationException("You must set the Minecraft version!");
         }
 
-        String mcVersion = delayedString(REPLACE_MC_VERSION).call();
-
         // http://files.minecraftforge.net/maven/de/oceanlabs/mcp/mcp/1.7.10/mcp-1.7.10-srg.zip
         project.getDependencies().add(CONFIG_MAPPINGS, ImmutableMap.of(
                 "group", "de.oceanlabs.mcp",
                 "name", delayedString("mcp_" + REPLACE_MCP_CHANNEL).call(),
-                "version", delayedString(REPLACE_MCP_VERSION + "-" + mcVersion).call(),
+                "version", delayedString(REPLACE_MCP_VERSION + "-" + REPLACE_MC_VERSION).call(),
                 "ext", "zip"
                 ));
 
         project.getDependencies().add(CONFIG_MCP_DATA, ImmutableMap.of(
                 "group", "de.oceanlabs.mcp",
                 "name", "mcp",
-                "version", mcVersion,
+                "version", delayedString(REPLACE_MC_VERSION).call(),
                 "classifier", "srg",
                 "ext", "zip"
                 ));
