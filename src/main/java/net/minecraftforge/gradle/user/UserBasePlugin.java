@@ -337,7 +337,7 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
      * @return useable deobfsucated output file
      */
     @SuppressWarnings("serial")
-    private Object chooseDeobfOutput(final String globalPattern, final String localPattern, final String appendage, final String classifier)
+    protected final Object chooseDeobfOutput(final String globalPattern, final String localPattern, final String appendage, final String classifier)
     {
         return new Closure<DelayedFile>(project, this) {
             public DelayedFile call()
