@@ -79,9 +79,6 @@ compileJava {
 	options.deprecation = true
 	options.compilerArgs += ["-Werror"]
 	//options.compilerArgs += ["-Werror", "-Xlint:unchecked"]
-
-	// ignore non-compiling things in the dev packages
-	exclude "**/old/**", "**/old/*"
 }
 
 jar {
@@ -99,8 +96,6 @@ javadoc {
     options.addStringOption 'link', 'https://gradle.org/docs/current/javadoc/'
     options.addStringOption 'link', 'http://docs.guava-libraries.googlecode.com/git-history/v18.0/javadoc'
     options.addStringOption 'link', 'http://asm.ow2.org/asm50/javadoc/user/'
-
-	exclude "**/old/**", "**/old/*"
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
@@ -117,10 +112,6 @@ artifacts {
 sourceSets.main.compileClasspath += [ configurations.compileOnly ]
 idea.module.scopes.PROVIDED.plus += [ configurations.compileOnly ]
 eclipse.classpath.plusConfigurations += [ configurations.compileOnly ]
-
-compileTestJava {
-	exclude "**/old/**", "**/old/*"
-}
 
 test {
     if (project.hasProperty("filesmaven")) // disable this test when on the forge jenkins
