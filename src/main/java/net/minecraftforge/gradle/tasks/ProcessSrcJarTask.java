@@ -71,7 +71,7 @@ public class ProcessSrcJarTask extends AbstractEditJarTask
         }
     }
 
-    public void applyPatchStage(String stage, FileCollection patchFiles, ContextProvider provider) throws Exception
+    private void applyPatchStage(String stage, FileCollection patchFiles, ContextProvider provider) throws Exception
     {
         getLogger().info("Reading patches for stage {}", stage);
         ArrayList<PatchedFile> patches = readPatches(patchFiles, provider);

@@ -1,6 +1,9 @@
 package net.minecraftforge.gradle.user.patcherUser;
 
-import static net.minecraftforge.gradle.common.Constants.*;
+import static net.minecraftforge.gradle.common.Constants.DIR_JSONS;
+import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
+import static net.minecraftforge.gradle.common.Constants.TASK_DL_VERSION_JSON;
+import static net.minecraftforge.gradle.common.Constants.TASK_GENERATE_SRGS;
 import static net.minecraftforge.gradle.user.UserConstants.*;
 import static net.minecraftforge.gradle.user.patcherUser.PatcherUserConstants.*;
 import groovy.lang.Closure;
@@ -11,6 +14,7 @@ import net.minecraftforge.gradle.tasks.DeobfuscateJar;
 import net.minecraftforge.gradle.tasks.ExtractConfigTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSources;
+import net.minecraftforge.gradle.user.TaskRecompileMc;
 import net.minecraftforge.gradle.user.UserBaseExtension;
 import net.minecraftforge.gradle.user.UserBasePlugin;
 import net.minecraftforge.gradle.util.delayed.TokenReplacer;
@@ -66,7 +70,7 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
         {
             final Object patchedJar = chooseDeobfOutput(global, local, "", "binpatched");
 
-            TaskApplyBinPatches task = makeTask("applyBinPatches", TaskApplyBinPatches.class);
+            TaskApplyBinPatches task = makeTask(TASK_BINPATCH, TaskApplyBinPatches.class);
             task.setInJar(delayedFile(JAR_MERGED));
             task.setOutJar(patchedJar);
             task.setPatches(delayedFile(BINPATCH_USERDEV));
@@ -84,17 +88,21 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
 
         // add source patching task
         {
-            final Object decompFixed = chooseDeobfOutput(global, local, "", "decompFixed");
-            final Object patched = chooseDeobfOutput(global, local, "", "patched");
+            final Object postDecompJar = chooseDeobfOutput(global, local, "", "decompFixed");
+            final Object patchedJar = chooseDeobfOutput(global, local, "", "patched");
 
-            ProcessSrcJarTask patch = makeTask("processSources", ProcessSrcJarTask.class);
-            patch.dependsOn("decompile");
-            patch.setInJar(decompFixed);
-            patch.setOutJar(patched);
+            ProcessSrcJarTask patch = makeTask(TASK_PATCH, ProcessSrcJarTask.class);
+            patch.addStage("userdev", delayedFile(DIR_UD_PATCHES), null, delayedFile(ZIP_UD_SRC));
+            patch.setInJar(postDecompJar);
+            patch.setOutJar(patchedJar);
+            patch.dependsOn(TASK_POST_DECOMP);
 
             RemapSources remap = (RemapSources) project.getTasks().getByName(TASK_REMAP);
-            remap.setInJar(patched);
+            remap.setInJar(patchedJar);
             remap.dependsOn(patch);
+            
+            TaskRecompileMc recomp = (TaskRecompileMc) project.getTasks().getByName(TASK_RECOMPILE);
+            recomp.setInResources(ZIP_UD_RES);
         }
 
     }
@@ -119,14 +127,14 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
         }
 
         super.afterEvaluate();
-
+        
         // add userdev dep
-        project.getDependencies().add(CONFIG_USERDEV, delayedString(""
-                + REPLACE_API_GROUP + ":"
-                + REPLACE_API_NAME + ":"
-                + REPLACE_API_VERSION + ":"
-                + getUserdevClassifier(ext) + "@"
-                + getUserdevExtension(ext)
+        project.getDependencies().add(CONFIG_USERDEV, ImmutableMap.of(
+                "group", getApiGroup(ext),
+                "name", getApiName(ext),
+                "version", getApiVersion(ext),
+                "classifier", getUserdevClassifier(ext),
+                "ext", getUserdevExtension(ext)
                 ));
     }
 

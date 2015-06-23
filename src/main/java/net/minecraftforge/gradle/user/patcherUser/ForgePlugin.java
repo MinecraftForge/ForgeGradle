@@ -76,7 +76,7 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
     @Override
     public String getApiVersion(ForgeExtension ext)
     {
-        return ext.getVersion() + ext.getForgeVersion();
+        return ext.getVersion() + "-" + ext.getForgeVersion();
     }
 
     @Override

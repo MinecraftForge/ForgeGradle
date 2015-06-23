@@ -34,12 +34,16 @@ public class ForgeExtension extends UserBaseExtension
     public void setForgeVersion(String forgeVersion)
     {
         checkAndSetVersion(forgeVersion);
+        
+        TokenReplacer.putReplacement(Constants.REPLACE_MC_VERSION, version);
+
+        mcpVersion = MCP_VERSION_MAP.get(version);
     }
 
     @Override
-    public void setVersion(String version)
+    public void setVersion(String inVersion)
     {
-        checkAndSetVersion(version);
+        checkAndSetVersion(inVersion);
 
         TokenReplacer.putReplacement(Constants.REPLACE_MC_VERSION, version);
 
