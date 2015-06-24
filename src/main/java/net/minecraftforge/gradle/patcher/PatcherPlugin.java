@@ -21,7 +21,6 @@ import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Task;
 import org.gradle.api.file.DuplicatesStrategy;
-import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
@@ -259,9 +258,12 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             mergeFiles.setOutAt(delayedFile(AT_MERGED_USERDEV));
         }
         
-        Copy packagePatches = makeTask(TASK_PATCHES_USERDEV, Copy.class);
+        Zip packagePatches = makeTask(TASK_PATCHES_USERDEV, Zip.class);
         {
-            packagePatches.into(delayedFile(DIR_USERDEV_PATCHES));
+            File out = delayedFile(ZIP_USERDEV_PATCHES).call();
+            packagePatches.from(delayedFile(DIR_USERDEV_PATCHES));
+            packagePatches.setDestinationDir(out.getParentFile());
+            packagePatches.setArchiveName(out.getName());
         }
 
         Zip userdev = makeTask(TASK_BUILD_USERDEV, Zip.class);
@@ -390,7 +392,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             // default is DECOMP_POST though
             patch.setInJar(delayedFile(JAR_DECOMP_POST));
             patch.setOutJar(delayedFile(projectString(JAR_PROJECT_PATCHED, patcher)));
-            patch.setPatchDir(patcher.getDelayedPatchDir());
+            patch.setPatches(patcher.getDelayedPatchDir());
             patch.setDoesCache(false);
             patch.setMaxFuzz(2);
             patch.setFailOnError(false);
@@ -797,7 +799,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         // Why regenerate patches from clean if the built project already has them?
         if ("clean".equals(patcher.getGenPatchesFrom().toLowerCase()))
         {
-            ((Copy)(project.getTasks().getByName(TASK_PATCHES_USERDEV))).from(patcher.getPatchDir());
+            ((Zip)(project.getTasks().getByName(TASK_PATCHES_USERDEV))).from(patcher.getPatchDir());
         }
         else
         {
@@ -808,7 +810,9 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             userdevPatches.addChangedSource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, patcher)));
             userdevPatches.dependsOn(TASK_POST_DECOMP, projectString(TASK_PROJECT_RETROMAP, patcher));
             
-            project.getTasks().getByName(TASK_PATCHES_USERDEV).dependsOn(userdevPatches);
+            Zip packageUserdev = (Zip)(project.getTasks().getByName(TASK_PATCHES_USERDEV));
+            packageUserdev.from(delayedFile(DIR_USERDEV_PATCHES));
+            packageUserdev.dependsOn(userdevPatches);
         }
 
         TaskExtractNew userdevSources = (TaskExtractNew) project.getTasks().getByName(TASK_EXTRACT_OBF_SOURCES);

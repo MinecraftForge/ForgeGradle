@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.util.GradleConfigurationException;
 import net.minecraftforge.gradle.util.ZipFileTree;
 import net.minecraftforge.gradle.util.patching.ContextualPatch;
 import net.minecraftforge.gradle.util.patching.ContextualPatch.PatchStatus;
@@ -19,7 +20,9 @@ import org.gradle.api.file.FileVisitor;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.ParallelizableTask;
 
 import com.cloudbees.diff.PatchException;
@@ -41,26 +44,25 @@ public class PatchSourcesTask extends AbstractEditJarTask
      */
 
     @Input
-    private int                    maxFuzz     = 0;
+    private int                    maxFuzz       = 0;
 
     @Input
-    private int                    patchStrip  = 3;
+    private int                    patchStrip    = 3;
 
     @Input
-    private boolean                makeRejects = true;
+    private boolean                makeRejects   = true;
 
     @Input
-    private boolean                failOnError = false;
+    private boolean                failOnError   = false;
 
-    @InputDirectory
-    private Object                 patchDir;
+    private Object                 patches;
 
     @InputFiles
-    private List<Object>           injects     = Lists.newArrayList();
+    private List<Object>           injects       = Lists.newArrayList();
 
     // stateful pieces of this task
     private ContextProvider        context;
-    private ArrayList<PatchedFile> patches     = Lists.newArrayList();
+    private ArrayList<PatchedFile> loadedPatches = Lists.newArrayList();
 
     @Override
     public void doStuffBefore() throws IOException
@@ -71,14 +73,49 @@ public class PatchSourcesTask extends AbstractEditJarTask
         context = new ContextProvider(null, patchStrip); // add in the map later. 
 
         // collect patchFiles and add them to the listing
-        for (File f : getProject().fileTree(getPatchDir()))
-        {
-            if (!f.exists() || f.isDirectory() || !f.getName().endsWith("patch"))
-            {
-                continue;
-            }
+        File patchThingy = getPatches(); // cached for the if statements
+        final int fuzz = getMaxFuzz();
 
-            patches.add(new PatchedFile(f, context));
+        if (patchThingy.isDirectory())
+        {
+            for (File f : getProject().fileTree(getPatches()))
+            {
+                if (!f.exists() || f.isDirectory() || !f.getName().endsWith("patch"))
+                {
+                    continue;
+                }
+
+                loadedPatches.add(new PatchedFile(f, context, fuzz));
+            }
+        }
+        else if (patchThingy.getName().endsWith(".jar") || patchThingy.getName().endsWith(".zip"))
+        {
+            // no rejects from a jar
+            makeRejects = false;
+
+            (new ZipFileTree(patchThingy)).visit(new FileVisitor() {
+
+                @Override
+                public void visitDir(FileVisitDetails arg0)
+                {
+                    // nope.
+                }
+
+                @Override
+                public void visitFile(FileVisitDetails details)
+                {
+                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                    details.copyTo(stream);
+                    String file = new String(stream.toByteArray(), Constants.CHARSET);
+                    loadedPatches.add(new PatchedFile(file, context, fuzz));
+                }
+
+            });
+            ;
+        }
+        else
+        {
+            throw new GradleConfigurationException("Patches (" + patchThingy.getPath() + ") is not a valid type! only zips, jars, and directories are allowed.");
         }
     }
 
@@ -155,7 +192,7 @@ public class PatchSourcesTask extends AbstractEditJarTask
         boolean fuzzed = false;
         Throwable failure = null;
 
-        for (PatchedFile patch : patches)
+        for (PatchedFile patch : loadedPatches)
         {
             List<ContextualPatch.PatchReport> errors = patch.patch.patch(false);
             for (ContextualPatch.PatchReport report : errors)
@@ -287,14 +324,36 @@ public class PatchSourcesTask extends AbstractEditJarTask
         this.failOnError = failOnError;
     }
 
-    public File getPatchDir()
+    @Optional
+    @InputDirectory
+    private File getPatchesDir()
     {
-        return getProject().file(patchDir);
+        File patch = getPatches();
+        if (patch.isDirectory())
+            return getPatches();
+        else
+            return null;
     }
 
-    public void setPatchDir(Object patchDir)
+    @Optional
+    @InputFile
+    private File getPatchesZip()
     {
-        this.patchDir = patchDir;
+        File patch = getPatches();
+        if (patch.isDirectory())
+            return null;
+        else
+            return getPatches();
+    }
+
+    public File getPatches()
+    {
+        return getProject().file(patches);
+    }
+
+    public void setPatches(Object patchDir)
+    {
+        this.patches = patchDir;
     }
 
     public FileCollection getInjects()
@@ -372,19 +431,30 @@ public class PatchSourcesTask extends AbstractEditJarTask
         }
     }
 
-    private class PatchedFile
+    private static class PatchedFile
     {
         public final File            fileToPatch;
         public final ContextualPatch patch;
 
-        public PatchedFile(File file, ContextProvider provider) throws IOException
+        public PatchedFile(File file, ContextProvider provider, int maxFuzz) throws IOException
         {
             this.fileToPatch = file;
-            this.patch = ContextualPatch.create(Files.toString(file, Charset.defaultCharset()), provider).setAccessC14N(true).setMaxFuzz(getMaxFuzz());
+            this.patch = ContextualPatch.create(Files.toString(file, Charset.defaultCharset()), provider).setAccessC14N(true).setMaxFuzz(maxFuzz);
+        }
+
+        public PatchedFile(String file, ContextProvider provider, int maxFuzz)
+        {
+            this.fileToPatch = null;
+            this.patch = ContextualPatch.create(file, provider).setAccessC14N(true).setMaxFuzz(maxFuzz);
         }
 
         public File makeRejectFile()
         {
+            if (fileToPatch == null)
+            {
+                return null;
+            }
+
             return new File(fileToPatch.getParentFile(), fileToPatch.getName() + ".rej");
         }
     }

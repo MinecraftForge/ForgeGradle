@@ -82,7 +82,7 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
             task.setInJar(delayedFile(JAR_MERGED));
             task.setOutJar(patchedJar);
             task.setPatches(delayedFile(BINPATCH_USERDEV));
-            task.setClassJar(delayedFile(JAR_UD_CLASSES));
+            task.setClassJar(delayedFile(ZIP_UD_CLASSES));
             task.setResourceJar(delayedTree(ZIP_UD_RES));
             task.dependsOn("mergeJars");
 
@@ -100,7 +100,7 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
             final Object patchedJar = chooseDeobfOutput(global, local, "", "patched");
 
             PatchSourcesTask patch = makeTask(TASK_PATCH, PatchSourcesTask.class);
-            patch.setPatchDir(delayedFile(DIR_UD_PATCHES));
+            patch.setPatches(delayedFile(ZIP_UD_PATCHES));
             patch.addInject(delayedFile(ZIP_UD_SRC)); // not injecting the resources just yet, do that after recompile
             patch.setFailOnError(true);
             patch.setMakeRejects(false);

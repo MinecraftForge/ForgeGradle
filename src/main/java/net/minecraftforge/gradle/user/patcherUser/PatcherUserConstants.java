@@ -22,8 +22,8 @@ public final class PatcherUserConstants
     public static final String JSON_USERDEV          = DIR_USERDEV + "/dev.json";
     public static final String ZIP_UD_SRC            = DIR_USERDEV + "/sources.zip";
     public static final String ZIP_UD_RES            = DIR_USERDEV + "/resources.zip";
-    public static final String DIR_UD_PATCHES        = DIR_USERDEV + "/patches";
-    public static final String JAR_UD_CLASSES        = DIR_USERDEV + "/classes.zip";
+    public static final String ZIP_UD_PATCHES        = DIR_USERDEV + "/patches.zip";
+    public static final String ZIP_UD_CLASSES        = DIR_USERDEV + "/classes.zip";
     public static final String BINPATCH_USERDEV      = DIR_USERDEV + "/devbinpatches.pack.lzma";
 
     public static final String TASK_EXTRACT_USERDEV  = "extractUserdev";

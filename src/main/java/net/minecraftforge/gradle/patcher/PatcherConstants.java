@@ -55,10 +55,10 @@ final class PatcherConstants
     static final String BINPATCH_RUN             = DIR_PACKAGING + "/binpatches.pack.lzma";
     static final String JSON_INSTALLER           = DIR_PACKAGING + "/install_profile.json";
     static final String JSON_UNIVERSAL           = DIR_PACKAGING + "/version.json";
-    static final String DIR_USERDEV_TMP_PATCHES  = DIR_PACKAGING + "/userdevPatches";
+    static final String DIR_USERDEV_PATCHES      = DIR_PACKAGING + "/userdevPatches";
 
     static final String DIR_USERDEV              = DIR_PACKAGING + "/userdev";
-    static final String DIR_USERDEV_PATCHES      = DIR_USERDEV + "/patches";
+    static final String ZIP_USERDEV_PATCHES      = DIR_USERDEV + "/patches.zip";
     static final String ZIP_USERDEV_SOURCES      = DIR_USERDEV + "/sources.zip";
     static final String ZIP_USERDEV_RES          = DIR_USERDEV + "/resources.zip";
     static final String BINPATCH_DEV             = DIR_USERDEV + "/devbinpatches.pack.lzma";
@@ -87,7 +87,7 @@ final class PatcherConstants
     static final String TASK_EXTRACT_OBF_CLASSES = "extractNonMcClasses";
     static final String TASK_PROCESS_JSON        = "processJson";
     static final String TASK_OUTPUT_JAR          = "outputJar";
-    static final String TASK_PATCHES_USERDEV     = "copyUserdevPatches";
+    static final String TASK_PATCHES_USERDEV     = "packagedUserdevPatches";
     static final String TASK_EXTRACT_OBF_SOURCES = "extractNonMcSources";
     static final String TASK_COMBINE_RESOURCES   = "combineResources";
     static final String TASK_MERGE_FILES         = "mergeFiles";
