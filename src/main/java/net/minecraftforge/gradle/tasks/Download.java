@@ -14,15 +14,17 @@ import net.minecraftforge.gradle.util.caching.CachedTask;
 
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.ParallelizableTask;
 import org.gradle.api.tasks.TaskAction;
 
+@ParallelizableTask
 public class Download extends CachedTask
 {
     @Input
     private Object url;
 
-    @OutputFile
     @Cached
+    @OutputFile
     private Object output;
 
     @TaskAction

@@ -78,7 +78,6 @@ final class PatcherConstants
     static final String TASK_DEOBF               = "deobfuscateJar";
     static final String TASK_DECOMP              = "decompileJar";
     static final String TASK_POST_DECOMP         = "sourceProcessJar";
-    static final String TASK_PATCH               = "patchJar";
     static final String TASK_GEN_PROJECTS        = "genGradleProjects";
     static final String TASK_GEN_IDES            = "genIdeProjects";
 
@@ -98,6 +97,7 @@ final class PatcherConstants
     // project tasks
     static final String TASK_PROJECT_SETUP       = "setupProject" + REPLACE_PROJECT_CAP_NAME;
     static final String TASK_PROJECT_SETUP_DEV   = "setupDevProject" + REPLACE_PROJECT_CAP_NAME;
+    static final String TASK_PROJECT_PATCH       = "patch" + REPLACE_PROJECT_CAP_NAME + "Jar";
     static final String TASK_PROJECT_REMAP_JAR   = "remap" + REPLACE_PROJECT_CAP_NAME + "Jar";
     static final String TASK_PROJECT_EXTRACT_SRC = "extract" + REPLACE_PROJECT_CAP_NAME + "Sources";
     static final String TASK_PROJECT_EXTRACT_RES = "extract" + REPLACE_PROJECT_CAP_NAME + "Resources";

@@ -12,6 +12,9 @@ import java.net.URL;
 import net.minecraftforge.gradle.common.Constants;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.ParallelizableTask;
 import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.base.Charsets;
@@ -19,11 +22,21 @@ import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
+@ParallelizableTask
 public class EtagDownloadTask extends DefaultTask
 {
-    Object  url;
-    Object  file;
-    boolean dieWithError;
+    @Input
+    private Object url;
+    @OutputFile
+    private Object file;
+    @Input
+    boolean        dieWithError;
+
+    public EtagDownloadTask()
+    {
+        super();
+        this.getOutputs().upToDateWhen(Constants.CALL_FALSE);
+    }
 
     @TaskAction
     public void doTask() throws IOException
@@ -63,19 +76,19 @@ public class EtagDownloadTask extends DefaultTask
                         this.setDidWork(false);
                         break;
                     case 200: // worked
-                        
+
                         // write file
                         InputStream stream = con.getInputStream();
                         Files.write(ByteStreams.toByteArray(stream), outFile);
                         stream.close();
-                        
+
                         // write etag
                         etag = con.getHeaderField("ETag");
                         if (!Strings.isNullOrEmpty(etag))
                         {
                             Files.write(etag, etagFile, Charsets.UTF_8);
                         }
-                        
+
                         break;
                     default: // another code?? uh.. 
                         error("Unexpected reponse " + con.getResponseCode() + " from " + url);

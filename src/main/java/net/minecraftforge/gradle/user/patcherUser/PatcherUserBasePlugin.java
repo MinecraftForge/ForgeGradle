@@ -12,9 +12,10 @@ import java.io.File;
 
 import net.minecraftforge.gradle.tasks.DeobfuscateJar;
 import net.minecraftforge.gradle.tasks.ExtractConfigTask;
-import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
+import net.minecraftforge.gradle.tasks.PatchSourcesTask;
 import net.minecraftforge.gradle.tasks.RemapSources;
 import net.minecraftforge.gradle.user.TaskRecompileMc;
+import net.minecraftforge.gradle.user.TaskSingleReobf;
 import net.minecraftforge.gradle.user.UserBaseExtension;
 import net.minecraftforge.gradle.user.UserBasePlugin;
 import net.minecraftforge.gradle.util.delayed.TokenReplacer;
@@ -64,9 +65,16 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
             project.getTasks().getByName(TASK_MAKE_START).dependsOn(extractUserdev);
         }
 
-        // setup patching
+        // setup deobfuscation
+        {
+            DeobfuscateJar deobfBin = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF);
+            DeobfuscateJar deobf = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF);
 
-        // add the binPatching task
+            deobfBin.addTransformerClean(delayedFile(AT_USERDEV));
+            deobf.addTransformerClean(delayedFile(AT_USERDEV));
+        }
+
+        // setup binpatching
         {
             final Object patchedJar = chooseDeobfOutput(global, local, "", "binpatched");
 
@@ -86,13 +94,17 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
             deobf.dependsOn(task);
         }
 
-        // add source patching task
+        // setup source patching
         {
             final Object postDecompJar = chooseDeobfOutput(global, local, "", "decompFixed");
             final Object patchedJar = chooseDeobfOutput(global, local, "", "patched");
 
-            ProcessSrcJarTask patch = makeTask(TASK_PATCH, ProcessSrcJarTask.class);
-            patch.addStage("userdev", delayedFile(DIR_UD_PATCHES), null, delayedFile(ZIP_UD_SRC));
+            PatchSourcesTask patch = makeTask(TASK_PATCH, PatchSourcesTask.class);
+            patch.setPatchDir(delayedFile(DIR_UD_PATCHES));
+            patch.addInject(delayedFile(ZIP_UD_SRC)); // not injecting the resources just yet, do that after recompile
+            patch.setFailOnError(true);
+            patch.setMakeRejects(false);
+            patch.setPatchStrip(1);
             patch.setInJar(postDecompJar);
             patch.setOutJar(patchedJar);
             patch.dependsOn(TASK_POST_DECOMP);
@@ -100,9 +112,17 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
             RemapSources remap = (RemapSources) project.getTasks().getByName(TASK_REMAP);
             remap.setInJar(patchedJar);
             remap.dependsOn(patch);
-            
+
             TaskRecompileMc recomp = (TaskRecompileMc) project.getTasks().getByName(TASK_RECOMPILE);
-            recomp.setInResources(ZIP_UD_RES);
+            recomp.setInResources(delayedFile(ZIP_UD_RES));
+        }
+        
+        // setup reobf
+        {
+            TaskSingleReobf reobf = (TaskSingleReobf) project.getTasks().getByName(TASK_REOBF);
+            reobf.addSecondarySrgFile(delayedFile(SRG_USERDEV));
+            
+            // still need to set the primary SRG
         }
 
     }
@@ -127,7 +147,7 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
         }
 
         super.afterEvaluate();
-        
+
         // add userdev dep
         project.getDependencies().add(CONFIG_USERDEV, ImmutableMap.of(
                 "group", getApiGroup(ext),

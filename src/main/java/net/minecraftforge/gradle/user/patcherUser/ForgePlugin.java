@@ -1,5 +1,9 @@
 package net.minecraftforge.gradle.user.patcherUser;
 
+import static net.minecraftforge.gradle.common.Constants.REPLACE_MC_VERSION;
+import static net.minecraftforge.gradle.common.Constants.SRG_MCP_TO_SRG;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_REOBF;
+
 import java.io.File;
 import java.util.List;
 
@@ -26,8 +30,15 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
         setForgeVersionJson();
 
         super.applyUserPlugin();
+
+        // setup reobf
+        {
+            TaskSingleReobf reobf = (TaskSingleReobf) project.getTasks().getByName(TASK_REOBF);
+            reobf.setPrimarySrg(delayedFile(SRG_MCP_TO_SRG));
+            reobf.addPreTransformer(new McVersionTransformer(delayedString(REPLACE_MC_VERSION)));
+        }
     }
-    
+
     @Override
     protected void afterEvaluate()
     {
