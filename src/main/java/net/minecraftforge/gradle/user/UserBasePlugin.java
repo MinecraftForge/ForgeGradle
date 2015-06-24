@@ -135,9 +135,6 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
         // add access transformers to deobf tasks
         addAtsToDeobf();
-
-        // add reobf srg lines
-        ((TaskSingleReobf) project.getTasks().getByName(TASK_REOBF)).addExtraSrgLines(getExtension().getSrgExtra());
         
         // add task depends for reobf
         if (project.getPlugins().hasPlugin("maven"))

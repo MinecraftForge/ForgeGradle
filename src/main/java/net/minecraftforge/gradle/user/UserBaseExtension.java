@@ -2,7 +2,6 @@ package net.minecraftforge.gradle.user;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -11,7 +10,6 @@ import net.minecraftforge.gradle.common.BaseExtension;
 
 public class UserBaseExtension extends BaseExtension
 {
-    private LinkedList<String>      srgExtra     = new LinkedList<String>();
     private HashMap<String, Object> replacements = new HashMap<String, Object>();
     private ArrayList<String>       includes     = new ArrayList<String>();
     private ArrayList<Object>       ats          = new ArrayList<Object>();
@@ -20,16 +18,6 @@ public class UserBaseExtension extends BaseExtension
     public UserBaseExtension(UserBasePlugin<? extends UserBaseExtension> plugin)
     {
         super(plugin);
-    }
-
-    public LinkedList<String> getSrgExtra()
-    {
-        return srgExtra;
-    }
-
-    public void srgExtra(String in)
-    {
-        srgExtra.add(in);
     }
 
     public void replace(Object token, Object replacement)
