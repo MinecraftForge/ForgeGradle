@@ -67,7 +67,7 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
 
         // setup deobfuscation
         {
-            DeobfuscateJar deobfBin = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF);
+            DeobfuscateJar deobfBin = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF_BIN);
             DeobfuscateJar deobf = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF);
 
             deobfBin.addTransformerClean(delayedFile(AT_USERDEV));

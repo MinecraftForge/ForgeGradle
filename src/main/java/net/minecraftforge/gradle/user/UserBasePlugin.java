@@ -42,6 +42,7 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.GroovyCompile;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.scala.ScalaCompile;
+import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
@@ -96,7 +97,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         });
 
         // IDE stuff
-        addEclipseRuns();
+        configureEclipse();
         configureIntellij();
 
         applyUserPlugin();
@@ -560,10 +561,17 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
     protected abstract List<String> getServerRunArgs(T ext);
 
     /**
-     * Creates task that generate the eclipse run configs and attaches them to the eclipse task.
+     * Configures the eclipse classpath
+     * Also creates task that generate the eclipse run configs and attaches them to the eclipse task.
      */
-    protected void addEclipseRuns()
+    protected void configureEclipse()
     {
+        EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse"); 
+        eclipseConv.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(CONFIG_MC));
+        eclipseConv.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(CONFIG_MC_DEPS));
+        eclipseConv.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(CONFIG_START));
+        eclipseConv.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(CONFIG_PROVIDED));
+        
         if (this.hasClientRun())
         {
             GenEclipseRunTask eclipseClient = makeTask("makeEclipseCleanRunClient", GenEclipseRunTask.class);
@@ -601,6 +609,11 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         ideaConv.getModule().getExcludeDirs().addAll(project.files(".gradle", "build", ".idea", "out").getFiles());
         ideaConv.getModule().setDownloadJavadoc(true);
         ideaConv.getModule().setDownloadSources(true);
+        
+        ideaConv.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(CONFIG_MC_DEPS));
+        ideaConv.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(CONFIG_MC));
+        ideaConv.getModule().getScopes().get("RUNTIME").get("plus").add(project.getConfigurations().getByName(CONFIG_START));
+        ideaConv.getModule().getScopes().get("PROVIDED").get("plus").add(project.getConfigurations().getByName(CONFIG_PROVIDED));
 
         // fix the idea bug
         ideaConv.getModule().setInheritOutputDirs(true);
