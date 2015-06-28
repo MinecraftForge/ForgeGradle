@@ -76,14 +76,17 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         Task task = makeTask(TASK_SETUP_CI, DefaultTask.class);
         task.setDescription("Sets up the bare minimum to build a minecraft mod. Ideally for CI servers");
         task.setGroup("ForgeGradle");
+        task.dependsOn(TASK_DD_PROVIDED, TASK_DD_COMPILE);
 
         task = makeTask(TASK_SETUP_DEV, DefaultTask.class);
         task.setDescription("CIWorkspace + natives and assets to run and test Minecraft");
         task.setGroup("ForgeGradle");
+        task.dependsOn(TASK_DD_PROVIDED, TASK_DD_COMPILE);
 
         task = makeTask(TASK_SETUP_DECOMP, DefaultTask.class);
         task.setDescription("DevWorkspace + the deobfuscated Minecraft source linked as a source jar.");
         task.setGroup("ForgeGradle");
+        task.dependsOn(TASK_DD_PROVIDED, TASK_DD_COMPILE);
 
         // create configs
         project.getConfigurations().maybeCreate(CONFIG_MC);
@@ -99,7 +102,6 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         // Quality of life stuff for the users
         createSourceCopyTasks();
         doDevTimeDeobf();
-        
 
         // use zinc for scala compilation
         project.getTasks().withType(ScalaCompile.class, new Action<ScalaCompile>() {
