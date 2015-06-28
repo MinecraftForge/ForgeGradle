@@ -1,6 +1,7 @@
 package net.minecraftforge.gradle.user;
 
 import static net.minecraftforge.gradle.common.Constants.REPLACE_PROJECT_CACHE_DIR;
+import static net.minecraftforge.gradle.common.Constants.REPLACE_CACHE_DIR;
 
 public class UserConstants
 {
@@ -11,6 +12,11 @@ public class UserConstants
     public static final String CONFIG_MC              = "forgeGradleMc";
     public static final String CONFIG_START           = "forgeGradleGradleStart";
     public static final String CONFIG_PROVIDED        = "provided";
+
+    public static final String CONFIG_DEOBF_COMPILE   = "deobfCompile";
+    public static final String CONFIG_DEOBF_PROVIDED  = "deobfProvided";
+    public static final String CONFIG_DC_RESOLVED     = "forgeGradleResolvedDeobfCompile";
+    public static final String CONFIG_DP_RESOLVED     = "forgeGradleResovledDeobfProvided";
 
     public static final String TASK_SETUP_CI          = "setupCiWorkspace";
     public static final String TASK_SETUP_DEV         = "setupDevWorkspace";
@@ -25,6 +31,9 @@ public class UserConstants
     public static final String TASK_MAKE_START        = "makeStart";
 
     public static final String TASK_REOBF             = "reobfJar";
+    
+    public static final String TASK_DD_COMPILE        = "deobfCompileDummyTask";
+    public static final String TASK_DD_PROVIDED       = "deobfProvidedDummyTask";
 
     static final String        REPLACE_SERVER_TWEAKER = "{RUN_SERVER_TWEAKER}";
     static final String        REPLACE_CLIENT_TWEAKER = "{RUN_CLIENT_TWEAKER}";
@@ -33,4 +42,5 @@ public class UserConstants
     static final String        REPLACE_RUN_DIR        = "{RUN_DIR}";
 
     public static final String DIR_LOCAL_CACHE        = REPLACE_PROJECT_CACHE_DIR + "/minecraft";
+    public static final String DIR_DEOBF_DEPS         = REPLACE_CACHE_DIR + "/deobfedDeps/";
 }

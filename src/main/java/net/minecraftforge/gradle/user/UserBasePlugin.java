@@ -23,6 +23,7 @@ import net.minecraftforge.gradle.tasks.DeobfuscateJar;
 import net.minecraftforge.gradle.tasks.GenEclipseRunTask;
 import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.RemapSources;
+import net.minecraftforge.gradle.util.GradleConfigurationException;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import net.minecraftforge.gradle.util.delayed.TokenReplacer;
 
@@ -31,8 +32,14 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.XmlProvider;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.artifacts.ModuleVersionIdentifier;
+import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.maven.Conf2ScopeMappingContainer;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.plugins.MavenPluginConvention;
@@ -82,10 +89,17 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         project.getConfigurations().maybeCreate(CONFIG_MC);
         project.getConfigurations().maybeCreate(CONFIG_PROVIDED);
         project.getConfigurations().maybeCreate(CONFIG_START);
+        
+        project.getConfigurations().maybeCreate(CONFIG_DEOBF_COMPILE);
+        project.getConfigurations().maybeCreate(CONFIG_DEOBF_PROVIDED);
+        project.getConfigurations().maybeCreate(CONFIG_DC_RESOLVED);
+        project.getConfigurations().maybeCreate(CONFIG_DP_RESOLVED);
 
         configureCompilation();
         // Quality of life stuff for the users
         createSourceCopyTasks();
+        doDevTimeDeobf();
+        
 
         // use zinc for scala compilation
         project.getTasks().withType(ScalaCompile.class, new Action<ScalaCompile>() {
@@ -391,6 +405,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                 .plus(project.getConfigurations().getByName(CONFIG_MC_DEPS))
                 .plus(project.getConfigurations().getByName(CONFIG_START)));
 
+        project.getConfigurations().getByName("compile").extendsFrom(project.getConfigurations().getByName(CONFIG_DC_RESOLVED));
+        project.getConfigurations().getByName(CONFIG_PROVIDED).extendsFrom(project.getConfigurations().getByName(CONFIG_DP_RESOLVED));
         project.getConfigurations().getByName("apiCompile").extendsFrom(project.getConfigurations().getByName("compile"));
         project.getConfigurations().getByName("testCompile").extendsFrom(project.getConfigurations().getByName("apiCompile"));
 
@@ -460,6 +476,94 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         }
 
         // Todo: kotlin?  closure?
+    }
+    
+    protected void doDevTimeDeobf()
+    {
+        final Task compileDummy = getDummyDep("compile", delayedFile(DIR_DEOBF_DEPS + "/compileDummy.jar"), TASK_DD_COMPILE);
+        final Task providedDummy = getDummyDep("compile", delayedFile(DIR_DEOBF_DEPS + "/providedDummy.jar"), TASK_DD_PROVIDED);
+        
+        final Configuration compileConfig = project.getConfigurations().getByName(CONFIG_DEOBF_COMPILE);
+        final Configuration providedConfig = project.getConfigurations().getByName(CONFIG_DEOBF_PROVIDED);
+        
+        // die wih error if I find invalid types...
+        project.afterEvaluate(new Action<Project>() {
+            @Override
+            public void execute(Project project)
+            {
+                // add maven repo
+                addMavenRepo(project, "deobfDeps", delayedFile(DIR_DEOBF_DEPS).call().getAbsoluteFile().toURI().getPath());
+                
+                
+                // allow only maven deps
+                for (Dependency dep : compileConfig.getIncoming().getDependencies())
+                {
+                    if (!(dep instanceof ExternalModuleDependency))
+                    {
+                        throw new GradleConfigurationException("Only allowed to use maven dependencies for this. If its a jar file, deobfuscate it yourself.");
+                    }
+                }
+                
+                for (Dependency dep : providedConfig.getDependencies())
+                {
+                    if (!(dep instanceof ExternalModuleDependency))
+                    {
+                        throw new GradleConfigurationException("Only allowed to use maven dependencies for this. If its a jar file, deobfuscate it yourself.");
+                    }
+                }
+                
+                int i = 0;
+                
+                // copy to the other obf thing, while making the new tasks
+                for (ResolvedArtifact artifact : compileConfig.getResolvedConfiguration().getResolvedArtifacts())
+                {
+                    ModuleVersionIdentifier module = artifact.getModuleVersion().getId();
+                    String group = "deobf." + module.getGroup();
+                    
+                    TaskSingleDeobfBin deobf = makeTask("deobfDepTask"+(i++), TaskSingleDeobfBin.class);
+                    deobf.setInJar(artifact.getFile());
+                    deobf.setOutJar(getFile(DIR_DEOBF_DEPS, group, module.getName(), module.getVersion(), artifact.getExtension()));
+                    deobf.setFieldCsv(delayedFile(CSV_FIELD));
+                    deobf.setMethodCsv(delayedFile(CSV_METHOD));
+                    compileDummy.dependsOn(deobf);
+                    
+                    project.getDependencies().add(CONFIG_DC_RESOLVED, group + ":" + module.getName() + ":" + module.getVersion());
+                }
+                
+                for (ResolvedArtifact artifact : providedConfig.getResolvedConfiguration().getResolvedArtifacts())
+                {
+                    ModuleVersionIdentifier module = artifact.getModuleVersion().getId();
+                    String group = "deobf." + module.getGroup();
+                    
+                    TaskSingleDeobfBin deobf = makeTask("deobfDepTask"+(i++), TaskSingleDeobfBin.class);
+                    deobf.setInJar(artifact.getFile());
+                    deobf.setOutJar(getFile(DIR_DEOBF_DEPS, group, module.getName(), module.getVersion(), artifact.getExtension()));
+                    deobf.setFieldCsv(delayedFile(CSV_FIELD));
+                    deobf.setMethodCsv(delayedFile(CSV_METHOD));
+                    providedDummy.dependsOn(deobf);
+                    
+                    project.getDependencies().add(CONFIG_DP_RESOLVED, group + ":" + module.getName() + ":" + module.getVersion());
+                }
+            }
+            
+            private Object getFile(String baseDir, String group, String name, String version, String ext)
+            {
+                return delayedFile(baseDir + "/" + group.replace('.', '/') + "/" + name + "/" + version + "/" + name + "-" + version + "." + ext);
+            }
+        });
+    }
+    
+    protected final TaskDepDummy getDummyDep(String config, DelayedFile dummy, String taskName)
+    {
+        TaskDepDummy dummyTask = makeTask(taskName, TaskDepDummy.class);
+        dummyTask.setOutputFile(dummy);
+        
+        ConfigurableFileCollection col = project.files(dummy);
+        col.builtBy(dummyTask);
+        
+        project.getDependencies().add(config, col);
+        
+        return dummyTask;
     }
 
     protected void mapConfigurations()
@@ -596,6 +700,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             project.getTasks().getByName("eclipse").dependsOn(eclipseServer);
         }
 
+        // otehr dependencies
+        project.getTasks().getByName("eclipseClasspath").dependsOn(TASK_DD_COMPILE, TASK_DD_PROVIDED);
     }
 
     /**
@@ -614,6 +720,9 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         ideaConv.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(CONFIG_MC));
         ideaConv.getModule().getScopes().get("RUNTIME").get("plus").add(project.getConfigurations().getByName(CONFIG_START));
         ideaConv.getModule().getScopes().get("PROVIDED").get("plus").add(project.getConfigurations().getByName(CONFIG_PROVIDED));
+        
+        // add deobf task dependencies
+        project.getTasks().getByName("ideaModule").dependsOn(TASK_DD_COMPILE, TASK_DD_PROVIDED);
 
         // fix the idea bug
         ideaConv.getModule().setInheritOutputDirs(true);
@@ -747,7 +856,6 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                 continue;
 
             Element child = addXml(root, "configuration", ImmutableMap.of(
-                    "default", "false",
                     "name", data[0],
                     "type", "Application",
                     "factoryName", "Application",
@@ -760,7 +868,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                     "runner", "idea"));
             addXml(child, "option", ImmutableMap.of("name", "MAIN_CLASS_NAME", "value", data[1]));
             addXml(child, "option", ImmutableMap.of("name", "VM_PARAMETERS", "value", ""));
-            addXml(child, "option", ImmutableMap.of("name", "PROGRAM_PARAMETERS", "value", data[3]));
+            addXml(child, "option", ImmutableMap.of("name", "PROGRAM_PARAMETERS", "value", data[2]));
             addXml(child, "option", ImmutableMap.of("name", "WORKING_DIRECTORY", "value", "file://" + delayedFile("{RUN_DIR}").call().getCanonicalPath().replace(module, "$PROJECT_DIR$")));
             addXml(child, "option", ImmutableMap.of("name", "ALTERNATIVE_JRE_PATH_ENABLED", "value", "false"));
             addXml(child, "option", ImmutableMap.of("name", "ALTERNATIVE_JRE_PATH", "value", ""));
