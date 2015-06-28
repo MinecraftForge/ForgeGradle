@@ -55,6 +55,9 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
         // add asset-index task to CI and dev workspace tasks
         project.getTasks().getByName(TASK_SETUP_CI).dependsOn(Constants.TASK_DL_VERSION_JSON);
         project.getTasks().getByName(TASK_SETUP_DEV).dependsOn(Constants.TASK_DL_VERSION_JSON);
+        
+        // add launchwrapper dep
+        project.getDependencies().add("provided", "net.minecraft:launchwrapper:1.11");
     }
 
     @Override
