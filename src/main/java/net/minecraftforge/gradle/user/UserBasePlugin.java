@@ -6,6 +6,7 @@ import groovy.lang.Closure;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -38,7 +39,13 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.artifacts.component.ComponentIdentifier;
 import org.gradle.api.artifacts.maven.Conf2ScopeMappingContainer;
+import org.gradle.api.artifacts.result.ArtifactResolutionResult;
+import org.gradle.api.artifacts.result.ArtifactResult;
+import org.gradle.api.artifacts.result.ComponentArtifactsResult;
+import org.gradle.api.artifacts.result.DependencyResult;
+import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -49,6 +56,8 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.GroovyCompile;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.scala.ScalaCompile;
+import org.gradle.jvm.JvmLibrary;
+import org.gradle.language.base.artifact.SourcesArtifact;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 import org.w3c.dom.DOMException;
@@ -59,6 +68,7 @@ import org.w3c.dom.NodeList;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePlugin<T>
 {
@@ -92,7 +102,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         project.getConfigurations().maybeCreate(CONFIG_MC);
         project.getConfigurations().maybeCreate(CONFIG_PROVIDED);
         project.getConfigurations().maybeCreate(CONFIG_START);
-        
+
         project.getConfigurations().maybeCreate(CONFIG_DEOBF_COMPILE);
         project.getConfigurations().maybeCreate(CONFIG_DEOBF_PROVIDED);
         project.getConfigurations().maybeCreate(CONFIG_DC_RESOLVED);
@@ -152,7 +162,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
         // add access transformers to deobf tasks
         addAtsToDeobf();
-        
+
         // add task depends for reobf
         if (project.getPlugins().hasPlugin("maven"))
         {
@@ -337,7 +347,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         return new Closure<DelayedFile>(project, this) {
             public DelayedFile call()
             {
-                String classAdd = Strings.isNullOrEmpty(classifier) ? "" : "-"+classifier;
+                String classAdd = Strings.isNullOrEmpty(classifier) ? "" : "-" + classifier;
                 String str = useLocalCache(getExtension()) ? localPattern : globalPattern;
                 return delayedFile(String.format(str, appendage) + classAdd + ".jar");
             }
@@ -479,15 +489,12 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
         // Todo: kotlin?  closure?
     }
-    
+
     protected void doDevTimeDeobf()
     {
         final Task compileDummy = getDummyDep("compile", delayedFile(DIR_DEOBF_DEPS + "/compileDummy.jar"), TASK_DD_COMPILE);
         final Task providedDummy = getDummyDep("compile", delayedFile(DIR_DEOBF_DEPS + "/providedDummy.jar"), TASK_DD_PROVIDED);
-        
-        final Configuration compileConfig = project.getConfigurations().getByName(CONFIG_DEOBF_COMPILE);
-        final Configuration providedConfig = project.getConfigurations().getByName(CONFIG_DEOBF_PROVIDED);
-        
+
         // die wih error if I find invalid types...
         project.afterEvaluate(new Action<Project>() {
             @Override
@@ -495,76 +502,97 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             {
                 // add maven repo
                 addMavenRepo(project, "deobfDeps", delayedFile(DIR_DEOBF_DEPS).call().getAbsoluteFile().toURI().getPath());
-                
-                
-                // allow only maven deps
-                for (Dependency dep : compileConfig.getIncoming().getDependencies())
+
+                remapDeps(project, project.getConfigurations().getByName(CONFIG_DEOBF_COMPILE), CONFIG_DC_RESOLVED, compileDummy);
+                remapDeps(project, project.getConfigurations().getByName(CONFIG_DEOBF_PROVIDED), CONFIG_DP_RESOLVED, providedDummy);
+            }
+
+            @SuppressWarnings("unchecked")
+            private void remapDeps(Project project, Configuration config, String resolvedConfig, Task dummyTask)
+            {
+                // only allow maven/ivy dependencies
+                for (Dependency dep : config.getIncoming().getDependencies())
                 {
                     if (!(dep instanceof ExternalModuleDependency))
                     {
                         throw new GradleConfigurationException("Only allowed to use maven dependencies for this. If its a jar file, deobfuscate it yourself.");
                     }
                 }
-                
-                for (Dependency dep : providedConfig.getDependencies())
+
+                int taskId = 0;
+
+                // FOR BINARIES
+
+                for (ResolvedArtifact artifact : config.getResolvedConfiguration().getResolvedArtifacts())
                 {
-                    if (!(dep instanceof ExternalModuleDependency))
+                    ModuleVersionIdentifier module = artifact.getModuleVersion().getId();
+                    String group = "deobf." + module.getGroup();
+
+                    TaskSingleDeobfBin deobf = makeTask(config.getName() + "DeobfDepTask" + (taskId++), TaskSingleDeobfBin.class);
+                    deobf.setInJar(artifact.getFile());
+                    deobf.setOutJar(getFile(DIR_DEOBF_DEPS, group, module.getName(), module.getVersion(), null));
+                    deobf.setFieldCsv(delayedFile(CSV_FIELD));
+                    deobf.setMethodCsv(delayedFile(CSV_METHOD));
+                    deobf.dependsOn(TASK_EXTRACT_MAPPINGS);
+                    dummyTask.dependsOn(deobf);
+
+                    project.getDependencies().add(resolvedConfig, group + ":" + module.getName() + ":" + module.getVersion());
+                }
+
+                // FOR SOURCES!
+
+                HashMap<ComponentIdentifier, ModuleVersionIdentifier> idMap = Maps.newHashMap();
+
+                for (DependencyResult depResult : config.getIncoming().getResolutionResult().getAllDependencies())
+                {
+                    idMap.put(depResult.getFrom().getId(), depResult.getFrom().getModuleVersion());
+                }
+
+                ArtifactResolutionResult result = project.getDependencies().createArtifactResolutionQuery()
+                        .forComponents(idMap.keySet())
+                        .withArtifacts(JvmLibrary.class, SourcesArtifact.class)
+                        .execute();
+
+                for (ComponentArtifactsResult comp : result.getResolvedComponents())
+                {
+                    ModuleVersionIdentifier module = idMap.get(comp.getId());
+                    String group = "deobf." + module.getGroup();
+
+                    for (ArtifactResult art : comp.getArtifacts(SourcesArtifact.class))
                     {
-                        throw new GradleConfigurationException("Only allowed to use maven dependencies for this. If its a jar file, deobfuscate it yourself.");
+                        // there can only be One!
+                        RemapSources remap = makeTask(config.getName() + "RemapDepSourcesTask" + (taskId++), RemapSources.class);
+                        remap.setInJar(((ResolvedArtifactResult) art).getFile());
+                        remap.setOutJar(getFile(DIR_DEOBF_DEPS, group, module.getName(), module.getVersion(), "sources"));
+                        remap.setFieldsCsv(delayedFile(CSV_FIELD));
+                        remap.setMethodsCsv(delayedFile(CSV_METHOD));
+                        remap.setParamsCsv(delayedFile(CSV_PARAM));
+                        remap.dependsOn(TASK_EXTRACT_MAPPINGS);
+                        dummyTask.dependsOn(remap);
+                        break;
                     }
-                }
-                
-                int i = 0;
-                
-                // copy to the other obf thing, while making the new tasks
-                for (ResolvedArtifact artifact : compileConfig.getResolvedConfiguration().getResolvedArtifacts())
-                {
-                    ModuleVersionIdentifier module = artifact.getModuleVersion().getId();
-                    String group = "deobf." + module.getGroup();
-                    
-                    TaskSingleDeobfBin deobf = makeTask("deobfDepTask"+(i++), TaskSingleDeobfBin.class);
-                    deobf.setInJar(artifact.getFile());
-                    deobf.setOutJar(getFile(DIR_DEOBF_DEPS, group, module.getName(), module.getVersion(), artifact.getExtension()));
-                    deobf.setFieldCsv(delayedFile(CSV_FIELD));
-                    deobf.setMethodCsv(delayedFile(CSV_METHOD));
-                    compileDummy.dependsOn(deobf);
-                    
-                    project.getDependencies().add(CONFIG_DC_RESOLVED, group + ":" + module.getName() + ":" + module.getVersion());
-                }
-                
-                for (ResolvedArtifact artifact : providedConfig.getResolvedConfiguration().getResolvedArtifacts())
-                {
-                    ModuleVersionIdentifier module = artifact.getModuleVersion().getId();
-                    String group = "deobf." + module.getGroup();
-                    
-                    TaskSingleDeobfBin deobf = makeTask("deobfDepTask"+(i++), TaskSingleDeobfBin.class);
-                    deobf.setInJar(artifact.getFile());
-                    deobf.setOutJar(getFile(DIR_DEOBF_DEPS, group, module.getName(), module.getVersion(), artifact.getExtension()));
-                    deobf.setFieldCsv(delayedFile(CSV_FIELD));
-                    deobf.setMethodCsv(delayedFile(CSV_METHOD));
-                    providedDummy.dependsOn(deobf);
-                    
-                    project.getDependencies().add(CONFIG_DP_RESOLVED, group + ":" + module.getName() + ":" + module.getVersion());
                 }
             }
-            
-            private Object getFile(String baseDir, String group, String name, String version, String ext)
+
+            private Object getFile(String baseDir, String group, String name, String version, String classifier)
             {
-                return delayedFile(baseDir + "/" + group.replace('.', '/') + "/" + name + "/" + version + "/" + name + "-" + version + "." + ext);
+                return delayedFile(
+                baseDir + "/" + group.replace('.', '/') + "/" + name + "/" + version + "/" +
+                        name + "-" + version + (Strings.isNullOrEmpty(classifier) ? "" : "-" + classifier) + ".jar");
             }
         });
     }
-    
+
     protected final TaskDepDummy getDummyDep(String config, DelayedFile dummy, String taskName)
     {
         TaskDepDummy dummyTask = makeTask(taskName, TaskDepDummy.class);
         dummyTask.setOutputFile(dummy);
-        
+
         ConfigurableFileCollection col = project.files(dummy);
         col.builtBy(dummyTask);
-        
+
         project.getDependencies().add(config, col);
-        
+
         return dummyTask;
     }
 
@@ -587,7 +615,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
     protected void addAtsToDeobf()
     {
         // INFO: This method is overriden by PatcherUserBasePlugin to add the reading from resource dirs and depndencies
-        
+
         // add src ATs
         DeobfuscateJar binDeobf = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF_BIN);
         DeobfuscateJar decompDeobf = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF);
@@ -672,12 +700,12 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
      */
     protected void configureEclipse()
     {
-        EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse"); 
+        EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse");
         eclipseConv.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(CONFIG_MC));
         eclipseConv.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(CONFIG_MC_DEPS));
         eclipseConv.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(CONFIG_START));
         eclipseConv.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(CONFIG_PROVIDED));
-        
+
         if (this.hasClientRun())
         {
             GenEclipseRunTask eclipseClient = makeTask("makeEclipseCleanRunClient", GenEclipseRunTask.class);
@@ -717,12 +745,12 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         ideaConv.getModule().getExcludeDirs().addAll(project.files(".gradle", "build", ".idea", "out").getFiles());
         ideaConv.getModule().setDownloadJavadoc(true);
         ideaConv.getModule().setDownloadSources(true);
-        
+
         ideaConv.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(CONFIG_MC_DEPS));
         ideaConv.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(CONFIG_MC));
         ideaConv.getModule().getScopes().get("RUNTIME").get("plus").add(project.getConfigurations().getByName(CONFIG_START));
         ideaConv.getModule().getScopes().get("PROVIDED").get("plus").add(project.getConfigurations().getByName(CONFIG_PROVIDED));
-        
+
         // add deobf task dependencies
         project.getTasks().getByName("ideaModule").dependsOn(TASK_DD_COMPILE, TASK_DD_PROVIDED);
 

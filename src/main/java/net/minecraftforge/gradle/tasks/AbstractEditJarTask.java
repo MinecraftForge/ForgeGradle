@@ -32,8 +32,8 @@ public abstract class AbstractEditJarTask extends CachedTask
     @OutputFile
     private Object outJar;
 
-    protected File   resolvedInJar;
-    protected File   resolvedOutJar;
+    protected File resolvedInJar;
+    protected File resolvedOutJar;
 
     @TaskAction
     public void doTask() throws Throwable
@@ -42,20 +42,20 @@ public abstract class AbstractEditJarTask extends CachedTask
         resolvedOutJar = getOutJar();
 
         doStuffBefore();
-        
+
         if (storeJarInRam())
         {
             getLogger().debug("Reading jar: " + resolvedInJar);
-            
-            Map<String, String> sourceMap   = Maps.newHashMap();
-            Map<String, byte[]> resourceMap   = Maps.newHashMap();
-            
+
+            Map<String, String> sourceMap = Maps.newHashMap();
+            Map<String, byte[]> resourceMap = Maps.newHashMap();
+
             readAndStoreJarInRam(resolvedInJar, sourceMap, resourceMap);
 
             doStuffMiddle(sourceMap, resourceMap);
-            
+
             saveJar(resolvedOutJar, sourceMap, resourceMap);
-            
+
             getLogger().debug("Saving jar: " + resolvedOutJar);
         }
         else
@@ -83,8 +83,8 @@ public abstract class AbstractEditJarTask extends CachedTask
 
     /**
      * Do Stuff after the jar is read, but before it is written.
-     * @param sourceMap name-&gt;contents  for all java files in the jar
-     * @param resourceMap name-&gt;contents  for everything else
+     * @param sourceMap name-&gt;contents for all java files in the jar
+     * @param resourceMap name-&gt;contents for everything else
      * @throws Exception for convenience
      */
     public abstract void doStuffMiddle(Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws Exception;
@@ -94,10 +94,10 @@ public abstract class AbstractEditJarTask extends CachedTask
      * @throws Exception for convenience
      */
     public abstract void doStuffAfter() throws Exception;
-    
+
     /**
      * Whether to store the contents of the jar in RAM.
-     * If this returns false, then the doStuffMiddle method is not called. 
+     * If this returns false, then the doStuffMiddle method is not called.
      * @return store jar in ram
      */
     protected abstract boolean storeJarInRam();
@@ -138,7 +138,7 @@ public abstract class AbstractEditJarTask extends CachedTask
     protected static void saveJar(File output, Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws IOException
     {
         output.getParentFile().mkdirs();
-        
+
         JarOutputStream zout = new JarOutputStream(new FileOutputStream(output));
 
         // write in resources
@@ -159,7 +159,7 @@ public abstract class AbstractEditJarTask extends CachedTask
 
         zout.close();
     }
-    
+
     private void copyJar(File input, File output) throws Exception
     {
         // begin reading jar
@@ -185,7 +185,7 @@ public abstract class AbstractEditJarTask extends CachedTask
             else
             {
                 // source
-                zout.putNextEntry(new JarEntry(entry));
+                zout.putNextEntry(new JarEntry(entry.getName()));
                 zout.write(asRead(entry.getName(), new String(ByteStreams.toByteArray(zin), Constants.CHARSET)).getBytes());
                 zout.closeEntry();
             }
