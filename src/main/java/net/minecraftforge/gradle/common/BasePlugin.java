@@ -1,59 +1,6 @@
 package net.minecraftforge.gradle.common;
 
-import static net.minecraftforge.gradle.common.Constants.ASSETS_INDEX_URL;
-import static net.minecraftforge.gradle.common.Constants.CONFIG_MAPPINGS;
-import static net.minecraftforge.gradle.common.Constants.CONFIG_MCP_DATA;
-import static net.minecraftforge.gradle.common.Constants.CONFIG_MC_DEPS;
-import static net.minecraftforge.gradle.common.Constants.CONFIG_NATIVES;
-import static net.minecraftforge.gradle.common.Constants.CSV_FIELD;
-import static net.minecraftforge.gradle.common.Constants.CSV_METHOD;
-import static net.minecraftforge.gradle.common.Constants.DIR_ASSETS;
-import static net.minecraftforge.gradle.common.Constants.DIR_JSONS;
-import static net.minecraftforge.gradle.common.Constants.DIR_MCP_DATA;
-import static net.minecraftforge.gradle.common.Constants.DIR_MCP_MAPPINGS;
-import static net.minecraftforge.gradle.common.Constants.DIR_NATIVES;
-import static net.minecraftforge.gradle.common.Constants.EXC_MCP;
-import static net.minecraftforge.gradle.common.Constants.EXC_SRG;
-import static net.minecraftforge.gradle.common.Constants.EXT_NAME_MC;
-import static net.minecraftforge.gradle.common.Constants.GROUP_FG;
-import static net.minecraftforge.gradle.common.Constants.JAR_CLIENT_FRESH;
-import static net.minecraftforge.gradle.common.Constants.JAR_FERNFLOWER;
-import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
-import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_FRESH;
-import static net.minecraftforge.gradle.common.Constants.JSON_ASSET_INDEX;
-import static net.minecraftforge.gradle.common.Constants.JSON_VERSION;
-import static net.minecraftforge.gradle.common.Constants.MCP_DATA_EXC;
-import static net.minecraftforge.gradle.common.Constants.MCP_DATA_SRG;
-import static net.minecraftforge.gradle.common.Constants.REPLACE_ASSET_INDEX;
-import static net.minecraftforge.gradle.common.Constants.REPLACE_BUILD_DIR;
-import static net.minecraftforge.gradle.common.Constants.REPLACE_CACHE_DIR;
-import static net.minecraftforge.gradle.common.Constants.REPLACE_MCP_CHANNEL;
-import static net.minecraftforge.gradle.common.Constants.REPLACE_MCP_VERSION;
-import static net.minecraftforge.gradle.common.Constants.REPLACE_MC_VERSION;
-import static net.minecraftforge.gradle.common.Constants.REPLACE_PROJECT_CACHE_DIR;
-import static net.minecraftforge.gradle.common.Constants.SRG_MCP_TO_NOTCH;
-import static net.minecraftforge.gradle.common.Constants.SRG_MCP_TO_SRG;
-import static net.minecraftforge.gradle.common.Constants.SRG_SRG_TO_MCP;
-import static net.minecraftforge.gradle.common.Constants.TASK_CLEAN_CACHE;
-import static net.minecraftforge.gradle.common.Constants.TASK_DL_ASSETS;
-import static net.minecraftforge.gradle.common.Constants.TASK_DL_ASSET_INDEX;
-import static net.minecraftforge.gradle.common.Constants.TASK_DL_CLIENT;
-import static net.minecraftforge.gradle.common.Constants.TASK_DL_FERNFLOWER;
-import static net.minecraftforge.gradle.common.Constants.TASK_DL_SERVER;
-import static net.minecraftforge.gradle.common.Constants.TASK_DL_VERSION_JSON;
-import static net.minecraftforge.gradle.common.Constants.TASK_EXTRACT_MAPPINGS;
-import static net.minecraftforge.gradle.common.Constants.TASK_EXTRACT_MCP;
-import static net.minecraftforge.gradle.common.Constants.TASK_EXTRACT_NATIVES;
-import static net.minecraftforge.gradle.common.Constants.TASK_GENERATE_SRGS;
-import static net.minecraftforge.gradle.common.Constants.TASK_MERGE_JARS;
-import static net.minecraftforge.gradle.common.Constants.URL_FF;
-import static net.minecraftforge.gradle.common.Constants.URL_FORGE_MAVEN;
-import static net.minecraftforge.gradle.common.Constants.URL_LIBRARY;
-import static net.minecraftforge.gradle.common.Constants.URL_MCP_JSON;
-import static net.minecraftforge.gradle.common.Constants.URL_MC_CLIENT;
-import static net.minecraftforge.gradle.common.Constants.URL_MC_JSON;
-import static net.minecraftforge.gradle.common.Constants.URL_MC_SERVER;
-import static net.minecraftforge.gradle.common.Constants.USER_AGENT;
+import static net.minecraftforge.gradle.common.Constants.*;
 import groovy.lang.Closure;
 
 import java.io.File;
@@ -66,16 +13,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
-import net.minecraftforge.gradle.tasks.CrowdinDownload;
-import net.minecraftforge.gradle.tasks.Download;
-import net.minecraftforge.gradle.tasks.DownloadAssetsTask;
-import net.minecraftforge.gradle.tasks.EtagDownloadTask;
-import net.minecraftforge.gradle.tasks.ExtractConfigTask;
-import net.minecraftforge.gradle.tasks.GenSrgs;
-import net.minecraftforge.gradle.tasks.JenkinsChangelog;
-import net.minecraftforge.gradle.tasks.MergeJars;
-import net.minecraftforge.gradle.tasks.ObtainFernFlowerTask;
-import net.minecraftforge.gradle.tasks.SignJar;
+import net.minecraftforge.gradle.tasks.*;
 import net.minecraftforge.gradle.util.FileLogListenner;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
@@ -112,7 +50,6 @@ import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.gson.reflect.TypeToken;
-
 public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Project>
 {
     public Project       project;
@@ -293,7 +230,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         // Check FG Version, unless its disabled
         List<String> lines = Lists.newArrayListWithExpectedSize(5);
-        Object disableUpdateCheck = project.getProperties().get("com.minecraftforge.gradle.disableUpdateChecker");
+        Object disableUpdateCheck = project.getProperties().get("net.minecraftforge.gradle.disableUpdateChecker");
         if (!"true".equals(disableUpdateCheck) && !"yes".equals(disableUpdateCheck) && !new Boolean(true).equals(disableUpdateCheck))
         {
             doFGVersionCheck(lines);
@@ -789,32 +726,32 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
     // DELAYED STUFF ONLY ------------------------------------------------------------------------
     private LoadingCache<String, TokenReplacer> replacerCache = CacheBuilder.newBuilder()
-                                                                      .weakValues()
-                                                                      .build(
-                                                                              new CacheLoader<String, TokenReplacer>() {
-                                                                                  public TokenReplacer load(String key)
-                                                                                  {
-                                                                                      return new TokenReplacer(key);
-                                                                                  }
-                                                                              });
-    private LoadingCache<String, DelayedString> stringCache   = CacheBuilder.newBuilder()
-                                                                      .weakValues()
-                                                                      .build(
-                                                                              new CacheLoader<String, DelayedString>() {
-                                                                                  public DelayedString load(String key)
-                                                                                  {
-                                                                                      return new DelayedString(replacerCache.getUnchecked(key));
-                                                                                  }
-                                                                              });
-    private LoadingCache<String, DelayedFile>   fileCache     = CacheBuilder.newBuilder()
-                                                                      .weakValues()
-                                                                      .build(
-                                                                              new CacheLoader<String, DelayedFile>() {
-                                                                                  public DelayedFile load(String key)
-                                                                                  {
-                                                                                      return new DelayedFile(project, replacerCache.getUnchecked(key));
-                                                                                  }
-                                                                              });
+            .weakValues()
+            .build(
+                    new CacheLoader<String, TokenReplacer>() {
+                        public TokenReplacer load(String key)
+                        {
+                            return new TokenReplacer(key);
+                        }
+                    });
+    private LoadingCache<String, DelayedString> stringCache = CacheBuilder.newBuilder()
+            .weakValues()
+            .build(
+                    new CacheLoader<String, DelayedString>() {
+                        public DelayedString load(String key)
+                        {
+                            return new DelayedString(replacerCache.getUnchecked(key));
+                        }
+                    });
+    private LoadingCache<String, DelayedFile> fileCache = CacheBuilder.newBuilder()
+            .weakValues()
+            .build(
+                    new CacheLoader<String, DelayedFile>() {
+                        public DelayedFile load(String key)
+                        {
+                            return new DelayedFile(project, replacerCache.getUnchecked(key));
+                        }
+                    });
 
     protected DelayedString delayedString(String path)
     {
