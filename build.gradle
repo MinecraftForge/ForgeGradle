@@ -20,11 +20,6 @@ repositories {
         name = "eclipse"
         url = "https://repo.eclipse.org/content/groups/eclipse/"
     }
-    maven {
-        // because SpecialSource doesnt have a full release
-        name = "sonatype"
-        url = "https://oss.sonatype.org/content/repositories/snapshots/"
-    }
     mavenCentral()
     
     // because of the GradleStart stuff
@@ -41,7 +36,7 @@ configurations {
 
 dependencies {
     compile gradleApi()
-    
+
     // moved to the beginning to be the overrider
     compile 'org.ow2.asm:asm-debug-all:5.0.3'
     compile 'com.google.guava:guava:18.0'
@@ -79,6 +74,16 @@ compileJava {
 	options.deprecation = true
 	options.compilerArgs += ["-Werror"]
 	//options.compilerArgs += ["-Werror", "-Xlint:unchecked"]
+}
+
+processResources {
+    from(sourceSets.main.resources.srcDirs) {
+        include 'forgegradle.version.properties'
+        expand 'version': project.version
+    }
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'forgegradle.version.properties'
+    }
 }
 
 jar {

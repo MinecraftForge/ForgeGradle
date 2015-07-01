@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.common;
 
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -11,10 +12,13 @@ import net.minecraftforge.gradle.util.delayed.TokenReplacer;
 import org.gradle.api.Project;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.Resources;
 
 public abstract class BaseExtension
 {
     protected static final transient Map<String, String> MCP_VERSION_MAP = ImmutableMap.of("1.8", "9.10");
+
+    public final String                                  forgeGradleVersion;
 
     protected transient Project                          project;
     protected String                                     version;
@@ -31,6 +35,26 @@ public abstract class BaseExtension
     public BaseExtension(BasePlugin<? extends BaseExtension> plugin)
     {
         this.project = plugin.project;
+
+        String version;
+        try
+        {
+            URL url = BaseExtension.class.getClassLoader().getResource("forgegradle.version.txt");
+            version = Resources.toString(url, Constants.CHARSET);
+
+            if (version.equals("${version}"))
+            {
+                version = "2.0-SNAPSHOT"; // fallback
+            }
+
+        }
+        catch (Exception e)
+        {
+            // again, the fallback
+            version = "2.0-SNAPSHOT";
+        }
+
+        forgeGradleVersion = version;
     }
 
     public String getVersion()
