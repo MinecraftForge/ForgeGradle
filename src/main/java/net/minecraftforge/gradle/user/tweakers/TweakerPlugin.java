@@ -127,19 +127,19 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
     @Override
     protected String getClientTweaker(TweakerExtension ext)
     {
-        return ""; // nothing hardcoded to GradleStart
+        return ""; // nothing, put it in as an argument
     }
 
     @Override
     protected String getServerTweaker(TweakerExtension ext)
     {
-        return ""; // nothing hardcoded to GradleStart
+        return ""; // nothing, put it in as an argument
     }
 
     @Override
     protected String getClientRunClass(TweakerExtension ext)
     {
-        return ""; // default
+        return "net.minecraft.client.main.Main"; // default
     }
 
     @Override
@@ -151,7 +151,7 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
     @Override
     protected String getServerRunClass(TweakerExtension ext)
     {
-        return ""; // default
+        return "net.minecraft.server.MinecraftServer"; // default
     }
 
     @Override

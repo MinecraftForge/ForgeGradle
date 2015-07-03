@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.user.patcherUser;
+package net.minecraftforge.gradle.user.patcherUser.forge;
 
 import java.util.List;
 

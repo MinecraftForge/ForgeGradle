@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.user.patcherUser;
+package net.minecraftforge.gradle.user.patcherUser.forge;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

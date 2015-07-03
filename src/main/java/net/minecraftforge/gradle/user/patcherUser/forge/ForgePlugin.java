@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.user.patcherUser;
+package net.minecraftforge.gradle.user.patcherUser.forge;
 
 import static net.minecraftforge.gradle.common.Constants.REPLACE_MC_VERSION;
 import static net.minecraftforge.gradle.common.Constants.SRG_MCP_TO_SRG;
@@ -10,6 +10,7 @@ import java.util.List;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.user.TaskSingleReobf;
 import net.minecraftforge.gradle.user.UserConstants;
+import net.minecraftforge.gradle.user.patcherUser.PatcherUserBasePlugin;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 import net.minecraftforge.gradle.util.json.JsonFactory;
 import net.minecraftforge.gradle.util.json.forgeversion.ForgeVersion;
@@ -22,7 +23,6 @@ import com.google.common.collect.Lists;
 
 public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
 {
-
     @Override
     protected void applyUserPlugin()
     {

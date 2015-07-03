@@ -2,8 +2,8 @@ package net.minecraftforge.gradle.versions;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import net.minecraftforge.gradle.user.patcherUser.ForgeExtension;
-import net.minecraftforge.gradle.user.patcherUser.ForgePlugin;
+import net.minecraftforge.gradle.user.patcherUser.forge.ForgeExtension;
+import net.minecraftforge.gradle.user.patcherUser.forge.ForgePlugin;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 
 import org.gradle.api.Project;
