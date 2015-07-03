@@ -171,10 +171,4 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
     {
         return isClient();
     }
-
-    //@formatter:off
-    @Override protected void applyOverlayPlugin() { }
-    @Override public boolean canOverlayPlugin() { return false; }
-    @Override protected TweakerExtension getOverlayExtension() { return null; }
-    //@formatter:on
 }

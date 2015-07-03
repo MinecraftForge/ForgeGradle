@@ -244,8 +244,5 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
     //@formatter:off
     @Override protected boolean hasServerRun() { return true; }
     @Override protected boolean hasClientRun() { return true; }
-    @Override protected void applyOverlayPlugin() { }
-    @Override public boolean canOverlayPlugin() { return false; }
-    @Override protected T getOverlayExtension() { return null; }
     //@formatter:on
 }

@@ -71,34 +71,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 throw new RuntimeException("ForgeGradle 2.0 requires Gradle 2.3 or above.");
         }
 
-        // search for overlays..
-        for (Plugin p : project.getPlugins())
-        {
-            if (p instanceof BasePlugin && p != this)
-            {
-                if (canOverlayPlugin())
-                {
-                    project.getLogger().info("Applying Overlay");
-
-                    // found another BasePlugin thats already applied.
-                    // do only overlay stuff and return;
-                    otherPlugin = (BasePlugin) p;
-
-                    // copy the caches before anything uses them
-                    otherPlugin.replacerCache = replacerCache;
-                    otherPlugin.stringCache = stringCache;
-                    otherPlugin.fileCache = fileCache;
-
-                    applyOverlayPlugin();
-                    return;
-                }
-                else
-                {
-                    throw new GradleConfigurationException("Seems you are trying to apply 2 ForgeGradle plugins that are not designed to overlay... Fix your buildscripts.");
-                }
-            }
-        }
-
         if (project.getBuildDir().getAbsolutePath().contains("!"))
         {
             project.getLogger().error("Build path has !, This will screw over a lot of java things as ! is used to denote archive paths, REMOVE IT if you want to continue");
@@ -185,14 +157,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     }
 
     public abstract void applyPlugin();
-
-    protected abstract void applyOverlayPlugin();
-
-    /**
-     * return true if this plugin can be applied over another BasePlugin.
-     * @return TRUE if this can be applied upon another base plugin.
-     */
-    public abstract boolean canOverlayPlugin();
 
     private static boolean displayBanner = true;
 
@@ -457,17 +421,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     @SuppressWarnings("unchecked")
     public final K getExtension()
     {
-        if (otherPlugin != null && canOverlayPlugin())
-            return getOverlayExtension();
-        else
-            return (K) project.getExtensions().getByName(EXT_NAME_MC);
+        return (K) project.getExtensions().getByName(EXT_NAME_MC);
     }
-
-    /**
-     * @return the extension object with name EXT_NAME_MC
-     * @see Constants#EXT_NAME_MC
-     */
-    protected abstract K getOverlayExtension();
 
     public DefaultTask makeTask(String name)
     {

@@ -896,9 +896,4 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
     {
         return str.replace("{CAPNAME}", project.getCapName()).replace("{NAME}", project.getName());
     }
-
-    //@formatter:off
-    @Override public boolean canOverlayPlugin() { return false; }
-    @Override protected void applyOverlayPlugin() { }
-    @Override protected PatcherExtension getOverlayExtension() { return null; }
 }
