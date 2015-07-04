@@ -18,12 +18,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import net.minecraftforge.gradle.common.BasePlugin;
-import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
-import net.minecraftforge.gradle.tasks.CreateStartTask;
-import net.minecraftforge.gradle.tasks.DeobfuscateJar;
-import net.minecraftforge.gradle.tasks.GenEclipseRunTask;
-import net.minecraftforge.gradle.tasks.PostDecompileTask;
-import net.minecraftforge.gradle.tasks.RemapSources;
+import net.minecraftforge.gradle.tasks.*;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import net.minecraftforge.gradle.util.delayed.TokenReplacer;
@@ -53,6 +48,7 @@ import org.gradle.api.plugins.MavenPluginConvention;
 import org.gradle.api.tasks.GroovySourceSet;
 import org.gradle.api.tasks.ScalaSourceSet;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.compile.GroovyCompile;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.scala.ScalaCompile;
@@ -112,6 +108,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         // Quality of life stuff for the users
         createSourceCopyTasks();
         doDevTimeDeobf();
+        makeObfSource();
 
         // use zinc for scala compilation
         project.getTasks().withType(ScalaCompile.class, new Action<ScalaCompile>() {
@@ -163,10 +160,22 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         // add access transformers to deobf tasks
         addAtsToDeobf();
 
+        if (ext.getMakeObfSourceJar())
+        {
+            project.getTasks().getByName("assemble").dependsOn(TASK_SRC_JAR);
+            project.getTasks().getByName("build").dependsOn(TASK_SRC_JAR);
+        }
+
         // add task depends for reobf
         if (project.getPlugins().hasPlugin("maven"))
         {
             project.getTasks().getByName("uploadArchives").dependsOn(TASK_REOBF);
+
+            if (ext.getMakeObfSourceJar())
+            {
+                project.getTasks().getByName("uploadArchives").dependsOn(TASK_SRC_JAR);
+                project.getArtifacts().add("archives", project.getTasks().getByName(TASK_SRC_JAR));
+            }
         }
 
         // TODO: do some GradleSTart stuff based on the MC version?
@@ -440,7 +449,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
         // main
         {
-            File dir = new File(project.getBuildDir(), SourceSet.MAIN_SOURCE_SET_NAME + "/java");
+            File dir = new File(project.getBuildDir(), "sources/" + SourceSet.MAIN_SOURCE_SET_NAME + "/java");
 
             task = makeTask("sourceMainJava", TaskSourceCopy.class);
             task.setSource(main.getJava());
@@ -457,7 +466,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         if (project.getPlugins().hasPlugin("scala"))
         {
             ScalaSourceSet set = (ScalaSourceSet) new DslObject(main).getConvention().getPlugins().get("scala");
-            File dir = new File(project.getBuildDir(), SourceSet.MAIN_SOURCE_SET_NAME + "/scala");
+            File dir = new File(project.getBuildDir(), "sources/" + SourceSet.MAIN_SOURCE_SET_NAME + "/scala");
 
             task = makeTask("sourceMainScala", TaskSourceCopy.class);
             task.setSource(set.getScala());
@@ -474,7 +483,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         if (project.getPlugins().hasPlugin("groovy"))
         {
             GroovySourceSet set = (GroovySourceSet) new DslObject(main).getConvention().getPlugins().get("groovy");
-            File dir = new File(project.getBuildDir(), SourceSet.MAIN_SOURCE_SET_NAME + "/groovy");
+            File dir = new File(project.getBuildDir(), "sources/" + SourceSet.MAIN_SOURCE_SET_NAME + "/groovy");
 
             task = makeTask("sourceMainGroovy", TaskSourceCopy.class);
             task.setSource(set.getGroovy());
@@ -581,6 +590,44 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                         name + "-" + version + (Strings.isNullOrEmpty(classifier) ? "" : "-" + classifier) + ".jar");
             }
         });
+    }
+
+    protected void makeObfSource()
+    {
+        JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+        SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+
+        DelayedFile rangeMap = delayedFile("{BUILD_DIR}/tmp/rangemap.txt");
+        File copiedDir = new File(project.getBuildDir(), "sources/main/java");
+        DelayedFile retromapped = delayedFile("{BUILD_DIR}/tmp/retromapped.jar");
+
+        ExtractS2SRangeTask extractRangemap = makeTask(TASK_EXTRACT_RANGE, ExtractS2SRangeTask.class);
+        {
+            extractRangemap.addSource(new File(project.getBuildDir(), "sources/main/java"));
+            extractRangemap.setRangeMap(rangeMap);
+            extractRangemap.addLibs(main.getCompileClasspath());
+            extractRangemap.dependsOn("sourceMainJava");
+        }
+
+        ApplyS2STask retromap = makeTask(TASK_RETROMAP_SRC, ApplyS2STask.class);
+        {
+            retromap.addSource(copiedDir);
+            retromap.setOut(retromapped);
+            retromap.addSrg(delayedFile(SRG_MCP_TO_SRG));
+            retromap.addExc(delayedFile(EXC_MCP));
+            retromap.addExc(delayedFile(EXC_SRG));
+            retromap.setRangeMap(rangeMap);
+            retromap.dependsOn(TASK_GENERATE_SRGS, extractRangemap);
+        }
+
+        Jar sourceJar = makeTask(TASK_SRC_JAR, Jar.class);
+        {
+            sourceJar.from(retromapped.toZipTree());
+            sourceJar.from(main.getOutput());
+            sourceJar.exclude("*.class", "**/*.class");
+            sourceJar.setClassifier("sources");
+            sourceJar.dependsOn(main.getCompileJavaTaskName(), main.getProcessResourcesTaskName(), retromap);
+        }
     }
 
     protected final TaskDepDummy getDummyDep(String config, DelayedFile dummy, String taskName)

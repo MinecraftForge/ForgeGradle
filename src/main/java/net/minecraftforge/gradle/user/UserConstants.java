@@ -1,7 +1,7 @@
 package net.minecraftforge.gradle.user;
 
-import static net.minecraftforge.gradle.common.Constants.REPLACE_PROJECT_CACHE_DIR;
 import static net.minecraftforge.gradle.common.Constants.REPLACE_CACHE_DIR;
+import static net.minecraftforge.gradle.common.Constants.REPLACE_PROJECT_CACHE_DIR;
 
 public class UserConstants
 {
@@ -31,7 +31,10 @@ public class UserConstants
     public static final String TASK_MAKE_START        = "makeStart";
 
     public static final String TASK_REOBF             = "reobfJar";
-    
+    public static final String TASK_EXTRACT_RANGE     = "extractRangemapSrc";
+    public static final String TASK_RETROMAP_SRC      = "retromapSources";
+    public static final String TASK_SRC_JAR           = "sourceJar";
+
     public static final String TASK_DD_COMPILE        = "deobfCompileDummyTask";
     public static final String TASK_DD_PROVIDED       = "deobfProvidedDummyTask";
 

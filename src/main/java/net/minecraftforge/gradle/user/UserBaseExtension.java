@@ -11,10 +11,11 @@ import net.minecraftforge.gradle.util.delayed.TokenReplacer;
 
 public class UserBaseExtension extends BaseExtension
 {
-    private HashMap<String, Object> replacements = new HashMap<String, Object>();
-    private ArrayList<String>       includes     = new ArrayList<String>();
-    private ArrayList<Object>       ats          = new ArrayList<Object>();
-    private String                  runDir       = "run";
+    private HashMap<String, Object> replacements     = new HashMap<String, Object>();
+    private ArrayList<String>       includes         = new ArrayList<String>();
+    private ArrayList<Object>       ats              = new ArrayList<Object>();
+    private String                  runDir           = "run";
+    private boolean                 makeObfSourceJar = true;
 
     public UserBaseExtension(UserBasePlugin<? extends UserBaseExtension> plugin)
     {
@@ -81,5 +82,15 @@ public class UserBaseExtension extends BaseExtension
     public String getRunDir()
     {
         return this.runDir;
+    }
+
+    public boolean getMakeObfSourceJar()
+    {
+        return makeObfSourceJar;
+    }
+
+    public void setMakeObfSourceJar(boolean makeObfSourceJar)
+    {
+        this.makeObfSourceJar = makeObfSourceJar;
     }
 }
