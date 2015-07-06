@@ -120,6 +120,9 @@ public class CreateStartTask extends CachedTask
     @SuppressWarnings("rawtypes")
     private String resolveString(Object obj) throws IOException
     {
+        if (obj == null)
+            return null;
+        
         if (obj instanceof Closure)
             return resolveString(((Closure) obj).call());
         else if (obj instanceof File)

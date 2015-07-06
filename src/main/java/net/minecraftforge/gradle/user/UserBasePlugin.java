@@ -178,6 +178,12 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             }
         }
 
+        // add GradleStart dep
+        {
+            ConfigurableFileCollection col = project.files(getStartDir());
+            col.builtBy(TASK_MAKE_START);
+            project.getDependencies().add(CONFIG_START, col);
+        }
         // TODO: do some GradleStart stuff based on the MC version?
     }
 
@@ -274,9 +280,9 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             
             if (this.hasServerRun())
             {
-                makeStart.addResource(GRADLE_START_RESOURCES[0]); // gradle start        
+                makeStart.addResource(GRADLE_START_RESOURCES[1]); // gradle start        
                 
-                makeStart.addReplacement("@@SERVERTWEAKER@@", delayedString(REPLACE_SERVER_TWEAKER));
+                makeStart.addReplacement("@@TWEAKERSERVER@@", delayedString(REPLACE_SERVER_TWEAKER));
                 makeStart.addReplacement("@@BOUNCERSERVER@@", delayedString(REPLACE_SERVER_MAIN));
             }
 
@@ -749,7 +755,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             GenEclipseRunTask eclipseClient = makeTask("makeEclipseCleanRunClient", GenEclipseRunTask.class);
             eclipseClient.setMainClass(GRADLE_START_CLIENT);
             eclipseClient.setProjectName(project.getName());
-            eclipseClient.setOutputFile(project.file("Client.launch"));
+            eclipseClient.setOutputFile(project.file(project.getName() + "_Client.launch"));
             eclipseClient.setRunDir(delayedFile(REPLACE_RUN_DIR));
             eclipseClient.dependsOn(TASK_MAKE_START);
 
@@ -762,15 +768,33 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             GenEclipseRunTask eclipseServer = makeTask("makeEclipseCleanRunServer", GenEclipseRunTask.class);
             eclipseServer.setMainClass(GRADLE_START_SERVER);
             eclipseServer.setProjectName(project.getName());
-            eclipseServer.setOutputFile(project.file("Server.launch"));
+            eclipseServer.setOutputFile(project.file(project.getName() + "_Server.launch"));
             eclipseServer.setRunDir(delayedFile(REPLACE_RUN_DIR));
             eclipseServer.dependsOn(TASK_MAKE_START);
 
             project.getTasks().getByName("eclipse").dependsOn(eclipseServer);
             project.getTasks().getByName("cleanEclipse").dependsOn("cleanMakeEclipseCleanRunServer");
         }
+        
+        project.afterEvaluate(new Action<Project>(){
 
-        // otehr dependencies
+            @Override
+            public void execute(Project project)
+            {
+                T ext = getExtension();
+                if (hasClientRun())
+                {
+                    ((GenEclipseRunTask)project.getTasks().getByName("makeEclipseCleanRunClient")).setArguments(Joiner.on(' ').join(getClientRunArgs(ext)));
+                }
+                if (hasServerRun())
+                {
+                    ((GenEclipseRunTask)project.getTasks().getByName("makeEclipseCleanRunServer")).setArguments(Joiner.on(' ').join(getServerRunArgs(ext)));
+                }
+            }
+            
+        });
+
+        // other dependencies
         project.getTasks().getByName("eclipseClasspath").dependsOn(TASK_DD_COMPILE, TASK_DD_PROVIDED);
     }
 
