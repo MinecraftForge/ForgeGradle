@@ -28,8 +28,6 @@ import com.google.common.collect.ImmutableMap;
 
 public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
 {
-    abstract boolean isClient();
-
     private static final String CLEAN_ROOT = REPLACE_CACHE_DIR + "/net/minecraft/";
     private static final String MCP_INSERT = Constants.REPLACE_MCP_CHANNEL + "/" + Constants.REPLACE_MCP_VERSION;
 
@@ -39,25 +37,19 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
         // patterns
         String cleanSuffix = "%s-" + REPLACE_MC_VERSION;
         String dirtySuffix = "%s-" + REPLACE_MC_VERSION + "-PROJECT(" + project.getName() + ")";
+        String jarName = getJarName();
 
-        if (isClient())
-        {
-            this.tasksClient(CLEAN_ROOT + "minecraft/" + REPLACE_MC_VERSION + "/" + MCP_INSERT + "/minecraft" + cleanSuffix, DIR_LOCAL_CACHE + "minecraft" + dirtySuffix);
-        }
-        else
-        {
-            this.tasksClient(CLEAN_ROOT + "mincraft_server/" + REPLACE_MC_VERSION + "/" + MCP_INSERT + "/minecraft_server" + cleanSuffix, DIR_LOCAL_CACHE + "minecraft_server" + dirtySuffix);
-        }
+        createDecompTasks(CLEAN_ROOT + jarName + "/" + REPLACE_MC_VERSION + "/" + MCP_INSERT + "/" + jarName + cleanSuffix, DIR_LOCAL_CACHE + jarName + dirtySuffix);
 
         // remove the unused merge jars task
         project.getTasks().remove(project.getTasks().getByName(TASK_MERGE_JARS));
 
-        // add asset-index task to CI and dev workspace tasks
+        // add version json task to CI and dev workspace tasks
         project.getTasks().getByName(TASK_SETUP_CI).dependsOn(Constants.TASK_DL_VERSION_JSON);
         project.getTasks().getByName(TASK_SETUP_DEV).dependsOn(Constants.TASK_DL_VERSION_JSON);
-        
-        // add launchwrapper dep
-        project.getDependencies().add("provided", "net.minecraft:launchwrapper:1.11");
+
+        // add launchwrapper dep.. cuz everyone uses it apperantly..
+        project.getDependencies().add(UserConstants.CONFIG_PROVIDED, "net.minecraft:launchwrapper:1.11");
     }
 
     @Override
@@ -68,14 +60,14 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
             @Override
             public void execute(Project proj)
             {
-                String cleanRoot = CLEAN_ROOT + (isClient() ? "/minecraft" : "/minecraft_server") + "/" + REPLACE_MC_VERSION + "/" + MCP_INSERT;
+                String cleanRoot = CLEAN_ROOT + getJarName() + "/" + REPLACE_MC_VERSION + "/" + MCP_INSERT;
                 addFlatRepo(proj, "TweakerMcRepo", delayedFile(useLocalCache ? DIR_LOCAL_CACHE : cleanRoot).call());
             }
         });
 
         // add the Mc dep
         String group = "net.minecraft";
-        String artifact = (isClient() ? "minecraft" : "minecraft_server") + (isDecomp ? "Src" : "Bin");
+        String artifact = getJarName() + (isDecomp ? "Src" : "Bin");
         String version = delayedString(REPLACE_MC_VERSION).call() + (useLocalCache ? "-PROJECT(" + project.getName() + ")" : "");
 
         project.getDependencies().add(CONFIG_MC, ImmutableMap.of("group", group, "name", artifact, "version", version));
@@ -118,10 +110,23 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
         }
     }
 
+    /**
+     * Correctly invoke the makeDecomptasks() method from the UserBasePlugin
+     * @param globalPattern pattern for convenience
+     * @param localPattern pattern for convenience
+     */
+    protected abstract void createDecompTasks(String globalPattern, String localPattern);
+
+    /**
+     * The name of the cached artifacts. The name o fthe API.. primary identifier.. thing.
+     * @return "Minecraft" or "Minecraft_server" or something.
+     */
+    protected abstract String getJarName();
+
     @Override
     protected Object getStartDir()
     {
-        return delayedFile(REPLACE_CACHE_DIR + "/net/minecraft/minecraft/" + REPLACE_MC_VERSION + "/start");
+        return delayedFile(REPLACE_CACHE_DIR + "/net/minecraft/" + getJarName() + "/" + REPLACE_MC_VERSION + "/start");
     }
 
     @Override
@@ -158,17 +163,5 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
     protected List<String> getServerRunArgs(TweakerExtension ext)
     {
         return ImmutableList.of("--tweakClass", ext.getTweakClass(), "--noCoreSearch");
-    }
-
-    @Override
-    protected final boolean hasServerRun()
-    {
-        return !isClient();
-    }
-
-    @Override
-    protected final boolean hasClientRun()
-    {
-        return isClient();
     }
 }

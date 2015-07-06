@@ -283,22 +283,32 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             dlServer.setOutput(delayedFile(JAR_SERVER_FRESH));
             dlServer.setUrl(delayedString(URL_MC_SERVER));
         }
+        
+        SplitJarTask splitServer = makeTask(TASK_SPLIT_SERVER, SplitJarTask.class);
+        {
+            splitServer.setInJar(delayedFile(JAR_SERVER_FRESH));
+            splitServer.setOutFirst(delayedFile(JAR_SERVER_PURE));
+            splitServer.setOutSecond(delayedFile(JAR_SERVER_DEPS));
+            
+            splitServer.exclude("org/bouncycastle", "org/bouncycastle/*", "org/bouncycastle/**");
+            splitServer.exclude("org/apache", "org/apache/*", "org/apache/**");
+            splitServer.exclude("com/google", "com/google/*", "com/google/**");
+            splitServer.exclude("com/mojang/authlib", "com/mojang/authlib/*", "com/mojang/authlib/**");
+            splitServer.exclude("com/mojang/util", "com/mojang/util/*", "com/mojang/util/**");
+            splitServer.exclude("gnu/trove", "gnu/trove/*", "gnu/trove/**");
+            splitServer.exclude("io/netty", "io/netty/*", "io/netty/**");
+            splitServer.exclude("javax/annotation", "javax/annotation/*", "javax/annotation/**");
+            splitServer.exclude("argo", "argo/*", "argo/**");
+            
+            splitServer.dependsOn(dlServer);
+        }
 
         MergeJars merge = makeTask(TASK_MERGE_JARS, MergeJars.class);
         {
             merge.setClient(delayedFile(JAR_CLIENT_FRESH));
-            merge.setServer(delayedFile(JAR_SERVER_FRESH));
+            merge.setServer(delayedFile(JAR_SERVER_PURE));
             merge.setOutJar(delayedFile(JAR_MERGED));
-            merge.dontProcess("org/bouncycastle");
-            merge.dontProcess("org/apache");
-            merge.dontProcess("com/google");
-            merge.dontProcess("com/mojang/authlib");
-            merge.dontProcess("com/mojang/util");
-            merge.dontProcess("gnu/trove");
-            merge.dontProcess("io/netty");
-            merge.dontProcess("javax/annotation");
-            merge.dontProcess("argo");
-            merge.dependsOn(dlClient, dlServer);
+            merge.dependsOn(dlClient, splitServer);
 
             merge.setGroup(null);
             merge.setDescription(null);

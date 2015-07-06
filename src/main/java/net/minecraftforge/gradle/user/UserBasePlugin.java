@@ -178,27 +178,12 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             }
         }
 
-        // TODO: do some GradleSTart stuff based on the MC version?
+        // TODO: do some GradleStart stuff based on the MC version?
     }
 
     protected abstract void applyUserPlugin();
 
-    protected void tasksClient(String globalPattern, String localPattern)
-    {
-        makeDecompTasks(globalPattern, localPattern, delayedFile(JAR_CLIENT_FRESH), TASK_DL_CLIENT, delayedFile(MCP_PATCHES_CLIENT));
-    }
-
-    protected void tasksServer(String globalPattern, String localPattern)
-    {
-        makeDecompTasks(globalPattern, localPattern, delayedFile(JAR_SERVER_FRESH), TASK_DL_SERVER, delayedFile(MCP_PATCHES_SERVER));
-    }
-
-    protected void tasksMerged(String globalPattern, String localPattern)
-    {
-        makeDecompTasks(globalPattern, localPattern, delayedFile(JAR_MERGED), TASK_MERGE_JARS, delayedFile(MCP_PATCHES_MERGED));
-    }
-
-    private void makeDecompTasks(final String globalPattern, final String localPattern, Object inputJar, String inputTask, Object mcpPatchSet)
+    protected void makeDecompTasks(final String globalPattern, final String localPattern, Object inputJar, String inputTask, Object mcpPatchSet)
     {
         madeDecompTasks = true; // to gaurd against stupid programmers
 
@@ -271,15 +256,31 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         // create GradleStart
         final CreateStartTask makeStart = makeTask(TASK_MAKE_START, CreateStartTask.class);
         {
-            for (String resource : GRADLE_START_RESOURCES)
+            // ADD YOUR OWN D
+            makeStart.addResource(GRADLE_START_RESOURCES[2]); // gradle start common.
+            
+            if (this.hasClientRun())
             {
-                makeStart.addResource(resource);
+                makeStart.addResource(GRADLE_START_RESOURCES[0]); // gradle start
+                
+                makeStart.addReplacement("@@ASSETINDEX@@", delayedString(REPLACE_ASSET_INDEX));
+                makeStart.addReplacement("@@ASSETSDIR@@", delayedFile(REPLACE_CACHE_DIR + "/assets"));
+                makeStart.addReplacement("@@NATIVESDIR@@", delayedFile(DIR_NATIVES));
+                makeStart.addReplacement("@@CLIENTTWEAKER@@", delayedString(REPLACE_CLIENT_TWEAKER));
+                makeStart.addReplacement("@@BOUNCERCLIENT@@", delayedString(REPLACE_CLIENT_MAIN));
+
+                makeStart.dependsOn(TASK_DL_ASSET_INDEX, TASK_DL_ASSETS, TASK_EXTRACT_NATIVES);
+            }
+            
+            if (this.hasServerRun())
+            {
+                makeStart.addResource(GRADLE_START_RESOURCES[0]); // gradle start        
+                
+                makeStart.addReplacement("@@SERVERTWEAKER@@", delayedString(REPLACE_SERVER_TWEAKER));
+                makeStart.addReplacement("@@BOUNCERSERVER@@", delayedString(REPLACE_SERVER_MAIN));
             }
 
             makeStart.addReplacement("@@MCVERSION@@", delayedString(REPLACE_MC_VERSION));
-            makeStart.addReplacement("@@ASSETINDEX@@", delayedString(REPLACE_ASSET_INDEX));
-            makeStart.addReplacement("@@ASSETSDIR@@", delayedFile(REPLACE_CACHE_DIR + "/assets"));
-            makeStart.addReplacement("@@NATIVESDIR@@", delayedFile(DIR_NATIVES));
             makeStart.addReplacement("@@SRGDIR@@", delayedFile(DIR_MCP_MAPPINGS + "/srgs/"));
             makeStart.addReplacement("@@SRG_NOTCH_SRG@@", delayedFile(SRG_NOTCH_TO_SRG));
             makeStart.addReplacement("@@SRG_NOTCH_MCP@@", delayedFile(SRG_NOTCH_TO_MCP));
@@ -287,19 +288,9 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             makeStart.addReplacement("@@SRG_MCP_SRG@@", delayedFile(SRG_MCP_TO_SRG));
             makeStart.addReplacement("@@SRG_MCP_NOTCH@@", delayedFile(SRG_MCP_TO_NOTCH));
             makeStart.addReplacement("@@CSVDIR@@", delayedFile(DIR_MCP_DATA));
-            makeStart.addReplacement("@@CLIENTTWEAKER@@", delayedString(REPLACE_CLIENT_TWEAKER));
-            makeStart.addReplacement("@@SERVERTWEAKER@@", delayedString(REPLACE_SERVER_TWEAKER));
-            makeStart.addReplacement("@@BOUNCERCLIENT@@", delayedString(REPLACE_CLIENT_MAIN));
-            makeStart.addReplacement("@@BOUNCERSERVER@@", delayedString(REPLACE_SERVER_MAIN));
             makeStart.setStartOut(getStartDir());
             makeStart.addClasspathConfig(CONFIG_MC_DEPS);
-
-            // see delayed task config for some more config regarding MC versions... for 1.7.10 compat
-            // TODO: UNTESTED
-
             makeStart.mustRunAfter(deobfBin, recompile);
-
-            makeStart.dependsOn(TASK_DL_ASSET_INDEX, TASK_DL_ASSETS, TASK_EXTRACT_NATIVES);
         }
 
         // create reobf task
@@ -763,6 +754,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             eclipseClient.dependsOn(TASK_MAKE_START);
 
             project.getTasks().getByName("eclipse").dependsOn(eclipseClient);
+            project.getTasks().getByName("cleanEclipse").dependsOn("cleanMakeEclipseCleanRunClient");
         }
 
         if (this.hasServerRun())
@@ -775,6 +767,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             eclipseServer.dependsOn(TASK_MAKE_START);
 
             project.getTasks().getByName("eclipse").dependsOn(eclipseServer);
+            project.getTasks().getByName("cleanEclipse").dependsOn("cleanMakeEclipseCleanRunServer");
         }
 
         // otehr dependencies

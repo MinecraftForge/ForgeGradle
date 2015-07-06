@@ -21,11 +21,9 @@ import java.util.zip.ZipOutputStream;
 
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
 
-import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -46,28 +44,19 @@ import com.google.common.io.ByteStreams;
 public class MergeJars extends CachedTask
 {
     @InputFile
-    private Object client;
+    private Object                client;
 
     @InputFile
-    private Object server;
+    private Object                server;
 
     @OutputFile
     @Cached
-    private Object outJar;
+    private Object                outJar;
 
-    private final Class<Side> sideClass = net.minecraftforge.fml.relauncher.Side.class;
+    private final Class<Side>     sideClass     = net.minecraftforge.fml.relauncher.Side.class;
     private final Class<SideOnly> sideOnlyClass = net.minecraftforge.fml.relauncher.SideOnly.class;
 
-    @Input
-    private final HashSet<String> copyToServer = Sets.newHashSet();
-    @Input
-    private final HashSet<String> copyToClient = Sets.newHashSet();
-    @Input
-    private final HashSet<String> dontAnnotate = Sets.newHashSet();
-    @Input
-    private final HashSet<String> dontProcess = Sets.newHashSet();
-
-    private static final boolean DEBUG = false;
+    private static final boolean  DEBUG         = false;
 
     @TaskAction
     public void doTask() throws IOException
@@ -119,20 +108,8 @@ public class MergeJars extends CachedTask
 
                 if (sEntry == null)
                 {
-                    if (!copyToServer.contains(name))
-                    {
-                        copyClass(cInJar, cEntry, outJar, true);
-                        cAdded.add(name);
-                    }
-                    else
-                    {
-                        if (DEBUG)
-                        {
-                            System.out.println("Copy class c->s : " + name);
-                        }
-                        copyClass(cInJar, cEntry, outJar, true);
-                        cAdded.add(name);
-                    }
+                    copyClass(cInJar, cEntry, outJar, true);
+                    cAdded.add(name);
                     continue;
                 }
 
@@ -210,14 +187,11 @@ public class MergeJars extends CachedTask
 
         reader.accept(classNode, 0);
 
-        if (!dontAnnotate.contains(classNode.name))
+        if (classNode.visibleAnnotations == null)
         {
-            if (classNode.visibleAnnotations == null)
-            {
-                classNode.visibleAnnotations = new ArrayList<AnnotationNode>();
-            }
-            classNode.visibleAnnotations.add(getSideAnn(isClientOnly));
+            classNode.visibleAnnotations = new ArrayList<AnnotationNode>();
         }
+        classNode.visibleAnnotations.add(getSideAnn(isClientOnly));
 
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         classNode.accept(writer);
@@ -255,7 +229,7 @@ public class MergeJars extends CachedTask
     private HashMap<String, ZipEntry> getClassEntries(ZipFile inFile, ZipOutputStream outFile, HashSet<String> resources) throws IOException
     {
         HashMap<String, ZipEntry> ret = new HashMap<String, ZipEntry>();
-        master:
+
         for (ZipEntry entry : Collections.list(inFile.entries()))
         {
             String entryName = entry.getName();
@@ -273,14 +247,6 @@ public class MergeJars extends CachedTask
                  * }
                  */
                 continue;
-            }
-
-            for (String filter : dontProcess)
-            {
-                if (entryName.startsWith(filter))
-                {
-                    continue master;
-                }
             }
 
             if (!entryName.endsWith(".class") || entryName.startsWith("."))
@@ -542,8 +508,8 @@ public class MergeJars extends CachedTask
     private class MethodWrapper
     {
         private MethodNode node;
-        public boolean client;
-        public boolean server;
+        public boolean     client;
+        public boolean     server;
 
         public MethodWrapper(MethodNode node)
         {
@@ -614,25 +580,5 @@ public class MergeJars extends CachedTask
     public void setServer(Closure<File> server)
     {
         this.server = server;
-    }
-    
-    public void copyToServer(Object obj)
-    {
-        copyToServer.add(Constants.resolveString(obj));
-    }
-    
-    public void copyToClient(Object obj)
-    {
-        copyToClient.add(Constants.resolveString(obj));
-    }
-    
-    public void dontAnnotate(Object obj)
-    {
-        dontAnnotate.add(Constants.resolveString(obj));
-    }
-    
-    public void dontProcess(Object obj)
-    {
-        dontProcess.add(Constants.resolveString(obj));
     }
 }

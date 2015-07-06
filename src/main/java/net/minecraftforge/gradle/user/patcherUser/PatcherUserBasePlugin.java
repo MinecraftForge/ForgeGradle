@@ -1,9 +1,6 @@
 package net.minecraftforge.gradle.user.patcherUser;
 
-import static net.minecraftforge.gradle.common.Constants.DIR_JSONS;
-import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
-import static net.minecraftforge.gradle.common.Constants.TASK_DL_VERSION_JSON;
-import static net.minecraftforge.gradle.common.Constants.TASK_GENERATE_SRGS;
+import static net.minecraftforge.gradle.common.Constants.*;
 import static net.minecraftforge.gradle.user.UserConstants.*;
 import static net.minecraftforge.gradle.user.patcherUser.PatcherUserConstants.*;
 import groovy.lang.Closure;
@@ -36,7 +33,8 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
         // add the MC setup tasks..
         String global = DIR_API_JAR_BASE + "/" + REPLACE_API_NAME + "%s-" + REPLACE_API_VERSION;
         String local = DIR_LOCAL_CACHE + "/" + REPLACE_API_NAME + "%s-" + REPLACE_API_VERSION + "-PROJECT(" + project.getName() + ")";
-        this.tasksMerged(global, local);
+
+        this.makeDecompTasks(global, local, delayedFile(JAR_MERGED), TASK_MERGE_JARS, delayedFile(MCP_PATCHES_MERGED));
 
         // setup userdev
         {
@@ -116,12 +114,12 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
             TaskRecompileMc recomp = (TaskRecompileMc) project.getTasks().getByName(TASK_RECOMPILE);
             recomp.setInResources(delayedFile(ZIP_UD_RES));
         }
-        
+
         // setup reobf
         {
             TaskSingleReobf reobf = (TaskSingleReobf) project.getTasks().getByName(TASK_REOBF);
             reobf.addSecondarySrgFile(delayedFile(SRG_USERDEV));
-            
+
             // still need to set the primary SRG
         }
 
