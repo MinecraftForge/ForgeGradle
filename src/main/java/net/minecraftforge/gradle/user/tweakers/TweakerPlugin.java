@@ -23,7 +23,6 @@ import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.bundling.Jar;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
@@ -150,7 +149,11 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
     @Override
     protected List<String> getClientRunArgs(TweakerExtension ext)
     {
-        return ImmutableList.of("--tweakClass", ext.getTweakClass(), "--noCoreSearch"); // disable FMl coremod searching
+        List<String> out = ext.getResolvedClientRunArgs();
+        out.add("--tweakClass");
+        out.add(ext.getTweakClass());
+        out.add("--noCoreSearch"); // disabel FML-specific coremod loading
+        return out;
     }
 
     @Override
@@ -162,6 +165,22 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
     @Override
     protected List<String> getServerRunArgs(TweakerExtension ext)
     {
-        return ImmutableList.of("--tweakClass", ext.getTweakClass(), "--noCoreSearch");
+        List<String> out = ext.getResolvedServerRunArgs();
+        out.add("--tweakClass");
+        out.add(ext.getTweakClass());
+        out.add("--noCoreSearch"); // disabel FML-specific coremod loading
+        return out;
+    }
+
+    @Override
+    protected List<String> getClientJvmArgs(TweakerExtension ext)
+    {
+        return ext.getResolvedClientJvmArgs();
+    }
+
+    @Override
+    protected List<String> getServerJvmArgs(TweakerExtension ext)
+    {
+        return ext.getResolvedServerJvmArgs();
     }
 }

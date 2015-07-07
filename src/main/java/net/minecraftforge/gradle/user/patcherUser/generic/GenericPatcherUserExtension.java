@@ -1,10 +1,6 @@
 package net.minecraftforge.gradle.user.patcherUser.generic;
 
-import java.util.List;
-
 import net.minecraftforge.gradle.user.UserBaseExtension;
-
-import com.google.common.collect.Lists;
 
 public class GenericPatcherUserExtension extends UserBaseExtension
 {
@@ -14,7 +10,6 @@ public class GenericPatcherUserExtension extends UserBaseExtension
     private String clientTweaker, serverTweaker;
     private String clientRunClass    = "net.minecraft.launchwrapper.Launch";
     private String serverRunClass    = "net.minecraft.launchwrapper.Launch";
-    private List<String> clientRunArgs = Lists.newArrayList(), serverRunArgs = Lists.newArrayList();
 
     public GenericPatcherUserExtension(GenericPatcherUserPlugin plugin)
     {
@@ -109,25 +104,5 @@ public class GenericPatcherUserExtension extends UserBaseExtension
     public void setServerRunClass(String serverRunClass)
     {
         this.serverRunClass = serverRunClass;
-    }
-
-    public List<String> getClientRunArgs()
-    {
-        return clientRunArgs;
-    }
-
-    public void setClientRunArgs(List<String> clientRunArgs)
-    {
-        this.clientRunArgs = clientRunArgs;
-    }
-
-    public List<String> getServerRunArgs()
-    {
-        return serverRunArgs;
-    }
-
-    public void setServerRunArgs(List<String> serverRunArgs)
-    {
-        this.serverRunArgs = serverRunArgs;
     }
 }

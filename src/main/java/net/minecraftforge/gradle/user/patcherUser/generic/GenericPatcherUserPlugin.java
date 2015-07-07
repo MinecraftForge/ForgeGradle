@@ -57,7 +57,7 @@ public class GenericPatcherUserPlugin extends PatcherUserBasePlugin<GenericPatch
     @Override
     protected List<String> getClientRunArgs(GenericPatcherUserExtension ext)
     {
-        return ext.getClientRunArgs();
+        return ext.getResolvedClientRunArgs();
     }
 
     @Override
@@ -69,6 +69,18 @@ public class GenericPatcherUserPlugin extends PatcherUserBasePlugin<GenericPatch
     @Override
     protected List<String> getServerRunArgs(GenericPatcherUserExtension ext)
     {
-        return ext.getServerRunArgs();
+        return ext.getResolvedServerRunArgs();
+    }
+
+    @Override
+    protected List<String> getClientJvmArgs(GenericPatcherUserExtension ext)
+    {
+        return ext.getResolvedClientJvmArgs();
+    }
+
+    @Override
+    protected List<String> getServerJvmArgs(GenericPatcherUserExtension ext)
+    {
+        return ext.getResolvedServerJvmArgs();
     }
 }

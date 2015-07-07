@@ -19,7 +19,6 @@ import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.bundling.Jar;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 
 public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
 {
@@ -123,7 +122,7 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
     @Override
     protected List<String> getClientRunArgs(ForgeExtension ext)
     {
-        return Lists.newArrayListWithCapacity(0);
+        return ext.getResolvedClientRunArgs();
     }
 
     @Override
@@ -135,6 +134,18 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
     @Override
     protected List<String> getServerRunArgs(ForgeExtension ext)
     {
-        return Lists.newArrayListWithCapacity(0);
+        return ext.getResolvedServerRunArgs();
+    }
+    
+    @Override
+    protected List<String> getClientJvmArgs(ForgeExtension ext)
+    {
+        return ext.getResolvedClientJvmArgs();
+    }
+
+    @Override
+    protected List<String> getServerJvmArgs(ForgeExtension ext)
+    {
+        return ext.getResolvedServerJvmArgs();
     }
 }

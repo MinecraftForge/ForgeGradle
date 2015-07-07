@@ -723,6 +723,13 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
      * @return empty list for no arguments. NEVER NULL.
      */
     protected abstract List<String> getClientRunArgs(T ext);
+    
+    /**
+     * For run configurations. Is called late afterEvaluate or at runtime.
+     * @param ext the Extension object
+     * @return empty list for no arguments. NEVER NULL.
+     */
+    protected abstract List<String> getClientJvmArgs(T ext);
 
     /**
      * To be inserted into GradleStartServer. Is called late afterEvaluate or at runtime.
@@ -737,6 +744,13 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
      * @return empty list for no arguments. NEVER NULL.
      */
     protected abstract List<String> getServerRunArgs(T ext);
+
+    /**
+     * For run configurations. Is called late afterEvaluate or at runtime.
+     * @param ext the Extension object
+     * @return empty list for no arguments. NEVER NULL.
+     */
+    protected abstract List<String> getServerJvmArgs(T ext);
 
     /**
      * Configures the eclipse classpath
@@ -775,8 +789,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             project.getTasks().getByName("eclipse").dependsOn(eclipseServer);
             project.getTasks().getByName("cleanEclipse").dependsOn("cleanMakeEclipseCleanRunServer");
         }
-        
-        project.afterEvaluate(new Action<Project>(){
+
+        project.afterEvaluate(new Action<Project>() {
 
             @Override
             public void execute(Project project)
@@ -784,14 +798,18 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                 T ext = getExtension();
                 if (hasClientRun())
                 {
-                    ((GenEclipseRunTask)project.getTasks().getByName("makeEclipseCleanRunClient")).setArguments(Joiner.on(' ').join(getClientRunArgs(ext)));
+                    GenEclipseRunTask task = ((GenEclipseRunTask) project.getTasks().getByName("makeEclipseCleanRunClient"));
+                    task.setArguments(Joiner.on(' ').join(getClientRunArgs(ext)));
+                    task.setJvmArguments(Joiner.on(' ').join(getClientJvmArgs(ext)));
                 }
                 if (hasServerRun())
                 {
-                    ((GenEclipseRunTask)project.getTasks().getByName("makeEclipseCleanRunServer")).setArguments(Joiner.on(' ').join(getServerRunArgs(ext)));
+                    GenEclipseRunTask task = ((GenEclipseRunTask) project.getTasks().getByName("makeEclipseCleanRunServer"));
+                    task.setArguments(Joiner.on(' ').join(getServerRunArgs(ext)));
+                    task.setJvmArguments(Joiner.on(' ').join(getServerJvmArgs(ext)));
                 }
             }
-            
+
         });
 
         // other dependencies
@@ -933,14 +951,16 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                 {
                         "Minecraft Client",
                         GRADLE_START_CLIENT,
-                        Joiner.on(' ').join(getClientRunArgs(ext))
+                        Joiner.on(' ').join(getClientRunArgs(ext)),
+                        Joiner.on(' ').join(getClientJvmArgs(ext))
                 } : null,
 
                 this.hasServerRun() ? new String[]
                 {
                         "Minecraft Server",
                         GRADLE_START_SERVER,
-                        Joiner.on(' ').join(getServerRunArgs(ext))
+                        Joiner.on(' ').join(getServerRunArgs(ext)),
+                        Joiner.on(' ').join(getServerJvmArgs(ext))
                 } : null
         };
 
@@ -961,7 +981,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                     "sample_coverage", "true",
                     "runner", "idea"));
             addXml(child, "option", ImmutableMap.of("name", "MAIN_CLASS_NAME", "value", data[1]));
-            addXml(child, "option", ImmutableMap.of("name", "VM_PARAMETERS", "value", ""));
+            addXml(child, "option", ImmutableMap.of("name", "VM_PARAMETERS", "value", data[3]));
             addXml(child, "option", ImmutableMap.of("name", "PROGRAM_PARAMETERS", "value", data[2]));
             addXml(child, "option", ImmutableMap.of("name", "WORKING_DIRECTORY", "value", "file://" + delayedFile("{RUN_DIR}").call().getCanonicalPath().replace(module, "$PROJECT_DIR$")));
             addXml(child, "option", ImmutableMap.of("name", "ALTERNATIVE_JRE_PATH_ENABLED", "value", "false"));

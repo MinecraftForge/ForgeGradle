@@ -35,7 +35,8 @@ public class GenEclipseRunTask extends DefaultTask
     @Input           private Object projectName;
     @Input           private Object mainClass;
     @Input           private Object runDir;
-    @Input @Optional private Object arguments;
+    @Input @Optional private Object runArgs;
+    @Input @Optional private Object jvmArgs;
     @OutputFile      private Object outputFile;
     //@formatter:on
 
@@ -56,6 +57,11 @@ public class GenEclipseRunTask extends DefaultTask
         if (!Strings.isNullOrEmpty(getArguments()))
         {
             addXml(root, "stringAttribute", ImmutableMap.of("key", "org.eclipse.jdt.launching.PROGRAM_ARGUMENTS", "value", getArguments()));
+        }
+        
+        if (!Strings.isNullOrEmpty(getJvmArguments()))
+        {
+            addXml(root, "stringAttribute", ImmutableMap.of("key", "org.eclipse.jdt.launching.VM_ARGUMENTS", "value", getJvmArguments()));
         }
         
         File outFile = getOutputFile();
@@ -81,12 +87,22 @@ public class GenEclipseRunTask extends DefaultTask
 
     public String getArguments()
     {
-        return Constants.resolveString(arguments);
+        return Constants.resolveString(runArgs);
     }
 
     public void setArguments(Object arguments)
     {
-        this.arguments = arguments;
+        this.runArgs = arguments;
+    }
+    
+    public String getJvmArguments()
+    {
+        return Constants.resolveString(jvmArgs);
+    }
+
+    public void setJvmArguments(Object arguments)
+    {
+        this.jvmArgs = arguments;
     }
 
     public String getRunDir()
