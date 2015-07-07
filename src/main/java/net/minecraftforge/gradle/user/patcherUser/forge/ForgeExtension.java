@@ -20,6 +20,7 @@ public class ForgeExtension extends UserBaseExtension
 {
     protected ForgeVersion forgeJson;
     private String         forgeVersion;
+    private String         coreMod = null;
 
     public ForgeExtension(UserBasePlugin<ForgeExtension> plugin)
     {
@@ -34,7 +35,7 @@ public class ForgeExtension extends UserBaseExtension
     public void setForgeVersion(String forgeVersion)
     {
         checkAndSetVersion(forgeVersion);
-        
+
         TokenReplacer.putReplacement(Constants.REPLACE_MC_VERSION, version);
 
         mcpVersion = MCP_VERSION_MAP.get(version);
@@ -208,6 +209,16 @@ public class ForgeExtension extends UserBaseExtension
         }
         else
             return false;
+    }
+
+    public String getCoreMod()
+    {
+        return coreMod;
+    }
+
+    public void setCoreMod(String coreMod)
+    {
+        this.coreMod = coreMod;
     }
 
 }

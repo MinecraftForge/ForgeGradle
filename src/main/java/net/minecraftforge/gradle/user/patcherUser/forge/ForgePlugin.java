@@ -53,6 +53,11 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
         {
             JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
             Jar jarTask = (Jar) project.getTasks().getByName("jar");
+            
+            if (!Strings.isNullOrEmpty(ext.getCoreMod()))
+            {
+                jarTask.getManifest().getAttributes().put("FMLCorePlugin", ext.getCoreMod());
+            }
 
             TaskSingleReobf reobfTask = ((TaskSingleReobf) project.getTasks().getByName(UserConstants.TASK_REOBF));
             reobfTask.setClasspath(javaConv.getSourceSets().getByName("main").getCompileClasspath());
@@ -140,12 +145,24 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
     @Override
     protected List<String> getClientJvmArgs(ForgeExtension ext)
     {
-        return ext.getResolvedClientJvmArgs();
+        List<String> out = ext.getResolvedClientJvmArgs();
+        if (!Strings.isNullOrEmpty(ext.getCoreMod()))
+        {
+            out.add("-Dfml.coreMods.load");
+            out.add(ext.getCoreMod());
+        }
+        return out;
     }
 
     @Override
     protected List<String> getServerJvmArgs(ForgeExtension ext)
     {
-        return ext.getResolvedServerJvmArgs();
+        List<String> out = ext.getResolvedServerJvmArgs();
+        if (!Strings.isNullOrEmpty(ext.getCoreMod()))
+        {
+            out.add("-Dfml.coreMods.load");
+            out.add(ext.getCoreMod());
+        }
+        return out;
     }
 }
