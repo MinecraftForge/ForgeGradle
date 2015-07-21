@@ -1,7 +1,5 @@
 package net.minecraftforge.gradle.tasks;
 
-import groovy.lang.Closure;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -19,11 +17,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-import net.minecraftforge.gradle.util.caching.Cached;
-import net.minecraftforge.gradle.util.caching.CachedTask;
-
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -36,10 +29,17 @@ import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import com.google.common.base.Function;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.ByteStreams;
+
+import groovy.lang.Closure;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
+import net.minecraftforge.gradle.util.caching.Cached;
+import net.minecraftforge.gradle.util.caching.CachedTask;
 
 public class MergeJars extends CachedTask
 {
@@ -548,7 +548,7 @@ public class MergeJars extends CachedTask
         @Override
         public String toString()
         {
-            return Objects.toStringHelper(this).add("name", node.name).add("desc", node.desc).add("server", server).add("client", client).toString();
+            return MoreObjects.toStringHelper(this).add("name", node.name).add("desc", node.desc).add("server", server).add("client", client).toString();
         }
     }
 
