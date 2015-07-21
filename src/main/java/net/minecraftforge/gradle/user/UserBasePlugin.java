@@ -18,7 +18,14 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import net.minecraftforge.gradle.common.BasePlugin;
-import net.minecraftforge.gradle.tasks.*;
+import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
+import net.minecraftforge.gradle.tasks.ApplyS2STask;
+import net.minecraftforge.gradle.tasks.CreateStartTask;
+import net.minecraftforge.gradle.tasks.DeobfuscateJar;
+import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
+import net.minecraftforge.gradle.tasks.GenEclipseRunTask;
+import net.minecraftforge.gradle.tasks.PostDecompileTask;
+import net.minecraftforge.gradle.tasks.RemapSources;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import net.minecraftforge.gradle.util.delayed.TokenReplacer;
@@ -133,6 +140,12 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         if (!madeDecompTasks)
         {
             throw new RuntimeException("THE DECOMP TASKS HAVENT BEEN MADE!! STUPID FORGEGRADLE DEVELOPER!!!! :(");
+        }
+        
+        // verify runDir is set
+        if (Strings.isNullOrEmpty(getExtension().getRunDir()))
+        {
+            throw new GradleConfigurationException("RunDir is not set!");
         }
 
         super.afterEvaluate();
