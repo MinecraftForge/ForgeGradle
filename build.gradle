@@ -62,9 +62,6 @@ dependencies {
     compile 'de.oceanlabs.mcp:mcinjector:3.2-SNAPSHOT'
     compile 'net.minecraftforge.srg2source:Srg2Source:3.2-SNAPSHOT'
 
-    // stupid maven
-    deployerJars "org.apache.maven.wagon:wagon-ssh:2.2"
-    
     //Stuff used in the GradleStart classes
     compileOnly 'com.mojang:authlib:1.5.16'
     compileOnly "net.minecraft:launchwrapper:1.11"
@@ -123,72 +120,68 @@ test {
         exclude "**/ExtensionMcpMappingTest*"
 }
 
+
 uploadArchives {
-    repositories {
-        if (project.hasProperty("filesmaven")) {
-            logger.info('Publishing to files server')
+    repositories.mavenDeployer {
 
-            mavenDeployer {
-                configuration = configurations.deployerJars
+        dependsOn 'build'
 
-                repository(url: project.filesmaven.url) {
-                    authentication(userName: project.filesmaven.username, privateKey: project.filesmaven.key)
-                }
-
-                pom {
-                    groupId = project.group
-                    version = project.version
-                    artifactId = project.archivesBaseName
-                    project {
-                        name project.archivesBaseName
-                        packaging 'jar'
-                        description 'Gradle plugin for Forge'
-                        url 'https://github.com/MinecraftForge/ForgeGradle'
-
-                        scm {
-                            url 'https://github.com/MinecraftForge/ForgeGradle'
-                            connection 'scm:git:git://github.com/MinecraftForge/ForgeGradle.git'
-                            developerConnection 'scm:git:git@github.com:MinecraftForge/ForgeGradle.git'
-                        }
-
-                        issueManagement {
-                            system 'github'
-                            url 'https://github.com/MinecraftForge/ForgeGradle/issues'
-                        }
-
-                        licenses {
-                            license {
-                                name 'Lesser GNU Public License, Version 2.1'
-                                url 'https://www.gnu.org/licenses/lgpl-2.1.html'
-                                distribution 'repo'
-                            }
-                        }
-
-                        developers {
-                            developer {
-                                id 'AbrarSyed'
-                                name 'Abrar Syed'
-                                roles { role 'developer' }
-                            }
-                        }
-                        developers {
-                            developer {
-                                id 'LexManos'
-                                name 'Lex Manos'
-                                roles { role 'developer' }
-                            }
-                        }
-                    }
-                }
+        if (project.hasProperty('forgeMavenPass'))
+        {
+            repository(url: "http://files.minecraftforge.net/maven/manage/upload") {
+                authentication(userName: "forge", project.getProperty('forgeMavenPass')) // the elvis operator. look it up.
             }
         }
         else
         {
-            add project.repositories.mavenLocal()
-            logger.info('Publishing to repo folder')
-            
-            mavenDeployer {
-                repository(url: 'file://localhost/' + project.file('repo').getAbsolutePath())
+            // local repo folder. Might wanna juset use  gradle install   if you wanans end it to maven-local
+            repository(url: 'file://localhost/' + project.file('repo').getAbsolutePath())
+        }
+
+
+        pom {
+            groupId = project.group
+            version = project.version
+            artifactId = project.archivesBaseName
+            project {
+                name project.archivesBaseName
+                packaging 'jar'
+                description 'Gradle plugin for Forge'
+                url 'https://github.com/MinecraftForge/ForgeGradle'
+
+                scm {
+                    url 'https://github.com/MinecraftForge/ForgeGradle'
+                    connection 'scm:git:git://github.com/MinecraftForge/ForgeGradle.git'
+                    developerConnection 'scm:git:git@github.com:MinecraftForge/ForgeGradle.git'
+                }
+
+                issueManagement {
+                    system 'github'
+                    url 'https://github.com/MinecraftForge/ForgeGradle/issues'
+                }
+
+                licenses {
+                    license {
+                        name 'Lesser GNU Public License, Version 2.1'
+                        url 'https://www.gnu.org/licenses/lgpl-2.1.html'
+                        distribution 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'AbrarSyed'
+                        name 'Abrar Syed'
+                        roles { role 'developer' }
+                    }
+                }
+                developers {
+                    developer {
+                        id 'LexManos'
+                        name 'Lex Manos'
+                        roles { role 'developer' }
+                    }
+                }
             }
         }
     }
