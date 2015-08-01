@@ -65,24 +65,7 @@ public class SplitJarTask extends CachedTask implements PatternFilterable
             @Override
             public void visitDir(FileVisitDetails details)
             {
-                JarEntry entry = new JarEntry(details.getPath());
-                entry.setSize(details.getSize());
-                entry.setTime(details.getLastModified());
-
-                try
-                {
-                    zout1.putNextEntry(entry);
-                    details.copyTo(zout1);
-                    zout1.closeEntry();
-
-                    zout2.putNextEntry(entry);
-                    details.copyTo(zout2);
-                    zout2.closeEntry();
-                }
-                catch (IOException e)
-                {
-                    Throwables.propagate(e);
-                }
+                // ignore directories
             }
 
             @Override
