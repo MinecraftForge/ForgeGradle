@@ -13,6 +13,8 @@ import net.minecraftforge.gradle.user.UserConstants;
 import net.minecraftforge.gradle.user.patcherUser.PatcherUserBasePlugin;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 import net.minecraftforge.gradle.util.json.JsonFactory;
+import net.minecraftforge.gradle.util.json.fgversion.FGVersion;
+import net.minecraftforge.gradle.util.json.fgversion.FGVersionWrapper;
 import net.minecraftforge.gradle.util.json.forgeversion.ForgeVersion;
 
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -74,6 +76,29 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
         String url = Constants.URL_FORGE_MAVEN + "/net/minecraftforge/forge/json";
 
         getExtension().forgeJson = JsonFactory.GSON.fromJson(getWithEtag(url, jsonCache, etagFile), ForgeVersion.class);
+    }
+    
+    @Override
+    protected void onVersionCheck(FGVersion version, FGVersionWrapper wrapper)
+    {
+        String forgeVersion = getExtension().getForgeVersion();
+        
+        // isolate build number
+        int index = forgeVersion.indexOf('-');
+        if (index >= 0)
+            forgeVersion = forgeVersion.substring(0, index);
+        index = forgeVersion.lastIndexOf('.');
+        forgeVersion.substring(index + 1);
+        
+        int buildNum = Integer.parseInt(forgeVersion);
+        
+        int minBuild = version.ext.get("forgeMinBuild").getAsInt();
+        int maxBuild = version.ext.get("forgeMaxBuild").getAsInt();
+        
+        if (buildNum < minBuild)
+            throw new GradleConfigurationException("This version of FOrgeGradle ("+getExtension().forgeGradleVersion+") does not support forge builds less than #"+minBuild);
+        else if (buildNum > maxBuild)
+            throw new GradleConfigurationException("This version of FOrgeGradle ("+getExtension().forgeGradleVersion+") does not support forge builds greater than #"+maxBuild);
     }
 
     @Override

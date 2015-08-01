@@ -23,107 +23,120 @@ else
 }
 
 println "analyzing file: $jsonFile"
+println "----"
+println ""
 
 // start verifying
 import groovy.json.*
 
 def result = new JsonSlurper().parse(jsonFile);
-boolean broke = false;
-boolean warned = false;
+broke = false;
+warned = false;
 
-// check if list is sorted
-def sorted = result.versionNumbers.sort(false) // false so it returns a new list instead of editting
-
-if (sorted != result.versionNumbers)
+// some convenience methods
+public void error(msg)
 {
     broke = true
+    println "ERROR -- "+msg
+}
+public void warn(msg)
+{
+    warned = true
+    println "WARNING -- "+msg
+}
+
+// check if list is sorted
+def sorted = result.sort(false) { it.version } // false so it returns a new list instead of editting
+
+if (sorted != result)
+{
     println "ERROR --"
-    println "Version numbers are not sorted. Should be.. "
+    println "Versions are not sorted. Should be.. "
     println new JsonBuilder(sorted).toPrettyString()
     println " -- "
 }
 
-if (sorted.size() > result.versionObjects.size())
-{
-    broke = true
-    println "ERROR -- More versions defined in objects than there are in the list"
-}
-else if (sorted.size() < result.versionObjects.size())
-{
-    broke = true
-    println "ERROR -- Fewer versions defined in objects than there are in the list"
-}
-
 // start valterating over objects
-result.versionObjects.each { key, val ->
+result.eachWithIndex { version, index ->
 
-    if (key != val.version)
+    def fieldBroke = false;
+    // check mandatory field existances
+    ['status', 'docUrl', 'version', 'changes', 'bugs'].each { field ->
+        if (result["${field}"] == null)
+        {
+            fieldBroke = true
+            error "Version object with index ${index} is missing field ${field}"
+        }
+    }
+    
+    if (fieldBroke)
     {
-        broke = true
-        println "ERROR -- Object Key and value version dont match"
+        println "FIELDS BROKEN"
+        System.exit 0
     }
 
     // check if indexes match
-    if (key != sorted[val.index])
+    if (sorted[index] != version)
     {
-        broke = true
-        println "ERROR -- Index of '$key' (${sorted[val.index]}) doesnt match vals actual index in the sorted list. Should be ${sorted.indexOf key}"
+        error "Index of '${version.version}' (${sorted[index]}) doesnt match vals actual index in the sorted list. Should be ${sorted.indexOf version.version}"
     }
 
-    // check outdated status
-    if (val.outdated)
+    // check status for enums
+    def status = version.status.toUpperCase();
+
+    // check if its upper case
+    if (version.status != status)
     {
-        // verify list posvalion
-        if (key == sorted.last())
+        error "Status '${version.status}' for version ${version.version} is not all upper case"
+    }
+    // check for valid statuses
+    else if (!(["FINE", "BROKEN", "OUTDATED"].contains(status))) // not in the list?
+    {
+        error "Status '${version.status}' for version ${version.version} is not a valid status"
+    }
+
+    // check 'outdated' status
+    if (version.status == "OUTDATED")
+    {
+        if (!version.changes)
         {
-            broke = true
-            println "ERROR -- '$key' is marked 'outdated' even though vals the newest version"
+            warn "'${version.version}' is marked 'OUTDATED' but there are no changes listed"
         }
     }
-    else // not outdated obviously
+    // check 'broken' status
+    else if (version.status == "BROKEN" && version.bugs.isEmpty())
     {
-        // verify list posvalion
-        if (key != sorted.last())
+        if (!version.bugs)
         {
-            broke = true
-            println "ERROR -- '$key' is not marked 'outdated' even though there is a newer version"
+            warn "'${version.version}' is marked 'BROKEN' but there are no bugs listed"
+        }
+    }
+    else
+    {
+        // verify list position
+        if (index != result.versions.size()-1)
+        {
+            error "'${version.version}' is not marked 'outdated' even though there is a newer version"
         }
 
         // check for changes
-        if (val.changes.size() <= 0)
+        if (version.changes.size() <= 0)
         {
-            warned = true
-            println "WARNING -- '$key' is the newest version, but has no defined changes"
-        }
-
-        // check broken state
-        if (val.broken)
-        {
-            broke = true
-            println "ERROR -- '$key' is marked 'broken' even though val is not outdated"
+            warn "'${version.version}' is the newest version, but has no defined changes"
         }
     }
 
-    if (val.broken)
+    if (!version.docUrl)
     {
-        // check for bugs
-        if (val.bugs.size() <= 0)
-        {
-            warned = true
-            println "WARNING -- '$key' is marked as 'broken', yet has no bugs defined"
-        }
+        warn "'${version.version}' doesnt have a 'docUrl' defined!"
+    }
+    else if (!version.docUrl.startsWith('http://') && !version.docUrl.startsWith('https://'))
+    {
+        warn "'${version.version}' has a 'docUrl' that isnt an HTTP URL"
     }
 
-    if (!val.docUrl)
-    {
-        warned = true
-        println "WARNING -- '$key' doesnt have a 'docUrl' defined!"
-    }
-    else if (!val.docUrl.startsWith('http://') && !val.docUrl.startsWith('https://'))
-    {
-        broke = true
-        println "WARNING -- '$key' has a 'docUrl' that isnt an HTTP URL"
-    }
+
+    // TODO: check the plugin-specific stuff
 }
 
 // ----------

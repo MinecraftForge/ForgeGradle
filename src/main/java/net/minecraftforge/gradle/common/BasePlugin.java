@@ -1,7 +1,6 @@
 package net.minecraftforge.gradle.common;
 
 import static net.minecraftforge.gradle.common.Constants.*;
-import groovy.lang.Closure;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,18 +11,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
-
-import net.minecraftforge.gradle.tasks.*;
-import net.minecraftforge.gradle.util.FileLogListenner;
-import net.minecraftforge.gradle.util.GradleConfigurationException;
-import net.minecraftforge.gradle.util.delayed.DelayedFile;
-import net.minecraftforge.gradle.util.delayed.DelayedFileTree;
-import net.minecraftforge.gradle.util.delayed.DelayedString;
-import net.minecraftforge.gradle.util.delayed.TokenReplacer;
-import net.minecraftforge.gradle.util.json.JsonFactory;
-import net.minecraftforge.gradle.util.json.fgversion.ForgeGradleVersion;
-import net.minecraftforge.gradle.util.json.fgversion.ForgeGradleWrapper;
-import net.minecraftforge.gradle.util.json.version.Version;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
@@ -50,6 +37,30 @@ import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.gson.reflect.TypeToken;
+
+import groovy.lang.Closure;
+import net.minecraftforge.gradle.tasks.CrowdinDownload;
+import net.minecraftforge.gradle.tasks.Download;
+import net.minecraftforge.gradle.tasks.DownloadAssetsTask;
+import net.minecraftforge.gradle.tasks.EtagDownloadTask;
+import net.minecraftforge.gradle.tasks.ExtractConfigTask;
+import net.minecraftforge.gradle.tasks.GenSrgs;
+import net.minecraftforge.gradle.tasks.JenkinsChangelog;
+import net.minecraftforge.gradle.tasks.MergeJars;
+import net.minecraftforge.gradle.tasks.ObtainFernFlowerTask;
+import net.minecraftforge.gradle.tasks.SignJar;
+import net.minecraftforge.gradle.tasks.SplitJarTask;
+import net.minecraftforge.gradle.util.FileLogListenner;
+import net.minecraftforge.gradle.util.GradleConfigurationException;
+import net.minecraftforge.gradle.util.delayed.DelayedFile;
+import net.minecraftforge.gradle.util.delayed.DelayedFileTree;
+import net.minecraftforge.gradle.util.delayed.DelayedString;
+import net.minecraftforge.gradle.util.delayed.TokenReplacer;
+import net.minecraftforge.gradle.util.json.JsonFactory;
+import net.minecraftforge.gradle.util.json.fgversion.FGBuildStatus;
+import net.minecraftforge.gradle.util.json.fgversion.FGVersion;
+import net.minecraftforge.gradle.util.json.fgversion.FGVersionWrapper;
+import net.minecraftforge.gradle.util.json.version.Version;
 public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Project>
 {
     public Project       project;
@@ -231,17 +242,17 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         final File jsonCache = cacheFile("ForgeGradleVersion.json");
         final File etagFile = new File(jsonCache.getAbsolutePath() + ".etag");
 
-        ForgeGradleWrapper wrapper = JsonFactory.GSON.fromJson(getWithEtag(checkUrl, jsonCache, etagFile), ForgeGradleWrapper.class);
-        ForgeGradleVersion webVersion = wrapper.versionObjects.get(version);
-        String latestVersion = wrapper.versionNumbers.get(wrapper.versionNumbers.size()-1);
+        FGVersionWrapper wrapper = JsonFactory.GSON.fromJson(getWithEtag(checkUrl, jsonCache, etagFile), FGVersionWrapper.class);
+        FGVersion webVersion = wrapper.versionObjects.get(version);
+        String latestVersion = wrapper.versions.get(wrapper.versions.size()-1);
         
-        if (webVersion == null || (!webVersion.broken && !webVersion.outdated))
+        if (webVersion == null || webVersion.status == FGBuildStatus.FINE)
         {
             return;
         }
         
         // broken implies outdated
-        if (webVersion.broken)
+        if (webVersion.status == FGBuildStatus.BROKEN)
         {
             outLines.add("ForgeGradle "+webVersion.version+" HAS " + (webVersion.bugs.length > 1 ? "SERIOUS BUGS" : "a SERIOUS BUG") + "!");
             outLines.add("UPDATE TO "+latestVersion+" IMMEDIATELY!");
@@ -253,20 +264,30 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             outLines.add("****************************");
             return;
         }
-        else if (webVersion.outdated)
+        else if (webVersion.status == FGBuildStatus.OUTDATED)
         {
             outLines.add("ForgeGradle "+latestVersion + " is out! You should update!");
             outLines.add(" Features:");
             
-            for (int i = webVersion.index; i < wrapper.versionNumbers.size(); i++)
+            for (int i = webVersion.index; i < wrapper.versions.size(); i++)
             {
-                for (String feature : wrapper.versionObjects.get(wrapper.versionNumbers.get(i)).changes)
+                for (String feature : wrapper.versionObjects.get(wrapper.versions.get(i)).changes)
                 {
                     outLines.add(" -- " + feature);
                 }
             }
             outLines.add("****************************");
         }
+    }
+    
+    /**
+     * Function to do stuff with the version check json information. Is called afterEvaluate
+     * @param version
+     * @param wrapper
+     */
+    protected void onVersionCheck(FGVersion version, FGVersionWrapper wrapper)
+    {
+        // not required.. but you probably wanan implement this
     }
 
     @SuppressWarnings("serial")

@@ -1,19 +1,17 @@
-{
-    "versionNumbers": [
-        "2.0.0"
-    ],
-    "versionObjects": {
-        "2.0.0": {
-            "outdated": false,
-            "broken": false,
-            "index": 0,
-            "docUrl": "https://forgegradle.readthedocs.org",
-            "version": "2.0.0",
-            "changes": [
-            	"Massive update fro ForgeGradle 1.2"
-            ],
-            "bugs": [
-            ]
+[
+    {
+        "status": "FINE",
+        "docUrl": "https://forgegradle.readthedocs.org",
+        "version": "2.0.0",
+        "changes": [
+        	"Massive update fro ForgeGradle 1.2"
+        ],
+        "bugs": [
+        ],
+        "pluginSpecific": {
+            "forgeMinBuild": "1234",
+            "forgeMaxBuild": "1234"
         }
     }
-}
+]
+
