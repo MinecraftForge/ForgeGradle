@@ -128,7 +128,7 @@ public class ForgeExtension extends UserBaseExtension
         matcher = STANDARD.matcher(str);
         if (matcher.matches())
         {
-            String branch = Strings.emptyToNull(matcher.group(4));
+            String branch = matcher.group(4);
             String mcversion = matcher.group(1);
 
             String forgeVersion = matcher.group(2);
@@ -138,7 +138,7 @@ public class ForgeExtension extends UserBaseExtension
             {
                 LOGGER.lifecycle("Assuming custom forge version!");
                 version = mcversion;
-                this.forgeVersion = forgeVersion;
+                this.forgeVersion = forgeVersion + branch;
                 return;
             }
 
@@ -150,7 +150,7 @@ public class ForgeExtension extends UserBaseExtension
             }
 
             boolean branchMatches = false;
-            if (branch == null)
+            if (Strings.isNullOrEmpty(branch))
                 branchMatches = Strings.isNullOrEmpty(build.branch);
             else
                 branchMatches = branch.substring(1).equals(build.branch);
