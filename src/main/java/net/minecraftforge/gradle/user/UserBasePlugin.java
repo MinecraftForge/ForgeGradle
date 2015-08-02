@@ -2,7 +2,6 @@ package net.minecraftforge.gradle.user;
 
 import static net.minecraftforge.gradle.common.Constants.*;
 import static net.minecraftforge.gradle.user.UserConstants.*;
-import groovy.lang.Closure;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,19 +15,6 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-
-import net.minecraftforge.gradle.common.BasePlugin;
-import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
-import net.minecraftforge.gradle.tasks.ApplyS2STask;
-import net.minecraftforge.gradle.tasks.CreateStartTask;
-import net.minecraftforge.gradle.tasks.DeobfuscateJar;
-import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
-import net.minecraftforge.gradle.tasks.GenEclipseRunTask;
-import net.minecraftforge.gradle.tasks.PostDecompileTask;
-import net.minecraftforge.gradle.tasks.RemapSources;
-import net.minecraftforge.gradle.util.GradleConfigurationException;
-import net.minecraftforge.gradle.util.delayed.DelayedFile;
-import net.minecraftforge.gradle.util.delayed.TokenReplacer;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
@@ -53,6 +39,7 @@ import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.plugins.MavenPluginConvention;
 import org.gradle.api.tasks.GroovySourceSet;
+import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.ScalaSourceSet;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.Jar;
@@ -72,6 +59,20 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+
+import groovy.lang.Closure;
+import net.minecraftforge.gradle.common.BasePlugin;
+import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
+import net.minecraftforge.gradle.tasks.ApplyS2STask;
+import net.minecraftforge.gradle.tasks.CreateStartTask;
+import net.minecraftforge.gradle.tasks.DeobfuscateJar;
+import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
+import net.minecraftforge.gradle.tasks.GenEclipseRunTask;
+import net.minecraftforge.gradle.tasks.PostDecompileTask;
+import net.minecraftforge.gradle.tasks.RemapSources;
+import net.minecraftforge.gradle.util.GradleConfigurationException;
+import net.minecraftforge.gradle.util.delayed.DelayedFile;
+import net.minecraftforge.gradle.util.delayed.TokenReplacer;
 
 public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePlugin<T>
 {
@@ -112,10 +113,12 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         project.getConfigurations().maybeCreate(CONFIG_DP_RESOLVED);
 
         configureCompilation();
+
         // Quality of life stuff for the users
         createSourceCopyTasks();
         doDevTimeDeobf();
         makeObfSource();
+        makeRunTasks();
 
         // use zinc for scala compilation
         project.getTasks().withType(ScalaCompile.class, new Action<ScalaCompile>() {
@@ -198,6 +201,36 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             project.getDependencies().add(CONFIG_START, col);
         }
         // TODO: do some GradleStart stuff based on the MC version?
+        
+        // run task stuff
+        // Add the mod and stuff to the classpath of the exec tasks.
+        final Jar jarTask = (Jar) project.getTasks().getByName("jar");
+
+        if (this.hasClientRun())
+        {
+            JavaExec exec = (JavaExec) project.getTasks().getByName("runClient");
+            exec.classpath(project.getConfigurations().getByName("runtime"));
+            exec.classpath(project.getConfigurations().getByName(CONFIG_MC));
+            exec.classpath(project.getConfigurations().getByName(CONFIG_MC_DEPS));
+            exec.classpath(project.getConfigurations().getByName(CONFIG_START));
+            exec.classpath(jarTask.getArchivePath());
+            exec.dependsOn(jarTask);
+            exec.jvmArgs(getClientJvmArgs(getExtension()));
+            exec.args(getClientRunArgs(getExtension()));
+        }
+
+        if (this.hasServerRun())
+        {
+            JavaExec exec = (JavaExec) project.getTasks().getByName("runServer");
+            exec.classpath(project.getConfigurations().getByName("runtime"));
+            exec.classpath(project.getConfigurations().getByName(CONFIG_MC));
+            exec.classpath(project.getConfigurations().getByName(CONFIG_MC_DEPS));
+            exec.classpath(project.getConfigurations().getByName(CONFIG_START));
+            exec.classpath(jarTask.getArchivePath());
+            exec.dependsOn(jarTask);
+            exec.jvmArgs(getServerJvmArgs(getExtension()));
+            exec.jvmArgs(getServerRunArgs(getExtension()));
+        }
     }
 
     protected abstract void applyUserPlugin();
@@ -285,7 +318,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                 makeStart.addReplacement("@@ASSETINDEX@@", delayedString(REPLACE_ASSET_INDEX));
                 makeStart.addReplacement("@@ASSETSDIR@@", delayedFile(REPLACE_CACHE_DIR + "/assets"));
                 makeStart.addReplacement("@@NATIVESDIR@@", delayedFile(DIR_NATIVES));
-                makeStart.addReplacement("@@CLIENTTWEAKER@@", delayedString(REPLACE_CLIENT_TWEAKER));
+                makeStart.addReplacement("@@TWEAKERCLIENT@@", delayedString(REPLACE_CLIENT_TWEAKER));
                 makeStart.addReplacement("@@BOUNCERCLIENT@@", delayedString(REPLACE_CLIENT_MAIN));
 
                 makeStart.dependsOn(TASK_DL_ASSET_INDEX, TASK_DL_ASSETS, TASK_EXTRACT_NATIVES);
@@ -637,6 +670,40 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             sourceJar.exclude("*.class", "**/*.class");
             sourceJar.setClassifier("sources");
             sourceJar.dependsOn(main.getCompileJavaTaskName(), main.getProcessResourcesTaskName(), retromap);
+        }
+    }
+    
+    protected void makeRunTasks()
+    {
+        if (this.hasClientRun())
+        {
+            JavaExec exec = makeTask("runClient", JavaExec.class);
+            exec.getOutputs().dir(delayedFile(REPLACE_RUN_DIR));
+            exec.setMain(GRADLE_START_CLIENT);
+            exec.workingDir(delayedFile(REPLACE_RUN_DIR));
+            exec.setStandardOutput(System.out);
+            exec.setErrorOutput(System.err);
+
+            exec.setGroup("ForgeGradle");
+            exec.setDescription("Runs the Minecraft client");
+
+            exec.dependsOn("makeStart");
+        }
+
+        if (this.hasClientRun())
+        {
+            JavaExec exec = makeTask("runServer", JavaExec.class);
+            exec.getOutputs().dir(delayedFile(REPLACE_RUN_DIR));
+            exec.setMain(GRADLE_START_SERVER);
+            exec.workingDir(delayedFile(REPLACE_RUN_DIR));
+            exec.setStandardOutput(System.out);
+            exec.setStandardInput(System.in);
+            exec.setErrorOutput(System.err);
+
+            exec.setGroup("ForgeGradle");
+            exec.setDescription("Runs the Minecraft Server");
+
+            exec.dependsOn("makeStart");
         }
     }
 
