@@ -420,26 +420,26 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
         Object delayedRemapped = delayedFile(projectString(JAR_PROJECT_REMAPPED, patcher));
 
-        ExtractTask extract = makeTask(projectString(TASK_PROJECT_EXTRACT_SRC, patcher), ExtractTask.class);
+        ExtractTask extractSrc = makeTask(projectString(TASK_PROJECT_EXTRACT_SRC, patcher), ExtractTask.class);
         {
-            extract.from(delayedRemapped);
-            extract.into(subWorkspace(patcher.getCapName() + DIR_EXTRACTED_SRC));
-            extract.include("*.java", "**/*.java");
-            extract.setDoesCache(false);
-            extract.dependsOn(remapTask, TASK_GEN_PROJECTS);
+            extractSrc.from(delayedRemapped);
+            extractSrc.into(subWorkspace(patcher.getCapName() + DIR_EXTRACTED_SRC));
+            extractSrc.include("*.java", "**/*.java");
+            extractSrc.setDoesCache(false);
+            extractSrc.dependsOn(remapTask, TASK_GEN_PROJECTS);
         }
 
-        extract = makeTask(projectString(TASK_PROJECT_EXTRACT_RES, patcher), ExtractTask.class);
+        ExtractTask extractRes = makeTask(projectString(TASK_PROJECT_EXTRACT_RES, patcher), ExtractTask.class);
         {
-            extract.from(delayedRemapped);
-            extract.into(subWorkspace(patcher.getCapName() + DIR_EXTRACTED_RES));
-            extract.exclude("*.java", "**/*.java");
-            extract.setDoesCache(false);
-            extract.dependsOn(remapTask, TASK_GEN_PROJECTS);
+            extractRes.from(delayedRemapped);
+            extractRes.into(subWorkspace(patcher.getCapName() + DIR_EXTRACTED_RES));
+            extractRes.exclude("*.java", "**/*.java");
+            extractRes.setDoesCache(false);
+            extractRes.dependsOn(remapTask, TASK_GEN_PROJECTS);
         }
 
         Task setupTask = makeTask(projectString(TASK_PROJECT_SETUP, patcher));
-        setupTask.dependsOn(projectString(TASK_PROJECT_EXTRACT_SRC, patcher), projectString(TASK_PROJECT_EXTRACT_RES, patcher));
+        setupTask.dependsOn(extractSrc, extractRes);
 
         // Run config generation, not necessary unless its actual dev
 
@@ -520,6 +520,9 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         Task setupDevTask = makeTask(projectString(TASK_PROJECT_SETUP_DEV, patcher));
         setupDevTask.dependsOn(setupTask, makeStart, TASK_GEN_IDES);
         setupDevTask.dependsOn(eclipseRunClient, eclipseRunServer, ideaRunClient, ideaRunServer);
+        
+        // fixe starts bieng created after the IDE thing
+        project.getTasks().getByName(TASK_GEN_IDES).mustRunAfter(makeStart);
 
         /// TASKS THAT ARN'T PART OF THE SETUP
 
