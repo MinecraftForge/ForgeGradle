@@ -38,8 +38,8 @@ This part is what tells gradle to actually include the contents of the dependenc
 
 ```
 minecraft {
-    srgExtra "PK:org/ejml your/new/package/here/ejml"
-    srgExtra "PK:org/ejml/alg your/new/package/here/ejml/alg"
+    srgExtra "PK: org/ejml your/new/package/here/ejml"
+    srgExtra "PK: org/ejml/alg your/new/package/here/ejml/alg"
 }
 ```
 This is the section that tells Gradle what package you want to relocate where. This takes advantage of ForgeGradle's reobfuscation mechanism, and thus these lines only take effect at the reobfuscation step of the build. These **srgExtra** strings are indeed SRG lines, and can be specified for individual classes, fields, or methods as well as packages. This section can be located anywhere in the build.gradle.
