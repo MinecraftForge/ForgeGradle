@@ -81,8 +81,8 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
             task.setOutJar(patchedJar);
             task.setPatches(delayedFile(BINPATCH_USERDEV));
             task.setClassJar(delayedFile(ZIP_UD_CLASSES));
-            task.setResourceJar(delayedTree(ZIP_UD_RES));
-            task.dependsOn("mergeJars");
+            task.setResourceJar(delayedFile(ZIP_UD_RES));
+            task.dependsOn(TASK_MERGE_JARS, TASK_EXTRACT_USERDEV);
 
             project.getTasks().getByName(TASK_DEOBF_BIN).dependsOn(task);
 
