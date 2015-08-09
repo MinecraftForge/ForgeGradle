@@ -1,12 +1,24 @@
 package net.minecraftforge.gradle.user.patcherUser;
 
-import static net.minecraftforge.gradle.common.Constants.*;
+import static net.minecraftforge.gradle.common.Constants.DIR_JSONS;
+import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
+import static net.minecraftforge.gradle.common.Constants.MCP_PATCHES_MERGED;
+import static net.minecraftforge.gradle.common.Constants.TASK_DL_VERSION_JSON;
+import static net.minecraftforge.gradle.common.Constants.TASK_GENERATE_SRGS;
+import static net.minecraftforge.gradle.common.Constants.TASK_MERGE_JARS;
 import static net.minecraftforge.gradle.user.UserConstants.*;
 import static net.minecraftforge.gradle.user.patcherUser.PatcherUserConstants.*;
-import groovy.lang.Closure;
 
 import java.io.File;
 
+import org.gradle.api.Action;
+import org.gradle.api.Project;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.SourceSet;
+
+import com.google.common.collect.ImmutableMap;
+
+import groovy.lang.Closure;
 import net.minecraftforge.gradle.tasks.DeobfuscateJar;
 import net.minecraftforge.gradle.tasks.ExtractConfigTask;
 import net.minecraftforge.gradle.tasks.PatchSourcesTask;
@@ -16,13 +28,6 @@ import net.minecraftforge.gradle.user.TaskSingleReobf;
 import net.minecraftforge.gradle.user.UserBaseExtension;
 import net.minecraftforge.gradle.user.UserBasePlugin;
 import net.minecraftforge.gradle.util.delayed.TokenReplacer;
-
-import org.gradle.api.Action;
-import org.gradle.api.Project;
-import org.gradle.api.plugins.JavaPluginConvention;
-import org.gradle.api.tasks.SourceSet;
-
-import com.google.common.collect.ImmutableMap;
 
 public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends UserBasePlugin<T>
 {

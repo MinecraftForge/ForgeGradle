@@ -377,11 +377,13 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             @Override
             public void execute(Project project)
             {
-                boolean isDecomp = false;
-
-                if (project.file(recompiledJar).exists())
+                // the recompiled jar exists, or the decomp task is part of the build
+                boolean isDecomp = project.file(recompiledJar).exists() || project.getGradle().getStartParameter().getTaskNames().contains(TASK_SETUP_DECOMP);
+                
+                // set task dependencies
+                if (!isDecomp)
                 {
-                    isDecomp = true;
+                    project.getTasks().getByName("compileJava").dependsOn(UserConstants.TASK_DEOBF_BIN);
                 }
 
                 afterDecomp(isDecomp, useLocalCache(getExtension()), CONFIG_MC);
@@ -466,8 +468,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         test.setRuntimeClasspath(test.getRuntimeClasspath()
                 .plus(api.getOutput())
                 .plus(project.getConfigurations().getByName(CONFIG_MC))
-                .plus(project.getConfigurations().getByName(CONFIG_MC_DEPS))
-                .plus(project.getConfigurations().getByName(CONFIG_START)));
+                .plus(project.getConfigurations().getByName(CONFIG_MC_DEPS)));
 
         project.getConfigurations().getByName("compile").extendsFrom(project.getConfigurations().getByName(CONFIG_DC_RESOLVED));
         project.getConfigurations().getByName(CONFIG_PROVIDED).extendsFrom(project.getConfigurations().getByName(CONFIG_DP_RESOLVED));
