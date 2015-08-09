@@ -1,7 +1,19 @@
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "com.gradle.publish:plugin-publish-plugin:0.9.1"
+    }
+}
+
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
 apply plugin: 'maven'
+apply plugin: "com.gradle.plugin-publish"
 
 group = 'net.minecraftforge.gradle'
 version = '2.0-SNAPSHOT'
@@ -20,7 +32,7 @@ repositories {
         name = "eclipse"
         url = "https://repo.eclipse.org/content/groups/eclipse/"
     }
-    //jcenter()
+    jcenter() // get as many deps from here as possible
     mavenCentral()
     
     // because of the GradleStart stuff
@@ -137,6 +149,36 @@ test {
         exclude "**/ExtensionMcpMappingTest*"
 }
 
+pluginBundle {
+    website = 'http://www.gradle.org/'
+    vcsUrl = 'https://github.com/MinecraftForge/ForgeGradle'
+    description = 'Gradle plugin for all Minecraft mod development needs'
+    tags = ['forge', 'minecraft', 'minecraftforge', 'sponge', 'mcp']
+
+    plugins {
+        patcher {
+            id = 'net.minecraftforge.gradle.patcher'
+            displayName = 'Mincraft Patcher Plugin'
+        }
+        tweakerClient {
+            id = 'net.minecraftforge.gradle.tweaker-client'
+            displayName = 'Mincraft Client Tweaker Plugin'
+        }
+        tweakerServer {
+            id = 'net.minecraftforge.gradle.tweaker-server'
+            displayName = 'Mincraft Server Tweaker Plugin'
+        }
+        forge {
+            id = 'net.minecraftforge.gradle.forge'
+            displayName = 'MincraftForge Mod Development Plugin'
+        }
+
+        launch4j {
+            id = 'net.minecraftforge.gradle.launch4j'
+            displayName = 'Specialized Launch4J Gradle Plugin'
+        }
+    }
+}
 
 uploadArchives {
     repositories.mavenDeployer {
