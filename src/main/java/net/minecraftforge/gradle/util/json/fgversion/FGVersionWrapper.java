@@ -13,4 +13,10 @@ public class FGVersionWrapper
 {
     public List<String>           versions       = Lists.newArrayList();
     public Map<String, FGVersion> versionObjects = Maps.newHashMap();
+
+    @Override
+    public String toString()
+    {
+        return "FGVersionWrapper [versions=" + versions + ", versionObjects=" + versionObjects + "]";
+    }
 }

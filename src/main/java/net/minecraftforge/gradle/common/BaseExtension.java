@@ -40,7 +40,7 @@ public abstract class BaseExtension
         try
         {
             URL url = BaseExtension.class.getClassLoader().getResource("forgegradle.version.txt");
-            version = Resources.toString(url, Constants.CHARSET);
+            version = Resources.toString(url, Constants.CHARSET).trim();
 
             if (version.equals("${version}"))
             {

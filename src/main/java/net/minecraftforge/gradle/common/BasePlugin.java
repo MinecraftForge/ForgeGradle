@@ -248,6 +248,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         
         if (webVersion == null || webVersion.status == FGBuildStatus.FINE)
         {
+            System.out.println("NULL OR FINE");
             return;
         }
         

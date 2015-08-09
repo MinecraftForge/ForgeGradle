@@ -104,7 +104,7 @@ result.eachWithIndex { version, index ->
         }
     }
     // check 'broken' status
-    else if (version.status == "BROKEN" && version.bugs.isEmpty())
+    else if (version.status == "BROKEN")
     {
         if (!version.bugs)
         {

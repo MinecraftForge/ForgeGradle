@@ -96,9 +96,9 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
         int maxBuild = version.ext.get("forgeMaxBuild").getAsInt();
         
         if (buildNum < minBuild)
-            throw new GradleConfigurationException("This version of FOrgeGradle ("+getExtension().forgeGradleVersion+") does not support forge builds less than #"+minBuild);
+            throw new GradleConfigurationException("This version of ForgeGradle ("+getExtension().forgeGradleVersion+") does not support forge builds less than #"+minBuild);
         else if (buildNum > maxBuild)
-            throw new GradleConfigurationException("This version of FOrgeGradle ("+getExtension().forgeGradleVersion+") does not support forge builds greater than #"+maxBuild);
+            throw new GradleConfigurationException("This version of ForgeGradle ("+getExtension().forgeGradleVersion+") does not support forge builds greater than #"+maxBuild);
     }
 
     @Override
