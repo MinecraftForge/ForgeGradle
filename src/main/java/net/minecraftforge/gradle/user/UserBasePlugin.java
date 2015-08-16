@@ -691,7 +691,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             exec.dependsOn("makeStart");
         }
 
-        if (this.hasClientRun())
+        if (this.hasServerRun())
         {
             JavaExec exec = makeTask("runServer", JavaExec.class);
             exec.getOutputs().dir(delayedFile(REPLACE_RUN_DIR));
