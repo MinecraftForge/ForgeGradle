@@ -38,7 +38,7 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
         String dirtySuffix = "%s-" + REPLACE_MC_VERSION + "-PROJECT(" + project.getName() + ")";
         String jarName = getJarName();
 
-        createDecompTasks(CLEAN_ROOT + jarName + "/" + REPLACE_MC_VERSION + "/" + MCP_INSERT + "/" + jarName + cleanSuffix, DIR_LOCAL_CACHE + jarName + dirtySuffix);
+        createDecompTasks(CLEAN_ROOT + jarName + "/" + REPLACE_MC_VERSION + "/" + MCP_INSERT + "/" + jarName + cleanSuffix, DIR_LOCAL_CACHE + "/" + jarName + dirtySuffix);
 
         // remove the unused merge jars task
         project.getTasks().remove(project.getTasks().getByName(TASK_MERGE_JARS));
