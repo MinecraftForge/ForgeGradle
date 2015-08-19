@@ -258,12 +258,19 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             mergeFiles.setOutAt(delayedFile(AT_MERGED_USERDEV));
         }
         
+        TaskGenPatches userdevPatches = makeTask(TASK_GEN_PATCHES_USERDEV, TaskGenPatches.class);
+        {
+            userdevPatches.setPatchDir(delayedFile(DIR_USERDEV_PATCHES));
+            userdevPatches.addOriginalSource(delayedFile(JAR_DECOMP_POST)); // add vanilla SRG named source
+        }
+        
         Zip packagePatches = makeTask(TASK_PATCHES_USERDEV, Zip.class);
         {
             File out = delayedFile(ZIP_USERDEV_PATCHES).call();
-            packagePatches.from(delayedFile(DIR_USERDEV_PATCHES));
             packagePatches.setDestinationDir(out.getParentFile());
             packagePatches.setArchiveName(out.getName());
+            packagePatches.from(delayedFile(DIR_USERDEV_PATCHES));
+            packagePatches.dependsOn(userdevPatches);
         }
 
         Zip userdev = makeTask(TASK_BUILD_USERDEV, Zip.class);
@@ -800,23 +807,10 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         reobf.dependsOn(projectString(TASK_PROJECT_COMPILE, patcher));
 
         // Why regenerate patches from clean if the built project already has them?
-        if ("clean".equals(patcher.getGenPatchesFrom().toLowerCase()))
-        {
-            ((Zip)(project.getTasks().getByName(TASK_PATCHES_USERDEV))).from(patcher.getPatchDir());
-        }
-        else
-        {
-            //TASK_PATCHES_USERDEV
-            TaskGenPatches userdevPatches = makeTask("genUserdevPatches", TaskGenPatches.class);
-            userdevPatches.setPatchDir(delayedFile(DIR_USERDEV_PATCHES));
-            userdevPatches.addOriginalSource(delayedFile(JAR_DECOMP_POST)); // add vanilla SRG named source
-            userdevPatches.addChangedSource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, patcher)));
-            userdevPatches.dependsOn(TASK_POST_DECOMP, projectString(TASK_PROJECT_RETROMAP, patcher));
-            
-            Zip packageUserdev = (Zip)(project.getTasks().getByName(TASK_PATCHES_USERDEV));
-            packageUserdev.from(delayedFile(DIR_USERDEV_PATCHES));
-            packageUserdev.dependsOn(userdevPatches);
-        }
+        // to strip the prefixes.. thats why...
+        TaskGenPatches userdevPatches = (TaskGenPatches) (project.getTasks().getByName(TASK_GEN_PATCHES_USERDEV));
+        userdevPatches.addChangedSource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, patcher)));
+        userdevPatches.dependsOn(TASK_POST_DECOMP, projectString(TASK_PROJECT_RETROMAP, patcher));
 
         TaskExtractNew userdevSources = (TaskExtractNew) project.getTasks().getByName(TASK_EXTRACT_OBF_SOURCES);
         userdevSources.addDirtySource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, patcher)));

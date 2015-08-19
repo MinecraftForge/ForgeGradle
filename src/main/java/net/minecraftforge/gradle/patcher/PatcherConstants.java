@@ -87,6 +87,7 @@ final class PatcherConstants
     static final String TASK_EXTRACT_OBF_CLASSES = "extractNonMcClasses";
     static final String TASK_PROCESS_JSON        = "processJson";
     static final String TASK_OUTPUT_JAR          = "outputJar";
+    static final String TASK_GEN_PATCHES_USERDEV = "genUserdevPatches";
     static final String TASK_PATCHES_USERDEV     = "packagedUserdevPatches";
     static final String TASK_EXTRACT_OBF_SOURCES = "extractNonMcSources";
     static final String TASK_COMBINE_RESOURCES   = "combineResources";
