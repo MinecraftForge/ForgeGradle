@@ -97,7 +97,7 @@ public class SignJar extends DefaultTask implements PatternFilterable
             {
                 try
                 {
-                    if (!spec.isSatisfiedBy(details))
+                    if (spec.isSatisfiedBy(details))
                     {
                         ZipEntry entry = new ZipEntry(details.getPath());
                         entry.setTime(details.getLastModified());
