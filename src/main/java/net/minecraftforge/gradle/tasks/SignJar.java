@@ -88,7 +88,6 @@ public class SignJar extends DefaultTask implements PatternFilterable
             @Override
             public void visitDir(FileVisitDetails details)
             {
-                details.stopVisiting();
                 // nothing
             }
 
