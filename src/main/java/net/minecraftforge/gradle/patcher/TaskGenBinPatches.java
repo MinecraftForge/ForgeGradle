@@ -69,15 +69,12 @@ class TaskGenBinPatches extends DefaultTask
     {
         loadMappings();
 
-        for (Object tree : patchSets)
+        for (File patch : getPatchSets())
         {
-            for (File patch : getProject().files(tree).getFiles())
-            {
-                String name = patch.getName().replace(".java.patch", "");
-                String obfName = srgMapping.get(name);
-                patchedFiles.add(obfName);
-                addInnerClasses(name, patchedFiles);
-            }
+            String name = patch.getName().replace(".java.patch", "");
+            String obfName = srgMapping.get(name);
+            patchedFiles.add(obfName);
+            addInnerClasses(name, patchedFiles);
         }
 
         HashMap<String, byte[]> runtime = new HashMap<String, byte[]>();
