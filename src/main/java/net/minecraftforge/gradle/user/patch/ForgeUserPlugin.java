@@ -36,8 +36,8 @@ public class ForgeUserPlugin extends UserPatchBasePlugin
     @Override
     protected void doVersionChecks(int buildNumber)
     {
-        if (buildNumber != 0 && buildNumber < 1048)
-            throw new IllegalArgumentException("ForgeGradle 1.2 only works for Forge versions 10.12.0.1048+");
+        if (buildNumber != 0 && ( buildNumber < 1048 || buildNumber > 1502 ))
+            throw new IllegalArgumentException("ForgeGradle 1.2 only works for Forge versions 10.12.0.1048 -- 11.14.3.1503");
     }
 
     @Override
