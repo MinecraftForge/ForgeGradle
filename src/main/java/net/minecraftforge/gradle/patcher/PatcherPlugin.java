@@ -284,7 +284,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             userdev.setDestinationDir(new File(DIR_OUTPUT));
             userdev.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
             userdev.getOutputs().upToDateWhen(Constants.CALL_FALSE); // rebuild every time.
-            userdev.dependsOn(genBinPatches, packagePatches, extractNonMcSources, combineRes, mergeFiles);
+            userdev.dependsOn(genBinPatches, extractObfClasses, packagePatches, extractNonMcSources, combineRes, mergeFiles);
         }
     }
 
