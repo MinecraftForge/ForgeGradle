@@ -73,6 +73,9 @@ public class GenEclipseRunTask extends DefaultTask
         StreamResult result = new StreamResult(getOutputFile());
 
         transformer.transform(source, result);
+        
+        // make the rundir
+        new File(getRunDir()).mkdirs();
     }
 
     public String getProjectName()
