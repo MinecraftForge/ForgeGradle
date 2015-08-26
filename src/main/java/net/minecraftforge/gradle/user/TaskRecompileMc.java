@@ -104,14 +104,15 @@ public class TaskRecompileMc extends CachedTask
         JarOutputStream zout = new JarOutputStream(new FileOutputStream(outJar));
 
         Visitor visitor = new Visitor(zout, elementsAdded);
-
-        new ZipFileTree(sourceJar).visit(visitor);
-        getProject().fileTree(classDir).visit(visitor);
-
+        
+        // custom resources should override existing ones, so resources first.
         if (resourceJar != null)
         {
             new ZipFileTree(resourceJar).visit(visitor);
         }
+
+        new ZipFileTree(sourceJar).visit(visitor); // then the ones from the the original sources
+        getProject().fileTree(classDir).visit(visitor); // then the classes
 
         zout.close();
     }
