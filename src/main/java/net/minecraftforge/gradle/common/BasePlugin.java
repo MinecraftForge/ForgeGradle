@@ -279,6 +279,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             }
             outLines.add("****************************");
         }
+        
+        onVersionCheck(webVersion, wrapper);
     }
     
     /**

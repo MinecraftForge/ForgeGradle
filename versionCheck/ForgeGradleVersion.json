@@ -9,8 +9,8 @@
         "bugs": [
         ],
         "ext": {
-            "forgeMinBuild": "1234",
-            "forgeMaxBuild": "1234"
+            "forgeMinBuild": "1503",
+            "forgeMaxBuild": "9999"
         }
     }
 ]
