@@ -23,7 +23,6 @@ import net.minecraftforge.gradle.tasks.DeobfuscateJar;
 import net.minecraftforge.gradle.tasks.ExtractConfigTask;
 import net.minecraftforge.gradle.tasks.PatchSourcesTask;
 import net.minecraftforge.gradle.tasks.RemapSources;
-import net.minecraftforge.gradle.user.TaskRecompileMc;
 import net.minecraftforge.gradle.user.TaskSingleReobf;
 import net.minecraftforge.gradle.user.UserBaseExtension;
 import net.minecraftforge.gradle.user.UserBasePlugin;
@@ -104,7 +103,8 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
 
             PatchSourcesTask patch = makeTask(TASK_PATCH, PatchSourcesTask.class);
             patch.setPatches(delayedFile(ZIP_UD_PATCHES));
-            patch.addInject(delayedFile(ZIP_UD_SRC)); // not injecting the resources just yet, do that after recompile
+            patch.addInject(delayedFile(ZIP_UD_SRC));
+            patch.addInject(delayedFile(ZIP_UD_RES)); // injecting teh resources too... the src jar needs them afterall.
             patch.setFailOnError(true);
             patch.setMakeRejects(false);
             patch.setPatchStrip(1);
@@ -115,9 +115,6 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
             RemapSources remap = (RemapSources) project.getTasks().getByName(TASK_REMAP);
             remap.setInJar(patchedJar);
             remap.dependsOn(patch);
-
-            TaskRecompileMc recomp = (TaskRecompileMc) project.getTasks().getByName(TASK_RECOMPILE);
-            recomp.setInResources(delayedFile(ZIP_UD_RES));
         }
 
         // setup reobf
