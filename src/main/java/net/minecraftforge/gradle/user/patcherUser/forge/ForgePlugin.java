@@ -128,7 +128,6 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
         try
         {
             getExtension().forgeJson = JsonFactory.GSON.fromJson(getWithEtag(url, jsonCache, etagFile), ForgeVersion.class);
-            
         }
         catch(NullPointerException e)
         {

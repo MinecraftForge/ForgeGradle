@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -230,6 +231,15 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             exec.dependsOn(jarTask);
             exec.jvmArgs(getServerJvmArgs(getExtension()));
             exec.jvmArgs(getServerRunArgs(getExtension()));
+        }
+        
+        // complain about version number
+        // blame cazzar if this regex doesnt work
+        Pattern pattern = Pattern.compile("(?:(?:mc)?((?:\\d+)(?:.\\d+)+)-)?((?:0|[1-9][0-9]*)(?:\\.(?:0|[1-9][0-9]*))+)(?:-([\\da-z\\-]+(?:\\.[\\da-z\\-]+)*))?(?:\\+([\\da-z\\-]+(?:\\.[\\da-z\\-]+)*))?", Pattern.CASE_INSENSITIVE); 
+        if (!pattern.matcher(project.getVersion().toString()).matches())
+        {
+            project.getLogger().warn("Version string '"+project.getVersion()+"' does not match SemVer specification ");
+            project.getLogger().warn("You should try SemVer : http://semver.org/");
         }
     }
 
