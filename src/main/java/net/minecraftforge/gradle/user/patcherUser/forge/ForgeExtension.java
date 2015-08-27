@@ -77,7 +77,7 @@ public class ForgeExtension extends UserBaseExtension
         }
 
         // promotions
-        if (this.forgeJson.promos.containsKey(str))
+        if (this.forgeJson != null && this.forgeJson.promos != null && this.forgeJson.promos.containsKey(str))
         {
             boolean worked = getFromBuildNumber(this.forgeJson.promos.get(str));
             LOGGER.lifecycle("Selected version " + this.forgeVersion);
@@ -90,36 +90,53 @@ public class ForgeExtension extends UserBaseExtension
         if (matcher.matches())
         {
             String branch = Strings.emptyToNull(matcher.group(3));
-
             String forgeVersion = matcher.group(1);
-            ForgeBuild build = this.forgeJson.number.get(Integer.valueOf(matcher.group(2)));
 
-            if (build == null)
+            try
             {
-                throw new GradleConfigurationException("No such version exists!");
+                ForgeBuild build = this.forgeJson.number.get(Integer.valueOf(matcher.group(2)));
+
+                if (build == null)
+                {
+                    throw new GradleConfigurationException("No such version exists!");
+                }
+
+                boolean branchMatches = false;
+                if (branch == null)
+                    branchMatches = Strings.isNullOrEmpty(build.branch);
+                else
+                    branchMatches = branch.substring(1).equals(build.branch);
+
+                String outBranch = build.branch;
+                if (outBranch == null)
+                    outBranch = "";
+                else
+                    outBranch = "-" + build.branch;
+
+                if (!build.version.equals(forgeVersion) || !branchMatches)
+                {
+                    throw new GradleConfigurationException(str + " is an invalid version! did you mean '" + build.version + outBranch + "' ?");
+                }
+
+                version = build.mcversion.replace("_", "-");
+                this.forgeVersion = build.version;
+                if (!Strings.isNullOrEmpty(build.branch) && !"null".equals(build.branch))
+                    this.forgeVersion += outBranch;
+
             }
-
-            boolean branchMatches = false;
-            if (branch == null)
-                branchMatches = Strings.isNullOrEmpty(build.branch);
-            else
-                branchMatches = branch.substring(1).equals(build.branch);
-
-            String outBranch = build.branch;
-            if (outBranch == null)
-                outBranch = "";
-            else
-                outBranch = "-" + build.branch;
-
-            if (!build.version.equals(forgeVersion) || !branchMatches)
+            catch (GradleConfigurationException e)
             {
-                throw new GradleConfigurationException(str + " is an invalid version! did you mean '" + build.version + outBranch + "' ?");
+                throw e;
             }
+            catch (Exception e)// everythng but the gradle exception
+            {
+                System.out.println("Error occurred parsing version!");
 
-            version = build.mcversion.replace("_", "-");
-            this.forgeVersion = build.version;
-            if (!Strings.isNullOrEmpty(build.branch) && !"null".equals(build.branch))
-                this.forgeVersion += outBranch;
+                version = "1.8";// just gonna guess.. since we dont know..
+                this.forgeVersion = forgeVersion;
+                if (!Strings.isNullOrEmpty(branch) && !"null".equals(branch))
+                    this.forgeVersion += branch;
+            }
 
             return;
         }
@@ -134,44 +151,60 @@ public class ForgeExtension extends UserBaseExtension
             String forgeVersion = matcher.group(2);
             String buildNumber = matcher.group(3);
 
-            if ("0".equals(buildNumber))
+            try
             {
-                LOGGER.lifecycle("Assuming custom forge version!");
+                if ("0".equals(buildNumber))
+                {
+                    LOGGER.lifecycle("Assuming custom forge version!");
+                    version = mcversion;
+                    this.forgeVersion = forgeVersion + branch;
+                    return;
+                }
+
+                ForgeBuild build = this.forgeJson.number.get(Integer.parseInt(buildNumber));
+
+                if (build == null)
+                {
+                    throw new GradleConfigurationException("No such version exists!");
+                }
+
+                boolean branchMatches = false;
+                if (Strings.isNullOrEmpty(branch))
+                    branchMatches = Strings.isNullOrEmpty(build.branch);
+                else
+                    branchMatches = branch.substring(1).equals(build.branch);
+
+                boolean mcMatches = build.mcversion.equals(mcversion);
+
+                String outBranch = build.branch;
+                if (outBranch == null)
+                    outBranch = "";
+                else
+                    outBranch = "-" + build.branch;
+
+                if (!build.version.equals(forgeVersion) || !branchMatches || !mcMatches)
+                {
+                    throw new GradleConfigurationException(str + " is an invalid version! did you mean '" + build.mcversion + "-" + build.version + outBranch + "' ?");
+                }
+
+                version = build.mcversion.replace("_", "-");
+                this.forgeVersion = build.version;
+                if (!Strings.isNullOrEmpty(build.branch) && !"null".equals(build.branch))
+                    this.forgeVersion += outBranch;
+            }
+            catch (GradleConfigurationException e)
+            {
+                throw e;
+            }
+            catch (Exception e)// everythng but the gradle exception
+            {
+                System.out.println("Error occurred parsing version!");
+
                 version = mcversion;
-                this.forgeVersion = forgeVersion + branch;
-                return;
+                this.forgeVersion = forgeVersion;
+                if (!Strings.isNullOrEmpty(branch) && !"null".equals(branch))
+                    this.forgeVersion += branch;
             }
-
-            ForgeBuild build = this.forgeJson.number.get(Integer.parseInt(buildNumber));
-
-            if (build == null)
-            {
-                throw new GradleConfigurationException("No such version exists!");
-            }
-
-            boolean branchMatches = false;
-            if (Strings.isNullOrEmpty(branch))
-                branchMatches = Strings.isNullOrEmpty(build.branch);
-            else
-                branchMatches = branch.substring(1).equals(build.branch);
-
-            boolean mcMatches = build.mcversion.equals(mcversion);
-
-            String outBranch = build.branch;
-            if (outBranch == null)
-                outBranch = "";
-            else
-                outBranch = "-" + build.branch;
-
-            if (!build.version.equals(forgeVersion) || !branchMatches || !mcMatches)
-            {
-                throw new GradleConfigurationException(str + " is an invalid version! did you mean '" + build.mcversion + "-" + build.version + outBranch + "' ?");
-            }
-
-            version = build.mcversion.replace("_", "-");
-            this.forgeVersion = build.version;
-            if (!Strings.isNullOrEmpty(build.branch) && !"null".equals(build.branch))
-                this.forgeVersion += outBranch;
 
             return;
         }

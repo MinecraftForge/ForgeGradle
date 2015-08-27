@@ -14,6 +14,7 @@ import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.bundling.Jar;
 
 import com.google.common.base.Strings;
+import com.google.gson.JsonSyntaxException;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.user.TaskSingleReobf;
@@ -124,7 +125,19 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
         File etagFile = new File(jsonCache.getAbsolutePath() + ".etag");
         String url = Constants.URL_FORGE_MAVEN + "/net/minecraftforge/forge/json";
 
-        getExtension().forgeJson = JsonFactory.GSON.fromJson(getWithEtag(url, jsonCache, etagFile), ForgeVersion.class);
+        try
+        {
+            getExtension().forgeJson = JsonFactory.GSON.fromJson(getWithEtag(url, jsonCache, etagFile), ForgeVersion.class);
+            
+        }
+        catch(NullPointerException e)
+        {
+            getExtension().forgeJson = null;
+        }
+        catch(JsonSyntaxException e)
+        {
+            getExtension().forgeJson = null;
+        }
     }
     
     @Override
