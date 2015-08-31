@@ -29,7 +29,8 @@ public class GLConstantFixer
             "ARBMultitexture",
             "ARBOcclusionQuery",
             "ARBVertexBufferObject",
-            "ARBShaderObjects"
+            "ARBShaderObjects",
+            "GlStateManager"
     };
     //@formatter:on
 
@@ -50,7 +51,7 @@ public class GLConstantFixer
     public String fixOGL(String text)
     {
         // if it never uses openGL, ignore it.
-        if (!text.contains(IMPORT_CHECK))
+        if (!text.contains(IMPORT_CHECK) && !text.contains("GlStateManager"))
         {
             return text;
         }

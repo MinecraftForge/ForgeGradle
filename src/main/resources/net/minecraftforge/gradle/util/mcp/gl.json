@@ -2,12 +2,17 @@
    {
       "functions": {
          "GL11":[
-            "glClear"
+            "glClear",
+            "glPushAttrib"
+         ],
+         "GlStateManager":[
+            "clear"
          ]
       },
       "constants": {
          "GL11":{
             "256":"GL_DEPTH_BUFFER_BIT",
+            "8256":"GL_LIGHTING_BIT | GL_ENABLE_BIT",
             "16640":"GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT"
          }
       }
@@ -57,6 +62,10 @@
       "functions": {
          "GL11":[
             "glBlendFunc"
+         ],
+         "GlStateManager":[
+            "tryBlendFuncSeparate",
+            "blendFunc"
          ]
       },
       "constants": {
@@ -294,6 +303,16 @@
             "glGetBufferSubDataARB",
             "glMapBufferARB",
             "glUnmapBufferARB"
+         ],
+         "GlStateManager":[
+            "shadeModel",
+            "depthFunc",
+            "cullFace",
+            "matrixMode",
+            "alphaFunc",
+            "colorLogicOp",
+            "colorMaterial",
+            "setFog"
          ]
       },
       "constants": {
@@ -1212,6 +1231,11 @@
             "35048":"GL_DYNAMIC_DRAW_ARB",
             "35049":"GL_DYNAMIC_READ_ARB",
             "35050":"GL_DYNAMIC_COPY_ARB"
+         },
+         "NVFogDistance":{
+            "34138":"GL_FOG_DISTANCE_MODE_NV",
+            "34139":"GL_EYE_RADIAL_NV",
+            "34140":"GL_EYE_PLANE_ABSOLUTE_NV"
          }
       }
    },
