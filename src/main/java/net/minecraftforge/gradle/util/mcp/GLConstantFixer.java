@@ -41,6 +41,7 @@ public class GLConstantFixer
     private static final String         CHECK          = "org.lwjgl.opengl.";
     private static final String         IMPORT_CHECK   = "import " + CHECK;
     private static final String         IMPORT_REPLACE = "import " + ADD_AFTER + ";";
+    private static final String         STATEMAN_CHECK = "GlStateManager";
 
     public GLConstantFixer() throws IOException
     {
@@ -51,7 +52,7 @@ public class GLConstantFixer
     public String fixOGL(String text)
     {
         // if it never uses openGL, ignore it.
-        if (!text.contains(IMPORT_CHECK) && !text.contains("GlStateManager"))
+        if (!text.contains(IMPORT_CHECK) && !text.contains(STATEMAN_CHECK))
         {
             return text;
         }
@@ -124,10 +125,7 @@ public class GLConstantFixer
             constantMatcher.appendTail(innerOut);
 
             // replace the final line.
-            if (fullCall != null)
-            {
-                rootMatch.appendReplacement(out, Matcher.quoteReplacement(innerOut.toString()));
-            }
+            rootMatch.appendReplacement(out, Matcher.quoteReplacement(innerOut.toString()));
         }
         rootMatch.appendTail(out);
 
