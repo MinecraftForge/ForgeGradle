@@ -75,8 +75,9 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         // check for gradle version
         {
             List<String> split = Splitter.on('.').splitToList(project.getGradle().getGradleVersion());
+            
             int major = Integer.parseInt(split.get(0));
-            int minor = Integer.parseInt(split.get(1));
+            int minor = Integer.parseInt(split.get(1).split("-")[0]);
 
             if (major <= 1 || (major == 2 && minor < 3))
                 throw new RuntimeException("ForgeGradle 2.0 requires Gradle 2.3 or above.");
