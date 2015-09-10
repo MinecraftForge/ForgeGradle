@@ -3,6 +3,7 @@ package net.minecraftforge.gradle.user;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
 import org.gradle.api.DefaultTask;
@@ -22,6 +23,9 @@ public class TaskDepDummy extends DefaultTask
         
         // yup.. a dummy jar....
         JarOutputStream stream = new JarOutputStream(new FileOutputStream(out));
+        stream.putNextEntry(new JarEntry("dummyThing"));
+        stream.write(0xffffffff);
+        stream.closeEntry();
         stream.close();
     }
 
