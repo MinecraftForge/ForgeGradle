@@ -12,7 +12,7 @@ public class AccessTransformerTweaker implements ITweaker
     public void injectIntoClassLoader(LaunchClassLoader classLoader)
     {
         // so I can get it in the right ClassLaoder
-        classLoader.registerTransformer("net.minecraftforge.gradle.GradleStartCommon$AccessTransformerTransformer");
+        classLoader.registerTransformer("net.minecraftforge.gradle.GradleForgeHacks$AccessTransformerTransformer");
     }
 
     //@formatter:off
