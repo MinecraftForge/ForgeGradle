@@ -26,7 +26,6 @@ import net.minecraftforge.gradle.tasks.RemapSources;
 import net.minecraftforge.gradle.user.TaskSingleReobf;
 import net.minecraftforge.gradle.user.UserBaseExtension;
 import net.minecraftforge.gradle.user.UserBasePlugin;
-import net.minecraftforge.gradle.util.delayed.TokenReplacer;
 
 public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends UserBasePlugin<T>
 {
@@ -132,10 +131,10 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
     {
         // add replacements
         T ext = getExtension();
-        TokenReplacer.putReplacement(REPLACE_API_GROUP, getApiGroup(ext));
-        TokenReplacer.putReplacement(REPLACE_API_GROUP_DIR, getApiGroup(ext).replace('.', '/'));
-        TokenReplacer.putReplacement(REPLACE_API_NAME, getApiName(ext));
-        TokenReplacer.putReplacement(REPLACE_API_VERSION, getApiVersion(ext));
+        replacer.putReplacement(REPLACE_API_GROUP, getApiGroup(ext));
+        replacer.putReplacement(REPLACE_API_GROUP_DIR, getApiGroup(ext).replace('.', '/'));
+        replacer.putReplacement(REPLACE_API_NAME, getApiName(ext));
+        replacer.putReplacement(REPLACE_API_VERSION, getApiVersion(ext));
 
         // read version file if exists
         {

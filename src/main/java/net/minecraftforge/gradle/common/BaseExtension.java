@@ -5,32 +5,33 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import joptsimple.internal.Strings;
-import net.minecraftforge.gradle.util.GradleConfigurationException;
-import net.minecraftforge.gradle.util.delayed.TokenReplacer;
-
 import org.gradle.api.Project;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 
+import joptsimple.internal.Strings;
+import net.minecraftforge.gradle.util.GradleConfigurationException;
+import net.minecraftforge.gradle.util.delayed.ReplacementProvider;
+
 public abstract class BaseExtension
 {
     protected static final transient Map<String, String> MCP_VERSION_MAP = ImmutableMap.of("1.8", "9.10");
 
-    public final String                                  forgeGradleVersion;
+    public final String forgeGradleVersion;
 
-    protected transient Project                          project;
-    protected String                                     version;
-    protected String                                     mcpVersion      = "unknown";
+    protected transient Project             project;
+    protected transient ReplacementProvider replacer;
+    protected String                        version;
+    protected String                        mcpVersion = "unknown";
 
     // this should never be touched except by the base plugin in this package
-    Map<String, Map<String, int[]>>                      mcpJson;
-    protected boolean                                    mappingsSet     = false;
-    protected String                                     mappingsChannel = null;
-    protected int                                        mappingsVersion = -1;
+    Map<String, Map<String, int[]>> mcpJson;
+    protected boolean               mappingsSet     = false;
+    protected String                mappingsChannel = null;
+    protected int                   mappingsVersion = -1;
     // custom version for custom mappings
-    protected String                                     mappingsCustom  = null;
+    protected String                mappingsCustom  = null;
 
     public BaseExtension(BasePlugin<? extends BaseExtension> plugin)
     {
@@ -44,7 +45,7 @@ public abstract class BaseExtension
 
             if (version.equals("${version}"))
             {
-                version = "2.0-SNAPSHOT"; // fallback
+                version = "2.0-SNAPSHOT";// fallback
             }
 
         }
@@ -66,7 +67,7 @@ public abstract class BaseExtension
     {
         this.version = version;
 
-        TokenReplacer.putReplacement(Constants.REPLACE_MC_VERSION, version);
+        replacer.putReplacement(Constants.REPLACE_MC_VERSION, version);
 
         mcpVersion = MCP_VERSION_MAP.get(version);
 
@@ -135,8 +136,8 @@ public abstract class BaseExtension
             mappingsChannel = null;
             mappingsVersion = -1;
 
-            TokenReplacer.putReplacement(Constants.REPLACE_MCP_CHANNEL, mappingsChannel);
-            TokenReplacer.putReplacement(Constants.REPLACE_MCP_VERSION, getMappingsVersion());
+            replacer.putReplacement(Constants.REPLACE_MCP_CHANNEL, mappingsChannel);
+            replacer.putReplacement(Constants.REPLACE_MCP_VERSION, getMappingsVersion());
 
             return;
         }
@@ -167,8 +168,8 @@ public abstract class BaseExtension
 
         mappingsSet = true;
 
-        TokenReplacer.putReplacement(Constants.REPLACE_MCP_CHANNEL, mappingsChannel);
-        TokenReplacer.putReplacement(Constants.REPLACE_MCP_VERSION, getMappingsVersion());
+        replacer.putReplacement(Constants.REPLACE_MCP_CHANNEL, mappingsChannel);
+        replacer.putReplacement(Constants.REPLACE_MCP_VERSION, getMappingsVersion());
 
         // check
         checkMappings();

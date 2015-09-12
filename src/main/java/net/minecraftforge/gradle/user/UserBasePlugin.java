@@ -75,7 +75,6 @@ import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.RemapSources;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
-import net.minecraftforge.gradle.util.delayed.TokenReplacer;
 
 public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePlugin<T>
 {
@@ -158,10 +157,10 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
         // add repalcements for run configs and gradle start
         T ext = getExtension();
-        TokenReplacer.putReplacement(REPLACE_CLIENT_TWEAKER, getClientTweaker(ext));
-        TokenReplacer.putReplacement(REPLACE_SERVER_TWEAKER, getServerTweaker(ext));
-        TokenReplacer.putReplacement(REPLACE_CLIENT_MAIN, getClientRunClass(ext));
-        TokenReplacer.putReplacement(REPLACE_SERVER_MAIN, getServerRunClass(ext));
+        replacer.putReplacement(REPLACE_CLIENT_TWEAKER, getClientTweaker(ext));
+        replacer.putReplacement(REPLACE_SERVER_TWEAKER, getServerTweaker(ext));
+        replacer.putReplacement(REPLACE_CLIENT_MAIN, getClientRunClass(ext));
+        replacer.putReplacement(REPLACE_SERVER_MAIN, getServerRunClass(ext));
 
         // map configurations (only if the maven or maven publish plugins exist)
         mapConfigurations();

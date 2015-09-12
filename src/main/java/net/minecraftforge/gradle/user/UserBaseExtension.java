@@ -6,11 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.google.common.collect.Lists;
+
 import net.minecraftforge.gradle.common.BaseExtension;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.util.delayed.TokenReplacer;
-
-import com.google.common.collect.Lists;
 
 public class UserBaseExtension extends BaseExtension
 {
@@ -83,7 +82,7 @@ public class UserBaseExtension extends BaseExtension
     public void setRunDir(String value)
     {
         this.runDir = value;
-        TokenReplacer.putReplacement(UserConstants.REPLACE_RUN_DIR, runDir);
+        replacer.putReplacement(UserConstants.REPLACE_RUN_DIR, runDir);
     }
 
     public String getRunDir()

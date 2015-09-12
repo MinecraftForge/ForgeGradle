@@ -21,9 +21,9 @@ public class DelayedFileTree extends DelayedBase<FileTree>
         project = null;
     }
     
-    public DelayedFileTree(Project project, String pattern)
+    public DelayedFileTree(Project project, ReplacementProvider provider, String pattern)
     {
-        super(pattern);
+        super(provider, pattern);
         hardcoded = null;
         this.project = project;
     }

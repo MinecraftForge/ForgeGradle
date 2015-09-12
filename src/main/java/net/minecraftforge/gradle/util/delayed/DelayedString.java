@@ -4,9 +4,9 @@ package net.minecraftforge.gradle.util.delayed;
 @SuppressWarnings("serial")
 public class DelayedString extends DelayedBase<String>
 {
-    public DelayedString(String pattern)
+    public DelayedString(ReplacementProvider provider,  String pattern)
     {
-        super(pattern);
+        super(provider, pattern);
     }
     
     public DelayedString(TokenReplacer replacer)

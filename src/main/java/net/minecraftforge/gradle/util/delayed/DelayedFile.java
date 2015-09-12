@@ -17,9 +17,9 @@ public class DelayedFile extends DelayedBase<File>
         project = null;
     }
     
-    public DelayedFile(Project project, String pattern)
+    public DelayedFile(Project project, ReplacementProvider provider, String pattern)
     {
-        super(pattern);
+        super(provider, pattern);
         hardcoded = null;
         this.project = project;
     }

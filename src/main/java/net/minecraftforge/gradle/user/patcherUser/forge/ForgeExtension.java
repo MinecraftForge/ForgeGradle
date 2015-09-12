@@ -3,18 +3,17 @@ package net.minecraftforge.gradle.user.patcherUser.forge;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.user.UserBaseExtension;
-import net.minecraftforge.gradle.user.UserBasePlugin;
-import net.minecraftforge.gradle.util.GradleConfigurationException;
-import net.minecraftforge.gradle.util.delayed.TokenReplacer;
-import net.minecraftforge.gradle.util.json.forgeversion.ForgeBuild;
-import net.minecraftforge.gradle.util.json.forgeversion.ForgeVersion;
-
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 
 import com.google.common.base.Strings;
+
+import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.user.UserBaseExtension;
+import net.minecraftforge.gradle.user.UserBasePlugin;
+import net.minecraftforge.gradle.util.GradleConfigurationException;
+import net.minecraftforge.gradle.util.json.forgeversion.ForgeBuild;
+import net.minecraftforge.gradle.util.json.forgeversion.ForgeVersion;
 
 public class ForgeExtension extends UserBaseExtension
 {
@@ -36,7 +35,7 @@ public class ForgeExtension extends UserBaseExtension
     {
         checkAndSetVersion(forgeVersion);
 
-        TokenReplacer.putReplacement(Constants.REPLACE_MC_VERSION, version);
+        replacer.putReplacement(Constants.REPLACE_MC_VERSION, version);
 
         mcpVersion = MCP_VERSION_MAP.get(version);
     }
@@ -46,7 +45,7 @@ public class ForgeExtension extends UserBaseExtension
     {
         checkAndSetVersion(inVersion);
 
-        TokenReplacer.putReplacement(Constants.REPLACE_MC_VERSION, version);
+        replacer.putReplacement(Constants.REPLACE_MC_VERSION, version);
 
         mcpVersion = MCP_VERSION_MAP.get(version);
 

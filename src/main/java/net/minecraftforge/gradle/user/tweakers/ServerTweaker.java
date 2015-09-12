@@ -1,18 +1,22 @@
 package net.minecraftforge.gradle.user.tweakers;
 
-import static net.minecraftforge.gradle.common.Constants.*;
+import static net.minecraftforge.gradle.common.Constants.CONFIG_MC_DEPS;
+import static net.minecraftforge.gradle.common.Constants.CONFIG_NATIVES;
+import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_PURE;
+import static net.minecraftforge.gradle.common.Constants.MCP_PATCHES_SERVER;
+import static net.minecraftforge.gradle.common.Constants.REPLACE_ASSET_INDEX;
+import static net.minecraftforge.gradle.common.Constants.TASK_SPLIT_SERVER;
 
 import java.io.File;
-
-import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.util.delayed.TokenReplacer;
-import net.minecraftforge.gradle.util.json.JsonFactory;
-import net.minecraftforge.gradle.util.json.version.Version;
 
 import org.gradle.api.artifacts.Configuration.State;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 
 import com.google.common.base.Throwables;
+
+import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.util.json.JsonFactory;
+import net.minecraftforge.gradle.util.json.version.Version;
 
 public class ServerTweaker extends TweakerPlugin
 {
@@ -101,7 +105,7 @@ public class ServerTweaker extends TweakerPlugin
             project.getLogger().debug("RESOLVED: " + CONFIG_NATIVES);
 
         // set asset index
-        TokenReplacer.putReplacement(REPLACE_ASSET_INDEX, version.getAssets());
+        replacer.putReplacement(REPLACE_ASSET_INDEX, version.getAssets());
 
         return version;
     }

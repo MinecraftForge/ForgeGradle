@@ -7,10 +7,10 @@ public abstract class DelayedBase<V> extends Closure<V>
 {
     protected TokenReplacer replacer;
 
-    public DelayedBase(String pattern)
+    public DelayedBase(ReplacementProvider provider, String pattern)
     {
         super(null);
-        replacer = new TokenReplacer(pattern);
+        replacer = new TokenReplacer(provider, pattern);
     }
     
     public DelayedBase(TokenReplacer replacer)

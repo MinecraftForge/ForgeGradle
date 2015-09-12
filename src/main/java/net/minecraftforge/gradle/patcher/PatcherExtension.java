@@ -1,13 +1,11 @@
 package net.minecraftforge.gradle.patcher;
 
-import groovy.lang.Closure;
-
 import java.io.File;
 
-import net.minecraftforge.gradle.common.BaseExtension;
-import net.minecraftforge.gradle.util.delayed.TokenReplacer;
-
 import org.gradle.api.NamedDomainObjectContainer;
+
+import groovy.lang.Closure;
+import net.minecraftforge.gradle.common.BaseExtension;
 
 public class PatcherExtension extends BaseExtension
 {
@@ -51,7 +49,7 @@ public class PatcherExtension extends BaseExtension
     public void setInstallerVersion(String installerVersion)
     {
         this.installerVersion = installerVersion;
-        TokenReplacer.putReplacement(PatcherConstants.REPLACE_INSTALLER, installerVersion);
+        replacer.putReplacement(PatcherConstants.REPLACE_INSTALLER, installerVersion);
     }
 
     public NamedDomainObjectContainer<PatcherProject> getProjects()

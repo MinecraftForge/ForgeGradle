@@ -55,6 +55,7 @@ import net.minecraftforge.gradle.util.GradleConfigurationException;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import net.minecraftforge.gradle.util.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.util.delayed.DelayedString;
+import net.minecraftforge.gradle.util.delayed.ReplacementProvider;
 import net.minecraftforge.gradle.util.delayed.TokenReplacer;
 import net.minecraftforge.gradle.util.json.JsonFactory;
 import net.minecraftforge.gradle.util.json.fgversion.FGBuildStatus;
@@ -65,6 +66,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 {
     public Project       project;
     public BasePlugin<?> otherPlugin;
+    public ReplacementProvider replacer = new ReplacementProvider();
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
@@ -90,8 +92,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         }
 
         // set the obvious replacements
-        TokenReplacer.putReplacement(REPLACE_CACHE_DIR, cacheFile("").getAbsolutePath());
-        TokenReplacer.putReplacement(REPLACE_BUILD_DIR, project.getBuildDir().getAbsolutePath());
+        replacer.putReplacement(REPLACE_CACHE_DIR, cacheFile("").getAbsolutePath());
+        replacer.putReplacement(REPLACE_BUILD_DIR, project.getBuildDir().getAbsolutePath());
 
         // logging
         {
@@ -99,7 +101,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             if (projectCacheDir == null)
                 projectCacheDir = new File(project.getProjectDir(), ".gradle");
 
-            TokenReplacer.putReplacement(REPLACE_PROJECT_CACHE_DIR, projectCacheDir.getAbsolutePath());
+            replacer.putReplacement(REPLACE_PROJECT_CACHE_DIR, projectCacheDir.getAbsolutePath());
 
             FileLogListenner listener = new FileLogListenner(new File(projectCacheDir, "gradle.log"));
             project.getLogging().addStandardOutputListener(listener);
@@ -364,7 +366,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                         Files.write(buf.toString().getBytes(Charsets.UTF_8), json);
 
                         // grab the AssetIndex if it isnt already there
-                        if (!TokenReplacer.hasReplacement(REPLACE_ASSET_INDEX))
+                        if (!replacer.hasReplacement(REPLACE_ASSET_INDEX))
                         {
                             parseAndStoreVersion(json, json.getParentFile());
                         }
@@ -703,7 +705,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             project.getLogger().debug("RESOLVED: " + CONFIG_NATIVES);
 
         // set asset index
-        TokenReplacer.putReplacement(REPLACE_ASSET_INDEX, version.getAssets());
+        replacer.putReplacement(REPLACE_ASSET_INDEX, version.getAssets());
 
         return version;
     }
@@ -720,7 +722,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                     new CacheLoader<String, TokenReplacer>() {
                         public TokenReplacer load(String key)
                         {
-                            return new TokenReplacer(key);
+                            return new TokenReplacer(replacer, key);
                         }
                     });
     private LoadingCache<String, DelayedString> stringCache = CacheBuilder.newBuilder()
