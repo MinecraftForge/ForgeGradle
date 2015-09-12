@@ -6,6 +6,7 @@ import static net.minecraftforge.gradle.common.Constants.MCP_PATCHES_MERGED;
 import static net.minecraftforge.gradle.common.Constants.TASK_DL_VERSION_JSON;
 import static net.minecraftforge.gradle.common.Constants.TASK_GENERATE_SRGS;
 import static net.minecraftforge.gradle.common.Constants.TASK_MERGE_JARS;
+import static net.minecraftforge.gradle.common.Constants.DIR_LOCAL_CACHE;
 import static net.minecraftforge.gradle.user.UserConstants.*;
 import static net.minecraftforge.gradle.user.patcherUser.PatcherUserConstants.*;
 

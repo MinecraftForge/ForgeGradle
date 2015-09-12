@@ -1,7 +1,5 @@
 package net.minecraftforge.gradle.common;
 
-import groovy.lang.Closure;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -27,23 +25,23 @@ import java.util.concurrent.Callable;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import net.minecraftforge.gradle.patcher.PatcherExtension;
-import net.minecraftforge.gradle.util.json.version.OS;
-
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
-import au.com.bytecode.opencsv.CSVParser;
-import au.com.bytecode.opencsv.CSVReader;
-
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
+
+import au.com.bytecode.opencsv.CSVParser;
+import au.com.bytecode.opencsv.CSVReader;
+import groovy.lang.Closure;
+import net.minecraftforge.gradle.patcher.PatcherExtension;
+import net.minecraftforge.gradle.util.json.version.OS;
 
 public class Constants
 {
@@ -58,27 +56,32 @@ public class Constants
         }
     }
 
-    public static final OS          OPERATING_SYSTEM = OS.CURRENT;
-    public static final SystemArch  SYSTEM_ARCH      = getArch();
-    public static final Charset     CHARSET          = Charsets.UTF_8;
-    public static final String      HASH_FUNC        = "MD5";
-    public static final String      USER_AGENT       = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11";
+    public static final OS         OPERATING_SYSTEM = OS.CURRENT;
+    public static final SystemArch SYSTEM_ARCH      = getArch();
+    public static final Charset    CHARSET          = Charsets.UTF_8;
+    public static final String     HASH_FUNC        = "MD5";
+    public static final String     USER_AGENT       = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11";
 
     // extension names
-    public static final String EXT_NAME_MC      = "minecraft";
-    
-    public static final String GROUP_FG         = "ForgeGradle";
+    public static final String EXT_NAME_MC = "minecraft";
+
+    public static final String GROUP_FG = "ForgeGradle";
 
     @SuppressWarnings("serial")
-    public static final Closure<Boolean> CALL_FALSE = new Closure<Boolean>(null){ public Boolean call(Object o){ return false; }};
-    
+    public static final Closure<Boolean> CALL_FALSE = new Closure<Boolean>(null) {
+        public Boolean call(Object o)
+        {
+            return false;
+        }
+    };
+
     // replacement strings
-    
+
     /** MC version in form "#.#.#(-appendage)" where the appendage may be -pre# or something. **/
     public static final String REPLACE_MC_VERSION        = "{MC_VERSION}";
-    /** the folder where to cache.  ~/.gradle/caches/minecraft **/
+    /** the folder where to cache. ~/.gradle/caches/minecraft **/
     public static final String REPLACE_CACHE_DIR         = "{CACHE_DIR}";
-    /** the folder where to cache project specific.  project/.gradle/ **/
+    /** the folder where to cache project specific. project/.gradle/ **/
     public static final String REPLACE_PROJECT_CACHE_DIR = "{PROJECT_CACHE_DIR}";
     /** project/build **/
     public static final String REPLACE_BUILD_DIR         = "{BUILD_DIR}";
@@ -88,23 +91,7 @@ public class Constants
     public static final String REPLACE_MCP_VERSION       = "{MAPPING_VERSION}";
     /** AssetIndex name **/
     public static final String REPLACE_ASSET_INDEX       = "{ASSET_INDEX}";
-    
-    // -------- only for dev
-//  patern = patern.replace("{MAPPING_CHANNEL_DOC}", exten.getMappingsChannelNoSubtype());
-    
-    // -------- only for user
-//  patern = patern.replace("{RUN_DIR}", exten.getRunDir().replace('\\', '/'));
-    
-    // -------- remov entirely?
-//  patern = patern.replace("{MC_VERSION_SAFE}", exten.getVersion().replace('-', '_'));
-//  patern = patern.replace("{MCP_VERSION}", exten.getMcpVersion());
-//  patern = patern.replace("{BUILD_NUM}", build);
-//  patern = patern.replace("{PROJECT}", project.getName());
-//
-//    patern = patern.replace("{JENKINS_SERVER}",        jenk.getServer());
-//    patern = patern.replace("{JENKINS_JOB}",           jenk.getJob());
-//    patern = patern.replace("{JENKINS_AUTH_NAME}",     jenk.getAuthName());
-//    patern = patern.replace("{JENKINS_AUTH_PASSWORD}", jenk.getAuthPassword());
+
 
     // urls
     public static final String URL_MC_JSON      = "http://s3.amazonaws.com/Minecraft.Download/versions/" + REPLACE_MC_VERSION + "/" + REPLACE_MC_VERSION + ".json";
@@ -118,65 +105,66 @@ public class Constants
     public static final String URL_MCP_JSON     = "http://export.mcpbot.bspk.rs/versions.json";
 
     // configs
-    public static final String CONFIG_MCP_DATA  = "forgeGradleMcpData";
-    public static final String CONFIG_MAPPINGS  = "forgeGradleMcpMappings";
-    public static final String CONFIG_NATIVES   = "forgeGradleMcNatives";
-    public static final String CONFIG_MC_DEPS   = "forgeGradleMcDeps";
+    public static final String CONFIG_MCP_DATA = "forgeGradleMcpData";
+    public static final String CONFIG_MAPPINGS = "forgeGradleMcpMappings";
+    public static final String CONFIG_NATIVES  = "forgeGradleMcNatives";
+    public static final String CONFIG_MC_DEPS  = "forgeGradleMcDeps";
 
     // things in the cache dir.
-    public static final String DIR_MCP_DATA     = "{CACHE_DIR}/de/oceanlabs/mcp/mcp/" + REPLACE_MC_VERSION;
-    public static final String DIR_MCP_MAPPINGS = "{CACHE_DIR}/de/oceanlabs/mcp/mcp_" + REPLACE_MCP_CHANNEL +"/" + REPLACE_MCP_VERSION;
-    public static final String JAR_CLIENT_FRESH = "{CACHE_DIR}/net/minecraft/minecraft/" + REPLACE_MC_VERSION + "/minecraft-" + REPLACE_MC_VERSION + ".jar";
-    public static final String JAR_SERVER_FRESH = "{CACHE_DIR}/net/minecraft/minecraft_server/" + REPLACE_MC_VERSION + "/minecraft_server-" + REPLACE_MC_VERSION + ".jar";
-    public static final String JAR_MERGED       = "{CACHE_DIR}/net/minecraft/minecraft_merged/" + REPLACE_MC_VERSION + "/minecraft_merged-" + REPLACE_MC_VERSION + ".jar";
-    public static final String JAR_SERVER_PURE  = "{CACHE_DIR}/net/minecraft/minecraft_server/" + REPLACE_MC_VERSION + "/minecraft_server-" + REPLACE_MC_VERSION + "-pure.jar";
-    public static final String JAR_SERVER_DEPS  = "{CACHE_DIR}/net/minecraft/minecraft_server/" + REPLACE_MC_VERSION + "/minecraft_server-" + REPLACE_MC_VERSION + "-deps.jar";
-    public static final String DIR_NATIVES      = "{CACHE_DIR}/net/minecraft/natives/" + REPLACE_MC_VERSION + "/";
-    public static final String JAR_FERNFLOWER   = "{CACHE_DIR}/fernflower-fixed.jar";
-    public static final String DIR_ASSETS       = "{CACHE_DIR}/assets";
+    public static final String DIR_LOCAL_CACHE  = REPLACE_PROJECT_CACHE_DIR + "/minecraft";
+    public static final String DIR_MCP_DATA     = REPLACE_CACHE_DIR + "/de/oceanlabs/mcp/mcp/" + REPLACE_MC_VERSION;
+    public static final String DIR_MCP_MAPPINGS = REPLACE_CACHE_DIR + "/de/oceanlabs/mcp/mcp_" + REPLACE_MCP_CHANNEL + "/" + REPLACE_MCP_VERSION;
+    public static final String JAR_CLIENT_FRESH = REPLACE_CACHE_DIR + "/net/minecraft/minecraft/" + REPLACE_MC_VERSION + "/minecraft-" + REPLACE_MC_VERSION + ".jar";
+    public static final String JAR_SERVER_FRESH = REPLACE_CACHE_DIR + "/net/minecraft/minecraft_server/" + REPLACE_MC_VERSION + "/minecraft_server-" + REPLACE_MC_VERSION + ".jar";
+    public static final String JAR_MERGED       = REPLACE_CACHE_DIR + "/net/minecraft/minecraft_merged/" + REPLACE_MC_VERSION + "/minecraft_merged-" + REPLACE_MC_VERSION + ".jar";
+    public static final String JAR_SERVER_PURE  = REPLACE_CACHE_DIR + "/net/minecraft/minecraft_server/" + REPLACE_MC_VERSION + "/minecraft_server-" + REPLACE_MC_VERSION + "-pure.jar";
+    public static final String JAR_SERVER_DEPS  = REPLACE_CACHE_DIR + "/net/minecraft/minecraft_server/" + REPLACE_MC_VERSION + "/minecraft_server-" + REPLACE_MC_VERSION + "-deps.jar";
+    public static final String DIR_NATIVES      = REPLACE_CACHE_DIR + "/net/minecraft/natives/" + REPLACE_MC_VERSION + "/";
+    public static final String JAR_FERNFLOWER   = REPLACE_CACHE_DIR + "/fernflower-fixed.jar";
+    public static final String DIR_ASSETS       = REPLACE_CACHE_DIR + "/assets";
     public static final String JSON_ASSET_INDEX = DIR_ASSETS + "/indexes/" + REPLACE_ASSET_INDEX + ".json";
-    public static final String DIR_JSONS        = "{CACHE_DIR}/versionJsons";
+    public static final String DIR_JSONS        = REPLACE_CACHE_DIR + "/versionJsons";
     public static final String JSON_VERSION     = DIR_JSONS + "/" + REPLACE_MC_VERSION + ".json";
-    
-    public static final String GRADLE_START_CLIENT   = "GradleStart";
-    public static final String GRADLE_START_SERVER   = "GradleStartServer";
-    
+
+    public static final String GRADLE_START_CLIENT = "GradleStart";
+    public static final String GRADLE_START_SERVER = "GradleStartServer";
+
     public static final String[] GRADLE_START_RESOURCES = new String[] {
-        "GradleStart.java",
-        "GradleStartServer.java",
-        "net/minecraftforge/gradle/GradleStartCommon.java",
-        
-        // 1.7.10 only
-        //makeStart.addResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
+            "GradleStart.java",
+            "GradleStartServer.java",
+            "net/minecraftforge/gradle/GradleStartCommon.java",
+
+            // 1.7.10 only
+            //makeStart.addResource("net/minecraftforge/gradle/OldPropertyMapSerializer.java");
     };
 
     public static final String[] GRADLE_START_FML_RES = new String[] {
-        "net/minecraftforge/gradle/GradleForgeHacks.java",
-        "net/minecraftforge/gradle/tweakers/CoremodTweaker.java",
-        "net/minecraftforge/gradle/tweakers/AccessTransformerTweaker.java"
+            "net/minecraftforge/gradle/GradleForgeHacks.java",
+            "net/minecraftforge/gradle/tweakers/CoremodTweaker.java",
+            "net/minecraftforge/gradle/tweakers/AccessTransformerTweaker.java"
     };
-    
+
     // mcp data constants
-    public static final String MCP_DATA_SRG       = DIR_MCP_DATA+"/joined.srg";
-    public static final String MCP_DATA_EXC       = DIR_MCP_DATA+"/joined.exc";
-    public static final String MCP_DATA_EXC_JSON  = DIR_MCP_DATA+"/exceptor.json";
-    public static final String MCP_DATA_STYLE     = DIR_MCP_DATA+"/astyle.cfg";
-    public static final String MCP_PATCHES_CLIENT = DIR_MCP_DATA+"/patches/minecraft_ff";
-    public static final String MCP_PATCHES_SERVER = DIR_MCP_DATA+"/patches/minecraft_server_ff";
-    public static final String MCP_PATCHES_MERGED = DIR_MCP_DATA+"/patches/minecraft_merged_ff";
-    
+    public static final String MCP_DATA_SRG       = DIR_MCP_DATA + "/joined.srg";
+    public static final String MCP_DATA_EXC       = DIR_MCP_DATA + "/joined.exc";
+    public static final String MCP_DATA_EXC_JSON  = DIR_MCP_DATA + "/exceptor.json";
+    public static final String MCP_DATA_STYLE     = DIR_MCP_DATA + "/astyle.cfg";
+    public static final String MCP_PATCHES_CLIENT = DIR_MCP_DATA + "/patches/minecraft_ff";
+    public static final String MCP_PATCHES_SERVER = DIR_MCP_DATA + "/patches/minecraft_server_ff";
+    public static final String MCP_PATCHES_MERGED = DIR_MCP_DATA + "/patches/minecraft_merged_ff";
+
     // generated off of MCP data constants
-    public static final String CSV_METHOD        = DIR_MCP_MAPPINGS+"/methods.csv";
-    public static final String CSV_FIELD         = DIR_MCP_MAPPINGS+"/fields.csv";
-    public static final String CSV_PARAM         = DIR_MCP_MAPPINGS+"/params.csv";
-    public static final String SRG_NOTCH_TO_SRG  = DIR_MCP_MAPPINGS+"/srgs/notch-srg.srg";
-    public static final String SRG_NOTCH_TO_MCP  = DIR_MCP_MAPPINGS+"/srgs/notch-mcp.srg";
-    public static final String SRG_SRG_TO_MCP    = DIR_MCP_MAPPINGS+"/srgs/srg-mcp.srg";
-    public static final String SRG_MCP_TO_SRG    = DIR_MCP_MAPPINGS+"/srgs/mcp-srg.srg";
-    public static final String SRG_MCP_TO_NOTCH  = DIR_MCP_MAPPINGS+"/srgs/mcp-notch.srg";
-    public static final String EXC_SRG           = DIR_MCP_MAPPINGS+"/srgs/srg.exc";
-    public static final String EXC_MCP           = DIR_MCP_MAPPINGS+"/srgs/mcp.exc";
-    
+    public static final String CSV_METHOD       = DIR_MCP_MAPPINGS + "/methods.csv";
+    public static final String CSV_FIELD        = DIR_MCP_MAPPINGS + "/fields.csv";
+    public static final String CSV_PARAM        = DIR_MCP_MAPPINGS + "/params.csv";
+    public static final String SRG_NOTCH_TO_SRG = DIR_MCP_MAPPINGS + "/srgs/notch-srg.srg";
+    public static final String SRG_NOTCH_TO_MCP = DIR_MCP_MAPPINGS + "/srgs/notch-mcp.srg";
+    public static final String SRG_SRG_TO_MCP   = DIR_MCP_MAPPINGS + "/srgs/srg-mcp.srg";
+    public static final String SRG_MCP_TO_SRG   = DIR_MCP_MAPPINGS + "/srgs/mcp-srg.srg";
+    public static final String SRG_MCP_TO_NOTCH = DIR_MCP_MAPPINGS + "/srgs/mcp-notch.srg";
+    public static final String EXC_SRG          = DIR_MCP_MAPPINGS + "/srgs/srg.exc";
+    public static final String EXC_MCP          = DIR_MCP_MAPPINGS + "/srgs/mcp.exc";
+
     // task names
     public static final String TASK_DL_CLIENT        = "downloadClient";
     public static final String TASK_DL_SERVER        = "downloadServer";
@@ -207,7 +195,7 @@ public class Constants
         }
         return list;
     }
-    
+
     public static URL[] toUrls(FileCollection collection) throws MalformedURLException
     {
         ArrayList<URL> urls = new ArrayList<URL>();
@@ -249,12 +237,12 @@ public class Constants
             return SystemArch.BIT_32;
         }
     }
-    
+
     public static String lower(String string)
     {
         return string.toLowerCase(Locale.ENGLISH);
     }
-    
+
     public static List<String> lines(final String text)
     {
         try
@@ -267,24 +255,24 @@ public class Constants
             return ImmutableList.of();
         }
     }
-    
+
     /**
      * This method constructs,, configures and returns a CSV reader instance to be used to read MCP CSV files.
      * @param file File to read
-     * @return a configured CSVReader 
+     * @return a configured CSVReader
      * @throws IOException Propogated from openning the file
      */
     public static CSVReader getReader(File file) throws IOException
     {
         return new CSVReader(Files.newReader(file, Charset.defaultCharset()), CSVParser.DEFAULT_SEPARATOR, CSVParser.DEFAULT_QUOTE_CHARACTER, CSVParser.NULL_CHARACTER, 1, false);
     }
-    
+
     public static Element addXml(Node parent, String name, Map<String, String> values)
     {
         Document doc = parent.getOwnerDocument();
         if (doc == null)
             doc = (Document) parent;
-        
+
         Element e = doc.createElement(name);
         for (Entry<String, String> entry : values.entrySet())
         {
@@ -293,9 +281,9 @@ public class Constants
         parent.appendChild(e);
         return e;
     }
-    
+
     /**
-     * This method uses the channels API which uses direct filesystem copies instead of loading it into 
+     * This method uses the channels API which uses direct filesystem copies instead of loading it into
      * ram and then outputting it.
      * @param in file to copy
      * @param out created with directories if needed
@@ -305,7 +293,7 @@ public class Constants
     {
         // make dirs just in case
         out.getParentFile().mkdirs();
-        
+
         FileInputStream fis = new FileInputStream(in);
         FileOutputStream fout = new FileOutputStream(out);
 
@@ -314,13 +302,13 @@ public class Constants
 
         long size = source.size();
         source.transferTo(0, size, dest);
-        
+
         fis.close();
         fout.close();
     }
-    
+
     /**
-     * This method uses the channels API which uses direct filesystem copies instead of loading it into 
+     * This method uses the channels API which uses direct filesystem copies instead of loading it into
      * ram and then outputting it.
      * @param in file to copy
      * @param out created with directories if needed
@@ -331,7 +319,7 @@ public class Constants
     {
         // make dirs just in case
         out.getParentFile().mkdirs();
-        
+
         FileInputStream fis = new FileInputStream(in);
         FileOutputStream fout = new FileOutputStream(out);
 
@@ -339,7 +327,7 @@ public class Constants
         FileChannel dest = fout.getChannel();
 
         source.transferTo(0, size, dest);
-        
+
         fis.close();
         fout.close();
     }
@@ -402,7 +390,6 @@ public class Constants
 
             byte[] hash = hasher.digest();
 
-
             // convert to string
             String result = "";
 
@@ -458,16 +445,16 @@ public class Constants
         final File taskLogs = new File(project.getBuildDir(), "taskLogs");
         taskLogs.mkdirs();
         final File logFile = new File(taskLogs, name);
-        logFile.delete(); //Delete the old log
+        logFile.delete();//Delete the old log
         try
         {
             return new PrintStream(logFile);
         }
         catch (FileNotFoundException ignored)
         {}
-        return null; // Should never get to here
+        return null;// Should never get to here
     }
-    
+
     /**
      * Throws a null runtime exception if the resource isnt found.
      * @param resource String name of the resource your looking for
@@ -476,15 +463,15 @@ public class Constants
     public static URL getResource(String resource)
     {
         ClassLoader loader = BaseExtension.class.getClassLoader();
-        
+
         if (loader == null)
             throw new RuntimeException("ClassLoader is null! IMPOSSIBRU");
-        
+
         URL url = loader.getResource(resource);
-        
+
         if (url == null)
-            throw new RuntimeException("Resource "+resource+" not found");
-        
+            throw new RuntimeException("Resource " + resource + " not found");
+
         return url;
     }
 
@@ -509,7 +496,7 @@ public class Constants
             return (String) obj;
 
         if (obj instanceof Closure)
-            return resolveString(((Closure) obj).call()); // yes recursive.
+            return resolveString(((Closure) obj).call());// yes recursive.
         if (obj instanceof Callable)
         {
             try

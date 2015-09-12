@@ -444,7 +444,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         Delete clearCache = makeTask(TASK_CLEAN_CACHE, Delete.class);
         {
-            clearCache.delete(delayedFile(REPLACE_CACHE_DIR), delayedFile(REPLACE_PROJECT_CACHE_DIR));
+            clearCache.delete(delayedFile(REPLACE_CACHE_DIR), delayedFile(DIR_LOCAL_CACHE));
             clearCache.setGroup(GROUP_FG);
             clearCache.setDescription("Cleares the ForgeGradle cache. DONT RUN THIS unless you want a fresh start, or the dev tells you to.");
         }

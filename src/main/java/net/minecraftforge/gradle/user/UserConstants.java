@@ -1,7 +1,6 @@
 package net.minecraftforge.gradle.user;
 
 import static net.minecraftforge.gradle.common.Constants.REPLACE_CACHE_DIR;
-import static net.minecraftforge.gradle.common.Constants.REPLACE_PROJECT_CACHE_DIR;
 
 public class UserConstants
 {
@@ -44,6 +43,5 @@ public class UserConstants
     static final String        REPLACE_CLIENT_MAIN    = "{RUN_CLIENT_MAIN}";
     static final String        REPLACE_RUN_DIR        = "{RUN_DIR}";
 
-    public static final String DIR_LOCAL_CACHE        = REPLACE_PROJECT_CACHE_DIR + "/minecraft";
     public static final String DIR_DEOBF_DEPS         = REPLACE_CACHE_DIR + "/deobfedDeps/";
 }

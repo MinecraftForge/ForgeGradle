@@ -1,21 +1,15 @@
 package net.minecraftforge.gradle.user.tweakers;
 
+import static net.minecraftforge.gradle.common.Constants.DIR_LOCAL_CACHE;
 import static net.minecraftforge.gradle.common.Constants.REPLACE_CACHE_DIR;
 import static net.minecraftforge.gradle.common.Constants.REPLACE_MC_VERSION;
 import static net.minecraftforge.gradle.common.Constants.TASK_MERGE_JARS;
 import static net.minecraftforge.gradle.user.UserConstants.CONFIG_MC;
-import static net.minecraftforge.gradle.user.UserConstants.DIR_LOCAL_CACHE;
 import static net.minecraftforge.gradle.user.UserConstants.TASK_SETUP_CI;
 import static net.minecraftforge.gradle.user.UserConstants.TASK_SETUP_DEV;
 
 import java.io.File;
 import java.util.List;
-
-import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.user.TaskSingleReobf;
-import net.minecraftforge.gradle.user.UserBasePlugin;
-import net.minecraftforge.gradle.user.UserConstants;
-import net.minecraftforge.gradle.util.GradleConfigurationException;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
@@ -24,6 +18,12 @@ import org.gradle.api.tasks.bundling.Jar;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
+
+import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.user.TaskSingleReobf;
+import net.minecraftforge.gradle.user.UserBasePlugin;
+import net.minecraftforge.gradle.user.UserConstants;
+import net.minecraftforge.gradle.util.GradleConfigurationException;
 
 public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
 {
@@ -131,19 +131,19 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
     @Override
     protected String getClientTweaker(TweakerExtension ext)
     {
-        return ""; // nothing, put it in as an argument
+        return "";// nothing, put it in as an argument
     }
 
     @Override
     protected String getServerTweaker(TweakerExtension ext)
     {
-        return ""; // nothing, put it in as an argument
+        return "";// nothing, put it in as an argument
     }
 
     @Override
     protected String getClientRunClass(TweakerExtension ext)
     {
-        return "net.minecraft.client.main.Main"; // default
+        return "net.minecraft.client.main.Main";// default
     }
 
     @Override
@@ -152,14 +152,14 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
         List<String> out = ext.getResolvedClientRunArgs();
         out.add("--tweakClass");
         out.add(ext.getTweakClass());
-        out.add("--noCoreSearch"); // disabel FML-specific coremod loading
+        out.add("--noCoreSearch");// disabel FML-specific coremod loading
         return out;
     }
 
     @Override
     protected String getServerRunClass(TweakerExtension ext)
     {
-        return "net.minecraft.server.MinecraftServer"; // default
+        return "net.minecraft.server.MinecraftServer";// default
     }
 
     @Override
@@ -168,7 +168,7 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
         List<String> out = ext.getResolvedServerRunArgs();
         out.add("--tweakClass");
         out.add(ext.getTweakClass());
-        out.add("--noCoreSearch"); // disabel FML-specific coremod loading
+        out.add("--noCoreSearch");// disabel FML-specific coremod loading
         return out;
     }
 
