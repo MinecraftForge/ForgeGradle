@@ -48,6 +48,7 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
         // add coremod loading hack to gradle start
         {
             CreateStartTask makeStart = ((CreateStartTask)project.getTasks().getByName(UserConstants.TASK_MAKE_START));
+            makeStart.addResource("net/minecraftforge/gradle/GradleForgeHacks.java");
             makeStart.addExtraLine("net.minecraftforge.gradle.GradleForgeHacks.searchCoremods(this);");
         }
         
