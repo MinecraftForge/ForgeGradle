@@ -83,16 +83,6 @@ public class DeobfuscateJar extends CachedTask
 
     private Object            log;
 
-    private boolean           isClean       = true;
-
-    public void addTransformerClean(Object... obj)
-    {
-        for (Object object : obj)
-        {
-            ats.add(object);
-        }
-    }
-
     /**
      * adds an access transformer to the deobfuscation of this
      * @param obj access transformers
@@ -102,11 +92,6 @@ public class DeobfuscateJar extends CachedTask
         for (Object object : obj)
         {
             ats.add(object);
-        }
-
-        if (obj.length > 0)
-        {
-            isClean = false;
         }
     }
 
@@ -147,24 +132,6 @@ public class DeobfuscateJar extends CachedTask
         ErroringRemappingAccessMap accessMap = new ErroringRemappingAccessMap(new File[] { getMethodCsv(), getFieldCsv() });
 
         getLogger().info("Using AccessTransformers...");
-        //        PrintStream tmp = System.out;
-        //        System.setOut(new PrintStream(new ByteArrayOutputStream()
-        //        {
-        //            @Override
-        //            public void write(int b)
-        //            {
-        //            }
-        //
-        //            @Override
-        //            public void write(byte[] b, int off, int len)
-        //            {
-        //            }
-        //
-        //            @Override
-        //            public void writeTo(OutputStream out) throws IOException
-        //            {
-        //            }
-        //        }));
         //Make SS shutup about access maps
         for (File at : ats)
         {
@@ -496,22 +463,6 @@ public class DeobfuscateJar extends CachedTask
         this.methodCsv = methodCsv;
     }
 
-    @Override
-    protected boolean defaultCache()
-    {
-        return isClean;
-    }
-
-    public boolean isClean()
-    {
-        return isClean;
-    }
-
-    public void setDirty()
-    {
-        isClean = false;
-    }
-
     private static final class ErroringRemappingAccessMap extends AccessMap
     {
         private final Map<String, String> renames     = Maps.newHashMap();
@@ -589,8 +540,9 @@ public class DeobfuscateJar extends CachedTask
         @Override
         protected void accessApplied(String key, int oldAccess, int newAccess)
         {
-            // if the access' are equal, then the line is broken, and we dont want to remove it.
-            if (oldAccess != newAccess)
+            // if the access' are equal, then the line is broken, and we dont want to remove it.\
+            // or not... it still applied.. just applied twice somehow.. not an issue.
+//            if (oldAccess != newAccess) 
             {
                 // key added before is in format: package/class{method/field sig}
                 // and the key here is in format: package/class {method/field sig}
