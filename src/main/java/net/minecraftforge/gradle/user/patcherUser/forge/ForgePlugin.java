@@ -17,6 +17,7 @@ import com.google.common.base.Strings;
 import com.google.gson.JsonSyntaxException;
 
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.tasks.CreateStartTask;
 import net.minecraftforge.gradle.user.TaskSingleReobf;
 import net.minecraftforge.gradle.user.UserConstants;
 import net.minecraftforge.gradle.user.patcherUser.PatcherUserBasePlugin;
@@ -42,6 +43,12 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
             TaskSingleReobf reobf = (TaskSingleReobf) project.getTasks().getByName(TASK_REOBF);
             reobf.setPrimarySrg(delayedFile(SRG_MCP_TO_SRG));
             reobf.addPreTransformer(new McVersionTransformer(delayedString(REPLACE_MC_VERSION)));
+        }
+        
+        // add coremod loading hack to gradle start
+        {
+            CreateStartTask makeStart = ((CreateStartTask)project.getTasks().getByName(UserConstants.TASK_MAKE_START));
+            makeStart.addReplacement("//@@EXTRALINES@@", "net.minecraftforge.gradle.GradleForgeHacks.searchCoremods(this);");
         }
         
         // configure eclipse task to do extra stuff.
