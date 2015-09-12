@@ -350,7 +350,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             makeStart.addReplacement("@@SRG_SRG_MCP@@", delayedFile(SRG_SRG_TO_MCP));
             makeStart.addReplacement("@@SRG_MCP_SRG@@", delayedFile(SRG_MCP_TO_SRG));
             makeStart.addReplacement("@@SRG_MCP_NOTCH@@", delayedFile(SRG_MCP_TO_NOTCH));
-            makeStart.addReplacement("@@CSVDIR@@", delayedFile(DIR_MCP_DATA));
+            makeStart.addReplacement("@@CSVDIR@@", delayedFile(DIR_MCP_MAPPINGS));
             makeStart.setStartOut(getStartDir());
             makeStart.addClasspathConfig(CONFIG_MC_DEPS);
             makeStart.mustRunAfter(deobfBin, recompile);

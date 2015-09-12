@@ -338,7 +338,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             makeStart.addReplacement("@@SRG_SRG_MCP@@", delayedFile(SRG_SRG_TO_MCP));
             makeStart.addReplacement("@@SRG_MCP_SRG@@", delayedFile(SRG_MCP_TO_SRG));
             makeStart.addReplacement("@@SRG_MCP_NOTCH@@", delayedFile(SRG_MCP_TO_NOTCH));
-            makeStart.addReplacement("@@CSVDIR@@", delayedFile(DIR_MCP_DATA));
+            makeStart.addReplacement("@@CSVDIR@@", delayedFile(DIR_MCP_MAPPINGS));
             makeStart.addReplacement("@@BOUNCERCLIENT@@", "net.minecraft.client.main.Main");
             makeStart.addReplacement("@@TWEAKERCLIENT@@", "");
             makeStart.addReplacement("@@BOUNCERSERVER@@", "net.minecraft.server.MinecraftServer");
@@ -471,7 +471,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             makeStart.addReplacement("@@SRG_SRG_MCP@@", delayedFile(SRG_SRG_TO_MCP));
             makeStart.addReplacement("@@SRG_MCP_SRG@@", delayedFile(SRG_MCP_TO_SRG));
             makeStart.addReplacement("@@SRG_MCP_NOTCH@@", delayedFile(SRG_MCP_TO_NOTCH));
-            makeStart.addReplacement("@@CSVDIR@@", delayedFile(DIR_MCP_DATA));
+            makeStart.addReplacement("@@CSVDIR@@", delayedFile(DIR_MCP_MAPPINGS));
             makeStart.addReplacement("@@BOUNCERCLIENT@@", patcher.getDelayedMainClassClient());
             makeStart.addReplacement("@@TWEAKERCLIENT@@", patcher.getDelayedTweakClassClient());
             makeStart.addReplacement("@@BOUNCERSERVER@@", patcher.getDelayedMainClassServer());
