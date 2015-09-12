@@ -48,7 +48,7 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
         project.getTasks().getByName(TASK_SETUP_DEV).dependsOn(Constants.TASK_DL_VERSION_JSON);
 
         // add launchwrapper dep.. cuz everyone uses it apperantly..
-        project.getDependencies().add(UserConstants.CONFIG_PROVIDED, "net.minecraft:launchwrapper:1.11");
+        project.getDependencies().add(Constants.CONFIG_MC_DEPS, "net.minecraft:launchwrapper:1.11");
     }
 
     @Override

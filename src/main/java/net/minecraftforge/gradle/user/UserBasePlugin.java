@@ -927,7 +927,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         ideaConv.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(CONFIG_MC_DEPS));
         ideaConv.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(CONFIG_MC));
         ideaConv.getModule().getScopes().get("RUNTIME").get("plus").add(project.getConfigurations().getByName(CONFIG_START));
-        ideaConv.getModule().getScopes().get("PROVIDED").get("plus").add(project.getConfigurations().getByName(CONFIG_PROVIDED));
+        // not provided here, becuase idea actually removes those from the runtime config
+        ideaConv.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(CONFIG_PROVIDED));
 
         // add deobf task dependencies
         project.getTasks().getByName("ideaModule").dependsOn(TASK_DD_COMPILE, TASK_DD_PROVIDED);
