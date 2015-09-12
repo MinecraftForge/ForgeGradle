@@ -36,6 +36,7 @@ public abstract class BaseExtension
     public BaseExtension(BasePlugin<? extends BaseExtension> plugin)
     {
         this.project = plugin.project;
+        this.replacer = plugin.replacer;
 
         String version;
         try
