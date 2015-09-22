@@ -59,6 +59,7 @@ import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.plugins.MavenPluginConvention;
+import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.GroovySourceSet;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.ScalaSourceSet;
@@ -774,10 +775,17 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         }
     }
 
+    private static final Spec<File> AT_SPEC = new Spec<File>()
+    {
+        @Override
+        public boolean isSatisfiedBy(File file)
+        {
+            return file.isFile() && file.getName().toLowerCase().endsWith("_at.cfg");
+        }
+    };
+
     protected void addAtsToDeobf()
     {
-        // INFO: This method is overriden by PatcherUserBasePlugin to add the reading from resource dirs and depndencies
-
         // add src ATs
         DeobfuscateJar binDeobf = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF_BIN);
         DeobfuscateJar decompDeobf = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF);
@@ -786,6 +794,21 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         Object[] extAts = getExtension().getAccessTransformers().toArray();
         binDeobf.addTransformer(extAts);
         decompDeobf.addTransformer(extAts);
+
+        // grab ATs from configured resource dirs
+        boolean addedAts = false;
+
+        for (File at : getExtension().getResolvedAccessTransformerSources().filter(AT_SPEC).getFiles())
+        {
+            project.getLogger().lifecycle("Found AccessTransformer: {}", at.getName());
+            binDeobf.addTransformer(at);
+            decompDeobf.addTransformer(at);
+            addedAts = true;
+        }
+
+        // TODO: search dependency jars for resources
+
+        useLocalCache = useLocalCache || addedAts;
     }
 
     /**
