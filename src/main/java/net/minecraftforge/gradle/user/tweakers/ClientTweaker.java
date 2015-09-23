@@ -29,4 +29,11 @@ public class ClientTweaker extends TweakerPlugin
     {
         return true;
     }
+
+    @Override
+    protected String getClientRunClass(TweakerExtension ext)
+    {
+        return "net.minecraft.launchwrapper.Launch";
+    }
+
 }
