@@ -1,7 +1,7 @@
 site_name: ForgeGradle
 #theme:
 
-site_description: Documentation for ForgeGradle the gradle plufin for Minecraft
+site_description: Documentation for ForgeGradle the gradle plugin for Minecraft
 repo_url: https://github.com/MinecraftForge/ForgeGradle
 
 pages:
