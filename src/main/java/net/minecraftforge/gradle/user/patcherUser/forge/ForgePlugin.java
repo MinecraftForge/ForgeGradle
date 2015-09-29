@@ -245,8 +245,7 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
         List<String> out = ext.getResolvedClientJvmArgs();
         if (!Strings.isNullOrEmpty(ext.getCoreMod()))
         {
-            out.add("-Dfml.coreMods.load");
-            out.add(ext.getCoreMod());
+            out.add("-Dfml.coreMods.load=" + ext.getCoreMod());
         }
         return out;
     }
@@ -257,8 +256,7 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
         List<String> out = ext.getResolvedServerJvmArgs();
         if (!Strings.isNullOrEmpty(ext.getCoreMod()))
         {
-            out.add("-Dfml.coreMods.load");
-            out.add(ext.getCoreMod());
+            out.add("-Dfml.coreMods.load=" + ext.getCoreMod());
         }
         return out;
     }
