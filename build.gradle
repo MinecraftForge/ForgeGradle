@@ -6,6 +6,7 @@ buildscript {
     }
     dependencies {
         classpath "com.gradle.publish:plugin-publish-plugin:0.9.1"
+        classpath 'nl.javadude.gradle.plugins:license-gradle-plugin:0.11.0'
     }
 }
 
@@ -14,6 +15,7 @@ apply plugin: 'idea'
 apply plugin: 'eclipse'
 apply plugin: 'maven'
 apply plugin: "com.gradle.plugin-publish"
+apply plugin: 'license'
 
 group = 'net.minecraftforge.gradle'
 version = '2.0-SNAPSHOT'
@@ -156,6 +158,27 @@ eclipse.classpath.plusConfigurations += [ configurations.compileOnly ]
 test {
     if (project.hasProperty("filesmaven")) // disable this test when on the forge jenkins
         exclude "**/ExtensionMcpMappingTest*"
+}
+
+license {
+    ext {
+        description = 'A Gradle plugin for the creation of Minecraft mods and MinecraftForge plugins.'
+        year = '2013'
+        fullname = 'Minecraft Forge'
+    }
+    header rootProject.file('HEADER')
+    include '**net/minecraftforge/gradle/**/*.java'
+    excludes ([
+        '**net/minecraftforge/gradle/util/ZipFileTree.java',
+        '**net/minecraftforge/gradle/util/json/version/*',
+        '**net/minecraftforge/gradle/util/patching/Base64.java',
+        '**net/minecraftforge/gradle/util/patching/ContextualPatch.java'
+    ])
+    ignoreFailures false
+    strictCheck true
+    mapping {
+        java = 'SLASHSTAR_STYLE'
+    }
 }
 
 pluginBundle {
