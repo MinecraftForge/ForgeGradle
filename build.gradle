@@ -242,8 +242,6 @@ uploadArchives {
                         name 'Abrar Syed'
                         roles { role 'developer' }
                     }
-                }
-                developers {
                     developer {
                         id 'LexManos'
                         name 'Lex Manos'

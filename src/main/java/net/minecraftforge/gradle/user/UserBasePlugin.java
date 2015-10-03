@@ -395,6 +395,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                 if (!isDecomp)
                 {
                     project.getTasks().getByName("compileJava").dependsOn(UserConstants.TASK_DEOBF_BIN);
+                    project.getTasks().getByName("compileApiJava").dependsOn(UserConstants.TASK_DEOBF_BIN);
                 }
 
                 afterDecomp(isDecomp, useLocalCache(getExtension()), CONFIG_MC);
