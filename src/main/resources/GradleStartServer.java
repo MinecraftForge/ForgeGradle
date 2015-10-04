@@ -1,8 +1,6 @@
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.base.Strings;
-
 import net.minecraftforge.gradle.GradleStartCommon;
 
 public class GradleStartServer extends GradleStartCommon
@@ -21,17 +19,7 @@ public class GradleStartServer extends GradleStartCommon
     @Override
     protected String getBounceClass()
     {
-       String bounce = "@@BOUNCERSERVER@@";
-       
-       if (Strings.isNullOrEmpty(bounce))
-       {
-           // default MC server class launch class
-           return "net.minecraft.server.MinecraftServer";
-       }
-       else
-       {
-           return bounce;
-       }
+       return "@@BOUNCERSERVER@@";
     }
 
     @Override protected void preLaunch(Map<String, String> argMap, List<String> extras) { }
