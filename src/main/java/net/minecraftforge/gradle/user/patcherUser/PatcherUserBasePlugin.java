@@ -57,6 +57,13 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
         String global = DIR_API_JAR_BASE + "/" + REPLACE_API_NAME + "%s-" + REPLACE_API_VERSION;
         String local = DIR_LOCAL_CACHE + "/" + REPLACE_API_NAME + "%s-" + REPLACE_API_VERSION + "-PROJECT(" + project.getName() + ")";
 
+        // grab ATs from resource dirs
+        JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+        SourceSet main = javaConv.getSourceSets().getByName("main");
+        SourceSet api = javaConv.getSourceSets().getByName("api");
+
+        getExtension().atSources(main, api);
+
         this.makeDecompTasks(global, local, delayedFile(JAR_MERGED), TASK_MERGE_JARS, delayedFile(MCP_PATCHES_MERGED));
 
         // setup userdev
@@ -196,52 +203,6 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
         String version = getApiVersion(exten) + (useLocalCache ? "-PROJECT(" + project.getName() + ")" : "");
 
         project.getDependencies().add(CONFIG_MC, ImmutableMap.of("group", group, "name", artifact, "version", version));
-    }
-
-    @Override
-    protected void addAtsToDeobf()
-    {
-        // add src ATs
-        DeobfuscateJar binDeobf = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF_BIN);
-        DeobfuscateJar decompDeobf = (DeobfuscateJar) project.getTasks().getByName(TASK_DEOBF);
-
-        // ATs from the ExtensionObject
-        Object[] extAts = getExtension().getAccessTransformers().toArray();
-        binDeobf.addTransformer(extAts);
-        decompDeobf.addTransformer(extAts);
-
-        // grab ATs from resource dirs
-        JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
-        SourceSet main = javaConv.getSourceSets().getByName("main");
-        SourceSet api = javaConv.getSourceSets().getByName("api");
-
-        boolean addedAts = false;
-
-        for (File at : main.getResources().getFiles())
-        {
-            if (at.getName().toLowerCase().endsWith("_at.cfg"))
-            {
-                project.getLogger().lifecycle("Found AccessTransformer in main resources: " + at.getName());
-                binDeobf.addTransformer(at);
-                decompDeobf.addTransformer(at);
-                addedAts = true;
-            }
-        }
-
-        for (File at : api.getResources().getFiles())
-        {
-            if (at.getName().toLowerCase().endsWith("_at.cfg"))
-            {
-                project.getLogger().lifecycle("Found AccessTransformer in api resources: " + at.getName());
-                binDeobf.addTransformer(at);
-                decompDeobf.addTransformer(at);
-                addedAts = true;
-            }
-        }
-
-        // TODO: search dependency jars for resources
-
-        useLocalCache = useLocalCache || addedAts;
     }
 
     @Override

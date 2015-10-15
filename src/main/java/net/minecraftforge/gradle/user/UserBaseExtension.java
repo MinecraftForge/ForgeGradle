@@ -20,6 +20,7 @@
 package net.minecraftforge.gradle.user;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,14 +28,19 @@ import java.util.Map.Entry;
 
 import com.google.common.collect.Lists;
 
+import groovy.lang.Closure;
 import net.minecraftforge.gradle.common.BaseExtension;
 import net.minecraftforge.gradle.common.Constants;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.SourceSet;
 
 public class UserBaseExtension extends BaseExtension
 {
     private HashMap<String, Object> replacements     = new HashMap<String, Object>();
     private ArrayList<String>       includes         = new ArrayList<String>();
     private ArrayList<Object>       ats              = new ArrayList<Object>();
+    private ArrayList<Object>       atSources        = new ArrayList<Object>();
     private String                  runDir           = "run";
     private boolean                 makeObfSourceJar = true;
     private List<Object>            clientJvmArgs    = Lists.newArrayList();
@@ -89,13 +95,37 @@ public class UserBaseExtension extends BaseExtension
 
     public void ats(Object... obj)
     {
-        for (Object object : obj)
-            ats.add(object);
+        Collections.addAll(ats, obj);
     }
 
     public List<Object> getAccessTransformers()
     {
         return ats;
+    }
+
+    //@formatter:off
+    public void accessTransformerSource(Object obj) { atSource(obj); }
+    public void accessTransformerSources(Object... obj) { atSources(obj); }
+    //@formatter:on
+
+    public void atSource(Object obj)
+    {
+        atSources.add(obj);
+    }
+
+    public void atSources(Object... obj)
+    {
+        Collections.addAll(atSources, obj);
+    }
+
+    public List<Object> getAccessTransformerSources()
+    {
+        return atSources;
+    }
+
+    public FileCollection getResolvedAccessTransformerSources()
+    {
+        return resolveFiles(atSources);
     }
 
     public void setRunDir(String value)
@@ -188,4 +218,31 @@ public class UserBaseExtension extends BaseExtension
         }
         return out;
     }
+
+    private Object resolveFile(Object obj)
+    {
+        while (obj instanceof Closure)
+            obj = ((Closure<?>) obj).call();
+
+        SourceSet set = null;
+        if (obj instanceof SourceSet)
+            set = (SourceSet) obj;
+        else if (obj instanceof String)
+        {
+            JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+            set = javaConv.getSourceSets().findByName((String) obj);
+        }
+
+        return (set != null) ? set.getResources() : obj;
+    }
+
+    protected FileCollection resolveFiles(List<Object> objects)
+    {
+        Object[] files = new Object[objects.size()];
+        int i = 0;
+        for (Object obj : objects)
+            files[i++] = resolveFile(obj);
+        return project.files(files).getAsFileTree();
+    }
+
 }
