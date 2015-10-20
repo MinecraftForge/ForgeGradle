@@ -166,40 +166,44 @@ public class PostDecompileTask extends AbstractEditJarTask
     {
         boolean fuzzed = false;
         Throwable error = null;
-        for (PatchReport report : patchErrors)
+        for (PatchAttempt attempt: patchErrors)
         {
-            if (!report.getStatus().isSuccess())
-            {
-                //getLogger().log(LogLevel.ERROR, "Patching failed: " + report.getTarget(), report.getFailure());
-                getLogger().error("Patching failed: " + report.getTarget());
-
-                for (HunkReport hunk : report.getHunks())
+            for (PatchReport report : attempt.report) {
+                if (!report.getStatus().isSuccess())
                 {
-                    if (!hunk.getStatus().isSuccess())
+                    //getLogger().log(LogLevel.ERROR, "Patching failed: " + report.getTarget(), report.getFailure());
+                    getLogger().error("Patching failed: " + report.getTarget());
+
+                    for (HunkReport hunk : report.getHunks())
                     {
-                        getLogger().error("Hunk " + hunk.getHunkID() + " failed! " + report.getFailure().getMessage());
-                        getLogger().error(Joiner.on("\n").join(hunk.hunk.lines));
+                        if (!hunk.getStatus().isSuccess())
+                        {
+                            getLogger().error("Hunk " + hunk.getHunkID() + " failed! " + report.getFailure().getMessage());
+                            getLogger().error(Joiner.on("\n").join(hunk.hunk.lines));
+                            getLogger().error("File state");
+                            getLogger().error(attempt.file);
+                        }
+                    }
+
+                    error = report.getFailure();
+                }
+                else if (report.getStatus() == PatchStatus.Fuzzed) // catch fuzzed patches
+                {
+                    getLogger().log(LogLevel.INFO, "Patching fuzzed: " + report.getTarget(), report.getFailure());
+                    fuzzed = true;
+
+                    for (HunkReport hunk : report.getHunks())
+                    {
+                        if (!hunk.getStatus().isSuccess())
+                        {
+                            getLogger().info("Hunk " + hunk.getHunkID() + " fuzzed " + hunk.getFuzz() + "!");
+                        }
                     }
                 }
-
-                error = report.getFailure();
-            }
-            else if (report.getStatus() == PatchStatus.Fuzzed) // catch fuzzed patches
-            {
-                getLogger().log(LogLevel.INFO, "Patching fuzzed: " + report.getTarget(), report.getFailure());
-                fuzzed = true;
-
-                for (HunkReport hunk : report.getHunks())
+                else
                 {
-                    if (!hunk.getStatus().isSuccess())
-                    {
-                        getLogger().info("Hunk " + hunk.getHunkID() + " fuzzed " + hunk.getFuzz() + "!");
-                    }
+                    getLogger().debug("Patch succeeded: " + report.getTarget());
                 }
-            }
-            else
-            {
-                getLogger().debug("Patch succeeded: " + report.getTarget());
             }
         }
         if (fuzzed)
