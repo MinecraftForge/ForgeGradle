@@ -43,6 +43,7 @@ import net.minecraftforge.gradle.util.patching.ContextualPatch.PatchStatus;
 
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.logging.LogLevel;
+import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
@@ -74,7 +75,7 @@ public class PostDecompileTask extends AbstractEditJarTask
     private static final Pattern         AFTER       = Pattern.compile("(?m)(?:\\r\\n|\\r|\\n)((?:\\r\\n|\\r|\\n)[ \\t]+(case|default))");
 
     private final Multimap<String, File> patchesMap  = ArrayListMultimap.create();
-    private final List<PatchReport>      patchErrors = Lists.newArrayList();
+    private final List<PatchAttempt>      patchErrors = Lists.newArrayList();
     private final ASFormatter            formatter   = new ASFormatter();
     private GLConstantFixer              oglFixer;
 
@@ -102,11 +103,19 @@ public class PostDecompileTask extends AbstractEditJarTask
 
         oglFixer = new GLConstantFixer();
     }
-
+    class PatchAttempt {
+        public PatchAttempt(List<PatchReport> report, String file) {
+            super();
+            this.report = report;
+            this.file = file;
+        }
+        final List<PatchReport> report;
+        final String file;
+    }
     @Override
     public String asRead(String name, String file) throws Exception
     {
-        getLogger().debug("Processing file: " + file);
+        getLogger().debug("Processing file: " + name);
 
         file = FFPatcher.processFile(file);
 
@@ -116,9 +125,11 @@ public class PostDecompileTask extends AbstractEditJarTask
         {
             getLogger().debug("applying MCP patches");
             ContextProvider provider = new ContextProvider(file);
-            ContextualPatch patch = findPatch(patchFiles, provider);
-            patchErrors.addAll(patch.patch(false));
-            file = provider.getAsString();
+            ContextualPatch patch = findPatch(patchFiles, provider,getLogger());
+            if (patch != null) {
+                patchErrors.add(new PatchAttempt(patch.patch(false),file));
+                file = provider.getAsString();
+            }
         }
 
         getLogger().debug("processing comments");
@@ -145,7 +156,7 @@ public class PostDecompileTask extends AbstractEditJarTask
         getLogger().debug("applying FML transformations");
         file = BEFORE.matcher(file).replaceAll("$1");
         file = AFTER.matcher(file).replaceAll("$1");
-        file = FmlCleanup.renameClass(file);
+//        file = FmlCleanup.renameClass(file);
 
         return file;
     }
@@ -154,6 +165,7 @@ public class PostDecompileTask extends AbstractEditJarTask
     public void doStuffAfter() throws Exception
     {
         boolean fuzzed = false;
+        Throwable error = null;
         for (PatchReport report : patchErrors)
         {
             if (!report.getStatus().isSuccess())
@@ -165,11 +177,12 @@ public class PostDecompileTask extends AbstractEditJarTask
                 {
                     if (!hunk.getStatus().isSuccess())
                     {
-                        getLogger().error("Hunk " + hunk.getHunkID() + " failed!");
+                        getLogger().error("Hunk " + hunk.getHunkID() + " failed! " + report.getFailure().getMessage());
+                        getLogger().error(Joiner.on("\n").join(hunk.hunk.lines));
                     }
                 }
 
-                Throwables.propagate(report.getFailure());
+                error = report.getFailure();
             }
             else if (report.getStatus() == PatchStatus.Fuzzed) // catch fuzzed patches
             {
@@ -191,24 +204,37 @@ public class PostDecompileTask extends AbstractEditJarTask
         }
         if (fuzzed)
             getLogger().lifecycle("Patches Fuzzed!");
+        if (error != null) {
+            Throwables.propagate(error);
+        }
     }
 
-    private static ContextualPatch findPatch(Collection<File> files, ContextProvider provider) throws Exception
+    private static ContextualPatch findPatch(Collection<File> files, ContextProvider provider, Logger logger) throws Exception
     {
         ContextualPatch patch = null;
+        File lastFile = null;
+        boolean success = true;
         for (File f : files)
         {
+            logger.debug("trying MCP patch " + f.getName());
+            lastFile = f;
             patch = ContextualPatch.create(Files.toString(f, Constants.CHARSET), provider);
+
             List<PatchReport> errors = patch.patch(true);
 
-            boolean success = true;
+            success = true;
             for (PatchReport rep : errors)
             {
                 if (!rep.getStatus().isSuccess())
                     success = false;
             }
-            if (success)
+            if (success) {
+                logger.debug("accepted MCP patch " + f.getName());
                 break;
+            }
+        }
+        if (!success && lastFile != null) {
+            logger.debug("candidate MCP patch may fuzz " + lastFile.getName());
         }
         return patch;
     }

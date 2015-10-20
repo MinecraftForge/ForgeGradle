@@ -59,37 +59,46 @@ public class FFPatcher
 
     public static String processFile(String text)
     {
-        StringBuffer out = new StringBuffer();
-        Matcher m = SYNTHETICS.matcher(text);
-        while(m.find())
-        {
-            m.appendReplacement(out, synthetic_replacement(m).replace("$", "\\$"));
-        }
-        m.appendTail(out);
-        text = out.toString();
+//        StringBuffer out = new StringBuffer();
+//        Matcher m = SYNTHETICS.matcher(text);
+//        while(m.find())
+//        {
+//            m.appendReplacement(out, synthetic_replacement(m).replace("$", "\\$"));
+//        }
+//        m.appendTail(out);
+//        text = out.toString();
+//
+//        text = text.replaceAll(TRAILING, "");
+//
+//        text = text.replaceAll(TRAILINGZERO, "$1$2");
+//
+//        List<String> lines = Lists.newArrayList(Constants.lines(text));
+//
+//        processClass(lines, "", 0, "", ""); // mutates the list
+//        text = Joiner.on(Constants.NEWLINE).join(lines);
+//
+//        text = text.replaceAll(NEWLINES, Constants.NEWLINE);
+//        text = text.replaceAll(EMPTY_SUPER, "");
+//
+//        // fix interfaces (added 1.7.10+)
+//        out = new StringBuffer();
 
-        text = text.replaceAll(TRAILING, "");
-
-        text = text.replaceAll(TRAILINGZERO, "$1$2");
-
-        List<String> lines = Lists.newArrayList(Constants.lines(text));
-
-        processClass(lines, "", 0, "", ""); // mutates the list
-        text = Joiner.on(Constants.NEWLINE).join(lines);
-
-        text = text.replaceAll(NEWLINES, Constants.NEWLINE);
-        text = text.replaceAll(EMPTY_SUPER, "");
-
-        // fix interfaces (added 1.7.10+)
-        out = new StringBuffer();
-        m = ABSTRACT.matcher(text);
-        while (m.find())
-        {
-            m.appendReplacement(out, abstract_replacement(m).replace("$", "\\$"));
-        }
-        m.appendTail(out);
-
-        return out.toString();
+//        List<String> lines = Constants.lines(text);
+//        for (String line : lines) {
+//            if (line.trim().endsWith(";")) {
+//                Matcher m = ABSTRACT.matcher(text);
+//                while (m.find())
+//                {
+//                    m.appendReplacement(out, abstract_replacement(m).replace("$", "\\$"));
+//                }
+//                m.appendTail(out);
+//            } else {
+//                out.append(line).append(Constants.NEWLINE);
+//            }
+//        }
+//
+//        return out.toString();
+        return text;
     }
 
     private static int processClass(List<String> lines, String indent, int startIndex, String qualifiedName, String simpleName)
@@ -125,9 +134,9 @@ public class FFPatcher
                     newIndent = indent+ "   ";
                 }
 
-                // fund an enum class, parse it seperately
-                if (matcher.group("type").equals("enum"))
-                    processEnum(lines, newIndent, i+1, classPath, matcher.group("name"));
+//                // fund an enum class, parse it seperately
+//                if (matcher.group("type").equals("enum"))
+//                    processEnum(lines, newIndent, i+1, classPath, matcher.group("name"));
 
                 // nested class searching
                 i = processClass(lines, newIndent, i+1, classPath, matcher.group("name"));

@@ -85,6 +85,7 @@ import com.google.common.collect.Maps;
 
 import groovy.lang.Closure;
 import net.minecraftforge.gradle.common.BasePlugin;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
 import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.CreateStartTask;
@@ -166,7 +167,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         {
             throw new RuntimeException("THE DECOMP TASKS HAVENT BEEN MADE!! STUPID FORGEGRADLE DEVELOPER!!!! :(");
         }
-        
+
         // verify runDir is set
         if (Strings.isNullOrEmpty(getExtension().getRunDir()))
         {
@@ -223,7 +224,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             project.getDependencies().add(CONFIG_START, col);
         }
         // TODO: do some GradleStart stuff based on the MC version?
-        
+
         // run task stuff
         // Add the mod and stuff to the classpath of the exec tasks.
         final Jar jarTask = (Jar) project.getTasks().getByName("jar");
@@ -253,10 +254,10 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             exec.jvmArgs(getServerJvmArgs(getExtension()));
             exec.jvmArgs(getServerRunArgs(getExtension()));
         }
-        
+
         // complain about version number
         // blame cazzar if this regex doesnt work
-        Pattern pattern = Pattern.compile("(?:(?:mc)?((?:\\d+)(?:.\\d+)+)-)?((?:0|[1-9][0-9]*)(?:\\.(?:0|[1-9][0-9]*))+)(?:-([\\da-z\\-]+(?:\\.[\\da-z\\-]+)*))?(?:\\+([\\da-z\\-]+(?:\\.[\\da-z\\-]+)*))?", Pattern.CASE_INSENSITIVE); 
+        Pattern pattern = Pattern.compile("(?:(?:mc)?((?:\\d+)(?:.\\d+)+)-)?((?:0|[1-9][0-9]*)(?:\\.(?:0|[1-9][0-9]*))+)(?:-([\\da-z\\-]+(?:\\.[\\da-z\\-]+)*))?(?:\\+([\\da-z\\-]+(?:\\.[\\da-z\\-]+)*))?", Pattern.CASE_INSENSITIVE);
         if (!pattern.matcher(project.getVersion().toString()).matches())
         {
             project.getLogger().warn("Version string '"+project.getVersion()+"' does not match SemVer specification ");
@@ -304,7 +305,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         {
             decompile.setInJar(deobfDecompJar);
             decompile.setOutJar(decompJar);
-            decompile.setFernflower(delayedFile(JAR_FERNFLOWER));
+            decompile.setClasspath(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPS));
             decompile.dependsOn(TASK_DL_FERNFLOWER, deobfDecomp);
         }
 
@@ -341,11 +342,11 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         {
             // ADD YOUR OWN D
             makeStart.addResource(GRADLE_START_RESOURCES[2]); // gradle start common.
-            
+
             if (this.hasClientRun())
             {
                 makeStart.addResource(GRADLE_START_RESOURCES[0]); // gradle start
-                
+
                 makeStart.addReplacement("@@ASSETINDEX@@", delayedString(REPLACE_ASSET_INDEX));
                 makeStart.addReplacement("@@ASSETSDIR@@", delayedFile(REPLACE_CACHE_DIR + "/assets"));
                 makeStart.addReplacement("@@NATIVESDIR@@", delayedFile(DIR_NATIVES));
@@ -354,11 +355,11 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
                 makeStart.dependsOn(TASK_DL_ASSET_INDEX, TASK_DL_ASSETS, TASK_EXTRACT_NATIVES);
             }
-            
+
             if (this.hasServerRun())
             {
-                makeStart.addResource(GRADLE_START_RESOURCES[1]); // gradle start        
-                
+                makeStart.addResource(GRADLE_START_RESOURCES[1]); // gradle start
+
                 makeStart.addReplacement("@@TWEAKERSERVER@@", delayedString(REPLACE_SERVER_TWEAKER));
                 makeStart.addReplacement("@@BOUNCERSERVER@@", delayedString(REPLACE_SERVER_MAIN));
             }
@@ -410,7 +411,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             {
                 // the recompiled jar exists, or the decomp task is part of the build
                 boolean isDecomp = project.file(recompiledJar).exists() || project.getGradle().getStartParameter().getTaskNames().contains(TASK_SETUP_DECOMP);
-                
+
                 // set task dependencies
                 if (!isDecomp)
                 {
@@ -509,7 +510,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
         Javadoc javadoc = (Javadoc) project.getTasks().getByName(JavaPlugin.JAVADOC_TASK_NAME);
         javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
-        
+
         // libs folder dependencies
         project.getDependencies().add(JavaPlugin.COMPILE_CONFIGURATION_NAME, project.fileTree("libs"));
 
@@ -711,7 +712,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             sourceJar.dependsOn(main.getCompileJavaTaskName(), main.getProcessResourcesTaskName(), retromap);
         }
     }
-    
+
     protected void makeRunTasks()
     {
         if (this.hasClientRun())
@@ -864,7 +865,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
      * @return empty list for no arguments. NEVER NULL.
      */
     protected abstract List<String> getClientRunArgs(T ext);
-    
+
     /**
      * For run configurations. Is called late afterEvaluate or at runtime.
      * @param ext the Extension object

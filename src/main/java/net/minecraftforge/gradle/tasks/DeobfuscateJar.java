@@ -66,6 +66,7 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
 
+import de.oceanlabs.mcp.mcinjector.LVTNaming;
 import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
 
 public class DeobfuscateJar extends CachedTask
@@ -303,7 +304,9 @@ public class DeobfuscateJar extends CachedTask
                 0,
                 json,
                 isApplyMarkers(),
-                true);
+                true,
+                LVTNaming.LVT
+                );
     }
 
     private void removeUnknownClasses(File inJar, Map<String, MCInjectorStruct> config) throws IOException
@@ -561,7 +564,7 @@ public class DeobfuscateJar extends CachedTask
         {
             // if the access' are equal, then the line is broken, and we dont want to remove it.\
             // or not... it still applied.. just applied twice somehow.. not an issue.
-//            if (oldAccess != newAccess) 
+//            if (oldAccess != newAccess)
             {
                 // key added before is in format: package/class{method/field sig}
                 // and the key here is in format: package/class {method/field sig}

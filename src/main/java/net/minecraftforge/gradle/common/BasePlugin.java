@@ -41,6 +41,7 @@ import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.repositories.FlatDirectoryArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
+import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.Delete;
 import org.gradle.testfixtures.ProjectBuilder;
 
@@ -58,6 +59,7 @@ import com.google.common.io.Files;
 import com.google.gson.reflect.TypeToken;
 
 import groovy.lang.Closure;
+import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
 import net.minecraftforge.gradle.tasks.CrowdinDownload;
 import net.minecraftforge.gradle.tasks.Download;
 import net.minecraftforge.gradle.tasks.DownloadAssetsTask;
@@ -66,7 +68,6 @@ import net.minecraftforge.gradle.tasks.ExtractConfigTask;
 import net.minecraftforge.gradle.tasks.GenSrgs;
 import net.minecraftforge.gradle.tasks.JenkinsChangelog;
 import net.minecraftforge.gradle.tasks.MergeJars;
-import net.minecraftforge.gradle.tasks.ObtainFernFlowerTask;
 import net.minecraftforge.gradle.tasks.SignJar;
 import net.minecraftforge.gradle.tasks.SplitJarTask;
 import net.minecraftforge.gradle.util.FileLogListenner;
@@ -96,7 +97,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         // check for gradle version
         {
             List<String> split = Splitter.on('.').splitToList(project.getGradle().getGradleVersion());
-            
+
             int major = Integer.parseInt(split.get(0));
             int minor = Integer.parseInt(split.get(1).split("-")[0]);
 
@@ -208,6 +209,9 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         {
             throw new GradleConfigurationException("You must set the Minecraft version!");
         }
+//        JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+//        ApplyFernFlowerTask ffTask = ((ApplyFernFlowerTask) project.getTasks().getByName("decompileJar"));
+//        ffTask.setClasspath(javaConv.getSourceSets().getByName("main").getCompileClasspath());
 
         // http://files.minecraftforge.net/maven/de/oceanlabs/mcp/mcp/1.7.10/mcp-1.7.10-srg.zip
         project.getDependencies().add(CONFIG_MAPPINGS, ImmutableMap.of(
@@ -267,12 +271,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         FGVersionWrapper wrapper = JsonFactory.GSON.fromJson(getWithEtag(checkUrl, jsonCache, etagFile), FGVersionWrapper.class);
         FGVersion webVersion = wrapper.versionObjects.get(version);
         String latestVersion = wrapper.versions.get(wrapper.versions.size()-1);
-        
+
         if (webVersion == null || webVersion.status == FGBuildStatus.FINE)
         {
             return;
         }
-        
+
         // broken implies outdated
         if (webVersion.status == FGBuildStatus.BROKEN)
         {
@@ -290,7 +294,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         {
             outLines.add("ForgeGradle "+latestVersion + " is out! You should update!");
             outLines.add(" Features:");
-            
+
             for (int i = webVersion.index; i < wrapper.versions.size(); i++)
             {
                 for (String feature : wrapper.versionObjects.get(wrapper.versions.get(i)).changes)
@@ -300,10 +304,10 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             }
             outLines.add("****************************");
         }
-        
+
         onVersionCheck(webVersion, wrapper);
     }
-    
+
     /**
      * Function to do stuff with the version check json information. Is called afterEvaluate
      * @param version
@@ -328,13 +332,13 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             dlServer.setOutput(delayedFile(JAR_SERVER_FRESH));
             dlServer.setUrl(delayedString(URL_MC_SERVER));
         }
-        
+
         SplitJarTask splitServer = makeTask(TASK_SPLIT_SERVER, SplitJarTask.class);
         {
             splitServer.setInJar(delayedFile(JAR_SERVER_FRESH));
             splitServer.setOutFirst(delayedFile(JAR_SERVER_PURE));
             splitServer.setOutSecond(delayedFile(JAR_SERVER_DEPS));
-            
+
             splitServer.exclude("org/bouncycastle", "org/bouncycastle/*", "org/bouncycastle/**");
             splitServer.exclude("org/apache", "org/apache/*", "org/apache/**");
             splitServer.exclude("com/google", "com/google/*", "com/google/**");
@@ -344,7 +348,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             splitServer.exclude("io/netty", "io/netty/*", "io/netty/**");
             splitServer.exclude("javax/annotation", "javax/annotation/*", "javax/annotation/**");
             splitServer.exclude("argo", "argo/*", "argo/**");
-            
+
             splitServer.dependsOn(dlServer);
         }
 
@@ -452,13 +456,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             genSrgs.setMcpExc(delayedFile(EXC_MCP));
             genSrgs.setDoesCache(true);
             genSrgs.dependsOn(extractMcpData, extractMcpMappings);
-        }
-
-        ObtainFernFlowerTask ffTask = makeTask(TASK_DL_FERNFLOWER, ObtainFernFlowerTask.class);
-        {
-            ffTask.setMcpUrl(delayedString(URL_FF));
-            ffTask.setFfJar(delayedFile(JAR_FERNFLOWER));
-            ffTask.setDoesCache(true);
         }
 
         Delete clearCache = makeTask(TASK_CLEAN_CACHE, Delete.class);

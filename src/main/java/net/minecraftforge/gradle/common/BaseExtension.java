@@ -208,7 +208,8 @@ public abstract class BaseExtension
         // check if it exists
         Map<String, int[]> versionMap = mcpJson.get(version);
         if (versionMap == null)
-            throw new GradleConfigurationException("There are no mappings for MC " + version);
+            //throw new GradleConfigurationException("There are no mappings for MC " + version);
+            return;
 
         String channel = getMappingsChannelNoSubtype();
         int[] channelList = versionMap.get(channel);
