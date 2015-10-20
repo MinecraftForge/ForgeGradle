@@ -46,6 +46,7 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.InnerClassNode;
 
 import com.google.common.base.Function;
 import com.google.common.base.MoreObjects;
@@ -311,10 +312,45 @@ public class MergeJars extends CachedTask
 
         processFields(cClassNode, sClassNode);
         processMethods(cClassNode, sClassNode);
+        processInners(cClassNode, sClassNode);
 
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         cClassNode.accept(writer);
         return writer.toByteArray();
+    }
+
+    private static boolean innerMatches(InnerClassNode o, InnerClassNode o2)
+    {
+        if (o.innerName == null && o2.innerName != null) return false;
+        if (o.innerName != null && !o.innerName.equals(o2.innerName)) return false;
+        if (o.name == null && o2.name != null) return false;
+        if (o.name != null && !o.name.equals(o2.name)) return false;
+        if (o.outerName == null && o2.outerName != null) return false;
+        if (o.outerName != null && o.outerName.equals(o2.outerName)) return false;
+        return true;
+    }
+    private static boolean contains(List<InnerClassNode> list, InnerClassNode node)
+    {
+        for (InnerClassNode n : list)
+            if (innerMatches(n, node))
+                return true;
+        return false;
+    }
+    private static void processInners(ClassNode cClass, ClassNode sClass)
+    {
+        List<InnerClassNode> cIners = cClass.innerClasses;
+        List<InnerClassNode> sIners = sClass.innerClasses;
+
+        for (InnerClassNode n : cIners)
+        {
+            if (!contains(sIners, n))
+                sIners.add(n);
+        }
+        for (InnerClassNode n : sIners)
+        {
+            if (!contains(cIners, n))
+                cIners.add(n);
+        }
     }
 
     private ClassNode getClassNode(byte[] data)
