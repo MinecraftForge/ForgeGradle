@@ -38,7 +38,6 @@ public class TestClass {
       private final int field_150989_l;
       private final float field_150990_m;
       private boolean field_150987_n = false;
-
       private static final String __OBFID = "CL_00000033";
 
       private InnerEnum(int p_i45336_3_, String p_i45336_4_, int p_i45336_5_, float p_i45336_6_, int p_i45336_7_, float p_i45336_8_) {

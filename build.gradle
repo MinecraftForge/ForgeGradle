@@ -18,7 +18,7 @@ apply plugin: "com.gradle.plugin-publish"
 apply plugin: 'license'
 
 group = 'net.minecraftforge.gradle'
-version = '2.0-SNAPSHOT'
+version = '2.1-SNAPSHOT'
 //version = '2.0.2'
 archivesBaseName = 'ForgeGradle'
 targetCompatibility = '1.6'

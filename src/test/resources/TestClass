@@ -23,10 +23,10 @@ public class TestClass {
 
    public static enum InnerEnum {
 
-      COD("COD", 0, 0, "cod", 2, 0.1F, 5, 0.6F),
-      SALMON("SALMON", 1, 1, "salmon", 2, 0.1F, 6, 0.8F),
-      CLOWNFISH("CLOWNFISH", 2, 2, "clownfish", 1, 0.1F),
-      PUFFERFISH("PUFFERFISH", 3, 3, "pufferfish", 1, 0.1F);
+      COD(0, "cod", 2, 0.1F, 5, 0.6F),
+      SALMON(1, "salmon", 2, 0.1F, 6, 0.8F),
+      CLOWNFISH(2, "clownfish", 1, 0.1F),
+      PUFFERFISH(3, "pufferfish", 1, 0.1F);
       private static final Map field_150983_e = Maps.newHashMap();
       private final int field_150980_f;
       private final String field_150981_g;
@@ -39,12 +39,10 @@ public class TestClass {
       private final int field_150989_l;
       private final float field_150990_m;
       private boolean field_150987_n = false;
-      // $FF: synthetic field
-      private static final TestClass.InnerEnum[] field_150988_o = new TestClass.InnerEnum[]{COD, SALMON, CLOWNFISH, PUFFERFISH};
       private static final String __OBFID = "CL_00000033";
 
 
-      private InnerEnum(String p_i45336_1_, int p_i45336_2_, int p_i45336_3_, String p_i45336_4_, int p_i45336_5_, float p_i45336_6_, int p_i45336_7_, float p_i45336_8_) {
+      private InnerEnum(int p_i45336_3_, String p_i45336_4_, int p_i45336_5_, float p_i45336_6_, int p_i45336_7_, float p_i45336_8_) {
          this.field_150980_f = p_i45336_3_;
          this.field_150981_g = p_i45336_4_;
          this.field_150991_j = p_i45336_5_;
@@ -54,8 +52,8 @@ public class TestClass {
          this.field_150987_n = true;
       }
 
-      private InnerEnum(String p_i45337_1_, int p_i45337_2_, int p_i45337_3_, String p_i45337_4_, int p_i45337_5_, float p_i45337_6_) {
-         this(p_i45337_1_, p_i45337_2_, p_i45337_3_, p_i45337_4_, p_i45337_5_, p_i45337_6_);
+      private InnerEnum(int p_i45337_3_, String p_i45337_4_, int p_i45337_5_, float p_i45337_6_) {
+         this(p_i45337_3_, p_i45337_4_, p_i45337_5_, p_i45337_6_);
          this.field_150980_f = p_i45337_3_;
          this.field_150981_g = p_i45337_4_;
          this.field_150991_j = p_i45337_5_;

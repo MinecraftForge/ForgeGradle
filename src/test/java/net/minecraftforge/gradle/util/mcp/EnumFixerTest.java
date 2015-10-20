@@ -46,6 +46,7 @@ public class EnumFixerTest
         String[] expected = readResource(EXPECTED).split("\r\n|\r|\n");
         String[] actual = input.split("\r\n|\r|\n");
 
+        Assert.assertEquals(readResource(EXPECTED).replaceAll("\r\n|\r|\n", "\n"), input.replaceAll("\r\n|\r|\n", "\n"));
         Assert.assertEquals(expected.length, actual.length);
         for (int i = 0; i < expected.length; i++)
         {
