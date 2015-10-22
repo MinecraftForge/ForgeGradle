@@ -612,12 +612,19 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
                 int taskId = 0;
 
+                // FOR SOURCES!
+
+                HashMap<ComponentIdentifier, ModuleVersionIdentifier> idMap = Maps.newHashMap();
+                
                 // FOR BINARIES
 
                 for (ResolvedArtifact artifact : config.getResolvedConfiguration().getResolvedArtifacts())
                 {
                     ModuleVersionIdentifier module = artifact.getModuleVersion().getId();
                     String group = "deobf." + module.getGroup();
+                    
+                    // Add artifacts that will be remapped to get their sources
+                    idMap.put(artifact.getId().getComponentIdentifier(), module);
 
                     TaskSingleDeobfBin deobf = makeTask(config.getName() + "DeobfDepTask" + (taskId++), TaskSingleDeobfBin.class);
                     deobf.setInJar(artifact.getFile());
@@ -629,10 +636,6 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
                     project.getDependencies().add(resolvedConfig, group + ":" + module.getName() + ":" + module.getVersion());
                 }
-
-                // FOR SOURCES!
-
-                HashMap<ComponentIdentifier, ModuleVersionIdentifier> idMap = Maps.newHashMap();
 
                 for (DependencyResult depResult : config.getIncoming().getResolutionResult().getAllDependencies())
                 {
