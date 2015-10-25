@@ -44,6 +44,7 @@ jar {
     manifest {
         attributes 'version':project.version, 'javaCompliance': project.targetCompatibility
         attributes 'group':project.group
+        attributes 'Implementation-Version': project.version + getGitHash()
     }
 }
 
@@ -200,3 +201,9 @@ uploadArchives {
 // write out version so its convenient for doc deployment
 file('build').mkdirs()
 file('build/version.txt').text = version;
+
+def getGitHash() {
+    def process = 'git rev-parse --short HEAD'.execute()
+    process.waitFor()
+    return '-' + (process.exitValue() ? 'unknown' : process.text.trim())
+}

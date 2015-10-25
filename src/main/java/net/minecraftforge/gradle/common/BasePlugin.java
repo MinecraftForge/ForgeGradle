@@ -33,6 +33,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.repositories.FlatDirectoryArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.Delete;
 import org.gradle.testfixtures.ProjectBuilder;
 
@@ -192,13 +193,16 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         if (!displayBanner)
             return;
-        project.getLogger().lifecycle("****************************");
-        project.getLogger().lifecycle(" Powered By MCP:             ");
-        project.getLogger().lifecycle(" http://modcoderpack.com/    ");
-        project.getLogger().lifecycle(" Searge, ProfMobius, Fesh0r, ");
-        project.getLogger().lifecycle(" R4wk, ZeuX, IngisKahn, bspkrs");
-        project.getLogger().lifecycle(delayedString(" MCP Data version : {MCP_VERSION}").call());
-        project.getLogger().lifecycle("****************************");
+        Logger logger = this.project.getLogger();
+        logger.lifecycle("#################################################");
+        logger.lifecycle("         ForgeGradle {}        ", this.getClass().getPackage().getImplementationVersion());
+        logger.lifecycle("  https://github.com/MinecraftForge/ForgeGradle  ");
+        logger.lifecycle("#################################################");
+        logger.lifecycle("               Powered by MCP {}               ", this.delayedString("{MCP_VERSION}"));
+        logger.lifecycle("             http://modcoderpack.com             ");
+        logger.lifecycle("         by: Searge, ProfMobius, Fesh0r,         ");
+        logger.lifecycle("         R4wk, ZeuX, IngisKahn, bspkrs           ");
+        logger.lifecycle("#################################################");
         displayBanner = false;
     }
 
