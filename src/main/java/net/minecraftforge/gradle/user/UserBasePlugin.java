@@ -521,17 +521,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             return true;
 
         // checks to see if any access transformers were added.
-        useLocalCache = !extension.getAccessTransformers().isEmpty();
-        
-        // check the dep AT dir..
-        for (File f : delayedFile(DIR_DEP_ATS).call().listFiles())
-        {
-            if (!f.isDirectory())
-            {
-                useLocalCache = true;
-                break;
-            }
-        }
+        useLocalCache = !extension.getAccessTransformers().isEmpty() || extension.isUseDepAts();
 
         return useLocalCache;
     }
@@ -885,8 +875,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
         // ATs from the ExtensionObject
         Object[] extAts = getExtension().getAccessTransformers().toArray();
-        binDeobf.addAt(extAts);
-        decompDeobf.addAt(extAts);
+        binDeobf.addAts(extAts);
+        decompDeobf.addAts(extAts);
 
         // grab ATs from configured resource dirs
         boolean addedAts = false;
