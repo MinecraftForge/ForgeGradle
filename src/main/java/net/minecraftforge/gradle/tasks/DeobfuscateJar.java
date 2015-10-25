@@ -23,7 +23,6 @@ import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PROTECTED;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
-import groovy.lang.Closure;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -36,20 +35,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipFile;
-
-import net.md_5.specialsource.AccessMap;
-import net.md_5.specialsource.Jar;
-import net.md_5.specialsource.JarMapping;
-import net.md_5.specialsource.JarRemapper;
-import net.md_5.specialsource.RemapperProcessor;
-import net.md_5.specialsource.provider.JarProvider;
-import net.md_5.specialsource.provider.JointProvider;
-import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.util.caching.Cached;
-import net.minecraftforge.gradle.util.caching.CachedTask;
-import net.minecraftforge.gradle.util.json.JsonFactory;
-import net.minecraftforge.gradle.util.json.MCInjectorStruct;
-import net.minecraftforge.gradle.util.json.MCInjectorStruct.InnerClass;
 
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Input;
@@ -67,6 +52,20 @@ import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
 
 import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
+import groovy.lang.Closure;
+import net.md_5.specialsource.AccessMap;
+import net.md_5.specialsource.Jar;
+import net.md_5.specialsource.JarMapping;
+import net.md_5.specialsource.JarRemapper;
+import net.md_5.specialsource.RemapperProcessor;
+import net.md_5.specialsource.provider.JarProvider;
+import net.md_5.specialsource.provider.JointProvider;
+import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.util.caching.Cached;
+import net.minecraftforge.gradle.util.caching.CachedTask;
+import net.minecraftforge.gradle.util.json.JsonFactory;
+import net.minecraftforge.gradle.util.json.MCInjectorStruct;
+import net.minecraftforge.gradle.util.json.MCInjectorStruct.InnerClass;
 
 public class DeobfuscateJar extends CachedTask
 {
@@ -101,18 +100,6 @@ public class DeobfuscateJar extends CachedTask
     private ArrayList<Object> ats           = Lists.newArrayList();
 
     private Object            log;
-
-    /**
-     * adds an access transformer to the deobfuscation of this
-     * @param obj access transformers
-     */
-    public void addTransformer(Object... obj)
-    {
-        for (Object object : obj)
-        {
-            ats.add(object);
-        }
-    }
 
     @TaskAction
     public void doTask() throws IOException
@@ -457,6 +444,27 @@ public class DeobfuscateJar extends CachedTask
         };
     }
 
+    /**
+     * adds an access transformer to the deobfuscation of this
+     * @param obj access transformers
+     */
+    public void addAt(Object obj)
+    {
+        ats.add(obj);
+    }
+    
+    /**
+     * adds access transformers to the deobfuscation of this
+     * @param obj access transformers
+     */
+    public void addAts(Iterable<Object> objs)
+    {
+        for (Object object : objs)
+        {
+            ats.add(object);
+        }
+    }
+    
     public FileCollection getAts()
     {
         return getProject().files(ats.toArray());

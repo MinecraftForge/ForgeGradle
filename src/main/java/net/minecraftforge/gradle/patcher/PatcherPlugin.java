@@ -764,7 +764,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                 else if (f.getName().endsWith("_at.cfg"))
                 {
                     // Add ATs for deobf in the same run.. why not...
-                    deobfJar.addTransformer(f);
+                    deobfJar.addAt(f);
                     mergeFiles.addAt(f);
                 }
             }

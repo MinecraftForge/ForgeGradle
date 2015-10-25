@@ -19,8 +19,68 @@
  */
 package net.minecraftforge.gradle.user;
 
-import static net.minecraftforge.gradle.common.Constants.*;
-import static net.minecraftforge.gradle.user.UserConstants.*;
+import static net.minecraftforge.gradle.common.Constants.CONFIG_MC_DEPS;
+import static net.minecraftforge.gradle.common.Constants.CSV_FIELD;
+import static net.minecraftforge.gradle.common.Constants.CSV_METHOD;
+import static net.minecraftforge.gradle.common.Constants.CSV_PARAM;
+import static net.minecraftforge.gradle.common.Constants.DIR_MCP_MAPPINGS;
+import static net.minecraftforge.gradle.common.Constants.DIR_NATIVES;
+import static net.minecraftforge.gradle.common.Constants.EXC_MCP;
+import static net.minecraftforge.gradle.common.Constants.EXC_SRG;
+import static net.minecraftforge.gradle.common.Constants.GRADLE_START_CLIENT;
+import static net.minecraftforge.gradle.common.Constants.GRADLE_START_RESOURCES;
+import static net.minecraftforge.gradle.common.Constants.GRADLE_START_SERVER;
+import static net.minecraftforge.gradle.common.Constants.GROUP_FG;
+import static net.minecraftforge.gradle.common.Constants.JAR_FERNFLOWER;
+import static net.minecraftforge.gradle.common.Constants.MCP_DATA_EXC_JSON;
+import static net.minecraftforge.gradle.common.Constants.MCP_DATA_STYLE;
+import static net.minecraftforge.gradle.common.Constants.REPLACE_ASSET_INDEX;
+import static net.minecraftforge.gradle.common.Constants.REPLACE_CACHE_DIR;
+import static net.minecraftforge.gradle.common.Constants.REPLACE_MC_VERSION;
+import static net.minecraftforge.gradle.common.Constants.SRG_MCP_TO_NOTCH;
+import static net.minecraftforge.gradle.common.Constants.SRG_MCP_TO_SRG;
+import static net.minecraftforge.gradle.common.Constants.SRG_NOTCH_TO_MCP;
+import static net.minecraftforge.gradle.common.Constants.SRG_NOTCH_TO_SRG;
+import static net.minecraftforge.gradle.common.Constants.SRG_SRG_TO_MCP;
+import static net.minecraftforge.gradle.common.Constants.TASK_DL_ASSETS;
+import static net.minecraftforge.gradle.common.Constants.TASK_DL_ASSET_INDEX;
+import static net.minecraftforge.gradle.common.Constants.TASK_DL_FERNFLOWER;
+import static net.minecraftforge.gradle.common.Constants.TASK_DL_VERSION_JSON;
+import static net.minecraftforge.gradle.common.Constants.TASK_EXTRACT_MAPPINGS;
+import static net.minecraftforge.gradle.common.Constants.TASK_EXTRACT_NATIVES;
+import static net.minecraftforge.gradle.common.Constants.TASK_GENERATE_SRGS;
+import static net.minecraftforge.gradle.common.Constants.addXml;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_DC_RESOLVED;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_DEOBF_COMPILE;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_DEOBF_PROVIDED;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_DP_RESOLVED;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_MC;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_PROVIDED;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_START;
+import static net.minecraftforge.gradle.user.UserConstants.DIR_DEOBF_DEPS;
+import static net.minecraftforge.gradle.user.UserConstants.DIR_DEP_ATS;
+import static net.minecraftforge.gradle.user.UserConstants.REPLACE_CLIENT_MAIN;
+import static net.minecraftforge.gradle.user.UserConstants.REPLACE_CLIENT_TWEAKER;
+import static net.minecraftforge.gradle.user.UserConstants.REPLACE_RUN_DIR;
+import static net.minecraftforge.gradle.user.UserConstants.REPLACE_SERVER_MAIN;
+import static net.minecraftforge.gradle.user.UserConstants.REPLACE_SERVER_TWEAKER;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_DD_COMPILE;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_DD_PROVIDED;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_DECOMPILE;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_DEOBF;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_DEOBF_BIN;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_EXTRACT_DEP_ATS;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_EXTRACT_RANGE;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_MAKE_START;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_POST_DECOMP;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_RECOMPILE;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_REMAP;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_REOBF;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_RETROMAP_SRC;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_SETUP_CI;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_SETUP_DECOMP;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_SETUP_DEV;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_SRC_JAR;
 
 import java.io.File;
 import java.io.IOException;
@@ -139,6 +199,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         // Quality of life stuff for the users
         createSourceCopyTasks();
         doDevTimeDeobf();
+        doDepAtExtraction();
         makeObfSource();
         makeRunTasks();
 
@@ -280,7 +341,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             deobfBin.setApplyMarkers(false);
             deobfBin.setInJar(inputJar);
             deobfBin.setOutJar(chooseDeobfOutput(globalPattern, localPattern, "Bin", ""));
-            deobfBin.dependsOn(inputTask, TASK_GENERATE_SRGS);
+            deobfBin.dependsOn(inputTask, TASK_GENERATE_SRGS, TASK_EXTRACT_DEP_ATS);
         }
 
         final Object deobfDecompJar = chooseDeobfOutput(globalPattern, localPattern, "", "srgBin");
@@ -297,7 +358,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             deobfDecomp.setApplyMarkers(true);
             deobfDecomp.setInJar(inputJar);
             deobfDecomp.setOutJar(deobfDecompJar);
-            deobfDecomp.dependsOn(inputTask, TASK_GENERATE_SRGS); // todo grab correct task to depend on
+            deobfDecomp.dependsOn(inputTask, TASK_GENERATE_SRGS, TASK_EXTRACT_DEP_ATS); // todo grab correct task to depend on
         }
 
         final ApplyFernFlowerTask decompile = makeTask(TASK_DECOMPILE, ApplyFernFlowerTask.class);
@@ -461,6 +522,16 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
         // checks to see if any access transformers were added.
         useLocalCache = !extension.getAccessTransformers().isEmpty();
+        
+        // check the dep AT dir..
+        for (File f : delayedFile(DIR_DEP_ATS).call().listFiles())
+        {
+            if (!f.isDirectory())
+            {
+                useLocalCache = true;
+                break;
+            }
+        }
 
         return useLocalCache;
     }
@@ -677,6 +748,25 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         });
     }
 
+    protected void doDepAtExtraction()
+    {
+        TaskExtractDepAts extract = makeTask(TASK_EXTRACT_DEP_ATS, TaskExtractDepAts.class);
+        extract.addCollection(project.getConfigurations().getByName("compile"));
+        extract.addCollection(project.getConfigurations().getByName(CONFIG_PROVIDED));
+        extract.addCollection(project.getConfigurations().getByName(CONFIG_DEOBF_COMPILE));
+        extract.addCollection(project.getConfigurations().getByName(CONFIG_DEOBF_PROVIDED));
+        extract.setOutputDir(delayedFile(DIR_DEP_ATS));
+        extract.onlyIf(new Spec<Object>() {
+            @Override
+            public boolean isSatisfiedBy(Object arg0)
+            {
+                return getExtension().isUseDepAts();
+            }
+        });
+        
+        getExtension().atSource(delayedFile(DIR_DEP_ATS));
+    }
+    
     protected void makeObfSource()
     {
         JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
@@ -795,8 +885,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
         // ATs from the ExtensionObject
         Object[] extAts = getExtension().getAccessTransformers().toArray();
-        binDeobf.addTransformer(extAts);
-        decompDeobf.addTransformer(extAts);
+        binDeobf.addAt(extAts);
+        decompDeobf.addAt(extAts);
 
         // grab ATs from configured resource dirs
         boolean addedAts = false;
@@ -804,12 +894,10 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         for (File at : getExtension().getResolvedAccessTransformerSources().filter(AT_SPEC).getFiles())
         {
             project.getLogger().lifecycle("Found AccessTransformer: {}", at.getName());
-            binDeobf.addTransformer(at);
-            decompDeobf.addTransformer(at);
+            binDeobf.addAt(at);
+            decompDeobf.addAt(at);
             addedAts = true;
         }
-
-        // TODO: search dependency jars for resources
 
         useLocalCache = useLocalCache || addedAts;
     }
