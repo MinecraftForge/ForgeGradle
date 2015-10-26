@@ -49,6 +49,7 @@ public class UserConstants
     public static final String TASK_RECOMPILE         = "recompileMc";
     public static final String TASK_MAKE_START        = "makeStart";
 
+    public static final String EXT_REOBF              = "reobf";
     public static final String TASK_REOBF             = "reobfJar";
     public static final String TASK_EXTRACT_RANGE     = "extractRangemapSrc";
     public static final String TASK_RETROMAP_SRC      = "retromapSources";

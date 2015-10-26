@@ -20,7 +20,6 @@
 package net.minecraftforge.gradle.user.patcherUser.forge;
 
 import static net.minecraftforge.gradle.common.Constants.REPLACE_MC_VERSION;
-import static net.minecraftforge.gradle.common.Constants.SRG_MCP_TO_SRG;
 import static net.minecraftforge.gradle.user.UserConstants.TASK_REOBF;
 
 import java.io.File;
@@ -29,7 +28,6 @@ import java.io.IOException;
 import java.util.List;
 
 import org.gradle.api.Action;
-import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.bundling.Jar;
 
 import com.google.common.base.Strings;
@@ -60,7 +58,6 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
         // setup reobf
         {
             TaskSingleReobf reobf = (TaskSingleReobf) project.getTasks().getByName(TASK_REOBF);
-            reobf.setPrimarySrg(delayedFile(SRG_MCP_TO_SRG));
             reobf.addPreTransformer(new McVersionTransformer(delayedString(REPLACE_MC_VERSION)));
         }
         
@@ -121,6 +118,13 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
     }
 
     @Override
+    protected void setupReobf(TaskSingleReobf reobf)
+    {
+        super.setupReobf(reobf);
+        reobf.useSrgSrg();
+    }
+
+    @Override
     protected void afterEvaluate()
     {
         ForgeExtension ext = getExtension();
@@ -131,21 +135,14 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
 
         super.afterEvaluate();
 
-        // configure reobf
+        // add manifest things
         {
-            JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
             Jar jarTask = (Jar) project.getTasks().getByName("jar");
             
             if (!Strings.isNullOrEmpty(ext.getCoreMod()))
             {
                 jarTask.getManifest().getAttributes().put("FMLCorePlugin", ext.getCoreMod());
             }
-
-            TaskSingleReobf reobfTask = ((TaskSingleReobf) project.getTasks().getByName(UserConstants.TASK_REOBF));
-            reobfTask.setClasspath(javaConv.getSourceSets().getByName("main").getCompileClasspath());
-            reobfTask.setPrimarySrg(delayedFile(Constants.SRG_MCP_TO_SRG));
-            reobfTask.setJar(jarTask.getArchivePath());
-            reobfTask.dependsOn(jarTask);
         }
     }
 

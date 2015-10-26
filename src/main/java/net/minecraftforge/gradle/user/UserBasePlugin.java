@@ -19,68 +19,8 @@
  */
 package net.minecraftforge.gradle.user;
 
-import static net.minecraftforge.gradle.common.Constants.CONFIG_MC_DEPS;
-import static net.minecraftforge.gradle.common.Constants.CSV_FIELD;
-import static net.minecraftforge.gradle.common.Constants.CSV_METHOD;
-import static net.minecraftforge.gradle.common.Constants.CSV_PARAM;
-import static net.minecraftforge.gradle.common.Constants.DIR_MCP_MAPPINGS;
-import static net.minecraftforge.gradle.common.Constants.DIR_NATIVES;
-import static net.minecraftforge.gradle.common.Constants.EXC_MCP;
-import static net.minecraftforge.gradle.common.Constants.EXC_SRG;
-import static net.minecraftforge.gradle.common.Constants.GRADLE_START_CLIENT;
-import static net.minecraftforge.gradle.common.Constants.GRADLE_START_RESOURCES;
-import static net.minecraftforge.gradle.common.Constants.GRADLE_START_SERVER;
-import static net.minecraftforge.gradle.common.Constants.GROUP_FG;
-import static net.minecraftforge.gradle.common.Constants.JAR_FERNFLOWER;
-import static net.minecraftforge.gradle.common.Constants.MCP_DATA_EXC_JSON;
-import static net.minecraftforge.gradle.common.Constants.MCP_DATA_STYLE;
-import static net.minecraftforge.gradle.common.Constants.REPLACE_ASSET_INDEX;
-import static net.minecraftforge.gradle.common.Constants.REPLACE_CACHE_DIR;
-import static net.minecraftforge.gradle.common.Constants.REPLACE_MC_VERSION;
-import static net.minecraftforge.gradle.common.Constants.SRG_MCP_TO_NOTCH;
-import static net.minecraftforge.gradle.common.Constants.SRG_MCP_TO_SRG;
-import static net.minecraftforge.gradle.common.Constants.SRG_NOTCH_TO_MCP;
-import static net.minecraftforge.gradle.common.Constants.SRG_NOTCH_TO_SRG;
-import static net.minecraftforge.gradle.common.Constants.SRG_SRG_TO_MCP;
-import static net.minecraftforge.gradle.common.Constants.TASK_DL_ASSETS;
-import static net.minecraftforge.gradle.common.Constants.TASK_DL_ASSET_INDEX;
-import static net.minecraftforge.gradle.common.Constants.TASK_DL_FERNFLOWER;
-import static net.minecraftforge.gradle.common.Constants.TASK_DL_VERSION_JSON;
-import static net.minecraftforge.gradle.common.Constants.TASK_EXTRACT_MAPPINGS;
-import static net.minecraftforge.gradle.common.Constants.TASK_EXTRACT_NATIVES;
-import static net.minecraftforge.gradle.common.Constants.TASK_GENERATE_SRGS;
-import static net.minecraftforge.gradle.common.Constants.addXml;
-import static net.minecraftforge.gradle.user.UserConstants.CONFIG_DC_RESOLVED;
-import static net.minecraftforge.gradle.user.UserConstants.CONFIG_DEOBF_COMPILE;
-import static net.minecraftforge.gradle.user.UserConstants.CONFIG_DEOBF_PROVIDED;
-import static net.minecraftforge.gradle.user.UserConstants.CONFIG_DP_RESOLVED;
-import static net.minecraftforge.gradle.user.UserConstants.CONFIG_MC;
-import static net.minecraftforge.gradle.user.UserConstants.CONFIG_PROVIDED;
-import static net.minecraftforge.gradle.user.UserConstants.CONFIG_START;
-import static net.minecraftforge.gradle.user.UserConstants.DIR_DEOBF_DEPS;
-import static net.minecraftforge.gradle.user.UserConstants.DIR_DEP_ATS;
-import static net.minecraftforge.gradle.user.UserConstants.REPLACE_CLIENT_MAIN;
-import static net.minecraftforge.gradle.user.UserConstants.REPLACE_CLIENT_TWEAKER;
-import static net.minecraftforge.gradle.user.UserConstants.REPLACE_RUN_DIR;
-import static net.minecraftforge.gradle.user.UserConstants.REPLACE_SERVER_MAIN;
-import static net.minecraftforge.gradle.user.UserConstants.REPLACE_SERVER_TWEAKER;
-import static net.minecraftforge.gradle.user.UserConstants.TASK_DD_COMPILE;
-import static net.minecraftforge.gradle.user.UserConstants.TASK_DD_PROVIDED;
-import static net.minecraftforge.gradle.user.UserConstants.TASK_DECOMPILE;
-import static net.minecraftforge.gradle.user.UserConstants.TASK_DEOBF;
-import static net.minecraftforge.gradle.user.UserConstants.TASK_DEOBF_BIN;
-import static net.minecraftforge.gradle.user.UserConstants.TASK_EXTRACT_DEP_ATS;
-import static net.minecraftforge.gradle.user.UserConstants.TASK_EXTRACT_RANGE;
-import static net.minecraftforge.gradle.user.UserConstants.TASK_MAKE_START;
-import static net.minecraftforge.gradle.user.UserConstants.TASK_POST_DECOMP;
-import static net.minecraftforge.gradle.user.UserConstants.TASK_RECOMPILE;
-import static net.minecraftforge.gradle.user.UserConstants.TASK_REMAP;
-import static net.minecraftforge.gradle.user.UserConstants.TASK_REOBF;
-import static net.minecraftforge.gradle.user.UserConstants.TASK_RETROMAP_SRC;
-import static net.minecraftforge.gradle.user.UserConstants.TASK_SETUP_CI;
-import static net.minecraftforge.gradle.user.UserConstants.TASK_SETUP_DECOMP;
-import static net.minecraftforge.gradle.user.UserConstants.TASK_SETUP_DEV;
-import static net.minecraftforge.gradle.user.UserConstants.TASK_SRC_JAR;
+import static net.minecraftforge.gradle.common.Constants.*;
+import static net.minecraftforge.gradle.user.UserConstants.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -98,6 +38,7 @@ import javax.xml.transform.stream.StreamResult;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.XmlProvider;
@@ -193,6 +134,11 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         project.getConfigurations().maybeCreate(CONFIG_DEOBF_PROVIDED);
         project.getConfigurations().maybeCreate(CONFIG_DC_RESOLVED);
         project.getConfigurations().maybeCreate(CONFIG_DP_RESOLVED);
+
+        // create the reobf named container and add the jar task to it.
+        NamedDomainObjectContainer<?> reobf = project.container(IReobfuscator.class, new ReobfTaskFactory(this));
+        reobf.create("jar");
+        project.getExtensions().add(EXT_REOBF, reobf);
 
         configureCompilation();
 
@@ -327,6 +273,22 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
     protected abstract void applyUserPlugin();
 
+    /**
+     * Sets up the default settings for reobf tasks.
+     *
+     * @param reobf The task to setup
+     */
+    protected void setupReobf(TaskSingleReobf reobf)
+    {
+        reobf.setExceptorCfg(delayedFile(EXC_SRG));
+        reobf.setFieldCsv(delayedFile(CSV_FIELD));
+        reobf.setMethodCsv(delayedFile(CSV_METHOD));
+
+        reobf.useNotchSrg();
+        JavaPluginConvention java = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+        reobf.setClasspath(java.getSourceSets().getByName("main").getCompileClasspath());
+    }
+
     protected void makeDecompTasks(final String globalPattern, final String localPattern, Object inputJar, String inputTask, Object mcpPatchSet)
     {
         madeDecompTasks = true; // to gaurd against stupid programmers
@@ -437,31 +399,10 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             makeStart.mustRunAfter(deobfBin, recompile);
         }
 
-        // create reobf task
-        TaskSingleReobf reobf = makeTask(TASK_REOBF, TaskSingleReobf.class);
-        {
-            reobf.setExceptorCfg(delayedFile(EXC_SRG));
-            reobf.setFieldCsv(delayedFile(CSV_FIELD));
-            reobf.setMethodCsv(delayedFile(CSV_METHOD));
-            reobf.setDeobfFile(deobfDecompJar);
-            reobf.setRecompFile(recompiledJar);
-
-            reobf.dependsOn(TASK_GENERATE_SRGS);
-            reobf.mustRunAfter("test");
-
-            // TODO: IMPLEMENT IN SUBLCASSES
-            //task.setSrg(delayedFile(REOBF_SRG));
-            //task.setMcVersion(delayedString(Constants.REPLACE_MC_VERSION));
-        }
-
         // add setup dependencies
         project.getTasks().getByName(TASK_SETUP_CI).dependsOn(deobfBin);
         project.getTasks().getByName(TASK_SETUP_DEV).dependsOn(deobfBin, makeStart);
         project.getTasks().getByName(TASK_SETUP_DECOMP).dependsOn(recompile, makeStart);
-
-        // add build task depends
-        project.getTasks().getByName("build").dependsOn(reobf);
-        project.getTasks().getByName("assemble").dependsOn(reobf);
 
         // configure MC compiling. This AfterEvaluate section should happen after the one made in
         // also configure the dummy task dependencies
