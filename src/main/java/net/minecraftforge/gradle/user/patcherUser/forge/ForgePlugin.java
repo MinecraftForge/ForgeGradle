@@ -20,6 +20,7 @@
 package net.minecraftforge.gradle.user.patcherUser.forge;
 
 import static net.minecraftforge.gradle.common.Constants.REPLACE_MC_VERSION;
+import static net.minecraftforge.gradle.common.Constants.SRG_MCP_TO_SRG;
 import static net.minecraftforge.gradle.user.UserConstants.TASK_REOBF;
 
 import java.io.File;
@@ -121,7 +122,7 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
     protected void setupReobf(TaskSingleReobf reobf)
     {
         super.setupReobf(reobf);
-        reobf.useSrgSrg();
+        reobf.setPrimarySrg(delayedFile(SRG_MCP_TO_SRG));
     }
 
     @Override

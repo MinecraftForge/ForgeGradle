@@ -19,10 +19,7 @@
  */
 package net.minecraftforge.gradle.user;
 
-import static net.minecraftforge.gradle.common.Constants.TASK_GENERATE_SRGS;
-
 import java.io.File;
-import java.util.Collection;
 import java.util.List;
 
 import org.gradle.api.Action;
@@ -32,7 +29,10 @@ import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.bundling.Jar;
 
+import com.google.common.collect.Lists;
+
 import groovy.lang.Closure;
+import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 
 public class ReobfTaskFactory implements NamedDomainObjectFactory<IReobfuscator>
@@ -51,7 +51,7 @@ public class ReobfTaskFactory implements NamedDomainObjectFactory<IReobfuscator>
         String name = "reobf" + Character.toUpperCase(jarName.charAt(0)) + jarName.substring(1);
         final TaskSingleReobf task = plugin.maybeMakeTask(name, TaskSingleReobf.class);
 
-        task.dependsOn(TASK_GENERATE_SRGS, jarName);
+        task.dependsOn(Constants.TASK_GENERATE_SRGS, jarName);
         task.mustRunAfter("test");
         
         task.setJar(new Closure<File>(null) {
@@ -84,9 +84,9 @@ public class ReobfTaskFactory implements NamedDomainObjectFactory<IReobfuscator>
     class TaskWrapper implements IReobfuscator
     {
         private final String name;
-        private final IReobfuscator reobf;
+        private final TaskSingleReobf reobf;
 
-        public TaskWrapper(String name, IReobfuscator reobf)
+        public TaskWrapper(String name, TaskSingleReobf reobf)
         {
             this.name = name;
             this.reobf = reobf;
@@ -103,7 +103,7 @@ public class ReobfTaskFactory implements NamedDomainObjectFactory<IReobfuscator>
          *
          * @return The task
          */
-        public IReobfuscator getTask()
+        public TaskSingleReobf getTask()
         {
             return reobf;
         }
@@ -118,14 +118,14 @@ public class ReobfTaskFactory implements NamedDomainObjectFactory<IReobfuscator>
             return false;
         }
 
-        public Object getMappings()
+        public File getMappings()
         {
-            return reobf.getMappings();
+            return reobf.getPrimarySrg();
         }
 
         public void setMappings(Object srg)
         {
-            reobf.setMappings(srg);
+            reobf.setPrimarySrg(srg);
         }
 
         public void setClasspath(FileCollection classpath)
@@ -137,35 +137,74 @@ public class ReobfTaskFactory implements NamedDomainObjectFactory<IReobfuscator>
         {
             return reobf.getClasspath();
         }
-
-        public List<Object> getExtra()
+        
+        @Override
+        public void setExtraLines(List<Object> extra)
         {
-            return reobf.getExtra();
+            reobf.getExtraSrgLines().clear();
+            extraLines(extra);
         }
 
-        public void setExtra(List<Object> extra)
+        @Override
+        public List<Object> getExtraLines()
         {
-            reobf.setExtra(extra);
+            List<Object> list = Lists.newArrayList();
+            list.addAll(reobf.getExtraSrgLines());
+            return list;
         }
 
-        public void extra(Object... o)
+        @Override
+        public void extraLines(Iterable<Object> o)
         {
-            reobf.extra(o);
+            for (Object obj : o)
+            {
+                reobf.addExtraSrgLine(Constants.resolveString(obj));
+            }
         }
 
-        public void extra(Collection<Object> o)
+        @Override
+        public void extraLines(Object... o)
         {
-            reobf.extra(o);
+            for (Object obj : o)
+            {
+                reobf.addExtraSrgLine(Constants.resolveString(obj));
+            }
         }
 
+        @Override
+        public List<Object> getExtraFiles()
+        {
+            List<Object> list = Lists.newArrayList();
+            list.addAll(reobf.getSecondarySrgFiles().getFiles());
+            return list;
+        }
+
+        @Override
+        public void extraFiles(Iterable<Object> o)
+        {
+            for (Object obj : o)
+            {
+                reobf.addSecondarySrgFile(obj);
+            }
+        }
+
+        @Override
+        public void extraFiles(Object... o)
+        {
+            for (Object obj : o)
+            {
+                reobf.addSecondarySrgFile(obj);
+            }
+        }
+        
         public void useSrgSrg()
         {
-            reobf.useSrgSrg();
+            reobf.setPrimarySrg(Constants.SRG_MCP_TO_SRG);
         }
 
         public void useNotchSrg()
         {
-            reobf.useNotchSrg();
+            reobf.setPrimarySrg(Constants.SRG_MCP_TO_NOTCH);
         }
     }
 }

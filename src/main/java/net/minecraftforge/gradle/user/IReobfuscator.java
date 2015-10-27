@@ -20,7 +20,6 @@
 package net.minecraftforge.gradle.user;
 
 import java.io.File;
-import java.util.Collection;
 import java.util.List;
 
 import org.gradle.api.file.FileCollection;
@@ -31,7 +30,6 @@ import org.gradle.api.file.FileCollection;
  */
 public interface IReobfuscator
 {
-
     /**
      * Gets the mappings file used to reobfuscate. It should be either a
      * {@link File} or a String path for a DelayedFile.
@@ -66,36 +64,58 @@ public interface IReobfuscator
 
     /**
      * Gets the extra srg lines and files. Modders should prefer to use
-     * {@link #extra(Object...)} or {@code extra += []} instead of setting the
+     * {@link #extraLines(Object...)} or {@code extra += []} instead of setting the
      * list manually.
      * 
-     * @return The extra srg files or lines
+     * @return The extra srg lines
      */
-    List<Object> getExtra();
+    List<Object> getExtraLines();
 
     /**
-     * Sets the extra lines and files. Modders should prefer to use
-     * {@link #extra(Object...)} or {@code extra += []} instead of setting the
+     * Sets the extra lines. Modders should prefer to use
+     * {@link #extraLines(Object...)} instead of setting the
      * list manually.
      * 
-     * @param extra The list of srgs
+     * @param extra The list of srg lines
      */
-    void setExtra(List<Object> extra);
+    void setExtraLines(List<Object> extra);
 
     /**
-     * Adds some additional srg files or lines for reobfuscating. Should be a
-     * file or string path
+     * Adds some additional srg lines for reobfuscating. These are resolved to strings.
      * 
      * @param o The array to add
      */
-    void extra(Object... o);
+    void extraLines(Object... o);
 
     /**
-     * Adds a collection of additional srg files or lines for reobfuscating.
+     * Adds a collection of additional srg lines for reobfuscating.
      * 
      * @param o The collection to add
      */
-    void extra(Collection<Object> o);
+    void extraLines(Iterable<Object> o);
+    
+    /**
+     * Gets the extra srg  files. Modders should prefer to use
+     * {@link #extraFiles(Object...)} instead of setting the
+     * list manually.
+     * 
+     * @return The extra srg files
+     */
+    List<Object> getExtraFiles();
+
+    /**
+     * Adds some additional srg files for reobfuscating. These are resolved to files with {@link org.gradle.api.Project#file(Object)} 
+     * 
+     * @param o The array to add
+     */
+    void extraFiles(Object... o);
+
+    /**
+     * Adds a collection of additional srg files for reobfuscating.
+     * 
+     * @param o The collection to add
+     */
+    void extraFiles(Iterable<Object> o);
 
     /**
      * Sets the mappings to use Searge names. This is the default with the Forge

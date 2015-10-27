@@ -45,7 +45,6 @@ import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
 import groovy.lang.Closure;
-import groovy.lang.GString;
 import net.md_5.specialsource.Jar;
 import net.md_5.specialsource.JarMapping;
 import net.md_5.specialsource.JarRemapper;
@@ -54,7 +53,6 @@ import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
-import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import net.minecraftforge.gradle.util.mcp.ReobfExceptor;
 
 /**
@@ -97,9 +95,8 @@ import net.minecraftforge.gradle.util.mcp.ReobfExceptor;
  *
  */
 @ParallelizableTask
-public class TaskSingleReobf extends DefaultTask implements IReobfuscator
+public class TaskSingleReobf extends DefaultTask
 {
-
     private Object                 jar;
     private FileCollection         classpath;
 
@@ -192,7 +189,7 @@ public class TaskSingleReobf extends DefaultTask implements IReobfuscator
         // obfuscate
         File obfuscated = File.createTempFile("obfuscated", ".jar", getTemporaryDir());
         obfuscated.deleteOnExit();
-        applySpecialSource(tempIn, obfuscated, srg, srgLines, getExtraSrgFiles());
+        applySpecialSource(tempIn, obfuscated, srg, srgLines, getSecondarySrgFiles());
 
         // post transform
         transformers = getPostTransformers();
@@ -308,71 +305,6 @@ public class TaskSingleReobf extends DefaultTask implements IReobfuscator
         return getProject().file(primarySrg);
     }
 
-    @Override
-    public void setMappings(Object srg)
-    {
-        setPrimarySrg(srg);
-    }
-
-    @Override
-    public Object getMappings()
-    {
-        return getPrimarySrg();
-    }
-
-    public void useSrgSrg()
-    {
-        setMappings(Constants.SRG_MCP_TO_SRG);
-    }
-
-    public void useNotchSrg()
-    {
-        setMappings(Constants.SRG_MCP_TO_NOTCH);
-    }
-
-    @Override
-    public void setExtra(List<Object> extra)
-    {
-        secondarySrgFiles.clear();
-        extraSrgLines.clear();
-        extra(extra);
-    }
-
-    @Override
-    public List<Object> getExtra()
-    {
-        List<Object> list = Lists.newArrayList();
-        list.addAll(secondarySrgFiles);
-        list.addAll(extraSrgLines);
-        return list;
-    }
-
-    @Override
-    public void extra(Collection<Object> o)
-    {
-        for (Object obj : o)
-        {
-            if (obj instanceof String || obj instanceof GString)
-            {
-                addExtraSrgLine(obj.toString());
-            }
-            else if (obj instanceof File || obj instanceof DelayedFile)
-            {
-                addSecondarySrgFile(obj);
-            }
-            else
-            {
-                throw new IllegalArgumentException("Extra srgs must be a file or string. Found " + o.getClass());
-            }
-        }
-    }
-
-    @Override
-    public void extra(Object... o)
-    {
-        extra(Lists.newArrayList(o));
-    }
-
     public void setPrimarySrg(Object srg)
     {
         this.primarySrg = srg;
@@ -383,7 +315,7 @@ public class TaskSingleReobf extends DefaultTask implements IReobfuscator
         secondarySrgFiles.add(thing);
     }
 
-    public FileCollection getExtraSrgFiles()
+    public FileCollection getSecondarySrgFiles()
     {
         List<File> files = new ArrayList<File>(secondarySrgFiles.size());
 

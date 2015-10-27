@@ -283,7 +283,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         reobf.setFieldCsv(delayedFile(CSV_FIELD));
         reobf.setMethodCsv(delayedFile(CSV_METHOD));
 
-        reobf.useNotchSrg();
+        reobf.setPrimarySrg(delayedFile(SRG_MCP_TO_NOTCH));
         JavaPluginConvention java = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
         reobf.setClasspath(java.getSourceSets().getByName("main").getCompileClasspath());
     }
