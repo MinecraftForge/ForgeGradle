@@ -19,8 +19,6 @@
  */
 package net.minecraftforge.gradle.user;
 
-import groovy.lang.Closure;
-
 import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -36,16 +34,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-import net.md_5.specialsource.Jar;
-import net.md_5.specialsource.JarMapping;
-import net.md_5.specialsource.JarRemapper;
-import net.md_5.specialsource.provider.ClassLoaderProvider;
-import net.md_5.specialsource.provider.JarProvider;
-import net.md_5.specialsource.provider.JointProvider;
-import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.util.GradleConfigurationException;
-import net.minecraftforge.gradle.util.mcp.ReobfExceptor;
-
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.ParallelizableTask;
@@ -56,8 +44,60 @@ import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
+import groovy.lang.Closure;
+import groovy.lang.GString;
+import net.md_5.specialsource.Jar;
+import net.md_5.specialsource.JarMapping;
+import net.md_5.specialsource.JarRemapper;
+import net.md_5.specialsource.provider.ClassLoaderProvider;
+import net.md_5.specialsource.provider.JarProvider;
+import net.md_5.specialsource.provider.JointProvider;
+import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.util.GradleConfigurationException;
+import net.minecraftforge.gradle.util.delayed.DelayedFile;
+import net.minecraftforge.gradle.util.mcp.ReobfExceptor;
+
+/**
+ * Reobfuscates an arbitrary jar artifact.
+ *
+ * <p>
+ * To reobfuscate other artifacts or to change settings, use this in your build
+ * script.
+ *
+ * <pre>
+ *reobf {
+ *    // the jar artifact to reobfuscate
+ *    jar {
+ *
+ *        // Using non-default srg names
+ *        // reobf to notch
+ *        useNotchSrg()
+ *        // or for Searge names
+ *        useSrgSrg()
+ *        // or something else
+ *        mappings = file('srgs/minecraft.srg')
+ *
+ *        // In case you need to modify the classpath
+ *        classpath += configurations.provided
+ *
+ *        // Use this to add srg files or lines
+ *        // You can combine strings and files.
+ *        extra 'PK: org/ejml your/pkg/ejml', file('srgs/mappings.srg')
+ *
+ *        // You can also use with '+=' and array
+ *        extra += ['CL: your/pkg/Original your/pkg/Renamed', file('srgs/mappings2.srg')]
+ *
+ *    }
+ *
+ *    // Some other artifact using default settings
+ *    // the brackets are needed to create it
+ *    otherJar {}
+ *}
+ * </pre>
+ *
+ */
 @ParallelizableTask
-public class TaskSingleReobf extends DefaultTask
+public class TaskSingleReobf extends DefaultTask implements IReobfuscator
 {
 
     private Object                 jar;
@@ -266,6 +306,71 @@ public class TaskSingleReobf extends DefaultTask
         if (primarySrg == null)
             throw new GradleConfigurationException("Primary reobfuscation for Task '" + getName() + "' isnt set!");
         return getProject().file(primarySrg);
+    }
+
+    @Override
+    public void setMappings(Object srg)
+    {
+        setPrimarySrg(srg);
+    }
+
+    @Override
+    public Object getMappings()
+    {
+        return getPrimarySrg();
+    }
+
+    public void useSrgSrg()
+    {
+        setMappings(Constants.SRG_MCP_TO_SRG);
+    }
+
+    public void useNotchSrg()
+    {
+        setMappings(Constants.SRG_MCP_TO_NOTCH);
+    }
+
+    @Override
+    public void setExtra(List<Object> extra)
+    {
+        secondarySrgFiles.clear();
+        extraSrgLines.clear();
+        extra(extra);
+    }
+
+    @Override
+    public List<Object> getExtra()
+    {
+        List<Object> list = Lists.newArrayList();
+        list.addAll(secondarySrgFiles);
+        list.addAll(extraSrgLines);
+        return list;
+    }
+
+    @Override
+    public void extra(Collection<Object> o)
+    {
+        for (Object obj : o)
+        {
+            if (obj instanceof String || obj instanceof GString)
+            {
+                addExtraSrgLine(obj.toString());
+            }
+            else if (obj instanceof File || obj instanceof DelayedFile)
+            {
+                addSecondarySrgFile(obj);
+            }
+            else
+            {
+                throw new IllegalArgumentException("Extra srgs must be a file or string. Found " + o.getClass());
+            }
+        }
+    }
+
+    @Override
+    public void extra(Object... o)
+    {
+        extra(Lists.newArrayList(o));
     }
 
     public void setPrimarySrg(Object srg)
