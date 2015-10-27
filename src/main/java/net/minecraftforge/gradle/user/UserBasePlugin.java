@@ -135,9 +135,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         project.getConfigurations().maybeCreate(CONFIG_DC_RESOLVED);
         project.getConfigurations().maybeCreate(CONFIG_DP_RESOLVED);
 
-        // create the reobf named container and add the jar task to it.
-        NamedDomainObjectContainer<?> reobf = project.container(IReobfuscator.class, new ReobfTaskFactory(this));
-        reobf.create("jar");
+        // create the reobf named container
+        NamedDomainObjectContainer<IReobfuscator> reobf = project.container(IReobfuscator.class, new ReobfTaskFactory(this));
         project.getExtensions().add(EXT_REOBF, reobf);
 
         configureCompilation();
@@ -288,7 +287,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         reobf.setClasspath(java.getSourceSets().getByName("main").getCompileClasspath());
     }
 
-    protected void makeDecompTasks(final String globalPattern, final String localPattern, Object inputJar, String inputTask, Object mcpPatchSet)
+    @SuppressWarnings("unchecked")
+	protected void makeDecompTasks(final String globalPattern, final String localPattern, Object inputJar, String inputTask, Object mcpPatchSet)
     {
         madeDecompTasks = true; // to gaurd against stupid programmers
 
@@ -397,6 +397,9 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             makeStart.addClasspathConfig(CONFIG_MC_DEPS);
             makeStart.mustRunAfter(deobfBin, recompile);
         }
+        
+        // setup reobf...
+        ((NamedDomainObjectContainer<IReobfuscator>) project.getExtensions().getByName(EXT_REOBF)).create("jar");
 
         // add setup dependencies
         project.getTasks().getByName(TASK_SETUP_CI).dependsOn(deobfBin);
