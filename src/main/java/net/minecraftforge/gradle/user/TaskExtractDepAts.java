@@ -31,8 +31,9 @@ import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
@@ -44,8 +45,8 @@ import com.google.common.io.Files;
 
 public class TaskExtractDepAts extends DefaultTask
 {
-    @InputFiles
-    private List<FileCollection> collections = Lists.newArrayList();
+    @Input
+    private List<String> configurations = Lists.newArrayList();
     @OutputDirectory
     private Object               outputDir;
 
@@ -111,12 +112,15 @@ public class TaskExtractDepAts extends DefaultTask
 
     public FileCollection getCollections()
     {
-        return getProject().files(collections);
+    	List<Configuration> configs = Lists.newArrayListWithCapacity(configurations.size());
+    	for (String s : configurations)
+    		configs.add(getProject().getConfigurations().getByName(s));
+        return getProject().files(configs);
     }
 
-    public void addCollection(FileCollection col)
+    public void addCollection(String col)
     {
-        collections.add(col);
+        configurations.add(col);
     }
 
     public File getOutputDir()

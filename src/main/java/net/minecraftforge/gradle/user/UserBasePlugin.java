@@ -681,10 +681,10 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
     protected void doDepAtExtraction()
     {
         TaskExtractDepAts extract = makeTask(TASK_EXTRACT_DEP_ATS, TaskExtractDepAts.class);
-        extract.addCollection(project.getConfigurations().getByName("compile"));
-        extract.addCollection(project.getConfigurations().getByName(CONFIG_PROVIDED));
-        extract.addCollection(project.getConfigurations().getByName(CONFIG_DEOBF_COMPILE));
-        extract.addCollection(project.getConfigurations().getByName(CONFIG_DEOBF_PROVIDED));
+        extract.addCollection("compile");
+        extract.addCollection(CONFIG_PROVIDED);
+        extract.addCollection(CONFIG_DEOBF_COMPILE);
+        extract.addCollection(CONFIG_DEOBF_PROVIDED);
         extract.setOutputDir(delayedFile(DIR_DEP_ATS));
         extract.onlyIf(new Spec<Object>() {
             @Override
