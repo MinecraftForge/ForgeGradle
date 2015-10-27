@@ -199,12 +199,12 @@ public class ReobfTaskFactory implements NamedDomainObjectFactory<IReobfuscator>
         
         public void useSrgSrg()
         {
-            reobf.setPrimarySrg(Constants.SRG_MCP_TO_SRG);
+            reobf.setPrimarySrg(plugin.delayedFile(Constants.SRG_MCP_TO_SRG));
         }
 
         public void useNotchSrg()
         {
-            reobf.setPrimarySrg(Constants.SRG_MCP_TO_NOTCH);
+            reobf.setPrimarySrg(plugin.delayedFile(Constants.SRG_MCP_TO_NOTCH));
         }
     }
 }

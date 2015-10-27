@@ -767,17 +767,17 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                         }
                     });
 
-    protected DelayedString delayedString(String path)
+    public DelayedString delayedString(String path)
     {
         return stringCache.getUnchecked(path);
     }
 
-    protected DelayedFile delayedFile(String path)
+    public DelayedFile delayedFile(String path)
     {
         return fileCache.getUnchecked(path);
     }
 
-    protected DelayedFileTree delayedTree(String path)
+    public DelayedFileTree delayedTree(String path)
     {
         return new DelayedFileTree(project, replacerCache.getUnchecked(path));
     }
