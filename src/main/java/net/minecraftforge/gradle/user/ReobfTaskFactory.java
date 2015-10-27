@@ -21,14 +21,18 @@ package net.minecraftforge.gradle.user;
 
 import static net.minecraftforge.gradle.common.Constants.TASK_GENERATE_SRGS;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.List;
 
+import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectFactory;
+import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.bundling.Jar;
 
+import groovy.lang.Closure;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 
 public class ReobfTaskFactory implements NamedDomainObjectFactory<IReobfuscator>
@@ -40,27 +44,39 @@ public class ReobfTaskFactory implements NamedDomainObjectFactory<IReobfuscator>
         this.plugin = plugin;
     }
 
+    @SuppressWarnings("serial")
     @Override
-    public IReobfuscator create(String jarName)
+    public IReobfuscator create(final String jarName)
     {
-        Task jar = plugin.project.getTasks().getByName(jarName);
-
-        if (!(jar instanceof Jar))
-        {
-            throw new GradleConfigurationException(jarName + "  is not a jar task. Can only reobf jars!");
-        }
         String name = "reobf" + Character.toUpperCase(jarName.charAt(0)) + jarName.substring(1);
-        TaskSingleReobf task = plugin.maybeMakeTask(name, TaskSingleReobf.class);
+        final TaskSingleReobf task = plugin.maybeMakeTask(name, TaskSingleReobf.class);
 
-        task.setJar(((Jar) jar).getArchivePath());
-
-        task.dependsOn(TASK_GENERATE_SRGS, jar);
+        task.dependsOn(TASK_GENERATE_SRGS, jarName);
         task.mustRunAfter("test");
+        
+        task.setJar(new Closure<File>(null) {
+            public File call()
+            {
+                return ((Jar) plugin.project.getTasks().getByName(jarName)).getArchivePath();
+            }
+        });
 
-        plugin.project.getTasks().getByName("build").dependsOn(task);
         plugin.project.getTasks().getByName("assemble").dependsOn(task);
 
         plugin.setupReobf(task);
+        
+        // do after-Evaluate resolution, for the same of good error reporting
+        plugin.project.afterEvaluate(new Action<Project>() {
+            @Override
+            public void execute(Project arg0)
+            {
+                Task jar = plugin.project.getTasks().getByName(jarName);
+                if (!(jar instanceof Jar))
+                {
+                    throw new GradleConfigurationException(jarName + "  is not a jar task. Can only reobf jars!");
+                }
+            }
+        });
 
         return new TaskWrapper(jarName, task);
     }

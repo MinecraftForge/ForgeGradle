@@ -208,7 +208,6 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         if (ext.getMakeObfSourceJar())
         {
             project.getTasks().getByName("assemble").dependsOn(TASK_SRC_JAR);
-            project.getTasks().getByName("build").dependsOn(TASK_SRC_JAR);
         }
 
         // add task depends for reobf
