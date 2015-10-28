@@ -48,7 +48,7 @@
     {
         "status": "FINE",
         "docUrl": "https://forgegradle.readthedocs.org",
-        "version": "2.0.1",
+        "version": "2.0.2",
         "changes": [
         	"Many bug fixes",
         	"Fixed issues with dependency deobfuscation",
