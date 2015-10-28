@@ -108,11 +108,11 @@ compileJava {
 
 processResources {
     from(sourceSets.main.resources.srcDirs) {
-        include 'forgegradle.version.properties'
+        include 'forgegradle.version.txt'
         expand 'version': project.version
     }
     from(sourceSets.main.resources.srcDirs) {
-        exclude 'forgegradle.version.properties'
+        exclude 'forgegradle.version.txt'
     }
 }
 
