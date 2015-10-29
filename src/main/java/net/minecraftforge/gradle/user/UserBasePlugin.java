@@ -424,6 +424,9 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         ideaConv.getModule().setDownloadJavadoc(true);
         ideaConv.getModule().setDownloadSources(true);
 
+        // fix the idea bug
+        ideaConv.getModule().setInheritOutputDirs(true);
+
         Task task = makeTask("genIntellijRuns", DefaultTask.class);
         task.doLast(new Action<Task>() {
             @Override
