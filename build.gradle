@@ -19,7 +19,7 @@ apply plugin: 'license'
 
 group = 'net.minecraftforge.gradle'
 version = '2.1-SNAPSHOT'
-//version = '2.0.2'
+//version = '2.1.1'
 archivesBaseName = 'ForgeGradle'
 targetCompatibility = '1.6'
 sourceCompatibility = '1.6'
@@ -109,11 +109,11 @@ compileJava {
 
 processResources {
     from(sourceSets.main.resources.srcDirs) {
-        include 'forgegradle.version.properties'
+        include 'forgegradle.version.txt'
         expand 'version': project.version
     }
     from(sourceSets.main.resources.srcDirs) {
-        exclude 'forgegradle.version.properties'
+        exclude 'forgegradle.version.txt'
     }
 }
 
@@ -129,6 +129,7 @@ jar {
         attributes 'version':project.version
         attributes 'javaCompliance': project.targetCompatibility
         attributes 'group':project.group
+        attributes 'Implementation-Version': project.version + getGitHash()
     }
 }
 
@@ -191,7 +192,7 @@ pluginBundle {
     plugins {
         patcher {
             id = 'net.minecraftforge.gradle.patcher'
-            displayName = 'Mincraft Patcher Plugin'
+            displayName = 'Minicraft Patcher Plugin'
         }
         tweakerClient {
             id = 'net.minecraftforge.gradle.tweaker-client'
@@ -280,3 +281,9 @@ uploadArchives {
 // write out version so its convenient for doc deployment
 file('build').mkdirs()
 file('build/version.txt').text = version;
+
+def getGitHash() {
+    def process = 'git rev-parse --short HEAD'.execute()
+    process.waitFor()
+    return '-' + (process.exitValue() ? 'unknown' : process.text.trim())
+}

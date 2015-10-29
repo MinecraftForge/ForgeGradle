@@ -32,16 +32,13 @@ import java.util.List;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
-import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.bundling.Jar;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.user.TaskSingleReobf;
 import net.minecraftforge.gradle.user.UserBasePlugin;
-import net.minecraftforge.gradle.user.UserConstants;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 
 public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
@@ -116,16 +113,6 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
         Jar jarTask = (Jar) project.getTasks().getByName("jar");
         jarTask.getManifest().getAttributes().put("TweakClass", ext.getTweakClass());
 
-        // configure reobf
-        {
-            JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
-
-            TaskSingleReobf reobfTask = ((TaskSingleReobf) project.getTasks().getByName(UserConstants.TASK_REOBF));
-            reobfTask.setClasspath(javaConv.getSourceSets().getByName("main").getCompileClasspath());
-            reobfTask.setPrimarySrg(delayedFile(Constants.SRG_MCP_TO_NOTCH));
-            reobfTask.setJar(jarTask.getArchivePath());
-            reobfTask.dependsOn(jarTask);
-        }
     }
 
     /**

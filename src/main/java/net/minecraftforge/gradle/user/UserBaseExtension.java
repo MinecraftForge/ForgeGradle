@@ -41,6 +41,7 @@ public class UserBaseExtension extends BaseExtension
     private ArrayList<String>       includes         = new ArrayList<String>();
     private ArrayList<Object>       ats              = new ArrayList<Object>();
     private ArrayList<Object>       atSources        = new ArrayList<Object>();
+    private boolean                 useDepAts        = false;
     private String                  runDir           = "run";
     private boolean                 makeObfSourceJar = true;
     private List<Object>            clientJvmArgs    = Lists.newArrayList();
@@ -126,6 +127,24 @@ public class UserBaseExtension extends BaseExtension
     public FileCollection getResolvedAccessTransformerSources()
     {
         return resolveFiles(atSources);
+    }
+
+    /**
+     * Whether or not to grab Access Transformers from dependencies
+     * @return
+     */
+    public boolean isUseDepAts()
+    {
+        return useDepAts;
+    }
+
+    /**
+     * 
+     * @param useDepAts If TRUE, then 
+     */
+    public void setUseDepAts(boolean useDepAts)
+    {
+        this.useDepAts = useDepAts;
     }
 
     public void setRunDir(String value)
@@ -244,5 +263,4 @@ public class UserBaseExtension extends BaseExtension
             files[i++] = resolveFile(obj);
         return project.files(files).getAsFileTree();
     }
-
 }

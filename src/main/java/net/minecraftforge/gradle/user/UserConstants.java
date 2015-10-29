@@ -20,6 +20,7 @@
 package net.minecraftforge.gradle.user;
 
 import static net.minecraftforge.gradle.common.Constants.REPLACE_CACHE_DIR;
+import static net.minecraftforge.gradle.common.Constants.REPLACE_BUILD_DIR;
 
 public class UserConstants
 {
@@ -48,11 +49,13 @@ public class UserConstants
     public static final String TASK_RECOMPILE         = "recompileMc";
     public static final String TASK_MAKE_START        = "makeStart";
 
+    public static final String EXT_REOBF              = "reobf";
     public static final String TASK_REOBF             = "reobfJar";
     public static final String TASK_EXTRACT_RANGE     = "extractRangemapSrc";
     public static final String TASK_RETROMAP_SRC      = "retromapSources";
     public static final String TASK_SRC_JAR           = "sourceJar";
 
+    public static final String TASK_EXTRACT_DEP_ATS   = "extractDependencyATs";
     public static final String TASK_DD_COMPILE        = "deobfCompileDummyTask";
     public static final String TASK_DD_PROVIDED       = "deobfProvidedDummyTask";
 
@@ -63,4 +66,5 @@ public class UserConstants
     static final String        REPLACE_RUN_DIR        = "{RUN_DIR}";
 
     public static final String DIR_DEOBF_DEPS         = REPLACE_CACHE_DIR + "/deobfedDeps/";
+    public static final String DIR_DEP_ATS            = REPLACE_BUILD_DIR + "/depAts/";
 }

@@ -309,7 +309,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
     protected void makeCleanTasks()
     {
-        RemapSources remapCleanTask = makeTask("remapCleanJar", RemapSources.class);
+        RemapSources remapCleanTask = makeTask(TASK_CLEAN_REMAP, RemapSources.class);
         {
             remapCleanTask.setInJar(delayedFile(JAR_DECOMP_POST));
             remapCleanTask.setOutJar(delayedFile(JAR_REMAPPED));
@@ -323,7 +323,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
         Object delayedRemapped = delayedFile(JAR_REMAPPED);
 
-        ExtractTask extractSrc = makeTask("extractCleanSources", ExtractTask.class);
+        ExtractTask extractSrc = makeTask(TASK_CLEAN_EXTRACT_SRC, ExtractTask.class);
         {
             extractSrc.from(delayedRemapped);
             extractSrc.into(subWorkspace("Clean" + DIR_EXTRACTED_SRC));
@@ -332,7 +332,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             extractSrc.dependsOn(remapCleanTask, TASK_GEN_PROJECTS);
         }
 
-        ExtractTask extractRes = makeTask("extractCleanResources", ExtractTask.class);
+        ExtractTask extractRes = makeTask(TASK_CLEAN_EXTRACT_RES, ExtractTask.class);
         {
             extractRes.from(delayedRemapped);
             extractRes.into(subWorkspace("Clean" + DIR_EXTRACTED_RES));
@@ -341,7 +341,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             extractRes.dependsOn(remapCleanTask, TASK_GEN_PROJECTS);
         }
 
-        CreateStartTask makeStart = makeTask("makeCleanStart", CreateStartTask.class);
+        CreateStartTask makeStart = makeTask(TASK_CLEAN_MAKE_START, CreateStartTask.class);
         {
             for (String resource : GRADLE_START_RESOURCES)
             {
@@ -367,7 +367,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             makeStart.dependsOn(TASK_DL_ASSET_INDEX, TASK_DL_ASSETS, TASK_EXTRACT_NATIVES);
         }
 
-        GenEclipseRunTask eclipseClient = makeTask("makeEclipseCleanRunClient", GenEclipseRunTask.class);
+        GenEclipseRunTask eclipseClient = makeTask(TASK_CLEAN_RUNE_CLIENT, GenEclipseRunTask.class);
         {
             eclipseClient.setMainClass(GRADLE_START_CLIENT);
             eclipseClient.setProjectName("Clean");
@@ -376,7 +376,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             eclipseClient.dependsOn(makeStart, TASK_GEN_IDES);
         }
 
-        GenEclipseRunTask eclipseServer = makeTask("makeEclipseCleanRunServer", GenEclipseRunTask.class);
+        GenEclipseRunTask eclipseServer = makeTask(TASK_CLEAN_RUNE_SERVER, GenEclipseRunTask.class);
         {
             eclipseServer.setMainClass(GRADLE_START_SERVER);
             eclipseServer.setProjectName("Clean");
@@ -385,7 +385,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             eclipseServer.dependsOn(makeStart, TASK_GEN_IDES);
         }
 
-        TaskGenIdeaRun ideaClient = makeTask("makeIdeaCleanRunClient", TaskGenIdeaRun.class);
+        TaskGenIdeaRun ideaClient = makeTask(TASK_CLEAN_RUNJ_CLIENT, TaskGenIdeaRun.class);
         {
             ideaClient.setMainClass(GRADLE_START_CLIENT);
             ideaClient.setProjectName("Clean");
@@ -395,7 +395,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             ideaClient.dependsOn(makeStart, TASK_GEN_IDES);
         }
 
-        TaskGenIdeaRun ideaServer = makeTask("makeIdeaCleanRunServer", TaskGenIdeaRun.class);
+        TaskGenIdeaRun ideaServer = makeTask(TASK_CLEAN_RUNJ_SERVER, TaskGenIdeaRun.class);
         {
             ideaServer.setMainClass(GRADLE_START_SERVER);
             ideaServer.setProjectName("Clean");
@@ -415,8 +415,6 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         PatchSourcesTask patch = makeTask(projectString(TASK_PROJECT_PATCH, patcher), PatchSourcesTask.class);
         {
             // inJar is set afterEvaluate depending on the patch order.
-            // default is DECOMP_POST though
-            patch.setInJar(delayedFile(JAR_DECOMP_POST));
             patch.setOutJar(delayedFile(projectString(JAR_PROJECT_PATCHED, patcher)));
             patch.setPatches(patcher.getDelayedPatchDir());
             patch.setDoesCache(false);
@@ -428,40 +426,43 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
         RemapSources remapTask = makeTask(projectString(TASK_PROJECT_REMAP_JAR, patcher), RemapSources.class);
         {
-            remapTask.setInJar(delayedFile(projectString(JAR_PROJECT_PATCHED, patcher)));
+            // inJar is set afterEvaluate depending on the patch order.
             remapTask.setOutJar(delayedFile(projectString(JAR_PROJECT_REMAPPED, patcher)));
             remapTask.setMethodsCsv(delayedFile(Constants.CSV_METHOD));
             remapTask.setFieldsCsv(delayedFile(Constants.CSV_FIELD));
             remapTask.setParamsCsv(delayedFile(Constants.CSV_PARAM));
             remapTask.setAddsJavadocs(false);
             remapTask.setDoesCache(false);
-            remapTask.dependsOn(patch);
+            remapTask.dependsOn(TASK_POST_DECOMP, TASK_EXTRACT_MAPPINGS);
+            // depend on patch task in afterEval
         }
 
-        ((TaskGenSubprojects) project.getTasks().getByName(TASK_GEN_PROJECTS)).putProject(patcher.getCapName(),
+        ((TaskGenSubprojects) project.getTasks().getByName(TASK_GEN_PROJECTS)).putProject(
+                patcher.getCapName(),
                 patcher.getDelayedSourcesDir(),
                 patcher.getDelayedResourcesDir(),
                 patcher.getDelayedTestSourcesDir(),
-                patcher.getDelayedTestResourcesDir());
-
-        Object delayedRemapped = delayedFile(projectString(JAR_PROJECT_REMAPPED, patcher));
+                patcher.getDelayedTestResourcesDir()
+                );
 
         ExtractTask extractSrc = makeTask(projectString(TASK_PROJECT_EXTRACT_SRC, patcher), ExtractTask.class);
         {
-            extractSrc.from(delayedRemapped);
+            // set from() thing in afterEval
             extractSrc.into(subWorkspace(patcher.getCapName() + DIR_EXTRACTED_SRC));
             extractSrc.include("*.java", "**/*.java");
             extractSrc.setDoesCache(false);
-            extractSrc.dependsOn(remapTask, TASK_GEN_PROJECTS);
+            extractSrc.dependsOn(patch, remapTask, TASK_GEN_PROJECTS);
+            // if depends on both remap and patch, itl happen after whichever is second.
         }
 
         ExtractTask extractRes = makeTask(projectString(TASK_PROJECT_EXTRACT_RES, patcher), ExtractTask.class);
         {
-            extractRes.from(delayedRemapped);
+            // set from() thing in afterEval
             extractRes.into(subWorkspace(patcher.getCapName() + DIR_EXTRACTED_RES));
             extractRes.exclude("*.java", "**/*.java");
             extractRes.setDoesCache(false);
-            extractRes.dependsOn(remapTask, TASK_GEN_PROJECTS);
+            extractRes.dependsOn(patch, remapTask, TASK_GEN_PROJECTS);
+            // if depends on both remap and patch, itl happen after whichever is second.
         }
 
         Task setupTask = makeTask(projectString(TASK_PROJECT_SETUP, patcher));
@@ -717,6 +718,36 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         for (PatcherProject patcher : patchersList)
         {
             patcher.validate(); // validate project
+            
+            if (patcher.isApplyMcpPatches())
+            {
+                PatchSourcesTask patch = (PatchSourcesTask) project.getTasks().getByName(projectString(TASK_PROJECT_PATCH, patcher));
+                RemapSources remap = (RemapSources) project.getTasks().getByName(projectString(TASK_PROJECT_REMAP_JAR, patcher));
+                
+                // configure the patches to happen after remap
+                patch.dependsOn(remap);
+                patch.setInJar(delayedFile(projectString(JAR_PROJECT_REMAPPED, patcher)));
+                remap.setInJar(delayedFile(JAR_DECOMP_POST));
+                
+                // configure extract tasks to extract patched
+                Object patched = delayedFile(projectString(JAR_PROJECT_PATCHED, patcher));
+                ((ExtractTask) project.getTasks().getByName(projectString(TASK_PROJECT_EXTRACT_SRC, patcher))).from(patched);
+                ((ExtractTask) project.getTasks().getByName(projectString(TASK_PROJECT_EXTRACT_RES, patcher))).from(patched);
+            }
+            else
+            {
+                PatchSourcesTask patch = (PatchSourcesTask) project.getTasks().getByName(projectString(TASK_PROJECT_PATCH, patcher));
+                RemapSources remap = (RemapSources) project.getTasks().getByName(projectString(TASK_PROJECT_REMAP_JAR, patcher));
+                
+                // configure the patches to happen AFTER remap
+                remap.dependsOn(patch);
+                patch.setInJar(delayedFile(JAR_DECOMP_POST));
+                remap.setInJar(delayedFile(projectString(JAR_PROJECT_REMAPPED, patcher)));
+                
+                Object remapped = delayedFile(projectString(JAR_PROJECT_REMAPPED, patcher));
+                ((ExtractTask) project.getTasks().getByName(projectString(TASK_PROJECT_EXTRACT_SRC, patcher))).from(remapped);
+                ((ExtractTask) project.getTasks().getByName(projectString(TASK_PROJECT_EXTRACT_RES, patcher))).from(remapped);
+            }
 
             // configure patching input and injects
             if (lastPatcher != null)
@@ -764,7 +795,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                 else if (f.getName().endsWith("_at.cfg"))
                 {
                     // Add ATs for deobf in the same run.. why not...
-                    deobfJar.addTransformer(f);
+                    deobfJar.addAt(f);
                     mergeFiles.addAt(f);
                 }
             }
@@ -774,30 +805,48 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             {
                 TaskGenPatches genPatches = makeTask(projectString(TASK_PROJECT_GEN_PATCHES, patcher), TaskGenPatches.class);
                 genPatches.setPatchDir(patcher.getPatchDir());
-                genPatches.addChangedSource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, patcher)));
                 genPatches.setOriginalPrefix(patcher.getPatchPrefixOriginal());
                 genPatches.setChangedPrefix(patcher.getPatchPrefixChanged());
-                genPatches.dependsOn(projectString(TASK_PROJECT_RETROMAP, patcher));
-
                 //genPatches.getOutputs().upToDateWhen(CALL_FALSE);
-
                 genPatches.setGroup(GROUP_FG);
                 genPatches.setDescription("Generates patches for the '" + patcher.getName() + "' project");
-
+                
                 // add to global task
                 genPatchesTask.dependsOn(genPatches);
-
-                if ("clean".equals(patcher.getGenPatchesFrom().toLowerCase()))
+                
+                if (patcher.isGenMcpPatches())
                 {
-                    genPatches.addOriginalSource(delayedFile(JAR_DECOMP_POST)); // SRG named vanilla..
+                    genPatches.addChangedSource(subWorkspace(patcher.getCapName() + DIR_EXTRACTED_SRC));
+                    
+                    if ("clean".equals(patcher.getGenPatchesFrom().toLowerCase()))
+                    {
+                        genPatches.addOriginalSource(delayedFile(JAR_REMAPPED)); // SRG named vanilla..
+                    }
+                    else
+                    {
+                        PatcherProject genFrom = getExtension().getProjects().getByName(patcher.getGenPatchesFrom());
+                        genPatches.addOriginalSource(projectString(TASK_PROJECT_REMAP_JAR, patcher));
+                        genPatches.addOriginalSource(genFrom.getDelayedSourcesDir());
+                    }
                 }
                 else
                 {
-                    PatcherProject genFrom = getExtension().getProjects().getByName(patcher.getGenPatchesFrom());
-                    genPatches.addOriginalSource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, genFrom)));
-                    genPatches.addOriginalSource(delayedFile(projectString(JAR_PROJECT_RETRO_NONMC, genFrom)));
-                    genPatches.dependsOn(projectString(TASK_PROJECT_RETROMAP, genFrom), projectString(TASK_PROJECT_RETRO_NONMC, genFrom));
+                    genPatches.addChangedSource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, patcher)));
+                    genPatches.dependsOn(projectString(TASK_PROJECT_RETROMAP, patcher));
+
+                    if ("clean".equals(patcher.getGenPatchesFrom().toLowerCase()))
+                    {
+                        genPatches.addOriginalSource(delayedFile(JAR_DECOMP_POST)); // SRG named vanilla..
+                    }
+                    else
+                    {
+                        PatcherProject genFrom = getExtension().getProjects().getByName(patcher.getGenPatchesFrom());
+                        genPatches.addOriginalSource(delayedFile(projectString(JAR_PROJECT_RETROMAPPED, genFrom)));
+                        genPatches.addOriginalSource(delayedFile(projectString(JAR_PROJECT_RETRO_NONMC, genFrom)));
+                        genPatches.dependsOn(projectString(TASK_PROJECT_RETROMAP, genFrom), projectString(TASK_PROJECT_RETRO_NONMC, genFrom));
+                    }
                 }
+                
             }
 
             // add patch sets to bin patches
@@ -876,6 +925,13 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
                 if (toPut == null)
                     throw new GradleConfigurationException("Project " + patchAfter + " does not exist! You cannot patch after it!");
+                
+                if (toPut.isApplyMcpPatches() && !project.isApplyMcpPatches())
+                {
+                    // its trying to apply SRG patches after a project that does MCP patches??
+                    // IMPOSSIBRU!
+                    throw new GradleConfigurationException("Project " + patchAfter + " applies SRG named patches, and is attempting to patch after a project that uses MCP named patches! THATS IMPOSSIBRU!");
+                }
             }
 
             try

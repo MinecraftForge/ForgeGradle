@@ -1254,24 +1254,38 @@ public final class ContextualPatch
             }
             String[] t = target.split(" ");
             String[] h = hunk.split(" ");
-            if (t.length != h.length)
+
+            //don't check length, changing any modifier to default (removing it) will change length
+            int targetIndex = 0;
+            int hunkIndex = 0;
+            while (targetIndex < t.length && hunkIndex < h.length)
             {
-                return false;
-            }
-            for (int x = 0; x < t.length; x++)
-            {
-                if (isAccess(t[x]) && isAccess(h[x]))
+                boolean isTargetAccess = isAccess(t[targetIndex]);
+                boolean isHunkAccess = isAccess(h[hunkIndex]);
+                if (isTargetAccess || isHunkAccess)
                 {
+                    //Skip access modifiers
+                    if (isTargetAccess)
+                    {
+                        targetIndex++;
+                    }
+                    if (isHunkAccess)
+                    {
+                        hunkIndex++;
+                    }
                     continue;
                 }
-                else if (!t[x].equals(h[x]))
+                String hunkPart = h[hunkIndex];
+                String targetPart = t[targetIndex];
+                boolean labels = isLabel(targetPart) && isLabel(hunkPart);
+                if (!labels && !targetPart.equals(hunkPart))
                 {
-                    if (isLabel(t[x]) && isLabel(h[x]))
-                        continue;
                     return false;
                 }
+                hunkIndex++;
+                targetIndex++;
             }
-            return true;
+            return h.length == hunkIndex && t.length == targetIndex;
         }
         if (c14nWhitespace)
         {
@@ -1287,7 +1301,8 @@ public final class ContextualPatch
     {
         return data.equalsIgnoreCase("public") ||
                 data.equalsIgnoreCase("private") ||
-                data.equalsIgnoreCase("protected");
+                data.equalsIgnoreCase("protected") ||
+                data.equalsIgnoreCase("final");
     }
 
     private boolean isLabel(String data) //Damn FernFlower

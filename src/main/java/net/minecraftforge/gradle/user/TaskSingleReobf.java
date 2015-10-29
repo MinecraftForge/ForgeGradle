@@ -19,8 +19,6 @@
  */
 package net.minecraftforge.gradle.user;
 
-import groovy.lang.Closure;
-
 import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -36,16 +34,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-import net.md_5.specialsource.Jar;
-import net.md_5.specialsource.JarMapping;
-import net.md_5.specialsource.JarRemapper;
-import net.md_5.specialsource.provider.ClassLoaderProvider;
-import net.md_5.specialsource.provider.JarProvider;
-import net.md_5.specialsource.provider.JointProvider;
-import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.util.GradleConfigurationException;
-import net.minecraftforge.gradle.util.mcp.ReobfExceptor;
-
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.ParallelizableTask;
@@ -56,10 +44,59 @@ import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
+import groovy.lang.Closure;
+import net.md_5.specialsource.Jar;
+import net.md_5.specialsource.JarMapping;
+import net.md_5.specialsource.JarRemapper;
+import net.md_5.specialsource.provider.ClassLoaderProvider;
+import net.md_5.specialsource.provider.JarProvider;
+import net.md_5.specialsource.provider.JointProvider;
+import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.util.GradleConfigurationException;
+import net.minecraftforge.gradle.util.mcp.ReobfExceptor;
+
+/**
+ * Reobfuscates an arbitrary jar artifact.
+ *
+ * <p>
+ * To reobfuscate other artifacts or to change settings, use this in your build
+ * script.
+ *
+ * <pre>
+ *reobf {
+ *    // the jar artifact to reobfuscate
+ *    jar {
+ *
+ *        // Using non-default srg names
+ *        // reobf to notch
+ *        useNotchSrg()
+ *        // or for Searge names
+ *        useSrgSrg()
+ *        // or something else
+ *        mappings = file('srgs/minecraft.srg')
+ *
+ *        // In case you need to modify the classpath
+ *        classpath += configurations.provided
+ *
+ *        // Use this to add srg files or lines
+ *        // You can combine strings and files.
+ *        extra 'PK: org/ejml your/pkg/ejml', file('srgs/mappings.srg')
+ *
+ *        // You can also use with '+=' and array
+ *        extra += ['CL: your/pkg/Original your/pkg/Renamed', file('srgs/mappings2.srg')]
+ *
+ *    }
+ *
+ *    // Some other artifact using default settings
+ *    // the brackets are needed to create it
+ *    otherJar {}
+ *}
+ * </pre>
+ *
+ */
 @ParallelizableTask
 public class TaskSingleReobf extends DefaultTask
 {
-
     private Object                 jar;
     private FileCollection         classpath;
 
@@ -152,7 +189,7 @@ public class TaskSingleReobf extends DefaultTask
         // obfuscate
         File obfuscated = File.createTempFile("obfuscated", ".jar", getTemporaryDir());
         obfuscated.deleteOnExit();
-        applySpecialSource(tempIn, obfuscated, srg, srgLines, getExtraSrgFiles());
+        applySpecialSource(tempIn, obfuscated, srg, srgLines, getSecondarySrgFiles());
 
         // post transform
         transformers = getPostTransformers();
@@ -278,7 +315,7 @@ public class TaskSingleReobf extends DefaultTask
         secondarySrgFiles.add(thing);
     }
 
-    public FileCollection getExtraSrgFiles()
+    public FileCollection getSecondarySrgFiles()
     {
         List<File> files = new ArrayList<File>(secondarySrgFiles.size());
 

@@ -40,6 +40,7 @@ import org.gradle.api.artifacts.Configuration.State;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.repositories.FlatDirectoryArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.Delete;
@@ -240,18 +241,32 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         if (!displayBanner)
             return;
 
-        project.getLogger().lifecycle("****************************");
-        project.getLogger().lifecycle(" Powered By MCP:             ");
-        project.getLogger().lifecycle(" http://modcoderpack.com/    ");
-        project.getLogger().lifecycle(" Searge, ProfMobius, Fesh0r, ");
-        project.getLogger().lifecycle(" R4wk, ZeuX, IngisKahn, bspkrs");
-        project.getLogger().lifecycle(" MCP Data version : " + getExtension().getMcpVersion());
-        project.getLogger().lifecycle("****************************");
+        Logger logger = this.project.getLogger();
+        logger.lifecycle("#################################################");
+        logger.lifecycle("         ForgeGradle {}        ", this.getVersionString());
+        logger.lifecycle("  https://github.com/MinecraftForge/ForgeGradle  ");
+        logger.lifecycle("#################################################");
+        logger.lifecycle("               Powered by MCP {}               ", this.getExtension().getMcpVersion());
+        logger.lifecycle("             http://modcoderpack.com             ");
+        logger.lifecycle("         by: Searge, ProfMobius, Fesh0r,         ");
+        logger.lifecycle("         R4wk, ZeuX, IngisKahn, bspkrs           ");
+        logger.lifecycle("#################################################");
 
         for (String str : lines)
-            project.getLogger().lifecycle(str);
+            logger.lifecycle(str);
 
         displayBanner = false;
+    }
+
+    private String getVersionString()
+    {
+        String version = this.getClass().getPackage().getImplementationVersion();
+        if (Strings.isNullOrEmpty(version))
+        {
+            version = this.getExtension().forgeGradleVersion + "-unknown";
+        }
+
+        return version;
     }
 
     protected void doFGVersionCheck(List<String> outLines)
@@ -760,17 +775,17 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                         }
                     });
 
-    protected DelayedString delayedString(String path)
+    public DelayedString delayedString(String path)
     {
         return stringCache.getUnchecked(path);
     }
 
-    protected DelayedFile delayedFile(String path)
+    public DelayedFile delayedFile(String path)
     {
         return fileCache.getUnchecked(path);
     }
 
-    protected DelayedFileTree delayedTree(String path)
+    public DelayedFileTree delayedTree(String path)
     {
         return new DelayedFileTree(project, replacerCache.getUnchecked(path));
     }

@@ -62,6 +62,9 @@ public class PatcherProject implements Serializable
     
     private String patchPrefixOriginal = "";
     private String patchPrefixChanged = "";
+    
+    private boolean genMcpPatches = false;
+    private boolean applyMcpPatches = false;
 
     protected PatcherProject(String name, PatcherPlugin plugin)
     {
@@ -511,6 +514,26 @@ public class PatcherProject implements Serializable
             return new File(getRootDir(), defaultPath);
         else
             return ((File) field);
+    }
+
+    public boolean isGenMcpPatches()
+    {
+        return genMcpPatches;
+    }
+
+    public void setGenMcpPatches(boolean genMcpPatches)
+    {
+        this.genMcpPatches = genMcpPatches;
+    }
+
+    public boolean isApplyMcpPatches()
+    {
+        return applyMcpPatches;
+    }
+
+    public void setApplyMcpPatches(boolean applyMcpPatches)
+    {
+        this.applyMcpPatches = applyMcpPatches;
     }
     
     // ------------------------

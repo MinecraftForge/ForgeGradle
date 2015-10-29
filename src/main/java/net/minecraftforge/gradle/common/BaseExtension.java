@@ -26,10 +26,10 @@ import java.util.Map.Entry;
 
 import org.gradle.api.Project;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 
-import joptsimple.internal.Strings;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 import net.minecraftforge.gradle.util.delayed.ReplacementProvider;
 

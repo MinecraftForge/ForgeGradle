@@ -38,6 +38,7 @@ import javax.xml.transform.stream.StreamResult;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.XmlProvider;
@@ -135,11 +136,16 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         project.getConfigurations().maybeCreate(CONFIG_DC_RESOLVED);
         project.getConfigurations().maybeCreate(CONFIG_DP_RESOLVED);
 
+        // create the reobf named container
+        NamedDomainObjectContainer<IReobfuscator> reobf = project.container(IReobfuscator.class, new ReobfTaskFactory(this));
+        project.getExtensions().add(EXT_REOBF, reobf);
+
         configureCompilation();
 
         // Quality of life stuff for the users
         createSourceCopyTasks();
         doDevTimeDeobf();
+        doDepAtExtraction();
         makeObfSource();
         makeRunTasks();
 
@@ -202,7 +208,6 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         if (ext.getMakeObfSourceJar())
         {
             project.getTasks().getByName("assemble").dependsOn(TASK_SRC_JAR);
-            project.getTasks().getByName("build").dependsOn(TASK_SRC_JAR);
         }
 
         // add task depends for reobf
@@ -267,7 +272,24 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
     protected abstract void applyUserPlugin();
 
-    protected void makeDecompTasks(final String globalPattern, final String localPattern, Object inputJar, String inputTask, Object mcpPatchSet)
+    /**
+     * Sets up the default settings for reobf tasks.
+     *
+     * @param reobf The task to setup
+     */
+    protected void setupReobf(TaskSingleReobf reobf)
+    {
+        reobf.setExceptorCfg(delayedFile(EXC_SRG));
+        reobf.setFieldCsv(delayedFile(CSV_FIELD));
+        reobf.setMethodCsv(delayedFile(CSV_METHOD));
+
+        reobf.setPrimarySrg(delayedFile(SRG_MCP_TO_NOTCH));
+        JavaPluginConvention java = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+        reobf.setClasspath(java.getSourceSets().getByName("main").getCompileClasspath());
+    }
+
+    @SuppressWarnings("unchecked")
+	protected void makeDecompTasks(final String globalPattern, final String localPattern, Object inputJar, String inputTask, Object mcpPatchSet)
     {
         madeDecompTasks = true; // to gaurd against stupid programmers
 
@@ -281,7 +303,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             deobfBin.setApplyMarkers(false);
             deobfBin.setInJar(inputJar);
             deobfBin.setOutJar(chooseDeobfOutput(globalPattern, localPattern, "Bin", ""));
-            deobfBin.dependsOn(inputTask, TASK_GENERATE_SRGS);
+            deobfBin.dependsOn(inputTask, TASK_GENERATE_SRGS, TASK_EXTRACT_DEP_ATS);
         }
 
         final Object deobfDecompJar = chooseDeobfOutput(globalPattern, localPattern, "", "srgBin");
@@ -298,7 +320,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             deobfDecomp.setApplyMarkers(true);
             deobfDecomp.setInJar(inputJar);
             deobfDecomp.setOutJar(deobfDecompJar);
-            deobfDecomp.dependsOn(inputTask, TASK_GENERATE_SRGS); // todo grab correct task to depend on
+            deobfDecomp.dependsOn(inputTask, TASK_GENERATE_SRGS, TASK_EXTRACT_DEP_ATS); // todo grab correct task to depend on
         }
 
         final ApplyFernFlowerTask decompile = makeTask(TASK_DECOMPILE, ApplyFernFlowerTask.class);
@@ -376,32 +398,14 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             makeStart.addClasspathConfig(CONFIG_MC_DEPS);
             makeStart.mustRunAfter(deobfBin, recompile);
         }
-
-        // create reobf task
-        TaskSingleReobf reobf = makeTask(TASK_REOBF, TaskSingleReobf.class);
-        {
-            reobf.setExceptorCfg(delayedFile(EXC_SRG));
-            reobf.setFieldCsv(delayedFile(CSV_FIELD));
-            reobf.setMethodCsv(delayedFile(CSV_METHOD));
-            reobf.setDeobfFile(deobfDecompJar);
-            reobf.setRecompFile(recompiledJar);
-
-            reobf.dependsOn(TASK_GENERATE_SRGS);
-            reobf.mustRunAfter("test");
-
-            // TODO: IMPLEMENT IN SUBLCASSES
-            //task.setSrg(delayedFile(REOBF_SRG));
-            //task.setMcVersion(delayedString(Constants.REPLACE_MC_VERSION));
-        }
+        
+        // setup reobf...
+        ((NamedDomainObjectContainer<IReobfuscator>) project.getExtensions().getByName(EXT_REOBF)).create("jar");
 
         // add setup dependencies
         project.getTasks().getByName(TASK_SETUP_CI).dependsOn(deobfBin);
         project.getTasks().getByName(TASK_SETUP_DEV).dependsOn(deobfBin, makeStart);
         project.getTasks().getByName(TASK_SETUP_DECOMP).dependsOn(recompile, makeStart);
-
-        // add build task depends
-        project.getTasks().getByName("build").dependsOn(reobf);
-        project.getTasks().getByName("assemble").dependsOn(reobf);
 
         // configure MC compiling. This AfterEvaluate section should happen after the one made in
         // also configure the dummy task dependencies
@@ -461,7 +465,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             return true;
 
         // checks to see if any access transformers were added.
-        useLocalCache = !extension.getAccessTransformers().isEmpty();
+        useLocalCache = !extension.getAccessTransformers().isEmpty() || extension.isUseDepAts();
 
         return useLocalCache;
     }
@@ -613,12 +617,19 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
                 int taskId = 0;
 
+                // FOR SOURCES!
+
+                HashMap<ComponentIdentifier, ModuleVersionIdentifier> idMap = Maps.newHashMap();
+                
                 // FOR BINARIES
 
                 for (ResolvedArtifact artifact : config.getResolvedConfiguration().getResolvedArtifacts())
                 {
                     ModuleVersionIdentifier module = artifact.getModuleVersion().getId();
                     String group = "deobf." + module.getGroup();
+                    
+                    // Add artifacts that will be remapped to get their sources
+                    idMap.put(artifact.getId().getComponentIdentifier(), module);
 
                     TaskSingleDeobfBin deobf = makeTask(config.getName() + "DeobfDepTask" + (taskId++), TaskSingleDeobfBin.class);
                     deobf.setInJar(artifact.getFile());
@@ -630,10 +641,6 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
                     project.getDependencies().add(resolvedConfig, group + ":" + module.getName() + ":" + module.getVersion());
                 }
-
-                // FOR SOURCES!
-
-                HashMap<ComponentIdentifier, ModuleVersionIdentifier> idMap = Maps.newHashMap();
 
                 for (DependencyResult depResult : config.getIncoming().getResolutionResult().getAllDependencies())
                 {
@@ -675,6 +682,25 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         });
     }
 
+    protected void doDepAtExtraction()
+    {
+        TaskExtractDepAts extract = makeTask(TASK_EXTRACT_DEP_ATS, TaskExtractDepAts.class);
+        extract.addCollection("compile");
+        extract.addCollection(CONFIG_PROVIDED);
+        extract.addCollection(CONFIG_DEOBF_COMPILE);
+        extract.addCollection(CONFIG_DEOBF_PROVIDED);
+        extract.setOutputDir(delayedFile(DIR_DEP_ATS));
+        extract.onlyIf(new Spec<Object>() {
+            @Override
+            public boolean isSatisfiedBy(Object arg0)
+            {
+                return getExtension().isUseDepAts();
+            }
+        });
+        
+        getExtension().atSource(delayedFile(DIR_DEP_ATS));
+    }
+    
     protected void makeObfSource()
     {
         JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
@@ -793,8 +819,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
         // ATs from the ExtensionObject
         Object[] extAts = getExtension().getAccessTransformers().toArray();
-        binDeobf.addTransformer(extAts);
-        decompDeobf.addTransformer(extAts);
+        binDeobf.addAts(extAts);
+        decompDeobf.addAts(extAts);
 
         // grab ATs from configured resource dirs
         boolean addedAts = false;
@@ -802,12 +828,10 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         for (File at : getExtension().getResolvedAccessTransformerSources().filter(AT_SPEC).getFiles())
         {
             project.getLogger().lifecycle("Found AccessTransformer: {}", at.getName());
-            binDeobf.addTransformer(at);
-            decompDeobf.addTransformer(at);
+            binDeobf.addAt(at);
+            decompDeobf.addAt(at);
             addedAts = true;
         }
-
-        // TODO: search dependency jars for resources
 
         useLocalCache = useLocalCache || addedAts;
     }
