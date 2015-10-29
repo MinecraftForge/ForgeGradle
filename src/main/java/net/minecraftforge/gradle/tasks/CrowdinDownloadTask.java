@@ -10,7 +10,6 @@ import java.net.URL;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import joptsimple.internal.Strings;
 import net.minecraftforge.gradle.common.Constants;
 
 import org.gradle.api.DefaultTask;
@@ -20,6 +19,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFiles;
 import org.gradle.api.tasks.TaskAction;
 
+import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;

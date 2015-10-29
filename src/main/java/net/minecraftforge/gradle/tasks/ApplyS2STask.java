@@ -1,11 +1,12 @@
 package net.minecraftforge.gradle.tasks;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
-import joptsimple.internal.Strings;
 import net.minecraftforge.gradle.SequencedInputSupplier;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
@@ -241,7 +242,7 @@ public class ApplyS2STask extends DefaultTask
                                 writer.write(pts[2].substring(pts[2].lastIndexOf('/') + 1));
                                 writer.write(pts[3]);
                                 writer.write("=|");
-                                writer.write(Strings.join(params, ","));
+                                writer.write(Joiner.on(",").join(params));
                                 writer.newLine();
                             }
                         }
