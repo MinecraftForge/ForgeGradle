@@ -113,6 +113,16 @@ final class PatcherConstants
     static final String TASK_MERGE_FILES         = "mergeFiles";
     static final String TASK_BUILD_USERDEV       = "buildUserdev";
     static final String TASK_BUILD_INSTALLER     = "installer";
+    
+    // clean project tasks
+    static final String TASK_CLEAN_REMAP         = "remapCleanJar";
+    static final String TASK_CLEAN_EXTRACT_SRC   = "extractCleanSources";
+    static final String TASK_CLEAN_EXTRACT_RES   = "extractCleanResources";
+    static final String TASK_CLEAN_MAKE_START    = "makeCleanStart";
+    static final String TASK_CLEAN_RUNE_CLIENT   = "makeEclipseCleanRunClient";
+    static final String TASK_CLEAN_RUNE_SERVER   = "makeEclipseCleanRunServer";
+    static final String TASK_CLEAN_RUNJ_CLIENT   = "makeIdeaCleanRunClient";
+    static final String TASK_CLEAN_RUNJ_SERVER   = "makeIdeaCleanRunServer";
 
     // project tasks
     static final String TASK_PROJECT_SETUP       = "setupProject" + REPLACE_PROJECT_CAP_NAME;
