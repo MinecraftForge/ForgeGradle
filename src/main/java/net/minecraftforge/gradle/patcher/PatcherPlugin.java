@@ -742,7 +742,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                 // configure the patches to happen AFTER remap
                 remap.dependsOn(patch);
                 patch.setInJar(delayedFile(JAR_DECOMP_POST));
-                remap.setInJar(delayedFile(projectString(JAR_PROJECT_REMAPPED, patcher)));
+                remap.setInJar(delayedFile(projectString(JAR_PROJECT_PATCHED, patcher)));
                 
                 Object remapped = delayedFile(projectString(JAR_PROJECT_REMAPPED, patcher));
                 ((ExtractTask) project.getTasks().getByName(projectString(TASK_PROJECT_EXTRACT_SRC, patcher))).from(remapped);
