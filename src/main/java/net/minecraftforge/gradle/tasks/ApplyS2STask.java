@@ -45,6 +45,7 @@ import org.gradle.api.tasks.OutputFiles;
 import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
@@ -261,7 +262,7 @@ public class ApplyS2STask extends DefaultTask
                                 writer.write(pts[2].substring(pts[2].lastIndexOf('/') + 1));
                                 writer.write(pts[3]);
                                 writer.write("=|");
-                                writer.write(Strings.join(params, ","));
+                                writer.write(Joiner.on(',').join(params));
                                 writer.newLine();
                             }
                         }
