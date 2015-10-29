@@ -5,10 +5,11 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import joptsimple.internal.Strings;
 import net.minecraftforge.gradle.GradleConfigurationException;
 
 import org.gradle.api.Project;
+
+import com.google.common.base.Strings;
 
 public class BaseExtension
 {
