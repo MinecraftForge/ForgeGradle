@@ -86,9 +86,6 @@ public class PostDecompileTask extends AbstractEditJarTask
         {
             String name = f.getName();
 
-            if (name.contains("Enum")) // because version of FF is awesome and dont need dat
-                continue;
-
             int patchIndex = name.indexOf(".patch");
 
             // 6 is the length of ".patch" + 3 to account for .## at the end of the file.
