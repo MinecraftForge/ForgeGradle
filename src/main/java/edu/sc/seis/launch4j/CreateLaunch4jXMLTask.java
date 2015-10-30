@@ -174,7 +174,6 @@ public class CreateLaunch4jXMLTask extends DefaultTask
      * SNAPSHOT. I think this is a windows thing. So we check the version, and if it is only dots and
      * numbers, we use it. If not we use 0.0.0.1
      * @param version
-     * @return
      */
     private String parseDotVersion(String version)
     {
