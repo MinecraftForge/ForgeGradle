@@ -191,8 +191,6 @@ public class JenkinsChangelog extends DefaultTask
                     {
                         itr.remove();
                     }
-                    else if (map.containsKey("text"))
-                        getProject().getLogger().lifecycle(map.get("text"));
                 }
 
                 if (actions.size() == 0)
