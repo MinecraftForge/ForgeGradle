@@ -185,10 +185,14 @@ public class JenkinsChangelog extends DefaultTask
                 while (itr.hasNext())
                 {
                     Map<String, String> map = itr.next();
-                    if (!map.containsKey("text") || map.get("text").contains("http"))
+                    if (!map.containsKey("text") ||
+                        map.get("text").contains("http") ||
+                        map.get("text").contains("href="))
                     {
                         itr.remove();
                     }
+                    else if (map.containsKey("text"))
+                        getProject().getLogger().lifecycle(map.get("text"));
                 }
 
                 if (actions.size() == 0)
