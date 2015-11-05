@@ -24,17 +24,23 @@ import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PROTECTED;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Input;
@@ -43,11 +49,18 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.MethodNode;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
 
@@ -90,6 +103,10 @@ public class DeobfuscateJar extends CachedTask
 
     @Input
     private boolean           applyMarkers  = false;
+    
+    @Optional
+    @Input
+    private boolean           stripSynthetics = false;
 
     @Input
     private boolean           failOnAtError = true;
@@ -107,6 +124,7 @@ public class DeobfuscateJar extends CachedTask
         // make stuff into files.
         File tempObfJar = new File(getTemporaryDir(), "deobfed.jar"); // courtesy of gradle temp dir.
         File out = getOutJar();
+        File tempExcJar = stripSynthetics ? new File(getTemporaryDir(), "excpeted.jar") : out; // courtesy of gradle temp dir.
 
         // make the ATs list.. its a Set to avoid duplication.
         Set<File> ats = new HashSet<File>();
@@ -126,6 +144,13 @@ public class DeobfuscateJar extends CachedTask
         // apply exceptor
         getLogger().lifecycle("Applying Exceptor...");
         applyExceptor(tempObfJar, out, getExceptorCfg(), log, ats);
+        
+        if (stripSynthetics)
+        {
+            // strip out synthetics that arnt from enums..
+            getLogger().lifecycle("Stripping synthetics...");
+            stripSynthetics(tempExcJar, out);
+        }
     }
 
     private void deobfJar(File inJar, File outJar, File srg, Collection<File> ats) throws IOException
@@ -335,6 +360,70 @@ public class DeobfuscateJar extends CachedTask
             zip.close();
         }
     }
+    
+    private void stripSynthetics(File inJar, File outJar) throws IOException
+    {
+        ZipFile in = new ZipFile(inJar);
+        final ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(outJar)));
+
+        for (ZipEntry e : Collections.list(in.entries()))
+        {
+            if (e.getName().contains("META-INF"))
+                continue;
+
+            if (e.isDirectory())
+            {
+                out.putNextEntry(e);
+            }
+            else
+            {
+                ZipEntry n = new ZipEntry(e.getName());
+                n.setTime(e.getTime());
+                out.putNextEntry(n);
+
+                byte[] data = ByteStreams.toByteArray(in.getInputStream(e));
+
+                // correct source name
+                if (e.getName().endsWith(".class"))
+                    data = stripSynthetics(e.getName(), data);
+
+                out.write(data);
+            }
+        }
+
+        out.flush();
+        out.close();
+        in.close();
+    }
+
+    private byte[] stripSynthetics(String name, byte[] data)
+    {
+        ClassReader reader = new ClassReader(data);
+        ClassNode node = new ClassNode();
+
+        reader.accept(node, 0);
+
+        if ((node.access & Opcodes.ACC_ENUM) == 0 && !node.superName.equals("java/lang/Enum") && (node.access & Opcodes.ACC_SYNTHETIC) == 0)
+        {
+            // ^^ is for ignoring enums.
+
+            for (FieldNode f : ((List<FieldNode>) node.fields))
+            {
+                f.access = f.access & (0xffffffff-Opcodes.ACC_SYNTHETIC);
+                //getLogger().lifecycle("Stripping field: "+f.name);
+            }
+
+            for (MethodNode m : ((List<MethodNode>) node.methods))
+            {
+                m.access = m.access & (0xffffffff-Opcodes.ACC_SYNTHETIC);
+                //getLogger().lifecycle("Stripping method: "+m.name);
+            }
+        }
+
+        ClassWriter writer = new ClassWriter(0);
+        node.accept(writer);
+        return writer.toByteArray();
+    }
 
     public File getExceptorCfg()
     {
@@ -500,6 +589,16 @@ public class DeobfuscateJar extends CachedTask
     public void setMethodCsv(Object methodCsv)
     {
         this.methodCsv = methodCsv;
+    }
+    
+    public boolean getStripSynthetics()
+    {
+        return stripSynthetics;
+    }
+
+    public void setStripSynthetics(boolean stripSynthetics)
+    {
+        this.stripSynthetics = stripSynthetics;
     }
 
     private static final class ErroringRemappingAccessMap extends AccessMap
