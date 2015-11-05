@@ -143,7 +143,7 @@ public class DeobfuscateJar extends CachedTask
 
         // apply exceptor
         getLogger().lifecycle("Applying Exceptor...");
-        applyExceptor(tempObfJar, out, getExceptorCfg(), log, ats);
+        applyExceptor(tempObfJar, tempExcJar, getExceptorCfg(), log, ats);
         
         if (stripSynthetics)
         {
