@@ -78,26 +78,27 @@ public class FFPatcher
 //        text = Joiner.on(Constants.NEWLINE).join(lines);
 //
         text = text.replaceAll(NEWLINES, Constants.NEWLINE);
+        return text;
 //        text = text.replaceAll(EMPTY_SUPER, "");
 //
         // fix interfaces (added 1.7.10+)
-        out = new StringBuffer();
-
-        List<String> lines = Constants.lines(text);
-        for (String line : lines) {
-            if (line.trim().endsWith(";")) {
-                Matcher m = ABSTRACT.matcher(line);
-                while (m.find())
-                {
-                    m.appendReplacement(out, abstract_replacement(m).replace("$", "\\$"));
-                }
-                m.appendTail(out).append(Constants.NEWLINE);
-            } else {
-                out.append(line).append(Constants.NEWLINE);
-            }
-        }
+//        out = new StringBuffer();
 //
-        return out.toString();
+//        List<String> lines = Constants.lines(text);
+//        for (String line : lines) {
+//            if (line.trim().endsWith(";")) {
+//                Matcher m = ABSTRACT.matcher(line);
+//                while (m.find())
+//                {
+//                    m.appendReplacement(out, abstract_replacement(m).replace("$", "\\$"));
+//                }
+//                m.appendTail(out).append(Constants.NEWLINE);
+//            } else {
+//                out.append(line).append(Constants.NEWLINE);
+//            }
+//        }
+////
+//        return out.toString();
     }
 
     private static int processClass(List<String> lines, String indent, int startIndex, String qualifiedName, String simpleName)

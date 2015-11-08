@@ -150,9 +150,9 @@ public class PostDecompileTask extends AbstractEditJarTask
         writer.close();
         file = writer.toString();
 
-        getLogger().debug("applying FML transformations");
-        file = BEFORE.matcher(file).replaceAll("$1");
-        file = AFTER.matcher(file).replaceAll("$1");
+//        getLogger().debug("applying FML transformations");
+//        file = BEFORE.matcher(file).replaceAll("$1");
+//        file = AFTER.matcher(file).replaceAll("$1");
 //        file = FmlCleanup.renameClass(file);
 
         return file;
