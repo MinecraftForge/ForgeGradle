@@ -365,6 +365,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             makeStart.setStartOut(subWorkspace("Clean" + DIR_EXTRACTED_START));
             makeStart.setDoesCache(false);
             makeStart.dependsOn(TASK_DL_ASSET_INDEX, TASK_DL_ASSETS, TASK_EXTRACT_NATIVES);
+            makeStart.getOutputs().upToDateWhen(Constants.CALL_FALSE); //TODO: Abrar, Fix this...
         }
 
         GenEclipseRunTask eclipseClient = makeTask(TASK_CLEAN_RUNE_CLIENT, GenEclipseRunTask.class);
@@ -500,6 +501,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             makeStart.setStartOut(subWorkspace(patcher.getCapName() + DIR_EXTRACTED_START));
             makeStart.setDoesCache(false);
             makeStart.dependsOn(TASK_DL_ASSET_INDEX, TASK_DL_ASSETS);
+            makeStart.getOutputs().upToDateWhen(Constants.CALL_FALSE); //TODO: Abrar, Fix this...
         }
 
         GenEclipseRunTask eclipseRunClient = makeTask(projectString(TASK_PROJECT_RUNE_CLIENT, patcher), GenEclipseRunTask.class);
@@ -718,17 +720,17 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         for (PatcherProject patcher : patchersList)
         {
             patcher.validate(); // validate project
-            
+
             if (patcher.isApplyMcpPatches())
             {
                 PatchSourcesTask patch = (PatchSourcesTask) project.getTasks().getByName(projectString(TASK_PROJECT_PATCH, patcher));
                 RemapSources remap = (RemapSources) project.getTasks().getByName(projectString(TASK_PROJECT_REMAP_JAR, patcher));
-                
+
                 // configure the patches to happen after remap
                 patch.dependsOn(remap);
                 patch.setInJar(delayedFile(projectString(JAR_PROJECT_REMAPPED, patcher)));
                 remap.setInJar(delayedFile(JAR_DECOMP_POST));
-                
+
                 // configure extract tasks to extract patched
                 Object patched = delayedFile(projectString(JAR_PROJECT_PATCHED, patcher));
                 ((ExtractTask) project.getTasks().getByName(projectString(TASK_PROJECT_EXTRACT_SRC, patcher))).from(patched);
@@ -738,12 +740,12 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             {
                 PatchSourcesTask patch = (PatchSourcesTask) project.getTasks().getByName(projectString(TASK_PROJECT_PATCH, patcher));
                 RemapSources remap = (RemapSources) project.getTasks().getByName(projectString(TASK_PROJECT_REMAP_JAR, patcher));
-                
+
                 // configure the patches to happen AFTER remap
                 remap.dependsOn(patch);
                 patch.setInJar(delayedFile(JAR_DECOMP_POST));
                 remap.setInJar(delayedFile(projectString(JAR_PROJECT_PATCHED, patcher)));
-                
+
                 Object remapped = delayedFile(projectString(JAR_PROJECT_REMAPPED, patcher));
                 ((ExtractTask) project.getTasks().getByName(projectString(TASK_PROJECT_EXTRACT_SRC, patcher))).from(remapped);
                 ((ExtractTask) project.getTasks().getByName(projectString(TASK_PROJECT_EXTRACT_RES, patcher))).from(remapped);
@@ -810,14 +812,14 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                 //genPatches.getOutputs().upToDateWhen(CALL_FALSE);
                 genPatches.setGroup(GROUP_FG);
                 genPatches.setDescription("Generates patches for the '" + patcher.getName() + "' project");
-                
+
                 // add to global task
                 genPatchesTask.dependsOn(genPatches);
-                
+
                 if (patcher.isGenMcpPatches())
                 {
                     genPatches.addChangedSource(subWorkspace(patcher.getCapName() + DIR_EXTRACTED_SRC));
-                    
+
                     if ("clean".equals(patcher.getGenPatchesFrom().toLowerCase()))
                     {
                         genPatches.addOriginalSource(delayedFile(JAR_REMAPPED)); // SRG named vanilla..
@@ -846,7 +848,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                         genPatches.dependsOn(projectString(TASK_PROJECT_RETROMAP, genFrom), projectString(TASK_PROJECT_RETRO_NONMC, genFrom));
                     }
                 }
-                
+
             }
 
             // add patch sets to bin patches
@@ -925,7 +927,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
                 if (toPut == null)
                     throw new GradleConfigurationException("Project " + patchAfter + " does not exist! You cannot patch after it!");
-                
+
                 if (toPut.isApplyMcpPatches() && !project.isApplyMcpPatches())
                 {
                     // its trying to apply SRG patches after a project that does MCP patches??

@@ -398,7 +398,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             makeStart.addClasspathConfig(CONFIG_MC_DEPS);
             makeStart.mustRunAfter(deobfBin, recompile);
         }
-        
+
         // setup reobf...
         ((NamedDomainObjectContainer<IReobfuscator>) project.getExtensions().getByName(EXT_REOBF)).create("jar");
 
@@ -447,7 +447,6 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
     /**
      * A boolean used to cache the output of useLocalCache;
-     * @see useLocalCache
      */
     protected boolean useLocalCache = false;
 
@@ -620,14 +619,14 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                 // FOR SOURCES!
 
                 HashMap<ComponentIdentifier, ModuleVersionIdentifier> idMap = Maps.newHashMap();
-                
+
                 // FOR BINARIES
 
                 for (ResolvedArtifact artifact : config.getResolvedConfiguration().getResolvedArtifacts())
                 {
                     ModuleVersionIdentifier module = artifact.getModuleVersion().getId();
                     String group = "deobf." + module.getGroup();
-                    
+
                     // Add artifacts that will be remapped to get their sources
                     idMap.put(artifact.getId().getComponentIdentifier(), module);
 
@@ -697,10 +696,10 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                 return getExtension().isUseDepAts();
             }
         });
-        
+
         getExtension().atSource(delayedFile(DIR_DEP_ATS));
     }
-    
+
     protected void makeObfSource()
     {
         JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");

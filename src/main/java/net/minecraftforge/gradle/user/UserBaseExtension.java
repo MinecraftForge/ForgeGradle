@@ -131,7 +131,6 @@ public class UserBaseExtension extends BaseExtension
 
     /**
      * Whether or not to grab Access Transformers from dependencies
-     * @return
      */
     public boolean isUseDepAts()
     {
@@ -139,8 +138,8 @@ public class UserBaseExtension extends BaseExtension
     }
 
     /**
-     * 
-     * @param useDepAts If TRUE, then 
+     *
+     * @param useDepAts If TRUE, then
      */
     public void setUseDepAts(boolean useDepAts)
     {
