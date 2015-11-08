@@ -88,7 +88,7 @@ public class ApplyFernFlowerTask extends CachedTask {
         mapOptions.put(IFernflowerPreferences.LITERALS_AS_IS, "0");
         mapOptions.put(IFernflowerPreferences.UNIT_TEST_MODE, "0");
         mapOptions.put(IFernflowerPreferences.MAX_PROCESSING_METHOD, "60");
-        mapOptions.put(DecompilerContext.RENAMER_FACTORY, "");
+        mapOptions.put(DecompilerContext.RENAMER_FACTORY, AdvancedJadRenamerFactory.class.getName());
 
         PrintStreamLogger logger = new PrintStreamLogger(Constants.getTaskLogStream(getProject(), getName() + ".log"));
         BaseDecompiler decompiler = new BaseDecompiler(new ByteCodeProvider(), new ArtifactSaver(tempDir), mapOptions, logger);
@@ -102,7 +102,7 @@ public class ApplyFernFlowerTask extends CachedTask {
         Constants.copyFile(tempJar, out);
     }
 
-    static class AdvancedJadRenamerFactory implements IVariableNamingFactory {
+    public static class AdvancedJadRenamerFactory implements IVariableNamingFactory {
         @Override
         public IVariableNameProvider createFactory(StructMethod arg0)
         {
@@ -110,7 +110,7 @@ public class ApplyFernFlowerTask extends CachedTask {
             return new AdvancedJadRenamer(arg0);
         }
     }
-    static class AdvancedJadRenamer extends JADNameProvider {
+    public static class AdvancedJadRenamer extends JADNameProvider {
         private StructMethod wrapper;
         private static final Pattern p = Pattern.compile("func_(\\d+)_.*");
         public AdvancedJadRenamer(StructMethod wrapper)
