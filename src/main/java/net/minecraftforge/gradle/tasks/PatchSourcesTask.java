@@ -45,7 +45,6 @@ import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.ParallelizableTask;
 
 import com.cloudbees.diff.PatchException;
-import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
@@ -90,7 +89,7 @@ public class PatchSourcesTask extends AbstractEditJarTask
         getLogger().info("Reading patches");
 
         // create context provider
-        context = new ContextProvider(null, patchStrip); // add in the map later.
+        context = new ContextProvider(null, patchStrip); // add in the map later. 
 
         // collect patchFiles and add them to the listing
         File patchThingy = getPatches(); // cached for the if statements
@@ -254,17 +253,6 @@ public class PatchSourcesTask extends AbstractEditJarTask
                         if (reject.exists())
                         {
                             reject.delete();
-                        }
-                        for (ContextualPatch.HunkReport hunk : report.getHunks())
-                        {
-                            // catch the failed hunks
-                            if (!hunk.getStatus().isSuccess())
-                            {
-                                getLogger().error("Hunk " + hunk.getHunkID() + " failed! " + (hunk.getFailure() != null ? hunk.getFailure().getMessage() : ""));
-                                Files.append(String.format("++++ REJECTED PATCH %d\n", hunk.getHunkID()), reject, Charsets.UTF_8);
-                                Files.append(Joiner.on('\n').join(hunk.hunk.lines), reject, Charsets.UTF_8);
-                                Files.append(String.format("\n++++ END PATCH\n"), reject, Charsets.UTF_8);
-                            }
                         }
                         getLogger().log(LogLevel.ERROR, "  Rejects written to {}", reject.getAbsolutePath());
                     }
