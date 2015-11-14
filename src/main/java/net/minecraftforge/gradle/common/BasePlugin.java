@@ -318,11 +318,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         
         onVersionCheck(webVersion, wrapper);
     }
-    
+
     /**
      * Function to do stuff with the version check json information. Is called afterEvaluate
-     * @param version
-     * @param wrapper
+     *
+     * @param version The ForgeGradle version
+     * @param wrapper Version wrapper
      */
     protected void onVersionCheck(FGVersion version, FGVersionWrapper wrapper)
     {

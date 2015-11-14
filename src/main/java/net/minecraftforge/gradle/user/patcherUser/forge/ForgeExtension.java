@@ -45,6 +45,9 @@ public class ForgeExtension extends UserBaseExtension
         super(plugin);
     }
 
+    /**
+     * @return the MinecraftForge version
+     */
     public String getForgeVersion()
     {
         return forgeVersion;
@@ -59,6 +62,21 @@ public class ForgeExtension extends UserBaseExtension
         mcpVersion = MCP_VERSION_MAP.get(version);
     }
 
+    /**
+     * Set the Minecraft and MinecraftForge version for the project. <br>
+     * Valid formats are:
+     * <ul>
+     * <li>{@code MinecraftVersion-ForgeVersion}</li>
+     * <li>{@code ForgeVersion}</li>
+     * <li>{@code ForgeBuildNumber}</li>
+     * <li>{@code recommended}</li>
+     * <li>{@code latest}</li>
+     * </ul>
+     *
+     * @param inVersion The version
+     *
+     * @see <a href="http://files.minecraftforge.net">http://files.minecraftforge.net</a>
+     */
     @Override
     public void setVersion(String inVersion)
     {
@@ -262,14 +280,23 @@ public class ForgeExtension extends UserBaseExtension
             return false;
     }
 
+    /**
+     * Get the coremod class for the mod
+     *
+     * @return The coremod class, or {@code null} if none is configured
+     */
     public String getCoreMod()
     {
         return coreMod;
     }
 
+    /**
+     * Set the coremod class for the mod
+     *
+     * @param coreMod The FQN for the coremod
+     */
     public void setCoreMod(String coreMod)
     {
         this.coreMod = coreMod;
     }
-
 }

@@ -430,6 +430,12 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
     /**
      * This method returns an object that resolved to the correct pattern based on the useLocalCache() method
+     *
+     * @param globalPattern The global pattern
+     * @param localPattern  The local pattern
+     * @param appendage     The appendage
+     * @param classifier    The classifier
+     *
      * @return useable deobfsucated output file
      */
     @SuppressWarnings("serial")
