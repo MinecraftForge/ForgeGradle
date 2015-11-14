@@ -54,11 +54,22 @@ public class UserBaseExtension extends BaseExtension
         super(plugin);
     }
 
+    /**
+     * Add a source replacement mapping
+     *
+     * @param token       The token to replace
+     * @param replacement The value to replace with
+     */
     public void replace(Object token, Object replacement)
     {
         replacements.put(token.toString(), replacement);
     }
 
+    /**
+     * Add a map of source replacement mappings
+     *
+     * @param map A map of tokens -&gt; replacements
+     */
     public void replace(Map<Object, Object> map)
     {
         for (Entry<Object, Object> e : map.entrySet())
@@ -67,70 +78,156 @@ public class UserBaseExtension extends BaseExtension
         }
     }
 
+    /**
+     * Get all of the source replacement tokens and values
+     *
+     * @return A map of tokens -&gt; replacements
+     */
     public Map<String, Object> getReplacements()
     {
         return replacements;
     }
 
+    /**
+     * Get a list of file patterns that will be used to determine included source replacement files.
+     *
+     * @return A list of classes
+     */
     public List<String> getIncludes()
     {
         return includes;
     }
 
-    public void replaceIn(String path)
+    /**
+     * Add a file pattern to be used in source replacement. {@code file.getPath().endsWith(pattern)} is used to determine included files.<br>
+     * This is an addative operation, so multiple calls are allowed
+     *
+     * @param pattern The pattern
+     */
+    public void replaceIn(String pattern)
     {
-        includes.add(path);
+        includes.add(pattern);
     }
 
     //@formatter:off
+
+    /**
+     * Add an access transformer
+     *
+     * @param obj The access transformer file
+     */
     public void accessT(Object obj) { at(obj); }
+
+    /**
+     * Add access transformers
+     *
+     * @param obj The access transformer files
+     */
     public void accessTs(Object... obj) { ats(obj); }
+
+    /**
+     * Add an access transformer
+     *
+     * @param obj The access transformer file
+     */
     public void accessTransformer(Object obj) { at(obj); }
+
+    /**
+     * Add access transformer
+     *
+     * @param obj The access transformer files
+     */
     public void accessTransformers(Object... obj) { ats(obj); }
     //@formatter:on
 
+    /**
+     * Add an access transformer
+     *
+     * @param obj The access transformer file
+     */
     public void at(Object obj)
     {
         ats.add(obj);
     }
 
+    /**
+     * Add access transformers
+     *
+     * @param obj The access transformer files
+     */
     public void ats(Object... obj)
     {
         Collections.addAll(ats, obj);
     }
 
+    /**
+     * Get all of the access transformers
+     *
+     * @return A list of access transformers
+     */
     public List<Object> getAccessTransformers()
     {
         return ats;
     }
 
     //@formatter:off
+    /**
+     * Add a location where access transformers can be found
+     *
+     * @param obj A location
+     */
     public void accessTransformerSource(Object obj) { atSource(obj); }
+
+    /**
+     * Add locations where access transformers can be found
+     *
+     * @param obj Locations
+     */
     public void accessTransformerSources(Object... obj) { atSources(obj); }
     //@formatter:on
 
+    /**
+     * Add a location where access transformers can be found
+     *
+     * @param obj A location
+     */
     public void atSource(Object obj)
     {
         atSources.add(obj);
     }
 
+    /**
+     * Add locations where access transformers can be found
+     *
+     * @param obj Locations
+     */
     public void atSources(Object... obj)
     {
         Collections.addAll(atSources, obj);
     }
 
+    /**
+     * Get a list of <em>unresolved</em> access transformer source locations
+     *
+     * @return A list of AT source locations
+     */
     public List<Object> getAccessTransformerSources()
     {
         return atSources;
     }
 
+    /**
+     * Get a list of <em>resolved</em> access transformer source locations
+     *
+     * @return A list of AT source locations
+     */
     public FileCollection getResolvedAccessTransformerSources()
     {
         return resolveFiles(atSources);
     }
 
     /**
-     * Whether or not to grab Access Transformers from dependencies
+     * @return Whether or not to grab Access Transformers from dependencies
      */
     public boolean isUseDepAts()
     {
@@ -138,35 +235,59 @@ public class UserBaseExtension extends BaseExtension
     }
 
     /**
+     * Set if dependencies should be searched for access transformers
      *
-     * @param useDepAts If TRUE, then
+     * @param useDepAts {@code true} if dependencies should be searched
      */
     public void setUseDepAts(boolean useDepAts)
     {
         this.useDepAts = useDepAts;
     }
 
+    /**
+     * Set the run location for Minecraft
+     *
+     * @param value The run location
+     */
     public void setRunDir(String value)
     {
         this.runDir = value;
         replacer.putReplacement(UserConstants.REPLACE_RUN_DIR, runDir);
     }
 
+    /**
+     * Get the run location for Minecraft
+     *
+     * @return The run location
+     */
     public String getRunDir()
     {
         return this.runDir;
     }
 
+    /**
+     * @return {@code true} if a srg-named sources jar will be created
+     */
     public boolean getMakeObfSourceJar()
     {
         return makeObfSourceJar;
     }
 
+    /**
+     * Set if a srg-named sources jar should be created
+     *
+     * @param makeObfSourceJar if a srg-named sources jar should be created
+     */
     public void setMakeObfSourceJar(boolean makeObfSourceJar)
     {
         this.makeObfSourceJar = makeObfSourceJar;
     }
 
+    /**
+     * Get the VM arguments for the client run config
+     *
+     * @return The client JVM args
+     */
     public List<Object> getClientJvmArgs()
     {
         return clientJvmArgs;
@@ -177,11 +298,21 @@ public class UserBaseExtension extends BaseExtension
         return resolve(getClientJvmArgs());
     }
 
+    /**
+     * Set the VM arguments for the client run config
+     *
+     * @param clientJvmArgs The client JVM args
+     */
     public void setClientJvmArgs(List<Object> clientJvmArgs)
     {
         this.clientJvmArgs = clientJvmArgs;
     }
 
+    /**
+     * Get the run arguments for the client run config
+     *
+     * @return The client run args
+     */
     public List<Object> getClientRunArgs()
     {
         return clientRunArgs;
@@ -192,11 +323,21 @@ public class UserBaseExtension extends BaseExtension
         return resolve(getClientRunArgs());
     }
 
+    /**
+     * Set the run arguments for the client run config
+     *
+     * @param clientRunArgs The client run args
+     */
     public void setClientRunArgs(List<Object> clientRunArgs)
     {
         this.clientRunArgs = clientRunArgs;
     }
 
+    /**
+     * Get the VM arguments for the server run config
+     *
+     * @return The server JVM args
+     */
     public List<Object> getServerJvmArgs()
     {
         return serverJvmArgs;
@@ -207,11 +348,21 @@ public class UserBaseExtension extends BaseExtension
         return resolve(getServerJvmArgs());
     }
 
+    /**
+     * Set the VM arguments for the server run config
+     *
+     * @param serverJvmArgs The server JVM args
+     */
     public void setServerJvmArgs(List<Object> serverJvmArgs)
     {
         this.serverJvmArgs = serverJvmArgs;
     }
 
+    /**
+     * Get the run arguments for the server run config
+     *
+     * @return The server run args
+     */
     public List<Object> getServerRunArgs()
     {
         return serverRunArgs;
@@ -222,6 +373,11 @@ public class UserBaseExtension extends BaseExtension
         return resolve(getServerRunArgs());
     }
 
+    /**
+     * Set the run arguments for the server run config
+     *
+     * @param serverRunArgs The server run args
+     */
     public void setServerRunArgs(List<Object> serverRunArgs)
     {
         this.serverRunArgs = serverRunArgs;

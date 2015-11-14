@@ -23,9 +23,15 @@ import java.io.Serializable;
 
 public interface ReobfTransformer extends Serializable
 {
-    
+
     /**
-     * You should use a classNode, but DONT use EXPAND_FRAMES
+     * Called for each class to be reobfuscated
+     *
+     * <em>Don't use {@link org.objectweb.asm.ClassReader#EXPAND_FRAMES EXPAND_FRAMES}</em>
+     *
+     * @param data The class bytes
+     *
+     * @return The modified class bytes
      */
     public abstract byte[] transform(byte[] data);
 }

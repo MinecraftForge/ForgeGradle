@@ -78,11 +78,21 @@ public abstract class BaseExtension
         forgeGradleVersion = version;
     }
 
+    /**
+     * Get the Minecraft version
+     *
+     * @return The Minecraft version
+     */
     public String getVersion()
     {
         return version;
     }
 
+    /**
+     * Set the Minecraft version
+     *
+     * @param version The Minecraft version
+     */
     public void setVersion(String version)
     {
         this.version = version;
@@ -95,6 +105,11 @@ public abstract class BaseExtension
         checkMappings();
     }
 
+    /**
+     * Get the MCP data version
+     *
+     * @return The MCP data version
+     */
     public String getMcpVersion()
     {
         return mcpVersion == null ? "unknown" : mcpVersion;
@@ -119,13 +134,25 @@ public abstract class BaseExtension
     }
 
     /**
-     * @return channel_version
+     * Get the MCP mappings channel and version<br>
+     * Examples: {@code stable_17, snapshot_20151113}
+     *
+     * @return The channel and version in format: {@code channel_version}.
+     *
+     * @see <a href="http://export.mcpbot.bspk.rs/">http://export.mcpbot.bspk.rs/</a>
      */
     public String getMappings()
     {
         return mappingsChannel + "_" + (mappingsCustom == null ? mappingsVersion : mappingsCustom);
     }
 
+    /**
+     * Get the MCP mappings channel
+     *
+     * @return The channel
+     *
+     * @see <a href="http://export.mcpbot.bspk.rs/">http://export.mcpbot.bspk.rs/</a>
+     */
     public String getMappingsChannel()
     {
         return mappingsChannel;
@@ -133,7 +160,8 @@ public abstract class BaseExtension
 
     /**
      * Strips the _nodoc and _verbose channel subtypes from the channel name.
-     * @return channel without subtype
+     *
+     * @return The channel without subtype
      */
     public String getMappingsChannelNoSubtype()
     {
@@ -144,11 +172,27 @@ public abstract class BaseExtension
             return mappingsChannel.substring(0, underscore);
     }
 
+    /**
+     * Get the MCP mappings version
+     *
+     * @return The version
+     *
+     * @see <a href="http://export.mcpbot.bspk.rs/">http://export.mcpbot.bspk.rs/</a>
+     */
     public String getMappingsVersion()
     {
         return mappingsCustom == null ? "" + mappingsVersion : mappingsCustom;
     }
 
+    /**
+     * Set the MCP mappings channel and version<br>
+     * The format is: {@code channel_version}.<br>
+     * Examples: {@code stable_17, snapshot_20151113}
+     *
+     * @param mappings The channel and version
+     *
+     * @see <a href="http://export.mcpbot.bspk.rs/">http://export.mcpbot.bspk.rs/</a>
+     */
     public void setMappings(String mappings)
     {
         if (Strings.isNullOrEmpty(mappings))
