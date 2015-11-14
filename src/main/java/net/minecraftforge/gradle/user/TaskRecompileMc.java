@@ -36,6 +36,8 @@ import net.minecraftforge.gradle.util.caching.CachedTask;
 
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
+import org.gradle.api.logging.LoggingManager;
+import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Optional;
@@ -79,6 +81,12 @@ public class TaskRecompileMc extends CachedTask
         // now compile, if im compiling.
         tempCls.mkdirs();
 
+        // Remove errors on normal runs
+        LoggingManager log = getLogging();
+        LogLevel startLevel = getProject().getGradle().getStartParameter().getLogLevel();
+        if (startLevel.compareTo(LogLevel.LIFECYCLE) >= 0) {
+            log.setLevel(LogLevel.ERROR);
+        }
         this.getAnt().invokeMethod("javac", ImmutableMap.builder()
                 .put("srcDir", tempSrc.getCanonicalPath())
                 .put("destDir", tempCls.getCanonicalPath())
@@ -89,7 +97,6 @@ public class TaskRecompileMc extends CachedTask
                 .put("source", "1.6")
                 .put("target", "1.6")
                 .put("debug", "true")
-                //.put("compilerarg", "-Xlint:-options") // to silence the bootstrap classpath warning
                 .build());
 
         outJar.getParentFile().mkdirs();
