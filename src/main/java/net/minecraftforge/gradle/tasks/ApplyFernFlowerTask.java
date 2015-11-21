@@ -87,7 +87,7 @@ public class ApplyFernFlowerTask extends CachedTask {
         mapOptions.put(IFernflowerPreferences.REMOVE_BRIDGE, "1");
         mapOptions.put(IFernflowerPreferences.LITERALS_AS_IS, "0");
         mapOptions.put(IFernflowerPreferences.UNIT_TEST_MODE, "0");
-        mapOptions.put(IFernflowerPreferences.MAX_PROCESSING_METHOD, "60");
+        mapOptions.put(IFernflowerPreferences.MAX_PROCESSING_METHOD, "0");
         mapOptions.put(DecompilerContext.RENAMER_FACTORY, AdvancedJadRenamerFactory.class.getName());
 
         PrintStreamLogger logger = new PrintStreamLogger(Constants.getTaskLogStream(getProject(), getName() + ".log"));
