@@ -34,6 +34,8 @@ import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
 
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.FileVisitDetails;
+import org.gradle.api.file.FileVisitor;
 import org.gradle.api.logging.LoggingManager;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.Input;
@@ -107,7 +109,7 @@ public class CreateStartTask extends CachedTask
         // now compile, if im compiling.
         if (compile)
         {
-            File compiled = getStartOut(); // quas
+            final File compiled = getStartOut(); // quas
             compiled.mkdirs(); // wex
 
             // build claspath    exort
@@ -138,7 +140,25 @@ public class CreateStartTask extends CachedTask
                     .put("encoding", "utf-8")
                     .put("source", "1.6")
                     .put("target", "1.6")
+                    .put("debug", "true")
                     .build());
+            
+            // copy the sources too, for debugging through GradleStart
+            getProject().fileTree(resourceDir).visit(new FileVisitor() {
+
+                @Override
+                public void visitDir(FileVisitDetails arg0)
+                {
+                    // ignore
+                }
+
+                @Override
+                public void visitFile(FileVisitDetails arg0)
+                {
+                    arg0.copyTo(arg0.getRelativePath().getFile(compiled));
+                }
+                
+            });
         }
 
     }
