@@ -136,7 +136,12 @@ public abstract class AbstractEditJarTask extends CachedTask
             }
 
             // resources or directories.
-            if (entry.isDirectory() || !entry.getName().endsWith(".java"))
+            if (entry.isDirectory()
+                    || !entry.getName().endsWith(".java")
+                    || !entry.getName().endsWith(".scala") // scala files
+                    || !entry.getName().endsWith(".groovy") // groovy files
+                    || !entry.getName().endsWith(".kt") // kotlin files
+                    )
             {
                 resourceMap.put(entry.getName(), ByteStreams.toByteArray(zin));
             }

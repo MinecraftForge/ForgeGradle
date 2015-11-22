@@ -102,12 +102,6 @@ public class TaskSingleDeobfBin extends CachedTask
 
         while ((entry = zin.getNextEntry()) != null)
         {
-            // no META or dirs. wel take care of dirs later.
-            if (entry.getName().contains("META-INF"))
-            {
-                continue;
-            }
-
             // resources or directories.
             if (entry.isDirectory() || !entry.getName().endsWith(".class"))
             {
