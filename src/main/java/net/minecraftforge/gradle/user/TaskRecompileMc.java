@@ -50,6 +50,9 @@ import com.google.common.collect.Sets;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
+import groovy.lang.Closure;
+import groovy.util.BuilderSupport;
+
 public class TaskRecompileMc extends CachedTask
 {
     @InputFile
@@ -87,7 +90,8 @@ public class TaskRecompileMc extends CachedTask
         if (startLevel.compareTo(LogLevel.LIFECYCLE) >= 0) {
             log.setLevel(LogLevel.ERROR);
         }
-        this.getAnt().invokeMethod("javac", ImmutableMap.builder()
+        this.getAnt().invokeMethod("javac", new Object[] {
+            ImmutableMap.builder()
                 .put("srcDir", tempSrc.getCanonicalPath())
                 .put("destDir", tempCls.getCanonicalPath())
                 .put("failonerror", true)
@@ -97,7 +101,31 @@ public class TaskRecompileMc extends CachedTask
                 .put("source", "1.6")
                 .put("target", "1.6")
                 .put("debug", "true")
-                .build());
+                .build(),
+            new Closure<Object>(this, this) {
+                protected Object doCall(Object arguments) {
+                    String currentExtDirs = System.getProperty("java.ext.dirs");
+                    String newExtDirs = "";
+                    String[] parts = currentExtDirs.split(File.pathSeparator);
+                    if (parts.length > 0) {
+                        String lastPart = parts[parts.length - 1];
+                        for (String part : parts) {
+                            if (!part.equals("/System/Library/Java/Extensions")) {
+                                newExtDirs += part;
+                                if (!part.equals(lastPart)) {
+                                    newExtDirs += File.pathSeparator;
+                                }
+                            }
+                        }
+                    }
+                    ((BuilderSupport) getDelegate()).invokeMethod("compilerarg",
+                        // Remove old vecmath
+                        ImmutableMap.of("line", "-Djava.ext.dirs=${newExtDirs}")
+                    );
+                    return null;
+                }
+            }
+        });
 
         outJar.getParentFile().mkdirs();
         createOutput(outJar, inJar, tempCls, getInResources());
