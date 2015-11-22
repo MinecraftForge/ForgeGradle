@@ -736,7 +736,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
         Jar sourceJar = makeTask(TASK_SRC_JAR, Jar.class);
         {
-            sourceJar.from(retromapped.toZipTree());
+            sourceJar.from(project.zipTree(retromapped));
             sourceJar.from(main.getOutput());
             sourceJar.exclude("*.class", "**/*.class");
             sourceJar.setClassifier("sources");
