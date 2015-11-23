@@ -226,7 +226,7 @@ public abstract class BaseExtension
         }
         else
         {
-            project.getLogger().warn("This set of MCP mappings was designed for MC "+version+". Use at your own peril.");
+            project.getLogger().warn("This set of MCP mappings was designed for MC "+mappingMc+". Use at your own peril.");
             replacer.putReplacement(Constants.REPLACE_MCP_MCVERSION, mappingMc);
             return;
         }
