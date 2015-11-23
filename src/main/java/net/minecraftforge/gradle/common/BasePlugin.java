@@ -19,7 +19,61 @@
  */
 package net.minecraftforge.gradle.common;
 
-import static net.minecraftforge.gradle.common.Constants.*;
+import static net.minecraftforge.gradle.common.Constants.ASSETS_INDEX_URL;
+import static net.minecraftforge.gradle.common.Constants.CONFIG_MAPPINGS;
+import static net.minecraftforge.gradle.common.Constants.CONFIG_MCP_DATA;
+import static net.minecraftforge.gradle.common.Constants.CONFIG_MC_DEPS;
+import static net.minecraftforge.gradle.common.Constants.CONFIG_NATIVES;
+import static net.minecraftforge.gradle.common.Constants.CSV_FIELD;
+import static net.minecraftforge.gradle.common.Constants.CSV_METHOD;
+import static net.minecraftforge.gradle.common.Constants.DIR_ASSETS;
+import static net.minecraftforge.gradle.common.Constants.DIR_JSONS;
+import static net.minecraftforge.gradle.common.Constants.DIR_LOCAL_CACHE;
+import static net.minecraftforge.gradle.common.Constants.DIR_MCP_DATA;
+import static net.minecraftforge.gradle.common.Constants.DIR_MCP_MAPPINGS;
+import static net.minecraftforge.gradle.common.Constants.DIR_NATIVES;
+import static net.minecraftforge.gradle.common.Constants.EXC_MCP;
+import static net.minecraftforge.gradle.common.Constants.EXC_SRG;
+import static net.minecraftforge.gradle.common.Constants.EXT_NAME_MC;
+import static net.minecraftforge.gradle.common.Constants.GROUP_FG;
+import static net.minecraftforge.gradle.common.Constants.JAR_CLIENT_FRESH;
+import static net.minecraftforge.gradle.common.Constants.JAR_MERGED;
+import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_DEPS;
+import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_FRESH;
+import static net.minecraftforge.gradle.common.Constants.JAR_SERVER_PURE;
+import static net.minecraftforge.gradle.common.Constants.JSON_ASSET_INDEX;
+import static net.minecraftforge.gradle.common.Constants.JSON_VERSION;
+import static net.minecraftforge.gradle.common.Constants.MCP_DATA_EXC;
+import static net.minecraftforge.gradle.common.Constants.MCP_DATA_SRG;
+import static net.minecraftforge.gradle.common.Constants.REPLACE_ASSET_INDEX;
+import static net.minecraftforge.gradle.common.Constants.REPLACE_BUILD_DIR;
+import static net.minecraftforge.gradle.common.Constants.REPLACE_CACHE_DIR;
+import static net.minecraftforge.gradle.common.Constants.REPLACE_MCP_CHANNEL;
+import static net.minecraftforge.gradle.common.Constants.REPLACE_MCP_VERSION;
+import static net.minecraftforge.gradle.common.Constants.REPLACE_MC_VERSION;
+import static net.minecraftforge.gradle.common.Constants.REPLACE_PROJECT_CACHE_DIR;
+import static net.minecraftforge.gradle.common.Constants.SRG_MCP_TO_NOTCH;
+import static net.minecraftforge.gradle.common.Constants.SRG_MCP_TO_SRG;
+import static net.minecraftforge.gradle.common.Constants.SRG_SRG_TO_MCP;
+import static net.minecraftforge.gradle.common.Constants.TASK_CLEAN_CACHE;
+import static net.minecraftforge.gradle.common.Constants.TASK_DL_ASSETS;
+import static net.minecraftforge.gradle.common.Constants.TASK_DL_ASSET_INDEX;
+import static net.minecraftforge.gradle.common.Constants.TASK_DL_CLIENT;
+import static net.minecraftforge.gradle.common.Constants.TASK_DL_SERVER;
+import static net.minecraftforge.gradle.common.Constants.TASK_DL_VERSION_JSON;
+import static net.minecraftforge.gradle.common.Constants.TASK_EXTRACT_MAPPINGS;
+import static net.minecraftforge.gradle.common.Constants.TASK_EXTRACT_MCP;
+import static net.minecraftforge.gradle.common.Constants.TASK_EXTRACT_NATIVES;
+import static net.minecraftforge.gradle.common.Constants.TASK_GENERATE_SRGS;
+import static net.minecraftforge.gradle.common.Constants.TASK_MERGE_JARS;
+import static net.minecraftforge.gradle.common.Constants.TASK_SPLIT_SERVER;
+import static net.minecraftforge.gradle.common.Constants.URL_FORGE_MAVEN;
+import static net.minecraftforge.gradle.common.Constants.URL_LIBRARY;
+import static net.minecraftforge.gradle.common.Constants.URL_MCP_JSON;
+import static net.minecraftforge.gradle.common.Constants.URL_MC_CLIENT;
+import static net.minecraftforge.gradle.common.Constants.URL_MC_JSON;
+import static net.minecraftforge.gradle.common.Constants.URL_MC_SERVER;
+import static net.minecraftforge.gradle.common.Constants.USER_AGENT;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,6 +84,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
@@ -42,7 +97,6 @@ import org.gradle.api.artifacts.repositories.FlatDirectoryArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
-import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.Delete;
 import org.gradle.testfixtures.ProjectBuilder;
 
@@ -55,12 +109,13 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.gson.reflect.TypeToken;
 
+import gnu.trove.TIntObjectHashMap;
 import groovy.lang.Closure;
-import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
 import net.minecraftforge.gradle.tasks.CrowdinDownload;
 import net.minecraftforge.gradle.tasks.Download;
 import net.minecraftforge.gradle.tasks.DownloadAssetsTask;
@@ -200,7 +255,29 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         File jsonCache = cacheFile("McpMappings.json");
         File etagFile = new File(jsonCache.getAbsolutePath() + ".etag");
 
-        getExtension().mcpJson = JsonFactory.GSON.fromJson(getWithEtag(URL_MCP_JSON, jsonCache, etagFile), new TypeToken<Map<String, Map<String, int[]>>>() {}.getType());
+        Map<String, Map<String, int[]>> json = JsonFactory.GSON.fromJson(getWithEtag(URL_MCP_JSON, jsonCache, etagFile), new TypeToken<Map<String, Map<String, int[]>>>() {}.getType());
+        Map<String, TIntObjectHashMap<String>> mcpJson = Maps.newHashMap();
+
+        for (Entry<String, Map<String, int[]>> entry1 : json.entrySet()) // <mcVersion, -->
+        {
+            for (Entry<String, int[]> entry2 : entry1.getValue().entrySet()) // <channel, versions>
+            {
+                TIntObjectHashMap<String> intMap = mcpJson.get(entry2.getKey());
+                if (intMap == null)
+                {
+                    intMap = new TIntObjectHashMap<String>();
+                }
+                
+                for (int mappingVersion : entry2.getValue())
+                {
+                    intMap.put(mappingVersion, entry1.getKey());
+                }
+                
+                mcpJson.put(entry2.getKey(), intMap);
+            }
+        }
+        
+        getExtension().mcpJson = mcpJson;
     }
 
     protected void afterEvaluate()

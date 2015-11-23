@@ -106,20 +106,6 @@ public class ExtensionMcpMappingTest
         assertEquals(this.ext.getMappingsVersion(), "12");
     }
 
-    @Test(expected = GradleConfigurationException.class)
-    public void testInvalidSnapshot17()
-    {
-        this.ext.setVersion(VERSION_17);
-        this.ext.setMappings("snapshot_20141205");
-    }
-
-    @Test(expected = GradleConfigurationException.class)
-    public void testInvalidSnapshot18()
-    {
-        this.ext.setVersion(VERSION_18);
-        this.ext.setMappings("snapshot_20140909");
-    }
-
     @Test
     public void testOrdering()
     {
