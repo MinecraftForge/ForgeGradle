@@ -108,6 +108,8 @@ public class Constants
     public static final String REPLACE_MCP_CHANNEL       = "{MAPPING_CHANNEL}";
     /** MCP mapping version **/
     public static final String REPLACE_MCP_VERSION       = "{MAPPING_VERSION}";
+    /** MCP mapping MC version **/
+    public static final String REPLACE_MCP_MCVERSION     = "{MAPPING_MCVERSION}";
     /** AssetIndex name **/
     public static final String REPLACE_ASSET_INDEX       = "{ASSET_INDEX}";
 

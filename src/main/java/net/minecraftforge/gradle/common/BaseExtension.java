@@ -20,7 +20,6 @@
 package net.minecraftforge.gradle.common;
 
 import java.net.URL;
-import java.util.Arrays;
 import java.util.Map;
 
 import org.gradle.api.Project;
@@ -190,6 +189,7 @@ public abstract class BaseExtension
 
         replacer.putReplacement(Constants.REPLACE_MCP_CHANNEL, mappingsChannel);
         replacer.putReplacement(Constants.REPLACE_MCP_VERSION, getMappingsVersion());
+        replacer.putReplacement(Constants.REPLACE_MCP_MCVERSION, version); // unless otherwise specified
 
         // check
         checkMappings();
@@ -213,8 +213,6 @@ public abstract class BaseExtension
             throw new GradleConfigurationException("There is no such MCP mapping channel named " + channel);
         }
         
-        System.out.println("checking -> " + getMappings());
-        System.out.println("channel map -> " + channelMap);
         String mappingMc = channelMap.get(mappingsVersion);
         
         if (version.equals(mappingMc))
@@ -229,6 +227,7 @@ public abstract class BaseExtension
         else
         {
             project.getLogger().warn("This set of MCP mappings was designed for MC "+version+". Use at your own peril.");
+            replacer.putReplacement(Constants.REPLACE_MCP_MCVERSION, mappingMc);
             return;
         }
     }
