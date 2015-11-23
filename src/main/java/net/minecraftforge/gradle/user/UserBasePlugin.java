@@ -328,7 +328,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             decompile.setInJar(deobfDecompJar);
             decompile.setOutJar(decompJar);
             decompile.setClasspath(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPS));
-            decompile.dependsOn(TASK_DL_FERNFLOWER, deobfDecomp);
+            decompile.dependsOn(deobfDecomp);
         }
 
         final PostDecompileTask postDecomp = makeTask(TASK_POST_DECOMP, PostDecompileTask.class);

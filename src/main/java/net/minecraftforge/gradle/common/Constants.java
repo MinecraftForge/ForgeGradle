@@ -196,7 +196,6 @@ public class Constants
     public static final String TASK_EXTRACT_MCP      = "extractMcpData";
     public static final String TASK_EXTRACT_MAPPINGS = "extractMcpMappings";
     public static final String TASK_GENERATE_SRGS    = "genSrgs";
-    public static final String TASK_DL_FERNFLOWER    = "getFernFlower";
     public static final String TASK_CLEAN_CACHE      = "cleanCache";
 
     // util
