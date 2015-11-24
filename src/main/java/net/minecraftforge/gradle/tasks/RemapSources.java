@@ -59,7 +59,7 @@ public class RemapSources extends AbstractEditJarTask
     private final Map<String, String> fieldDocs    = Maps.newHashMap();
     private final Map<String, String> params       = Maps.newHashMap();
 
-    private static final Pattern      SRG_FINDER   = Pattern.compile("(func_[0-9]+_[a-zA-Z_]+|field_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_)([^\\w\\$])");
+    private static final Pattern      SRG_FINDER   = Pattern.compile("func_[0-9]+_[a-zA-Z_]+|field_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_");
     private static final Pattern      METHOD       = Pattern.compile("^((?: {4})+|\\t+)(?:[\\w$.\\[\\]]+ )+(func_[0-9]+_[a-zA-Z_]+)\\(");
     private static final Pattern      FIELD        = Pattern.compile("^((?: {4})+|\\t+)(?:[\\w$.\\[\\]]+ )+(field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
 
@@ -159,7 +159,7 @@ public class RemapSources extends AbstractEditJarTask
         Matcher matcher = SRG_FINDER.matcher(line);
         while (matcher.find())
         {
-            String find = matcher.group(1);
+            String find = matcher.group();
 
             if (find.startsWith("p_"))
                 find = params.get(find);
@@ -169,10 +169,9 @@ public class RemapSources extends AbstractEditJarTask
                 find = fields.get(find);
 
             if (find == null)
-                find = matcher.group(1);
+                find = matcher.group();
 
             matcher.appendReplacement(buf, find);
-            buf.append(matcher.group(2));
         }
         matcher.appendTail(buf);
         return buf.toString();
