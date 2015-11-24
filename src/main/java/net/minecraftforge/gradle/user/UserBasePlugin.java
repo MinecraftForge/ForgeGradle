@@ -100,6 +100,13 @@ import net.minecraftforge.gradle.util.delayed.DelayedFile;
 public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePlugin<T>
 {
     private boolean madeDecompTasks = false; // to gaurd against stupid programmers
+    private final Closure<Object> makeRunDir = new Closure<Object>(null, null) {
+        public Object call()
+        {
+            delayedFile(REPLACE_RUN_DIR).call().mkdirs();
+            return null;
+        }
+    };
 
     @Override
     public final void applyPlugin()
@@ -764,6 +771,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             exec.setGroup("ForgeGradle");
             exec.setDescription("Runs the Minecraft client");
 
+            exec.doFirst(makeRunDir);
+
             exec.dependsOn("makeStart");
         }
 
@@ -779,6 +788,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
             exec.setGroup("ForgeGradle");
             exec.setDescription("Runs the Minecraft Server");
+
+            exec.doFirst(makeRunDir);
 
             exec.dependsOn("makeStart");
         }
@@ -949,6 +960,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             eclipseClient.setOutputFile(project.file(project.getName() + "_Client.launch"));
             eclipseClient.setRunDir(delayedFile(REPLACE_RUN_DIR));
             eclipseClient.dependsOn(TASK_MAKE_START);
+            eclipseClient.doFirst(makeRunDir);
 
             project.getTasks().getByName("eclipse").dependsOn(eclipseClient);
             project.getTasks().getByName("cleanEclipse").dependsOn("cleanMakeEclipseCleanRunClient");
@@ -962,6 +974,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             eclipseServer.setOutputFile(project.file(project.getName() + "_Server.launch"));
             eclipseServer.setRunDir(delayedFile(REPLACE_RUN_DIR));
             eclipseServer.dependsOn(TASK_MAKE_START);
+            eclipseServer.doFirst(makeRunDir);
 
             project.getTasks().getByName("eclipse").dependsOn(eclipseServer);
             project.getTasks().getByName("cleanEclipse").dependsOn("cleanMakeEclipseCleanRunServer");
@@ -1015,12 +1028,13 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         ideaConv.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(CONFIG_PROVIDED));
 
         // add deobf task dependencies
-        project.getTasks().getByName("ideaModule").dependsOn(TASK_DD_COMPILE, TASK_DD_PROVIDED);
+        project.getTasks().getByName("ideaModule").dependsOn(TASK_DD_COMPILE, TASK_DD_PROVIDED).doFirst(makeRunDir);
 
         // fix the idea bug
         ideaConv.getModule().setInheritOutputDirs(true);
 
         Task task = makeTask("genIntellijRuns", DefaultTask.class);
+        task.doFirst(makeRunDir);
         task.doLast(new Action<Task>() {
             @Override
             public void execute(Task task)
@@ -1082,7 +1096,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             }
         });
         task.setGroup(GROUP_FG);
-        task.setDescription("Generates the ForgeGradle run confgiurations for intellij Idea");
+        task.setDescription("Generates the ForgeGradle run configurations for intellij Idea");
 
         if (ideaConv.getWorkspace().getIws() == null)
             return;
