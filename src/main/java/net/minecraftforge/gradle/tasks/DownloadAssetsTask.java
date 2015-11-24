@@ -19,8 +19,6 @@
  */
 package net.minecraftforge.gradle.tasks;
 
-import groovy.lang.Closure;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -35,13 +33,12 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import net.minecraftforge.gradle.util.json.JsonFactory;
 import net.minecraftforge.gradle.util.json.version.AssetIndex;
 import net.minecraftforge.gradle.util.json.version.AssetIndex.AssetEntry;
 
 import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,8 +46,10 @@ import com.google.common.io.Files;
 
 public class DownloadAssetsTask extends DefaultTask
 {
-    DelayedFile           assetsDir;
+    @OutputDirectory
+    Object           assetsDir;
 
+    @InputFile
     Object                assetIndex;
 
     private File          virtualRoot  = null;
@@ -100,10 +99,10 @@ public class DownloadAssetsTask extends DefaultTask
 
     public File getAssetsDir()
     {
-        return assetsDir.call();
+        return getProject().file(assetsDir);
     }
 
-    public void setAssetsDir(DelayedFile assetsDir)
+    public void setAssetsDir(Object assetsDir)
     {
         this.assetsDir = assetsDir;
     }
@@ -113,7 +112,7 @@ public class DownloadAssetsTask extends DefaultTask
         return getProject().file(assetIndex);
     }
 
-    public void setAssetsIndex(Closure<File> index)
+    public void setAssetsIndex(Object index)
     {
         this.assetIndex = index;
     }
