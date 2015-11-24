@@ -167,7 +167,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
     @Override
     protected void afterEvaluate()
     {
-        // to gaurd against stupid programmers
+        // to guard against stupid programmers
         if (!madeDecompTasks)
         {
             throw new RuntimeException("THE DECOMP TASKS HAVENT BEEN MADE!! STUPID FORGEGRADLE DEVELOPER!!!! :(");
@@ -413,6 +413,9 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             @Override
             public void execute(Project project)
             {
+                if (project.getState().getFailure() != null)
+                    return;
+
                 // the recompiled jar exists, or the decomp task is part of the build
                 boolean isDecomp = project.file(recompiledJar).exists() || project.getGradle().getStartParameter().getTaskNames().contains(TASK_SETUP_DECOMP);
 
@@ -601,6 +604,9 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             @Override
             public void execute(Project project)
             {
+                if (project.getState().getFailure() != null)
+                    return;
+
                 // add maven repo
                 addMavenRepo(project, "deobfDeps", delayedFile(DIR_DEOBF_DEPS).call().getAbsoluteFile().toURI().getPath());
 
@@ -966,6 +972,9 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             @Override
             public void execute(Project project)
             {
+                if (project.getState().getFailure() != null)
+                    return;
+
                 T ext = getExtension();
                 if (hasClientRun())
                 {
