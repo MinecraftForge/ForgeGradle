@@ -291,7 +291,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
     @SuppressWarnings("unchecked")
 	protected void makeDecompTasks(final String globalPattern, final String localPattern, Object inputJar, String inputTask, Object mcpPatchSet)
     {
-        madeDecompTasks = true; // to gaurd against stupid programmers
+        madeDecompTasks = true; // to guard against stupid programmers
 
         final DeobfuscateJar deobfBin = makeTask(TASK_DEOBF_BIN, DeobfuscateJar.class);
         {
@@ -303,7 +303,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             deobfBin.setApplyMarkers(false);
             deobfBin.setInJar(inputJar);
             deobfBin.setOutJar(chooseDeobfOutput(globalPattern, localPattern, "Bin", ""));
-            deobfBin.dependsOn(inputTask, TASK_GENERATE_SRGS, TASK_EXTRACT_DEP_ATS);
+            deobfBin.dependsOn(inputTask, TASK_GENERATE_SRGS, TASK_EXTRACT_DEP_ATS, TASK_DD_COMPILE, TASK_DD_PROVIDED);
         }
 
         final Object deobfDecompJar = chooseDeobfOutput(globalPattern, localPattern, "", "srgBin");
@@ -320,7 +320,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             deobfDecomp.setApplyMarkers(true);
             deobfDecomp.setInJar(inputJar);
             deobfDecomp.setOutJar(deobfDecompJar);
-            deobfDecomp.dependsOn(inputTask, TASK_GENERATE_SRGS, TASK_EXTRACT_DEP_ATS); // todo grab correct task to depend on
+            deobfDecomp.dependsOn(inputTask, TASK_GENERATE_SRGS, TASK_EXTRACT_DEP_ATS, TASK_DD_COMPILE, TASK_DD_PROVIDED); // todo grab correct task to depend on
         }
 
         final ApplyFernFlowerTask decompile = makeTask(TASK_DECOMPILE, ApplyFernFlowerTask.class);
@@ -590,7 +590,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         final Task compileDummy = getDummyDep("compile", delayedFile(DIR_DEOBF_DEPS + "/compileDummy.jar"), TASK_DD_COMPILE);
         final Task providedDummy = getDummyDep("compile", delayedFile(DIR_DEOBF_DEPS + "/providedDummy.jar"), TASK_DD_PROVIDED);
 
-        // die wih error if I find invalid types...
+        // die with error if I find invalid types...
         project.afterEvaluate(new Action<Project>() {
             @Override
             public void execute(Project project)
@@ -625,7 +625,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                 for (ResolvedArtifact artifact : config.getResolvedConfiguration().getResolvedArtifacts())
                 {
                     ModuleVersionIdentifier module = artifact.getModuleVersion().getId();
-                    String group = "deobf." + module.getGroup();
+                    String group = delayedString("deobf." + REPLACE_MCP_CHANNEL + "." + REPLACE_MCP_VERSION + "." + module.getGroup()).call();
 
                     // Add artifacts that will be remapped to get their sources
                     idMap.put(artifact.getId().getComponentIdentifier(), module);
@@ -654,7 +654,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                 for (ComponentArtifactsResult comp : result.getResolvedComponents())
                 {
                     ModuleVersionIdentifier module = idMap.get(comp.getId());
-                    String group = "deobf." + module.getGroup();
+                    String group = delayedString("deobf." + REPLACE_MCP_CHANNEL + "." + REPLACE_MCP_VERSION + "." + module.getGroup()).call();
 
                     for (ArtifactResult art : comp.getArtifacts(SourcesArtifact.class))
                     {
