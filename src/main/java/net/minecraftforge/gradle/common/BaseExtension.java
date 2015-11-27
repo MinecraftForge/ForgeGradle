@@ -38,6 +38,7 @@ public abstract class BaseExtension
 
     public final String forgeGradleVersion;
 
+    protected transient BasePlugin<? extends BaseExtension> plugin;
     protected transient Project             project;
     protected transient ReplacementProvider replacer;
     protected String                        version;
@@ -53,6 +54,7 @@ public abstract class BaseExtension
 
     public BaseExtension(BasePlugin<? extends BaseExtension> plugin)
     {
+        this.plugin = plugin;
         this.project = plugin.project;
         this.replacer = plugin.replacer;
 
@@ -155,8 +157,7 @@ public abstract class BaseExtension
             mappingsChannel = null;
             mappingsVersion = -1;
 
-            replacer.putReplacement(Constants.REPLACE_MCP_CHANNEL, mappingsChannel);
-            replacer.putReplacement(Constants.REPLACE_MCP_VERSION, getMappingsVersion());
+            this.setMappingEnvironment(true);
 
             return;
         }
@@ -186,13 +187,23 @@ public abstract class BaseExtension
         }
 
         mappingsSet = true;
-
-        replacer.putReplacement(Constants.REPLACE_MCP_CHANNEL, mappingsChannel);
-        replacer.putReplacement(Constants.REPLACE_MCP_VERSION, getMappingsVersion());
-        replacer.putReplacement(Constants.REPLACE_MCP_MCVERSION, version); // unless otherwise specified
+        this.setMappingEnvironment(false);
 
         // check
         checkMappings();
+    }
+
+    protected void setMappingEnvironment(boolean empty)
+    {
+        this.replacer.putReplacement(Constants.REPLACE_MCP_CHANNEL, this.mappingsChannel);
+        this.replacer.putReplacement(Constants.REPLACE_MCP_VERSION, this.getMappingsVersion());
+        if (!empty)
+        {
+            this.replacer.putReplacement(Constants.REPLACE_MCP_MCVERSION, this.version); // unless otherwise specified
+        }
+
+        // Store the MCP mappings path in properties so that it can be accessed during builds.
+        System.setProperty("net.minecraftforge.gradle.mcp.mappings", this.plugin.delayedFile(Constants.DIR_MCP_MAPPINGS).call().getAbsolutePath());
     }
 
     /**
