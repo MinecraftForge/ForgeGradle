@@ -218,6 +218,7 @@ public abstract class BaseExtension
         if (version.equals(mappingMc))
         {
             // all good.
+            replacer.putReplacement(Constants.REPLACE_MCP_MCVERSION, version);
             return;
         }
         else if (mappingMc == null)
