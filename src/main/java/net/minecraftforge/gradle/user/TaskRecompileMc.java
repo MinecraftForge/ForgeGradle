@@ -77,12 +77,13 @@ public class TaskRecompileMc extends CachedTask
         File tempCls = new File(getTemporaryDir(), "compiled");
         File outJar = getOutJar();
 
+        // delete and recreate dirs
+        getProject().delete(tempSrc, tempCls);
         tempSrc.mkdirs();
-        extractSources(tempSrc, inJar);
-
-        // recompile
-        // now compile, if im compiling.
         tempCls.mkdirs();
+
+        // extract sources
+        extractSources(tempSrc, inJar);
 
         // Remove errors on normal runs
         LoggingManager log = getLogging();
@@ -90,6 +91,8 @@ public class TaskRecompileMc extends CachedTask
         if (startLevel.compareTo(LogLevel.LIFECYCLE) >= 0) {
             log.setLevel(LogLevel.ERROR);
         }
+
+        // recompile
         this.getAnt().invokeMethod("javac", new Object[] {
             ImmutableMap.builder()
                 .put("srcDir", tempSrc.getCanonicalPath())
