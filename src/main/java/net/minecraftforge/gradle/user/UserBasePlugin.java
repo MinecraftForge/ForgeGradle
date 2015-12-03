@@ -36,6 +36,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import com.google.common.collect.ImmutableList;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.NamedDomainObjectContainer;
@@ -66,6 +67,7 @@ import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.ScalaSourceSet;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.Jar;
+import org.gradle.api.tasks.compile.AbstractCompile;
 import org.gradle.api.tasks.compile.GroovyCompile;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
@@ -549,56 +551,68 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         // do the special source moving...
         TaskSourceCopy task;
 
-        // main
+        for (SourceSet set : javaConv.getSourceSets())
         {
-            File dir = new File(project.getBuildDir(), "sources/" + SourceSet.MAIN_SOURCE_SET_NAME + "/java");
+            if (set.getName() == "api")
+            {
+                // we dont care about the API sourceset...
+                continue;
+            }
 
-            task = makeTask("sourceMainJava", TaskSourceCopy.class);
-            task.setSource(main.getJava());
-            task.setOutput(dir);
+            // get the capitalized name of the sourceSet
+            String capSetName = Character.toUpperCase(set.getName().charAt(0)) + set.getName().substring(1);
 
-            // must get replacements from extension afterEValuate()
+            // java
+            {
+                File dir = new File(project.getBuildDir(), "sources/" + set.getName() + "/java");
 
-            JavaCompile compile = (JavaCompile) project.getTasks().getByName(main.getCompileJavaTaskName());
-            compile.dependsOn("sourceMainJava");
-            compile.setSource(dir);
+                task = makeTask("source"+capSetName+"Java", TaskSourceCopy.class);
+                task.setSource(main.getJava());
+                task.setOutput(dir);
+
+                // must get replacements from extension afterEvaluate()
+
+                JavaCompile compile = (JavaCompile) project.getTasks().getByName(main.getCompileJavaTaskName());
+                compile.dependsOn(task);
+                compile.setSource(dir);
+            }
+
+            // scala
+            if (project.getPlugins().hasPlugin("scala"))
+            {
+                ScalaSourceSet langSet = (ScalaSourceSet) new DslObject(main).getConvention().getPlugins().get("scala");
+                File dir = new File(project.getBuildDir(), "sources/" + set.getName() + "/scala");
+
+                task = makeTask("source"+capSetName+"Scala", TaskSourceCopy.class);
+                task.setSource(langSet.getScala());
+                task.setOutput(dir);
+
+                // must get replacements from extension afterEValuate()
+
+                ScalaCompile compile = (ScalaCompile) project.getTasks().getByName(main.getCompileTaskName("scala"));
+                compile.dependsOn(task);
+                compile.setSource(dir);
+            }
+
+            // groovy
+            if (project.getPlugins().hasPlugin("groovy"))
+            {
+                GroovySourceSet langSet = (GroovySourceSet) new DslObject(main).getConvention().getPlugins().get("groovy");
+                File dir = new File(project.getBuildDir(), "sources/" + set.getName() + "/groovy");
+
+                task = makeTask("source"+capSetName+"Groovy", TaskSourceCopy.class);
+                task.setSource(langSet.getGroovy());
+                task.setOutput(dir);
+
+                // must get replacements from extension afterEValuate()
+
+                GroovyCompile compile = (GroovyCompile) project.getTasks().getByName(main.getCompileTaskName("groovy"));
+                compile.dependsOn(task);
+                compile.setSource(dir);
+            }
+
+            // Todo: kotlin?  clojure?
         }
-
-        // scala!!!
-        if (project.getPlugins().hasPlugin("scala"))
-        {
-            ScalaSourceSet set = (ScalaSourceSet) new DslObject(main).getConvention().getPlugins().get("scala");
-            File dir = new File(project.getBuildDir(), "sources/" + SourceSet.MAIN_SOURCE_SET_NAME + "/scala");
-
-            task = makeTask("sourceMainScala", TaskSourceCopy.class);
-            task.setSource(set.getScala());
-            task.setOutput(dir);
-
-            // must get replacements from extension afterEValuate()
-
-            ScalaCompile compile = (ScalaCompile) project.getTasks().getByName(main.getCompileTaskName("scala"));
-            compile.dependsOn("sourceMainScala");
-            compile.setSource(dir);
-        }
-
-        // groovy!!!
-        if (project.getPlugins().hasPlugin("groovy"))
-        {
-            GroovySourceSet set = (GroovySourceSet) new DslObject(main).getConvention().getPlugins().get("groovy");
-            File dir = new File(project.getBuildDir(), "sources/" + SourceSet.MAIN_SOURCE_SET_NAME + "/groovy");
-
-            task = makeTask("sourceMainGroovy", TaskSourceCopy.class);
-            task.setSource(set.getGroovy());
-            task.setOutput(dir);
-
-            // must get replacements from extension afterEValuate()
-
-            GroovyCompile compile = (GroovyCompile) project.getTasks().getByName(main.getCompileTaskName("groovy"));
-            compile.dependsOn("sourceMainGroovy");
-            compile.setSource(dir);
-        }
-
-        // Todo: kotlin?  closure?
     }
 
     protected void doDevTimeDeobf()
