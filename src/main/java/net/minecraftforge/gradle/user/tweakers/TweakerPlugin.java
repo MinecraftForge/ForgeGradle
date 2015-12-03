@@ -149,7 +149,7 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
     @Override
     protected String getClientRunClass(TweakerExtension ext)
     {
-        return "net.minecraft.launchwrapper.Launch"; // the launch wrapper
+        return ext.getMainClass();
     }
 
     @Override
@@ -165,7 +165,7 @@ public abstract class TweakerPlugin extends UserBasePlugin<TweakerExtension>
     @Override
     protected String getServerRunClass(TweakerExtension ext)
     {
-        return "net.minecraft.launchwrapper.Launch"; // the launch wrapper
+        return ext.getMainClass();
     }
 
     @Override
