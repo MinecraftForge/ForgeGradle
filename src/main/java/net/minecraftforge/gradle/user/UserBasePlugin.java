@@ -553,7 +553,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
         for (SourceSet set : javaConv.getSourceSets())
         {
-            if (set.getName() == "api")
+            if (set.getName().equals("api"))
             {
                 // we dont care about the API sourceset...
                 continue;
