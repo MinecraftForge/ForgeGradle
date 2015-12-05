@@ -20,7 +20,6 @@
 package net.minecraftforge.gradle.user.patcherUser.forge;
 
 import static net.minecraftforge.gradle.common.Constants.REPLACE_MC_VERSION;
-import static net.minecraftforge.gradle.common.Constants.SRG_MCP_TO_SRG;
 import static net.minecraftforge.gradle.user.UserConstants.TASK_REOBF;
 
 import java.io.File;
@@ -36,6 +35,8 @@ import com.google.gson.JsonSyntaxException;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.tasks.CreateStartTask;
+import net.minecraftforge.gradle.user.ReobfMappingType;
+import net.minecraftforge.gradle.user.ReobfTaskFactory.ReobfTaskWrapper;
 import net.minecraftforge.gradle.user.TaskSingleReobf;
 import net.minecraftforge.gradle.user.UserConstants;
 import net.minecraftforge.gradle.user.patcherUser.PatcherUserBasePlugin;
@@ -114,15 +115,14 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
                     }
                 }
             }
-
         });
     }
 
     @Override
-    protected void setupReobf(TaskSingleReobf reobf)
+    protected void setupReobf(ReobfTaskWrapper reobf)
     {
         super.setupReobf(reobf);
-        reobf.setPrimarySrg(delayedFile(SRG_MCP_TO_SRG));
+        reobf.setMappingType(ReobfMappingType.SEARGE);
     }
 
     @Override
