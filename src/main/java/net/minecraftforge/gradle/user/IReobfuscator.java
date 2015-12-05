@@ -47,6 +47,31 @@ public interface IReobfuscator
     void setMappings(Object srg);
 
     /**
+     * Gets the mappings type.
+     *
+     * @return The mapping type
+     */
+    ReobfMappingType getMappingType();
+
+    /**
+     * Sets the mapping type for easy access to searge or notch names. For
+     * custom mappings, use {@link #setMappings(Object)}.
+     *
+     * <pre>
+     * // for notch names (vanilla)
+     * mappingType = "NOTCH"
+     *
+     * // or searge names (forge)
+     * mappingType = "SEARGE"
+     * </pre>
+     *
+     * @param type The mapping
+     * @throws NullPointerException when type is null
+     * @throws IllegalArgumentException when type is {@link ReobfMappingType#CUSTOM}
+     */
+    void setMappingType(ReobfMappingType type);
+
+    /**
      * Sets the classpath used to reobfuscate. This is used by groovy for
      * simplicity. Use <code>classpath += otherClasspath</code> to add to it.
      * 
@@ -64,8 +89,8 @@ public interface IReobfuscator
 
     /**
      * Gets the extra srg lines and files. Modders should prefer to use
-     * {@link #extraLines(Object...)} or {@code extra += []} instead of setting the
-     * list manually.
+     * {@link #extraLines(Object...)} or {@code extra += []} instead of setting
+     * the list manually.
      * 
      * @return The extra srg lines
      */
@@ -73,15 +98,15 @@ public interface IReobfuscator
 
     /**
      * Sets the extra lines. Modders should prefer to use
-     * {@link #extraLines(Object...)} instead of setting the
-     * list manually.
+     * {@link #extraLines(Object...)} instead of setting the list manually.
      * 
      * @param extra The list of srg lines
      */
     void setExtraLines(List<Object> extra);
 
     /**
-     * Adds some additional srg lines for reobfuscating. These are resolved to strings.
+     * Adds some additional srg lines for reobfuscating. These are resolved to
+     * strings.
      * 
      * @param o The array to add
      */
@@ -93,18 +118,18 @@ public interface IReobfuscator
      * @param o The collection to add
      */
     void extraLines(Iterable<Object> o);
-    
+
     /**
-     * Gets the extra srg  files. Modders should prefer to use
-     * {@link #extraFiles(Object...)} instead of setting the
-     * list manually.
+     * Gets the extra srg files. Modders should prefer to use
+     * {@link #extraFiles(Object...)} instead of setting the list manually.
      * 
      * @return The extra srg files
      */
     List<Object> getExtraFiles();
 
     /**
-     * Adds some additional srg files for reobfuscating. These are resolved to files with {@link org.gradle.api.Project#file(Object)} 
+     * Adds some additional srg files for reobfuscating. These are resolved to
+     * files with {@link org.gradle.api.Project#file(Object)}
      * 
      * @param o The array to add
      */
@@ -122,7 +147,10 @@ public interface IReobfuscator
      * plugin.
      *
      * i.e. Minecraft.func_71410_x()
+     *
+     * @deprecated Use {@link #setMappingType(ReobfMappingType)}
      */
+    @Deprecated
     void useSrgSrg();
 
     /**
@@ -130,7 +158,10 @@ public interface IReobfuscator
      * able to run without Forge installed, such as libraries or hybrid mods.
      *
      * i.e. bsu.z()
+     *
+     * @deprecated Use {@link #setMappingType(ReobfMappingType)}
      */
+    @Deprecated
     void useNotchSrg();
 
 }

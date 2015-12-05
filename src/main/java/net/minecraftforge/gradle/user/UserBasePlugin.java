@@ -96,6 +96,7 @@ import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.GenEclipseRunTask;
 import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.RemapSources;
+import net.minecraftforge.gradle.user.ReobfTaskFactory.ReobfTaskWrapper;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
 
@@ -285,13 +286,14 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
      *
      * @param reobf The task to setup
      */
-    protected void setupReobf(TaskSingleReobf reobf)
+    protected void setupReobf(ReobfTaskWrapper reobf)
     {
-        reobf.setExceptorCfg(delayedFile(EXC_SRG));
-        reobf.setFieldCsv(delayedFile(CSV_FIELD));
-        reobf.setMethodCsv(delayedFile(CSV_METHOD));
+        TaskSingleReobf task = reobf.getTask();
+        task.setExceptorCfg(delayedFile(EXC_SRG));
+        task.setFieldCsv(delayedFile(CSV_FIELD));
+        task.setMethodCsv(delayedFile(CSV_METHOD));
 
-        reobf.setPrimarySrg(delayedFile(SRG_MCP_TO_NOTCH));
+        reobf.setMappingType(ReobfMappingType.NOTCH);
         JavaPluginConvention java = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
         reobf.setClasspath(java.getSourceSets().getByName("main").getCompileClasspath());
     }
