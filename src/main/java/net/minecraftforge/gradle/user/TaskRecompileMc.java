@@ -149,8 +149,25 @@ public class TaskRecompileMc extends CachedTask
         }
 
         @Override
-        public void visitDir(FileVisitDetails dirDetails)
+        public void visitDir(FileVisitDetails dir)
         {
+            try
+            {
+                String name = dir.getRelativePath().toString().replace('\\', '/');
+                if (!name.endsWith("/"))
+                    name += "/";
+
+                if (entries.contains(name))
+                    return;
+
+                entries.add(name);
+                ZipEntry entry = new ZipEntry(name);
+                zout.putNextEntry(entry);
+            }
+            catch (IOException e)
+            {
+                Throwables.propagate(e);
+            }
         }
 
         @Override
