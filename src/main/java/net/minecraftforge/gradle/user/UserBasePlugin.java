@@ -36,7 +36,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import com.google.common.collect.ImmutableList;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.NamedDomainObjectContainer;
@@ -67,7 +66,6 @@ import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.ScalaSourceSet;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.Jar;
-import org.gradle.api.tasks.compile.AbstractCompile;
 import org.gradle.api.tasks.compile.GroovyCompile;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
@@ -155,7 +153,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         createSourceCopyTasks();
         doDevTimeDeobf();
         doDepAtExtraction();
-        makeObfSource();
+        configureRetromapping();
         makeRunTasks();
 
         // use zinc for scala compilation
@@ -548,73 +546,75 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
     protected void createSourceCopyTasks()
     {
         JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
-        SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
-        // do the special source moving...
-        TaskSourceCopy task;
+        Action<SourceSet> action = new Action<SourceSet>() {
+            @Override
+            public void execute(SourceSet set) {
 
+                TaskSourceCopy task;
+
+                String capName = set.getName().substring(0, 1).toUpperCase() + set.getName().substring(1);
+                String taskPrefix = "source"+capName;
+                File dirRoot = new File(project.getBuildDir(), "sources/"+set.getName());
+
+                // java
+                {
+                    File dir = new File(dirRoot, "java");
+
+                    task = makeTask(taskPrefix+"Java", TaskSourceCopy.class);
+                    task.setSource(set.getJava());
+                    task.setOutput(dir);
+
+                    // must get replacements from extension afterEvaluate()
+
+                    JavaCompile compile = (JavaCompile) project.getTasks().getByName(set.getCompileJavaTaskName());
+                    compile.dependsOn(task);
+                    compile.setSource(dir);
+                }
+
+                // scala
+                if (project.getPlugins().hasPlugin("scala"))
+                {
+                    ScalaSourceSet langSet = (ScalaSourceSet) new DslObject(set).getConvention().getPlugins().get("scala");
+                    File dir = new File(dirRoot, "scala");
+
+                    task = makeTask(taskPrefix+"Scala", TaskSourceCopy.class);
+                    task.setSource(langSet.getScala());
+                    task.setOutput(dir);
+
+                    // must get replacements from extension afterEValuate()
+
+                    ScalaCompile compile = (ScalaCompile) project.getTasks().getByName(set.getCompileTaskName("scala"));
+                    compile.dependsOn(task);
+                    compile.setSource(dir);
+                }
+
+                // groovy
+                if (project.getPlugins().hasPlugin("groovy"))
+                {
+                    GroovySourceSet langSet = (GroovySourceSet) new DslObject(set).getConvention().getPlugins().get("groovy");
+                    File dir = new File(dirRoot, "groovy");
+
+                    task = makeTask(taskPrefix+"Groovy", TaskSourceCopy.class);
+                    task.setSource(langSet.getGroovy());
+                    task.setOutput(dir);
+
+                    // must get replacements from extension afterEValuate()
+
+                    GroovyCompile compile = (GroovyCompile) project.getTasks().getByName(set.getCompileTaskName("groovy"));
+                    compile.dependsOn(task);
+                    compile.setSource(dir);
+                }
+            }
+        };
+
+        // for existing sourceSets
         for (SourceSet set : javaConv.getSourceSets())
         {
-            if (set.getName().equals("api"))
-            {
-                // we dont care about the API sourceset...
-                continue;
-            }
-
-            // get the capitalized name of the sourceSet
-            String capSetName = Character.toUpperCase(set.getName().charAt(0)) + set.getName().substring(1);
-
-            // java
-            {
-                File dir = new File(project.getBuildDir(), "sources/" + set.getName() + "/java");
-
-                task = makeTask("source"+capSetName+"Java", TaskSourceCopy.class);
-                task.setSource(main.getJava());
-                task.setOutput(dir);
-
-                // must get replacements from extension afterEvaluate()
-
-                JavaCompile compile = (JavaCompile) project.getTasks().getByName(main.getCompileJavaTaskName());
-                compile.dependsOn(task);
-                compile.setSource(dir);
-            }
-
-            // scala
-            if (project.getPlugins().hasPlugin("scala"))
-            {
-                ScalaSourceSet langSet = (ScalaSourceSet) new DslObject(main).getConvention().getPlugins().get("scala");
-                File dir = new File(project.getBuildDir(), "sources/" + set.getName() + "/scala");
-
-                task = makeTask("source"+capSetName+"Scala", TaskSourceCopy.class);
-                task.setSource(langSet.getScala());
-                task.setOutput(dir);
-
-                // must get replacements from extension afterEValuate()
-
-                ScalaCompile compile = (ScalaCompile) project.getTasks().getByName(main.getCompileTaskName("scala"));
-                compile.dependsOn(task);
-                compile.setSource(dir);
-            }
-
-            // groovy
-            if (project.getPlugins().hasPlugin("groovy"))
-            {
-                GroovySourceSet langSet = (GroovySourceSet) new DslObject(main).getConvention().getPlugins().get("groovy");
-                File dir = new File(project.getBuildDir(), "sources/" + set.getName() + "/groovy");
-
-                task = makeTask("source"+capSetName+"Groovy", TaskSourceCopy.class);
-                task.setSource(langSet.getGroovy());
-                task.setOutput(dir);
-
-                // must get replacements from extension afterEValuate()
-
-                GroovyCompile compile = (GroovyCompile) project.getTasks().getByName(main.getCompileTaskName("groovy"));
-                compile.dependsOn(task);
-                compile.setSource(dir);
-            }
-
-            // Todo: kotlin?  clojure?
+            action.execute(set);
         }
+        // for user-defined ones
+        javaConv.getSourceSets().whenObjectAdded(action);
     }
 
     protected void doDevTimeDeobf()
@@ -735,42 +735,73 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         getExtension().atSource(delayedFile(DIR_DEP_ATS));
     }
 
-    protected void makeObfSource()
+    protected void configureRetromapping()
     {
         JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+
+        Action<SourceSet> retromapCreator = new Action<SourceSet>() {
+            @Override
+            public void execute(SourceSet set) {
+
+                // native non-replaced
+                DelayedFile rangeMap = delayedFile(getSourceSetFormatted(set, TMPL_RANGEMAP));
+                DelayedFile retroMapped = delayedFile(getSourceSetFormatted(set, TMPL_RETROMAPED));
+
+                ExtractS2SRangeTask extractRangemap = makeTask(getSourceSetFormatted(set, TMPL_TASK_RANGEMAP), ExtractS2SRangeTask.class);
+                extractRangemap.addSource(new File(project.getBuildDir(), "sources/main/java"));
+                extractRangemap.setRangeMap(rangeMap);
+                extractRangemap.addLibs(set.getCompileClasspath());
+
+                ApplyS2STask retromap = makeTask(getSourceSetFormatted(set, TMPL_TASK_RETROMAP), ApplyS2STask.class);
+                retromap.addSource(set.getAllJava());
+                retromap.setOut(retroMapped);
+                retromap.addSrg(delayedFile(SRG_MCP_TO_SRG));
+                retromap.addExc(delayedFile(EXC_MCP));
+                retromap.addExc(delayedFile(EXC_SRG));
+                retromap.setRangeMap(rangeMap);
+                retromap.dependsOn(TASK_GENERATE_SRGS, extractRangemap);
+
+                // TODO: add replacing extract task
+
+
+                // for replaced sources
+                rangeMap = delayedFile(getSourceSetFormatted(set, TMPL_RANGEMAP_RPL));
+                retroMapped = delayedFile(getSourceSetFormatted(set, TMPL_RETROMAPED_RPL));
+                File replacedSource = new File(project.getBuildDir(), "sources/"+set.getName()+"/java");
+
+                extractRangemap = makeTask(getSourceSetFormatted(set, TMPL_TASK_RANGEMAP_RPL), ExtractS2SRangeTask.class);
+                extractRangemap.addSource(replacedSource);
+                extractRangemap.setRangeMap(rangeMap);
+                extractRangemap.addLibs(set.getCompileClasspath());
+                extractRangemap.dependsOn(getSourceSetFormatted(set, "source%sJava"));
+
+                retromap = makeTask(getSourceSetFormatted(set, TMPL_TASK_RETROMAP_RPL), ApplyS2STask.class);
+                retromap.addSource(replacedSource);
+                retromap.setOut(retroMapped);
+                retromap.addSrg(delayedFile(SRG_MCP_TO_SRG));
+                retromap.addExc(delayedFile(EXC_MCP));
+                retromap.addExc(delayedFile(EXC_SRG));
+                retromap.setRangeMap(rangeMap);
+                retromap.dependsOn(TASK_GENERATE_SRGS, extractRangemap);
+            }
+        };
+
+        // for existing sourceSets
+        for (SourceSet set : javaConv.getSourceSets())
+        {
+            retromapCreator.execute(set);
+        }
+        // for user-defined ones
+        javaConv.getSourceSets().whenObjectAdded(retromapCreator);
+
         SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
-        DelayedFile rangeMap = delayedFile("{BUILD_DIR}/tmp/rangemap.txt");
-        File copiedDir = new File(project.getBuildDir(), "sources/main/java");
-        DelayedFile retromapped = delayedFile("{BUILD_DIR}/tmp/retromapped.jar");
-
-        ExtractS2SRangeTask extractRangemap = makeTask(TASK_EXTRACT_RANGE, ExtractS2SRangeTask.class);
-        {
-            extractRangemap.addSource(new File(project.getBuildDir(), "sources/main/java"));
-            extractRangemap.setRangeMap(rangeMap);
-            extractRangemap.addLibs(main.getCompileClasspath());
-            extractRangemap.dependsOn("sourceMainJava");
-        }
-
-        ApplyS2STask retromap = makeTask(TASK_RETROMAP_SRC, ApplyS2STask.class);
-        {
-            retromap.addSource(copiedDir);
-            retromap.setOut(retromapped);
-            retromap.addSrg(delayedFile(SRG_MCP_TO_SRG));
-            retromap.addExc(delayedFile(EXC_MCP));
-            retromap.addExc(delayedFile(EXC_SRG));
-            retromap.setRangeMap(rangeMap);
-            retromap.dependsOn(TASK_GENERATE_SRGS, extractRangemap);
-        }
-
+        // make retromapped sourcejar
         Jar sourceJar = makeTask(TASK_SRC_JAR, Jar.class);
-        {
-            sourceJar.from(project.zipTree(retromapped));
-            sourceJar.from(main.getOutput());
-            sourceJar.exclude("*.class", "**/*.class");
-            sourceJar.setClassifier("sources");
-            sourceJar.dependsOn(main.getCompileJavaTaskName(), main.getProcessResourcesTaskName(), retromap);
-        }
+        sourceJar.from(delayedFile(getSourceSetFormatted(main, TMPL_RETROMAPED_RPL)));
+        sourceJar.from(main.getOutput().getResourcesDir());
+        sourceJar.setClassifier("sources");
+        sourceJar.dependsOn(main.getCompileJavaTaskName(), main.getProcessResourcesTaskName(), getSourceSetFormatted(main, TMPL_TASK_RETROMAP_RPL));
     }
 
     protected void makeRunTasks()

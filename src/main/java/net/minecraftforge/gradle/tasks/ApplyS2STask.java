@@ -29,6 +29,7 @@ import java.util.Map;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.SequencedInputSupplier;
+import net.minecraftforge.gradle.util.SourceDirSetSupplier;
 import net.minecraftforge.srg2source.rangeapplier.RangeApplier;
 import net.minecraftforge.srg2source.util.io.FolderSupplier;
 import net.minecraftforge.srg2source.util.io.InputSupplier;
@@ -38,11 +39,8 @@ import net.minecraftforge.srg2source.util.io.ZipOutputSupplier;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.Optional;
-import org.gradle.api.tasks.OutputFiles;
-import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.file.SourceDirectorySet;
+import org.gradle.api.tasks.*;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
@@ -75,7 +73,6 @@ public class ApplyS2STask extends DefaultTask
     @TaskAction
     public void doTask() throws IOException
     {
-        List<File> ins = getSource();
         File out = getOut();
         File rangemap = getRangeMap();
         File rangelog = File.createTempFile("rangelog", ".txt", this.getTemporaryDir());
@@ -84,23 +81,21 @@ public class ApplyS2STask extends DefaultTask
 
         InputSupplier inSup;
 
-        if (ins.size() == 0)
-            return; // no input.
-        else if (ins.size() == 1)
+        if (in.size() == 1)
         {
             // just 1 supplier.
-            inSup = getInput(ins.get(0));
+            inSup = getInput(in.get(0));
         }
         else
         {
             // multinput
             inSup = new SequencedInputSupplier();
-            for (File f : ins)
-                ((SequencedInputSupplier) inSup).add(getInput(f));
+            for (Object o : in)
+                ((SequencedInputSupplier) inSup).add(getInput(o));
         }
 
         OutputSupplier outSup;
-        if (ins.size() == 1 && ins.get(0).equals(out) && ins instanceof FolderSupplier)
+        if (in.size() == 1 && in.get(0).equals(out) && in instanceof FolderSupplier)
             outSup = (OutputSupplier) inSup;
         else
             outSup = getOutput(out);
@@ -119,8 +114,15 @@ public class ApplyS2STask extends DefaultTask
         outSup.close();
     }
 
-    private InputSupplier getInput(File f) throws IOException
+    private InputSupplier getInput(Object o) throws IOException
     {
+        if (o instanceof SourceDirectorySet)
+        {
+            return new SourceDirSetSupplier((SourceDirectorySet) o);
+        }
+
+        File f = getProject().file(o);
+
         if (f.isDirectory())
             return new FolderSupplier(f);
         else if (f.getPath().endsWith(".jar") || f.getPath().endsWith(".zip"))
@@ -130,7 +132,7 @@ public class ApplyS2STask extends DefaultTask
             return supp;
         }
         else
-            throw new IllegalArgumentException("Can only make suppliers out of directories and zips right now!");
+            throw new IllegalArgumentException("Can only make suppliers out of directories, zips, and SourceDirectorySets right now!");
     }
 
     private OutputSupplier getOutput(File f) throws IOException
@@ -286,18 +288,44 @@ public class ApplyS2STask extends DefaultTask
         return null;
     }
 
-    @InputFiles
+    @InputFiles @SkipWhenEmpty
     public FileCollection getSources()
     {
-        return getProject().files(in);
-    }
+        FileCollection collection = null;
 
-    public List<File> getSource()
-    {
-        List<File> files = new LinkedList<File>();
-        for (Object f : in)
-            files.add(getProject().file(f));
-        return files;
+        for (Object o: this.in)
+        {
+            FileCollection col;
+
+            if (o instanceof SourceDirectorySet)
+            {
+                col = (FileCollection) o;
+            }
+            else
+            {
+                File f = getProject().file(o);
+
+                if (f.isDirectory())
+                {
+                    col = getProject().fileTree(f);
+                }
+                else
+                {
+                    col = getProject().files(f);
+                }
+            }
+
+            if (collection == null)
+            {
+                collection = col;
+            }
+            else
+            {
+                collection = collection.plus(col);
+            }
+        }
+
+        return collection;
     }
 
     public void addSource(Object in)
@@ -305,7 +333,7 @@ public class ApplyS2STask extends DefaultTask
         this.in.add(in);
     }
 
-    @OutputFiles
+    @OutputFiles @Optional
     public FileCollection getOuts()
     {
         File outFile = getOut();
