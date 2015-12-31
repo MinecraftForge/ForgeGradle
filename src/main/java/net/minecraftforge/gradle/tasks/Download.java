@@ -27,6 +27,10 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
+
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
@@ -59,21 +63,15 @@ public class Download extends CachedTask
         connect.setRequestProperty("User-Agent", Constants.USER_AGENT);
         connect.setInstanceFollowRedirects(true);
 
-        InputStream inStream = connect.getInputStream();
-        OutputStream outStream = new FileOutputStream(outputFile);
+        ReadableByteChannel  inChannel  = Channels.newChannel(connect.getInputStream());
+        FileChannel          outChannel = new FileOutputStream(outputFile).getChannel();
 
-        int data = inStream.read();
-        while (data != -1)
-        {
-            outStream.write(data);
+        // If length is longer than what is available, it copies what is available according to java docs.
+        // Therefore, I use Long.MAX_VALUE which is a theoretical maximum.
+        outChannel.transferFrom(inChannel, 0, Long.MAX_VALUE);
 
-            // read next
-            data = inStream.read();
-        }
-
-        inStream.close();
-        outStream.flush();
-        outStream.close();
+        outChannel.close();
+        inChannel.close();
 
         getLogger().info("Download complete");
     }
