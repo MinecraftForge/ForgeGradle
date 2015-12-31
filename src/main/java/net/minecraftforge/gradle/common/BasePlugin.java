@@ -679,7 +679,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
      * Also sets the ASSET_INDEX replacement string
      * Does nothing (returns null) if the file is not found, but hard-crashes if it could not be parsed.
      * @param file version file to parse
-     * @param inheritanceDirs folders to look for the parent json
+     * @param inheritanceDirs folders to look for the parent json, should include DIR_JSON
      * @return NULL if the file doesnt exist
      */
     protected Version parseAndStoreVersion(File file, File... inheritanceDirs)
@@ -689,21 +689,11 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         Version version = null;
 
-        try
-        {
-            version = JsonFactory.loadVersion(file, delayedFile(Constants.DIR_JSONS).call());
-        }
-        catch (Exception e)
-        {
-            project.getLogger().error("" + file + " could not be parsed");
-            Throwables.propagate(e);
-        }
-
         if (version == null)
         {
             try
             {
-                version = JsonFactory.loadVersion(file, delayedFile(Constants.DIR_JSONS).call());
+                version = JsonFactory.loadVersion(file, inheritanceDirs);
             }
             catch (Exception e)
             {
@@ -743,11 +733,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         replacer.putReplacement(REPLACE_ASSET_INDEX, version.getAssets());
 
         return version;
-    }
-
-    protected Version parseAndStoreVersion(File file)
-    {
-        return parseAndStoreVersion(file, delayedFile(DIR_JSONS).call());
     }
 
     // DELAYED STUFF ONLY ------------------------------------------------------------------------
