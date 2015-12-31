@@ -29,6 +29,7 @@ import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.bundling.Jar;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
 import groovy.lang.Closure;
@@ -53,7 +54,7 @@ public class ReobfTaskFactory implements NamedDomainObjectFactory<IReobfuscator>
 
         task.dependsOn(Constants.TASK_GENERATE_SRGS, jarName);
         task.mustRunAfter("test");
-        
+
         task.setJar(new Closure<File>(null) {
             public File call()
             {
@@ -63,8 +64,9 @@ public class ReobfTaskFactory implements NamedDomainObjectFactory<IReobfuscator>
 
         plugin.project.getTasks().getByName("assemble").dependsOn(task);
 
-        plugin.setupReobf(task);
-        
+        ReobfTaskWrapper wrapper = new ReobfTaskWrapper(jarName, task);
+        plugin.setupReobf(wrapper);
+
         // do after-Evaluate resolution, for the same of good error reporting
         plugin.project.afterEvaluate(new Action<Project>() {
             @Override
@@ -78,15 +80,16 @@ public class ReobfTaskFactory implements NamedDomainObjectFactory<IReobfuscator>
             }
         });
 
-        return new TaskWrapper(jarName, task);
+        return wrapper;
     }
 
-    class TaskWrapper implements IReobfuscator
+    public class ReobfTaskWrapper implements IReobfuscator
     {
         private final String name;
         private final TaskSingleReobf reobf;
+        private ReobfMappingType mappingType;
 
-        public TaskWrapper(String name, TaskSingleReobf reobf)
+        public ReobfTaskWrapper(String name, TaskSingleReobf reobf)
         {
             this.name = name;
             this.reobf = reobf;
@@ -111,33 +114,54 @@ public class ReobfTaskFactory implements NamedDomainObjectFactory<IReobfuscator>
         @Override
         public boolean equals(Object obj)
         {
-            if (obj instanceof TaskWrapper)
+            if (obj instanceof ReobfTaskWrapper)
             {
-                return name.equals(((TaskWrapper) obj).name);
+                return name.equals(((ReobfTaskWrapper) obj).name);
             }
             return false;
         }
 
+        @Override
         public File getMappings()
         {
             return reobf.getPrimarySrg();
         }
 
+        @Override
         public void setMappings(Object srg)
         {
+            mappingType = ReobfMappingType.CUSTOM;
             reobf.setPrimarySrg(srg);
         }
 
+        @Override
+        public void setMappingType(ReobfMappingType type)
+        {
+            Preconditions.checkNotNull(type, "Mapping type cannot be null. Use setMappings() to use custom mappings.");
+            Preconditions.checkArgument(type != ReobfMappingType.CUSTOM,
+                    "Cannot set a Custom mapping type. Use setMappings() instead.");
+            mappingType = type;
+            reobf.setPrimarySrg(plugin.delayedFile(type.getPath()));
+        }
+
+        @Override
+        public ReobfMappingType getMappingType()
+        {
+            return this.mappingType;
+        }
+
+        @Override
         public void setClasspath(FileCollection classpath)
         {
             reobf.setClasspath(classpath);
         }
 
+        @Override
         public FileCollection getClasspath()
         {
             return reobf.getClasspath();
         }
-        
+
         @Override
         public void setExtraLines(List<Object> extra)
         {
@@ -196,15 +220,26 @@ public class ReobfTaskFactory implements NamedDomainObjectFactory<IReobfuscator>
                 reobf.addSecondarySrgFile(obj);
             }
         }
-        
+
+        @Deprecated
+        @Override
         public void useSrgSrg()
         {
-            reobf.setPrimarySrg(plugin.delayedFile(Constants.SRG_MCP_TO_SRG));
+            setMappingType(ReobfMappingType.SEARGE);
+            warnDeprecation("useSrgSrg()", "mappingType");
         }
 
+        @Deprecated
+        @Override
         public void useNotchSrg()
         {
-            reobf.setPrimarySrg(plugin.delayedFile(Constants.SRG_MCP_TO_NOTCH));
+            setMappingType(ReobfMappingType.NOTCH);
+            warnDeprecation("useNotchSrg()", "mappingType");
+        }
+
+        private void warnDeprecation(String old, String new_)
+        {
+            plugin.project.getLogger().warn("Warning, {} is deprecated! You should use {} instead.", old, new_);
         }
     }
 }

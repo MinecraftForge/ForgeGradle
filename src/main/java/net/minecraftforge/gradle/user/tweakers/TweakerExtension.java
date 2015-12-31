@@ -25,6 +25,7 @@ import net.minecraftforge.gradle.user.UserBaseExtension;
 public class TweakerExtension extends UserBaseExtension
 {
     private Object tweakClass;
+    private Object mainClass = "net.minecraft.launchwrapper.Launch";
     
     public TweakerExtension(TweakerPlugin plugin)
     {
@@ -36,8 +37,18 @@ public class TweakerExtension extends UserBaseExtension
         return Constants.resolveString(tweakClass);
     }
 
-    public void setTweakClass(String tweakClass)
+    public void setTweakClass(Object tweakClass)
     {
         this.tweakClass = tweakClass;
+    }
+
+    public String getMainClass()
+    {
+        return Constants.resolveString(mainClass);
+    }
+
+    public void setMainClass(Object mainClass)
+    {
+        this.mainClass = mainClass;
     }
 }

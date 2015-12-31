@@ -19,19 +19,31 @@
  */
 package net.minecraftforge.gradle.user;
 
-import java.io.Serializable;
+import net.minecraftforge.gradle.common.Constants;
 
-public interface ReobfTransformer extends Serializable
+/**
+ * Preset mappings for Notch and Searge names.
+ */
+public enum ReobfMappingType
 {
+    SEARGE(Constants.SRG_MCP_TO_SRG),
+    NOTCH(Constants.SRG_MCP_TO_NOTCH),
+    CUSTOM(null);
+
+    private String path;
+
+    private ReobfMappingType(String s)
+    {
+        this.path = s;
+    }
 
     /**
-     * Called for each class to be reobfuscated
+     * Gets the delayed path for this mapping type. Custom returns null.
      *
-     * <em>Don't use {@link org.objectweb.asm.ClassReader#EXPAND_FRAMES EXPAND_FRAMES}</em>
-     *
-     * @param data The class bytes
-     *
-     * @return The modified class bytes
+     * @return The delayed path
      */
-    public abstract byte[] transform(byte[] data);
+    public String getPath()
+    {
+        return path;
+    }
 }

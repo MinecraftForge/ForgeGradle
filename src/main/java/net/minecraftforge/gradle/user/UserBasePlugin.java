@@ -95,12 +95,20 @@ import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.GenEclipseRunTask;
 import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.RemapSources;
+import net.minecraftforge.gradle.user.ReobfTaskFactory.ReobfTaskWrapper;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
 
 public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePlugin<T>
 {
     private boolean madeDecompTasks = false; // to gaurd against stupid programmers
+    private final Closure<Object> makeRunDir = new Closure<Object>(null, null) {
+        public Object call()
+        {
+            delayedFile(REPLACE_RUN_DIR).call().mkdirs();
+            return null;
+        }
+    };
 
     @Override
     public final void applyPlugin()
@@ -146,7 +154,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         createSourceCopyTasks();
         doDevTimeDeobf();
         doDepAtExtraction();
-        makeObfSource();
+        configureRetromapping();
         makeRunTasks();
 
         // use zinc for scala compilation
@@ -168,7 +176,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
     @Override
     protected void afterEvaluate()
     {
-        // to gaurd against stupid programmers
+        // to guard against stupid programmers
         if (!madeDecompTasks)
         {
             throw new RuntimeException("THE DECOMP TASKS HAVENT BEEN MADE!! STUPID FORGEGRADLE DEVELOPER!!!! :(");
@@ -277,13 +285,14 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
      *
      * @param reobf The task to setup
      */
-    protected void setupReobf(TaskSingleReobf reobf)
+    protected void setupReobf(ReobfTaskWrapper reobf)
     {
-        reobf.setExceptorCfg(delayedFile(EXC_SRG));
-        reobf.setFieldCsv(delayedFile(CSV_FIELD));
-        reobf.setMethodCsv(delayedFile(CSV_METHOD));
+        TaskSingleReobf task = reobf.getTask();
+        task.setExceptorCfg(delayedFile(EXC_SRG));
+        task.setFieldCsv(delayedFile(CSV_FIELD));
+        task.setMethodCsv(delayedFile(CSV_METHOD));
 
-        reobf.setPrimarySrg(delayedFile(SRG_MCP_TO_NOTCH));
+        reobf.setMappingType(ReobfMappingType.NOTCH);
         JavaPluginConvention java = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
         reobf.setClasspath(java.getSourceSets().getByName("main").getCompileClasspath());
     }
@@ -301,6 +310,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             deobfBin.setFieldCsv(delayedFile(CSV_FIELD));
             deobfBin.setMethodCsv(delayedFile(CSV_METHOD));
             deobfBin.setApplyMarkers(false);
+            deobfBin.setStripSynthetics(true);
             deobfBin.setInJar(inputJar);
             deobfBin.setOutJar(chooseDeobfOutput(globalPattern, localPattern, "Bin", ""));
             deobfBin.dependsOn(inputTask, TASK_GENERATE_SRGS, TASK_EXTRACT_DEP_ATS, TASK_DD_COMPILE, TASK_DD_PROVIDED);
@@ -413,6 +423,9 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             @Override
             public void execute(Project project)
             {
+                if (project.getState().getFailure() != null)
+                    return;
+
                 // the recompiled jar exists, or the decomp task is part of the build
                 boolean isDecomp = project.file(recompiledJar).exists() || project.getGradle().getStartParameter().getTaskNames().contains(TASK_SETUP_DECOMP);
 
@@ -430,6 +443,12 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
     /**
      * This method returns an object that resolved to the correct pattern based on the useLocalCache() method
+     *
+     * @param globalPattern The global pattern
+     * @param localPattern  The local pattern
+     * @param appendage     The appendage
+     * @param classifier    The classifier
+     *
      * @return useable deobfsucated output file
      */
     @SuppressWarnings("serial")
@@ -528,61 +547,75 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
     protected void createSourceCopyTasks()
     {
         JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
-        SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
-        // do the special source moving...
-        TaskSourceCopy task;
+        Action<SourceSet> action = new Action<SourceSet>() {
+            @Override
+            public void execute(SourceSet set) {
 
-        // main
+                TaskSourceCopy task;
+
+                String capName = set.getName().substring(0, 1).toUpperCase() + set.getName().substring(1);
+                String taskPrefix = "source"+capName;
+                File dirRoot = new File(project.getBuildDir(), "sources/"+set.getName());
+
+                // java
+                {
+                    File dir = new File(dirRoot, "java");
+
+                    task = makeTask(taskPrefix+"Java", TaskSourceCopy.class);
+                    task.setSource(set.getJava());
+                    task.setOutput(dir);
+
+                    // must get replacements from extension afterEvaluate()
+
+                    JavaCompile compile = (JavaCompile) project.getTasks().getByName(set.getCompileJavaTaskName());
+                    compile.dependsOn(task);
+                    compile.setSource(dir);
+                }
+
+                // scala
+                if (project.getPlugins().hasPlugin("scala"))
+                {
+                    ScalaSourceSet langSet = (ScalaSourceSet) new DslObject(set).getConvention().getPlugins().get("scala");
+                    File dir = new File(dirRoot, "scala");
+
+                    task = makeTask(taskPrefix+"Scala", TaskSourceCopy.class);
+                    task.setSource(langSet.getScala());
+                    task.setOutput(dir);
+
+                    // must get replacements from extension afterEValuate()
+
+                    ScalaCompile compile = (ScalaCompile) project.getTasks().getByName(set.getCompileTaskName("scala"));
+                    compile.dependsOn(task);
+                    compile.setSource(dir);
+                }
+
+                // groovy
+                if (project.getPlugins().hasPlugin("groovy"))
+                {
+                    GroovySourceSet langSet = (GroovySourceSet) new DslObject(set).getConvention().getPlugins().get("groovy");
+                    File dir = new File(dirRoot, "groovy");
+
+                    task = makeTask(taskPrefix+"Groovy", TaskSourceCopy.class);
+                    task.setSource(langSet.getGroovy());
+                    task.setOutput(dir);
+
+                    // must get replacements from extension afterEValuate()
+
+                    GroovyCompile compile = (GroovyCompile) project.getTasks().getByName(set.getCompileTaskName("groovy"));
+                    compile.dependsOn(task);
+                    compile.setSource(dir);
+                }
+            }
+        };
+
+        // for existing sourceSets
+        for (SourceSet set : javaConv.getSourceSets())
         {
-            File dir = new File(project.getBuildDir(), "sources/" + SourceSet.MAIN_SOURCE_SET_NAME + "/java");
-
-            task = makeTask("sourceMainJava", TaskSourceCopy.class);
-            task.setSource(main.getJava());
-            task.setOutput(dir);
-
-            // must get replacements from extension afterEValuate()
-
-            JavaCompile compile = (JavaCompile) project.getTasks().getByName(main.getCompileJavaTaskName());
-            compile.dependsOn("sourceMainJava");
-            compile.setSource(dir);
+            action.execute(set);
         }
-
-        // scala!!!
-        if (project.getPlugins().hasPlugin("scala"))
-        {
-            ScalaSourceSet set = (ScalaSourceSet) new DslObject(main).getConvention().getPlugins().get("scala");
-            File dir = new File(project.getBuildDir(), "sources/" + SourceSet.MAIN_SOURCE_SET_NAME + "/scala");
-
-            task = makeTask("sourceMainScala", TaskSourceCopy.class);
-            task.setSource(set.getScala());
-            task.setOutput(dir);
-
-            // must get replacements from extension afterEValuate()
-
-            ScalaCompile compile = (ScalaCompile) project.getTasks().getByName(main.getCompileTaskName("scala"));
-            compile.dependsOn("sourceMainScala");
-            compile.setSource(dir);
-        }
-
-        // groovy!!!
-        if (project.getPlugins().hasPlugin("groovy"))
-        {
-            GroovySourceSet set = (GroovySourceSet) new DslObject(main).getConvention().getPlugins().get("groovy");
-            File dir = new File(project.getBuildDir(), "sources/" + SourceSet.MAIN_SOURCE_SET_NAME + "/groovy");
-
-            task = makeTask("sourceMainGroovy", TaskSourceCopy.class);
-            task.setSource(set.getGroovy());
-            task.setOutput(dir);
-
-            // must get replacements from extension afterEValuate()
-
-            GroovyCompile compile = (GroovyCompile) project.getTasks().getByName(main.getCompileTaskName("groovy"));
-            compile.dependsOn("sourceMainGroovy");
-            compile.setSource(dir);
-        }
-
-        // Todo: kotlin?  closure?
+        // for user-defined ones
+        javaConv.getSourceSets().whenObjectAdded(action);
     }
 
     protected void doDevTimeDeobf()
@@ -595,6 +628,9 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             @Override
             public void execute(Project project)
             {
+                if (project.getState().getFailure() != null)
+                    return;
+
                 // add maven repo
                 addMavenRepo(project, "deobfDeps", delayedFile(DIR_DEOBF_DEPS).call().getAbsoluteFile().toURI().getPath());
 
@@ -700,42 +736,73 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         getExtension().atSource(delayedFile(DIR_DEP_ATS));
     }
 
-    protected void makeObfSource()
+    protected void configureRetromapping()
     {
         JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+
+        Action<SourceSet> retromapCreator = new Action<SourceSet>() {
+            @Override
+            public void execute(SourceSet set) {
+
+                // native non-replaced
+                DelayedFile rangeMap = delayedFile(getSourceSetFormatted(set, TMPL_RANGEMAP));
+                DelayedFile retroMapped = delayedFile(getSourceSetFormatted(set, TMPL_RETROMAPED));
+
+                ExtractS2SRangeTask extractRangemap = makeTask(getSourceSetFormatted(set, TMPL_TASK_RANGEMAP), ExtractS2SRangeTask.class);
+                extractRangemap.addSource(new File(project.getBuildDir(), "sources/main/java"));
+                extractRangemap.setRangeMap(rangeMap);
+                extractRangemap.addLibs(set.getCompileClasspath());
+
+                ApplyS2STask retromap = makeTask(getSourceSetFormatted(set, TMPL_TASK_RETROMAP), ApplyS2STask.class);
+                retromap.addSource(set.getAllJava());
+                retromap.setOut(retroMapped);
+                retromap.addSrg(delayedFile(SRG_MCP_TO_SRG));
+                retromap.addExc(delayedFile(EXC_MCP));
+                retromap.addExc(delayedFile(EXC_SRG));
+                retromap.setRangeMap(rangeMap);
+                retromap.dependsOn(TASK_GENERATE_SRGS, extractRangemap);
+
+                // TODO: add replacing extract task
+
+
+                // for replaced sources
+                rangeMap = delayedFile(getSourceSetFormatted(set, TMPL_RANGEMAP_RPL));
+                retroMapped = delayedFile(getSourceSetFormatted(set, TMPL_RETROMAPED_RPL));
+                File replacedSource = new File(project.getBuildDir(), "sources/"+set.getName()+"/java");
+
+                extractRangemap = makeTask(getSourceSetFormatted(set, TMPL_TASK_RANGEMAP_RPL), ExtractS2SRangeTask.class);
+                extractRangemap.addSource(replacedSource);
+                extractRangemap.setRangeMap(rangeMap);
+                extractRangemap.addLibs(set.getCompileClasspath());
+                extractRangemap.dependsOn(getSourceSetFormatted(set, "source%sJava"));
+
+                retromap = makeTask(getSourceSetFormatted(set, TMPL_TASK_RETROMAP_RPL), ApplyS2STask.class);
+                retromap.addSource(replacedSource);
+                retromap.setOut(retroMapped);
+                retromap.addSrg(delayedFile(SRG_MCP_TO_SRG));
+                retromap.addExc(delayedFile(EXC_MCP));
+                retromap.addExc(delayedFile(EXC_SRG));
+                retromap.setRangeMap(rangeMap);
+                retromap.dependsOn(TASK_GENERATE_SRGS, extractRangemap);
+            }
+        };
+
+        // for existing sourceSets
+        for (SourceSet set : javaConv.getSourceSets())
+        {
+            retromapCreator.execute(set);
+        }
+        // for user-defined ones
+        javaConv.getSourceSets().whenObjectAdded(retromapCreator);
+
         SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
-        DelayedFile rangeMap = delayedFile("{BUILD_DIR}/tmp/rangemap.txt");
-        File copiedDir = new File(project.getBuildDir(), "sources/main/java");
-        DelayedFile retromapped = delayedFile("{BUILD_DIR}/tmp/retromapped.jar");
-
-        ExtractS2SRangeTask extractRangemap = makeTask(TASK_EXTRACT_RANGE, ExtractS2SRangeTask.class);
-        {
-            extractRangemap.addSource(new File(project.getBuildDir(), "sources/main/java"));
-            extractRangemap.setRangeMap(rangeMap);
-            extractRangemap.addLibs(main.getCompileClasspath());
-            extractRangemap.dependsOn("sourceMainJava");
-        }
-
-        ApplyS2STask retromap = makeTask(TASK_RETROMAP_SRC, ApplyS2STask.class);
-        {
-            retromap.addSource(copiedDir);
-            retromap.setOut(retromapped);
-            retromap.addSrg(delayedFile(SRG_MCP_TO_SRG));
-            retromap.addExc(delayedFile(EXC_MCP));
-            retromap.addExc(delayedFile(EXC_SRG));
-            retromap.setRangeMap(rangeMap);
-            retromap.dependsOn(TASK_GENERATE_SRGS, extractRangemap);
-        }
-
+        // make retromapped sourcejar
         Jar sourceJar = makeTask(TASK_SRC_JAR, Jar.class);
-        {
-            sourceJar.from(project.zipTree(retromapped));
-            sourceJar.from(main.getOutput());
-            sourceJar.exclude("*.class", "**/*.class");
-            sourceJar.setClassifier("sources");
-            sourceJar.dependsOn(main.getCompileJavaTaskName(), main.getProcessResourcesTaskName(), retromap);
-        }
+        sourceJar.from(delayedFile(getSourceSetFormatted(main, TMPL_RETROMAPED_RPL)));
+        sourceJar.from(main.getOutput().getResourcesDir());
+        sourceJar.setClassifier("sources");
+        sourceJar.dependsOn(main.getCompileJavaTaskName(), main.getProcessResourcesTaskName(), getSourceSetFormatted(main, TMPL_TASK_RETROMAP_RPL));
     }
 
     protected void makeRunTasks()
@@ -752,6 +819,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             exec.setGroup("ForgeGradle");
             exec.setDescription("Runs the Minecraft client");
 
+            exec.doFirst(makeRunDir);
+
             exec.dependsOn("makeStart");
         }
 
@@ -767,6 +836,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
             exec.setGroup("ForgeGradle");
             exec.setDescription("Runs the Minecraft Server");
+
+            exec.doFirst(makeRunDir);
 
             exec.dependsOn("makeStart");
         }
@@ -937,6 +1008,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             eclipseClient.setOutputFile(project.file(project.getName() + "_Client.launch"));
             eclipseClient.setRunDir(delayedFile(REPLACE_RUN_DIR));
             eclipseClient.dependsOn(TASK_MAKE_START);
+            eclipseClient.doFirst(makeRunDir);
 
             project.getTasks().getByName("eclipse").dependsOn(eclipseClient);
             project.getTasks().getByName("cleanEclipse").dependsOn("cleanMakeEclipseCleanRunClient");
@@ -950,6 +1022,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             eclipseServer.setOutputFile(project.file(project.getName() + "_Server.launch"));
             eclipseServer.setRunDir(delayedFile(REPLACE_RUN_DIR));
             eclipseServer.dependsOn(TASK_MAKE_START);
+            eclipseServer.doFirst(makeRunDir);
 
             project.getTasks().getByName("eclipse").dependsOn(eclipseServer);
             project.getTasks().getByName("cleanEclipse").dependsOn("cleanMakeEclipseCleanRunServer");
@@ -960,6 +1033,9 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             @Override
             public void execute(Project project)
             {
+                if (project.getState().getFailure() != null)
+                    return;
+
                 T ext = getExtension();
                 if (hasClientRun())
                 {
@@ -1000,12 +1076,13 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         ideaConv.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(CONFIG_PROVIDED));
 
         // add deobf task dependencies
-        project.getTasks().getByName("ideaModule").dependsOn(TASK_DD_COMPILE, TASK_DD_PROVIDED);
+        project.getTasks().getByName("ideaModule").dependsOn(TASK_DD_COMPILE, TASK_DD_PROVIDED).doFirst(makeRunDir);
 
         // fix the idea bug
         ideaConv.getModule().setInheritOutputDirs(true);
 
         Task task = makeTask("genIntellijRuns", DefaultTask.class);
+        task.doFirst(makeRunDir);
         task.doLast(new Action<Task>() {
             @Override
             public void execute(Task task)
@@ -1067,7 +1144,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             }
         });
         task.setGroup(GROUP_FG);
-        task.setDescription("Generates the ForgeGradle run confgiurations for intellij Idea");
+        task.setDescription("Generates the ForgeGradle run configurations for intellij Idea");
 
         if (ideaConv.getWorkspace().getIws() == null)
             return;

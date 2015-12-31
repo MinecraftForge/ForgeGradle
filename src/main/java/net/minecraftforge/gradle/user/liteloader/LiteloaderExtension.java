@@ -17,21 +17,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
  * USA
  */
-package net.minecraftforge.gradle.user;
+package net.minecraftforge.gradle.user.liteloader;
 
-import java.io.Serializable;
+import net.minecraftforge.gradle.user.UserBaseExtension;
 
-public interface ReobfTransformer extends Serializable
+public class LiteloaderExtension extends UserBaseExtension
 {
-
-    /**
-     * Called for each class to be reobfuscated
-     *
-     * <em>Don't use {@link org.objectweb.asm.ClassReader#EXPAND_FRAMES EXPAND_FRAMES}</em>
-     *
-     * @param data The class bytes
-     *
-     * @return The modified class bytes
-     */
-    public abstract byte[] transform(byte[] data);
+    public LiteloaderExtension(LiteloaderPlugin plugin)
+    {
+        super(plugin);
+    }
 }

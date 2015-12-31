@@ -27,6 +27,7 @@ import java.util.List;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.SequencedInputSupplier;
+import net.minecraftforge.gradle.util.SourceDirSetSupplier;
 import net.minecraftforge.srg2source.ast.RangeExtractor;
 import net.minecraftforge.srg2source.util.io.FolderSupplier;
 import net.minecraftforge.srg2source.util.io.InputSupplier;
@@ -34,8 +35,10 @@ import net.minecraftforge.srg2source.util.io.ZipInputSupplier;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.SkipWhenEmpty;
 import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.collect.Lists;
@@ -53,25 +56,24 @@ public class ExtractS2SRangeTask extends DefaultTask
     @TaskAction
     public void doTask() throws IOException
     {
-        List<File> ins = getSource();
         File rangemap = getRangeMap();
 
         InputSupplier inSup;
 
-        if (ins.size() == 0)
+        if (sources.size() == 0)
             return; // no input.
-        else if (ins.size() == 1)
+        if (sources.size() == 1)
         {
             // just 1 supplier.
-            inSup = getInput(ins.get(0));
+            inSup = getInput(sources.get(0));
         }
         else
         {
             // multinput
             inSup = new SequencedInputSupplier();
-            for (File f : ins)
+            for (Object o : sources)
             {
-                ((SequencedInputSupplier) inSup).add(getInput(f));
+                ((SequencedInputSupplier) inSup).add(getInput(o));
             }
         }
 
@@ -103,8 +105,17 @@ public class ExtractS2SRangeTask extends DefaultTask
             throw new RuntimeException("RangeMap generation Failed!!!");
     }
 
-    private InputSupplier getInput(File f) throws IOException
+    private InputSupplier getInput(Object o) throws IOException
     {
+        if (o instanceof SourceDirectorySet)
+        {
+            return new SourceDirSetSupplier((SourceDirectorySet) o);
+        }
+
+        File f = getProject().file(o);
+
+        System.out.println(f);
+
         if (f.isDirectory())
             return new FolderSupplier(f);
         else if (f.getPath().endsWith(".jar") || f.getPath().endsWith(".zip"))
@@ -114,7 +125,7 @@ public class ExtractS2SRangeTask extends DefaultTask
             return supp;
         }
         else
-            throw new IllegalArgumentException("Can only make suppliers out of directories and zips right now!");
+            throw new IllegalArgumentException("Can only make suppliers out of directories, zips, and SourceDirectorySets right now!");
     }
 
     public File getRangeMap()
@@ -127,38 +138,44 @@ public class ExtractS2SRangeTask extends DefaultTask
         this.rangeMap = out;
     }
 
-    @InputFiles
+    @InputFiles @SkipWhenEmpty
     public FileCollection getSources()
     {
         FileCollection collection = null;
         
-        for (File f : getSource())
+        for (Object o: this.sources)
         {
             FileCollection col;
-            if (f.isDirectory())
+
+            if (o instanceof SourceDirectorySet)
             {
-                col = getProject().fileTree(f);
+                col = (FileCollection) o;
             }
             else
             {
-                col = getProject().files(f);
+                File f = getProject().file(o);
+
+                if (f.isDirectory())
+                {
+                    col = getProject().fileTree(f);
+                }
+                else
+                {
+                    col = getProject().files(f);
+                }
             }
             
             if (collection == null)
+            {
                 collection = col;
+            }
             else
+            {
                 collection = collection.plus(col);
+            }
         }
         
         return collection;
-    }
-
-    public List<File> getSource()
-    {
-        List<File> files = new LinkedList<File>();
-        for (Object o : sources)
-            files.add(getProject().file(o));
-        return files;
     }
 
     public void addSource(Object in)

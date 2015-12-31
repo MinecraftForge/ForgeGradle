@@ -81,6 +81,7 @@ public class JsonFactory
                 {
                     Version parent = loadVersion(new File(inheritDir, v.inheritsFrom + ".json"), inheritanceDirs);
                     v.extendFrom(parent);
+                    found = true;
                     break;
                 }
             }
