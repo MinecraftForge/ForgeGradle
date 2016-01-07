@@ -204,10 +204,7 @@ public class TaskRecompileMc extends CachedTask
                 entries.add(name);
                 zout.putNextEntry(new ZipEntry(name));
 
-                InputStream stream = file.open();
-                ByteStreams.copy(file.open(), zout);
-                stream.close();
-
+                file.copyTo(zout);
             }
             catch (IOException e)
             {
