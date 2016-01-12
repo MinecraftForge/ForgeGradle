@@ -23,8 +23,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
@@ -42,13 +40,8 @@ import org.gradle.api.tasks.ParallelizableTask;
 import org.gradle.api.tasks.TaskAction;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.InvokeDynamicInsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.commons.Remapper;
+import org.objectweb.asm.commons.RemappingClassAdapter;
 
 import au.com.bytecode.opencsv.CSVReader;
 
@@ -142,52 +135,34 @@ public class TaskSingleDeobfBin extends CachedTask
         zin.close();
     }
 
-    private static byte[] deobfClass(byte[] classData, Map<String, String> methods, Map<String, String> fields)
+    private static byte[] deobfClass(byte[] classData, final Map<String, String> methods, final Map<String, String> fields)
     {
         ClassReader reader = new ClassReader(classData);
-        ClassNode node = new ClassNode();
-
-        reader.accept(node, 0);
-
-        for (FieldNode fieldNode : (List<FieldNode>)node.fields)
-        {
-            if (fields.containsKey(fieldNode.name))
-            {
-                fieldNode.name = fields.get(fieldNode.name);
-            }
-        }
-
-        for (MethodNode methodNode : (List<MethodNode>)node.methods)
-        {
-            if (methods.containsKey(methodNode.name))
-            {
-                methodNode.name = methods.get(methodNode.name);
-            }
-
-            Iterator<AbstractInsnNode> instructions = methodNode.instructions.iterator();
-            while (instructions.hasNext())
-            {
-                AbstractInsnNode insn = instructions.next();
-                switch (insn.getType())
-                    {
-                        case AbstractInsnNode.FIELD_INSN:
-                            FieldInsnNode fieldInsn = (FieldInsnNode) insn;
-                            fieldInsn.name = fields.containsKey(fieldInsn.name) ? fields.get(fieldInsn.name) : fieldInsn.name;
-                            break;
-                        case AbstractInsnNode.METHOD_INSN:
-                            MethodInsnNode methodInsn = (MethodInsnNode) insn;
-                            methodInsn.name = methods.containsKey(methodInsn.name) ? methods.get(methodInsn.name) : methodInsn.name;
-                            break;
-                        case AbstractInsnNode.INVOKE_DYNAMIC_INSN:
-                            InvokeDynamicInsnNode idInsn = (InvokeDynamicInsnNode) insn;
-                            idInsn.name = methods.containsKey(idInsn.name) ? methods.get(idInsn.name) : idInsn.name;
-                            break;
-                    }
-            }
-        }
-
         ClassWriter writer = new ClassWriter(0);
-        node.accept(writer);
+        Remapper remapper = new Remapper() {
+            @Override
+            public String mapFieldName(final String owner, final String name, final String desc)
+            {
+                String mappedName = fields.get(name);
+                return mappedName != null ? mappedName : name;
+            }
+
+            @Override
+            public String mapMethodName(final String owner, final String name, final String desc)
+            {
+                String mappedName = methods.get(name);
+                return mappedName != null ? mappedName : name;
+            }
+
+            @Override
+            public String mapInvokeDynamicMethodName(final String name, final String desc)
+            {
+                String mappedName = methods.get(name);
+                return mappedName != null ? mappedName : name;
+            }
+        };
+        RemappingClassAdapter adapter = new RemappingClassAdapter(writer, remapper);
+        reader.accept(adapter, ClassReader.EXPAND_FRAMES);
         return writer.toByteArray();
     }
 
