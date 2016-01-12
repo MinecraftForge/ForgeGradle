@@ -798,7 +798,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
         // make retromapped sourcejar
         Jar sourceJar = makeTask(TASK_SRC_JAR, Jar.class);
-        sourceJar.from(delayedFile(getSourceSetFormatted(main, TMPL_RETROMAPED_RPL)));
+        sourceJar.from(project.zipTree(delayedFile(getSourceSetFormatted(main, TMPL_RETROMAPED_RPL))));
         sourceJar.from(main.getOutput().getResourcesDir());
         sourceJar.setClassifier("sources");
         sourceJar.dependsOn(main.getCompileJavaTaskName(), main.getProcessResourcesTaskName(), getSourceSetFormatted(main, TMPL_TASK_RETROMAP_RPL));
