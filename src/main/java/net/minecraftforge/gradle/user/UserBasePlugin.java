@@ -741,16 +741,22 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
         Action<SourceSet> retromapCreator = new Action<SourceSet>() {
             @Override
-            public void execute(SourceSet set) {
+            public void execute(final SourceSet set) {
 
                 // native non-replaced
                 DelayedFile rangeMap = delayedFile(getSourceSetFormatted(set, TMPL_RANGEMAP));
                 DelayedFile retroMapped = delayedFile(getSourceSetFormatted(set, TMPL_RETROMAPED));
 
-                ExtractS2SRangeTask extractRangemap = makeTask(getSourceSetFormatted(set, TMPL_TASK_RANGEMAP), ExtractS2SRangeTask.class);
+                final ExtractS2SRangeTask extractRangemap = makeTask(getSourceSetFormatted(set, TMPL_TASK_RANGEMAP), ExtractS2SRangeTask.class);
                 extractRangemap.addSource(new File(project.getBuildDir(), "sources/main/java"));
                 extractRangemap.setRangeMap(rangeMap);
-                extractRangemap.addLibs(set.getCompileClasspath());
+                project.afterEvaluate(new Action<Project>() {
+                    @Override
+                    public void execute(Project project)
+                    {
+                        extractRangemap.addLibs(set.getCompileClasspath());
+                    }
+                });
 
                 ApplyS2STask retromap = makeTask(getSourceSetFormatted(set, TMPL_TASK_RETROMAP), ApplyS2STask.class);
                 retromap.addSource(set.getAllJava());
@@ -769,11 +775,17 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                 retroMapped = delayedFile(getSourceSetFormatted(set, TMPL_RETROMAPED_RPL));
                 File replacedSource = new File(project.getBuildDir(), "sources/"+set.getName()+"/java");
 
-                extractRangemap = makeTask(getSourceSetFormatted(set, TMPL_TASK_RANGEMAP_RPL), ExtractS2SRangeTask.class);
-                extractRangemap.addSource(replacedSource);
-                extractRangemap.setRangeMap(rangeMap);
-                extractRangemap.addLibs(set.getCompileClasspath());
-                extractRangemap.dependsOn(getSourceSetFormatted(set, "source%sJava"));
+                final ExtractS2SRangeTask extractRangemap2 = makeTask(getSourceSetFormatted(set, TMPL_TASK_RANGEMAP_RPL), ExtractS2SRangeTask.class);
+                extractRangemap2.addSource(replacedSource);
+                extractRangemap2.setRangeMap(rangeMap);
+                project.afterEvaluate(new Action<Project>() {
+                    @Override
+                    public void execute(Project project)
+                    {
+                        extractRangemap2.addLibs(set.getCompileClasspath());
+                    }
+                });
+                extractRangemap2.dependsOn(getSourceSetFormatted(set, "source%sJava"));
 
                 retromap = makeTask(getSourceSetFormatted(set, TMPL_TASK_RETROMAP_RPL), ApplyS2STask.class);
                 retromap.addSource(replacedSource);
@@ -782,7 +794,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                 retromap.addExc(delayedFile(EXC_MCP));
                 retromap.addExc(delayedFile(EXC_SRG));
                 retromap.setRangeMap(rangeMap);
-                retromap.dependsOn(TASK_GENERATE_SRGS, extractRangemap);
+                retromap.dependsOn(TASK_GENERATE_SRGS, extractRangemap2);
             }
         };
 
