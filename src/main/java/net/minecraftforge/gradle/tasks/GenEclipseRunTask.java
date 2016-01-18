@@ -80,7 +80,8 @@ public class GenEclipseRunTask extends DefaultTask
         
         if (!Strings.isNullOrEmpty(getJvmArguments()))
         {
-            addXml(root, "stringAttribute", ImmutableMap.of("key", "org.eclipse.jdt.launching.VM_ARGUMENTS", "value", getJvmArguments()));
+            // add the extra JVM arg.. because lex said so
+            addXml(root, "stringAttribute", ImmutableMap.of("key", "org.eclipse.jdt.launching.VM_ARGUMENTS", "value", getJvmArguments() + " -DFORCE_FRAME_RECALC=true"));
         }
         
         File outFile = getOutputFile();
