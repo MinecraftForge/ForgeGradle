@@ -77,13 +77,14 @@ public class GenEclipseRunTask extends DefaultTask
         {
             addXml(root, "stringAttribute", ImmutableMap.of("key", "org.eclipse.jdt.launching.PROGRAM_ARGUMENTS", "value", getArguments()));
         }
-        
-        if (!Strings.isNullOrEmpty(getJvmArguments()))
+
+        String jvm = getJvmArguments() == null ? "" : getJvmArguments();
+        jvm  += " -DFORGE_FORCE_FRAME_RECALC=true"; //Add a flag to work around Eclipse compiler issues.
+        if (!Strings.isNullOrEmpty(jvm))
         {
-            // add the extra JVM arg.. because lex said so
-            addXml(root, "stringAttribute", ImmutableMap.of("key", "org.eclipse.jdt.launching.VM_ARGUMENTS", "value", getJvmArguments() + " -DFORCE_FRAME_RECALC=true"));
+            addXml(root, "stringAttribute", ImmutableMap.of("key", "org.eclipse.jdt.launching.VM_ARGUMENTS", "value", jvm));
         }
-        
+
         File outFile = getOutputFile();
         outFile.getParentFile().mkdirs();
 
@@ -93,7 +94,7 @@ public class GenEclipseRunTask extends DefaultTask
         StreamResult result = new StreamResult(getOutputFile());
 
         transformer.transform(source, result);
-        
+
         // make the rundir
         new File(getRunDir()).mkdirs();
     }
@@ -117,7 +118,7 @@ public class GenEclipseRunTask extends DefaultTask
     {
         this.runArgs = arguments;
     }
-    
+
     public String getJvmArguments()
     {
         return Constants.resolveString(jvmArgs);
