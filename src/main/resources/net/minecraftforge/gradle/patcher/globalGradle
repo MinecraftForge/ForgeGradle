@@ -4,66 +4,76 @@ task eclipse
 task cleanEclipse
 
 subprojects {
-	apply plugin: "java"
-	apply plugin: "eclipse"
-	apply plugin: "idea"
-	
-	rootProject.tasks.eclipse.dependsOn tasks.eclipse
-	rootProject.tasks.cleanEclipse.dependsOn tasks.cleanEclipse
-	rootProject.tasks.idea.dependsOn tasks.idea
-	rootProject.tasks.cleanIdea.dependsOn tasks.cleanIdea
-	
-	repositories {
-		mavenCentral()
+    apply plugin: "java"
+    apply plugin: "eclipse"
+    apply plugin: "idea"
+
+    rootProject.tasks.eclipse.dependsOn tasks.eclipse
+    rootProject.tasks.cleanEclipse.dependsOn tasks.cleanEclipse
+    rootProject.tasks.idea.dependsOn tasks.idea
+    rootProject.tasks.cleanIdea.dependsOn tasks.cleanIdea
+
+    repositories {
+        mavenCentral()
 @@repositories@@
-	}
-	
-	dependencies {
+    }
+
+    dependencies {
 @@dependencies@@
-	}
-	
-	compileJava {
-		sourceCompatibility = targetCompatibility = "@@javaLevel@@"
-	}
-	
-	jar {
-		exclude 'GradleStart*', 'net/minecraftforge/gradle/**'
-	}
-	
-	def links = []
-	def dupes = []
-	eclipse.project.file.withXml { provider ->
-	    def node = provider.asNode()
-	    links = []
-	    dupes = []
-	    node.linkedResources.link.each { child ->
-	        def path = child.location.text()
-	        if (path in dupes) {
-	            child.replaceNode {}
-	        } else {
-	            dupes.add(path)
-	            def newName = path.split('/')[-2..-1].join('/')
-	            links += newName
-	            child.replaceNode {
-	                link{
-	                    name(newName)
-	                    type('2')
-	                    location(path)
-	                }
-	            }
-	        }
-	    }
-	}
-	
-	eclipse.classpath.file.withXml {
-	    def node = it.asNode()
-	    node.classpathentry.each { child -> 
-	        if (child.@kind == 'src' && !child.@path.contains('/')) child.replaceNode {}
-	        if (child.@path in links) links.remove(child.@path)
-	    }
-	    links.each { link -> node.appendNode('classpathentry', [kind:'src', path:link]) }
-	}
-	tasks.eclipseClasspath.dependsOn 'eclipseProject' //Make them run in correct order"
-	
-	idea { module { inheritOutputDirs = true } }
+    }
+
+    compileJava {
+        sourceCompatibility = targetCompatibility = "@@javaLevel@@"
+    }
+
+    jar {
+        exclude 'GradleStart*', 'net/minecraftforge/gradle/**'
+    }
+
+    /* The issue this is suposed to fix is not reproduceable with current gradle version. So disable.
+    def links = []
+    def dupes = []
+    eclipse.project.file.withXml { provider ->
+        def node = provider.asNode()
+        links = []
+        dupes = []
+        node.linkedResources.link.each { child ->
+            def path = child.location.text()
+            def name = child.name.text()
+            if (path in dupes) {
+                child.replaceNode {}
+            } else {
+                dupes.add(path)
+                def newName = path.split('/')[-2..-1].join('/')
+                println(child.name.text() + ' -> ' + newName)
+                links += newName
+                child.replaceNode {
+                    link{
+                        name(newName)
+                        type('2')
+                        location(path)
+                    }
+                }
+            }
+        }
+    }
+    */
+
+    eclipse.classpath.file.withXml { f ->
+        def node = f.asNode()
+        /*
+        node.classpathentry.each { child ->
+            //if (child.@kind == 'src' && !child.@path.contains('/')) child.replaceNode {} // THIS is the reason we are getting the 'eclipse randomly looses sources!
+            if (child.@path in links) links.remove(child.@path)
+        }
+        links.each { link -> node.appendNode('classpathentry', [kind:'src', path:link]) }
+        */
+        def types = ['src', 'output', 'con', 'lib']    // Sort entries
+        def sorted = node.classpathentry.sort(true) { types.indexOf(it.@kind) == -1 ? types.size : types.indexOf(it.@kind) }
+        node.classpathentry.each { it.replaceNode {} } // Nuke all entries
+        sorted.each { node.append(it) }                // Readd in sorted form
+    }
+    tasks.eclipseClasspath.dependsOn 'eclipseProject' //Make them run in correct order"
+
+    idea.module.inheritOutputDirs = true
 }
