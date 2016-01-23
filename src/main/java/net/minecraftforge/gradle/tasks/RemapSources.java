@@ -60,8 +60,8 @@ public class RemapSources extends AbstractEditJarTask
     private final Map<String, String> params       = Maps.newHashMap();
 
     private static final Pattern      SRG_FINDER   = Pattern.compile("func_[0-9]+_[a-zA-Z_]+|field_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_\\b");
-    private static final Pattern      METHOD       = Pattern.compile("^((?: {4})+|\\t+)(?:[\\w$.\\[\\]]+ )+(func_[0-9]+_[a-zA-Z_]+)\\(");
-    private static final Pattern      FIELD        = Pattern.compile("^((?: {4})+|\\t+)(?:[\\w$.\\[\\]]+ )+(field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
+    private static final Pattern      METHOD       = Pattern.compile("^((?: {4})+|\\t+)(?!return)(?:[\\w$.\\[\\]]+(?:<.+>)? )+(func_[0-9]+_[a-zA-Z_]+)\\(");
+    private static final Pattern      FIELD        = Pattern.compile("^((?: {4})+|\\t+)(?:[\\w$.\\[\\]]+(?:<.+>)? )+(field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
 
     @Override
     public void doStuffBefore() throws Exception
