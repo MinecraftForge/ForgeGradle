@@ -20,14 +20,19 @@
 package net.minecraftforge.gradle.user.patcherUser.forge;
 
 import static net.minecraftforge.gradle.common.Constants.REPLACE_MC_VERSION;
+import static net.minecraftforge.gradle.user.UserConstants.CONFIG_PACK;
 import static net.minecraftforge.gradle.user.UserConstants.TASK_REOBF;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.base.Joiner;
 import org.gradle.api.Action;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.bundling.Jar;
 
 import com.google.common.base.Strings;
@@ -72,7 +77,10 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
             }
             makeStart.addExtraLine("net.minecraftforge.gradle.GradleForgeHacks.searchCoremods(this);");
         }
-        
+
+        final Configuration packConfig = project.getConfigurations().maybeCreate(CONFIG_PACK);
+        project.getConfigurations().getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME).extendsFrom(packConfig);
+
         // configure eclipse task to do extra stuff.
         project.getTasks().getByName("eclipse").doLast(new Action() {
 
@@ -144,6 +152,20 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
             {
                 jarTask.getManifest().getAttributes().put("FMLCorePlugin", ext.getCoreMod());
             }
+
+            final Configuration config = project.getConfigurations().getByName(CONFIG_PACK);
+            if (!config.isEmpty())
+            {
+                final List<String> deps = new ArrayList<String>();
+                for (final File dep : config) {
+                    project.getLogger().info("Packing: " + dep.getAbsolutePath());
+                    jarTask.from(dep);
+                    deps.add(dep.getName());
+                }
+
+                jarTask.getManifest().getAttributes().put("ContainedDeps", Joiner.on(' ').join(deps));
+            }
+
         }
     }
 
