@@ -107,7 +107,16 @@ public class SignJar extends DefaultTask implements PatternFilterable
             @Override
             public void visitDir(FileVisitDetails details)
             {
-                // nothing
+                try
+                {
+                    String path = details.getPath();
+                    ZipEntry entry = new ZipEntry(path.endsWith("/") ? path : path + "/");
+                    outs.putNextEntry(entry);
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
             }
 
             @Override
