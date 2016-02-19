@@ -21,11 +21,8 @@ package net.minecraftforge.gradle.util.delayed;
 
 import java.io.File;
 
-import net.minecraftforge.gradle.util.ZipFileTree;
-
 import org.gradle.api.Project;
 import org.gradle.api.file.FileTree;
-import org.gradle.api.internal.file.collections.FileTreeAdapter;
 
 @SuppressWarnings("serial")
 public class DelayedFileTree extends DelayedBase<FileTree>
@@ -74,7 +71,7 @@ public class DelayedFileTree extends DelayedBase<FileTree>
         
         if (name.endsWith(".jar") || name.endsWith(".zip"))
         {
-            return new FileTreeAdapter(new ZipFileTree(file));
+            return project.zipTree(file);
         }
         else
         {
