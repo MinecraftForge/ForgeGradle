@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.Set;
 
 import net.minecraftforge.gradle.util.ExtractionVisitor;
-import net.minecraftforge.gradle.util.ZipFileTree;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
 
@@ -80,7 +79,7 @@ public class ExtractConfigTask extends CachedTask implements PatternFilterable
         for (File source : getConfigFiles())
         {
             getLogger().debug("Extracting: " + source);
-            (new ZipFileTree(source)).visit(visitor);
+            getProject().zipTree(source).visit(visitor);
         }
     }
 

@@ -55,7 +55,6 @@ import com.nothome.delta.GDiffPatcher;
 
 import lzma.sdk.lzma.Decoder;
 import lzma.streams.LzmaInputStream;
-import net.minecraftforge.gradle.util.ZipFileTree;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
 
@@ -145,7 +144,7 @@ public class TaskApplyBinPatches extends CachedTask
                 entries.add(entry.getName());
             }
 
-            new ZipFileTree(getResourceJar()).visit(new FileVisitor()
+            getProject().zipTree(getResourceJar()).visit(new FileVisitor()
             {
                 @Override
                 public void visitDir(FileVisitDetails dirDetails)

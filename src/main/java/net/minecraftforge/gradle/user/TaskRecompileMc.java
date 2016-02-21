@@ -23,14 +23,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Set;
 import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-import net.minecraftforge.gradle.util.ZipFileTree;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
 
@@ -47,7 +45,6 @@ import org.gradle.api.tasks.TaskAction;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
 import groovy.lang.Closure;
@@ -166,10 +163,10 @@ public class TaskRecompileMc extends CachedTask
         // custom resources should override existing ones, so resources first.
         if (resourceJar != null)
         {
-            new ZipFileTree(resourceJar).visit(visitor);
+            getProject().zipTree(resourceJar).visit(visitor);
         }
 
-        new ZipFileTree(sourceJar).visit(visitor); // then the ones from the the original sources
+        getProject().zipTree(sourceJar).visit(visitor); // then the ones from the the original sources
         getProject().fileTree(classDir).visit(visitor); // then the classes
 
         zout.close();

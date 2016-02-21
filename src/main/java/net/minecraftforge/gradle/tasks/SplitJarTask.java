@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
-import net.minecraftforge.gradle.util.ZipFileTree;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
 
@@ -79,7 +78,7 @@ public class SplitJarTask extends CachedTask implements PatternFilterable
         final JarOutputStream zout1 = new JarOutputStream(new FileOutputStream(out1));
         final JarOutputStream zout2 = new JarOutputStream(new FileOutputStream(out2));
 
-        (new ZipFileTree(input)).visit(new FileVisitor() {
+        getProject().zipTree(input).visit(new FileVisitor() {
 
             @Override
             public void visitDir(FileVisitDetails details)
