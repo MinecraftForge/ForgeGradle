@@ -148,12 +148,9 @@ public class JsonFactory
         return a;
     }
 
-    public static LiteLoaderJson loadLiteLoaderJson(File json) throws JsonSyntaxException, JsonIOException, IOException
+    public static LiteLoaderJson loadLiteLoaderJson(String json) throws JsonSyntaxException, JsonIOException
     {
-        FileReader reader = new FileReader(json);
-        LiteLoaderJson a = GSON.fromJson(reader, LiteLoaderJson.class);
-        reader.close();
-        return a;
+        return GSON.fromJson(json, LiteLoaderJson.class).addDefaultArtifacts();
     }
 
     public static Map<String, MCInjectorStruct> loadMCIJson(File json) throws IOException
