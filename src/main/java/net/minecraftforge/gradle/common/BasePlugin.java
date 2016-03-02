@@ -201,29 +201,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         File jsonCache = cacheFile("McpMappings.json");
         File etagFile = new File(jsonCache.getAbsolutePath() + ".etag");
 
-        Map<String, Map<String, int[]>> json = JsonFactory.GSON.fromJson(getWithEtag(URL_MCP_JSON, jsonCache, etagFile), new TypeToken<Map<String, Map<String, int[]>>>() {}.getType());
-        Map<String, TIntObjectHashMap<String>> mcpJson = Maps.newHashMap();
-
-        for (Entry<String, Map<String, int[]>> entry1 : json.entrySet()) // <mcVersion, -->
-        {
-            for (Entry<String, int[]> entry2 : entry1.getValue().entrySet()) // <channel, versions>
-            {
-                TIntObjectHashMap<String> intMap = mcpJson.get(entry2.getKey());
-                if (intMap == null)
-                {
-                    intMap = new TIntObjectHashMap<String>();
-                }
-                
-                for (int mappingVersion : entry2.getValue())
-                {
-                    intMap.put(mappingVersion, entry1.getKey());
-                }
-                
-                mcpJson.put(entry2.getKey(), intMap);
-            }
-        }
-        
-        getExtension().mcpJson = mcpJson;
+        getExtension().mcpJson = JsonFactory.GSON.fromJson(getWithEtag(URL_MCP_JSON, jsonCache, etagFile),
+                new TypeToken<Map<String, Map<String, int[]>>>() {}.getType());
     }
 
     protected void afterEvaluate()

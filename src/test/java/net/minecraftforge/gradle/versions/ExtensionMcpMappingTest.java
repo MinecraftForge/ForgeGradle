@@ -51,6 +51,7 @@ public class ExtensionMcpMappingTest
     }
     private static final String VERSION_17 = "1.7.10";
     private static final String VERSION_18 = "1.8";
+    private static final String VERSION_19 = "1.9";
 
     @Test
     public void testValidSnapshot17()
@@ -86,6 +87,15 @@ public class ExtensionMcpMappingTest
         this.ext.setMappings("stable_15");
         assertEquals(this.ext.getMappingsChannel(), "stable");
         assertEquals(this.ext.getMappingsVersion(), "15");
+    }
+
+    @Test
+    public void testValidSnapshot19()
+    {
+        this.ext.setVersion(VERSION_19);
+        this.ext.setMappings("snapshot_20160301");
+        assertEquals(this.ext.getMappingsChannel(), "snapshot");
+        assertEquals(this.ext.getMappingsVersion(), "20160301");
     }
 
     @Test

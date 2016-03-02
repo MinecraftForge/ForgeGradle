@@ -20,7 +20,9 @@
 package net.minecraftforge.gradle.common;
 
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.gradle.api.Project;
 
@@ -44,7 +46,7 @@ public abstract class BaseExtension
     protected String                        mcpVersion = "unknown";
 
     // this should never be touched except by the base plugin in this package
-    Map<String, TIntObjectHashMap<String>> mcpJson;
+    Map<String, Map<String, int[]>>        mcpJson;
     protected boolean                      mappingsSet     = false;
     protected String                       mappingsChannel = null;
     protected int                          mappingsVersion = -1;
@@ -64,7 +66,7 @@ public abstract class BaseExtension
 
             if (version.equals("${version}"))
             {
-                version = "2.0-SNAPSHOT";// fallback
+                version = "2.1-SNAPSHOT";// fallback
             }
 
         }
@@ -248,32 +250,55 @@ public abstract class BaseExtension
         // mappings or mc version are null
         if (mappingsChannel == null || Strings.isNullOrEmpty(version) || mappingsCustom != null)
             return;
-        
-        // check if the channel exists
+
+        // check if it exists
+        Map<String, int[]> versionMap = mcpJson.get(version);
+        if (versionMap == null)
+            throw new GradleConfigurationException("There are no mappings for MC " + version);
+
         String channel = getMappingsChannelNoSubtype();
-        TIntObjectHashMap<String> channelMap = mcpJson.get(channel);
-        if (channelMap == null)
-        {
+        int[] channelList = versionMap.get(channel);
+        if (channelList == null)
             throw new GradleConfigurationException("There is no such MCP mapping channel named " + channel);
-        }
-        
-        String mappingMc = channelMap.get(mappingsVersion);
-        
-        if (version.equals(mappingMc))
-        {
-            // all good.
-            replacer.putReplacement(Constants.REPLACE_MCP_MCVERSION, version);
+
+        // all is well with the world
+        if (searchArray(channelList, mappingsVersion))
             return;
-        }
-        else if (mappingMc == null)
+
+        // if it gets here.. it wasnt found. Now we try to actually find it..
+        for (Entry<String, Map<String, int[]>> mcEntry : mcpJson.entrySet())
         {
-            throw new GradleConfigurationException("The specified mapping '" + getMappings() + "' does not exist!");
+            for (Entry<String, int[]> channelEntry : mcEntry.getValue().entrySet())
+            {
+                // found it!
+                if (searchArray(channelEntry.getValue(), mappingsVersion))
+                {
+                    boolean rightMc = mcEntry.getKey().equals(version);
+                    boolean rightChannel = channelEntry.getKey().equals(channel);
+
+                    // right channel, but wrong mc
+                    if (rightChannel && !rightMc)
+                    {
+                        throw new GradleConfigurationException("This mapping '" + getMappings() + "' exists only for MC " + mcEntry.getKey() + "!");
+                    }
+
+                    // right MC , but wrong channel
+                    else if (rightMc && !rightChannel)
+                    {
+                        throw new GradleConfigurationException("This mapping '" + getMappings() + "' doesnt exist! perhaps you meant '" + channelEntry.getKey() + "_" + mappingsVersion + "'");
+                    }
+                }
+            }
         }
-        else
-        {
-            project.getLogger().warn("This set of MCP mappings was designed for MC "+mappingMc+". Use at your own peril.");
-            replacer.putReplacement(Constants.REPLACE_MCP_MCVERSION, mappingMc);
-            return;
-        }
+
+        // wasnt found
+        throw new GradleConfigurationException("The specified mapping '" + getMappings() + "' does not exist!");
+    }
+
+    private static boolean searchArray(int[] array, int key)
+    {
+        Arrays.sort(array);
+        int foundIndex = Arrays.binarySearch(array, key);
+        return foundIndex >= 0 && array[foundIndex] == key;
     }
 }

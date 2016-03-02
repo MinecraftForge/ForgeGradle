@@ -271,4 +271,10 @@ public class ZipFileTree implements MinimalFileTree
 	{
         // umm... wat?
     }
+
+    @Override
+    public void visitTreeOrBackingFile(FileVisitor visitor)
+    {
+        // uh.. nothing?
+    }
 }
