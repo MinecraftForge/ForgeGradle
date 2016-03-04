@@ -617,11 +617,16 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         javaConv.getSourceSets().whenObjectAdded(action);
     }
 
-    protected void doDevTimeDeobf()
+    protected final void doDevTimeDeobf()
     {
         final Task compileDummy = getDummyDep("compile", delayedFile(DIR_DEOBF_DEPS + "/compileDummy.jar"), TASK_DD_COMPILE);
         final Task providedDummy = getDummyDep("compile", delayedFile(DIR_DEOBF_DEPS + "/providedDummy.jar"), TASK_DD_PROVIDED);
 
+        setupDevTimeDeobf(compileDummy, providedDummy);
+    }
+
+    protected void setupDevTimeDeobf(final Task compileDummy, final Task providedDummy)
+    {
         // die wih error if I find invalid types...
         project.afterEvaluate(new Action<Project>() {
             @Override
@@ -636,86 +641,86 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                 remapDeps(project, project.getConfigurations().getByName(CONFIG_DEOBF_COMPILE), CONFIG_DC_RESOLVED, compileDummy);
                 remapDeps(project, project.getConfigurations().getByName(CONFIG_DEOBF_PROVIDED), CONFIG_DP_RESOLVED, providedDummy);
             }
-
-            @SuppressWarnings("unchecked")
-            private void remapDeps(Project project, Configuration config, String resolvedConfig, Task dummyTask)
-            {
-                // only allow maven/ivy dependencies
-                for (Dependency dep : config.getIncoming().getDependencies())
-                {
-                    if (!(dep instanceof ExternalModuleDependency))
-                    {
-                        throw new GradleConfigurationException("Only allowed to use maven dependencies for this. If its a jar file, deobfuscate it yourself.");
-                    }
-                }
-
-                int taskId = 0;
-
-                // FOR SOURCES!
-
-                HashMap<ComponentIdentifier, ModuleVersionIdentifier> idMap = Maps.newHashMap();
-
-                // FOR BINARIES
-
-                for (ResolvedArtifact artifact : config.getResolvedConfiguration().getResolvedArtifacts())
-                {
-                    ModuleVersionIdentifier module = artifact.getModuleVersion().getId();
-                    String group = "deobf." + module.getGroup();
-
-                    // Add artifacts that will be remapped to get their sources
-                    idMap.put(artifact.getId().getComponentIdentifier(), module);
-
-                    TaskSingleDeobfBin deobf = makeTask(config.getName() + "DeobfDepTask" + (taskId++), TaskSingleDeobfBin.class);
-                    deobf.setInJar(artifact.getFile());
-                    deobf.setOutJar(getFile(DIR_DEOBF_DEPS, group, module.getName(), module.getVersion(), null));
-                    deobf.setFieldCsv(delayedFile(CSV_FIELD));
-                    deobf.setMethodCsv(delayedFile(CSV_METHOD));
-                    deobf.dependsOn(TASK_EXTRACT_MAPPINGS);
-                    dummyTask.dependsOn(deobf);
-
-                    project.getDependencies().add(resolvedConfig, group + ":" + module.getName() + ":" + module.getVersion());
-                }
-
-                for (DependencyResult depResult : config.getIncoming().getResolutionResult().getAllDependencies())
-                {
-                    idMap.put(depResult.getFrom().getId(), depResult.getFrom().getModuleVersion());
-                }
-
-                ArtifactResolutionResult result = project.getDependencies().createArtifactResolutionQuery()
-                        .forComponents(idMap.keySet())
-                        .withArtifacts(JvmLibrary.class, SourcesArtifact.class)
-                        .execute();
-
-                for (ComponentArtifactsResult comp : result.getResolvedComponents())
-                {
-                    ModuleVersionIdentifier module = idMap.get(comp.getId());
-                    String group = "deobf." + module.getGroup();
-
-                    for (ArtifactResult art : comp.getArtifacts(SourcesArtifact.class))
-                    {
-                        // there can only be One!
-                        RemapSources remap = makeTask(config.getName() + "RemapDepSourcesTask" + (taskId++), RemapSources.class);
-                        remap.setInJar(((ResolvedArtifactResult) art).getFile());
-                        remap.setOutJar(getFile(DIR_DEOBF_DEPS, group, module.getName(), module.getVersion(), "sources"));
-                        remap.setFieldsCsv(delayedFile(CSV_FIELD));
-                        remap.setMethodsCsv(delayedFile(CSV_METHOD));
-                        remap.setParamsCsv(delayedFile(CSV_PARAM));
-                        remap.dependsOn(TASK_EXTRACT_MAPPINGS);
-                        dummyTask.dependsOn(remap);
-                        break;
-                    }
-                }
-            }
-
-            private Object getFile(String baseDir, String group, String name, String version, String classifier)
-            {
-                return delayedFile(
-                baseDir + "/" + group.replace('.', '/') + "/" + name + "/" + version + "/" +
-                        name + "-" + version + (Strings.isNullOrEmpty(classifier) ? "" : "-" + classifier) + ".jar");
-            }
         });
     }
 
+    @SuppressWarnings("unchecked")
+    protected void remapDeps(Project project, Configuration config, String resolvedConfig, Task dummyTask)
+    {
+        // only allow maven/ivy dependencies
+        for (Dependency dep : config.getIncoming().getDependencies())
+        {
+            if (!(dep instanceof ExternalModuleDependency))
+            {
+                throw new GradleConfigurationException("Only allowed to use maven dependencies for this. If its a jar file, deobfuscate it yourself.");
+            }
+        }
+
+        int taskId = 0;
+
+        // FOR SOURCES!
+
+        HashMap<ComponentIdentifier, ModuleVersionIdentifier> idMap = Maps.newHashMap();
+
+        // FOR BINARIES
+
+        for (ResolvedArtifact artifact : config.getResolvedConfiguration().getResolvedArtifacts())
+        {
+            ModuleVersionIdentifier module = artifact.getModuleVersion().getId();
+            String group = "deobf." + module.getGroup();
+
+            // Add artifacts that will be remapped to get their sources
+            idMap.put(artifact.getId().getComponentIdentifier(), module);
+
+            TaskSingleDeobfBin deobf = makeTask(config.getName() + "DeobfDepTask" + (taskId++), TaskSingleDeobfBin.class);
+            deobf.setInJar(artifact.getFile());
+            deobf.setOutJar(getFile(DIR_DEOBF_DEPS, group, module.getName(), module.getVersion(), null));
+            deobf.setFieldCsv(delayedFile(CSV_FIELD));
+            deobf.setMethodCsv(delayedFile(CSV_METHOD));
+            deobf.dependsOn(TASK_EXTRACT_MAPPINGS);
+            dummyTask.dependsOn(deobf);
+
+            project.getDependencies().add(resolvedConfig, group + ":" + module.getName() + ":" + module.getVersion());
+        }
+
+        for (DependencyResult depResult : config.getIncoming().getResolutionResult().getAllDependencies())
+        {
+            idMap.put(depResult.getFrom().getId(), depResult.getFrom().getModuleVersion());
+        }
+
+        ArtifactResolutionResult result = project.getDependencies().createArtifactResolutionQuery()
+                .forComponents(idMap.keySet())
+                .withArtifacts(JvmLibrary.class, SourcesArtifact.class)
+                .execute();
+
+        for (ComponentArtifactsResult comp : result.getResolvedComponents())
+        {
+            ModuleVersionIdentifier module = idMap.get(comp.getId());
+            String group = "deobf." + module.getGroup();
+
+            for (ArtifactResult art : comp.getArtifacts(SourcesArtifact.class))
+            {
+                // there can only be One!
+                RemapSources remap = makeTask(config.getName() + "RemapDepSourcesTask" + (taskId++), RemapSources.class);
+                remap.setInJar(((ResolvedArtifactResult) art).getFile());
+                remap.setOutJar(getFile(DIR_DEOBF_DEPS, group, module.getName(), module.getVersion(), "sources"));
+                remap.setFieldsCsv(delayedFile(CSV_FIELD));
+                remap.setMethodsCsv(delayedFile(CSV_METHOD));
+                remap.setParamsCsv(delayedFile(CSV_PARAM));
+                remap.dependsOn(TASK_EXTRACT_MAPPINGS);
+                dummyTask.dependsOn(remap);
+                break;
+            }
+        }
+    }
+
+    private Object getFile(String baseDir, String group, String name, String version, String classifier)
+    {
+        return delayedFile(
+        baseDir + "/" + group.replace('.', '/') + "/" + name + "/" + version + "/" +
+                name + "-" + version + (Strings.isNullOrEmpty(classifier) ? "" : "-" + classifier) + ".jar");
+    }
+    
     protected void doDepAtExtraction()
     {
         TaskExtractDepAts extract = makeTask(TASK_EXTRACT_DEP_ATS, TaskExtractDepAts.class);
