@@ -113,21 +113,19 @@ public class Constants
 
 
     // urls
-    public static final String URL_MC_JSON      = "http://s3.amazonaws.com/Minecraft.Download/versions/" + REPLACE_MC_VERSION + "/" + REPLACE_MC_VERSION + ".json";
-    public static final String URL_MC_CLIENT    = "http://s3.amazonaws.com/Minecraft.Download/versions/" + REPLACE_MC_VERSION + "/" + REPLACE_MC_VERSION + ".jar";
-    public static final String URL_MC_SERVER    = "http://s3.amazonaws.com/Minecraft.Download/versions/" + REPLACE_MC_VERSION + "/minecraft_server." + REPLACE_MC_VERSION + ".jar";
+    public static final String URL_MC_MANIFEST  = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
     public static final String URL_FF           = "http://files.minecraftforge.net/fernflower-fix-1.0.zip";
     public static final String URL_ASSETS       = "http://resources.download.minecraft.net";
     public static final String URL_LIBRARY      = "https://libraries.minecraft.net/";
     public static final String URL_FORGE_MAVEN  = "http://files.minecraftforge.net/maven";
-    public static final String ASSETS_INDEX_URL = "https://s3.amazonaws.com/Minecraft.Download/indexes/" + REPLACE_ASSET_INDEX + ".json";
     public static final String URL_MCP_JSON     = "http://export.mcpbot.bspk.rs/versions.json";
 
     // configs
-    public static final String CONFIG_MCP_DATA = "forgeGradleMcpData";
-    public static final String CONFIG_MAPPINGS = "forgeGradleMcpMappings";
-    public static final String CONFIG_NATIVES  = "forgeGradleMcNatives";
-    public static final String CONFIG_MC_DEPS  = "forgeGradleMcDeps";
+    public static final String CONFIG_MCP_DATA       = "forgeGradleMcpData";
+    public static final String CONFIG_MAPPINGS       = "forgeGradleMcpMappings";
+    public static final String CONFIG_NATIVES        = "forgeGradleMcNatives";
+    public static final String CONFIG_MC_DEPS        = "forgeGradleMcDeps";
+    public static final String CONFIG_MC_DEPS_CLIENT = "forgeGradleMcDepsClient";
 
     // things in the cache dir.
     public static final String DIR_LOCAL_CACHE  = REPLACE_PROJECT_CACHE_DIR + "/minecraft";

@@ -189,7 +189,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
         super.afterEvaluate();
 
-        // add repalcements for run configs and gradle start
+        // add replacements for run configs and gradle start
         T ext = getExtension();
         replacer.putReplacement(REPLACE_CLIENT_TWEAKER, getClientTweaker(ext));
         replacer.putReplacement(REPLACE_SERVER_TWEAKER, getServerTweaker(ext));

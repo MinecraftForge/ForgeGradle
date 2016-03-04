@@ -28,9 +28,11 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import net.minecraftforge.gradle.util.json.version.ManifestVersion;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Plugin;
@@ -87,6 +89,9 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     public Project       project;
     public BasePlugin<?> otherPlugin;
     public ReplacementProvider replacer = new ReplacementProvider();
+
+    private Map<String, ManifestVersion> mcManifest;
+    private Version                      mcVersionJson;
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
@@ -162,13 +167,17 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         });
 
         // do Mcp Snapshots Stuff
-        setVersionInfoJson();
+        getRemoteJsons();
         project.getConfigurations().maybeCreate(CONFIG_MCP_DATA);
         project.getConfigurations().maybeCreate(CONFIG_MAPPINGS);
 
         // set other useful configs
         project.getConfigurations().maybeCreate(CONFIG_MC_DEPS);
+        project.getConfigurations().maybeCreate(CONFIG_MC_DEPS_CLIENT);
         project.getConfigurations().maybeCreate(CONFIG_NATIVES);
+
+        // should be assumed until specified otherwise
+        project.getConfigurations().getByName(CONFIG_MC_DEPS).extendsFrom(project.getConfigurations().getByName(CONFIG_MC_DEPS_CLIENT));
 
         // after eval
         project.afterEvaluate(new Action<Project>() {
@@ -194,12 +203,17 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
     private static boolean displayBanner = true;
 
-    private void setVersionInfoJson()
+    private void getRemoteJsons()
     {
+        // MCP json
         File jsonCache = cacheFile("McpMappings.json");
         File etagFile = new File(jsonCache.getAbsolutePath() + ".etag");
-
         getExtension().mcpJson = JsonFactory.GSON.fromJson(getWithEtag(URL_MCP_JSON, jsonCache, etagFile), new TypeToken<Map<String, Map<String, int[]>>>() {}.getType());
+
+        // MC manifest json
+        jsonCache = cacheFile("McManifest.json");
+        etagFile = new File(jsonCache.getAbsolutePath() + ".etag");
+        mcManifest = JsonFactory.GSON.fromJson(getWithEtag(URL_MC_MANIFEST, jsonCache, etagFile), new TypeToken<Map<String, ManifestVersion>>() {}.getType());
     }
 
     protected void afterEvaluate()
@@ -336,13 +350,25 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         Download dlClient = makeTask(TASK_DL_CLIENT, Download.class);
         {
             dlClient.setOutput(delayedFile(JAR_CLIENT_FRESH));
-            dlClient.setUrl(delayedString(URL_MC_CLIENT));
+            dlClient.setUrl(new Closure<String>(null, null) {
+                @Override
+                public String call()
+                {
+                    return mcVersionJson.getClientUrl();
+                }
+            });
         }
 
         Download dlServer = makeTask(TASK_DL_SERVER, Download.class);
         {
             dlServer.setOutput(delayedFile(JAR_SERVER_FRESH));
-            dlServer.setUrl(delayedString(URL_MC_SERVER));
+            dlServer.setUrl(new Closure<String>(null, null) {
+                @Override
+                public String call()
+                {
+                    return mcVersionJson.getServerUrl();
+                }
+            });
         }
         
         SplitJarTask splitServer = makeTask(TASK_SPLIT_SERVER, SplitJarTask.class);
@@ -377,7 +403,13 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         EtagDownloadTask getVersionJson = makeTask(TASK_DL_VERSION_JSON, EtagDownloadTask.class);
         {
-            getVersionJson.setUrl(delayedString(URL_MC_JSON));
+            getVersionJson.setUrl(new Closure<String>(null, null) {
+                @Override
+                public String call()
+                {
+                    return mcManifest.get(getExtension().getVersion()).url;
+                }
+            });
             getVersionJson.setFile(delayedFile(JSON_VERSION));
             getVersionJson.setDieWithError(false);
             getVersionJson.doLast(new Closure<Boolean>(project) // normalizes to linux endings
@@ -426,7 +458,13 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         EtagDownloadTask getAssetsIndex = makeTask(TASK_DL_ASSET_INDEX, EtagDownloadTask.class);
         {
-            getAssetsIndex.setUrl(delayedString(ASSETS_INDEX_URL));
+            getAssetsIndex.setUrl(new Closure<String>(null, null) {
+                @Override
+                public String call()
+                {
+                    return mcVersionJson.assetIndex.url;
+                }
+            });
             getAssetsIndex.setFile(delayedFile(JSON_ASSET_INDEX));
             getAssetsIndex.setDieWithError(false);
             getAssetsIndex.dependsOn(getVersionJson);
@@ -693,7 +731,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         {
             try
             {
-                version = JsonFactory.loadVersion(file, inheritanceDirs);
+                version = JsonFactory.loadVersion(file, delayedString(REPLACE_MC_VERSION).call(), inheritanceDirs);
             }
             catch (Exception e)
             {
@@ -711,7 +749,19 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             for (net.minecraftforge.gradle.util.json.version.Library lib : version.getLibraries())
             {
                 if (lib.natives == null)
-                    handler.add(CONFIG_MC_DEPS, lib.getArtifactName());
+                {
+                    String configName = CONFIG_MC_DEPS;
+                    if (lib.name.contains("java3d")
+                            || lib.name.contains("paulscode")
+                            || lib.name.contains("lwjgl")
+                            || lib.name.contains("twitch")
+                            || lib.name.contains("jinput"))
+                    {
+                        configName = CONFIG_MC_DEPS_CLIENT;
+                    }
+
+                    handler.add(configName, lib.getArtifactName());
+                }
             }
         }
         else
@@ -730,7 +780,9 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             project.getLogger().debug("RESOLVED: " + CONFIG_NATIVES);
 
         // set asset index
-        replacer.putReplacement(REPLACE_ASSET_INDEX, version.getAssets());
+        replacer.putReplacement(REPLACE_ASSET_INDEX, version.assetIndex.id);
+
+        this.mcVersionJson = version;
 
         return version;
     }
