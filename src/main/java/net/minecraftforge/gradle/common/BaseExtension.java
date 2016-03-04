@@ -235,7 +235,6 @@ public abstract class BaseExtension
 
         replacer.putReplacement(Constants.REPLACE_MCP_CHANNEL, mappingsChannel);
         replacer.putReplacement(Constants.REPLACE_MCP_VERSION, getMappingsVersion());
-        replacer.putReplacement(Constants.REPLACE_MCP_MCVERSION, version); // unless otherwise specified
 
         // check
         checkMappings();
@@ -250,6 +249,9 @@ public abstract class BaseExtension
         // mappings or mc version are null
         if (mappingsChannel == null || Strings.isNullOrEmpty(version) || mappingsCustom != null)
             return;
+
+        // set now.
+        replacer.putReplacement(Constants.REPLACE_MCP_MCVERSION, version);
 
         // check if it exists
         Map<String, int[]> versionMap = mcpJson.get(version);
