@@ -247,11 +247,15 @@ public abstract class BaseExtension
     protected void checkMappings()
     {
         // mappings or mc version are null
-        if (mappingsChannel == null || Strings.isNullOrEmpty(version) || mappingsCustom != null)
+        if (mappingsChannel == null || Strings.isNullOrEmpty(version))
             return;
 
         // set now.
         replacer.putReplacement(Constants.REPLACE_MCP_MCVERSION, version);
+
+        // gotta do this after setting the MC version
+        if (mappingsCustom != null)
+            return;
 
         // check if it exists
         Map<String, int[]> versionMap = mcpJson.get(version);
