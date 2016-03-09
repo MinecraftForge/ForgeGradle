@@ -24,6 +24,7 @@ import static net.minecraftforge.gradle.user.UserConstants.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -36,6 +37,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import com.beust.jcommander.internal.Lists;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.NamedDomainObjectContainer;
@@ -56,6 +58,7 @@ import org.gradle.api.artifacts.result.ComponentArtifactsResult;
 import org.gradle.api.artifacts.result.DependencyResult;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -371,7 +374,6 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         // create GradleStart
         final CreateStartTask makeStart = makeTask(TASK_MAKE_START, CreateStartTask.class);
         {
-            // ADD YOUR OWN D
             makeStart.addResource(GRADLE_START_RESOURCES[2]); // gradle start common.
 
             if (this.hasClientRun())
@@ -824,14 +826,37 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         // for user-defined ones
         javaConv.getSourceSets().whenObjectAdded(retromapCreator);
 
-        SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        final SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
         // make retromapped sourcejar
-        Jar sourceJar = makeTask(TASK_SRC_JAR, Jar.class);
-        sourceJar.from(project.zipTree(delayedFile(getSourceSetFormatted(main, TMPL_RETROMAPED_RPL))));
+        final Jar sourceJar = makeTask(TASK_SRC_JAR, Jar.class);
+        final String retromappedSrc = getSourceSetFormatted(main, TMPL_RETROMAPED_RPL);
         sourceJar.from(main.getOutput().getResourcesDir());
         sourceJar.setClassifier("sources");
         sourceJar.dependsOn(main.getCompileJavaTaskName(), main.getProcessResourcesTaskName(), getSourceSetFormatted(main, TMPL_TASK_RETROMAP_RPL));
+
+        sourceJar.from(new Closure<Object>(this, this) {
+            public Object call() {
+                File file = delayedFile(retromappedSrc).call();
+                if (file.exists())
+                    return sourceJar.getProject().zipTree(delayedFile(retromappedSrc));
+                else
+                    return new ArrayList<File>();
+            }
+        });
+
+        // get scala sources too
+        project.afterEvaluate(new Action<Project>()
+        {
+            @Override public void execute(Project project)
+            {
+                if (project.getPlugins().hasPlugin("scala"))
+                {
+                    ScalaSourceSet langSet = (ScalaSourceSet) new DslObject(main).getConvention().getPlugins().get("scala");
+                    sourceJar.from(langSet.getAllScala());
+                }
+            }
+        });
     }
 
     protected void makeRunTasks()
