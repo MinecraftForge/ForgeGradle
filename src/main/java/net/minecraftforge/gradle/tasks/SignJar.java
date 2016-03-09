@@ -20,6 +20,8 @@
 package net.minecraftforge.gradle.tasks;
 
 import static net.minecraftforge.gradle.common.Constants.resolveString;
+
+import com.google.common.base.Strings;
 import groovy.lang.Closure;
 import groovy.util.MapEntry;
 
@@ -79,15 +81,18 @@ public class SignJar extends DefaultTask implements PatternFilterable
         processInputJar(input, toSign, ignoredStuff);
 
         // SIGN!
-        getProject().getAnt().invokeMethod("signjar", ImmutableMap.builder()
-                .put("alias", getAlias())
-                .put("storepass", getStorePass())
-                .put("keypass", getKeyPass())
-                .put("keystore", getKeyStore())
-                .put("jar", toSign.getAbsolutePath())
-                .put("signedjar", signed.getAbsolutePath())
-                .build()
-                );
+        Map<String, Object> map = Maps.newHashMap();
+        map.put("alias", getAlias());
+        map.put("storePass", getStorePass());
+        map.put("jar", toSign.getAbsolutePath());
+        map.put("signedJar", signed.getAbsolutePath());
+
+        if (!Strings.isNullOrEmpty(getKeyPass()))
+            map.put("keypass", getKeyPass());
+        if (!Strings.isNullOrEmpty(getKeyStore()))
+            map.put("keyStore", getKeyStore());
+
+        getProject().getAnt().invokeMethod("signjar", map);
 
         // write out
         writeOutputJar(signed, output, ignoredStuff);
