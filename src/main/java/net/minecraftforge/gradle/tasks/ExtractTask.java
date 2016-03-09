@@ -27,7 +27,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import net.minecraftforge.gradle.util.ExtractionVisitor;
-import net.minecraftforge.gradle.util.ZipFileTree;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
 
@@ -81,7 +80,7 @@ public class ExtractTask extends CachedTask implements PatternFilterable
         for (File source : getSourcePaths())
         {
             getLogger().debug("Extracting: " + source);
-            (new ZipFileTree(source)).visit(visitor);
+            getProject().zipTree(source).visit(visitor);
         }
     }
 

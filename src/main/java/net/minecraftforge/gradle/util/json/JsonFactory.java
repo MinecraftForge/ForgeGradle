@@ -23,12 +23,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
+import com.beust.jcommander.internal.Lists;
 import com.google.common.base.Strings;
+import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -43,6 +43,7 @@ import net.minecraftforge.gradle.util.json.fgversion.FGVersionWrapper;
 import net.minecraftforge.gradle.util.json.forgeversion.ForgeArtifact;
 import net.minecraftforge.gradle.util.json.forgeversion.ForgeArtifactAdapter;
 import net.minecraftforge.gradle.util.json.version.AssetIndex;
+import net.minecraftforge.gradle.util.json.version.ManifestVersion;
 import net.minecraftforge.gradle.util.json.version.Version;
 
 public class JsonFactory
@@ -58,12 +59,14 @@ public class JsonFactory
         builder.registerTypeAdapter(VersionObject.class, new LiteLoaderJson.VersionAdapter());
         builder.registerTypeAdapter(ForgeArtifact.class, new ForgeArtifactAdapter());
         builder.registerTypeAdapter(FGVersionWrapper.class, new FGVersionDeserializer());
+        builder.registerTypeAdapter(FGVersionWrapper.class, new FGVersionDeserializer());
+        builder.registerTypeAdapter(new TypeToken<Map<String, ManifestVersion>>() {}.getType(), new MojangManifestAdapter());
         builder.enableComplexMapKeySerialization();
         builder.setPrettyPrinting();
         GSON = builder.create();
     }
 
-    public static Version loadVersion(File json, File... inheritanceDirs) throws JsonSyntaxException, JsonIOException, IOException
+    public static Version loadVersion(File json, String mcVersion, File... inheritanceDirs) throws JsonSyntaxException, JsonIOException, IOException
     {
         FileReader reader = new FileReader(json);
         Version v = GSON.fromJson(reader, Version.class);
@@ -79,7 +82,48 @@ public class JsonFactory
 
                 if (parentFile.exists())
                 {
-                    Version parent = loadVersion(new File(inheritDir, v.inheritsFrom + ".json"), inheritanceDirs);
+                    List<File> dirs = new ArrayList<File>(inheritanceDirs.length-1);
+                    for (File toAdd : inheritanceDirs)
+                    {
+                        if (toAdd != inheritDir)
+                        {
+                            dirs.add(toAdd);
+                        }
+                    }
+
+                    Version parent = loadVersion(new File(inheritDir, v.inheritsFrom + ".json"), mcVersion, dirs.toArray(new File[dirs.size()]));
+                    v.extendFrom(parent);
+                    found = true;
+                    break;
+                }
+            }
+
+            // still didnt find the inherited
+            if (!found)
+            {
+                throw new FileNotFoundException("Inherited json file (" + v.inheritsFrom + ") not found! Maybe you are running in offline mode?");
+            }
+        }
+        else if (v.assetIndex == null) // inherit if the assetIndex is missing
+        {
+            boolean found = false;
+
+            for (File inheritDir : inheritanceDirs)
+            {
+                File parentFile = new File(inheritDir, mcVersion + ".json");
+
+                if (parentFile.exists())
+                {
+                    List<File> dirs = new ArrayList<File>(inheritanceDirs.length-1);
+                    for (File toAdd : inheritanceDirs)
+                    {
+                        if (toAdd != inheritDir)
+                        {
+                            dirs.add(toAdd);
+                        }
+                    }
+
+                    Version parent = loadVersion(new File(inheritDir, mcVersion + ".json"), mcVersion, dirs.toArray(new File[dirs.size()]));
                     v.extendFrom(parent);
                     found = true;
                     break;
@@ -104,12 +148,9 @@ public class JsonFactory
         return a;
     }
 
-    public static LiteLoaderJson loadLiteLoaderJson(File json) throws JsonSyntaxException, JsonIOException, IOException
+    public static LiteLoaderJson loadLiteLoaderJson(String json) throws JsonSyntaxException, JsonIOException
     {
-        FileReader reader = new FileReader(json);
-        LiteLoaderJson a = GSON.fromJson(reader, LiteLoaderJson.class);
-        reader.close();
-        return a;
+        return GSON.fromJson(json, LiteLoaderJson.class).addDefaultArtifacts();
     }
 
     public static Map<String, MCInjectorStruct> loadMCIJson(File json) throws IOException

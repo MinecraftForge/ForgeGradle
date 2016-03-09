@@ -3,6 +3,7 @@ package net.minecraftforge.gradle.util.json.version;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public class Version
 {
@@ -16,9 +17,10 @@ public class Version
     public String mainClass;
     public int minimumLauncherVersion;
     public String incompatibilityReason;
-    private String assets;
+    public AssetIndexRef assetIndex;
+    private Map<String, Download> downloads;
     public List<OSRule> rules;
-    
+
     private List<Library> _libraries;
 
     public List<Library> getLibraries()
@@ -37,27 +39,34 @@ public class Version
         }
         return _libraries;
     }
-    
-    public String getAssets()
+
+    public String getClientUrl()
     {
-        return assets == null ? "legacy" : assets;
+        return downloads.get("client").url;
     }
-    
+
+    public String getServerUrl()
+    {
+        return downloads.get("server").url;
+    }
+
     /**
      * Populates this instance with information from another version json.
      * @param version Version json to extend from
      */
     public void extendFrom(Version version)
     {
-        // strings. repalce if null.
+        // strings. replace if null.
         if (minecraftArguments == null)
             minecraftArguments = version.minecraftArguments;
         if (mainClass == null)
             mainClass = version.mainClass;
         if (incompatibilityReason == null)
             incompatibilityReason = version.incompatibilityReason;
-        if (assets == null)
-            assets = version.assets;
+        if (assetIndex == null)
+            assetIndex = version.assetIndex;
+        if (downloads == null)
+            downloads = version.downloads;
 
         // lists.  repalce if null, add if not.
         if (libraries == null)

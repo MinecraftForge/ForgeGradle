@@ -36,8 +36,6 @@ import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import net.minecraftforge.gradle.util.ZipFileTree;
-
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.FileVisitDetails;
@@ -102,7 +100,7 @@ public class SignJar extends DefaultTask implements PatternFilterable
         toSign.getParentFile().mkdirs();
         final JarOutputStream outs = new JarOutputStream(new BufferedOutputStream(new FileOutputStream(toSign)));
 
-        (new ZipFileTree(inputJar)).visit(new FileVisitor() {
+        getProject().zipTree(inputJar).visit(new FileVisitor() {
 
             @Override
             public void visitDir(FileVisitDetails details)

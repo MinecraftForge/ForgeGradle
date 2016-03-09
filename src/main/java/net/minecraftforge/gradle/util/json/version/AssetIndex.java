@@ -4,7 +4,7 @@ import java.util.Map;
 
 public class AssetIndex
 {
-    public boolean                 virtual;
+    public boolean virtual = false; // sane default
     public Map<String, AssetEntry> objects;
 
     public static class AssetEntry

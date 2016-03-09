@@ -729,7 +729,16 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                 // configure the patches to happen after remap
                 patch.dependsOn(remap);
                 patch.setInJar(delayedFile(projectString(JAR_PROJECT_REMAPPED, patcher)));
-                remap.setInJar(delayedFile(JAR_DECOMP_POST));
+                // configure patching input and injects
+                if (lastPatcher != null)
+                {
+                    remap.dependsOn(projectString(TASK_PROJECT_REMAP_JAR, lastPatcher));
+                    remap.setInJar(delayedFile(projectString(JAR_PROJECT_REMAPPED, lastPatcher)));
+                    patch.addInject(lastPatcher.getDelayedSourcesDir());
+                    patch.addInject(lastPatcher.getDelayedResourcesDir());
+                } else {
+                    remap.setInJar(delayedFile(JAR_DECOMP_POST));
+                }
 
                 // configure extract tasks to extract patched
                 Object patched = delayedFile(projectString(JAR_PROJECT_PATCHED, patcher));
@@ -743,22 +752,21 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
                 // configure the patches to happen AFTER remap
                 remap.dependsOn(patch);
-                patch.setInJar(delayedFile(JAR_DECOMP_POST));
                 remap.setInJar(delayedFile(projectString(JAR_PROJECT_PATCHED, patcher)));
+                // configure patching input and injects
+                if (lastPatcher != null)
+                {
+                    patch.dependsOn(projectString(TASK_PROJECT_PATCH, lastPatcher));
+                    patch.setInJar(delayedFile(projectString(JAR_PROJECT_PATCHED, lastPatcher)));
+                    patch.addInject(lastPatcher.getDelayedSourcesDir());
+                    patch.addInject(lastPatcher.getDelayedResourcesDir());
+                } else {
+                    patch.setInJar(delayedFile(JAR_DECOMP_POST));
+                }
 
                 Object remapped = delayedFile(projectString(JAR_PROJECT_REMAPPED, patcher));
                 ((ExtractTask) project.getTasks().getByName(projectString(TASK_PROJECT_EXTRACT_SRC, patcher))).from(remapped);
                 ((ExtractTask) project.getTasks().getByName(projectString(TASK_PROJECT_EXTRACT_RES, patcher))).from(remapped);
-            }
-
-            // configure patching input and injects
-            if (lastPatcher != null)
-            {
-                PatchSourcesTask patch = (PatchSourcesTask) project.getTasks().getByName(projectString(TASK_PROJECT_PATCH, patcher));
-                patch.dependsOn(projectString(TASK_PROJECT_PATCH, lastPatcher));
-                patch.setInJar(delayedFile(projectString(JAR_PROJECT_PATCHED, lastPatcher)));
-                patch.addInject(lastPatcher.getDelayedSourcesDir());
-                patch.addInject(lastPatcher.getDelayedResourcesDir());
             }
 
             // get EXCs and SRGs for retromapping
@@ -827,7 +835,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
                     else
                     {
                         PatcherProject genFrom = getExtension().getProjects().getByName(patcher.getGenPatchesFrom());
-                        genPatches.addOriginalSource(projectString(TASK_PROJECT_REMAP_JAR, patcher));
+                        genPatches.addOriginalSource(delayedFile(projectString(JAR_PROJECT_REMAPPED, patcher)));
                         genPatches.addOriginalSource(genFrom.getDelayedSourcesDir());
                     }
                 }

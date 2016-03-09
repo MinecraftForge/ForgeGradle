@@ -119,7 +119,6 @@ public abstract class UserVanillaBasePlugin<T extends UserBaseExtension> extends
     protected List<String> getClientRunArgs(T ext)
     {
         List<String> out = ext.getResolvedClientRunArgs();
-        out.add("--noCoreSearch");// disabel FML-specific coremod loading
         return out;
     }
 
@@ -127,7 +126,6 @@ public abstract class UserVanillaBasePlugin<T extends UserBaseExtension> extends
     protected List<String> getServerRunArgs(T ext)
     {
         List<String> out = ext.getResolvedServerRunArgs();
-        out.add("--noCoreSearch");// disable FML-specific coremod loading
         return out;
     }
 }

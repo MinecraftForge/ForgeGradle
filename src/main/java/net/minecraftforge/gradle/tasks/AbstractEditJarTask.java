@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
 import java.util.zip.ZipInputStream;
 
 import net.minecraftforge.gradle.common.Constants;
@@ -199,18 +200,25 @@ public abstract class AbstractEditJarTask extends CachedTask
             }
 
             // resources or directories.
-            if (entry.isDirectory() || !entry.getName().endsWith(".java"))
+            try
             {
-                zout.putNextEntry(new JarEntry(entry));
-                ByteStreams.copy(zin, zout);
-                zout.closeEntry();
+                if (entry.isDirectory() || !entry.getName().endsWith(".java"))
+                {
+                    zout.putNextEntry(new JarEntry(entry));
+                    ByteStreams.copy(zin, zout);
+                    zout.closeEntry();
+                }
+                else
+                {
+                    // source
+                    zout.putNextEntry(new JarEntry(entry.getName()));
+                    zout.write(asRead(entry.getName(), new String(ByteStreams.toByteArray(zin), Constants.CHARSET)).getBytes());
+                    zout.closeEntry();
+                }
             }
-            else
+            catch (ZipException ex)
             {
-                // source
-                zout.putNextEntry(new JarEntry(entry.getName()));
-                zout.write(asRead(entry.getName(), new String(ByteStreams.toByteArray(zin), Constants.CHARSET)).getBytes());
-                zout.closeEntry();
+                getLogger().debug("Duplicate zip entry " + entry.getName() + " in " + input + " writing " + output);
             }
         }
 
