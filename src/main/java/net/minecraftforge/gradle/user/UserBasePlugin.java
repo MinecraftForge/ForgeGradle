@@ -736,6 +736,19 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                 return getExtension().isUseDepAts();
             }
         });
+        extract.doLast(new Action<Task>() {
+            @Override public void execute(Task task)
+            {
+                DeobfuscateJar binDeobf = (DeobfuscateJar) task.getProject().getTasks().getByName(TASK_DEOBF_BIN);
+                DeobfuscateJar decompDeobf = (DeobfuscateJar) task.getProject().getTasks().getByName(TASK_DEOBF);
+
+                for (File file : task.getProject().fileTree(delayedFile(DIR_DEP_ATS)))
+                {
+                    binDeobf.addAt(file);
+                    decompDeobf.addAt(file);
+                }
+            }
+        });
 
         getExtension().atSource(delayedFile(DIR_DEP_ATS));
     }
@@ -909,7 +922,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         decompDeobf.addAts(extAts);
 
         // grab ATs from configured resource dirs
-        boolean addedAts = false;
+        boolean addedAts = getExtension().isUseDepAts();
 
         for (File at : getExtension().getResolvedAccessTransformerSources().filter(AT_SPEC).getFiles())
         {
