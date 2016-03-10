@@ -921,8 +921,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
             mappings.setSkipUnmappedConfs(true); // dont want unmapped confs bieng compile deps..
             mappings.addMapping(priority, configs.getByName(CONFIG_PROVIDED), Conf2ScopeMappingContainer.PROVIDED);
-            // TODO: more configs?
-            // TODO: UNTESTED
+            mappings.addMapping(priority, configs.getByName(CONFIG_DEOBF_COMPILE), Conf2ScopeMappingContainer.COMPILE);
+            mappings.addMapping(priority, configs.getByName(CONFIG_DEOBF_PROVIDED), Conf2ScopeMappingContainer.PROVIDED);
         }
     }
 
