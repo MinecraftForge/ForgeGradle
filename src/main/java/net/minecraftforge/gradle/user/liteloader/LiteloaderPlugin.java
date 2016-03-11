@@ -144,40 +144,41 @@ public class LiteloaderPlugin extends UserVanillaBasePlugin<LiteloaderExtension>
 
     private void applyDependenciesFromJson()
     {
+        final RepoObject repo = this.getRepo();
+        if (repo == null)
+        {
+            return;
+        }
+
         this.project.allprojects(new Action<Project>() {
             @Override
             public void execute(Project proj)
             {
-                RepoObject repo = LiteloaderPlugin.this.getRepo();
-                if (repo == null)
-                {
-                    return;
-                }
                 addMavenRepo(proj, MAVEN_REPO_NAME, repo.url);
-
-                Artifact artifact = LiteloaderPlugin.this.getArtifact();
-                if (artifact == null)
-                {
-                    return;
-                }
-                addDependency(proj, CONFIG_LL_DEOBF_COMPILE, artifact.getDepString(repo));
-
-                for (Map<String, String> library : artifact.getLibraries())
-                {
-                    String name = library.get("name");
-                    if (name != null && !name.isEmpty())
-                    {
-                        addDependency(proj, CONFIG_MC_DEPS, name);
-                    }
-
-                    String url = library.get("url");
-                    if (url != null && !url.isEmpty())
-                    {
-                        addMavenRepo(proj, url, url);
-                    }
-                }
             }
         });
+
+        Artifact artifact = this.getArtifact();
+        if (artifact == null)
+        {
+            return;
+        }
+        addDependency(this.project, CONFIG_LL_DEOBF_COMPILE, artifact.getDepString(repo));
+
+        for (Map<String, String> library : artifact.getLibraries())
+        {
+            String name = library.get("name");
+            if (name != null && !name.isEmpty())
+            {
+                addDependency(this.project, CONFIG_MC_DEPS, name);
+            }
+
+            String url = library.get("url");
+            if (url != null && !url.isEmpty())
+            {
+                addMavenRepo(this.project, url, url);
+            }
+        }
     }
 
     public VersionObject getVersion(String version)
