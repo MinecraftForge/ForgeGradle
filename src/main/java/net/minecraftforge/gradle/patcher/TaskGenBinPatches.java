@@ -88,12 +88,24 @@ class TaskGenBinPatches extends DefaultTask
     {
         loadMappings();
 
-        for (File patch : getPatchSets())
+        for (Object o : this.patchSets)
         {
-            String name = patch.getName().replace(".java.patch", "");
-            String obfName = srgMapping.get(name);
-            patchedFiles.add(obfName);
-            addInnerClasses(name, patchedFiles);
+            if (o instanceof File && ((File)o).isDirectory())
+            {
+                String base = ((File)o).getAbsolutePath();
+                for (File patch : getProject().fileTree(o))
+                {
+                    String path = patch.getAbsolutePath().replace(".java.patch", "");
+                    path = path.substring(base.length() + 1).replace('\\', '/');
+                    String obfName = srgMapping.get(path);
+                    patchedFiles.add(obfName);
+                    addInnerClasses(path, patchedFiles);
+                }
+            }
+            else
+            {
+                throw new RuntimeException("Unsuported patch set type: " + o);
+            }
         }
 
         HashMap<String, byte[]> runtime = new HashMap<String, byte[]>();
@@ -142,7 +154,7 @@ class TaskGenBinPatches extends DefaultTask
 
                 String[] parts = Iterables.toArray(splitter.split(line), String.class);
                 obfMapping.put(parts[1], parts[2]);
-                String srgName = parts[2].substring(parts[2].lastIndexOf('/') + 1);
+                String srgName = parts[2]; //.substring(parts[2].lastIndexOf('/') + 1);
                 srgMapping.put(srgName, parts[1]);
                 int innerDollar = srgName.lastIndexOf('$');
                 if (innerDollar > 0)
