@@ -1286,7 +1286,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             addXml(child, "option", ImmutableMap.of("name", "ENABLE_SWING_INSPECTOR", "value", "false"));
             addXml(child, "option", ImmutableMap.of("name", "ENV_VARIABLES"));
             addXml(child, "option", ImmutableMap.of("name", "PASS_PARENT_ENVS", "value", "true"));
-            addXml(child, "module", ImmutableMap.of("name", ((IdeaModel) project.getExtensions().getByName("idea")).getModule().getName()));
+            addXml(child, "module", ImmutableMap.of("name", ((IdeaModel) project.getExtensions().getByName("idea")).getModule().getName() + '_' + getExtension().getRunSourceSet().getName()));
             addXml(child, "RunnerSettings", ImmutableMap.of("RunnerId", "Run"));
             addXml(child, "ConfigurationWrapper", ImmutableMap.of("RunnerId", "Run"));
         }

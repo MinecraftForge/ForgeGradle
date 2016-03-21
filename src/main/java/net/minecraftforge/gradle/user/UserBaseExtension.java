@@ -48,6 +48,7 @@ public class UserBaseExtension extends BaseExtension
     private List<Object>            clientRunArgs    = Lists.newArrayList();
     private List<Object>            serverJvmArgs    = Lists.newArrayList();
     private List<Object>            serverRunArgs    = Lists.newArrayList();
+    private Object                  runSourceSet     = "main";
 
     public UserBaseExtension(UserBasePlugin<? extends UserBaseExtension> plugin)
     {
@@ -373,6 +374,14 @@ public class UserBaseExtension extends BaseExtension
         return resolve(getServerRunArgs());
     }
 
+    public SourceSet getRunSourceSet() {
+        return resolveSourceSet(this.runSourceSet);
+    }
+
+    public void setRunSourceSet(Object runSourceSet) {
+        this.runSourceSet = runSourceSet;
+    }
+
     /**
      * Set the run arguments for the server run config
      *
@@ -391,6 +400,19 @@ public class UserBaseExtension extends BaseExtension
             out.add(Constants.resolveString(o));
         }
         return out;
+    }
+
+    private SourceSet resolveSourceSet(Object obj) {
+        while (obj instanceof Closure)
+            obj = ((Closure<?>) obj).call();
+
+        if (obj instanceof SourceSet)
+            return (SourceSet) obj;
+        else {
+            String name = obj.toString();
+            JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+            return javaConv.getSourceSets().getByName(name);
+        }
     }
 
     private Object resolveFile(Object obj)
