@@ -347,60 +347,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     @SuppressWarnings("serial")
     private void makeCommonTasks()
     {
-        Download dlClient = makeTask(TASK_DL_CLIENT, Download.class);
-        {
-            dlClient.setOutput(delayedFile(JAR_CLIENT_FRESH));
-            dlClient.setUrl(new Closure<String>(null, null) {
-                @Override
-                public String call()
-                {
-                    return mcVersionJson.getClientUrl();
-                }
-            });
-        }
-
-        Download dlServer = makeTask(TASK_DL_SERVER, Download.class);
-        {
-            dlServer.setOutput(delayedFile(JAR_SERVER_FRESH));
-            dlServer.setUrl(new Closure<String>(null, null) {
-                @Override
-                public String call()
-                {
-                    return mcVersionJson.getServerUrl();
-                }
-            });
-        }
-        
-        SplitJarTask splitServer = makeTask(TASK_SPLIT_SERVER, SplitJarTask.class);
-        {
-            splitServer.setInJar(delayedFile(JAR_SERVER_FRESH));
-            splitServer.setOutFirst(delayedFile(JAR_SERVER_PURE));
-            splitServer.setOutSecond(delayedFile(JAR_SERVER_DEPS));
-            
-            splitServer.exclude("org/bouncycastle", "org/bouncycastle/*", "org/bouncycastle/**");
-            splitServer.exclude("org/apache", "org/apache/*", "org/apache/**");
-            splitServer.exclude("com/google", "com/google/*", "com/google/**");
-            splitServer.exclude("com/mojang/authlib", "com/mojang/authlib/*", "com/mojang/authlib/**");
-            splitServer.exclude("com/mojang/util", "com/mojang/util/*", "com/mojang/util/**");
-            splitServer.exclude("gnu/trove", "gnu/trove/*", "gnu/trove/**");
-            splitServer.exclude("io/netty", "io/netty/*", "io/netty/**");
-            splitServer.exclude("javax/annotation", "javax/annotation/*", "javax/annotation/**");
-            splitServer.exclude("argo", "argo/*", "argo/**");
-            
-            splitServer.dependsOn(dlServer);
-        }
-
-        MergeJars merge = makeTask(TASK_MERGE_JARS, MergeJars.class);
-        {
-            merge.setClient(delayedFile(JAR_CLIENT_FRESH));
-            merge.setServer(delayedFile(JAR_SERVER_PURE));
-            merge.setOutJar(delayedFile(JAR_MERGED));
-            merge.dependsOn(dlClient, splitServer);
-
-            merge.setGroup(null);
-            merge.setDescription(null);
-        }
-
         EtagDownloadTask getVersionJson = makeTask(TASK_DL_VERSION_JSON, EtagDownloadTask.class);
         {
             getVersionJson.setUrl(new Closure<String>(null, null) {
@@ -475,6 +421,64 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             getAssets.setAssetsDir(delayedFile(DIR_ASSETS));
             getAssets.setAssetsIndex(delayedFile(JSON_ASSET_INDEX));
             getAssets.dependsOn(getAssetsIndex);
+        }
+
+        Download dlClient = makeTask(TASK_DL_CLIENT, Download.class);
+        {
+            dlClient.setOutput(delayedFile(JAR_CLIENT_FRESH));
+            dlClient.setUrl(new Closure<String>(null, null) {
+                @Override
+                public String call()
+                {
+                    return mcVersionJson.getClientUrl();
+                }
+            });
+
+            dlClient.dependsOn(getVersionJson);
+        }
+
+        Download dlServer = makeTask(TASK_DL_SERVER, Download.class);
+        {
+            dlServer.setOutput(delayedFile(JAR_SERVER_FRESH));
+            dlServer.setUrl(new Closure<String>(null, null) {
+                @Override
+                public String call()
+                {
+                    return mcVersionJson.getServerUrl();
+                }
+            });
+
+            dlServer.dependsOn(getVersionJson);
+        }
+
+        SplitJarTask splitServer = makeTask(TASK_SPLIT_SERVER, SplitJarTask.class);
+        {
+            splitServer.setInJar(delayedFile(JAR_SERVER_FRESH));
+            splitServer.setOutFirst(delayedFile(JAR_SERVER_PURE));
+            splitServer.setOutSecond(delayedFile(JAR_SERVER_DEPS));
+
+            splitServer.exclude("org/bouncycastle", "org/bouncycastle/*", "org/bouncycastle/**");
+            splitServer.exclude("org/apache", "org/apache/*", "org/apache/**");
+            splitServer.exclude("com/google", "com/google/*", "com/google/**");
+            splitServer.exclude("com/mojang/authlib", "com/mojang/authlib/*", "com/mojang/authlib/**");
+            splitServer.exclude("com/mojang/util", "com/mojang/util/*", "com/mojang/util/**");
+            splitServer.exclude("gnu/trove", "gnu/trove/*", "gnu/trove/**");
+            splitServer.exclude("io/netty", "io/netty/*", "io/netty/**");
+            splitServer.exclude("javax/annotation", "javax/annotation/*", "javax/annotation/**");
+            splitServer.exclude("argo", "argo/*", "argo/**");
+
+            splitServer.dependsOn(dlServer);
+        }
+
+        MergeJars merge = makeTask(TASK_MERGE_JARS, MergeJars.class);
+        {
+            merge.setClient(delayedFile(JAR_CLIENT_FRESH));
+            merge.setServer(delayedFile(JAR_SERVER_PURE));
+            merge.setOutJar(delayedFile(JAR_MERGED));
+            merge.dependsOn(dlClient, splitServer);
+
+            merge.setGroup(null);
+            merge.setDescription(null);
         }
 
         ExtractConfigTask extractMcpData = makeTask(TASK_EXTRACT_MCP, ExtractConfigTask.class);
