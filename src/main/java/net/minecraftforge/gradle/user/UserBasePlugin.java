@@ -159,15 +159,6 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         configureRetromapping();
         makeRunTasks();
 
-        // use zinc for scala compilation
-        project.getTasks().withType(ScalaCompile.class, new Action<ScalaCompile>() {
-            @Override
-            public void execute(ScalaCompile t)
-            {
-                t.getScalaCompileOptions().setUseAnt(false);
-            }
-        });
-
         // IDE stuff
         configureEclipse();
         configureIntellij();
