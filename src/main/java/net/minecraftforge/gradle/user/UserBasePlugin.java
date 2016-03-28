@@ -160,15 +160,6 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         configureRetromapping();
         makeRunTasks();
 
-        // use zinc for scala compilation
-        project.getTasks().withType(ScalaCompile.class, new Action<ScalaCompile>() {
-            @Override
-            public void execute(ScalaCompile t)
-            {
-                t.getScalaCompileOptions().setUseAnt(false);
-            }
-        });
-
         // IDE stuff
         configureEclipse();
         configureIntellij();
@@ -920,8 +911,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
             mappings.setSkipUnmappedConfs(true); // dont want unmapped confs bieng compile deps..
             mappings.addMapping(priority, configs.getByName(CONFIG_PROVIDED), Conf2ScopeMappingContainer.PROVIDED);
-            // TODO: more configs?
-            // TODO: UNTESTED
+            mappings.addMapping(priority, configs.getByName(CONFIG_DEOBF_COMPILE), Conf2ScopeMappingContainer.COMPILE);
+            mappings.addMapping(priority, configs.getByName(CONFIG_DEOBF_PROVIDED), Conf2ScopeMappingContainer.PROVIDED);
         }
     }
 
