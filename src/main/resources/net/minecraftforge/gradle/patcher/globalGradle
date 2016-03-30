@@ -22,6 +22,7 @@ subprojects {
 @@dependencies@@
     }
 
+    sourceCompatibility = targetCompatibility = "@@javaLevel@@" // Need this here so eclipse task generates correctly.
     compileJava {
         sourceCompatibility = targetCompatibility = "@@javaLevel@@"
     }
