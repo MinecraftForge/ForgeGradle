@@ -27,7 +27,9 @@ import org.gradle.api.AntBuilder;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.internal.ClosureBackedAction;
+import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -48,6 +50,23 @@ public class LiteModTask extends DefaultTask
     public LiteModTask()
     {
         this.setFileName("litemod.json");
+        // only do this if there isn't a litemod.json in main
+        // XXX: adding litemod.json later requires clean
+        this.onlyIf(new Spec<Task> () {
+            @Override
+            public boolean isSatisfiedBy(Task arg0)
+            {
+                JavaPluginConvention java = ((JavaPluginConvention)getProject().getConvention().getPlugins().get("java"));
+                SourceDirectorySet resources = java.getSourceSets().getByName("main").getResources();
+                return resources.filter(new Spec<File>() {
+                    @Override
+                    public boolean isSatisfiedBy(File arg0)
+                    {
+                        return arg0.getName().equals("litemod.json");
+                    }
+                }).isEmpty();
+            }
+        });
         this.getOutputs().upToDateWhen(new Spec<Task>()
         {
             @Override
