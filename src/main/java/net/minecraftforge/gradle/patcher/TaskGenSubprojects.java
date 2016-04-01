@@ -68,7 +68,7 @@ class TaskGenSubprojects extends DefaultTask
     {
         File workspace = getWorkspaceDir();
         workspace.mkdirs();
-        
+
         // make run dir just in case
         new File(workspace, "run").mkdirs();
 
@@ -86,63 +86,53 @@ class TaskGenSubprojects extends DefaultTask
 
     private void generateRootBuild(File output) throws IOException
     {
-        int repoStart, repoEnd;
-        int depStart, depEnd;
-        int jLevelStart, jLevelEnd;
-
-        {
-            int startIndex = resource.indexOf("@@");
-            int endIndex = resource.indexOf("@@", startIndex+2);
-            
-            //System.out.println("start: "+startIndex + "    end: "+endIndex);
-
-            repoStart = startIndex;
-            repoEnd = endIndex + 3; // account for the ending newline and @@
-
-            startIndex = resource.indexOf("@@", endIndex+2);
-            endIndex = resource.indexOf("@@", startIndex+2);
-            
-            //System.out.println("start: "+startIndex + "    end: "+endIndex);
-
-            depStart = startIndex;
-            depEnd = endIndex + 3; // account for the ending newline and @@
-
-            startIndex = resource.indexOf("@@", endIndex+2);
-            endIndex = resource.indexOf("@@", startIndex+2);
-            
-            //System.out.println("start: "+startIndex + "    end: "+endIndex);
-
-            jLevelStart = startIndex;
-            jLevelEnd = endIndex + 2; // keep the line ending this time, only account for @@
-        }
-
         StringBuilder builder = new StringBuilder();
-
-        builder.append(resource.subSequence(0, repoStart));
-
-        // repositories
-        for (Repo repo : repositories)
+        int start = 0;
+        int end = 0;
+        while ((start = resource.indexOf("@@", end)) != -1)
         {
-            lines(builder, 2,
-                    "maven {",
-                    "    name '" + repo.name + "'",
-                    "    url '" + repo.url + "'",
-                    "}");
+            builder.append(resource.subSequence(end, start));
+            end = resource.indexOf("@@", start + 2);
+            if (end == -1)
+            {
+                builder.append(resource.subSequence(start, resource.length()));
+            }
+            else
+            {
+                String id = resource.substring(start + 2, end);
+                end += 2;
+
+                if ("repositories".equals(id))
+                {
+                    for (Repo repo : repositories)
+                    {
+                        lines(builder, 2,
+                                "maven {",
+                                "    name '" + repo.name + "'",
+                                "    url '" + repo.url + "'",
+                                "}");
+                    }
+                }
+                else if ("dependencies".equals(id))
+                {
+                    for (String dep : dependencies)
+                    {
+                        append(builder, INDENT, INDENT, dep, NEWLINE);
+                    }
+                }
+                else if ("javaLevel".equals(id))
+                {
+                    builder.append(getJavaLevel());
+                }
+                else
+                {
+                    this.getProject().getLogger().lifecycle("Unknown subproject key: " + id);
+                }
+            }
         }
 
-        builder.append(resource.subSequence(repoEnd, depStart));
-
-        // dependencies
-        for (String dep : dependencies)
-        {
-            append(builder, INDENT, INDENT, dep, NEWLINE);
-        }
-
-        builder.append(resource.subSequence(depEnd, jLevelStart));
-        
-        builder.append(getJavaLevel());
-        
-        builder.append(resource.subSequence(jLevelEnd, resource.length()));
+        if (end != -1)
+            builder.append(resource.subSequence(end, resource.length()));
 
         Files.write(builder.toString(), output, Constants.CHARSET);
     }
@@ -168,7 +158,7 @@ class TaskGenSubprojects extends DefaultTask
         File testRes = project.getExternalTestResDir();
 
         // @formatter:off
-        
+
         // why use relatvie paths? so the eclipse hack below can work correctly.
         // add extra sourceDirs
         append(builder, "sourceSets {", NEWLINE);
