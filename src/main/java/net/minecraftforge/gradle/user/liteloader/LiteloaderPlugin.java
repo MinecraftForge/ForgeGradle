@@ -34,6 +34,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.java.archives.Attributes;
+import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.jvm.tasks.Jar;
 
@@ -88,7 +89,13 @@ public class LiteloaderPlugin extends UserVanillaBasePlugin<LiteloaderExtension>
         final Jar sourceJar = (Jar)tasks.getByName("sourceJar");
         sourceJar.setBaseName(baseName);
         
-        makeTask(TASK_LITEMOD, LiteModTask.class);
+        final LiteModTask litemod = makeTask(TASK_LITEMOD, LiteModTask.class);
+
+        // make sure litemod.json is generated and added to the jar
+        Copy processResources = (Copy) tasks.getByName("processResources");
+        processResources.dependsOn(litemod);
+        processResources.from(litemod.getOutput());
+
     }
 
     @Override
@@ -144,40 +151,41 @@ public class LiteloaderPlugin extends UserVanillaBasePlugin<LiteloaderExtension>
     
     private void applyDependenciesFromJson()
     {
+        final RepoObject repo = this.getRepo();
+        if (repo == null)
+        {
+            return;
+        }
+        
         this.project.allprojects(new Action<Project>() {
             @Override
             public void execute(Project proj)
             {
-                RepoObject repo = LiteloaderPlugin.this.getRepo();
-                if (repo == null)
-                {
-                    return;
-                }
                 addMavenRepo(proj, MAVEN_REPO_NAME, repo.url);
-                
-                Artifact artifact = LiteloaderPlugin.this.getArtifact();
-                if (artifact == null)
-                {
-                    return;
-                }
-                addDependency(proj, CONFIG_LL_DEOBF_COMPILE, artifact.getDepString(repo));
-                
-                for (Map<String, String> library : artifact.getLibraries())
-                {
-                    String name = library.get("name");
-                    if (name != null && !name.isEmpty())
-                    {
-                        addDependency(proj, CONFIG_MC_DEPS, name);
-                    }
-                    
-                    String url = library.get("url");
-                    if (url != null && !url.isEmpty())
-                    {
-                        addMavenRepo(proj, url, url);
-                    }
-                }
             }
         });
+
+        Artifact artifact = this.getArtifact();
+        if (artifact == null)
+        {
+            return;
+        }
+        addDependency(this.project, CONFIG_LL_DEOBF_COMPILE, artifact.getDepString(repo));
+        
+        for (Map<String, String> library : artifact.getLibraries())
+        {
+            String name = library.get("name");
+            if (name != null && !name.isEmpty())
+            {
+                addDependency(this.project, CONFIG_MC_DEPS, name);
+            }
+            
+            String url = library.get("url");
+            if (url != null && !url.isEmpty())
+            {
+                addMavenRepo(this.project, url, url);
+            }
+        }
     }
 
     public VersionObject getVersion(String version)

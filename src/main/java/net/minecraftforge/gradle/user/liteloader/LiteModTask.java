@@ -19,22 +19,22 @@
  */
 package net.minecraftforge.gradle.user.liteloader;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
-import groovy.lang.Closure;
+import java.io.File;
+import java.io.IOException;
+
 import org.apache.tools.ant.taskdefs.BuildNumber;
 import org.gradle.api.AntBuilder;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.internal.ClosureBackedAction;
+import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Properties;
+import groovy.lang.Closure;
 
 public class LiteModTask extends DefaultTask
 {
@@ -50,6 +50,23 @@ public class LiteModTask extends DefaultTask
     public LiteModTask()
     {
         this.setFileName("litemod.json");
+        // only do this if there isn't a litemod.json in main
+        // XXX: adding litemod.json later requires clean
+        this.onlyIf(new Spec<Task> () {
+            @Override
+            public boolean isSatisfiedBy(Task arg0)
+            {
+                JavaPluginConvention java = ((JavaPluginConvention)getProject().getConvention().getPlugins().get("java"));
+                SourceDirectorySet resources = java.getSourceSets().getByName("main").getResources();
+                return resources.filter(new Spec<File>() {
+                    @Override
+                    public boolean isSatisfiedBy(File arg0)
+                    {
+                        return arg0.getName().equals("litemod.json");
+                    }
+                }).isEmpty();
+            }
+        });
         this.getOutputs().upToDateWhen(new Spec<Task>()
         {
             @Override
@@ -63,9 +80,14 @@ public class LiteModTask extends DefaultTask
     @TaskAction
     public void doTask() throws IOException
     {
+        LiteModJson json = LiteModTask.this.getJson();
+        if (json.revision == null)
+        {
+            json.setRevision(getBuildNumber());
+        }
         File outputFile = this.getOutput();
         outputFile.delete();
-        this.getJson().toJsonFile(outputFile);
+        json.toJsonFile(outputFile);
     }
     
     public Object getFileName()
@@ -93,10 +115,9 @@ public class LiteModTask extends DefaultTask
         {
             Project project = this.getProject();
             String version = project.getExtensions().findByType(LiteloaderExtension.class).getVersion();
-            String revision = this.getBuildNumber();
-            this.json = new LiteModJson(project, version, revision);
+            this.json = new LiteModJson(project, version);
         }
-        
+
         return this.json;
     }
     
@@ -111,14 +132,12 @@ public class LiteModTask extends DefaultTask
         {
             AntBuilder ant = getProject().getAnt();
 
-            File buildNumberFile = new File(this.getTemporaryDir(), "build.number");  
+            File buildNumberFile = new File("build.number");
             BuildNumber buildNumber = (BuildNumber)ant.invokeMethod("buildnumber");
             buildNumber.setFile(buildNumberFile);
             buildNumber.execute();
             
-            Properties props = new Properties();
-            props.load(Files.newReader(buildNumberFile, Charsets.ISO_8859_1));
-            this.buildNumber = props.getProperty("build.number");
+            this.buildNumber = ant.getAntProject().getProperty("build.number");
         }
         
         return this.buildNumber;
