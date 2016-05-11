@@ -116,6 +116,21 @@ public abstract class AbstractEditJarTask extends CachedTask
     public abstract void doStuffAfter() throws Exception;
 
     /**
+     * Called immediately after every file is written to the jar.
+     * @param jarOut The jar output stream
+     * @param entryName The path to the file in the jar
+     * @throws IOException IOException
+     */
+    protected void postWriteEntry(JarOutputStream jarOut, String entryName) throws IOException {}
+
+    /**
+     * Called after all entries have been written to the jar. This can be useful for adding any additional entries
+     * @param jarOut The jar output stream
+     * @throws IOException IOException
+     */
+    protected void postWrite(JarOutputStream jarOut) throws IOException {}
+
+    /**
      * Whether to store the contents of the jar in RAM.
      * If this returns false, then the doStuffMiddle method is not called.
      * @return store jar in ram
@@ -159,7 +174,7 @@ public abstract class AbstractEditJarTask extends CachedTask
         zin.close();
     }
 
-    protected static void saveJar(File output, Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws IOException
+    protected void saveJar(File output, Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws IOException
     {
         output.getParentFile().mkdirs();
 
@@ -171,6 +186,7 @@ public abstract class AbstractEditJarTask extends CachedTask
             zout.putNextEntry(new JarEntry(entry.getKey()));
             zout.write(entry.getValue());
             zout.closeEntry();
+            postWriteEntry(zout, entry.getKey());
         }
 
         // write in sources
@@ -179,7 +195,10 @@ public abstract class AbstractEditJarTask extends CachedTask
             zout.putNextEntry(new JarEntry(entry.getKey()));
             zout.write(entry.getValue().getBytes());
             zout.closeEntry();
+            postWriteEntry(zout, entry.getKey());
         }
+
+        postWrite(zout);
 
         zout.close();
     }
@@ -207,6 +226,7 @@ public abstract class AbstractEditJarTask extends CachedTask
                     zout.putNextEntry(new JarEntry(entry));
                     ByteStreams.copy(zin, zout);
                     zout.closeEntry();
+                    postWriteEntry(zout, entry.getName());
                 }
                 else
                 {
@@ -214,6 +234,7 @@ public abstract class AbstractEditJarTask extends CachedTask
                     zout.putNextEntry(new JarEntry(entry.getName()));
                     zout.write(asRead(entry.getName(), new String(ByteStreams.toByteArray(zin), Constants.CHARSET)).getBytes());
                     zout.closeEntry();
+                    postWriteEntry(zout, entry.getName());
                 }
             }
             catch (ZipException ex)
@@ -221,6 +242,8 @@ public abstract class AbstractEditJarTask extends CachedTask
                 getLogger().debug("Duplicate zip entry " + entry.getName() + " in " + input + " writing " + output);
             }
         }
+
+        postWrite(zout);
 
         zout.close();
         zin.close();

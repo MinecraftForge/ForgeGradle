@@ -429,6 +429,17 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                 }
 
                 afterDecomp(isDecomp, useLocalCache(getExtension()), CONFIG_MC);
+
+                // Yay more version hardcoding -.- These are the Minecraft versions that the current version of ForgeGradle
+                // supports that don't have the @Nullable annotations from Mojang. We only want to enable package-info.java
+                // generation for the versions with the @Nullable annotations
+                final String mcVersion = getExtension().getVersion();
+                if (!"1.8.8".equals(mcVersion) &&
+                        !"1.8.9".equals(mcVersion) &&
+                        !"1.9".equals(mcVersion) &&
+                        !"1.9.2".equals(mcVersion)) {
+                    postDecomp.setGeneratePackageInfos(true);
+                }
             }
         });
     }
