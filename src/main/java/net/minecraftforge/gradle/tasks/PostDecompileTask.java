@@ -20,6 +20,7 @@
 package net.minecraftforge.gradle.tasks;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -28,12 +29,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
 import java.util.regex.Pattern;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.mcp.FFPatcher;
-import net.minecraftforge.gradle.util.mcp.FmlCleanup;
 import net.minecraftforge.gradle.util.mcp.GLConstantFixer;
 import net.minecraftforge.gradle.util.mcp.McpCleanup;
 import net.minecraftforge.gradle.util.patching.ContextualPatch;
@@ -41,9 +44,12 @@ import net.minecraftforge.gradle.util.patching.ContextualPatch.HunkReport;
 import net.minecraftforge.gradle.util.patching.ContextualPatch.PatchReport;
 import net.minecraftforge.gradle.util.patching.ContextualPatch.PatchStatus;
 
+import com.google.common.collect.Sets;
+import com.google.common.io.ByteStreams;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.logging.Logger;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
@@ -67,6 +73,9 @@ public class PostDecompileTask extends AbstractEditJarTask
     @InputFile
     private Object                       astyleConfig;
 
+    @Input
+    private boolean                      generatePackageInfos = false;
+
     @OutputFile
     @Cached
     private Object                       outJar;
@@ -74,6 +83,25 @@ public class PostDecompileTask extends AbstractEditJarTask
     private static final Pattern         BEFORE      = Pattern.compile("(?m)((case|default).+(?:\\r\\n|\\r|\\n))(?:\\r\\n|\\r|\\n)");
     private static final Pattern         AFTER       = Pattern.compile("(?m)(?:\\r\\n|\\r|\\n)((?:\\r\\n|\\r|\\n)[ \\t]+(case|default))");
 
+    private static final String PACKAGE_INFO_TEMPLATE;
+    static {
+        try {
+            PACKAGE_INFO_TEMPLATE = new String(ByteStreams.toByteArray(PostDecompileTask.class.getResourceAsStream("nonnull-package-info.java.txt")));
+        } catch (IOException e) {
+            throw new Error(e);
+        }
+    }
+
+    private static final String METHODS_NONNULL_ANNOTATION;
+    static {
+        try {
+            METHODS_NONNULL_ANNOTATION = new String(ByteStreams.toByteArray(PostDecompileTask.class.getResourceAsStream("MethodsReturnNonnullByDefault.java.txt")));
+        } catch (IOException e) {
+            throw new Error(e);
+        }
+    }
+
+    private final Set<String> seenPackages = Sets.newHashSet();
     private final Multimap<String, File> patchesMap  = ArrayListMultimap.create();
     private final List<PatchAttempt>      patchErrors = Lists.newArrayList();
     private final ASFormatter            formatter   = new ASFormatter();
@@ -211,6 +239,37 @@ public class PostDecompileTask extends AbstractEditJarTask
         }
     }
 
+    @Override
+    protected void postWriteEntry(final JarOutputStream jarOut, final String entryName) throws IOException
+    {
+        if (!generatePackageInfos)
+            return;
+
+        if (entryName.startsWith("net/minecraft/") && entryName.endsWith(".java"))
+        {
+            String pkg = entryName.substring(0, entryName.lastIndexOf('/'));
+            if (!seenPackages.contains(pkg))
+            {
+                seenPackages.add(pkg);
+                jarOut.putNextEntry(new JarEntry(pkg + "/package-info.java"));
+                jarOut.write(PACKAGE_INFO_TEMPLATE.replace("@@PACKAGE@@", pkg.replace('/', '.')).getBytes(Constants.CHARSET));
+                jarOut.closeEntry();
+            }
+        }
+    }
+
+    @Override
+    protected void postWrite(final JarOutputStream jarOut) throws IOException
+    {
+        if (!generatePackageInfos)
+            return;
+
+        // Write the NonnullByDefault annotation
+        jarOut.putNextEntry(new JarEntry("mcp/MethodsReturnNonnullByDefault.java"));
+        jarOut.write(METHODS_NONNULL_ANNOTATION.getBytes(Constants.CHARSET));
+        jarOut.closeEntry();
+    }
+
     private static ContextualPatch findPatch(Collection<File> files, ContextProvider provider, Logger logger) throws Exception
     {
         ContextualPatch patch = null;
@@ -304,5 +363,15 @@ public class PostDecompileTask extends AbstractEditJarTask
     protected boolean storeJarInRam()
     {
         return false;
+    }
+
+    public boolean isGeneratePackageInfos()
+    {
+        return generatePackageInfos;
+    }
+
+    public void setGeneratePackageInfos(final boolean generatePackageInfos)
+    {
+        this.generatePackageInfos = generatePackageInfos;
     }
 }
