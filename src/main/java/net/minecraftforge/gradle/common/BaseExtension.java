@@ -259,17 +259,17 @@ public abstract class BaseExtension
 
         // check if it exists
         Map<String, int[]> versionMap = mcpJson.get(version);
-        if (versionMap == null)
-            throw new GradleConfigurationException("There are no mappings for MC " + version);
-
         String channel = getMappingsChannelNoSubtype();
-        int[] channelList = versionMap.get(channel);
-        if (channelList == null)
-            throw new GradleConfigurationException("There is no such MCP mapping channel named " + channel);
+        if (versionMap != null)
+        {
+            int[] channelList = versionMap.get(channel);
+            if (channelList == null)
+                throw new GradleConfigurationException("There is no such MCP mapping channel named " + channel);
 
-        // all is well with the world
-        if (searchArray(channelList, mappingsVersion))
-            return;
+            // all is well with the world
+            if (searchArray(channelList, mappingsVersion))
+                return;
+        }
 
         // if it gets here.. it wasnt found. Now we try to actually find it..
         for (Entry<String, Map<String, int[]>> mcEntry : mcpJson.entrySet())
