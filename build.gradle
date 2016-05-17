@@ -18,8 +18,8 @@ apply plugin: "com.gradle.plugin-publish"
 apply plugin: 'license'
 
 group = 'net.minecraftforge.gradle'
-version = '2.1-SNAPSHOT'
-//version = '2.1.1'
+version = '2.2-SNAPSHOT'
+//version = '2.2.1'
 archivesBaseName = 'ForgeGradle'
 targetCompatibility = '1.6'
 sourceCompatibility = '1.6'
@@ -86,7 +86,7 @@ dependencies {
     // mcp stuff
     shade 'de.oceanlabs.mcp:RetroGuard:3.6.6'
     shade 'de.oceanlabs.mcp:mcinjector:3.4-SNAPSHOT'
-    shade 'net.minecraftforge.srg2source:Srg2Source:3.3-SNAPSHOT'
+    shade 'net.minecraftforge.srg2source:Srg2Source:4.0-SNAPSHOT'
 
     //Stuff used in the GradleStart classes
     compileOnly 'com.mojang:authlib:1.5.16'
@@ -102,7 +102,7 @@ sourceSets {
 
 compileJava {
 	options.deprecation = true
-	options.compilerArgs += ["-Werror"]
+	//options.compilerArgs += ["-Werror"]
 	//options.compilerArgs += ["-Werror", "-Xlint:unchecked"]
 }
 
