@@ -388,6 +388,13 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                         {
                             parseAndStoreVersion(json, json.getParentFile());
                         }
+
+                        //TODO: Find a better way to do this but lets hack this together like I asked Abrar to do years ago -.-
+                        File jsondir = new File(BasePlugin.this.project.getProjectDir(), "jsons");
+                        if (jsondir.isDirectory()) // If the file exists this is a forge workspace, lets assume we're caching it.
+                        {
+                            Files.write(buf.toString().getBytes(Charsets.UTF_8), delayedFile("jsons/" + Constants.REPLACE_MC_VERSION + ".json").call());
+                        }
                     }
                     catch (Throwable t)
                     {
@@ -471,6 +478,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             splitServer.exclude("io/netty", "io/netty/*", "io/netty/**");
             splitServer.exclude("javax/annotation", "javax/annotation/*", "javax/annotation/**");
             splitServer.exclude("argo", "argo/*", "argo/**");
+            splitServer.exclude("it", "it/*", "it/**");
 
             splitServer.dependsOn(dlServer);
         }
