@@ -171,6 +171,7 @@ public class Constants
     public static final String MCP_PATCHES_CLIENT = DIR_MCP_DATA + "/patches/minecraft_ff";
     public static final String MCP_PATCHES_SERVER = DIR_MCP_DATA + "/patches/minecraft_server_ff";
     public static final String MCP_PATCHES_MERGED = DIR_MCP_DATA + "/patches/minecraft_merged_ff";
+    public static final String MCP_INJECT         = DIR_MCP_DATA + "/patches/inject";
 
     // generated off of MCP data constants
     public static final String CSV_METHOD       = DIR_MCP_MAPPINGS + "/methods.csv";

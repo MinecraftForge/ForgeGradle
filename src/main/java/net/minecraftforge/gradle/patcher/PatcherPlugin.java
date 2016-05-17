@@ -132,6 +132,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             postDecompileJar.setInJar(delayedFile(JAR_DECOMP));
             postDecompileJar.setOutJar(delayedFile(JAR_DECOMP_POST));
             postDecompileJar.setPatches(delayedFile(MCP_PATCHES_MERGED));
+            postDecompileJar.setInjects(delayedFile(MCP_INJECT));
             postDecompileJar.setAstyleConfig(delayedFile(MCP_DATA_STYLE));
             postDecompileJar.setDoesCache(false);
             postDecompileJar.dependsOn(decompileJar);

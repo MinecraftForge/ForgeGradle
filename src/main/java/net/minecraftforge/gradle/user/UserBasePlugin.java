@@ -292,7 +292,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
     }
 
     @SuppressWarnings("unchecked")
-	protected void makeDecompTasks(final String globalPattern, final String localPattern, Object inputJar, String inputTask, Object mcpPatchSet)
+    protected void makeDecompTasks(final String globalPattern, final String localPattern, Object inputJar, String inputTask, Object mcpPatchSet, Object mcpInject)
     {
         madeDecompTasks = true; // to guard against stupid programmers
 
@@ -339,6 +339,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             postDecomp.setInJar(decompJar);
             postDecomp.setOutJar(postDecompJar);
             postDecomp.setPatches(mcpPatchSet);
+            postDecomp.setInjects(mcpInject);
             postDecomp.setAstyleConfig(delayedFile(MCP_DATA_STYLE));
             postDecomp.dependsOn(decompile);
         }
@@ -712,7 +713,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         baseDir + "/" + group.replace('.', '/') + "/" + name + "/" + version + "/" +
                 name + "-" + version + (Strings.isNullOrEmpty(classifier) ? "" : "-" + classifier) + ".jar");
     }
-    
+
     protected void doDepAtExtraction()
     {
         TaskExtractDepAts extract = makeTask(TASK_EXTRACT_DEP_ATS, TaskExtractDepAts.class);

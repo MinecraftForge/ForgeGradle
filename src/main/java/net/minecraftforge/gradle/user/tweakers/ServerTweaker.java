@@ -49,7 +49,7 @@ public class ServerTweaker extends TweakerPlugin
     @Override
     protected void createDecompTasks(String globalPattern, String localPattern)
     {
-        super.makeDecompTasks(globalPattern, localPattern, delayedFile(JAR_SERVER_PURE), TASK_SPLIT_SERVER, delayedFile(MCP_PATCHES_SERVER));
+        super.makeDecompTasks(globalPattern, localPattern, delayedFile(JAR_SERVER_PURE), TASK_SPLIT_SERVER, delayedFile(MCP_PATCHES_SERVER), delayedFile(MCP_INJECT));
     }
 
     @Override

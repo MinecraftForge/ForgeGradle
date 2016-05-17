@@ -20,6 +20,7 @@
 package net.minecraftforge.gradle.tasks;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -28,10 +29,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.jar.JarOutputStream;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.caching.Cached;
+import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import net.minecraftforge.gradle.util.mcp.FFPatcher;
 import net.minecraftforge.gradle.util.mcp.FmlCleanup;
 import net.minecraftforge.gradle.util.mcp.GLConstantFixer;
@@ -50,12 +55,15 @@ import org.gradle.api.tasks.OutputFile;
 
 import com.github.abrarsyed.jastyle.ASFormatter;
 import com.github.abrarsyed.jastyle.OptParser;
+import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import com.google.common.io.Files;
+import com.google.common.io.Resources;
 
 public class PostDecompileTask extends AbstractEditJarTask
 {
@@ -63,6 +71,7 @@ public class PostDecompileTask extends AbstractEditJarTask
     private Object                       inJar;
 
     private Object                       patchDir;
+    private Object                       injectDir;
 
     @InputFile
     private Object                       astyleConfig;
@@ -74,8 +83,9 @@ public class PostDecompileTask extends AbstractEditJarTask
     private static final Pattern         BEFORE      = Pattern.compile("(?m)((case|default).+(?:\\r\\n|\\r|\\n))(?:\\r\\n|\\r|\\n)");
     private static final Pattern         AFTER       = Pattern.compile("(?m)(?:\\r\\n|\\r|\\n)((?:\\r\\n|\\r|\\n)[ \\t]+(case|default))");
 
+    private final Set<String>            seenPackages = Sets.newHashSet();
     private final Multimap<String, File> patchesMap  = ArrayListMultimap.create();
-    private final List<PatchAttempt>      patchErrors = Lists.newArrayList();
+    private final List<PatchAttempt>     patchErrors = Lists.newArrayList();
     private final ASFormatter            formatter   = new ASFormatter();
     private GLConstantFixer              oglFixer;
 
@@ -157,6 +167,42 @@ public class PostDecompileTask extends AbstractEditJarTask
 //        file = FmlCleanup.renameClass(file);
 
         return file;
+    }
+
+    @Override
+    protected void postWriteEntry(JarOutputStream jarOut, String entryName) throws IOException
+    {
+        if (entryName.startsWith("net/minecraft/") && entryName.endsWith(".java"))
+            this.seenPackages.add(entryName.substring(0, entryName.lastIndexOf('/')));
+    }
+
+    @Override
+    protected void postWrite(JarOutputStream jarOut) throws IOException
+    {
+        File file = ((DelayedFile)this.injectDir).call();
+        File info = new File(file, "package-info-template.java");
+        if (info.exists())
+        {
+            String template = Resources.toString(info.toURI().toURL(), Charsets.UTF_8);
+            getLogger().debug("Adding package-infos");
+            for (String pkg : this.seenPackages)
+            {
+                jarOut.putNextEntry(new ZipEntry(pkg + "/package-info.java"));
+                jarOut.write(template.replaceAll("\\{PACKAGE\\}", pkg.replace('/', '.')).getBytes());
+                jarOut.closeEntry();
+            }
+        }
+        File common = new File(file, "common/");
+        if (common.isDirectory())
+        {
+            for (File f : this.getProject().fileTree(common))
+            {
+                String name = f.getAbsolutePath().substring(common.getAbsolutePath().length() + 1);
+                jarOut.putNextEntry(new ZipEntry(name));
+                jarOut.write(Resources.toByteArray(f.toURI().toURL()));
+                jarOut.closeEntry();
+            }
+        }
     }
 
     @Override
@@ -260,6 +306,17 @@ public class PostDecompileTask extends AbstractEditJarTask
     public void setPatches(Object patchesDir)
     {
         this.patchDir = patchesDir;
+    }
+
+    @InputFiles
+    public FileCollection getInjects()
+    {
+        return getProject().fileTree(injectDir);
+    }
+
+    public void setInjects(Object injectDir)
+    {
+        this.injectDir = injectDir;
     }
 
     /**

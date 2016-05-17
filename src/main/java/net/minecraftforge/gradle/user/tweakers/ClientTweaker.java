@@ -20,6 +20,7 @@
 package net.minecraftforge.gradle.user.tweakers;
 
 import static net.minecraftforge.gradle.common.Constants.JAR_CLIENT_FRESH;
+import static net.minecraftforge.gradle.common.Constants.MCP_INJECT;
 import static net.minecraftforge.gradle.common.Constants.MCP_PATCHES_CLIENT;
 import static net.minecraftforge.gradle.common.Constants.TASK_DL_CLIENT;
 
@@ -34,7 +35,7 @@ public class ClientTweaker extends TweakerPlugin
     @Override
     protected void createDecompTasks(String globalPattern, String localPattern)
     {
-        super.makeDecompTasks(globalPattern, localPattern, delayedFile(JAR_CLIENT_FRESH), TASK_DL_CLIENT, delayedFile(MCP_PATCHES_CLIENT));
+        super.makeDecompTasks(globalPattern, localPattern, delayedFile(JAR_CLIENT_FRESH), TASK_DL_CLIENT, delayedFile(MCP_PATCHES_CLIENT), delayedFile(MCP_INJECT));
     }
 
     @Override

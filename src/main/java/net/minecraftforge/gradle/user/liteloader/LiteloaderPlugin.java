@@ -49,13 +49,13 @@ public class LiteloaderPlugin extends UserVanillaBasePlugin<LiteloaderExtension>
 
     public static final String MODFILE_PREFIX = "mod-";
     public static final String MODFILE_EXTENSION = "litemod";
-    
+
     public static final String VERSION_JSON_URL = "http://dl.liteloader.com/versions/versions.json";
     public static final String VERSION_JSON_FILENAME = "versions.json";
     public static final String VERSION_JSON_FILE = REPLACE_CACHE_DIR + "/com/mumfrey/liteloader/" + VERSION_JSON_FILENAME;
 
     public static final String TASK_LITEMOD = "litemod";
-    
+
     public static final String MFATT_MODTYPE = "ModType";
     public static final String MODSYSTEM = "LiteLoader";
 
@@ -73,7 +73,7 @@ public class LiteloaderPlugin extends UserVanillaBasePlugin<LiteloaderExtension>
         configs.maybeCreate(CONFIG_LL_DC_RESOLVED);
 
         configs.getByName(CONFIG_DC_RESOLVED).extendsFrom(configs.getByName(CONFIG_LL_DC_RESOLVED));
-        
+
         final DelayedFile versionJson = delayedFile(VERSION_JSON_FILE);
         final DelayedFile versionJsonEtag = delayedFile(VERSION_JSON_FILE + ".etag");
         setJson(JsonFactory.loadLiteLoaderJson(getWithEtag(VERSION_JSON_URL, versionJson.call(), versionJsonEtag.call())));
@@ -84,10 +84,10 @@ public class LiteloaderPlugin extends UserVanillaBasePlugin<LiteloaderExtension>
         final Jar jar = (Jar)tasks.getByName("jar");
         jar.setExtension(MODFILE_EXTENSION);
         jar.setBaseName(baseName);
-        
+
         final Jar sourceJar = (Jar)tasks.getByName("sourceJar");
         sourceJar.setBaseName(baseName);
-        
+
         makeTask(TASK_LITEMOD, LiteModTask.class);
     }
 
@@ -107,12 +107,12 @@ public class LiteloaderPlugin extends UserVanillaBasePlugin<LiteloaderExtension>
             }
         }
     }
-    
+
     @Override
     protected void setupDevTimeDeobf(final Task compileDummy, final Task providedDummy)
     {
         super.setupDevTimeDeobf(compileDummy, providedDummy);
-        
+
         // die with error if I find invalid types...
         this.project.afterEvaluate(new Action<Project>() {
             @Override
@@ -120,19 +120,19 @@ public class LiteloaderPlugin extends UserVanillaBasePlugin<LiteloaderExtension>
             {
                 if (project.getState().getFailure() != null)
                     return;
-                
+
                 remapDeps(project, project.getConfigurations().getByName(CONFIG_LL_DEOBF_COMPILE), CONFIG_LL_DC_RESOLVED, compileDummy);
             }
         });
     }
-    
+
     private void applyJson()
     {
         if (this.json == null)
         {
             return;
         }
-        
+
         VersionObject version = this.json.versions.get(this.getExtension().getVersion());
         if (version != null)
         {
@@ -141,7 +141,7 @@ public class LiteloaderPlugin extends UserVanillaBasePlugin<LiteloaderExtension>
             this.applyDependenciesFromJson();
         }
     }
-    
+
     private void applyDependenciesFromJson()
     {
         this.project.allprojects(new Action<Project>() {
@@ -154,14 +154,14 @@ public class LiteloaderPlugin extends UserVanillaBasePlugin<LiteloaderExtension>
                     return;
                 }
                 addMavenRepo(proj, MAVEN_REPO_NAME, repo.url);
-                
+
                 Artifact artifact = LiteloaderPlugin.this.getArtifact();
                 if (artifact == null)
                 {
                     return;
                 }
                 addDependency(proj, CONFIG_LL_DEOBF_COMPILE, artifact.getDepString(repo));
-                
+
                 for (Map<String, String> library : artifact.getLibraries())
                 {
                     String name = library.get("name");
@@ -169,7 +169,7 @@ public class LiteloaderPlugin extends UserVanillaBasePlugin<LiteloaderExtension>
                     {
                         addDependency(proj, CONFIG_MC_DEPS, name);
                     }
-                    
+
                     String url = library.get("url");
                     if (url != null && !url.isEmpty())
                     {
@@ -189,27 +189,27 @@ public class LiteloaderPlugin extends UserVanillaBasePlugin<LiteloaderExtension>
     {
         return this.json;
     }
-    
+
     public void setJson(LiteLoaderJson json)
     {
         this.json = json;
     }
-    
+
     public RepoObject getRepo()
     {
         return this.repo;
     }
-    
+
     public void setRepo(RepoObject repo)
     {
         this.repo = repo;
     }
-    
+
     public Artifact getArtifact()
     {
         return this.artifact;
     }
-    
+
     public void setArtifact(Artifact artifact)
     {
         this.artifact = artifact;
@@ -224,7 +224,7 @@ public class LiteloaderPlugin extends UserVanillaBasePlugin<LiteloaderExtension>
     @Override
     protected void createDecompTasks(String globalPattern, String localPattern)
     {
-        super.makeDecompTasks(globalPattern, localPattern, delayedFile(JAR_CLIENT_FRESH), TASK_DL_CLIENT, delayedFile(MCP_PATCHES_CLIENT));
+        super.makeDecompTasks(globalPattern, localPattern, delayedFile(JAR_CLIENT_FRESH), TASK_DL_CLIENT, delayedFile(MCP_PATCHES_CLIENT), delayedFile(MCP_INJECT));
     }
 
     @Override
