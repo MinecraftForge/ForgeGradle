@@ -393,13 +393,13 @@ public final class ContextualPatch
         }
         else
         {
+            if (lines.size() == 0)
+            {
+                return;
+            }
             PrintWriter w = new PrintWriter(new OutputStreamWriter(new FileOutputStream(patch.targetFile), getEncoding(patch.targetFile)));
             try
             {
-                if (lines.size() == 0)
-                {
-                    return;
-                }
                 for (String line : lines.subList(0, lines.size() - 1))
                 {
                     w.println(line);
