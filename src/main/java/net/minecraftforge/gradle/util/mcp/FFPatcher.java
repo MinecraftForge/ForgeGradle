@@ -19,47 +19,46 @@
  */
 package net.minecraftforge.gradle.util.mcp;
 
-import java.util.Arrays;
-import java.util.List;
-
 import net.minecraftforge.gradle.common.Constants;
 
-import com.google.code.regexp.Matcher;
 import com.google.code.regexp.Pattern;
-import com.google.common.base.Joiner;
-import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 
 public class FFPatcher
 {
-    static final String MODIFIERS = "public|protected|private|static|abstract|final|native|synchronized|transient|volatile|strictfp";
+    static final String _JAVA_IDENTIFIER = "[a-zA-Z_$][\\w_$\\.]*";
+    static final String _JAVA_ANNOTATION = "(?:\\@(?:" + _JAVA_IDENTIFIER + ")(?:\\((?:.*)*\\))? ?)";
 
-    private static final Pattern SYNTHETICS = Pattern.compile("(?m)(\\s*// \\$FF: (synthetic|bridge) method(\\r\\n|\\n|\\r)){1,2}\\s*(?<modifiers>(?:(?:" + MODIFIERS + ") )*)(?<return>.+?) (?<method>.+?)\\((?<arguments>.*)\\)\\s*\\{(\\r\\n|\\n|\\r)\\s*return this\\.(?<method2>.+?)\\((?<arguments2>.*)\\);(\\r\\n|\\n|\\r)\\s*\\}");
+    static final String MODIFIERS = "public|protected|private|static|abstract|final|native|synchronized|transient|volatile|strictfp";
+    static final String _MODIFIERS_INIT = "public|protected|private";
+    static final String _PARAMETERS_VAR = "(?:(?<annotation>" + _JAVA_ANNOTATION + ")?(?<type>(?:[^ ,])+(?:<.*>)?(?: \\.\\.\\.)?) var(?<id>\\d+)(?<end>,? )?)";
+    static final String _PARAMETERS     = "(?:(?<annotation>" + _JAVA_ANNOTATION + ")?(?<type>(?:[^ ,])+(?:<.*>)?(?: \\.\\.\\.)?) (?<name>" + _JAVA_IDENTIFIER + ")(?<end>,? )?)";
+
+    //private static final Pattern SYNTHETICS = Pattern.compile("(?m)(\\s*// \\$FF: (synthetic|bridge) method(\\r\\n|\\n|\\r)){1,2}\\s*(?<modifiers>(?:(?:" + MODIFIERS + ") )*)(?<return>.+?) (?<method>.+?)\\((?<arguments>.*)\\)\\s*\\{(\\r\\n|\\n|\\r)\\s*return this\\.(?<method2>.+?)\\((?<arguments2>.*)\\);(\\r\\n|\\n|\\r)\\s*\\}");
     //private static final Pattern TYPECAST = Pattern.compile("\\([\\w\\.]+\\)");
-    private static final Pattern ABSTRACT = Pattern.compile("(?m)^(?<indent>[ \\t\\f\\v]*)(?<modifiers>(?:(?:" + MODIFIERS + ") )*)(?<return>[^ ]+) (?<method>func_(?<number>\\d+)_[a-zA-Z_]+)\\((?<arguments>([^ ,]+ (\\.\\.\\. )?var\\d+,? ?)*)\\)(?: throws (?:[\\w$.]+,? ?)+)?;$");
+    //private static final Pattern ABSTRACT = Pattern.compile("(?m)^(?<indent>[ \\t\\f\\v]*)(?<modifiers>(?:(?:" + MODIFIERS + ") )*)(?<return>[^ ]+) (?<method>func_(?<number>\\d+)_[a-zA-Z_]+)\\((?<arguments>" + _PARAMETERS_VAR + "+)\\)(?: throws (?:[\\w$.]+,? ?)+)?;$");
 
     // Remove TRAILING whitespace
     private static final String TRAILING = "(?m)[ \\t]+$";
 
     //Remove repeated blank lines
     private static final String NEWLINES = "(?m)^(\\r\\n|\\r|\\n){2,}";
-    private static final String EMPTY_SUPER = "(?m)^[ \t]+super\\(\\);(\\r\\n|\\n|\\r)";
+    //private static final String EMPTY_SUPER = "(?m)^[ \t]+super\\(\\);(\\r\\n|\\n|\\r)";
 
     // strip TRAILING 0 from doubles and floats to fix decompile differences on OSX
     // 0.0010D => 0.001D
     // value, type
-    private static final String TRAILINGZERO = "([0-9]+\\.[0-9]*[1-9])0+([DdFfEe])";
+    //private static final String TRAILINGZERO = "([0-9]+\\.[0-9]*[1-9])0+([DdFfEe])";
 
     // new regexes
-    private static final String CLASS_REGEX = "(?<modifiers>(?:(?:" + MODIFIERS + ") )*)(?<type>enum|class|interface) (?<name>[\\w$]+)(?: (extends|implements) (?:[\\w$.]+(?:, [\\w$.]+)*))* \\{";
-    private static final String ENUM_ENTRY_REGEX = "(?<name>[\\w$]+)\\(\"(?:[\\w$]+)\", [0-9]+(?:, (?<body>.*?))?\\)(?<end> *(?:;|,|\\{)$)";
-    private static final String CONSTRUCTOR_REGEX = "(?<modifiers>(?:(?:" + MODIFIERS + ") )*)%s\\((?<parameters>.*?)\\)(?<end>(?: throws (?<throws>[\\w$.]+(?:, [\\w$.]+)*))? *(?:\\{\\}| \\{))";
-    private static final String CONSTRUCTOR_CALL_REGEX = "(?<name>this|super)\\((?<body>.*?)\\)(?<end>;)";
-    private static final String VALUE_FIELD_REGEX = "private static final %s\\[\\] [$\\w\\d]+ = new %s\\[\\]\\{.*?\\};";
+//    private static final String CLASS_REGEX = "(?<modifiers>(?:(?:" + MODIFIERS + ") )*)(?<type>enum|class|interface) (?<name>[\\w$]+)(?: (extends|implements) (?:[\\w$.]+(?:, [\\w$.]+)*))* \\{";
+//    private static final String ENUM_ENTRY_REGEX = "(?<name>[\\w$]+)\\(\"(?:[\\w$]+)\", [0-9]+(?:, (?<body>.*?))?\\)(?<end> *(?:;|,|\\{)$)";
+//    private static final String CONSTRUCTOR_REGEX = "(?<modifiers>(?:(?:" + MODIFIERS + ") )*)%s\\((?<parameters>.*?)\\)(?<end>(?: throws (?<throws>[\\w$.]+(?:, [\\w$.]+)*))? *(?:\\{\\}| \\{))";
+//    private static final String CONSTRUCTOR_CALL_REGEX = "(?<name>this|super)\\((?<body>.*?)\\)(?<end>;)";
+//    private static final String VALUE_FIELD_REGEX = "private static final %s\\[\\] [$\\w\\d]+ = new %s\\[\\]\\{.*?\\};";
 
     public static String processFile(String text)
     {
-        StringBuffer out = new StringBuffer();
+//        StringBuffer out = new StringBuffer();
 //        Matcher m = SYNTHETICS.matcher(text);
 //        while(m.find())
 //        {
@@ -100,7 +99,7 @@ public class FFPatcher
 ////
 //        return out.toString();
     }
-
+/*
     private static int processClass(List<String> lines, String indent, int startIndex, String qualifiedName, String simpleName)
     {
         Pattern classPattern = Pattern.compile(indent + CLASS_REGEX);
@@ -312,4 +311,5 @@ public class FFPatcher
 
         return match.group().replace(orig, fixed.toString());
     }
+*/
 }
