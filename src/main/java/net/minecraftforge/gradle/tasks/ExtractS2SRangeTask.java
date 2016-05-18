@@ -20,6 +20,7 @@
 package net.minecraftforge.gradle.tasks;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.LinkedList;
@@ -80,18 +81,23 @@ public class ExtractS2SRangeTask extends DefaultTask
         generateRangeMap(inSup, rangemap);
     }
 
-    private void generateRangeMap(InputSupplier inSup, File rangeMap)
+    private void generateRangeMap(InputSupplier inSup, File rangeMap) throws IOException
     {
         RangeExtractor extractor = new RangeExtractor();
-        
+
         for (File f : getLibs())
         {
             //System.out.println("lib: "+f);
             extractor.addLibs(f);
         }
-        
+
+        if (rangeMap.exists())
+        {
+            extractor.loadCache(new FileInputStream(rangeMap));
+        }
+
         extractor.setSrc(inSup);
-        
+
         //extractor.addLibs(getLibs().getAsPath()).setSrc(inSup);
 
         PrintStream stream = new PrintStream(Constants.getTaskLogStream(getProject(), this.getName() + ".log"));
@@ -142,7 +148,7 @@ public class ExtractS2SRangeTask extends DefaultTask
     public FileCollection getSources()
     {
         FileCollection collection = null;
-        
+
         for (Object o: this.sources)
         {
             FileCollection col;
@@ -164,7 +170,7 @@ public class ExtractS2SRangeTask extends DefaultTask
                     col = getProject().files(f);
                 }
             }
-            
+
             if (collection == null)
             {
                 collection = col;
@@ -174,7 +180,7 @@ public class ExtractS2SRangeTask extends DefaultTask
                 collection = collection.plus(col);
             }
         }
-        
+
         return collection;
     }
 
@@ -186,7 +192,7 @@ public class ExtractS2SRangeTask extends DefaultTask
     public FileCollection getLibs()
     {
         FileCollection collection = null;
-        
+
         for (Object o : libs)
         {
             FileCollection col;
@@ -198,13 +204,13 @@ public class ExtractS2SRangeTask extends DefaultTask
             {
                 col = getProject().files(o);
             }
-            
+
             if (collection == null)
                 collection = col;
             else
                 collection = collection.plus(col);
         }
-        
+
         return collection;
     }
 
