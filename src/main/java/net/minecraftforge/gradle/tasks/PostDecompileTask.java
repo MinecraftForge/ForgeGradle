@@ -197,7 +197,7 @@ public class PostDecompileTask extends AbstractEditJarTask
         {
             for (File f : this.getProject().fileTree(common))
             {
-                String name = f.getAbsolutePath().substring(common.getAbsolutePath().length() + 1);
+                String name = f.getAbsolutePath().substring(common.getAbsolutePath().length() + 1).replace('\\', '/');
                 jarOut.putNextEntry(new ZipEntry(name));
                 jarOut.write(Resources.toByteArray(f.toURI().toURL()));
                 jarOut.closeEntry();
