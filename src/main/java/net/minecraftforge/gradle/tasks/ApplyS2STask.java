@@ -66,6 +66,9 @@ public class ApplyS2STask extends DefaultTask
     @InputFile
     private Object excModifiers;
 
+    @Input
+    private boolean s2sKeepImports = true;
+
     // stuff defined on the tasks..
     private final List<Object> in = new LinkedList<Object>();
     private Object out;
@@ -152,6 +155,8 @@ public class ApplyS2STask extends DefaultTask
         RangeApplier app = new RangeApplier().readSrg(srg.getFiles());
 
         app.setOutLogger(Constants.getTaskLogStream(getProject(), this.getName() + ".log"));
+
+        app.setKeepImports(this.isS2sKeepImports());
 
         if (!exc.isEmpty())
         {
@@ -411,5 +416,15 @@ public class ApplyS2STask extends DefaultTask
     public File getExcModifiers()
     {
         return this.excModifiers == null ? null : this.getProject().file(excModifiers);
+    }
+
+    public boolean isS2sKeepImports()
+    {
+        return this.s2sKeepImports;
+    }
+
+    public void setS2sKeepImports(boolean value)
+    {
+        this.s2sKeepImports = value;
     }
 }

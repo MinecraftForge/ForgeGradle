@@ -774,6 +774,9 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             ApplyS2STask retromap = (ApplyS2STask) project.getTasks().getByName(projectString(TASK_PROJECT_RETROMAP, patcher));
             ApplyS2STask retromapNonMc = (ApplyS2STask) project.getTasks().getByName(projectString(TASK_PROJECT_RETRO_NONMC, patcher));
 
+            retromap.setS2sKeepImports(patcher.isS2sKeepImports());
+            retromapNonMc.setS2sKeepImports(patcher.isS2sKeepImports());
+
             // add from previous projects
             for (File f : addedExcs)
             {
