@@ -63,7 +63,7 @@ class TaskGenPatches extends DefaultTask
     @Input private String           originalPrefix = "";
     @Input private String           changedPrefix = "";
     //@formatter:on
-    
+
     //@formatter:off
     public TaskGenPatches() { super(); }
     //@formatter:on
@@ -78,14 +78,14 @@ class TaskGenPatches extends DefaultTask
 
         // fix and create patches.
         processFiles(getSupplier(getOriginalSource()), getSupplier(getChangedSource()));
-        
+
         removeOld(getPatchDir());
     }
-    
+
     private static InputSupplier getSupplier(List<File> files) throws IOException
     {
         SequencedInputSupplier supplier = new SequencedInputSupplier(files.size() + 1);
-        
+
         for (File f : files)
         {
             if (f.isDirectory())
@@ -97,7 +97,7 @@ class TaskGenPatches extends DefaultTask
                 supplier.add(supp);
             }
         }
-        
+
         return supplier;
     }
 
@@ -162,8 +162,8 @@ class TaskGenPatches extends DefaultTask
         List<String> paths = original.gatherAll("");
         for (String path : paths)
         {
+            InputStream o = original.getInput(path); //Moved cuz sometimes shit can screw up...
             path = path.replace('\\', '/');
-            InputStream o = original.getInput(path);
             InputStream c = changed.getInput(path);
             try
             {
@@ -189,6 +189,9 @@ class TaskGenPatches extends DefaultTask
             return;
         }
 
+        if (original == null)
+            throw new IllegalArgumentException("Original data for " + relative + " is null");
+
         // We have to cache the bytes because diff reads the stream twice.. why.. who knows.
         byte[] oData = ByteStreams.toByteArray(original);
         byte[] cData = ByteStreams.toByteArray(changed);
@@ -200,8 +203,8 @@ class TaskGenPatches extends DefaultTask
 
         if (!diff.isEmpty())
         {
-            String unidiff = diff.toUnifiedDiff(originalPrefix + relative, changedPrefix + relative, 
-                    new InputStreamReader(new ByteArrayInputStream(oData), Charsets.UTF_8), 
+            String unidiff = diff.toUnifiedDiff(originalPrefix + relative, changedPrefix + relative,
+                    new InputStreamReader(new ByteArrayInputStream(oData), Charsets.UTF_8),
                     new InputStreamReader(new ByteArrayInputStream(cData), Charsets.UTF_8), 3);
             unidiff = unidiff.replace("\r\n", "\n"); //Normalize lines
             unidiff = unidiff.replace("\n" + Hunk.ENDING_NEWLINE + "\n", "\n"); //We give 0 shits about this.
@@ -226,7 +229,7 @@ class TaskGenPatches extends DefaultTask
             created.add(patchFile);
         }
     }
-    
+
     @InputFiles
     public FileCollection getOriginalSources()
     {
@@ -245,7 +248,7 @@ class TaskGenPatches extends DefaultTask
     {
         this.originals.add(in);
     }
-    
+
     @InputFiles
     public FileCollection getChangedSources()
     {
