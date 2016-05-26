@@ -28,6 +28,9 @@ public class Version
         if (_libraries == null)
         {
             _libraries = new ArrayList<Library>();
+            Library jsr305 = new Library();
+            jsr305.name = "com.google.code.findbugs:jsr305:3.0.1";
+            _libraries.add(jsr305);
             if (libraries == null) return _libraries;
             for (Library lib : libraries)
             {
