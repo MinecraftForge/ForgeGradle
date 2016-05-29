@@ -24,6 +24,7 @@ import groovy.lang.Closure;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.zip.ZipEntry;
@@ -38,10 +39,15 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFiles;
 import org.gradle.api.tasks.TaskAction;
 
+import com.google.common.base.Charsets;
+import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
+import com.google.common.collect.Iterables;
 import com.google.common.io.ByteStreams;
+import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
+import com.google.common.io.LineProcessor;
 
 public class CrowdinDownload extends DefaultTask
 {
@@ -152,7 +158,30 @@ public class CrowdinDownload extends DefaultTask
                 File out = new File(output, entry.getName());
                 Files.createParentDirs(out);
                 Files.touch(out);
-                Files.write(ByteStreams.toByteArray(zStream), out);
+
+                String data = CharStreams.readLines(new InputStreamReader(zStream), new LineProcessor<String>()
+                {
+                    StringBuilder out = new StringBuilder();
+                    Splitter SPLITTER = Splitter.on('=').limit(2);
+
+                    @Override
+                    public boolean processLine(String line) throws IOException
+                    {
+                        String[] pts = Iterables.toArray(SPLITTER.split(line), String.class);
+                        out.append(pts[0]).append('=').append(
+                        pts[1].replace("\\!", "!")
+                              .replace("\\:", ":"))
+                        .append('\n');
+                        return true;
+                    }
+
+                    @Override
+                    public String getResult()
+                    {
+                        return out.toString();
+                    }
+                });
+                Files.write(data.getBytes(Charsets.UTF_8), out);
                 zStream.closeEntry();
             }
 
