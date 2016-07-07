@@ -22,6 +22,7 @@ package net.minecraftforge.gradle.tasks;
 import groovy.lang.Closure;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -29,6 +30,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import net.minecraftforge.gradle.common.Constants;
 
@@ -140,60 +142,71 @@ public class CrowdinDownload extends DefaultTask
         con.setRequestProperty("User-Agent", Constants.USER_AGENT);
         con.setInstanceFollowRedirects(true);
 
-        InputStream stream = con.getInputStream();
+        ZipInputStream zStream = new ZipInputStream(con.getInputStream());
+        ZipOutputStream zOut = null;
 
-        if (extract)
+        if (!extract)
         {
-            ZipInputStream zStream = new ZipInputStream(con.getInputStream());
+            Files.createParentDirs(output);
+            Files.touch(output);
+            zOut = new ZipOutputStream(new FileOutputStream(output));
+        }
 
-            ZipEntry entry;
-            while ((entry = zStream.getNextEntry()) != null)
+        ZipEntry entry;
+        while ((entry = zStream.getNextEntry()) != null)
+        {
+            if (entry.isDirectory() || entry.getSize() == 0)
             {
-                if (entry.isDirectory() || entry.getSize() == 0)
+                continue;
+            }
+
+            String data = CharStreams.readLines(new InputStreamReader(zStream), new LineProcessor<String>()
+            {
+                StringBuilder out = new StringBuilder();
+                Splitter SPLITTER = Splitter.on('=').limit(2);
+
+                @Override
+                public boolean processLine(String line) throws IOException
                 {
-                    continue;
-                }
-
-                getLogger().debug("Extracting file: " + entry.getName());
-                File out = new File(output, entry.getName());
-                Files.createParentDirs(out);
-                Files.touch(out);
-
-                String data = CharStreams.readLines(new InputStreamReader(zStream), new LineProcessor<String>()
-                {
-                    StringBuilder out = new StringBuilder();
-                    Splitter SPLITTER = Splitter.on('=').limit(2);
-
-                    @Override
-                    public boolean processLine(String line) throws IOException
+                    String[] pts = Iterables.toArray(SPLITTER.split(line), String.class);
+                    if (pts.length == 2)
                     {
-                        String[] pts = Iterables.toArray(SPLITTER.split(line), String.class);
                         out.append(pts[0]).append('=').append(
                         pts[1].replace("\\!", "!")
                               .replace("\\:", ":"))
                         .append('\n');
-                        return true;
                     }
+                    else
+                        out.append(line).append('\n');
+                    return true;
+                }
 
-                    @Override
-                    public String getResult()
-                    {
-                        return out.toString();
-                    }
-                });
+                @Override
+                public String getResult()
+                {
+                    return out.toString();
+                }
+            });
+
+            if (extract)
+            {
+                getLogger().debug("Extracting file: " + entry.getName());
+                File out = new File(output, entry.getName());
+                Files.createParentDirs(out);
+                Files.touch(out);
                 Files.write(data.getBytes(Charsets.UTF_8), out);
-                zStream.closeEntry();
             }
-
-            zStream.close();
+            else
+            {
+                zOut.putNextEntry(new ZipEntry(entry.getName()));
+                zOut.write(data.getBytes(Charsets.UTF_8));
+                zOut.closeEntry();
+            }
+            zStream.closeEntry();
         }
-        else
-        {
-            Files.createParentDirs(output);
-            Files.touch(output);
-            Files.write(ByteStreams.toByteArray(stream), output);
-            stream.close();
-        }
+        zStream.close();
+        if (zOut != null)
+            zOut.close();
 
         con.disconnect();
     }
