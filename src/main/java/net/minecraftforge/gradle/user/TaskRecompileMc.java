@@ -102,7 +102,7 @@ public class TaskRecompileMc extends CachedTask
                 .put("target", "1.6")
                 .put("debug", "true")
                 .build(),
-            new Closure<Object>(this, this) {
+            new Closure<Object>(TaskRecompileMc.class) {
                 protected Object doCall(Object arguments) {
                     String currentExtDirs = System.getProperty("java.ext.dirs");
                     String newExtDirs = "";
