@@ -259,7 +259,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             exec.classpath(jarTask.getArchivePath());
             exec.dependsOn(jarTask);
             exec.jvmArgs(getServerJvmArgs(getExtension()));
-            exec.jvmArgs(getServerRunArgs(getExtension()));
+            exec.args(getServerRunArgs(getExtension()));
         }
 
         // complain about version number
