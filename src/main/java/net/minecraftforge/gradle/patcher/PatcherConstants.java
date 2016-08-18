@@ -113,7 +113,7 @@ final class PatcherConstants
     static final String TASK_MERGE_FILES         = "mergeFiles";
     static final String TASK_BUILD_USERDEV       = "buildUserdev";
     static final String TASK_BUILD_INSTALLER     = "installer";
-    
+
     // clean project tasks
     static final String TASK_CLEAN_REMAP         = "remapCleanJar";
     static final String TASK_CLEAN_EXTRACT_SRC   = "extractCleanSources";

@@ -168,6 +168,7 @@ public class Constants
     public static final String MCP_DATA_EXC       = DIR_MCP_DATA + "/joined.exc";
     public static final String MCP_DATA_EXC_JSON  = DIR_MCP_DATA + "/exceptor.json";
     public static final String MCP_DATA_STYLE     = DIR_MCP_DATA + "/astyle.cfg";
+    public static final String MCP_DATA_STATICS   = DIR_MCP_DATA + "/static_methods.txt";
     public static final String MCP_PATCHES_CLIENT = DIR_MCP_DATA + "/patches/minecraft_ff";
     public static final String MCP_PATCHES_SERVER = DIR_MCP_DATA + "/patches/minecraft_server_ff";
     public static final String MCP_PATCHES_MERGED = DIR_MCP_DATA + "/patches/minecraft_merged_ff";
@@ -177,13 +178,13 @@ public class Constants
     public static final String CSV_METHOD       = DIR_MCP_MAPPINGS + "/methods.csv";
     public static final String CSV_FIELD        = DIR_MCP_MAPPINGS + "/fields.csv";
     public static final String CSV_PARAM        = DIR_MCP_MAPPINGS + "/params.csv";
-    public static final String SRG_NOTCH_TO_SRG = DIR_MCP_MAPPINGS + "/srgs/notch-srg.srg";
-    public static final String SRG_NOTCH_TO_MCP = DIR_MCP_MAPPINGS + "/srgs/notch-mcp.srg";
-    public static final String SRG_SRG_TO_MCP   = DIR_MCP_MAPPINGS + "/srgs/srg-mcp.srg";
-    public static final String SRG_MCP_TO_SRG   = DIR_MCP_MAPPINGS + "/srgs/mcp-srg.srg";
-    public static final String SRG_MCP_TO_NOTCH = DIR_MCP_MAPPINGS + "/srgs/mcp-notch.srg";
-    public static final String EXC_SRG          = DIR_MCP_MAPPINGS + "/srgs/srg.exc";
-    public static final String EXC_MCP          = DIR_MCP_MAPPINGS + "/srgs/mcp.exc";
+    public static final String SRG_NOTCH_TO_SRG = DIR_MCP_MAPPINGS + "/" + REPLACE_MC_VERSION + "/srgs/notch-srg.srg";
+    public static final String SRG_NOTCH_TO_MCP = DIR_MCP_MAPPINGS + "/" + REPLACE_MC_VERSION + "/srgs/notch-mcp.srg";
+    public static final String SRG_SRG_TO_MCP   = DIR_MCP_MAPPINGS + "/" + REPLACE_MC_VERSION + "/srgs/srg-mcp.srg";
+    public static final String SRG_MCP_TO_SRG   = DIR_MCP_MAPPINGS + "/" + REPLACE_MC_VERSION + "/srgs/mcp-srg.srg";
+    public static final String SRG_MCP_TO_NOTCH = DIR_MCP_MAPPINGS + "/" + REPLACE_MC_VERSION + "/srgs/mcp-notch.srg";
+    public static final String EXC_SRG          = DIR_MCP_MAPPINGS + "/" + REPLACE_MC_VERSION + "/srgs/srg.exc";
+    public static final String EXC_MCP          = DIR_MCP_MAPPINGS + "/" + REPLACE_MC_VERSION + "/srgs/mcp.exc";
 
     // task names
     public static final String TASK_DL_CLIENT        = "downloadClient";

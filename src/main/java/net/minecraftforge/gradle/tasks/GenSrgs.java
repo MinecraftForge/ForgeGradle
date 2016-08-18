@@ -27,6 +27,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.caching.Cached;
@@ -40,10 +41,14 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.objectweb.asm.Type;
 
 import au.com.bytecode.opencsv.CSVReader;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
@@ -52,6 +57,7 @@ public class GenSrgs extends CachedTask
     //@formatter:off
     @InputFile private DelayedFile inSrg;
     @InputFile private DelayedFile inExc;
+    @InputFile private DelayedFile inStatics;
     @InputFile private DelayedFile methodsCsv;
     @InputFile private DelayedFile fieldsCsv;
     @Cached @OutputFile private DelayedFile notchToSrg;
@@ -62,7 +68,7 @@ public class GenSrgs extends CachedTask
     @Cached @OutputFile private DelayedFile srgExc;
     @Cached @OutputFile private DelayedFile mcpExc;
     //@formatter:on
-    
+
     @InputFiles
     private final LinkedList<File> extraExcs = new LinkedList<File>();
     @InputFiles
@@ -82,7 +88,7 @@ public class GenSrgs extends CachedTask
         writeOutSrgs(inSrg, methods, fields);
 
         // do EXC stuff
-        writeOutExcs(excRemap, methods);
+        writeOutExcs(inSrg, excRemap, methods);
 
     }
 
@@ -282,7 +288,7 @@ public class GenSrgs extends CachedTask
         mcpToNotch.close();
     }
 
-    private void writeOutExcs(Map<String, String> excRemap, Map<String, String> methods) throws IOException
+    private void writeOutExcs(SrgContainer inSrg, Map<String, String> excRemap, Map<String, String> methods) throws IOException
     {
         // ensure folders exist
         Files.createParentDirs(getSrgExc());
@@ -294,6 +300,33 @@ public class GenSrgs extends CachedTask
 
         // read and write existing lines
         List<String> excLines = Files.readLines(getInExc(), Charsets.UTF_8);
+
+        // Generate default exc lines from srg
+        Joiner comma = Joiner.on(',');
+        Set<String> statics = Sets.newHashSet();
+        statics.addAll(Files.readLines(getInStatics(), Charsets.UTF_8));
+        for (MethodData mtd : inSrg.methodMap.values())
+        {
+            String cls = mtd.name.substring(0, mtd.name.lastIndexOf('/'));
+            String name = mtd.name.substring(cls.length() + 1);
+            //getLogger().lifecycle(cls + " " + name);
+            if (!name.startsWith("func_"))
+                continue;
+
+            String prefix = "p_" + name.split("_")[1];
+            List<String> args = Lists.newArrayList();
+
+            int idx = statics.contains(name) ? 0 : 1; // Static methods don't have 'this'
+            for (Type arg : Type.getArgumentTypes(mtd.sig))
+            {
+                args.add(prefix + "_" + idx++ + "_");
+                if (arg == Type.DOUBLE_TYPE || arg == Type.LONG_TYPE)
+                    idx++;
+            }
+            if (args.size() > 0)
+                excLines.add(cls + "." + name + mtd.sig + "=|" + comma.join(args));
+        }
+
         String[] split;
         for (String line : excLines)
         {
@@ -390,6 +423,16 @@ public class GenSrgs extends CachedTask
         this.inExc = inSrg;
     }
 
+    public File getInStatics()
+    {
+        return inStatics.call();
+    }
+
+    public void setInStatics(DelayedFile inStatics)
+    {
+        this.inStatics = inStatics;
+    }
+
     public File getMethodsCsv()
     {
         return methodsCsv.call();
@@ -429,7 +472,7 @@ public class GenSrgs extends CachedTask
     {
         this.notchToMcp = deobfSrg;
     }
-    
+
     public File getSrgToMcp()
     {
         return SrgToMcp.call();
