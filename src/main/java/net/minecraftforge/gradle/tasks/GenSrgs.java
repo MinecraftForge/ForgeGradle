@@ -22,6 +22,7 @@ package net.minecraftforge.gradle.tasks;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -300,6 +301,17 @@ public class GenSrgs extends CachedTask
 
         // read and write existing lines
         List<String> excLines = Files.readLines(getInExc(), Charsets.UTF_8);
+        Map<String, String> tmp = Maps.newHashMap();
+        for (String line : excLines)
+        {
+            if (line.startsWith("#"))
+                tmp.put(line, null);
+            else
+            {
+                String[] pts = line.split("=");
+                tmp.put(pts[0], pts[1]);
+            }
+        }
 
         // Generate default exc lines from srg
         Joiner comma = Joiner.on(',');
@@ -324,7 +336,27 @@ public class GenSrgs extends CachedTask
                     idx++;
             }
             if (args.size() > 0)
-                excLines.add(cls + "." + name + mtd.sig + "=|" + comma.join(args));
+            {
+                String key = cls + "." + name + mtd.sig;
+                String info = tmp.get(key);
+                if (info == null)
+                    info = "";
+                else if (info.indexOf('|') != -1)
+                    info = info.substring(0, info.indexOf('|'));
+                tmp.put(key, info + "|" + comma.join(args));
+            }
+        }
+
+        excLines.clear();
+        List<String> keys = Lists.newArrayList(tmp.keySet());
+        Collections.sort(keys);
+        for (String key : keys)
+        {
+            String value = tmp.get(key);
+            if (value == null)
+                excLines.add(key);
+            else
+                excLines.add(key + "=" + value);
         }
 
         String[] split;
@@ -342,7 +374,7 @@ public class GenSrgs extends CachedTask
             int dotIndex = split[0].indexOf('.');
 
             // not a method? wut?
-            if (sigIndex == -1 || dotIndex == -1)
+            if (line.startsWith("#") || sigIndex == -1 || dotIndex == -1)
             {
                 mcpOut.write(line);
                 mcpOut.newLine();
