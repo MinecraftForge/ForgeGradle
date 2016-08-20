@@ -22,8 +22,6 @@ package net.minecraftforge.gradle.tasks;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -39,6 +37,8 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.ParallelizableTask;
 import org.gradle.api.tasks.TaskAction;
+
+import com.google.common.io.Closeables;
 
 @ParallelizableTask
 public class Download extends CachedTask
@@ -64,13 +64,15 @@ public class Download extends CachedTask
         connect.setInstanceFollowRedirects(true);
 
         ReadableByteChannel  inChannel  = Channels.newChannel(connect.getInputStream());
-        FileChannel          outChannel = new FileOutputStream(outputFile).getChannel();
+        FileOutputStream     outFile = new FileOutputStream(outputFile);
+        FileChannel          outChannel = outFile.getChannel();
 
         // If length is longer than what is available, it copies what is available according to java docs.
         // Therefore, I use Long.MAX_VALUE which is a theoretical maximum.
         outChannel.transferFrom(inChannel, 0, Long.MAX_VALUE);
 
-        outChannel.close();
+        outChannel.close(); //Should close outFile but just in case
+        Closeables.close(outFile, true);
         inChannel.close();
 
         getLogger().info("Download complete");
