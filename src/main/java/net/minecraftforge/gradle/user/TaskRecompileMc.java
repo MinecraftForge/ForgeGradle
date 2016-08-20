@@ -32,9 +32,10 @@ import java.util.zip.ZipOutputStream;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
 
+import org.gradle.api.AntBuilder;
+import org.gradle.api.AntBuilder.AntMessagePriority;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
-import org.gradle.api.logging.LoggingManager;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
@@ -82,15 +83,14 @@ public class TaskRecompileMc extends CachedTask
         // extract sources
         extractSources(tempSrc, inJar);
 
+        AntBuilder ant = this.getAnt();
         // Remove errors on normal runs
-        LoggingManager log = getLogging();
         LogLevel startLevel = getProject().getGradle().getStartParameter().getLogLevel();
         if (startLevel.compareTo(LogLevel.LIFECYCLE) >= 0) {
-            log.setLevel(LogLevel.ERROR);
+            ant.setLifecycleLogLevel(AntMessagePriority.ERROR);
         }
-
         // recompile
-        this.getAnt().invokeMethod("javac", new Object[] {
+        ant.invokeMethod("javac", new Object[] {
             ImmutableMap.builder()
                 .put("srcDir", tempSrc.getCanonicalPath())
                 .put("destDir", tempCls.getCanonicalPath())
@@ -102,7 +102,7 @@ public class TaskRecompileMc extends CachedTask
                 .put("target", "1.6")
                 .put("debug", "true")
                 .build(),
-            new Closure<Object>(this, this) {
+            new Closure<Object>(TaskRecompileMc.class) {
                 protected Object doCall(Object arguments) {
                     String currentExtDirs = System.getProperty("java.ext.dirs");
                     String newExtDirs = "";

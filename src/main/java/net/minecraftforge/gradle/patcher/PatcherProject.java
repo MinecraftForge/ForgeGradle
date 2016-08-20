@@ -554,7 +554,7 @@ public class PatcherProject implements Serializable
     @SuppressWarnings("serial")
     protected Closure<String> getDelayedMainClassClient()
     {
-        return new Closure<String>(project, this) {
+        return new Closure<String>(PatcherProject.class) {
             public String call()
             {
                 return getMainClassClient();
@@ -565,7 +565,7 @@ public class PatcherProject implements Serializable
     @SuppressWarnings("serial")
     protected Closure<String> getDelayedTweakClassClient()
     {
-        return new Closure<String>(project, this) {
+        return new Closure<String>(PatcherProject.class) {
             public String call()
             {
                 return getTweakClassClient();
@@ -576,7 +576,7 @@ public class PatcherProject implements Serializable
     @SuppressWarnings("serial")
     protected Closure<String> getDelayedRunArgsClient()
     {
-        return new Closure<String>(project, this) {
+        return new Closure<String>(PatcherProject.class) {
             public String call()
             {
                 return getRunArgsClient();
@@ -587,7 +587,7 @@ public class PatcherProject implements Serializable
     @SuppressWarnings("serial")
     protected Closure<String> getDelayedMainClassServer()
     {
-        return new Closure<String>(project, this) {
+        return new Closure<String>(PatcherProject.class) {
             public String call()
             {
                 return getMainClassServer();
@@ -598,7 +598,7 @@ public class PatcherProject implements Serializable
     @SuppressWarnings("serial")
     protected Closure<String> getDelayedTweakClassServer()
     {
-        return new Closure<String>(project, this) {
+        return new Closure<String>(PatcherProject.class) {
             public String call()
             {
                 return getTweakClassServer();
@@ -609,7 +609,7 @@ public class PatcherProject implements Serializable
     @SuppressWarnings("serial")
     protected Closure<String> getDelayedRunArgsServer()
     {
-        return new Closure<String>(project, this) {
+        return new Closure<String>(PatcherProject.class) {
             public String call()
             {
                 return getRunArgsServer();
@@ -620,7 +620,7 @@ public class PatcherProject implements Serializable
     @SuppressWarnings("serial")
     protected Closure<File> getDelayedSourcesDir()
     {
-        return new Closure<File>(project, this) {
+        return new Closure<File>(PatcherProject.class) {
             public File call()
             {
                 return getSourcesDir();
@@ -631,7 +631,7 @@ public class PatcherProject implements Serializable
     @SuppressWarnings("serial")
     protected Closure<File> getDelayedResourcesDir()
     {
-        return new Closure<File>(project, this) {
+        return new Closure<File>(PatcherProject.class) {
             public File call()
             {
                 return getResourcesDir();
@@ -642,7 +642,7 @@ public class PatcherProject implements Serializable
     @SuppressWarnings("serial")
     protected Closure<File> getDelayedTestSourcesDir()
     {
-        return new Closure<File>(project, this) {
+        return new Closure<File>(PatcherProject.class) {
             public File call()
             {
                 return getTestSourcesDir();
@@ -653,7 +653,7 @@ public class PatcherProject implements Serializable
     @SuppressWarnings("serial")
     protected Closure<File> getDelayedTestResourcesDir()
     {
-        return new Closure<File>(project, this) {
+        return new Closure<File>(PatcherProject.class) {
             public File call()
             {
                 return getTestResourcesDir();
@@ -664,7 +664,7 @@ public class PatcherProject implements Serializable
     @SuppressWarnings("serial")
     protected Closure<File> getDelayedPatchDir()
     {
-        return new Closure<File>(project, this) {
+        return new Closure<File>(PatcherProject.class) {
             public File call()
             {
                 return getPatchDir();

@@ -124,7 +124,7 @@ public class PatcherExtension extends BaseExtension
     @SuppressWarnings("serial")
     protected Closure<File> getDelayedWorkspaceDir()
     {
-        return new Closure<File>(null) {
+        return new Closure<File>(PatcherExtension.class) {
             public File call()
             {
                 return getWorkspaceDir();
@@ -135,7 +135,7 @@ public class PatcherExtension extends BaseExtension
     @SuppressWarnings("serial")
     protected Closure<File> getDelayedSubWorkspaceDir(final String path)
     {
-        return new Closure<File>(null) {
+        return new Closure<File>(PatcherExtension.class) {
             public File call()
             {
                 return new File(getWorkspaceDir(), path);
@@ -146,7 +146,7 @@ public class PatcherExtension extends BaseExtension
     @SuppressWarnings("serial")
     protected Closure<File> getDelayedVersionJson()
     {
-        return new Closure<File>(null) {
+        return new Closure<File>(PatcherExtension.class) {
             public File call()
             {
                 return getVersionJson();

@@ -37,7 +37,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import com.beust.jcommander.internal.Lists;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.NamedDomainObjectContainer;
@@ -105,7 +104,7 @@ import net.minecraftforge.gradle.util.delayed.DelayedFile;
 public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePlugin<T>
 {
     private boolean madeDecompTasks = false; // to gaurd against stupid programmers
-    private final Closure<Object> makeRunDir = new Closure<Object>(null, null) {
+    private final Closure<Object> makeRunDir = new Closure<Object>(UserBasePlugin.class) {
         public Object call()
         {
             delayedFile(REPLACE_RUN_DIR).call().mkdirs();
@@ -447,7 +446,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
     @SuppressWarnings("serial")
     protected final Object chooseDeobfOutput(final String globalPattern, final String localPattern, final String appendage, final String classifier)
     {
-        return new Closure<DelayedFile>(project, this) {
+        return new Closure<DelayedFile>(UserBasePlugin.class) {
             public DelayedFile call()
             {
                 String classAdd = Strings.isNullOrEmpty(classifier) ? "" : "-" + classifier;
@@ -826,7 +825,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         sourceJar.setClassifier("sources");
         sourceJar.dependsOn(main.getCompileJavaTaskName(), main.getProcessResourcesTaskName(), getSourceSetFormatted(main, TMPL_TASK_RETROMAP_RPL));
 
-        sourceJar.from(new Closure<Object>(this, this) {
+        sourceJar.from(new Closure<Object>(UserBasePlugin.class) {
             public Object call() {
                 File file = delayedFile(retromappedSrc).call();
                 if (file.exists())
@@ -1194,7 +1193,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         if (ideaConv.getWorkspace().getIws() == null)
             return;
 
-        ideaConv.getWorkspace().getIws().withXml(new Closure<Object>(this, null)
+        ideaConv.getWorkspace().getIws().withXml(new Closure<Object>(UserBasePlugin.class)
         {
             public Object call(Object... obj)
             {
