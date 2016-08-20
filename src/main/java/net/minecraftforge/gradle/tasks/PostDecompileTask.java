@@ -31,14 +31,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.jar.JarOutputStream;
-import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import net.minecraftforge.gradle.util.mcp.FFPatcher;
-import net.minecraftforge.gradle.util.mcp.FmlCleanup;
 import net.minecraftforge.gradle.util.mcp.GLConstantFixer;
 import net.minecraftforge.gradle.util.mcp.McpCleanup;
 import net.minecraftforge.gradle.util.patching.ContextualPatch;
@@ -80,8 +78,8 @@ public class PostDecompileTask extends AbstractEditJarTask
     @Cached
     private Object                       outJar;
 
-    private static final Pattern         BEFORE      = Pattern.compile("(?m)((case|default).+(?:\\r\\n|\\r|\\n))(?:\\r\\n|\\r|\\n)");
-    private static final Pattern         AFTER       = Pattern.compile("(?m)(?:\\r\\n|\\r|\\n)((?:\\r\\n|\\r|\\n)[ \\t]+(case|default))");
+    //private static final Pattern         BEFORE      = Pattern.compile("(?m)((case|default).+(?:\\r\\n|\\r|\\n))(?:\\r\\n|\\r|\\n)");
+    //private static final Pattern         AFTER       = Pattern.compile("(?m)(?:\\r\\n|\\r|\\n)((?:\\r\\n|\\r|\\n)[ \\t]+(case|default))");
 
     private final Set<String>            seenPackages = Sets.newHashSet();
     private final Multimap<String, File> patchesMap  = ArrayListMultimap.create();

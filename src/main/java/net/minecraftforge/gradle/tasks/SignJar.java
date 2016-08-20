@@ -21,10 +21,6 @@ package net.minecraftforge.gradle.tasks;
 
 import static net.minecraftforge.gradle.common.Constants.resolveString;
 
-import com.google.common.base.Strings;
-import groovy.lang.Closure;
-import groovy.util.MapEntry;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -51,9 +47,12 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.util.PatternFilterable;
 import org.gradle.api.tasks.util.PatternSet;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
+
+import groovy.lang.Closure;
+import groovy.util.MapEntry;
 
 @ParallelizableTask
 public class SignJar extends DefaultTask implements PatternFilterable

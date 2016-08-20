@@ -57,7 +57,6 @@ import org.gradle.api.artifacts.result.ComponentArtifactsResult;
 import org.gradle.api.artifacts.result.DependencyResult;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -105,6 +104,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 {
     private boolean madeDecompTasks = false; // to gaurd against stupid programmers
     private final Closure<Object> makeRunDir = new Closure<Object>(UserBasePlugin.class) {
+        private static final long serialVersionUID = 7787405048420669566L;
+
         public Object call()
         {
             delayedFile(REPLACE_RUN_DIR).call().mkdirs();
@@ -826,6 +827,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         sourceJar.dependsOn(main.getCompileJavaTaskName(), main.getProcessResourcesTaskName(), getSourceSetFormatted(main, TMPL_TASK_RETROMAP_RPL));
 
         sourceJar.from(new Closure<Object>(UserBasePlugin.class) {
+            private static final long serialVersionUID = 3294969515175232088L;
+
             public Object call() {
                 File file = delayedFile(retromappedSrc).call();
                 if (file.exists())

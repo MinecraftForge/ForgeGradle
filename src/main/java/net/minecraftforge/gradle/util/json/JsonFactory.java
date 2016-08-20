@@ -45,6 +45,7 @@ import net.minecraftforge.gradle.util.json.version.AssetIndex;
 import net.minecraftforge.gradle.util.json.version.ManifestVersion;
 import net.minecraftforge.gradle.util.json.version.Version;
 
+@SuppressWarnings("serial")
 public class JsonFactory
 {
     public static final Gson GSON;

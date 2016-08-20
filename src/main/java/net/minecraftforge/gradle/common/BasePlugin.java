@@ -28,11 +28,8 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-
 import net.minecraftforge.gradle.util.json.version.ManifestVersion;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
@@ -57,12 +54,10 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.gson.reflect.TypeToken;
 
-import gnu.trove.TIntObjectHashMap;
 import groovy.lang.Closure;
 import net.minecraftforge.gradle.tasks.CrowdinDownload;
 import net.minecraftforge.gradle.tasks.Download;
