@@ -92,7 +92,7 @@ public class TaskRecompileMc extends CachedTask
                 .put("source", "1.6")
                 .put("target", "1.6")
                 .put("debug", "true")
-                .put("java.ext.dirs", getExtPath())
+                .put("Djava.ext.dirs", getExtPath())
                 .build()
         );
 
