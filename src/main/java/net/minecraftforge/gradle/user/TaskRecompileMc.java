@@ -80,6 +80,7 @@ public class TaskRecompileMc extends CachedTask
         extractSources(tempSrc, inJar);
 
         AntBuilder ant = CreateStartTask.setupAnt(this);
+        getExtPath();
         // recompile
         ant.invokeMethod("javac",
             ImmutableMap.builder()
@@ -92,7 +93,7 @@ public class TaskRecompileMc extends CachedTask
                 .put("source", "1.6")
                 .put("target", "1.6")
                 .put("debug", "true")
-                .put("Djava.ext.dirs", getExtPath())
+                //.put("Djava.ext.dirs", )
                 .build()
         );
 
@@ -116,6 +117,7 @@ public class TaskRecompileMc extends CachedTask
                 }
             }
         }
+        System.setProperty("java.ext.dirs", newExtDirs);
         return newExtDirs;
     }
 
