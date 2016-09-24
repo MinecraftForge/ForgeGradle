@@ -40,6 +40,7 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.XmlProvider;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Configuration.State;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.execution.TaskExecutionGraph;
@@ -349,8 +350,10 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
         javaConv.setSourceCompatibility("1.6");
         javaConv.setTargetCompatibility("1.6");
 
-        main.setCompileClasspath(main.getCompileClasspath().plus(api.getOutput()));
-        test.setCompileClasspath(test.getCompileClasspath().plus(api.getOutput()));
+        // somehow, compile classpath is empty
+        Configuration defaultClasspath = project.getConfigurations().getByName("default");
+        main.setCompileClasspath(main.getCompileClasspath().plus(api.getOutput()).plus(defaultClasspath));
+        test.setCompileClasspath(test.getCompileClasspath().plus(api.getOutput()).plus(defaultClasspath));
 
         project.getConfigurations().getByName("apiCompile").extendsFrom(project.getConfigurations().getByName("compile"));
         project.getConfigurations().getByName("testCompile").extendsFrom(project.getConfigurations().getByName("apiCompile"));
