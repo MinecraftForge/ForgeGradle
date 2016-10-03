@@ -63,4 +63,11 @@ public class ServerTweaker extends TweakerPlugin
     {
         return false;
     }
+
+    @Override
+    protected String getServerRunClass(TweakerExtension ext)
+    {
+        return "net.minecraft.launchwrapper.Launch";
+    }
+
 }
