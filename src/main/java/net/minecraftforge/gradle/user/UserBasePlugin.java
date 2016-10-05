@@ -1262,7 +1262,8 @@ public abstract class UserBasePlugin<T extends UserExtension> extends BasePlugin
             git.getParentFile().mkdir();
             try
             {
-                Files.write("#Seriously guys, stop commiting this to your git repo!\r\n*".getBytes(), git);
+                Files.write("#Seriously guys, stop commiting these stuff to your git repo!\r\n*".getBytes(), git);
+                Files.write("/build".getBytes(), git);
             }
             catch (IOException e){}
         }
