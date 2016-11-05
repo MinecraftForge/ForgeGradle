@@ -556,7 +556,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                     File dir = new File(dirRoot, "java");
 
                     task = makeTask(taskPrefix+"Java", TaskSourceCopy.class);
-                    task.setSource(set.getJava());
+                    task.setSource(set.getAllSource());
                     task.setOutput(dir);
 
                     // must get replacements from extension afterEvaluate()
@@ -770,7 +770,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                 });
 
                 ApplyS2STask retromap = makeTask(getSourceSetFormatted(set, TMPL_TASK_RETROMAP), ApplyS2STask.class);
-                retromap.addSource(set.getAllSource());
+                retromap.addSource(set.getAllJava());
                 retromap.setOut(retroMapped);
                 retromap.addSrg(delayedFile(SRG_MCP_TO_SRG));
                 retromap.addExc(delayedFile(EXC_MCP));
