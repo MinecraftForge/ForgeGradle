@@ -770,7 +770,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                 });
 
                 ApplyS2STask retromap = makeTask(getSourceSetFormatted(set, TMPL_TASK_RETROMAP), ApplyS2STask.class);
-                retromap.addSource(set.getAllJava());
+                retromap.addSource(set.getAllSource());
                 retromap.setOut(retroMapped);
                 retromap.addSrg(delayedFile(SRG_MCP_TO_SRG));
                 retromap.addExc(delayedFile(EXC_MCP));
