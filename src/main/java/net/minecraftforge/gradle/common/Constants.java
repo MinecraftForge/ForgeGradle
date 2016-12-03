@@ -127,6 +127,7 @@ public class Constants
     public static final String CONFIG_MAPPINGS       = "forgeGradleMcpMappings";
     public static final String CONFIG_NATIVES        = "forgeGradleMcNatives";
     public static final String CONFIG_MC_DEPS        = "forgeGradleMcDeps";
+    public static final String CONFIG_FFI_DEPS        = "forgeGradleFfiDeps"; // FernFlowerInvoker
     public static final String CONFIG_MC_DEPS_CLIENT = "forgeGradleMcDepsClient";
 
     // things in the cache dir.
@@ -460,12 +461,18 @@ public class Constants
         return null;
     }
 
-    public static PrintStream getTaskLogStream(Project project, String name)
+    public static File getTaskLogFile(Project project, String name)
     {
         final File taskLogs = new File(project.getBuildDir(), "taskLogs");
         taskLogs.mkdirs();
         final File logFile = new File(taskLogs, name);
         logFile.delete();//Delete the old log
+        return logFile;
+    }
+
+    public static PrintStream getTaskLogStream(Project project, String name)
+    {
+        final File logFile = getTaskLogFile(project, name);
         try
         {
             return new PrintStream(logFile);

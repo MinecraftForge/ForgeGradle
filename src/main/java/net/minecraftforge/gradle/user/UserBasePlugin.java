@@ -88,7 +88,6 @@ import com.google.common.collect.Maps;
 import groovy.lang.Closure;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.tasks.ApplyFernFlowerTask;
 import net.minecraftforge.gradle.tasks.ApplyS2STask;
 import net.minecraftforge.gradle.tasks.CreateStartTask;
 import net.minecraftforge.gradle.tasks.DeobfuscateJar;
@@ -96,6 +95,7 @@ import net.minecraftforge.gradle.tasks.ExtractS2SRangeTask;
 import net.minecraftforge.gradle.tasks.GenEclipseRunTask;
 import net.minecraftforge.gradle.tasks.PostDecompileTask;
 import net.minecraftforge.gradle.tasks.RemapSources;
+import net.minecraftforge.gradle.tasks.fernflower.ApplyFernFlowerTask;
 import net.minecraftforge.gradle.user.ReobfTaskFactory.ReobfTaskWrapper;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
@@ -331,6 +331,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             decompile.setInJar(deobfDecompJar);
             decompile.setOutJar(decompJar);
             decompile.setClasspath(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPS));
+            decompile.setForkedClasspath(project.getConfigurations().getByName(Constants.CONFIG_FFI_DEPS));
             decompile.dependsOn(deobfDecomp);
         }
 
