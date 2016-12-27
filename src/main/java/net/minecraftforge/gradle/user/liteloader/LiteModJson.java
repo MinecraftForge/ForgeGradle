@@ -21,6 +21,9 @@ package net.minecraftforge.gradle.user.liteloader;
 
 import com.google.common.base.Strings;
 import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 
@@ -28,10 +31,64 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 
 public class LiteModJson
 {
+    public static class Description extends HashMap<String, Object>
+    {
+        public static final String BASE = "";
+
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public String toString()
+        {
+            Object value = this.get(Description.BASE);
+            return value == null ? Description.BASE : value.toString();
+        }
+
+        public void propertyMissing(String name, Object value)
+        {
+            this.put(name, value);
+        }
+
+        public Object propertyMissing(String name)
+        {
+            return this.get(name);
+        }
+
+        static class JsonAdapter extends TypeAdapter<Description>
+        {
+            @Override
+            public void write(JsonWriter out, Description value) throws IOException
+            {
+                if (value == null)
+                {
+                    out.nullValue();
+                    return;
+                }
+
+                out.value(value.toString());
+                for (Entry<String, Object> entry : value.entrySet())
+                {
+                    if (!entry.getKey().equals(Description.BASE) && entry.getValue() != null)
+                    {
+                        out.name("description." + entry.getKey()).value(entry.getValue().toString());
+                    }
+                }
+            }
+
+            @Override
+            public Description read(JsonReader in) throws IOException
+            {
+                return null;
+            }
+        }
+    }
+
     public String name, displayName, version, author;
     public String mcversion, revision;
     public String injectAt, tweakClass;
@@ -39,31 +96,36 @@ public class LiteModJson
     public List<String> dependsOn;
     public List<String> requiredAPIs;
     public List<String> mixinConfigs;
-    
+
+    /**
+     * Handle base description and sub-descriptions dynamically
+     */
+    public Description description;
+
     private transient final Project project;
     private transient final String minecraftVersion;
-    
+
     LiteModJson(Project project, String minecraftVersion, String revision)
     {
         this.project = project;
         this.mcversion = this.minecraftVersion = minecraftVersion;
         this.revision = revision;
-        
+
         this.name = project.getName();
         this.displayName = project.hasProperty("displayName") ? project.property("displayName").toString() : project.getDescription();
         this.version = project.getVersion().toString();
     }
-    
+
     public void setMcversion(String version)
     {
         this.mcversion = version;
     }
-    
+
     public void setRevision(String revision)
     {
         this.revision = revision;
     }
-    
+
     public List<String> getClassTransformerClasses()
     {
         if (this.classTransformerClasses == null)
@@ -72,7 +134,7 @@ public class LiteModJson
         }
         return this.classTransformerClasses;
     }
-    
+
     public List<String> getDependsOn()
     {
         if (this.dependsOn == null)
@@ -81,7 +143,7 @@ public class LiteModJson
         }
         return this.dependsOn;
     }
-    
+
     public List<String> getRequiredAPIs()
     {
         if (this.requiredAPIs == null)
@@ -90,7 +152,7 @@ public class LiteModJson
         }
         return this.requiredAPIs;
     }
-    
+
     public List<String> getMixinConfigs()
     {
         if (this.mixinConfigs == null)
@@ -100,12 +162,26 @@ public class LiteModJson
         return this.mixinConfigs;
     }
 
+    public Description getDescription()
+    {
+        if (this.description == null)
+        {
+            this.description = new Description();
+        }
+        return this.description;
+    }
+
+    public void setDescription(Object value)
+    {
+        this.getDescription().put(Description.BASE, value);
+    }
+
     public void toJsonFile(File outputFile) throws IOException
     {
         this.validate();
-        
+
         FileWriter writer = new FileWriter(outputFile);
-        new GsonBuilder().setPrettyPrinting().create().toJson(this, writer);
+        new GsonBuilder().registerTypeAdapter(Description.class, new Description.JsonAdapter()).setPrettyPrinting().create().toJson(this, writer);
         writer.flush();
         writer.close();
     }
@@ -114,16 +190,16 @@ public class LiteModJson
     {
         if (Strings.isNullOrEmpty(this.name))
             throw new InvalidUserDataException("litemod json is missing property [name]");
-        
+
         if (Strings.isNullOrEmpty(this.version))
             throw new InvalidUserDataException("litemod json is missing property [version]");
-        
+
         if (Strings.isNullOrEmpty(this.mcversion))
             throw new InvalidUserDataException("litemod json is missing property [mcversion]");
-        
+
         if (Strings.isNullOrEmpty(this.revision))
             throw new InvalidUserDataException("litemod json is missing property [revision]");
-        
+
         try
         {
             Float.parseFloat(this.revision);
@@ -132,11 +208,11 @@ public class LiteModJson
         {
             throw new InvalidUserDataException("invalid format for [revision] property in litemod.json, expected float");
         }
-        
+
         if (!this.minecraftVersion.equals(this.mcversion)) {
             this.project.getLogger().warn("You are setting a different target version of minecraft to the build environment");
         }
 
     }
-    
+
 }
