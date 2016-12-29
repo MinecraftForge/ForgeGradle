@@ -661,12 +661,11 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
             con.connect();
 
-            String out = null;
             if (con.getResponseCode() == 304)
             {
                 // the existing file is good
                 Files.touch(cache); // touch it to update last-modified time, to wait another minute
-                out = Files.toString(cache, Charsets.UTF_8);
+                return Files.toString(cache, Charsets.UTF_8);
             }
             else if (con.getResponseCode() == 200)
             {
@@ -686,7 +685,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                     Files.write(etag, etagFile, Charsets.UTF_8);
                 }
 
-                out = new String(data);
+                return new String(data);
             }
             else
             {
@@ -694,8 +693,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             }
 
             con.disconnect();
-
-            return out;
         }
         catch (Exception e)
         {
