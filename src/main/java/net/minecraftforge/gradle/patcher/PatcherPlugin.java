@@ -31,6 +31,7 @@ import java.util.Set;
 import net.minecraftforge.gradle.common.BasePlugin;
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.tasks.*;
+import net.minecraftforge.gradle.tasks.fernflower.ApplyFernFlowerTask;
 import net.minecraftforge.gradle.util.CopyInto;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
 import net.minecraftforge.gradle.util.json.version.Library;
@@ -124,6 +125,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             decompileJar.setOutJar(delayedFile(JAR_DECOMP));
             decompileJar.setDoesCache(false);
             decompileJar.setClasspath(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPS));
+            decompileJar.setForkedClasspath(project.getConfigurations().getByName(Constants.CONFIG_FFI_DEPS));
             decompileJar.dependsOn(deobfJar);
         }
 

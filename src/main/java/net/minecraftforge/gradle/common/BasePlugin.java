@@ -30,19 +30,25 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
 import net.minecraftforge.gradle.util.json.version.ManifestVersion;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.Configuration.State;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.repositories.FlatDirectoryArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
+import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Delete;
+import org.gradle.api.tasks.StopExecutionException;
 import org.gradle.testfixtures.ProjectBuilder;
 
 import com.google.common.base.Charsets;
@@ -53,6 +59,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
@@ -172,6 +179,9 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         project.getConfigurations().maybeCreate(CONFIG_MC_DEPS);
         project.getConfigurations().maybeCreate(CONFIG_MC_DEPS_CLIENT);
         project.getConfigurations().maybeCreate(CONFIG_NATIVES);
+        project.getConfigurations().maybeCreate(CONFIG_FFI_DEPS);
+
+        addFernFlowerInvokerDeps();
 
         // should be assumed until specified otherwise
         project.getConfigurations().getByName(CONFIG_MC_DEPS).extendsFrom(project.getConfigurations().getByName(CONFIG_MC_DEPS_CLIENT));
@@ -342,6 +352,34 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     protected void onVersionCheck(FGVersion version, FGVersionWrapper wrapper)
     {
         // not required.. but you probably wanan implement this
+    }
+
+    private void addFernFlowerInvokerDeps()
+    {
+        DependencyHandler deps = project.getDependencies();
+        // Get dependencies from current FG
+        Configuration buildscriptClasspath = project.getBuildscript().getConfigurations().getByName("classpath");
+        final Dependency fgDep = Iterables.getFirst(buildscriptClasspath.getDependencies().matching(new Spec<Dependency>() {
+            @Override
+            public boolean isSatisfiedBy(Dependency element)
+            {
+                return element.getName().equals(GROUP_FG);
+            }
+        }), null);
+        if (fgDep == null) {
+            // This shouldn't happen, unless people are doing really wonky stuff
+            throw new StopExecutionException("Missing FG dep in buildscript classpath");
+        }
+        // This adds all of the dependencies of FG
+        deps.add(CONFIG_FFI_DEPS, project.files(buildscriptClasspath.getResolvedConfiguration().getFiles(new Spec<Dependency>() {
+            @Override
+            public boolean isSatisfiedBy(Dependency element)
+            {
+                return element.contentEquals(fgDep);
+            }
+        })));
+        // And this adds the groovy dep. FFI shouldn't need Gradle.
+        deps.add(CONFIG_FFI_DEPS, deps.localGroovy());
     }
 
     @SuppressWarnings("serial")
