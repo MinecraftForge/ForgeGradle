@@ -24,8 +24,10 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import groovy.lang.Closure;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
+import org.gradle.api.internal.ClosureBackedAction;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -37,17 +39,23 @@ import java.util.Map.Entry;
 
 public class LiteModJson
 {
-    public static class Description extends HashMap<String, Object>
+    public static class InlineMap extends HashMap<String, Object>
     {
         public static final String BASE = "";
 
         private static final long serialVersionUID = 1L;
 
+        private String prefix;
+
+        public InlineMap(String prefix) {
+            this.prefix = prefix;
+        }
+
         @Override
         public String toString()
         {
-            Object value = this.get(Description.BASE);
-            return value == null ? Description.BASE : value.toString();
+            Object value = this.get(InlineMap.BASE);
+            return value == null ? InlineMap.BASE : value.toString();
         }
 
         public void propertyMissing(String name, Object value)
@@ -60,29 +68,36 @@ public class LiteModJson
             return this.get(name);
         }
 
-        static class JsonAdapter extends TypeAdapter<Description>
+        static class JsonAdapter extends TypeAdapter<InlineMap>
         {
             @Override
-            public void write(JsonWriter out, Description value) throws IOException
+            public void write(JsonWriter out, InlineMap value) throws IOException
             {
                 if (value == null)
                 {
                     out.nullValue();
                     return;
                 }
+                if (!value.containsKey(InlineMap.BASE))
+                {
+                    out.nullValue();
+                }
+                else
+                {
+                    out.value(value.toString());
+                }
 
-                out.value(value.toString());
                 for (Entry<String, Object> entry : value.entrySet())
                 {
-                    if (!entry.getKey().equals(Description.BASE) && entry.getValue() != null)
+                    if (!entry.getKey().equals(InlineMap.BASE) && entry.getValue() != null)
                     {
-                        out.name("description." + entry.getKey()).value(entry.getValue().toString());
+                        out.name(value.prefix + entry.getKey()).value(entry.getValue().toString());
                     }
                 }
             }
 
             @Override
-            public Description read(JsonReader in) throws IOException
+            public InlineMap read(JsonReader in) throws IOException
             {
                 return null;
             }
@@ -100,7 +115,8 @@ public class LiteModJson
     /**
      * Handle base description and sub-descriptions dynamically
      */
-    public Description description;
+    public InlineMap description;
+    public InlineMap metadata;
 
     private transient final Project project;
     private transient final String minecraftVersion;
@@ -162,18 +178,32 @@ public class LiteModJson
         return this.mixinConfigs;
     }
 
-    public Description getDescription()
+    public InlineMap getDescription()
     {
         if (this.description == null)
         {
-            this.description = new Description();
+            this.description = new InlineMap("description.");
         }
         return this.description;
     }
 
     public void setDescription(Object value)
     {
-        this.getDescription().put(Description.BASE, value);
+        this.getDescription().put(InlineMap.BASE, value);
+    }
+
+    public InlineMap getMetadata()
+    {
+        if (this.metadata == null)
+        {
+            this.metadata = new InlineMap("");
+        }
+        return this.metadata;
+    }
+
+    public void metadata(Closure closure)
+    {
+        ClosureBackedAction.execute(this.getMetadata(), closure);
     }
 
     public void toJsonFile(File outputFile) throws IOException
@@ -181,7 +211,7 @@ public class LiteModJson
         this.validate();
 
         FileWriter writer = new FileWriter(outputFile);
-        new GsonBuilder().registerTypeAdapter(Description.class, new Description.JsonAdapter()).setPrettyPrinting().create().toJson(this, writer);
+        new GsonBuilder().registerTypeAdapter(InlineMap.class, new InlineMap.JsonAdapter()).setPrettyPrinting().create().toJson(this, writer);
         writer.flush();
         writer.close();
     }
