@@ -358,14 +358,21 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     {
         DependencyHandler deps = project.getDependencies();
         // Get dependencies from current FG
-        Configuration buildscriptClasspath = project.getBuildscript().getConfigurations().getByName("classpath");
-        final Dependency fgDep = Iterables.getFirst(buildscriptClasspath.getDependencies().matching(new Spec<Dependency>() {
-            @Override
-            public boolean isSatisfiedBy(Dependency element)
-            {
-                return element.getName().equals(GROUP_FG);
-            }
-        }), null);
+        Project parent = project;
+        Dependency fgDepTemp = null;
+        Configuration buildscriptClasspath = null;
+        while (parent != null && fgDepTemp == null) {
+            buildscriptClasspath = project.getBuildscript().getConfigurations().getByName("classpath");
+            fgDepTemp = Iterables.getFirst(buildscriptClasspath.getDependencies().matching(new Spec<Dependency>() {
+                @Override
+                public boolean isSatisfiedBy(Dependency element)
+                {
+                    return element.getName().equals(GROUP_FG);
+                }
+            }), null);
+            parent = parent.getParent();
+        }
+        final Dependency fgDep = fgDepTemp;
         if (fgDep == null) {
             // This shouldn't happen, unless people are doing really wonky stuff
             throw new StopExecutionException("Missing FG dep in buildscript classpath");
