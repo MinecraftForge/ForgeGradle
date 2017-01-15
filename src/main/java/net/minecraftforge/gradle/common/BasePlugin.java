@@ -362,7 +362,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         Dependency fgDepTemp = null;
         Configuration buildscriptClasspath = null;
         while (parent != null && fgDepTemp == null) {
-            buildscriptClasspath = project.getBuildscript().getConfigurations().getByName("classpath");
+            buildscriptClasspath = parent.getBuildscript().getConfigurations().getByName("classpath");
             fgDepTemp = Iterables.getFirst(buildscriptClasspath.getDependencies().matching(new Spec<Dependency>() {
                 @Override
                 public boolean isSatisfiedBy(Dependency element)
