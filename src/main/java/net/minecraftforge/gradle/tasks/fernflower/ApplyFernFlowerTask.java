@@ -45,6 +45,7 @@ public class ApplyFernFlowerTask extends CachedTask {
 
     // 2.5 GB
     private static final long REQUIRED_MEMORY = (long) (2.5 * 1024 * 1024 * 1024);
+    private static final String FORK_FLAG = "forkDecompile";
 
     @InputFile
     Object inJar;
@@ -87,8 +88,10 @@ public class ApplyFernFlowerTask extends CachedTask {
 
     private void runFernFlower(FernFlowerSettings settings) throws IOException
     {
-        if (Runtime.getRuntime().maxMemory() >= REQUIRED_MEMORY) {
-            // no need to fork
+        // forking allowed if the property is not present or it is "true" ("true" is the default)
+        boolean forkAllowed = !getProject().hasProperty(FORK_FLAG) || Boolean.parseBoolean(getProject().property(FORK_FLAG).toString());
+        if (!forkAllowed || Runtime.getRuntime().maxMemory() >= REQUIRED_MEMORY) {
+            // no fork, either not allowed or memory is OK
             FernFlowerInvoker.runFernFlower(settings);
         } else {
             // put this in the info logs, but day-to-day use doesn't need to see it
