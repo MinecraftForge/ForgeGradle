@@ -677,7 +677,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
 
                     // add repo for url if its not the MC repo, not maven central, and not already added
                     String url = lib.getUrl();
-                    if (!url.contains("libraries.minecraft.net") && !url.contains("maven.apache.org") && !repos.contains(url))
+                    if (!url.contains("libraries.minecraft.net") && !url.contains("minecraft-libraries.s3.amazonaws.com") && !url.contains("maven.apache.org") && !repos.contains(url))
                     {
                         createProjects.addRepo("jsonRepo" + repos.size(), url);
 
