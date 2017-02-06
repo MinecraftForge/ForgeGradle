@@ -20,6 +20,7 @@
 package net.minecraftforge.gradle.user.patcherUser.forge;
 
 import static net.minecraftforge.gradle.common.Constants.REPLACE_MC_VERSION;
+import static net.minecraftforge.gradle.user.UserConstants.TASK_MCMOD_INFO;
 import static net.minecraftforge.gradle.user.UserConstants.TASK_REOBF;
 
 import java.io.File;
@@ -116,6 +117,8 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
                 }
             }
         });
+
+        makeTask(TASK_MCMOD_INFO, ForgeInfoTask.class);
     }
 
     @Override

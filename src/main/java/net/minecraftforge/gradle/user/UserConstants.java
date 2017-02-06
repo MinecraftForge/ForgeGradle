@@ -51,6 +51,8 @@ public class UserConstants
     public static final String TASK_RECOMPILE         = "recompileMc";
     public static final String TASK_MAKE_START        = "makeStart";
 
+    public static final String TASK_MCMOD_INFO        = "mcmod";
+
     public static final String EXT_REOBF              = "reobf";
     public static final String TASK_REOBF             = "reobfJar";
     public static final String TASK_SRC_JAR           = "sourceJar";
