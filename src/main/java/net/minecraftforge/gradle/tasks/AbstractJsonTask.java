@@ -31,10 +31,10 @@ import groovy.lang.Closure;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.InvalidUserDataException;
-import org.gradle.api.internal.ClosureBackedAction;
 import org.gradle.api.specs.Specs;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.util.ConfigureUtil;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -87,7 +87,7 @@ public abstract class AbstractJsonTask<T extends AbstractJsonTask.IModInfo> exte
 
         // allow the transformer to change the data
         if (this.transform != null) {
-            ClosureBackedAction.execute(map, this.transform);
+            ConfigureUtil.configure(this.transform, map);
         }
 
         // write to file
@@ -142,7 +142,7 @@ public abstract class AbstractJsonTask<T extends AbstractJsonTask.IModInfo> exte
     }
 
     public void json(Closure<?> configureClosure) {
-        ClosureBackedAction.execute(this.getJson(), configureClosure);
+        ConfigureUtil.configure(configureClosure, this.getJson());
     }
 
     protected GsonBuilder withGsonBuilder(GsonBuilder gson) {

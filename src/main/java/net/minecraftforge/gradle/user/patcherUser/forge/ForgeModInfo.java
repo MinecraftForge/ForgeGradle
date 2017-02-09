@@ -25,9 +25,8 @@ import com.google.common.collect.Sets;
 import groovy.lang.Closure;
 import groovy.lang.MissingMethodException;
 import net.minecraftforge.gradle.tasks.AbstractJsonTask;
-import org.codehaus.groovy.runtime.InvokerHelper;
 import org.gradle.api.InvalidUserDataException;
-import org.gradle.api.internal.ClosureBackedAction;
+import org.gradle.util.ConfigureUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -57,7 +56,6 @@ public class ForgeModInfo implements AbstractJsonTask.IModInfo {
     }
 
     public Object methodMissing(String name, Object params) {
-        // FIXME requires explicit reference to type. e.g. `it.botania {}`
         Object[] args = (Object[]) params;
         if (args.length == 1 && args[0] instanceof Closure) {
             mod(name, (Closure) args[0]);
@@ -98,7 +96,7 @@ public class ForgeModInfo implements AbstractJsonTask.IModInfo {
      * @param args the properties to set
      */
     public void mod(Map<String, ?> args, String id) {
-        InvokerHelper.setProperties(mod(id), args);
+        ConfigureUtil.configureByMap(args, mod(id));
     }
 
     /**
@@ -117,7 +115,7 @@ public class ForgeModInfo implements AbstractJsonTask.IModInfo {
      * @param action the closure to use to configure the mod info
      */
     public void mod(String id, Closure<?> action) {
-        ClosureBackedAction.execute(mod(id), action);
+        ConfigureUtil.configure(action, mod(id));
     }
 
     public List<FMLModInfo> getMods() {
