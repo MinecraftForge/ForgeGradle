@@ -23,24 +23,28 @@ import groovy.lang.Closure;
 import net.minecraftforge.gradle.common.BaseExtension;
 import net.minecraftforge.gradle.tasks.AbstractJsonTask;
 
-public class ForgeInfoTask extends AbstractJsonTask<ForgeModInfo>{
+public class ForgeInfoTask extends AbstractJsonTask<ForgeModInfo>
+{
 
-
-    public ForgeInfoTask() {
+    public ForgeInfoTask()
+    {
         this.setFileName("mcmod.info");
     }
 
-    public ForgeModInfo getInfo() {
+    public ForgeModInfo getInfo()
+    {
         // so it can be accessed via the filename. (mcmod.info.version = 3)
         return this.getJson();
     }
 
-    public void info(Closure<?> cl) {
+    public void info(Closure<?> cl)
+    {
         super.json(cl);
     }
 
     @Override
-    protected ForgeModInfo createJson() {
+    protected ForgeModInfo createJson()
+    {
         BaseExtension ext = (BaseExtension) getProject().getExtensions().findByName("minecraft");
         return new ForgeModInfo(ext.getVersion());
     }

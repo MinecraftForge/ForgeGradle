@@ -32,7 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class ForgeModInfo implements AbstractJsonTask.IModInfo {
+public class ForgeModInfo implements AbstractJsonTask.IModInfo
+{
 
     @SuppressWarnings("unused")
     private int modListVersion = 2;
@@ -42,24 +43,37 @@ public class ForgeModInfo implements AbstractJsonTask.IModInfo {
 
     private transient final String mcversion;
 
-    public ForgeModInfo(String mcversion) {
+    public ForgeModInfo(String mcversion)
+    {
         this.mcversion = mcversion;
     }
 
     @Override
-    public void validate() throws InvalidUserDataException {
+    public void validate() throws InvalidUserDataException
+    {
         // Nothing is required. Everything is completely optional.
     }
 
-    public Object propertyMissing(String name) {
+    public Object propertyMissing(String name)
+    {
         return mod(name);
     }
 
-    public Object methodMissing(String name, Object params) {
+    public Object methodMissing(String name, Object params)
+    {
         Object[] args = (Object[]) params;
-        if (args.length == 1 && args[0] instanceof Closure) {
-            mod(name, (Closure) args[0]);
-            return null;
+        if (args.length == 1)
+        {
+            if (args[0] instanceof Closure)
+            {
+                mod(name, (Closure) args[0]);
+                return null;
+            }
+            else if (args[0] instanceof Map)
+            {
+                mod((Map) args[0], name);
+                return null;
+            }
         }
         throw new MissingMethodException(name, this.getClass(), args);
 
@@ -71,8 +85,10 @@ public class ForgeModInfo implements AbstractJsonTask.IModInfo {
      * @param id The modid
      * @return The mod info object
      */
-    public FMLModInfo mod(String id) {
-        if (!modidMap.containsKey(id)) {
+    public FMLModInfo mod(String id)
+    {
+        if (!modidMap.containsKey(id))
+        {
             FMLModInfo info = new FMLModInfo(id, mcversion);
             modList.add(info);
             modidMap.put(id, info);
@@ -81,7 +97,7 @@ public class ForgeModInfo implements AbstractJsonTask.IModInfo {
     }
 
     /**
-     * <p>Quickly assign the properties to the given modid.</p>
+     * <p>Quickly assign the map properties to the given modid.</p>
      * <strong>Example</strong>
      * <pre>
      *     mod('example', name: 'Example', version: '1.0.0')
@@ -92,15 +108,18 @@ public class ForgeModInfo implements AbstractJsonTask.IModInfo {
      *     )
      * </pre>
      *
-     * @param id   the modid
      * @param args the properties to set
+     * @param id   the modid
+     *
+     * @return The mod which was configured
      */
-    public void mod(Map<String, ?> args, String id) {
-        ConfigureUtil.configureByMap(args, mod(id));
+    public FMLModInfo mod(Map<?, ?> args, String id)
+    {
+        return ConfigureUtil.configureByMap(args, mod(id));
     }
 
     /**
-     * Configures the given {@link FMLModInfo} from the modid with a closure backed action
+     * Configures the given {@link FMLModInfo} from the modid
      * <pre>
      *     mod('pipecraft') {
      *         name = 'Pipe Craft'
@@ -110,19 +129,23 @@ public class ForgeModInfo implements AbstractJsonTask.IModInfo {
      *         // etc
      *     }
      * </pre>
-     *
      * @param id     The modid
      * @param action the closure to use to configure the mod info
+     *
+     * @return The mod which was configured
      */
-    public void mod(String id, Closure<?> action) {
-        ConfigureUtil.configure(action, mod(id));
+    public FMLModInfo mod(String id, Closure<?> action)
+    {
+        return ConfigureUtil.configure(action, mod(id));
     }
 
-    public List<FMLModInfo> getMods() {
+    public List<FMLModInfo> getMods()
+    {
         return this.modList;
     }
 
-    public class FMLModInfo {
+    public class FMLModInfo
+    {
         private final String modid;
         private String name;
         private String description;
@@ -140,137 +163,169 @@ public class ForgeModInfo implements AbstractJsonTask.IModInfo {
         private Set<String> dependants;
         private String useDependencyInformation;
 
-        private FMLModInfo(String id, String mcversion) {
+        private FMLModInfo(String id, String mcversion)
+        {
             this.modid = id;
             this.mcversion = mcversion;
         }
 
-        public String getModid() {
+        public String getModid()
+        {
             return modid;
         }
 
-        public String getName() {
+        public String getName()
+        {
             return name;
         }
 
-        public void setName(String name) {
+        public void setName(String name)
+        {
             this.name = name;
         }
 
-        public String getDescription() {
+        public String getDescription()
+        {
             return description;
         }
 
-        public void setDescription(String description) {
+        public void setDescription(String description)
+        {
             this.description = description;
         }
 
-        public String getVersion() {
+        public String getVersion()
+        {
             return version;
         }
 
-        public void setVersion(String version) {
+        public void setVersion(String version)
+        {
             this.version = version;
         }
 
-        public String getMcversion() {
+        public String getMcversion()
+        {
             return mcversion;
         }
 
-        public void setMcversion(String mcversion) {
+        public void setMcversion(String mcversion)
+        {
             this.mcversion = mcversion;
         }
 
-        public String getUrl() {
+        public String getUrl()
+        {
             return url;
         }
 
-        public void setUrl(String url) {
+        public void setUrl(String url)
+        {
             this.url = url;
         }
 
-        public String getUpdateUrl() {
+        public String getUpdateUrl()
+        {
             return updateUrl;
         }
 
-        public void setUpdateUrl(String updateUrl) {
+        public void setUpdateUrl(String updateUrl)
+        {
             this.updateUrl = updateUrl;
         }
 
-        public Set<String> getAuthorList() {
+        public Set<String> getAuthorList()
+        {
             if (authorList == null) authorList = Sets.newHashSet();
             return authorList;
         }
 
-        public void setAuthorList(Set<String> authorList) {
+        public void setAuthorList(Set<String> authorList)
+        {
             this.authorList = authorList;
         }
 
-        public Set<String> getScreenshots() {
+        public Set<String> getScreenshots()
+        {
             if (screenshots == null) screenshots = Sets.newHashSet();
             return screenshots;
         }
 
-        public void setScreenshots(Set<String> screenshots) {
+        public void setScreenshots(Set<String> screenshots)
+        {
             this.screenshots = screenshots;
         }
 
-        public String getCredits() {
+        public String getCredits()
+        {
             return credits;
         }
 
-        public void setCredits(String credits) {
+        public void setCredits(String credits)
+        {
             this.credits = credits;
         }
 
-        public String getLogoFile() {
+        public String getLogoFile()
+        {
             return logoFile;
         }
 
-        public void setLogoFile(String logoFile) {
+        public void setLogoFile(String logoFile)
+        {
             this.logoFile = logoFile;
         }
 
-        public String getParent() {
+        public String getParent()
+        {
             return parent;
         }
 
-        public void setParent(String parent) {
+        public void setParent(String parent)
+        {
             this.parent = parent;
         }
 
-        public Set<String> getRequiredMods() {
+        public Set<String> getRequiredMods()
+        {
             if (requiredMods == null) requiredMods = Sets.newHashSet();
             return requiredMods;
         }
 
-        public void setRequiredMods(Set<String> requiredMods) {
+        public void setRequiredMods(Set<String> requiredMods)
+        {
             this.requiredMods = requiredMods;
         }
 
-        public Set<String> getDependencies() {
+        public Set<String> getDependencies()
+        {
             if (dependencies == null) dependencies = Sets.newHashSet();
             return dependencies;
         }
 
-        public void setDependencies(Set<String> dependencies) {
+        public void setDependencies(Set<String> dependencies)
+        {
             this.dependencies = dependencies;
         }
 
-        public Set<String> getDependants() {
+        public Set<String> getDependants()
+        {
             if (dependants == null) dependants = Sets.newHashSet();
             return dependants;
         }
 
-        public void setDependants(Set<String> dependants) {
+        public void setDependants(Set<String> dependants)
+        {
             this.dependants = dependants;
         }
 
-        public String getUseDependencyInformation() {
+        public String getUseDependencyInformation()
+        {
             return useDependencyInformation;
         }
 
-        public void setUseDependencyInformation(String useDependencyInformation) {
+        public void setUseDependencyInformation(String useDependencyInformation)
+        {
             this.useDependencyInformation = useDependencyInformation;
         }
     }

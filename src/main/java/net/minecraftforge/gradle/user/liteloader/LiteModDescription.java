@@ -26,43 +26,53 @@ import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.util.HashMap;
 
-public class LiteModDescription extends HashMap<String, Object> {
+public class LiteModDescription extends HashMap<String, Object>
+{
     public static final String BASE = "";
 
     private static final long serialVersionUID = 1L;
 
     @Override
-    public String toString() {
+    public String toString()
+    {
         Object value = this.get(LiteModDescription.BASE);
         return value == null ? LiteModDescription.BASE : value.toString();
     }
 
-    public void propertyMissing(String name, Object value) {
+    public void propertyMissing(String name, Object value)
+    {
         this.put(name, value);
     }
 
-    public Object propertyMissing(String name) {
+    public Object propertyMissing(String name)
+    {
         return this.get(name);
     }
 
-    static class JsonAdapter extends TypeAdapter<LiteModDescription> {
+    static class JsonAdapter extends TypeAdapter<LiteModDescription>
+    {
         @Override
-        public void write(JsonWriter out, LiteModDescription value) throws IOException {
-            if (value == null) {
+        public void write(JsonWriter out, LiteModDescription value) throws IOException
+        {
+            if (value == null)
+            {
                 out.nullValue();
                 return;
             }
 
             out.value(value.toString());
-            for (Entry<String, Object> entry : value.entrySet()) {
-                if (!entry.getKey().equals(LiteModDescription.BASE) && entry.getValue() != null) {
+            for (Entry<String, Object> entry : value.entrySet())
+            {
+                if (!entry.getKey().equals(LiteModDescription.BASE) && entry.getValue() != null)
+                {
                     out.name("description." + entry.getKey()).value(entry.getValue().toString());
                 }
             }
         }
 
         @Override
-        public LiteModDescription read(JsonReader in) throws IOException {
+        public LiteModDescription read(JsonReader in) throws IOException
+        {
             return null;
         }
     }

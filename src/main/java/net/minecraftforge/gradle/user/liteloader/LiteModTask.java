@@ -41,27 +41,32 @@ public class LiteModTask extends AbstractJsonTask<LiteModJson>
     }
 
     @Override
-    public void doTask() throws IOException {
+    public void doTask() throws IOException
+    {
         LiteModJson json = getJson();
-        if (json.revision == null) {
+        if (json.revision == null)
+        {
             json.setRevision(getBuildNumber());
         }
         super.doTask();
     }
 
     @Override
-    protected LiteModJson createJson() {
+    protected LiteModJson createJson()
+    {
         Project project = this.getProject();
         String version = project.getExtensions().findByType(LiteloaderExtension.class).getVersion();
         return new LiteModJson(project, version);
     }
 
     @Override
-    protected GsonBuilder withGsonBuilder(GsonBuilder gson) {
+    protected GsonBuilder withGsonBuilder(GsonBuilder gson)
+    {
         return gson.registerTypeAdapter(LiteModDescription.class, new LiteModDescription.JsonAdapter());
     }
 
-    private String getBuildNumber() throws IOException {
+    private String getBuildNumber() throws IOException
+    {
         if (this.buildNumber == null)
         {
             AntBuilder ant = getProject().getAnt();

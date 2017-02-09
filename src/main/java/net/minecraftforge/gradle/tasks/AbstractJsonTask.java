@@ -23,7 +23,6 @@ package net.minecraftforge.gradle.tasks;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
@@ -42,9 +41,11 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Map;
 
-public abstract class AbstractJsonTask<T extends AbstractJsonTask.IModInfo> extends DefaultTask {
+public abstract class AbstractJsonTask<T extends AbstractJsonTask.IModInfo> extends DefaultTask
+{
 
-    public interface IModInfo {
+    public interface IModInfo
+    {
         void validate() throws InvalidUserDataException;
     }
 
@@ -59,17 +60,20 @@ public abstract class AbstractJsonTask<T extends AbstractJsonTask.IModInfo> exte
     }
 
     @OutputFile
-    public File getOutputFile() {
+    public File getOutputFile()
+    {
         return new File(getTemporaryDir(), fileName);
     }
 
     @TaskAction
-    public void doTask() throws IOException {
+    public void doTask() throws IOException
+    {
         Gson gson = withGsonBuilder(new GsonBuilder()
                 .setPrettyPrinting()
                 .registerTypeAdapter(Double.class, new JsonSerializer<Double>() {
                     @Override
-                    public JsonElement serialize(Double src, Type typeOfSrc, JsonSerializationContext context) {
+                    public JsonElement serialize(Double src, Type typeOfSrc, JsonSerializationContext context)
+                    {
                         // demote the double if it has no decimal
                         if (src.longValue() == src)
                             return new JsonPrimitive(src.longValue());
@@ -86,13 +90,12 @@ public abstract class AbstractJsonTask<T extends AbstractJsonTask.IModInfo> exte
         Map map = gson.fromJson(object, Map.class);
 
         // allow the transformer to change the data
-        if (this.transform != null) {
-            ConfigureUtil.configure(this.transform, map);
-        }
+        ConfigureUtil.configure(this.transform, map);
 
         // write to file
         FileWriter writer = null;
-        try {
+        try
+        {
             File outputFile = this.getOutputFile();
             outputFile.delete();
             writer = new FileWriter(outputFile);
@@ -100,52 +103,44 @@ public abstract class AbstractJsonTask<T extends AbstractJsonTask.IModInfo> exte
             gson.toJson(map, writer);
 
             writer.flush();
-        } finally {
+        }
+        finally
+        {
             IOUtils.closeQuietly(writer);
         }
     }
 
-    private JsonObject merge(JsonObject base, JsonObject toMerge) {
-        for (Map.Entry<String, JsonElement> e : toMerge.entrySet()) {
-            String name = e.getKey();
-            JsonElement element = e.getValue();
-            if (base.has(name) && !element.isJsonPrimitive()) {
-                JsonElement toReplace = base.get(name);
-
-                // TODO merge objects/arrays
-
-            } else {
-                // doesn't exist or is a primitive
-                base.add(name, element);
-            }
-        }
-        return base;
-    }
-
-    public String getFileName() {
+    public String getFileName()
+    {
         return fileName;
     }
 
-    public void setFileName(String fileName) {
+    public void setFileName(String fileName)
+    {
         this.fileName = fileName;
     }
 
-    public T getJson() {
-        if (this.json == null) {
+    public T getJson()
+    {
+        if (this.json == null)
+        {
             this.json = createJson();
         }
         return this.json;
     }
 
-    public void transform(Closure cl) {
+    public void transform(Closure cl)
+    {
         this.transform = cl;
     }
 
-    public void json(Closure<?> configureClosure) {
+    public void json(Closure<?> configureClosure)
+    {
         ConfigureUtil.configure(configureClosure, this.getJson());
     }
 
-    protected GsonBuilder withGsonBuilder(GsonBuilder gson) {
+    protected GsonBuilder withGsonBuilder(GsonBuilder gson)
+    {
         return gson;
     }
 
