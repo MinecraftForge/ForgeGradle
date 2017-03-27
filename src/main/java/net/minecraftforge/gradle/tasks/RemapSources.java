@@ -59,9 +59,10 @@ public class RemapSources extends AbstractEditJarTask
     private final Map<String, String> fieldDocs    = Maps.newHashMap();
     private final Map<String, String> params       = Maps.newHashMap();
 
+
     private static final Pattern      SRG_FINDER   = Pattern.compile("func_[0-9]+_[a-zA-Z_]+|field_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_\\b");
-    private static final Pattern      METHOD       = Pattern.compile("^((?: {4})+|\\t+)(?:[\\w$.\\[\\]]+ )+(func_[0-9]+_[a-zA-Z_]+)\\(");
-    private static final Pattern      FIELD        = Pattern.compile("^((?: {4})+|\\t+)(?:[\\w$.\\[\\]]+ )+(field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
+    public static final Pattern      METHOD       = Pattern.compile("^(?<indent>(?: {4})+|\\t+)(?!return)(?:\\w+\\s+)*(?<generic><[\\w\\W]*>\\s+)?(?<return>\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>func_[0-9]+_[a-zA-Z_]+)\\(");
+    public static final Pattern      FIELD        = Pattern.compile("^(?<indent>(?: {4})+|\\t+)(?:\\w+\\s+)*(?:\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
 
     @Override
     public void doStuffBefore() throws Exception
@@ -89,7 +90,7 @@ public class RemapSources extends AbstractEditJarTask
             params.put(s[0], s[1]);
         }
     }
-    
+
     @Override
     protected boolean storeJarInRam()
     {
@@ -102,7 +103,7 @@ public class RemapSources extends AbstractEditJarTask
         ArrayList<String> newLines = new ArrayList<String>();
         for (String line : Constants.lines(text))
         {
-            // basically all this code is to find the javadocs for a field ebfore replacing it.
+            // basically all this code is to find the javadocs for a field before replacing it.
             // if we arnt doing javadocs.. screw dat.
             if (addsJavadocs)
             {
@@ -120,12 +121,12 @@ public class RemapSources extends AbstractEditJarTask
         Matcher matcher = METHOD.matcher(line);
         if (matcher.find())
         {
-            String javadoc = methodDocs.get(matcher.group(2));
+            String javadoc = methodDocs.get(matcher.group("name"));
             if (!Strings.isNullOrEmpty(javadoc))
             {
-                insetAboveAnnotations(newLines, JavadocAdder.buildJavadoc(matcher.group(1), javadoc, true));
+                insetAboveAnnotations(newLines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, true));
             }
-            
+
             // worked, so return and dont try the fields.
             return;
         }
@@ -134,10 +135,10 @@ public class RemapSources extends AbstractEditJarTask
         matcher = FIELD.matcher(line);
         if (matcher.find())
         {
-            String javadoc = fieldDocs.get(matcher.group(2));
+            String javadoc = fieldDocs.get(matcher.group("name"));
             if (!Strings.isNullOrEmpty(javadoc))
             {
-                insetAboveAnnotations(newLines, JavadocAdder.buildJavadoc(matcher.group(1), javadoc, false));
+                insetAboveAnnotations(newLines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, false));
             }
         }
     }
@@ -176,7 +177,7 @@ public class RemapSources extends AbstractEditJarTask
         matcher.appendTail(buf);
         return buf.toString();
     }
-    
+
     public File getMethodsCsv()
     {
         return methodsCsv.call();
@@ -216,7 +217,7 @@ public class RemapSources extends AbstractEditJarTask
     {
         this.addsJavadocs = javadoc;
     }
-    
+
     @Override
     public void doStuffMiddle(Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws Exception { }
 

@@ -1,0 +1,32 @@
+{
+    public static boolean field_1_a = true;
+    static boolean field_2_a;
+    boolean field_3_a;
+    boolean[] field_4_a;
+    List<Test> field_5_a;
+    private final Map<String, T> field_6_a;
+    Map<> field_7_a;
+    Map<,> field_8_a; //This will get javadocs even tho its invalid cuz we dont care if its valid just that it grabs all the generics
+    Map<Test[], Bob[]>[] field_9_a;
+    Map<? extends Object & Turtle> field_10_a;
+
+
+
+    public static void func_1_a();
+    static boolean  func_2_a();
+    boolean func_3_a();
+    boolean[] func_4_a();
+    List<Test> func_5_a();
+    Map<Test, Bob> func_6_a();
+    Map<> func_7_a();
+    Map<,> func_8_a();
+    Map<Test[], Bob[]>[] func_9_a();
+    Map<? extends Object & Turtle> func_10_a();
+    public static <T extends Enum<T> & IStringSerializable> PropertyEnum<T> func_11_a();
+
+
+
+    //These SHOULDN'T get javadocs
+    return func_1_a();
+
+}
