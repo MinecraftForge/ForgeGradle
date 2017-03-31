@@ -23,8 +23,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
@@ -38,6 +36,8 @@ import au.com.bytecode.opencsv.CSVReader;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
+import com.google.code.regexp.Matcher;
+import com.google.code.regexp.Pattern;
 
 @ParallelizableTask
 public class RemapSources extends AbstractEditJarTask
