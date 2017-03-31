@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.tasks.RemapSources;
@@ -34,6 +33,7 @@ import org.junit.Test;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
+import com.google.code.regexp.Matcher;
 
 public class JavadocInserterTest
 {
