@@ -18,11 +18,11 @@ apply plugin: "com.gradle.plugin-publish"
 apply plugin: 'license'
 
 group = 'net.minecraftforge.gradle'
-version = '2.2-SNAPSHOT'
+version = '2.3-SNAPSHOT'
 //version = '2.2.1'
 archivesBaseName = 'ForgeGradle'
-targetCompatibility = '1.6'
-sourceCompatibility = '1.6'
+targetCompatibility = '1.8'
+sourceCompatibility = '1.8'
 
 repositories {
     mavenLocal()
@@ -74,7 +74,7 @@ dependencies {
     compile 'com.nothome:javaxdelta:2.0.1' // GDIFF implementation for BinPatches
     compile 'com.google.code.gson:gson:2.2.4' // Used instead of Argo for buuilding changelog.
     compile 'com.github.tony19:named-regexp:0.2.3' // 1.7 Named regexp features
-    compile 'net.minecraftforge:fernflower:2.0-SNAPSHOT' // Fernflower Forge edition
+    compile 'net.minecraftforge:forgeflower:1.0.342-SNAPSHOT' // Fernflower Forge edition
 
     shade 'net.md-5:SpecialSource:1.7.4' // deobf and reobs
     // compile 'net.md-5:SpecialSource:1.7.4' // when md5 publishes
