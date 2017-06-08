@@ -137,8 +137,8 @@ public class CreateStartTask extends CachedTask
                     .put("includeantruntime", false)
                     .put("classpath", col.getAsPath()) // because ant knows what a file collection is
                     .put("encoding", "utf-8")
-                    .put("source", "1.6")
-                    .put("target", "1.6")
+                    .put("source", "1.8")
+                    .put("target", "1.8")
                     .put("debug", "true")
                     .build());
 

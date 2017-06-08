@@ -484,7 +484,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
 
     /**
      * Creates the api SourceSet and configures the classpaths of all the SourceSets to have MC and the MC deps in them.
-     * Also sets the target JDK to java 6
+     * Also sets the target JDK to java 8
      */
     protected void configureCompilation()
     {
@@ -531,8 +531,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
         project.getDependencies().add(JavaPlugin.COMPILE_CONFIGURATION_NAME, project.fileTree("libs"));
 
         // set the compile target
-        javaConv.setSourceCompatibility("1.6");
-        javaConv.setTargetCompatibility("1.6");
+        javaConv.setSourceCompatibility("1.8");
+        javaConv.setTargetCompatibility("1.8");
     }
 
     /**
