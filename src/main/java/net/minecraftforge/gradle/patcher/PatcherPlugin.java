@@ -673,7 +673,10 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
             {
                 if (lib.applies() && lib.extract == null)
                 {
-                    createProjects.addCompileDep(lib.getArtifactName());
+                    if (lib.getArtifactName().contains("java-objc-bridge") && lib.getArtifactName().contains("natives-osx")) //Normal repo bundles this in the mian jar so we need to just use the main jar
+                        createProjects.addCompileDep(lib.getArtifactNameSkipNatives());
+                    else
+                        createProjects.addCompileDep(lib.getArtifactName());
 
                     // add repo for url if its not the MC repo, not maven central, and not already added
                     String url = lib.getUrl();

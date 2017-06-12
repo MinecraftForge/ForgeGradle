@@ -12,7 +12,7 @@ public class Library
     public Map<OS, String> natives;
     public ExtractRule extract;
     private String url;
-    
+
     private Action _applies = null;
     public boolean applies()
     {
@@ -38,37 +38,38 @@ public class Library
     private Artifact _artifact = null;
     public String getPath()
     {
-        if (_artifact == null)
-        {
-            _artifact = new Artifact(name);
-        }
-        return _artifact.getPath();
+        return getArtifact().getPath();
     }
 
     public String getPathNatives()
     {
         if (natives == null) return null;
-        if (_artifact == null)
-        {
-            _artifact = new Artifact(name);
-        }
-        return _artifact.getPath(natives.get(OS.CURRENT));
+        return getArtifact().getPath(natives.get(OS.CURRENT));
     }
-    
+
     public String getArtifactName()
+    {
+        if (natives == null)
+            return getArtifact().getArtifact();
+        else
+            return getArtifact().getArtifact(natives.get(OS.CURRENT));
+    }
+
+    public String getArtifactNameSkipNatives()
+    {
+        return getArtifact().getArtifact();
+    }
+
+    private Artifact getArtifact()
     {
         if (_artifact == null)
             _artifact = new Artifact(name);
-        
-        if (natives == null)
-            return _artifact.getArtifact();
-        else
-            return _artifact.getArtifact(natives.get(OS.CURRENT));
+        return _artifact;
     }
 
     public String getUrl()
     {
-        return url == null ? Constants.URL_LIBRARY : url; 
+        return url == null ? Constants.URL_LIBRARY : url;
     }
 
     @Override
@@ -112,7 +113,7 @@ public class Library
             if (!"jar".equals(ext)) ret += "@" + ext;
             return ret;
         }
-        
+
         public String getPath(){ return getPath(classifier); }
         public String getPath(String classifier)
         {

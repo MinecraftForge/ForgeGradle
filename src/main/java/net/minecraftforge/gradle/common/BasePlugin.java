@@ -819,8 +819,10 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                     {
                         configName = CONFIG_MC_DEPS_CLIENT;
                     }
-
-                    handler.add(configName, lib.getArtifactName());
+                    if (lib.getArtifactName().contains("java-objc-bridge") && lib.getArtifactName().contains("natives-osx")) //Normal repo bundles this in the mian jar so we need to just use the main jar
+                        handler.add(configName, lib.getArtifactNameSkipNatives());
+                    else
+                        handler.add(configName, lib.getArtifactName());
                 }
             }
         }
