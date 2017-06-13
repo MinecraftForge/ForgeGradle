@@ -819,10 +819,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                     {
                         configName = CONFIG_MC_DEPS_CLIENT;
                     }
-                    if (lib.getArtifactName().contains("java-objc-bridge") && lib.getArtifactName().contains("natives-osx")) //Normal repo bundles this in the mian jar so we need to just use the main jar
-                        handler.add(configName, lib.getArtifactNameSkipNatives());
-                    else
-                        handler.add(configName, lib.getArtifactName());
+
+                    handler.add(configName, lib.getArtifactName());
                 }
             }
         }
@@ -835,7 +833,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             for (net.minecraftforge.gradle.util.json.version.Library lib : version.getLibraries())
             {
                 if (lib.natives != null)
-                    handler.add(CONFIG_NATIVES, lib.getArtifactName());
+                {
+                    if (lib.getArtifactName().contains("java-objc-bridge") && lib.getArtifactName().contains("natives-osx")) //Normal repo bundles this in the mian jar so we need to just use the main jar
+                        handler.add(CONFIG_NATIVES, lib.getArtifactNameSkipNatives());
+                    else
+                        handler.add(CONFIG_NATIVES, lib.getArtifactName());
+                }
             }
         }
         else
