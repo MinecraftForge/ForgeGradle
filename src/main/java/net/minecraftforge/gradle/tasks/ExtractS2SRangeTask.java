@@ -82,7 +82,7 @@ public class ExtractS2SRangeTask extends DefaultTask
 
     private void generateRangeMap(InputSupplier inSup, File rangeMap) throws IOException
     {
-        RangeExtractor extractor = new RangeExtractor();
+        RangeExtractor extractor = new RangeExtractor(RangeExtractor.JAVA_1_8);
 
         for (File f : getLibs())
         {
