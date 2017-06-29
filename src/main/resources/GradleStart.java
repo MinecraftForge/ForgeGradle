@@ -41,11 +41,11 @@ public class GradleStart extends GradleStartCommon
     @Override
     protected void setDefaultArguments(Map<String, String> argMap)
     {
-        argMap.put("version",        "@@MCVERSION@@");
-        argMap.put("assetIndex",     "@@ASSETINDEX@@");
-        argMap.put("assetsDir",      "@@ASSETSDIR@@");
-        argMap.put("accessToken",    "FML");
-        argMap.put("userProperties", "{}");
+        argMap.putIfAbsent("version",        "@@MCVERSION@@");
+        argMap.putIfAbsent("assetIndex",     "@@ASSETINDEX@@");
+        argMap.putIfAbsent("assetsDir",      "@@ASSETSDIR@@");
+        argMap.putIfAbsent("accessToken",    "FML");
+        argMap.putIfAbsent("userProperties", "{}");
         argMap.put("username",        null);
         argMap.put("password",        null);
     }
