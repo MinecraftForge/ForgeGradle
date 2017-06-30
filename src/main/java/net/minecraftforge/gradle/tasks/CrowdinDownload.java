@@ -60,8 +60,8 @@ public class CrowdinDownload extends DefaultTask
     private Object              output;
 
     // format these with the projectId and apiKey
-    private static final String EXPORT_URL   = "https://api.crowdin.net/api/project/%s/export?key=%s";
-    private static final String DOWNLOAD_URL = "https://api.crowdin.net/api/project/%s/download/all.zip?key=%s";
+    private static final String EXPORT_URL   = "https://api.crowdin.com/api/project/%s/export?key=%s";
+    private static final String DOWNLOAD_URL = "https://api.crowdin.com/api/project/%s/download/all.zip?key=%s";
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public CrowdinDownload()
