@@ -19,23 +19,26 @@
  */
 package net.minecraftforge.gradle.common;
 
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.io.Resources;
+import com.google.common.primitives.Ints;
+import net.minecraftforge.gradle.util.GradleConfigurationException;
+import net.minecraftforge.gradle.util.delayed.ReplacementProvider;
+import org.gradle.api.Project;
+
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.gradle.api.Project;
-
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.io.Resources;
-
-import net.minecraftforge.gradle.util.GradleConfigurationException;
-import net.minecraftforge.gradle.util.delayed.ReplacementProvider;
-
 public abstract class BaseExtension
 {
     protected static final transient Map<String, String> MCP_VERSION_MAP = ImmutableMap.of("1.8", "9.10");
+
+    private static final String MIN_VERSION = "1.9.4";
+    // The max supported version of minecraft. null means latest is supported
+    private static final String MAX_VERSION = "1.11.2";
 
     public final String forgeGradleVersion;
 
@@ -51,6 +54,8 @@ public abstract class BaseExtension
     protected int                          mappingsVersion = -1;
     // custom version for custom mappings
     protected String                mappingsCustom  = null;
+
+    private boolean suppressVersionTest;
 
     public BaseExtension(BasePlugin<? extends BaseExtension> plugin)
     {
@@ -76,6 +81,10 @@ public abstract class BaseExtension
         }
 
         forgeGradleVersion = version;
+    }
+
+    public void setSuppressVersionTest(boolean b) {
+        this.suppressVersionTest = b;
     }
 
     /**
@@ -245,6 +254,17 @@ public abstract class BaseExtension
      */
     protected void checkMappings()
     {
+
+        if (!Strings.isNullOrEmpty(version)
+                && (compareVersion(version, MIN_VERSION) < 0 || compareVersion(version, MAX_VERSION) > 0)
+                && !suppressVersionTest)
+        {
+                // version not supported
+                throw new GradleConfigurationException(String.format("ForgeGradle %s does not support Minecraft %s. MIN: %s, MAX: %s",
+                        forgeGradleVersion, version, MIN_VERSION, nullStringTo(MAX_VERSION, "none")));
+
+        }
+
         // mappings or mc version are null
         if (mappingsChannel == null || Strings.isNullOrEmpty(version))
             return;
@@ -301,6 +321,44 @@ public abstract class BaseExtension
 
         // wasnt found
         throw new GradleConfigurationException("The specified mapping '" + getMappings() + "' does not exist!");
+    }
+
+    private static String getMappedString(String key, String value) {
+        if (value == null) return "";
+        return key + ": " + value;
+    }
+
+    /**
+     * Compares 2 versions. Returns -1 if version1 is outdated, +1 if version2 is outdated, and 0 if they are the same.
+     * @param version1
+     * @param version2
+     * @return
+     */
+    private static int compareVersion(String version1, String version2)
+    {
+        if (version2 == null || version2.equals(version1))
+            return 0;
+
+        int[] v1 = stringToInt(version1.split("\\."));
+        int[] v2 = stringToInt(version2.split("\\."));
+
+        // FIXME 1.9.0 > 1.9
+        return Ints.lexicographicalComparator().compare(v1, v2);
+    }
+
+    private static int[] stringToInt(String[] strings)
+    {
+        int[] ints = new int[strings.length];
+        for (int i = 0; i < ints.length; i++)
+        {
+            Integer v = Ints.tryParse(strings[i]);
+            ints[i] = v == null ? 0 : v;
+        }
+        return ints;
+    }
+
+    private static String nullStringTo(String string, String to) {
+        return string == null ? to : string;
     }
 
     private static boolean searchArray(int[] array, int key)
