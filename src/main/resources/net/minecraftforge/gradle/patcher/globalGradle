@@ -18,6 +18,10 @@ subprojects {
 @@repositories@@
     }
 
+    configurations.all {
+        transitive = false
+    }
+
     dependencies {
 @@dependencies@@
     }

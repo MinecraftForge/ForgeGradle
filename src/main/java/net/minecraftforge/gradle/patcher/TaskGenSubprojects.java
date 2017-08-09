@@ -45,6 +45,8 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
+import groovy.lang.Closure;
+
 class TaskGenSubprojects extends DefaultTask
 {
     //@formatter:off
@@ -53,6 +55,7 @@ class TaskGenSubprojects extends DefaultTask
     @Input private final String           resource;
     @Input private final List<Repo>       repositories = Lists.newArrayList();
     @Input private final List<String>     dependencies = Lists.newArrayList();
+    @Input private Closure<Boolean> depFilter;
     private final Map<String, DevProject> projects     = Maps.newHashMap();
     private static final String           INDENT       = "    "; // 4 spaces
     //@formatter:on
@@ -117,6 +120,11 @@ class TaskGenSubprojects extends DefaultTask
                 {
                     for (String dep : dependencies)
                     {
+                        if (this.depFilter != null && !this.depFilter.call(dep))
+                        {
+                            this.getProject().getLogger().debug("Filtering Dep: " + dep);
+                            continue;
+                        }
                         append(builder, INDENT, INDENT, dep, NEWLINE);
                     }
                 }
@@ -319,5 +327,15 @@ class TaskGenSubprojects extends DefaultTask
     public void setWorkspaceDir(Object workspaceDir)
     {
         this.workspaceDir = workspaceDir;
+    }
+
+    public void setFilter(Closure<Boolean> filter)
+    {
+        this.depFilter = filter;
+    }
+
+    public Closure<Boolean> getFilter()
+    {
+        return this.depFilter;
     }
 }
