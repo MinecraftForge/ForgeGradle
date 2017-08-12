@@ -24,6 +24,7 @@ import static net.minecraftforge.gradle.user.UserConstants.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -57,6 +58,7 @@ import org.gradle.api.artifacts.result.ComponentArtifactsResult;
 import org.gradle.api.artifacts.result.DependencyResult;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -75,6 +77,8 @@ import org.gradle.jvm.JvmLibrary;
 import org.gradle.language.base.artifact.SourcesArtifact;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet;
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -600,6 +604,37 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                     compile.dependsOn(task);
                     compile.setSource(dir);
                 }
+
+                // kotlin
+                if (project.getPlugins().hasPlugin("kotlin"))
+                {
+                    KotlinSourceSet langSet = (KotlinSourceSet) new DslObject(set).getConvention().getPlugins().get("kotlin");
+                    File dir = new File(dirRoot, "kotlin");
+
+                    task = makeTask(taskPrefix+"Kotlin", TaskSourceCopy.class);
+                    task.setSource(langSet.getKotlin());
+                    task.setOutput(dir);
+
+                    // must get replacements from extension afterEValuate()
+
+                    KotlinCompile compile = (KotlinCompile) project.getTasks().getByName(set.getCompileTaskName("kotlin"));
+                    compile.dependsOn(task);
+                    compile.setSource(dir);
+                    Path dirPath = dir.toPath();
+
+                    // Apparently the Kotlin plugin doesn't respect setSource in any way, so this is required
+                    compile.include(new Closure<Boolean>(UserBasePlugin.class)
+                    {
+                        @Override
+                        public Boolean call(Object o)
+                        {
+                            if (o instanceof FileTreeElement) {
+                                return ((FileTreeElement) o).getFile().toPath().startsWith(dirPath);
+                            }
+                            return super.call();
+                        }
+                    });
+                }
             }
         };
 
@@ -839,7 +874,7 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             }
         });
 
-        // get scala sources too
+        // get scala & kotlin sources too
         project.afterEvaluate(new Action<Project>()
         {
             @Override public void execute(Project project)
@@ -848,6 +883,11 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                 {
                     ScalaSourceSet langSet = (ScalaSourceSet) new DslObject(main).getConvention().getPlugins().get("scala");
                     sourceJar.from(langSet.getAllScala());
+                }
+                if (project.getPlugins().hasPlugin("kotlin"))
+                {
+                    KotlinSourceSet langSet = (KotlinSourceSet) new DslObject(main).getConvention().getPlugins().get("kotlin");
+                    sourceJar.from(langSet.getKotlin());
                 }
             }
         });
