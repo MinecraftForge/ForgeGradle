@@ -78,6 +78,20 @@ public class UserBaseExtension extends BaseExtension
             replace(e.getKey(), e.getValue());
         }
     }
+    
+    /**
+     * Add a source replacement mapping and optional file patterns to be used in source replacement.
+     * {@code file.getPath().endsWith(pattern)} is used to determine included files.<br>
+     *
+     * @param token       The token to replace
+     * @param replacement The value to replace with
+     * @param patterns    The file patterns
+     */
+    public void replace(Object token, Object replacement, String... patterns)
+    {
+        replacements.put(token.toString(), replacement);
+        Collections.addAll(includes, patterns);
+    }
 
     /**
      * Get all of the source replacement tokens and values
