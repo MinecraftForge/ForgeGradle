@@ -29,7 +29,6 @@ import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import net.minecraftforge.gradle.util.mcp.JavadocAdder;
 
 import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.ParallelizableTask;
 
 import au.com.bytecode.opencsv.CSVReader;
 
@@ -39,7 +38,6 @@ import com.google.common.collect.Maps;
 import com.google.code.regexp.Matcher;
 import com.google.code.regexp.Pattern;
 
-@ParallelizableTask
 public class RemapSources extends AbstractEditJarTask
 {
     @InputFile
