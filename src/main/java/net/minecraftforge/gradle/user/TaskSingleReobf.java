@@ -222,17 +222,18 @@ public class TaskSingleReobf extends DefaultTask
         JarRemapper remapper = new JarRemapper(null, mapping);
 
         // load jar
-        Jar inputJar = Jar.init(input);
+        try (Jar inputJar = Jar.init(input))
+        {
+            // ensure that inheritance provider is used
+            JointProvider inheritanceProviders = new JointProvider();
+            inheritanceProviders.add(new JarProvider(inputJar));
+            if (classpath != null)
+                inheritanceProviders.add(new ClassLoaderProvider(new URLClassLoader(Constants.toUrls(classpath))));
+            mapping.setFallbackInheritanceProvider(inheritanceProviders);
 
-        // ensure that inheritance provider is used
-        JointProvider inheritanceProviders = new JointProvider();
-        inheritanceProviders.add(new JarProvider(inputJar));
-        if (classpath != null)
-            inheritanceProviders.add(new ClassLoaderProvider(new URLClassLoader(Constants.toUrls(classpath))));
-        mapping.setFallbackInheritanceProvider(inheritanceProviders);
-
-        // remap jar
-        remapper.remapJar(inputJar, output);
+            // remap jar
+            remapper.remapJar(inputJar, output);
+        }
     }
 
     private void applyExtraTransformers(File inJar, File outJar, List<ReobfTransformer> transformers) throws IOException
