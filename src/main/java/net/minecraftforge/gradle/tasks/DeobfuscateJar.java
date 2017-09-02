@@ -155,28 +155,29 @@ public class DeobfuscateJar extends CachedTask
         JarRemapper remapper = new JarRemapper(srgProcessor, mapping, atProcessor);
 
         // load jar
-        Jar input = Jar.init(inJar);
-
-        // ensure that inheritance provider is used
-        JointProvider inheritanceProviders = new JointProvider();
-        inheritanceProviders.add(new JarProvider(input));
-        mapping.setFallbackInheritanceProvider(inheritanceProviders);
-
-        // remap jar
-        remapper.remapJar(input, outJar);
-
-        // throw error for broken AT lines
-        if (accessMap.brokenLines.size() > 0 && failOnAtError)
+        try (Jar input = Jar.init(inJar))
         {
-            getLogger().error("{} Broken Access Transformer lines:", accessMap.brokenLines.size());
-            for (String line : accessMap.brokenLines.values())
+            // ensure that inheritance provider is used
+            JointProvider inheritanceProviders = new JointProvider();
+            inheritanceProviders.add(new JarProvider(input));
+            mapping.setFallbackInheritanceProvider(inheritanceProviders);
+
+            // remap jar
+            remapper.remapJar(input, outJar);
+
+            // throw error for broken AT lines
+            if (accessMap.brokenLines.size() > 0 && failOnAtError)
             {
-                getLogger().error(" ---  {}", line);
+                getLogger().error("{} Broken Access Transformer lines:", accessMap.brokenLines.size());
+                for (String line : accessMap.brokenLines.values())
+                {
+                    getLogger().error(" ---  {}", line);
+                }
+
+                // TODO: add info for disabling
+
+                throw new RuntimeException("Your Access Transformers be broke!");
             }
-
-            // TODO: add info for disabling
-
-            throw new RuntimeException("Your Access Transformers be broke!");
         }
     }
 

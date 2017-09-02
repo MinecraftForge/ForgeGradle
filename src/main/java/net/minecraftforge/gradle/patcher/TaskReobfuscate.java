@@ -116,25 +116,26 @@ class TaskReobfuscate extends DefaultTask
         JarRemapper remapper = new JarRemapper(null, mapping);
 
         // load jar
-        Jar input = Jar.init(inJar);
-
-        // ensure that inheritance provider is used
-        JointProvider inheritanceProviders = new JointProvider();
-        inheritanceProviders.add(new JarProvider(input));
-
-        if (classpath != null)
-            inheritanceProviders.add(new ClassLoaderProvider(new URLClassLoader(Constants.toUrls(classpath))));
-
-        mapping.setFallbackInheritanceProvider(inheritanceProviders);
-
-        File out = getOutJar();
-        if (!out.getParentFile().exists()) //Needed because SS doesn't create it.
+        try (Jar input = Jar.init(inJar))
         {
-            out.getParentFile().mkdirs();
-        }
+            // ensure that inheritance provider is used
+            JointProvider inheritanceProviders = new JointProvider();
+            inheritanceProviders.add(new JarProvider(input));
 
-        // remap jar
-        remapper.remapJar(input, getOutJar());
+            if (classpath != null)
+                inheritanceProviders.add(new ClassLoaderProvider(new URLClassLoader(Constants.toUrls(classpath))));
+
+            mapping.setFallbackInheritanceProvider(inheritanceProviders);
+
+            File out = getOutJar();
+            if (!out.getParentFile().exists()) //Needed because SS doesn't create it.
+            {
+                out.getParentFile().mkdirs();
+            }
+
+            // remap jar
+            remapper.remapJar(input, getOutJar());
+        }
     }
     
     public File getInJar()
