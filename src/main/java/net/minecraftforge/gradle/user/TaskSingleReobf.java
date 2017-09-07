@@ -158,15 +158,14 @@ public class TaskSingleReobf extends DefaultTask
                 srgLines.createNewFile();
             }
 
-            BufferedWriter writer = Files.newWriter(srgLines, Charsets.UTF_8);
-            for (String line : getExtraSrgLines())
+            try (BufferedWriter writer = Files.newWriter(srgLines, Charsets.UTF_8))
             {
-                writer.write(line);
-                writer.newLine();
+                for (String line : getExtraSrgLines())
+                {
+                    writer.write(line);
+                    writer.newLine();
+                }
             }
-
-            writer.flush();
-            writer.close();
         }
 
         // prepare jar for reobf
@@ -222,33 +221,40 @@ public class TaskSingleReobf extends DefaultTask
         JarRemapper remapper = new JarRemapper(null, mapping);
 
         // load jar
+        URLClassLoader classLoader = null;
         try (Jar inputJar = Jar.init(input))
         {
             // ensure that inheritance provider is used
             JointProvider inheritanceProviders = new JointProvider();
             inheritanceProviders.add(new JarProvider(inputJar));
-            if (classpath != null)
-                inheritanceProviders.add(new ClassLoaderProvider(new URLClassLoader(Constants.toUrls(classpath))));
+
+            if (classpath != null && !classpath.isEmpty())
+                inheritanceProviders.add(new ClassLoaderProvider(classLoader = new URLClassLoader(Constants.toUrls(classpath))));
+
             mapping.setFallbackInheritanceProvider(inheritanceProviders);
 
             // remap jar
             remapper.remapJar(inputJar, output);
         }
+        finally
+        {
+            if (classLoader != null)
+                classLoader.close();
+        }
     }
 
     private void applyExtraTransformers(File inJar, File outJar, List<ReobfTransformer> transformers) throws IOException
     {
-        ZipFile in = new ZipFile(inJar);
-        final ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(outJar)));
-
-        for (ZipEntry e : Collections.list(in.entries()))
+        try (ZipFile in = new ZipFile(inJar);
+             ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(outJar))))
         {
-            if (e.isDirectory())
+            for (ZipEntry e : Collections.list(in.entries()))
             {
-                out.putNextEntry(e);
-            }
-            else
-            {
+                if (e.isDirectory())
+                {
+                    out.putNextEntry(e);
+                    continue;
+                }
                 ZipEntry n = new ZipEntry(e.getName());
                 n.setTime(e.getTime());
                 out.putNextEntry(n);
@@ -267,10 +273,6 @@ public class TaskSingleReobf extends DefaultTask
                 out.write(data);
             }
         }
-
-        out.flush();
-        out.close();
-        in.close();
     }
 
     // Main Jar and classpath

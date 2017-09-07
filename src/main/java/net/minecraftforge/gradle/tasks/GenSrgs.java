@@ -151,142 +151,130 @@ public class GenSrgs extends CachedTask
         Files.createParentDirs(getMcpToNotch());
 
         // create streams
+        try (
         BufferedWriter notchToSrg = Files.newWriter(getNotchToSrg(), Charsets.UTF_8);
         BufferedWriter notchToMcp = Files.newWriter(getNotchToMcp(), Charsets.UTF_8);
         BufferedWriter srgToMcp = Files.newWriter(getSrgToMcp(), Charsets.UTF_8);
         BufferedWriter mcpToSrg = Files.newWriter(getMcpToSrg(), Charsets.UTF_8);
-        BufferedWriter mcpToNotch = Files.newWriter(getMcpToNotch(), Charsets.UTF_8);
-
-        String line, temp, mcpName;
-        // packages
-        for (Entry<String, String> e : inSrg.packageMap.entrySet())
+        BufferedWriter mcpToNotch = Files.newWriter(getMcpToNotch(), Charsets.UTF_8))
         {
-            line = "PK: "+e.getKey()+" "+e.getValue();
 
-            // nobody cares about the packages.
-            notchToSrg.write(line);
-            notchToSrg.newLine();
+            String line, temp, mcpName;
+            // packages
+            for (Entry<String, String> e : inSrg.packageMap.entrySet())
+            {
+                line = "PK: " + e.getKey() + " " + e.getValue();
 
-            notchToMcp.write(line);
-            notchToMcp.newLine();
+                // nobody cares about the packages.
+                notchToSrg.write(line);
+                notchToSrg.newLine();
 
-            // No package changes from MCP to SRG names
-            //srgToMcp.write(line);
-            //srgToMcp.newLine();
+                notchToMcp.write(line);
+                notchToMcp.newLine();
 
-            // No package changes from MCP to SRG names
-            //mcpToSrg.write(line);
-            //mcpToSrg.newLine();
+                // No package changes from MCP to SRG names
+                //srgToMcp.write(line);
+                //srgToMcp.newLine();
 
-            // reverse!
-            mcpToNotch.write("PK: "+e.getValue()+" "+e.getKey());
-            mcpToNotch.newLine();
+                // No package changes from MCP to SRG names
+                //mcpToSrg.write(line);
+                //mcpToSrg.newLine();
+
+                // reverse!
+                mcpToNotch.write("PK: " + e.getValue() + " " + e.getKey());
+                mcpToNotch.newLine();
+            }
+
+            // classes
+            for (Entry<String, String> e : inSrg.classMap.entrySet())
+            {
+                line = "CL: " + e.getKey() + " " + e.getValue();
+
+                // same...
+                notchToSrg.write(line);
+                notchToSrg.newLine();
+
+                // SRG and MCP have the same class names
+                notchToMcp.write(line);
+                notchToMcp.newLine();
+
+                line = "CL: " + e.getValue() + " " + e.getValue();
+
+                // deobf: same classes on both sides.
+                srgToMcp.write("CL: " + e.getValue() + " " + e.getValue());
+                srgToMcp.newLine();
+
+                // reobf: same classes on both sides.
+                mcpToSrg.write("CL: " + e.getValue() + " " + e.getValue());
+                mcpToSrg.newLine();
+
+                // output is notch
+                mcpToNotch.write("CL: " + e.getValue() + " " + e.getKey());
+                mcpToNotch.newLine();
+            }
+
+            // fields
+            for (Entry<String, String> e : inSrg.fieldMap.entrySet())
+            {
+                line = "FD: " + e.getKey() + " " + e.getValue();
+
+                // same...
+                notchToSrg.write("FD: " + e.getKey() + " " + e.getValue());
+                notchToSrg.newLine();
+
+                temp = e.getValue().substring(e.getValue().lastIndexOf('/') + 1);
+                mcpName = e.getValue();
+                if (fields.containsKey(temp))
+                    mcpName = mcpName.replace(temp, fields.get(temp));
+
+                // SRG and MCP have the same class names
+                notchToMcp.write("FD: " + e.getKey() + " " + mcpName);
+                notchToMcp.newLine();
+
+                // srg name -> mcp name
+                srgToMcp.write("FD: " + e.getValue() + " " + mcpName);
+                srgToMcp.newLine();
+
+                // mcp name -> srg name
+                mcpToSrg.write("FD: " + mcpName + " " + e.getValue());
+                mcpToSrg.newLine();
+
+                // output is notch
+                mcpToNotch.write("FD: " + mcpName + " " + e.getKey());
+                mcpToNotch.newLine();
+            }
+
+            // methods
+            for (Entry<MethodData, MethodData> e : inSrg.methodMap.entrySet())
+            {
+                line = "MD: " + e.getKey() + " " + e.getValue();
+
+                // same...
+                notchToSrg.write("MD: " + e.getKey() + " " + e.getValue());
+                notchToSrg.newLine();
+
+                temp = e.getValue().name.substring(e.getValue().name.lastIndexOf('/') + 1);
+                mcpName = e.getValue().toString();
+                if (methods.containsKey(temp))
+                    mcpName = mcpName.replace(temp, methods.get(temp));
+
+                // SRG and MCP have the same class names
+                notchToMcp.write("MD: " + e.getKey() + " " + mcpName);
+                notchToMcp.newLine();
+
+                // srg name -> mcp name
+                srgToMcp.write("MD: " + e.getValue() + " " + mcpName);
+                srgToMcp.newLine();
+
+                // mcp name -> srg name
+                mcpToSrg.write("MD: " + mcpName + " " + e.getValue());
+                mcpToSrg.newLine();
+
+                // output is notch
+                mcpToNotch.write("MD: " + mcpName + " " + e.getKey());
+                mcpToNotch.newLine();
+            }
         }
-
-        // classes
-        for (Entry<String, String> e : inSrg.classMap.entrySet())
-        {
-            line = "CL: "+e.getKey()+" "+e.getValue();
-
-            // same...
-            notchToSrg.write(line);
-            notchToSrg.newLine();
-
-            // SRG and MCP have the same class names
-            notchToMcp.write(line);
-            notchToMcp.newLine();
-
-            line = "CL: "+e.getValue()+" "+e.getValue();
-
-            // deobf: same classes on both sides.
-            srgToMcp.write("CL: "+e.getValue()+" "+e.getValue());
-            srgToMcp.newLine();
-
-            // reobf: same classes on both sides.
-            mcpToSrg.write("CL: "+e.getValue()+" "+e.getValue());
-            mcpToSrg.newLine();
-
-            // output is notch
-            mcpToNotch.write("CL: "+e.getValue()+" "+e.getKey());
-            mcpToNotch.newLine();
-        }
-
-        // fields
-        for (Entry<String, String> e : inSrg.fieldMap.entrySet())
-        {
-            line = "FD: "+e.getKey()+" "+e.getValue();
-
-            // same...
-            notchToSrg.write("FD: "+e.getKey()+" "+e.getValue());
-            notchToSrg.newLine();
-
-            temp = e.getValue().substring(e.getValue().lastIndexOf('/')+1);
-            mcpName = e.getValue();
-            if (fields.containsKey(temp))
-                mcpName = mcpName.replace(temp, fields.get(temp));
-
-            // SRG and MCP have the same class names
-            notchToMcp.write("FD: "+e.getKey()+" "+mcpName);
-            notchToMcp.newLine();
-
-            // srg name -> mcp name
-            srgToMcp.write("FD: "+e.getValue()+" "+mcpName);
-            srgToMcp.newLine();
-
-            // mcp name -> srg name
-            mcpToSrg.write("FD: "+mcpName+" "+e.getValue());
-            mcpToSrg.newLine();
-
-            // output is notch
-            mcpToNotch.write("FD: "+mcpName+" "+e.getKey());
-            mcpToNotch.newLine();
-        }
-
-        // methods
-        for (Entry<MethodData, MethodData> e : inSrg.methodMap.entrySet())
-        {
-            line = "MD: "+e.getKey()+" "+e.getValue();
-
-            // same...
-            notchToSrg.write("MD: "+e.getKey()+" "+e.getValue());
-            notchToSrg.newLine();
-
-            temp = e.getValue().name.substring(e.getValue().name.lastIndexOf('/')+1);
-            mcpName = e.getValue().toString();
-            if (methods.containsKey(temp))
-                mcpName = mcpName.replace(temp, methods.get(temp));
-
-            // SRG and MCP have the same class names
-            notchToMcp.write("MD: "+e.getKey()+" "+mcpName);
-            notchToMcp.newLine();
-
-            // srg name -> mcp name
-            srgToMcp.write("MD: "+e.getValue()+" "+mcpName);
-            srgToMcp.newLine();
-
-            // mcp name -> srg name
-            mcpToSrg.write("MD: "+mcpName+" "+e.getValue());
-            mcpToSrg.newLine();
-
-            // output is notch
-            mcpToNotch.write("MD: "+mcpName+" "+e.getKey());
-            mcpToNotch.newLine();
-        }
-
-        notchToSrg.flush();
-        notchToSrg.close();
-
-        notchToMcp.flush();
-        notchToMcp.close();
-
-        srgToMcp.flush();
-        srgToMcp.close();
-
-        mcpToSrg.flush();
-        mcpToSrg.close();
-
-        mcpToNotch.flush();
-        mcpToNotch.close();
     }
 
     private void writeOutExcs(SrgContainer inSrg, Map<String, String> excRemap, Map<String, String> methods) throws IOException

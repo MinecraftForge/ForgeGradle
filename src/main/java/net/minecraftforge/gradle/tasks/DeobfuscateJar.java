@@ -299,8 +299,7 @@ public class DeobfuscateJar extends CachedTask
 
     private void removeUnknownClasses(File inJar, Map<String, MCInjectorStruct> config) throws IOException
     {
-        ZipFile zip = new ZipFile(inJar);
-        try
+        try (ZipFile zip = new ZipFile(inJar))
         {
             Iterator<Map.Entry<String, MCInjectorStruct>> entries = config.entrySet().iterator();
             while (entries.hasNext())
@@ -333,10 +332,6 @@ public class DeobfuscateJar extends CachedTask
                     }
                 }
             }
-        }
-        finally
-        {
-            zip.close();
         }
     }
 

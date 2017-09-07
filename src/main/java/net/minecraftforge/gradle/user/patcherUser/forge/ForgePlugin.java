@@ -101,13 +101,14 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
                         byte[] LOCATION_BEFORE = new byte[] { 0x40, (byte) 0xB1, (byte) 0x8B, (byte) 0x81, 0x23, (byte) 0xBC, 0x00, 0x14, 0x1A, 0x25, (byte) 0x96, (byte) 0xE7, (byte) 0xA3, (byte) 0x93, (byte) 0xBE, 0x1E };
                         byte[] LOCATION_AFTER = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0xC0, 0x58, (byte) 0xFB, (byte) 0xF3, 0x23, (byte) 0xBC, 0x00, 0x14, 0x1A, 0x51, (byte) 0xF3, (byte) 0x8C, 0x7B, (byte) 0xBB, 0x77, (byte) 0xC6 };
 
-                        FileOutputStream fos = new FileOutputStream(f);
-                        fos.write(LOCATION_BEFORE);//Unknown but w/e
-                        fos.write((byte) ((projectDir.length() & 0xFF) >> 8));
-                        fos.write((byte) ((projectDir.length() & 0xFF) >> 0));
-                        fos.write(projectDir.getBytes());
-                        fos.write(LOCATION_AFTER);//Unknown but w/e
-                        fos.close();
+                        try (FileOutputStream fos = new FileOutputStream(f))
+                        {
+                            fos.write(LOCATION_BEFORE);//Unknown but w/e
+                            fos.write((byte) ((projectDir.length() & 0xFF) >> 8));
+                            fos.write((byte) ((projectDir.length() & 0xFF) >> 0));
+                            fos.write(projectDir.getBytes());
+                            fos.write(LOCATION_AFTER);//Unknown but w/e
+                        }
                     }
                     catch (IOException e)
                     {

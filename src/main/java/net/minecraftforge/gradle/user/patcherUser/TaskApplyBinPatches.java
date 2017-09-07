@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.*;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -84,12 +85,11 @@ public class TaskApplyBinPatches extends CachedTask
             getOutJar().delete();
         }
 
-        ZipFile in = new ZipFile(getInJar());
-        ZipInputStream classesIn = new ZipInputStream(new FileInputStream(getClassJar()));
-        final ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(getOutJar())));
         final HashSet<String> entries = new HashSet<String>();
 
-        try
+        try (ZipFile in = new ZipFile(getInJar());
+             ZipInputStream classesIn = new ZipInputStream(new FileInputStream(getClassJar()));
+             ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(getOutJar()))))
         {
             // DO PATCHES
             log("Patching Class:");
@@ -106,7 +106,6 @@ public class TaskApplyBinPatches extends CachedTask
                 {
                     ZipEntry n = new ZipEntry(e.getName());
                     n.setTime(e.getTime());
-                    out.putNextEntry(n);
 
                     byte[] data = ByteStreams.toByteArray(in.getInputStream(e));
                     ClassPatch patch = patchlist.get(e.getName().replace('\\', '/'));
@@ -168,17 +167,11 @@ public class TaskApplyBinPatches extends CachedTask
                     }
                     catch (IOException e)
                     {
-                        Throwables.propagateIfPossible(e);
+                        throw Throwables.propagate(e);
                     }
                 }
 
             });
-        }
-        finally
-        {
-            classesIn.close();
-            in.close();
-            out.close();
         }
     }
 
@@ -193,14 +186,15 @@ public class TaskApplyBinPatches extends CachedTask
     {
         Pattern matcher = Pattern.compile(String.format("binpatch/merged/.*.binpatch"));
 
-        JarInputStream jis;
-        try
+        byte[] bytes;
+        try (ByteArrayOutputStream jarBytes = new ByteArrayOutputStream())
         {
-            LzmaInputStream binpatchesDecompressed = new LzmaInputStream(new FileInputStream(getPatches()), new Decoder());
-            ByteArrayOutputStream jarBytes = new ByteArrayOutputStream();
-            JarOutputStream jos = new JarOutputStream(jarBytes);
-            Pack200.newUnpacker().unpack(binpatchesDecompressed, jos);
-            jis = new JarInputStream(new ByteArrayInputStream(jarBytes.toByteArray()));
+            try (LzmaInputStream binpatchesDecompressed = new LzmaInputStream(new FileInputStream(getPatches()), new Decoder());
+                 JarOutputStream jos = new JarOutputStream(jarBytes))
+            {
+                Pack200.newUnpacker().unpack(binpatchesDecompressed, jos);
+            }
+            bytes = jarBytes.toByteArray();
         }
         catch (Exception e)
         {
@@ -210,7 +204,7 @@ public class TaskApplyBinPatches extends CachedTask
         log("Reading Patches:");
         do
         {
-            try
+            try (JarInputStream jis = new JarInputStream(new ByteArrayInputStream(bytes)))
             {
                 JarEntry entry = jis.getNextJarEntry();
                 if (entry == null)
@@ -223,10 +217,7 @@ public class TaskApplyBinPatches extends CachedTask
                     ClassPatch cp = readPatch(entry, jis);
                     patchlist.put(cp.sourceClassName.replace('.', '/') + ".class", cp);
                 }
-                else
-                {
-                    jis.closeEntry();
-                }
+                jis.closeEntry();
             }
             catch (IOException e)
             {}

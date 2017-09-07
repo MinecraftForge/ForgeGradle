@@ -73,34 +73,34 @@ public class TaskExtractDepAts extends DefaultTask
             if (!f.exists() || !f.getName().endsWith("jar"))
                 continue;
 
-            JarFile jar = new JarFile(f);
-            Manifest man = jar.getManifest();
-
-            if (man != null)
+            try (JarFile jar = new JarFile(f))
             {
-                String atString = man.getMainAttributes().getValue("FMLAT");
-                if (!Strings.isNullOrEmpty(atString))
+                Manifest man = jar.getManifest();
+
+                if (man != null)
                 {
-                    for (String at : splitter.split(atString.trim()))
+                    String atString = man.getMainAttributes().getValue("FMLAT");
+                    if (!Strings.isNullOrEmpty(atString))
                     {
-                        // append _at.cfg just in case its not there already...
-                        // also differentiate the file name, in cas the same At comes from multiple jars.. who knows why...
-                        File outFile = new File(outputDir, at + "_" + Files.getNameWithoutExtension(f.getName()) + "_at.cfg");
-                        toDelete.remove(outFile);
-                        
-                        JarEntry entry = jar.getJarEntry("META-INF/" + at);
+                        for (String at : splitter.split(atString.trim()))
+                        {
+                            // append _at.cfg just in case its not there already...
+                            // also differentiate the file name, in cas the same At comes from multiple jars.. who knows why...
+                            File outFile = new File(outputDir, at + "_" + Files.getNameWithoutExtension(f.getName()) + "_at.cfg");
+                            toDelete.remove(outFile);
 
-                        InputStream istream = jar.getInputStream(entry);
-                        OutputStream ostream = new FileOutputStream(outFile);
-                        ByteStreams.copy(istream, ostream);
+                            JarEntry entry = jar.getJarEntry("META-INF/" + at);
 
-                        istream.close();
-                        ostream.close();
+
+                            try (InputStream istream = jar.getInputStream(entry);
+                                 OutputStream ostream = new FileOutputStream(outFile))
+                            {
+                                ByteStreams.copy(istream, ostream);
+                            }
+                        }
                     }
                 }
             }
-
-            jar.close();
         }
         
         // remove the files that shouldnt be there...
