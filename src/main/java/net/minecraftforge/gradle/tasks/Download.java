@@ -63,17 +63,14 @@ public class Download extends CachedTask
         connect.setRequestProperty("User-Agent", Constants.USER_AGENT);
         connect.setInstanceFollowRedirects(true);
 
-        ReadableByteChannel  inChannel  = Channels.newChannel(connect.getInputStream());
-        FileOutputStream     outFile = new FileOutputStream(outputFile);
-        FileChannel          outChannel = outFile.getChannel();
-
-        // If length is longer than what is available, it copies what is available according to java docs.
-        // Therefore, I use Long.MAX_VALUE which is a theoretical maximum.
-        outChannel.transferFrom(inChannel, 0, Long.MAX_VALUE);
-
-        outChannel.close(); //Should close outFile but just in case
-        Closeables.close(outFile, true);
-        inChannel.close();
+        try (ReadableByteChannel  inChannel  = Channels.newChannel(connect.getInputStream());
+             FileOutputStream     outFile = new FileOutputStream(outputFile);
+             FileChannel          outChannel = outFile.getChannel())
+        {
+            // If length is longer than what is available, it copies what is available according to java docs.
+            // Therefore, I use Long.MAX_VALUE which is a theoretical maximum.
+            outChannel.transferFrom(inChannel, 0, Long.MAX_VALUE);
+        }
 
         getLogger().info("Download complete");
     }

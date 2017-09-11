@@ -139,114 +139,112 @@ public abstract class AbstractEditJarTask extends CachedTask
 
     private final void readAndStoreJarInRam(File jar, Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws Exception
     {
-        ZipInputStream zin = new ZipInputStream(new FileInputStream(jar));
-        ZipEntry entry = null;
-        String fileStr;
-
-        while ((entry = zin.getNextEntry()) != null)
+        try (ZipInputStream zin = new ZipInputStream(new FileInputStream(jar)))
         {
-            // ignore META-INF, it shouldnt be here. If it is we remove it from the output jar.
-            if (entry.getName().contains("META-INF"))
-            {
-                continue;
-            }
+            ZipEntry entry;
+            String fileStr;
 
-            // resources or directories.
-            if (entry.isDirectory() || (!entry.getName().endsWith(".java")
-                    && !entry.getName().endsWith(".scala") // scala files
-                    && !entry.getName().endsWith(".groovy") // groovy files
-                    && !entry.getName().endsWith(".kt") // kotlin files
-                    ))
+            while ((entry = zin.getNextEntry()) != null)
             {
-                resourceMap.put(entry.getName(), ByteStreams.toByteArray(zin));
-            }
-            else
-            {
+                // ignore META-INF, it shouldnt be here. If it is we remove it from the output jar.
+                if (entry.getName().contains("META-INF"))
+                {
+                    continue;
+                }
+
+                // resources or directories.
+                if (entry.isDirectory() || (!entry.getName().endsWith(".java")
+                        && !entry.getName().endsWith(".scala") // scala files
+                        && !entry.getName().endsWith(".groovy") // groovy files
+                        && !entry.getName().endsWith(".kt") // kotlin files
+                        ))
+                {
+                    resourceMap.put(entry.getName(), ByteStreams.toByteArray(zin));
+                }
+                else
+                {
                 // source!
                 fileStr = new String(ByteStreams.toByteArray(zin), Constants.CHARSET);
 
-                fileStr = asRead(entry.getName(), fileStr);
+                    fileStr = asRead(entry.getName(), fileStr);
 
-                sourceMap.put(entry.getName(), fileStr);
+                    sourceMap.put(entry.getName(), fileStr);
+                }
             }
         }
-
-        zin.close();
     }
 
     protected void saveJar(File output, Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws IOException
     {
         output.getParentFile().mkdirs();
 
-        JarOutputStream zout = new JarOutputStream(new FileOutputStream(output));
-
-        // write in resources
-        for (Map.Entry<String, byte[]> entry : resourceMap.entrySet())
+        try (JarOutputStream zout = new JarOutputStream(new FileOutputStream(output)))
         {
-            zout.putNextEntry(new JarEntry(entry.getKey()));
-            zout.write(entry.getValue());
-            zout.closeEntry();
-            postWriteEntry(zout, entry.getKey());
+
+            // write in resources
+            for (Map.Entry<String, byte[]> entry : resourceMap.entrySet())
+            {
+                zout.putNextEntry(new JarEntry(entry.getKey()));
+                zout.write(entry.getValue());
+                zout.closeEntry();
+                postWriteEntry(zout, entry.getKey());
+            }
+
+            // write in sources
+            for (Map.Entry<String, String> entry : sourceMap.entrySet())
+            {
+                zout.putNextEntry(new JarEntry(entry.getKey()));
+                zout.write(entry.getValue().getBytes());
+                zout.closeEntry();
+                postWriteEntry(zout, entry.getKey());
+            }
+
+            postWrite(zout);
         }
-
-        // write in sources
-        for (Map.Entry<String, String> entry : sourceMap.entrySet())
-        {
-            zout.putNextEntry(new JarEntry(entry.getKey()));
-            zout.write(entry.getValue().getBytes());
-            zout.closeEntry();
-            postWriteEntry(zout, entry.getKey());
-        }
-
-        postWrite(zout);
-
-        zout.close();
     }
 
     private void copyJar(File input, File output) throws Exception
     {
         // begin reading jar
-        ZipInputStream zin = new ZipInputStream(new FileInputStream(input));
-        JarOutputStream zout = new JarOutputStream(new FileOutputStream(output));
-        ZipEntry entry = null;
-
-        while ((entry = zin.getNextEntry()) != null)
+        try (ZipInputStream zin = new ZipInputStream(new FileInputStream(input));
+             JarOutputStream zout = new JarOutputStream(new FileOutputStream(output)))
         {
-            // no META or dirs. wel take care of dirs later.
-            if (entry.getName().contains("META-INF"))
+            ZipEntry entry;
+            while ((entry = zin.getNextEntry()) != null)
             {
-                continue;
+                // no META or dirs. wel take care of dirs later.
+                if (entry.getName().contains("META-INF"))
+                {
+                    continue;
+                }
+
+                // resources or directories.
+                try
+                {
+                    if (entry.isDirectory() || !entry.getName().endsWith(".java"))
+                    {
+                        zout.putNextEntry(new JarEntry(entry));
+                        ByteStreams.copy(zin, zout);
+                        zout.closeEntry();
+                        postWriteEntry(zout, entry.getName());
+                    }
+                    else
+                    {
+                        // source
+                        zout.putNextEntry(new JarEntry(entry.getName()));
+                        zout.write(asRead(entry.getName(), new String(ByteStreams.toByteArray(zin), Constants.CHARSET)).getBytes());
+                        zout.closeEntry();
+                        postWriteEntry(zout, entry.getName());
+                    }
+                }
+                catch (ZipException ex)
+                {
+                    getLogger().debug("Duplicate zip entry " + entry.getName() + " in " + input + " writing " + output);
+                }
             }
 
-            // resources or directories.
-            try
-            {
-                if (entry.isDirectory() || !entry.getName().endsWith(".java"))
-                {
-                    zout.putNextEntry(new JarEntry(entry));
-                    ByteStreams.copy(zin, zout);
-                    zout.closeEntry();
-                    postWriteEntry(zout, entry.getName());
-                }
-                else
-                {
-                    // source
-                    zout.putNextEntry(new JarEntry(entry.getName()));
-                    zout.write(asRead(entry.getName(), new String(ByteStreams.toByteArray(zin), Constants.CHARSET)).getBytes());
-                    zout.closeEntry();
-                    postWriteEntry(zout, entry.getName());
-                }
-            }
-            catch (ZipException ex)
-            {
-                getLogger().debug("Duplicate zip entry " + entry.getName() + " in " + input + " writing " + output);
-            }
+            postWrite(zout);
         }
-
-        postWrite(zout);
-
-        zout.close();
-        zin.close();
     }
 
     public File getInJar()
