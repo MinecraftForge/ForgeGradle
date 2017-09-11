@@ -155,29 +155,28 @@ public class DeobfuscateJar extends CachedTask
         JarRemapper remapper = new JarRemapper(srgProcessor, mapping, atProcessor);
 
         // load jar
-        try (Jar input = Jar.init(inJar))
+        Jar input = Jar.init(inJar);
+
+        // ensure that inheritance provider is used
+        JointProvider inheritanceProviders = new JointProvider();
+        inheritanceProviders.add(new JarProvider(input));
+        mapping.setFallbackInheritanceProvider(inheritanceProviders);
+
+        // remap jar
+        remapper.remapJar(input, outJar);
+
+        // throw error for broken AT lines
+        if (accessMap.brokenLines.size() > 0 && failOnAtError)
         {
-            // ensure that inheritance provider is used
-            JointProvider inheritanceProviders = new JointProvider();
-            inheritanceProviders.add(new JarProvider(input));
-            mapping.setFallbackInheritanceProvider(inheritanceProviders);
-
-            // remap jar
-            remapper.remapJar(input, outJar);
-
-            // throw error for broken AT lines
-            if (accessMap.brokenLines.size() > 0 && failOnAtError)
+            getLogger().error("{} Broken Access Transformer lines:", accessMap.brokenLines.size());
+            for (String line : accessMap.brokenLines.values())
             {
-                getLogger().error("{} Broken Access Transformer lines:", accessMap.brokenLines.size());
-                for (String line : accessMap.brokenLines.values())
-                {
-                    getLogger().error(" ---  {}", line);
-                }
-
-                // TODO: add info for disabling
-
-                throw new RuntimeException("Your Access Transformers be broke!");
+                getLogger().error(" ---  {}", line);
             }
+
+            // TODO: add info for disabling
+
+            throw new RuntimeException("Your Access Transformers be broke!");
         }
     }
 
@@ -299,7 +298,8 @@ public class DeobfuscateJar extends CachedTask
 
     private void removeUnknownClasses(File inJar, Map<String, MCInjectorStruct> config) throws IOException
     {
-        try (ZipFile zip = new ZipFile(inJar))
+        ZipFile zip = new ZipFile(inJar);
+        try
         {
             Iterator<Map.Entry<String, MCInjectorStruct>> entries = config.entrySet().iterator();
             while (entries.hasNext())
@@ -332,6 +332,10 @@ public class DeobfuscateJar extends CachedTask
                     }
                 }
             }
+        }
+        finally
+        {
+            zip.close();
         }
     }
 

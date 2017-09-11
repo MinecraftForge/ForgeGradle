@@ -158,14 +158,15 @@ public class TaskSingleReobf extends DefaultTask
                 srgLines.createNewFile();
             }
 
-            try (BufferedWriter writer = Files.newWriter(srgLines, Charsets.UTF_8))
+            BufferedWriter writer = Files.newWriter(srgLines, Charsets.UTF_8);
+            for (String line : getExtraSrgLines())
             {
-                for (String line : getExtraSrgLines())
-                {
-                    writer.write(line);
-                    writer.newLine();
-                }
+                writer.write(line);
+                writer.newLine();
             }
+
+            writer.flush();
+            writer.close();
         }
 
         // prepare jar for reobf
@@ -221,40 +222,32 @@ public class TaskSingleReobf extends DefaultTask
         JarRemapper remapper = new JarRemapper(null, mapping);
 
         // load jar
-        URLClassLoader classLoader = null;
-        try (Jar inputJar = Jar.init(input))
-        {
-            // ensure that inheritance provider is used
-            JointProvider inheritanceProviders = new JointProvider();
-            inheritanceProviders.add(new JarProvider(inputJar));
+        Jar inputJar = Jar.init(input);
 
-            if (classpath != null && !classpath.isEmpty())
-                inheritanceProviders.add(new ClassLoaderProvider(classLoader = new URLClassLoader(Constants.toUrls(classpath))));
+        // ensure that inheritance provider is used
+        JointProvider inheritanceProviders = new JointProvider();
+        inheritanceProviders.add(new JarProvider(inputJar));
+        if (classpath != null)
+            inheritanceProviders.add(new ClassLoaderProvider(new URLClassLoader(Constants.toUrls(classpath))));
+        mapping.setFallbackInheritanceProvider(inheritanceProviders);
 
-            mapping.setFallbackInheritanceProvider(inheritanceProviders);
-
-            // remap jar
-            remapper.remapJar(inputJar, output);
-        }
-        finally
-        {
-            if (classLoader != null)
-                classLoader.close();
-        }
+        // remap jar
+        remapper.remapJar(inputJar, output);
     }
 
     private void applyExtraTransformers(File inJar, File outJar, List<ReobfTransformer> transformers) throws IOException
     {
-        try (ZipFile in = new ZipFile(inJar);
-             ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(outJar))))
+        ZipFile in = new ZipFile(inJar);
+        final ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(outJar)));
+
+        for (ZipEntry e : Collections.list(in.entries()))
         {
-            for (ZipEntry e : Collections.list(in.entries()))
+            if (e.isDirectory())
             {
-                if (e.isDirectory())
-                {
-                    out.putNextEntry(e);
-                    continue;
-                }
+                out.putNextEntry(e);
+            }
+            else
+            {
                 ZipEntry n = new ZipEntry(e.getName());
                 n.setTime(e.getTime());
                 out.putNextEntry(n);
@@ -273,6 +266,10 @@ public class TaskSingleReobf extends DefaultTask
                 out.write(data);
             }
         }
+
+        out.flush();
+        out.close();
+        in.close();
     }
 
     // Main Jar and classpath

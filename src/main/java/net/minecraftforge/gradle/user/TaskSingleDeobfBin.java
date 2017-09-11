@@ -71,20 +71,16 @@ public class TaskSingleDeobfBin extends CachedTask
         final Map<String, String> fields = Maps.newHashMap();
 
         // read CSV files
-        try (CSVReader reader = Constants.getReader(getMethodCsv()))
+        CSVReader reader = Constants.getReader(getMethodCsv());
+        for (String[] s : reader.readAll())
         {
-            for (String[] s : reader.readAll())
-            {
-                methods.put(s[0], s[1]);
-            }
+            methods.put(s[0], s[1]);
         }
 
-        try (CSVReader reader = Constants.getReader(getFieldCsv()))
+        reader = Constants.getReader(getFieldCsv());
+        for (String[] s : reader.readAll())
         {
-            for (String[] s : reader.readAll())
-            {
-                fields.put(s[0], s[1]);
-            }
+            fields.put(s[0], s[1]);
         }
 
         // actually do the jar copy..
@@ -94,47 +90,49 @@ public class TaskSingleDeobfBin extends CachedTask
         output.getParentFile().mkdirs();
 
         // begin reading jar
-        try (ZipInputStream zin = new ZipInputStream(new FileInputStream(input));
-             JarOutputStream zout = new JarOutputStream(new FileOutputStream(output))) {
-            ZipEntry entry;
+        ZipInputStream zin = new ZipInputStream(new FileInputStream(input));
+        JarOutputStream zout = new JarOutputStream(new FileOutputStream(output));
+        ZipEntry entry = null;
 
-            while ((entry = zin.getNextEntry()) != null)
+        while ((entry = zin.getNextEntry()) != null)
+        {
+            if (entry.getName().contains("META-INF"))
             {
-                if (entry.getName().contains("META-INF"))
+                // Skip signature files
+                if (entry.getName().endsWith(".SF") || entry.getName().endsWith(".DSA"))
                 {
-                    // Skip signature files
-                    if (entry.getName().endsWith(".SF") || entry.getName().endsWith(".DSA"))
-                    {
-                        continue;
-                    }
-                    // Strip out file signatures from manifest
-                    else if (entry.getName().equals("META-INF/MANIFEST.MF"))
-                    {
-                        Manifest mf = new Manifest(zin);
-                        mf.getEntries().clear();
-                        zout.putNextEntry(new JarEntry(entry.getName()));
-                        mf.write(zout);
-                        zout.closeEntry();
-                        continue;
-                    }
+                    continue;
                 }
-
-                // resources or directories.
-                if (entry.isDirectory() || !entry.getName().endsWith(".class"))
+                // Strip out file signatures from manifest
+                else if (entry.getName().equals("META-INF/MANIFEST.MF"))
                 {
-                    zout.putNextEntry(new JarEntry(entry));
-                    ByteStreams.copy(zin, zout);
-                    zout.closeEntry();
-                }
-                else
-                {
-                    // classes
+                    Manifest mf = new Manifest(zin);
+                    mf.getEntries().clear();
                     zout.putNextEntry(new JarEntry(entry.getName()));
-                    zout.write(deobfClass(ByteStreams.toByteArray(zin), methods, fields));
+                    mf.write(zout);
                     zout.closeEntry();
+                    continue;
                 }
             }
+
+            // resources or directories.
+            if (entry.isDirectory() || !entry.getName().endsWith(".class"))
+            {
+                zout.putNextEntry(new JarEntry(entry));
+                ByteStreams.copy(zin, zout);
+                zout.closeEntry();
+            }
+            else
+            {
+                // classes
+                zout.putNextEntry(new JarEntry(entry.getName()));
+                zout.write(deobfClass(ByteStreams.toByteArray(zin), methods, fields));
+                zout.closeEntry();
+            }
         }
+
+        zout.close();
+        zin.close();
     }
 
     private static byte[] deobfClass(byte[] classData, final Map<String, String> methods, final Map<String, String> fields)

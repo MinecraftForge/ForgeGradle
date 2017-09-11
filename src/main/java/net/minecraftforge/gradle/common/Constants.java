@@ -319,14 +319,17 @@ public class Constants
         // make dirs just in case
         out.getParentFile().mkdirs();
 
-        try (FileInputStream fis = new FileInputStream(in);
-             FileOutputStream fout = new FileOutputStream(out);
-             FileChannel source = fis.getChannel();
-             FileChannel dest = fout.getChannel())
-        {
-            long size = source.size();
-            source.transferTo(0, size, dest);
-        }
+        FileInputStream fis = new FileInputStream(in);
+        FileOutputStream fout = new FileOutputStream(out);
+
+        FileChannel source = fis.getChannel();
+        FileChannel dest = fout.getChannel();
+
+        long size = source.size();
+        source.transferTo(0, size, dest);
+
+        fis.close();
+        fout.close();
     }
 
     /**
@@ -342,13 +345,16 @@ public class Constants
         // make dirs just in case
         out.getParentFile().mkdirs();
 
-        try (FileInputStream fis = new FileInputStream(in);
-             FileOutputStream fout = new FileOutputStream(out);
-             FileChannel source = fis.getChannel();
-             FileChannel dest = fout.getChannel())
-        {
-            source.transferTo(0, size, dest);
-        }
+        FileInputStream fis = new FileInputStream(in);
+        FileOutputStream fout = new FileOutputStream(out);
+
+        FileChannel source = fis.getChannel();
+        FileChannel dest = fout.getChannel();
+
+        source.transferTo(0, size, dest);
+
+        fis.close();
+        fout.close();
     }
 
     public static String hash(File file)
@@ -394,10 +400,12 @@ public class Constants
 
     public static String hashZip(File file, String function)
     {
-        try (ZipInputStream zin = new ZipInputStream(new FileInputStream(file)))
+        try
         {
             MessageDigest hasher = MessageDigest.getInstance(function);
-            ZipEntry entry;
+
+            ZipInputStream zin = new ZipInputStream(new FileInputStream(file));
+            ZipEntry entry = null;
             while ((entry = zin.getNextEntry()) != null)
             {
                 hasher.update(entry.getName().getBytes());
