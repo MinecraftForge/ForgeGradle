@@ -74,9 +74,11 @@ class ArtifactSaver implements IResultSaver {
     public void saveClassFile(String path, String qualifiedName, String entryName, String content, int[] mapping) {
         File file = new File(getAbsolutePath(path), entryName);
         try {
-            try (Writer out = new OutputStreamWriter(new FileOutputStream(file), "UTF8"))
-            {
+            Writer out = new OutputStreamWriter(new FileOutputStream(file), "UTF8");
+            try {
                 out.write(content);
+            } finally {
+                out.close();
             }
         } catch (IOException ex) {
             DecompilerContext.getLogger().writeMessage("Cannot write class file " + file, ex);
@@ -112,19 +114,19 @@ class ArtifactSaver implements IResultSaver {
             return;
         }
 
-
-        try (ZipFile srcArchive = new ZipFile(new File(source))) {
-            ZipEntry entry = srcArchive.getEntry(entryName);
-            if (entry != null) {
-                try (InputStream in = srcArchive.getInputStream(entry)) {
+        try {
+            ZipFile srcArchive = new ZipFile(new File(source));
+            try {
+                ZipEntry entry = srcArchive.getEntry(entryName);
+                if (entry != null) {
+                    InputStream in = srcArchive.getInputStream(entry);
                     ZipOutputStream out = mapArchiveStreams.get(file);
-                    try {
-                        out.putNextEntry(new ZipEntry(entryName));
-                    } finally {
-                        out.closeEntry();
-                    }
+                    out.putNextEntry(new ZipEntry(entryName));
                     InterpreterUtil.copyStream(in, out);
+                    in.close();
                 }
+            } finally {
+                srcArchive.close();
             }
         } catch (IOException ex) {
             String message = "Cannot copy entry " + entryName + " from " + source + " to " + file;

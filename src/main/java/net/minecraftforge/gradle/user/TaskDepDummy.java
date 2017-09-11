@@ -41,12 +41,11 @@ public class TaskDepDummy extends DefaultTask
         out.getParentFile().mkdirs();
         
         // yup.. a dummy jar....
-        try (JarOutputStream stream = new JarOutputStream(new FileOutputStream(out)))
-        {
-            stream.putNextEntry(new JarEntry("dummyThing"));
-            stream.write(0xffffffff);
-            stream.closeEntry();
-        }
+        JarOutputStream stream = new JarOutputStream(new FileOutputStream(out));
+        stream.putNextEntry(new JarEntry("dummyThing"));
+        stream.write(0xffffffff);
+        stream.closeEntry();
+        stream.close();
     }
 
     public File getOutputFile()

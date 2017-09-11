@@ -67,34 +67,36 @@ class TaskExtractNew extends DefaultTask
     {
         ending = Strings.nullToEmpty(ending);
 
-        try (InputSupplier cleanSupplier = getSupplier(getCleanSource());
-             InputSupplier dirtySupplier = getSupplier(getDirtySource()))
+        InputSupplier cleanSupplier = getSupplier(getCleanSource());
+        InputSupplier dirtySupplier = getSupplier(getDirtySource());
+
+        Set<String> cleanFiles = Sets.newHashSet(cleanSupplier.gatherAll(ending));
+
+        File output = getOutput();
+        output.getParentFile().mkdirs();
+
+        boolean isClassEnding = false; //TODO: Figure out Abrar's logic for this... ending.equals(".class"); // this is a trigger for custom stuff
+
+        ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(output));
+        for (String path : dirtySupplier.gatherAll(ending))
         {
-            Set<String> cleanFiles = Sets.newHashSet(cleanSupplier.gatherAll(ending));
-
-            File output = getOutput();
-            output.getParentFile().mkdirs();
-
-            boolean isClassEnding = false; //TODO: Figure out Abrar's logic for this... ending.equals(".class"); // this is a trigger for custom stuff
-
-            try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(output)))
+            if ( (isClassEnding && matchesClass(cleanFiles, path)) || cleanFiles.contains(path))
             {
-                for (String path : dirtySupplier.gatherAll(ending))
-                {
-                    if ((isClassEnding && matchesClass(cleanFiles, path)) || cleanFiles.contains(path))
-                    {
-                        continue;
-                    }
-
-                    zout.putNextEntry(new ZipEntry(path));
-
-                    try (InputStream stream = dirtySupplier.getInput(path))
-                    {
-                        ByteStreams.copy(stream, zout);
-                    }
-                }
+                continue;
             }
+
+            zout.putNextEntry(new ZipEntry(path));
+
+            InputStream stream = dirtySupplier.getInput(path);
+            ByteStreams.copy(stream, zout);
+            stream.close();
+
+            zout.closeEntry();
         }
+
+        zout.close();
+        cleanSupplier.close();
+        dirtySupplier.close();
     }
 
     private String stripEnding(String path)

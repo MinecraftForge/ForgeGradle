@@ -33,12 +33,13 @@ public class McpCleanup
 
     public static String stripComments(String text)
     {
+        StringReader in = new StringReader(text);
+        StringWriter out = new StringWriter(text.length());
         boolean inComment = false;
         boolean inString = false;
         char c;
         int ci;
-        try (StringReader in = new StringReader(text);
-             StringWriter out = new StringWriter(text.length()))
+        try
         {
             while ((ci = in.read()) != -1)
             {
@@ -125,12 +126,14 @@ public class McpCleanup
                             }
                     }
             }
-            text = out.toString();
+            out.close();
         }
         catch (Exception e)
         {
             throw new RuntimeException(e);
         }
+        
+        text = out.toString();
 
         text = COMMENTS_TRAILING.matcher(text).replaceAll("");
         text = COMMENTS_NEWLINES.matcher(text).replaceAll(Constants.NEWLINE);

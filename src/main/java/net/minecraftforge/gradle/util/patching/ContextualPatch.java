@@ -203,11 +203,9 @@ public final class ContextualPatch
         patchReader.close();
 
         byte[] buffer = new byte[MAGIC.length()];
-        int read;
-        try (InputStream in = new FileInputStream(patchFile))
-        {
-            read = in.read(buffer);
-        }
+        InputStream in = new FileInputStream(patchFile);
+        int read = in.read(buffer);
+        in.close();
         if (read != -1 && MAGIC.equals(new String(buffer, "utf8")))
         {  // NOI18N
             encoding = "utf8"; // NOI18N
