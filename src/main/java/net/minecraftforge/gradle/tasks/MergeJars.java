@@ -582,7 +582,7 @@ public class MergeJars extends CachedTask
         return getProject().file(outJar);
     }
 
-    public void setOutJar(Closure<File> outJar)
+    public void setOutJar(Object outJar)
     {
         this.outJar = outJar;
     }
@@ -592,7 +592,7 @@ public class MergeJars extends CachedTask
         return getProject().file(server);
     }
 
-    public void setServer(Closure<File> server)
+    public void setServer(Object server)
     {
         this.server = server;
     }

@@ -34,6 +34,7 @@ import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
 
+import org.apache.commons.io.FilenameUtils;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.ParallelizableTask;
@@ -137,7 +138,7 @@ public abstract class AbstractEditJarTask extends CachedTask
      */
     protected abstract boolean storeJarInRam();
 
-    private final void readAndStoreJarInRam(File jar, Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws Exception
+    final void readAndStoreJarInRam(File jar, Map<String, String> sourceMap, Map<String, byte[]> resourceMap) throws Exception
     {
         try (ZipInputStream zin = new ZipInputStream(new FileInputStream(jar)))
         {
@@ -153,18 +154,14 @@ public abstract class AbstractEditJarTask extends CachedTask
                 }
 
                 // resources or directories.
-                if (entry.isDirectory() || (!entry.getName().endsWith(".java")
-                        && !entry.getName().endsWith(".scala") // scala files
-                        && !entry.getName().endsWith(".groovy") // groovy files
-                        && !entry.getName().endsWith(".kt") // kotlin files
-                        ))
+                if (!isSourceFile(entry))
                 {
                     resourceMap.put(entry.getName(), ByteStreams.toByteArray(zin));
                 }
                 else
                 {
-                // source!
-                fileStr = new String(ByteStreams.toByteArray(zin), Constants.CHARSET);
+                    // source!
+                    fileStr = new String(ByteStreams.toByteArray(zin), Constants.CHARSET);
 
                     fileStr = asRead(entry.getName(), fileStr);
 
@@ -203,6 +200,28 @@ public abstract class AbstractEditJarTask extends CachedTask
         }
     }
 
+    /**
+     * Checks whether the given entry should be treated as a source file
+     *
+     * This can be overridden to change the types your task treats as source files
+     *
+     * @param entry the entry to check
+     * @return true if entry is a source file
+     */
+    protected boolean isSourceFile(ZipEntry entry) {
+        if (entry.isDirectory())
+            return false;
+        String extension = FilenameUtils.getExtension(entry.getName());
+        switch (extension) {
+            case "java":
+            case "scala":
+            case "groovy":
+            case "kt":
+                return true;
+        }
+        return false;
+    }
+
     private void copyJar(File input, File output) throws Exception
     {
         // begin reading jar
@@ -221,7 +240,7 @@ public abstract class AbstractEditJarTask extends CachedTask
                 // resources or directories.
                 try
                 {
-                    if (entry.isDirectory() || !entry.getName().endsWith(".java"))
+                    if (!isSourceFile(entry))
                     {
                         zout.putNextEntry(new JarEntry(entry));
                         ByteStreams.copy(zin, zout);

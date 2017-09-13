@@ -181,6 +181,7 @@ public class TaskSingleReobf extends DefaultTask
             File transformed = File.createTempFile("preTransformed", ".jar", getTemporaryDir());
             transformed.deleteOnExit();
             applyExtraTransformers(tempIn, transformed, transformers);
+            tempIn.delete();
 
             tempIn = transformed; // for later copying
         }
@@ -189,6 +190,7 @@ public class TaskSingleReobf extends DefaultTask
         File obfuscated = File.createTempFile("obfuscated", ".jar", getTemporaryDir());
         obfuscated.deleteOnExit();
         applySpecialSource(tempIn, obfuscated, srg, srgLines, getSecondarySrgFiles());
+        tempIn.delete();
 
         // post transform
         transformers = getPostTransformers();
@@ -203,6 +205,7 @@ public class TaskSingleReobf extends DefaultTask
 
         // copy to output
         Constants.copyFile(obfuscated, out);
+        obfuscated.delete();
     }
 
     private void applySpecialSource(File input, File output, File srg, File extraSrg, FileCollection extraSrgFiles) throws IOException

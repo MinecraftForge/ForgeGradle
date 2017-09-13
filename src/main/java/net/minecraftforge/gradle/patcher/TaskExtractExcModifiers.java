@@ -47,6 +47,12 @@ class TaskExtractExcModifiers extends DefaultTask
     
     @OutputFile
     private Object outExc;
+
+    /**
+     * Used to override the prefix matched in the jar for testing
+     * Default is for minecraft
+     */
+    String matchingPrefix = "net/minecraft/";
     
     //@formatter:off
     public TaskExtractExcModifiers() { super(); }
@@ -76,7 +82,7 @@ class TaskExtractExcModifiers extends DefaultTask
 
                 String entryName = entry.getName();
 
-                if (!entryName.endsWith(".class") || !entryName.startsWith("net/minecraft/"))
+                if (!entryName.endsWith(".class") || !entryName.startsWith(matchingPrefix))
                     continue;
 
                 getProject().getLogger().debug("Processing " + entryName);

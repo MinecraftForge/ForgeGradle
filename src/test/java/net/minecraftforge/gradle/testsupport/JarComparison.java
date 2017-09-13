@@ -58,28 +58,36 @@ public class JarComparison
             {
                 boolean found = false;
                 for (FieldNode inner : changedNode.fields)
-                    if (inner.name.equals(outer.name))
+                    if (key(inner).equals(key(outer)))
                     {
                         found = true;
                         break;
                     }
-                Assert.assertTrue("Should find field with name " + outer.name + " in " + changedNode.name, found);
+                Assert.assertTrue("Should find field " + key(outer) + " in " + changedNode.name, found);
             }
 
             for (MethodNode outer : expectedNode.methods)
             {
                 boolean found = false;
                 for (MethodNode inner : changedNode.methods)
-                    if (inner.name.equals(outer.name))
+                    if (key(inner).equals(key(outer)))
                     {
                         found = true;
                         break;
                     }
-                Assert.assertTrue("Should find method with name " + outer.name + " in " + changedNode.name + ", actual methods\n" + changedNode.methods.stream().map(it -> it.name).collect(Collectors.toList()), found);
+                Assert.assertTrue("Should find method " + key(outer) + " in " + changedNode.name + ", actual methods\n" + changedNode.methods.stream().map(JarComparison::key).collect(Collectors.toList()), found);
             }
         }
 
         Assert.assertTrue("Should visit classes in expected jar " + expected, visitedAnyClasses);
+    }
+
+    private static String key(MethodNode node) {
+        return node.name + ':' + node.desc;
+    }
+
+    private static String key(FieldNode node) {
+        return node.name + ':' + node.desc;
     }
 
     private static ClassNode readClassNodeFromJarEntryInJarFile(JarFile jarFile, JarEntry jarEntry) throws IOException
