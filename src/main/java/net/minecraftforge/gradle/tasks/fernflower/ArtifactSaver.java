@@ -121,10 +121,10 @@ class ArtifactSaver implements IResultSaver {
                     ZipOutputStream out = mapArchiveStreams.get(file);
                     try {
                         out.putNextEntry(new ZipEntry(entryName));
+                        InterpreterUtil.copyStream(in, out);
                     } finally {
                         out.closeEntry();
                     }
-                    InterpreterUtil.copyStream(in, out);
                 }
             }
         } catch (IOException ex) {
