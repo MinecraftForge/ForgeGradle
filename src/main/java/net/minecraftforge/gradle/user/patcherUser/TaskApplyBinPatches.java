@@ -106,6 +106,7 @@ public class TaskApplyBinPatches extends CachedTask
                 {
                     ZipEntry n = new ZipEntry(e.getName());
                     n.setTime(e.getTime());
+                    out.putNextEntry(n);
 
                     byte[] data = ByteStreams.toByteArray(in.getInputStream(e));
                     ClassPatch patch = patchlist.get(e.getName().replace('\\', '/'));
@@ -184,7 +185,7 @@ public class TaskApplyBinPatches extends CachedTask
 
     public void setup()
     {
-        Pattern matcher = Pattern.compile(String.format("binpatch/merged/.*.binpatch"));
+        Pattern matcher = Pattern.compile("binpatch/merged/.*.binpatch");
 
         byte[] bytes;
         try (ByteArrayOutputStream jarBytes = new ByteArrayOutputStream())
@@ -202,9 +203,9 @@ public class TaskApplyBinPatches extends CachedTask
         }
 
         log("Reading Patches:");
-        do
+        try (JarInputStream jis = new JarInputStream(new ByteArrayInputStream(bytes)))
         {
-            try (JarInputStream jis = new JarInputStream(new ByteArrayInputStream(bytes)))
+            do
             {
                 JarEntry entry = jis.getNextJarEntry();
                 if (entry == null)
@@ -218,10 +219,12 @@ public class TaskApplyBinPatches extends CachedTask
                     patchlist.put(cp.sourceClassName.replace('.', '/') + ".class", cp);
                 }
                 jis.closeEntry();
-            }
-            catch (IOException e)
-            {}
-        } while (true);
+            } while (true);
+        }
+        catch (IOException e)
+        {
+            throw Throwables.propagate(e);
+        }
         log("Read %d binary patches", patchlist.size());
         log("Patch list :\n\t%s", Joiner.on("\n\t").join(patchlist.entrySet()));
     }
