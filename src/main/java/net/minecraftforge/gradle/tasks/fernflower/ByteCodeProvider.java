@@ -34,15 +34,12 @@ class ByteCodeProvider implements IBytecodeProvider {
         if (internalPath == null) {
             return InterpreterUtil.getBytes(file);
         } else {
-            ZipFile archive = new ZipFile(file);
-            try {
+            try (ZipFile archive = new ZipFile(file)) {
                 ZipEntry entry = archive.getEntry(internalPath);
                 if (entry == null) {
                     throw new IOException("Entry not found: " + internalPath);
                 }
                 return InterpreterUtil.getBytes(archive, entry);
-            } finally {
-                archive.close();
             }
         }
     }

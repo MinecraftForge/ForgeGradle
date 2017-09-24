@@ -62,7 +62,7 @@ dependencies {
     compile gradleApi()
 
     // moved to the beginning to be the overrider
-    compile 'org.ow2.asm:asm-debug-all:5.1'
+    compile 'org.ow2.asm:asm-debug-all:6.0_BETA'
     compile 'com.google.guava:guava:18.0'
 
     compile 'net.sf.opencsv:opencsv:2.3' // reading CSVs.. also used by SpecialSource
@@ -76,7 +76,7 @@ dependencies {
     compile 'com.github.tony19:named-regexp:0.2.3' // 1.7 Named regexp features
     compile 'net.minecraftforge:forgeflower:1.0.342-SNAPSHOT' // Fernflower Forge edition
 
-    shade 'net.md-5:SpecialSource:1.7.4' // deobf and reobs
+    shade 'net.md-5:SpecialSource:1.8.0' // deobf and reobs
     // compile 'net.md-5:SpecialSource:1.7.4' // when md5 publishes
 
     // because curse

@@ -97,9 +97,10 @@ public class EtagDownloadTask extends DefaultTask
                     case 200: // worked
 
                         // write file
-                        InputStream stream = con.getInputStream();
-                        Files.write(ByteStreams.toByteArray(stream), outFile);
-                        stream.close();
+                        try (InputStream stream = con.getInputStream())
+                        {
+                            Files.write(ByteStreams.toByteArray(stream), outFile);
+                        }
 
                         // write etag
                         etag = con.getHeaderField("ETag");

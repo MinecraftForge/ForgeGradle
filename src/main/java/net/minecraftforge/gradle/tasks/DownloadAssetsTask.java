@@ -187,13 +187,11 @@ public class DownloadAssetsTask extends DefaultTask
                         {
                             // download
                             ReadableByteChannel channel = Channels.newChannel(new URL(Constants.URL_ASSETS + "/" + asset.path).openStream());
-                            FileOutputStream fout = new FileOutputStream(file);
-                            FileChannel fileChannel = fout.getChannel();
-                            
-                            fileChannel.transferFrom(channel, 0, asset.size);
-                            
-                            channel.close();
-                            fout.close();
+                            try (FileOutputStream fout = new FileOutputStream(file);
+                                 FileChannel fileChannel = fout.getChannel())
+                            {
+                                fileChannel.transferFrom(channel, 0, asset.size);
+                            }
                         }
                         else
                         {

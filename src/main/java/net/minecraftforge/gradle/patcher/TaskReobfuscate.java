@@ -94,14 +94,14 @@ class TaskReobfuscate extends DefaultTask
         }
         
         // append SRG
-        BufferedWriter writer = new BufferedWriter(new FileWriter(srg, true));
-        for (String line : extraSrg)
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(srg, true)))
         {
-            writer.write(line);
-            writer.newLine();
+            for (String line : extraSrg)
+            {
+                writer.write(line);
+                writer.newLine();
+            }
         }
-        writer.flush();
-        writer.close();
 
         obfuscate(inJar, getLibs(), srg);
     }
@@ -116,25 +116,32 @@ class TaskReobfuscate extends DefaultTask
         JarRemapper remapper = new JarRemapper(null, mapping);
 
         // load jar
-        Jar input = Jar.init(inJar);
-
-        // ensure that inheritance provider is used
-        JointProvider inheritanceProviders = new JointProvider();
-        inheritanceProviders.add(new JarProvider(input));
-
-        if (classpath != null)
-            inheritanceProviders.add(new ClassLoaderProvider(new URLClassLoader(Constants.toUrls(classpath))));
-
-        mapping.setFallbackInheritanceProvider(inheritanceProviders);
-
-        File out = getOutJar();
-        if (!out.getParentFile().exists()) //Needed because SS doesn't create it.
+        URLClassLoader classLoader = null;
+        try (Jar input = Jar.init(inJar))
         {
-            out.getParentFile().mkdirs();
-        }
+            // ensure that inheritance provider is used
+            JointProvider inheritanceProviders = new JointProvider();
+            inheritanceProviders.add(new JarProvider(input));
 
-        // remap jar
-        remapper.remapJar(input, getOutJar());
+            if (classpath != null && !classpath.isEmpty())
+                inheritanceProviders.add(new ClassLoaderProvider(classLoader = new URLClassLoader(Constants.toUrls(classpath))));
+
+            mapping.setFallbackInheritanceProvider(inheritanceProviders);
+
+            File out = getOutJar();
+            if (!out.getParentFile().exists()) //Needed because SS doesn't create it.
+            {
+                out.getParentFile().mkdirs();
+            }
+
+            // remap jar
+            remapper.remapJar(input, getOutJar());
+        }
+        finally
+        {
+            if (classLoader != null)
+                classLoader.close();
+        }
     }
     
     public File getInJar()
