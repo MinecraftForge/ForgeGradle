@@ -125,10 +125,22 @@ processResources {
 }
 
 jar {
+    // Shading could try to add duplicate classes
+    // fail instead of silently adding multiple entries with the same name
+    duplicatesStrategy=DuplicatesStrategy.FAIL
 
-    configurations.shade.each { dep ->
-        from(project.zipTree(dep)){
-            exclude 'META-INF', 'META-INF/**'
+    configurations.shade.getResolvedConfiguration().getResolvedArtifacts().each { dep ->
+        def id = dep.getModuleVersion().id
+        if (configurations.shade.dependencies.find { orig -> orig.group == id.group && orig.name == id.name }) {
+            // shade direct dependencies
+            from(project.zipTree(dep.file)) {
+                exclude 'META-INF', 'META-INF/**', 'module-info.class'
+            }
+        } else {
+            // add transitive dependencies as normal compile dependencies
+            // if a shaded dependency has a transitive dependency which must also be shaded
+            // it must be explicitly added as a shaded depncendy
+            dependencies.compile(id.toString())
         }
     }
 
