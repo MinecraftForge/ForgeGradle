@@ -21,8 +21,7 @@ package net.minecraftforge.gradle.tasks;
 
 import groovy.util.MapEntry;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -130,7 +129,10 @@ public class JenkinsChangelog extends DefaultTask
             getProject().getLogger().debug(auth);
             con.addRequestProperty("Authorization", auth);
         }
-        return new String(ByteStreams.toByteArray(con.getInputStream()));
+        try (InputStream is = con.getInputStream())
+        {
+            return new String(ByteStreams.toByteArray(is));
+        }
     }
 
     private String cleanJson(String data, String part)

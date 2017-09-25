@@ -725,10 +725,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 }
                 else if (con.getResponseCode() == 200)
                 {
-                    InputStream stream = con.getInputStream();
-                    byte[] data = ByteStreams.toByteArray(stream);
+                    byte[] data;
+                    try (InputStream stream = con.getInputStream())
+                    {
+                        data = ByteStreams.toByteArray(stream);
+                    }
                     Files.write(data, cache);
-                    stream.close();
 
                     // write etag
                     etag = con.getHeaderField("ETag");

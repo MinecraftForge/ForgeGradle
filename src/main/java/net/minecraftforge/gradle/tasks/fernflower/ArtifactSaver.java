@@ -19,6 +19,7 @@
  */
 package net.minecraftforge.gradle.tasks.fernflower;
 
+import com.google.common.base.Charsets;
 import org.jetbrains.java.decompiler.main.DecompilerContext;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
 import org.jetbrains.java.decompiler.main.extern.IResultSaver;
@@ -41,8 +42,8 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 class ArtifactSaver implements IResultSaver {
-    private final Map<String, ZipOutputStream> mapArchiveStreams = new HashMap<String, ZipOutputStream>();
-    private final Map<String, Set<String>> mapArchiveEntries = new HashMap<String, Set<String>>();
+    private final Map<String, ZipOutputStream> mapArchiveStreams = new HashMap<>();
+    private final Map<String, Set<String>> mapArchiveEntries = new HashMap<>();
     private final File root;
     public ArtifactSaver(File tempDir) {
         this.root = tempDir;
@@ -74,11 +75,9 @@ class ArtifactSaver implements IResultSaver {
     public void saveClassFile(String path, String qualifiedName, String entryName, String content, int[] mapping) {
         File file = new File(getAbsolutePath(path), entryName);
         try {
-            Writer out = new OutputStreamWriter(new FileOutputStream(file), "UTF8");
-            try {
+            try (Writer out = new OutputStreamWriter(new FileOutputStream(file), Charsets.UTF_8))
+            {
                 out.write(content);
-            } finally {
-                out.close();
             }
         } catch (IOException ex) {
             DecompilerContext.getLogger().writeMessage("Cannot write class file " + file, ex);
@@ -114,19 +113,19 @@ class ArtifactSaver implements IResultSaver {
             return;
         }
 
-        try {
-            ZipFile srcArchive = new ZipFile(new File(source));
-            try {
-                ZipEntry entry = srcArchive.getEntry(entryName);
-                if (entry != null) {
-                    InputStream in = srcArchive.getInputStream(entry);
+
+        try (ZipFile srcArchive = new ZipFile(new File(source))) {
+            ZipEntry entry = srcArchive.getEntry(entryName);
+            if (entry != null) {
+                try (InputStream in = srcArchive.getInputStream(entry)) {
                     ZipOutputStream out = mapArchiveStreams.get(file);
-                    out.putNextEntry(new ZipEntry(entryName));
-                    InterpreterUtil.copyStream(in, out);
-                    in.close();
+                    try {
+                        out.putNextEntry(new ZipEntry(entryName));
+                        InterpreterUtil.copyStream(in, out);
+                    } finally {
+                        out.closeEntry();
+                    }
                 }
-            } finally {
-                srcArchive.close();
             }
         } catch (IOException ex) {
             String message = "Cannot copy entry " + entryName + " from " + source + " to " + file;
@@ -146,7 +145,7 @@ class ArtifactSaver implements IResultSaver {
             ZipOutputStream out = mapArchiveStreams.get(file);
             out.putNextEntry(new ZipEntry(entryName));
             if (content != null) {
-                out.write(content.getBytes("UTF-8"));
+                out.write(content.getBytes(Charsets.UTF_8));
             }
         } catch (IOException ex) {
             String message = "Cannot write entry " + entryName + " to " + file;
@@ -155,10 +154,7 @@ class ArtifactSaver implements IResultSaver {
     }
 
     private boolean checkEntry(String entryName, String file) {
-        Set<String> set = mapArchiveEntries.get(file);
-        if (set == null) {
-            mapArchiveEntries.put(file, set = new HashSet<String>());
-        }
+        Set<String> set = mapArchiveEntries.computeIfAbsent(file, k -> new HashSet<>());
 
         boolean added = set.add(entryName);
         if (!added) {
@@ -179,4 +175,7 @@ class ArtifactSaver implements IResultSaver {
         }
     }
 
+    boolean areAnyArchiveStreamsOpen() {
+        return !mapArchiveStreams.isEmpty();
+    }
 }

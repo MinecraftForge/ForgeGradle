@@ -47,6 +47,12 @@ class TaskExtractExcModifiers extends DefaultTask
     
     @OutputFile
     private Object outExc;
+
+    /**
+     * Used to override the prefix matched in the jar for testing
+     * Default is for minecraft
+     */
+    String matchingPrefix = "net/minecraft/";
     
     //@formatter:off
     public TaskExtractExcModifiers() { super(); }
@@ -64,31 +70,29 @@ class TaskExtractExcModifiers extends DefaultTask
         output.getParentFile().mkdirs();
         output.createNewFile();
         
-        
-        BufferedWriter writer = Files.newWriter(output, Charsets.UTF_8);
-        ZipInputStream zin = new ZipInputStream(new FileInputStream(input));
-        ZipEntry entry = null;
-
-        while ((entry = zin.getNextEntry()) != null)
+        try (BufferedWriter writer = Files.newWriter(output, Charsets.UTF_8);
+            ZipInputStream zin = new ZipInputStream(new FileInputStream(input)))
         {
-            if (entry.isDirectory())
-                continue;
+            ZipEntry entry;
 
-            String entryName = entry.getName();
-            
-            if (!entryName.endsWith(".class") || !entryName.startsWith("net/minecraft/"))
-                continue;
+            while ((entry = zin.getNextEntry()) != null)
+            {
+                if (entry.isDirectory())
+                    continue;
 
-            getProject().getLogger().debug("Processing " + entryName);
-            byte[] entryData = ByteStreams.toByteArray(zin);
+                String entryName = entry.getName();
 
-            ClassReader cr = new ClassReader(entryData);
-            ClassVisitor ca = new GenerateMapClassAdapter(writer);
-            cr.accept(ca, 0);
+                if (!entryName.endsWith(".class") || !entryName.startsWith(matchingPrefix))
+                    continue;
+
+                getProject().getLogger().debug("Processing " + entryName);
+                byte[] entryData = ByteStreams.toByteArray(zin);
+
+                ClassReader cr = new ClassReader(entryData);
+                ClassVisitor ca = new GenerateMapClassAdapter(writer);
+                cr.accept(ca, 0);
+            }
         }
-
-        zin.close();
-        writer.close();
     }
     
     private static class GenerateMapClassAdapter extends ClassVisitor

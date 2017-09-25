@@ -37,10 +37,10 @@ import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Pack200;
 import java.util.jar.Pack200.Packer;
-import java.util.zip.Adler32;
 
 import lzma.streams.LzmaOutputStream;
 
+import net.minecraftforge.gradle.util.patching.BinPatches;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.InputFile;
@@ -54,7 +54,6 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
@@ -175,68 +174,48 @@ class TaskGenBinPatches extends DefaultTask
 
     private void createBinPatches(HashMap<String, byte[]> patches, String root, File base, File target) throws Exception
     {
-        JarFile cleanJ = new JarFile(base);
-        JarFile dirtyJ = new JarFile(target);
-
-        for (Map.Entry<String, String> entry : obfMapping.entrySet())
+        try (JarFile cleanJ = new JarFile(base);
+             JarFile dirtyJ = new JarFile(target))
         {
-            String obf = entry.getKey();
-            String srg = entry.getValue();
 
-            if (!patchedFiles.contains(obf)) // Not in the list of patch files.. we didn't edit it.
+            for (Map.Entry<String, String> entry : obfMapping.entrySet())
             {
-                continue;
+                String obf = entry.getKey();
+                String srg = entry.getValue();
+
+                if (!patchedFiles.contains(obf)) // Not in the list of patch files.. we didn't edit it.
+                {
+                    continue;
+                }
+
+                JarEntry cleanE = cleanJ.getJarEntry(obf + ".class");
+                JarEntry dirtyE = dirtyJ.getJarEntry(obf + ".class");
+
+                if (dirtyE == null) //Something odd happened.. a base MC class wasn't in the obfed jar?
+                {
+                    continue;
+                }
+
+                byte[] clean = (cleanE != null ? ByteStreams.toByteArray(cleanJ.getInputStream(cleanE)) : null);
+                byte[] dirty = ByteStreams.toByteArray(dirtyJ.getInputStream(dirtyE));
+                byte[] patchBytes = BinPatches.getBinPatchBytesWithHeader(delta, obf, srg, clean, dirty);
+
+                patches.put(root + srg.replace('/', '.') + ".binpatch", patchBytes);
             }
-
-            JarEntry cleanE = cleanJ.getJarEntry(obf + ".class");
-            JarEntry dirtyE = dirtyJ.getJarEntry(obf + ".class");
-
-            if (dirtyE == null) //Something odd happened.. a base MC class wasn't in the obfed jar?
-            {
-                continue;
-            }
-
-            byte[] clean = (cleanE != null ? ByteStreams.toByteArray(cleanJ.getInputStream(cleanE)) : new byte[0]);
-            byte[] dirty = ByteStreams.toByteArray(dirtyJ.getInputStream(dirtyE));
-
-            byte[] diff = delta.compute(clean, dirty);
-
-            ByteArrayDataOutput out = ByteStreams.newDataOutput(diff.length + 50);
-            out.writeUTF(obf);                   // Clean name
-            out.writeUTF(obf.replace('/', '.')); // Source Notch name
-            out.writeUTF(srg.replace('/', '.')); // Source SRG Name
-            out.writeBoolean(cleanE != null);    // Exists in Clean
-            if (cleanE != null)
-            {
-                out.writeInt(adlerHash(clean)); // Hash of Clean file
-            }
-            out.writeInt(diff.length); // Patch length
-            out.write(diff);           // Patch
-
-            patches.put(root + srg.replace('/', '.') + ".binpatch", out.toByteArray());
         }
-
-        cleanJ.close();
-        dirtyJ.close();
-    }
-
-    private int adlerHash(byte[] input)
-    {
-        Adler32 hasher = new Adler32();
-        hasher.update(input);
-        return (int) hasher.getValue();
     }
 
     private byte[] createPatchJar(HashMap<String, byte[]> patches) throws Exception
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        JarOutputStream jar = new JarOutputStream(out);
-        for (Map.Entry<String, byte[]> entry : patches.entrySet())
+        try (JarOutputStream jar = new JarOutputStream(out))
         {
-            jar.putNextEntry(new JarEntry("binpatch/" + entry.getKey()));
-            jar.write(entry.getValue());
+            for (Map.Entry<String, byte[]> entry : patches.entrySet())
+            {
+                jar.putNextEntry(new JarEntry("binpatch/" + entry.getKey()));
+                jar.write(entry.getValue());
+            }
         }
-        jar.close();
         return out.toByteArray();
     }
 
@@ -266,9 +245,10 @@ class TaskGenBinPatches extends DefaultTask
     private byte[] compress(byte[] data) throws Exception
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        LzmaOutputStream lzma = new LzmaOutputStream.Builder(out).useEndMarkerMode(true).build();
-        lzma.write(data);
-        lzma.close();
+        try (LzmaOutputStream lzma = new LzmaOutputStream.Builder(out).useEndMarkerMode(true).build())
+        {
+            lzma.write(data);
+        }
         return out.toByteArray();
     }
 

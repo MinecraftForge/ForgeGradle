@@ -21,11 +21,7 @@ package net.minecraftforge.gradle.tasks;
 
 import static net.minecraftforge.gradle.common.Constants.resolveString;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -34,6 +30,7 @@ import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import com.google.common.io.Closeables;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.FileVisitDetails;
@@ -102,91 +99,91 @@ public class SignJar extends DefaultTask implements PatternFilterable
         final Spec<FileTreeElement> spec = patternSet.getAsSpec();
 
         toSign.getParentFile().mkdirs();
-        final JarOutputStream outs = new JarOutputStream(new BufferedOutputStream(new FileOutputStream(toSign)));
+        try (JarOutputStream outs = new JarOutputStream(new BufferedOutputStream(new FileOutputStream(toSign))))
+        {
 
-        getProject().zipTree(inputJar).visit(new FileVisitor() {
-
-            @Override
-            public void visitDir(FileVisitDetails details)
+            getProject().zipTree(inputJar).visit(new FileVisitor()
             {
-                try
-                {
-                    String path = details.getPath();
-                    ZipEntry entry = new ZipEntry(path.endsWith("/") ? path : path + "/");
-                    outs.putNextEntry(entry);
-                }
-                catch (IOException e)
-                {
-                    e.printStackTrace();
-                }
-            }
 
-            @Override
-            @SuppressWarnings("unchecked")
-            public void visitFile(FileVisitDetails details)
-            {
-                try
+                @Override
+                public void visitDir(FileVisitDetails details)
                 {
-                    if (spec.isSatisfiedBy(details))
+                    try
                     {
-                        ZipEntry entry = new ZipEntry(details.getPath());
-                        entry.setTime(details.getLastModified());
+                        String path = details.getPath();
+                        ZipEntry entry = new ZipEntry(path.endsWith("/") ? path : path + "/");
                         outs.putNextEntry(entry);
-                        details.copyTo(outs);
-                        outs.closeEntry();
                     }
-                    else
+                    catch (IOException e)
                     {
-                        InputStream stream = details.open();
-                        unsigned.put(details.getPath(), new MapEntry(ByteStreams.toByteArray(stream), details.getLastModified()));
-                        stream.close();
+                        e.printStackTrace();
                     }
                 }
-                catch (IOException e)
+
+                @Override
+                @SuppressWarnings("unchecked")
+                public void visitFile(FileVisitDetails details)
                 {
-                    e.printStackTrace();
+                    try
+                    {
+                        if (spec.isSatisfiedBy(details))
+                        {
+                            ZipEntry entry = new ZipEntry(details.getPath());
+                            entry.setTime(details.getLastModified());
+                            outs.putNextEntry(entry);
+                            details.copyTo(outs);
+                            outs.closeEntry();
+                        }
+                        else
+                        {
+                            try (InputStream stream = details.open())
+                            {
+                                unsigned.put(details.getPath(), new MapEntry(ByteStreams.toByteArray(stream), details.getLastModified()));
+                            }
+                        }
+                    }
+                    catch (IOException e)
+                    {
+                        e.printStackTrace();
+                    }
                 }
-            }
 
-        });
-
-        outs.close();
+            });
+        }
     }
 
     private void writeOutputJar(File signedJar, File outputJar, Map<String, Entry<byte[], Long>> unsigned) throws IOException
     {
         outputJar.getParentFile().mkdirs();
 
-        JarOutputStream outs = new JarOutputStream(new BufferedOutputStream(new FileOutputStream(outputJar)));
-
-        ZipFile base = new ZipFile(signedJar);
-        for (ZipEntry e : Collections.list(base.entries()))
+        try (JarOutputStream outs = new JarOutputStream(new BufferedOutputStream(new FileOutputStream(outputJar)));
+             ZipFile base = new ZipFile(signedJar))
         {
-            if (e.isDirectory())
+            for (ZipEntry e : Collections.list(base.entries()))
             {
-                outs.putNextEntry(e);
+                if (e.isDirectory())
+                {
+                    outs.putNextEntry(e);
+                }
+                else
+                {
+                    ZipEntry n = new ZipEntry(e.getName());
+                    n.setTime(e.getTime());
+                    outs.putNextEntry(n);
+                    ByteStreams.copy(base.getInputStream(e), outs);
+                    outs.closeEntry();
+                }
             }
-            else
+
+            for (Map.Entry<String, Map.Entry<byte[], Long>> e : unsigned.entrySet())
             {
-                ZipEntry n = new ZipEntry(e.getName());
-                n.setTime(e.getTime());
+                ZipEntry n = new ZipEntry(e.getKey());
+                n.setTime(e.getValue().getValue());
                 outs.putNextEntry(n);
-                ByteStreams.copy(base.getInputStream(e), outs);
+                outs.write(e.getValue().getKey());
                 outs.closeEntry();
             }
         }
-        base.close();
-
-        for (Map.Entry<String, Map.Entry<byte[], Long>> e : unsigned.entrySet())
-        {
-            ZipEntry n = new ZipEntry(e.getKey());
-            n.setTime(e.getValue().getValue());
-            outs.putNextEntry(n);
-            outs.write(e.getValue().getKey());
-            outs.closeEntry();
-        }
-
-        outs.close();
     }
 
     @Override

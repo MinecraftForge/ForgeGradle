@@ -151,34 +151,28 @@ public class ReobfExceptor
     
     private JarInfo readJar(File inJar) throws IOException
     {
-        ZipInputStream zip = null;
-        try
+        try (ZipInputStream zip = new ZipInputStream(new BufferedInputStream(new FileInputStream(inJar))))
         {
-            try
-            {
-                zip = new ZipInputStream(new BufferedInputStream(new FileInputStream(inJar)));
-            }
-            catch (FileNotFoundException e)
-            {
-                throw new FileNotFoundException("Could not open input file: " + e.getMessage());
-            }
-            
             JarInfo reader = new JarInfo();
             while (true)
             {
                 ZipEntry entry = zip.getNextEntry();
                 if (entry == null) break;
-                if (entry.isDirectory() ||
-                    !entry.getName().endsWith(".class")) continue;
-                (new ClassReader(ByteStreams.toByteArray(zip))).accept(reader, 0);
+                try
+                {
+                    if (entry.isDirectory() ||
+                            !entry.getName().endsWith(".class")) continue;
+                    (new ClassReader(ByteStreams.toByteArray(zip))).accept(reader, 0);
+                } finally
+                {
+                    zip.closeEntry();
+                }
             }
             return reader;
-        } finally {
-            if (zip != null) {
-                try {
-                    zip.close();
-                } catch (IOException e){}
-            }
+        }
+        catch (FileNotFoundException e)
+        {
+            throw new FileNotFoundException("Could not open input file: " + e.getMessage());
         }
     }
     

@@ -75,48 +75,47 @@ public class SplitJarTask extends CachedTask implements PatternFilterable
         out2.getParentFile().mkdirs();
 
         // begin reading jar
-        final JarOutputStream zout1 = new JarOutputStream(new FileOutputStream(out1));
-        final JarOutputStream zout2 = new JarOutputStream(new FileOutputStream(out2));
+        try (JarOutputStream zout1 = new JarOutputStream(new FileOutputStream(out1));
+             JarOutputStream zout2 = new JarOutputStream(new FileOutputStream(out2)))
+        {
 
-        getProject().zipTree(input).visit(new FileVisitor() {
+            getProject().zipTree(input).visit(new FileVisitor() {
 
-            @Override
-            public void visitDir(FileVisitDetails details)
-            {
-                // ignore directories
-            }
-
-            @Override
-            public void visitFile(FileVisitDetails details)
-            {
-                JarEntry entry = new JarEntry(details.getPath());
-                entry.setSize(details.getSize());
-                entry.setTime(details.getLastModified());
-
-                try
+                @Override
+                public void visitDir(FileVisitDetails details)
                 {
-                    if (spec.isSatisfiedBy(details))
+                    // ignore directories
+                }
+
+                @Override
+                public void visitFile(FileVisitDetails details)
+                {
+                    JarEntry entry = new JarEntry(details.getPath());
+                    entry.setSize(details.getSize());
+                    entry.setTime(details.getLastModified());
+
+                    try
                     {
-                        zout1.putNextEntry(entry);
-                        details.copyTo(zout1);
-                        zout1.closeEntry();
+                        if (spec.isSatisfiedBy(details))
+                        {
+                            zout1.putNextEntry(entry);
+                            details.copyTo(zout1);
+                            zout1.closeEntry();
+                        }
+                        else
+                        {
+                            zout2.putNextEntry(entry);
+                            details.copyTo(zout2);
+                            zout2.closeEntry();
+                        }
                     }
-                    else
+                    catch (IOException e)
                     {
-                        zout2.putNextEntry(entry);
-                        details.copyTo(zout2);
-                        zout2.closeEntry();
+                        Throwables.propagate(e);
                     }
                 }
-                catch (IOException e)
-                {
-                    Throwables.propagate(e);
-                }
-            }
-        });
-
-        zout1.close();
-        zout2.close();
+            });
+        }
     }
 
     public File getInJar()

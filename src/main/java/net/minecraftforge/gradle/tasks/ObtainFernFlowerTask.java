@@ -71,20 +71,20 @@ public class ObtainFernFlowerTask extends CachedTask
         connect.setRequestProperty("User-Agent", Constants.USER_AGENT);
         connect.setInstanceFollowRedirects(true);
 
-        final ZipInputStream zin = new ZipInputStream(connect.getInputStream());
-        ZipEntry entry = null;
-
-        while ((entry = zin.getNextEntry()) != null)
+        try (final ZipInputStream zin = new ZipInputStream(connect.getInputStream()))
         {
-            if (Constants.lower(entry.getName()).endsWith("fernflower.jar"))
+            ZipEntry entry;
+
+            while ((entry = zin.getNextEntry()) != null)
             {
-                ff.getParentFile().mkdirs();
-                Files.touch(ff);
-                Files.write(ByteStreams.toByteArray(zin), ff);
+                if (Constants.lower(entry.getName()).endsWith("fernflower.jar"))
+                {
+                    ff.getParentFile().mkdirs();
+                    Files.touch(ff);
+                    Files.write(ByteStreams.toByteArray(zin), ff);
+                }
             }
         }
-
-        zin.close();
 
         getLogger().info("Download and Extraction complete");
     }
