@@ -117,6 +117,12 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 throw new RuntimeException("ForgeGradle 2.0 requires Gradle 2.3 or above.");
         }
 
+        // check for java version
+        {
+            if ("9".equals(System.getProperty("java.specification.version")) && !"true".equals(System.getProperty("forgegradle.overrideJava9Check")))
+                throw new RuntimeException("ForgeGradle does not currently support Java 9");
+        }
+
         if (project.getBuildDir().getAbsolutePath().contains("!"))
         {
             LOGGER.error("Build path has !, This will screw over a lot of java things as ! is used to denote archive paths, REMOVE IT if you want to continue");
