@@ -167,7 +167,7 @@ public abstract class GradleStartCommon
             {
                 String value = (String) options.valueOf(key);
                 argMap.put(key, value);
-                if (!"password".equalsIgnoreCase(key))
+                if (!"password".equalsIgnoreCase(key) && !"accessToken".equalsIgnoreCase(key))
                     LOGGER.info(key + ": " + value);
             }
         }
