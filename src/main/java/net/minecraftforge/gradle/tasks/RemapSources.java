@@ -63,7 +63,7 @@ public class RemapSources extends AbstractEditJarTask
 
     private static final Pattern      SRG_FINDER             = Pattern.compile("func_[0-9]+_[a-zA-Z_]+|field_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_\\b");
     private static final Pattern      METHOD_JAVADOC_PATTERN = Pattern.compile("^(?<indent>(?: {4})+|\\t+)(?!return)(?:\\w+\\s+)*(?<generic><[\\w\\W]*>\\s+)?(?<return>\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>func_[0-9]+_[a-zA-Z_]+)\\(");
-    private static final Pattern      FIELD_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: {4})+|\\t+)(?:\\w+\\s+)*(?:\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
+    private static final Pattern      FIELD_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: {4})+|\\t+)(?!return)(?:\\w+\\s+)*(?:\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
 
     @Override
     public void doStuffBefore() throws Exception
