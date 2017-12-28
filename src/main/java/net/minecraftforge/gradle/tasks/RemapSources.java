@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
@@ -60,9 +61,9 @@ public class RemapSources extends AbstractEditJarTask
     private final Map<String, String> params       = Maps.newHashMap();
 
 
-    private static final Pattern      SRG_FINDER   = Pattern.compile("func_[0-9]+_[a-zA-Z_]+|field_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_\\b");
-    public static final Pattern      METHOD       = Pattern.compile("^(?<indent>(?: {4})+|\\t+)(?!return)(?:\\w+\\s+)*(?<generic><[\\w\\W]*>\\s+)?(?<return>\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>func_[0-9]+_[a-zA-Z_]+)\\(");
-    public static final Pattern      FIELD        = Pattern.compile("^(?<indent>(?: {4})+|\\t+)(?:\\w+\\s+)*(?:\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
+    private static final Pattern      SRG_FINDER             = Pattern.compile("func_[0-9]+_[a-zA-Z_]+|field_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_\\b");
+    private static final Pattern      METHOD_JAVADOC_PATTERN = Pattern.compile("^(?<indent>(?: {4})+|\\t+)(?!return)(?:\\w+\\s+)*(?<generic><[\\w\\W]*>\\s+)?(?<return>\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>func_[0-9]+_[a-zA-Z_]+)\\(");
+    private static final Pattern      FIELD_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: {4})+|\\t+)(?:\\w+\\s+)*(?:\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
 
     @Override
     public void doStuffBefore() throws Exception
@@ -104,10 +105,10 @@ public class RemapSources extends AbstractEditJarTask
         for (String line : Constants.lines(text))
         {
             // basically all this code is to find the javadocs for a field before replacing it.
-            // if we arnt doing javadocs.. screw dat.
+            // if we aren't doing javadocs... screw dat.
             if (addsJavadocs)
             {
-                injectJavadoc(newLines, line);
+                injectJavadoc(newLines, line, methodDocs::get, fieldDocs::get);
             }
             newLines.add(replaceInLine(line));
         }
@@ -115,35 +116,45 @@ public class RemapSources extends AbstractEditJarTask
         return Joiner.on(Constants.NEWLINE).join(newLines);
     }
 
-    private void injectJavadoc(List<String> newLines, String line)
+    /**
+     * Injects a javadoc into the given list of lines, if the given line is a
+     * method or field declaration.
+     *
+     * @param lines The current file content (to be modified by this method)
+     * @param line The line that was just read (will not be in the list)
+     * @param methodFunc A function that takes a method SRG id and returns its javadoc
+     * @param fieldFunc A function that takes a field SRG id and returns its javadoc
+     */
+    public static void injectJavadoc(List<String> lines, String line, Function<String, String> methodFunc, Function<String, String> fieldFunc)
     {
         // methods
-        Matcher matcher = METHOD.matcher(line);
+        Matcher matcher = METHOD_JAVADOC_PATTERN.matcher(line);
         if (matcher.find())
         {
-            String javadoc = methodDocs.get(matcher.group("name"));
+            String javadoc = methodFunc.apply(matcher.group("name"));
             if (!Strings.isNullOrEmpty(javadoc))
             {
-                insetAboveAnnotations(newLines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, true));
+                insertAboveAnnotations(lines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, true));
             }
 
-            // worked, so return and dont try the fields.
+            // worked, so return and don't try the fields.
             return;
         }
 
         // fields
-        matcher = FIELD.matcher(line);
+        matcher = FIELD_JAVADOC_PATTERN.matcher(line);
         if (matcher.find())
         {
-            String javadoc = fieldDocs.get(matcher.group("name"));
+            String javadoc = fieldFunc.apply(matcher.group("name"));
             if (!Strings.isNullOrEmpty(javadoc))
             {
-                insetAboveAnnotations(newLines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, false));
+                insertAboveAnnotations(lines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, false));
             }
         }
     }
 
-    private static void insetAboveAnnotations(List<String> list, String line)
+    /** Inserts the given javadoc line into the list of lines before any annotations */
+    private static void insertAboveAnnotations(List<String> list, String line)
     {
         int back = 0;
         while (list.get(list.size() - 1 - back).trim().startsWith("@"))
