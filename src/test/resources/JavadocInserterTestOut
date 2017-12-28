@@ -19,6 +19,9 @@
     Map<Test[], Bob[]>[] field_9_a;
     /** Javadoc For: field_10_a */
     Map<? extends Object & Turtle> field_10_a;
+    /** Javadoc For: field_11_a */
+    @Nullable
+    Object field_11_a;
 
 
 
@@ -66,10 +69,60 @@
      * Javadoc For: func_11_a
      */
     public static <T extends Enum<T> & IStringSerializable> PropertyEnum<T> func_11_a();
+    /**
+     * Javadoc For: func_12_a
+     */
+    @Nullable
+    Object func_12_a();
 
 
 
-    //These SHOULDN'T get javadocs
-    return func_1_a();
+    // Non-SRG methods (e.g. from non-obf interfaces) should not get docs
+    public int size();
+    public List<? extends T> findAll(Class<T> clazz);
 
+    // Methods and fields in methods shouldn't get docs
+    boolean foo() {
+        someVar = func_2_a();
+        func_2_a().aField++;
+        test(func_2_a());
+        return func_2_a();
+    }
+    boolean bar() {
+        someVar = field_2_a;
+        test(field_2_a);
+        field_2_a++;
+        return field_2_a;
+    }
+
+
+
+    // Inner and anonymous classes
+    class Nested {
+        /** Javadoc For: field_101_a */
+        int field_101_a;
+        /**
+         * Javadoc For: func_101_a
+         */
+        int func_101_a();
+    }
+
+    Object inner() {
+        class MethodNested {
+            /** Javadoc For: field_102_a */
+            boolean field_102_a;
+            /**
+             * Javadoc For: func_102_a
+             */
+            boolean func_102_a();
+        }
+        return new Object() {
+            /** Javadoc For: field_103_a */
+            boolean field_103_a;
+            /**
+             * Javadoc For: func_103_a
+             */
+            boolean func_103_a();
+        }
+    }
 }

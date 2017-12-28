@@ -9,6 +9,8 @@
     Map<,> field_8_a; //This will get javadocs even tho its invalid cuz we dont care if its valid just that it grabs all the generics
     Map<Test[], Bob[]>[] field_9_a;
     Map<? extends Object & Turtle> field_10_a;
+    @Nullable
+    Object field_11_a;
 
 
 
@@ -23,10 +25,45 @@
     Map<Test[], Bob[]>[] func_9_a();
     Map<? extends Object & Turtle> func_10_a();
     public static <T extends Enum<T> & IStringSerializable> PropertyEnum<T> func_11_a();
+    @Nullable
+    Object func_12_a();
 
 
 
-    //These SHOULDN'T get javadocs
-    return func_1_a();
+    // Non-SRG methods (e.g. from non-obf interfaces) should not get docs
+    public int size();
+    public List<? extends T> findAll(Class<T> clazz);
 
+    // Methods and fields in methods shouldn't get docs
+    boolean foo() {
+        someVar = func_2_a();
+        func_2_a().aField++;
+        test(func_2_a());
+        return func_2_a();
+    }
+    boolean bar() {
+        someVar = field_2_a;
+        test(field_2_a);
+        field_2_a++;
+        return field_2_a;
+    }
+
+
+
+    // Inner and anonymous classes
+    class Nested {
+        int field_101_a;
+        int func_101_a();
+    }
+
+    Object inner() {
+        class MethodNested {
+            boolean field_102_a;
+            boolean func_102_a();
+        }
+        return new Object() {
+            boolean field_103_a;
+            boolean func_103_a();
+        }
+    }
 }
