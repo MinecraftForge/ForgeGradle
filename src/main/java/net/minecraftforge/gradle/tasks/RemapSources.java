@@ -52,6 +52,9 @@ public class RemapSources extends AbstractEditJarTask
     @InputFile
     private DelayedFile               paramsCsv;
 
+    @InputFile
+    private Object                    classesCsv;
+
     private boolean                   addsJavadocs = true;
 
     private final Map<String, String> methods      = Maps.newHashMap();
@@ -59,36 +62,56 @@ public class RemapSources extends AbstractEditJarTask
     private final Map<String, String> fields       = Maps.newHashMap();
     private final Map<String, String> fieldDocs    = Maps.newHashMap();
     private final Map<String, String> params       = Maps.newHashMap();
+    private final Map<String, String> classDocs    = Maps.newHashMap();
 
 
     private static final Pattern      SRG_FINDER             = Pattern.compile("func_[0-9]+_[a-zA-Z_]+|field_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_\\b");
     private static final Pattern      METHOD_JAVADOC_PATTERN = Pattern.compile("^(?<indent>(?: {4})+|\\t+)(?!return)(?:\\w+\\s+)*(?<generic><[\\w\\W]*>\\s+)?(?<return>\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>func_[0-9]+_[a-zA-Z_]+)\\(");
     private static final Pattern      FIELD_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: {4})+|\\t+)(?!return)(?:\\w+\\s+)*(?:\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
+    private static final Pattern      CLASS_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: {4})*|\\t*)(?:\\w+\\s+)*(?:class|interface|enum) (?<name>\\w+)");
 
     @Override
     public void doStuffBefore() throws Exception
     {
         // read CSV files
-        CSVReader reader = Constants.getReader(getMethodsCsv());
-        for (String[] s : reader.readAll())
+        try (CSVReader reader = Constants.getReader(getMethodsCsv()))
         {
-            methods.put(s[0], s[1]);
-            if (!s[3].isEmpty() && addsJavadocs)
-                methodDocs.put(s[0], s[3]);
+            for (String[] s : reader.readAll())
+            {
+                methods.put(s[0], s[1]);
+                if (!s[3].isEmpty() && addsJavadocs)
+                    methodDocs.put(s[0], s[3]);
+            }
         }
 
-        reader = Constants.getReader(getFieldsCsv());
-        for (String[] s : reader.readAll())
+        try (CSVReader reader = Constants.getReader(getFieldsCsv()))
         {
-            fields.put(s[0], s[1]);
-            if (!s[3].isEmpty() && addsJavadocs)
-                fieldDocs.put(s[0], s[3]);
+            for (String[] s : reader.readAll())
+            {
+                fields.put(s[0], s[1]);
+                if (!s[3].isEmpty() && addsJavadocs)
+                    fieldDocs.put(s[0], s[3]);
+            }
         }
 
-        reader = Constants.getReader(getParamsCsv());
-        for (String[] s : reader.readAll())
+        try (CSVReader reader = Constants.getReader(getParamsCsv()))
         {
-            params.put(s[0], s[1]);
+            for (String[] s : reader.readAll())
+            {
+                params.put(s[0], s[1]);
+            }
+        }
+
+        if (classesCsv != null)
+        {
+            try (CSVReader reader = Constants.getReader(getClassesCsv()))
+            {
+                for (String[] s : reader.readAll()) {
+                    if (!s[3].isEmpty() && addsJavadocs) {
+                        classDocs.put(s[1] + ":" + s[0], s[3]);
+                    }
+                }
+            }
         }
     }
 
@@ -108,7 +131,7 @@ public class RemapSources extends AbstractEditJarTask
             // if we aren't doing javadocs... screw dat.
             if (addsJavadocs)
             {
-                injectJavadoc(newLines, line, methodDocs::get, fieldDocs::get);
+                injectJavadoc(newLines, line, name, methodDocs::get, fieldDocs::get, classDocs::get);
             }
             newLines.add(replaceInLine(line));
         }
@@ -122,10 +145,14 @@ public class RemapSources extends AbstractEditJarTask
      *
      * @param lines The current file content (to be modified by this method)
      * @param line The line that was just read (will not be in the list)
+     * @param name The file's name (including ending .java)
      * @param methodFunc A function that takes a method SRG id and returns its javadoc
      * @param fieldFunc A function that takes a field SRG id and returns its javadoc
+     * @param classFunc A function that takes a filename (with .java) followed by the 
+     * class name and returns its javadoc
      */
-    public static void injectJavadoc(List<String> lines, String line, Function<String, String> methodFunc, Function<String, String> fieldFunc)
+    public static void injectJavadoc(List<String> lines, String line, String name,
+            Function<String, String> methodFunc, Function<String, String> fieldFunc, Function<String, String> classFunc)
     {
         // methods
         Matcher matcher = METHOD_JAVADOC_PATTERN.matcher(line);
@@ -150,6 +177,19 @@ public class RemapSources extends AbstractEditJarTask
             {
                 insertAboveAnnotations(lines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, false));
             }
+
+            return;
+        }
+
+        matcher = CLASS_JAVADOC_PATTERN.matcher(line);
+        if (matcher.find()) {
+            String javadoc = classFunc.apply(name + ":" + matcher.group("name"));
+            if (!Strings.isNullOrEmpty(javadoc))
+            {
+                insertAboveAnnotations(lines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, true));
+            }
+
+            return;
         }
     }
 
@@ -217,6 +257,15 @@ public class RemapSources extends AbstractEditJarTask
     public void setParamsCsv(DelayedFile paramsCsv)
     {
         this.paramsCsv = paramsCsv;
+    }
+
+    public File getClassesCsv()
+    {
+        return getProject().file(this.classesCsv);
+    }
+
+    public void setClassesCsv(Object classesCsv) {
+        this.classesCsv = classesCsv;
     }
 
     public boolean addsJavadocs()

@@ -46,7 +46,7 @@ public class JavadocInserterTest
         for (String line : Constants.lines(input))
         {
             System.out.println(line);
-            RemapSources.injectJavadoc(newLines, line, method -> "Javadoc For: " + method, field -> "Javadoc For: " + field);
+            RemapSources.injectJavadoc(newLines, line, "", method -> "Javadoc For: " + method, field -> "Javadoc For: " + field, cls -> null);
             newLines.add(line);
         }
         String output = Joiner.on(Constants.NEWLINE).join(newLines);
