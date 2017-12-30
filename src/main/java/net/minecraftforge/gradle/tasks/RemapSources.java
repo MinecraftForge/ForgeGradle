@@ -65,10 +65,11 @@ public class RemapSources extends AbstractEditJarTask
     private final Map<String, String> classDocs    = Maps.newHashMap();
 
 
-    private static final Pattern      SRG_FINDER             = Pattern.compile("func_[0-9]+_[a-zA-Z_]+|field_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_\\b");
-    private static final Pattern      METHOD_JAVADOC_PATTERN = Pattern.compile("^(?<indent>(?: {4})+|\\t+)(?!return)(?:\\w+\\s+)*(?<generic><[\\w\\W]*>\\s+)?(?<return>\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>func_[0-9]+_[a-zA-Z_]+)\\(");
-    private static final Pattern      FIELD_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: {4})+|\\t+)(?!return)(?:\\w+\\s+)*(?:\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
-    private static final Pattern      CLASS_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: {4})*|\\t*)(?:\\w+\\s+)*(?:class|interface|enum) (?<name>\\w+)");
+    private static final Pattern SRG_FINDER              = Pattern.compile("func_[0-9]+_[a-zA-Z_]+|field_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_\\b");
+    private static final Pattern METHOD_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: {4})+|\\t+)(?!return)(?:\\w+\\s+)*(?<generic><[\\w\\W]*>\\s+)?(?<return>\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>func_[0-9]+_[a-zA-Z_]+)\\(");
+    private static final Pattern FIELD_JAVADOC_PATTERN   = Pattern.compile("^(?<indent>(?: {4})+|\\t+)(?!return)(?:\\w+\\s+)*(?:\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
+    private static final Pattern CLASS_JAVADOC_PATTERN   = Pattern.compile("^(?<indent>(?: {4})*|\\t*)(?:\\w+\\s+)*(?:class|interface|enum) (?<name>\\w+)");
+    private static final Pattern PACKAGE_JAVADOC_PATTERN = Pattern.compile("^package (?<name>.+);");
 
     @Override
     public void doStuffBefore() throws Exception
@@ -190,6 +191,19 @@ public class RemapSources extends AbstractEditJarTask
             }
 
             return;
+        }
+
+        if (name.endsWith("package-info.java")) {
+            matcher = PACKAGE_JAVADOC_PATTERN.matcher(line);
+            if (matcher.find()) {
+                String javadoc = classFunc.apply(name + ":" + matcher.group("name"));
+                if (!Strings.isNullOrEmpty(javadoc))
+                {
+                    insertAboveAnnotations(lines, JavadocAdder.buildJavadoc("", javadoc, true));
+                }
+
+                return;
+            }
         }
     }
 
