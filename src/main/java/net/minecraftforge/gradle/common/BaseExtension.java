@@ -324,7 +324,7 @@ public abstract class BaseExtension
     }
 
     @SuppressWarnings("unused")
-	private static String getMappedString(String key, String value) {
+    private static String getMappedString(String key, String value) {
         if (value == null) return "";
         return key + ": " + value;
     }
