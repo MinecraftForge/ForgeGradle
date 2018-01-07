@@ -167,7 +167,7 @@ class TaskGenSubprojects extends DefaultTask
 
         // @formatter:off
 
-        // why use relatvie paths? so the eclipse hack below can work correctly.
+        // why use relative paths? so the eclipse hack below can work correctly.
         // add extra sourceDirs
         append(builder, "sourceSets {", NEWLINE);
         append(builder, INDENT, "main.java.srcDir 'src/main/start'", NEWLINE); // add start dir to gradle sources

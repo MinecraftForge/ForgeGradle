@@ -323,7 +323,8 @@ public abstract class BaseExtension
         throw new GradleConfigurationException("The specified mapping '" + getMappings() + "' does not exist!");
     }
 
-    private static String getMappedString(String key, String value) {
+    @SuppressWarnings("unused")
+	private static String getMappedString(String key, String value) {
         if (value == null) return "";
         return key + ": " + value;
     }
