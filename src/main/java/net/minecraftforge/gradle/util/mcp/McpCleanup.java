@@ -19,7 +19,6 @@
  */
 package net.minecraftforge.gradle.util.mcp;
 
-import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,99 +30,98 @@ public class McpCleanup
     public static final Pattern COMMENTS_TRAILING = Pattern.compile("(?m)[ \\t]+$");
     public static final Pattern COMMENTS_NEWLINES = Pattern.compile("(?m)^(?:\\r\\n|\\r|\\n){2,}");
 
+    enum CommentState
+    {
+        CODE,
+        STRING,
+        CHARACTER,
+        SINGLE_LINE_COMMENT,
+        MULTI_LINE_COMMENT,
+    }
+
     public static String stripComments(String text)
     {
-        boolean inComment = false;
-        boolean inString = false;
-        char c;
-        int ci;
-        try (StringReader in = new StringReader(text);
-             StringWriter out = new StringWriter(text.length()))
+        CommentState state = CommentState.CODE;
+        int i = 0;
+        try (StringWriter out = new StringWriter(text.length()))
         {
-            while ((ci = in.read()) != -1)
+            while (i < text.length())
             {
-                c = (char) ci;
-                switch (c)
+                if (state == CommentState.CODE)
+                {
+                    out.write(text.charAt(i++));
+                }
+                else if (state == CommentState.STRING || state == CommentState.CHARACTER)
+                {
+                    // write the first quote
+                    out.write(text.charAt(i++));
+                    char end = state == CommentState.STRING ? '"' : '\'';
+                    while (i < text.length() && text.charAt(i) != end)
                     {
-                        case '\\':
-                            {
-                                out.write(c);
-                                out.write(in.read());//Skip escaped chars
-                                break;
-                            }
-                        case '\"':
-                            {
-                                if (!inComment)
-                                {
-                                    out.write(c);
-                                    inString = !inString;
-                                }
-                                break;
-                            }
-                        case '\'':
-                            {
-                                if (!inComment)
-                                {
-                                    out.write(c);
-                                    out.write(in.read());
-                                    out.write(in.read());
-                                }
-                                break;
-                            }
-                        case '*':
-                            {
-                                char c2 = (char) in.read();
-                                if (inComment && c2 == '/')
-                                {
-                                    inComment = false;
-                                    out.write(' ');//Allows int x = 3; int y = -/**/-x; to work
-                                }
-                                else
-                                {
-                                    out.write(c);
-                                    out.write(c2);
-                                }
-                                break;
-                            }
-                        case '/':
-                            {
-                                if (!inString)
-                                {
-                                    char c2 = (char) in.read();
-                                    switch (c2)
-                                        {
-                                            case '/':
-                                                char c3 = 0;
-                                                while (c3 != '\n' && c3 != '\r')
-                                                {
-                                                    c3 = (char) in.read();
-                                                }
-                                                out.write(c3);//write newline
-                                                break;
-                                            case '*':
-                                                inComment = true;
-                                                break;
-                                            default:
-                                                out.write(c);
-                                                out.write(c2);
-                                                break;
-                                        }
-                                }
-                                else
-                                {
-                                    out.write(c);
-                                }
-                                break;
-                            }
-                        default:
-                            {
-                                if (!inComment)
-                                {
-                                    out.write(c);
-                                }
-                                break;
-                            }
+                        // escape characters
+                        if (text.charAt(i) == '\\')
+                        {
+                            out.write(text.charAt(i++));
+                        }
+                        // the slash might have been the last character
+                        if (i >= text.length())
+                        {
+                            break;
+                        }
+                        out.write(text.charAt(i++));
                     }
+                    // write the second quote
+                    // check because the text might not have ended
+                    if (i < text.length())
+                    {
+                        out.write(text.charAt(i++));
+                    }
+                }
+                else if (state == CommentState.SINGLE_LINE_COMMENT)
+                {
+                    i += 2; // skip "//"
+                    while (i < text.length() && text.charAt(i) != '\n' && text.charAt(i) != '\r')
+                    {
+                        i++;
+                    }
+                    i += 1; // skip the ending newline
+                }
+                else // state == CommentState.MULTI_LINE_COMMENT
+                {
+                    i += 2; // skip "/*"
+                    while (i < text.length() && (text.charAt(i) != '*' || text.charAt(i + 1) != '/'))
+                    {
+                        i++;
+                    }
+                    i += 2; //skip "*/"
+                }
+                state = null;
+                if (i < text.length())
+                {
+                    if (text.charAt(i) == '"')
+                    {
+                        state = CommentState.STRING;
+                    }
+                    else if (text.charAt(i) == '\'')
+                    {
+                        state = CommentState.CHARACTER;
+                    }
+                }
+                if (i + 1 < text.length() && state == null)
+                {
+                    if (text.charAt(i) == '/' && text.charAt(i + 1) == '/')
+                    {
+                        state = CommentState.SINGLE_LINE_COMMENT;
+                    }
+                    else if (text.charAt(i) == '/' && text.charAt(i + 1) == '*')
+                    {
+                        state = CommentState.MULTI_LINE_COMMENT;
+                    }
+                }
+                if (state == null)
+                {
+                    state = CommentState.CODE;
+                }
             }
             text = out.toString();
         }

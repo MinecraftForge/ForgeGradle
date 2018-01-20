@@ -1,0 +1,17 @@
+public class StripComments
+{
+	//I am a single line comment
+	boolean flag = false;
+	/*
+	 * I am a multi line comment
+	 */
+	public static final String greeting = "hello world'a/*'";
+	public static final String nastyStr = "yadadada*";
+	//I should get removed
+	public static final String victimStr = "something or // other";
+
+	public void someMethod()
+	{
+		System.out.println("some test");
+	}
+}
