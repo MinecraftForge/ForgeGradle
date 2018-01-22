@@ -36,10 +36,10 @@ public final class JavadocAdder
      * Converts a raw javadoc string into a nicely formatted, indented, and wrapped string.
      * @param indent the indent to be inserted before every line.
      * @param javadoc The javadoc string to be processed
-     * @param isMethod If this javadoc is for a method or a field
+     * @param forceMultiline If this javadoc should always be spread over multiple lines even if it can fit in one
      * @return A fully formatted javadoc comment string complete with comment characters and newlines.
      */
-    public static String buildJavadoc(String indent, String javadoc, boolean isMethod)
+    public static String buildJavadoc(String indent, String javadoc, boolean forceMultiline)
     {
         StringBuilder builder = new StringBuilder();
         
@@ -50,7 +50,7 @@ public final class JavadocAdder
             list.addAll(wrapText(line, 120 - (indent.length() + 3)));
         }
 
-        if (list.size() > 1 || isMethod)
+        if (list.size() > 1 || forceMultiline)
         {
             builder.append(indent);
             builder.append("/**");
