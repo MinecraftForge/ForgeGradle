@@ -125,6 +125,7 @@ public class RemapSources extends AbstractEditJarTask
     @Override
     public String asRead(String name, String text)
     {
+        String className = name.replace(".java", "").replaceAll("[/\\\\]", ".");
         ArrayList<String> newLines = new ArrayList<String>();
         for (String line : Constants.lines(text))
         {
@@ -132,7 +133,7 @@ public class RemapSources extends AbstractEditJarTask
             // if we aren't doing javadocs... screw dat.
             if (addsJavadocs)
             {
-                injectJavadoc(newLines, line, name, methodDocs::get, fieldDocs::get, classDocs::get);
+                injectJavadoc(newLines, line, className, methodDocs::get, fieldDocs::get, classDocs::get);
             }
             newLines.add(replaceInLine(line));
         }
@@ -146,11 +147,11 @@ public class RemapSources extends AbstractEditJarTask
      *
      * @param lines The current file content (to be modified by this method)
      * @param line The line that was just read (will not be in the list)
-     * @param name The file's name (including ending .java)
+     * @param name The fully qualified name of the class
      * @param methodFunc A function that takes a method SRG id and returns its javadoc
      * @param fieldFunc A function that takes a field SRG id and returns its javadoc
-     * @param classFunc A function that takes a filename (with .java) followed by the 
-     * class name and returns its javadoc
+     * @param classFunc A function that takes a qualified class name, and then the inner
+     * class name, and returns its javadoc
      */
     public static void injectJavadoc(List<String> lines, String line, String name,
             Function<String, String> methodFunc, Function<String, String> fieldFunc, Function<String, String> classFunc)
@@ -193,7 +194,7 @@ public class RemapSources extends AbstractEditJarTask
             return;
         }
 
-        if (name.endsWith("package-info.java")) {
+        if (name.endsWith("package-info")) {
             matcher = PACKAGE_JAVADOC_PATTERN.matcher(line);
             if (matcher.find()) {
                 String javadoc = classFunc.apply(name + ":" + matcher.group("name"));
