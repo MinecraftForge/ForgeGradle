@@ -259,6 +259,7 @@ public class TaskExtractAnnotations extends DefaultTask
             .build();
 
         private static final ValueHolder NULL = new ValueHolder();
+        private static final ValueHolder EMPTY_LIST = new ValueHolder(null, null, Lists.newArrayList());
 
         public final ValueType type;
         public final String value;
@@ -317,6 +318,9 @@ public class TaskExtractAnnotations extends DefaultTask
 
         public static ValueHolder of(List<ValueHolder> values)
         {
+            if (values.isEmpty())
+                return EMPTY_LIST;
+
             return new ValueHolder(values.get(0).type, null, values.stream().map(a -> a.value).collect(Collectors.toList()));
         }
     }
