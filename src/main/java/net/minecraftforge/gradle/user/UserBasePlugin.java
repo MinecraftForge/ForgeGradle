@@ -625,6 +625,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                     // Apparently the Kotlin plugin doesn't respect setSource in any way, so this is required
                     compile.include(new Closure<Boolean>(UserBasePlugin.class)
                     {
+                        private static final long serialVersionUID = -6765183773807992625L;
+
                         @Override
                         public Boolean call(Object o)
                         {
