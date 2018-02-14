@@ -1,0 +1,15 @@
+public class StripComments
+{
+
+	boolean flag = false;
+
+	public static final String greeting = "hello world'a/*'";
+	public static final String nastyStr = "yadadada*";
+
+	public static final String victimStr = "something or // other";
+
+	public void someMethod()
+	{
+		System.out.println("some test");
+	}
+}
