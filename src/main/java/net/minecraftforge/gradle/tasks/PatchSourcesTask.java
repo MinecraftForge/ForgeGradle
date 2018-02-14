@@ -41,7 +41,6 @@ import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
-import org.gradle.api.tasks.ParallelizableTask;
 
 import com.cloudbees.diff.PatchException;
 import com.google.common.base.Charsets;
@@ -50,7 +49,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 
-@ParallelizableTask
 public class PatchSourcesTask extends AbstractEditJarTask
 {
     /*

@@ -33,7 +33,6 @@ import net.minecraftforge.gradle.common.Constants;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
-import org.gradle.api.tasks.ParallelizableTask;
 import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.base.Charsets;
@@ -41,7 +40,6 @@ import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
-@ParallelizableTask
 public class EtagDownloadTask extends DefaultTask
 {
     @Input

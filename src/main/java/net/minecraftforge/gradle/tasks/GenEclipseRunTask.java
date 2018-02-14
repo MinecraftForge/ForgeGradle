@@ -39,7 +39,6 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
-import org.gradle.api.tasks.ParallelizableTask;
 import org.gradle.api.tasks.TaskAction;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -47,7 +46,6 @@ import org.w3c.dom.Element;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 
-@ParallelizableTask
 public class GenEclipseRunTask extends DefaultTask
 {
     //@formatter:off
