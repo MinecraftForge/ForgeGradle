@@ -1,6 +1,6 @@
 /*
  * A Gradle plugin for the creation of Minecraft mods and MinecraftForge plugins.
- * Copyright (C) 2013 Minecraft Forge
+ * Copyright (C) 2013-2018 Minecraft Forge
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
