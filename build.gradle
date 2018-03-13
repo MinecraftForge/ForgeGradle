@@ -75,7 +75,7 @@ dependencies {
     compile 'com.google.code.gson:gson:2.2.4' // Used instead of Argo for buuilding changelog.
     compile 'com.github.tony19:named-regexp:0.2.3' // 1.7 Named regexp features
     
-    shade 'net.md-5:SpecialSource:1.7.4-SNAPSHOT' // deobf and reobs
+    shade 'net.md-5:SpecialSource:1.7.4' // deobf and reobs
     // compile 'net.md-5:SpecialSource:1.7.4' // when md5 publishes
     
     // because curse
