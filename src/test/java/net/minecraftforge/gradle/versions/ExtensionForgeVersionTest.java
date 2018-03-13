@@ -46,6 +46,7 @@ public class ExtensionForgeVersionTest
 
         this.ext = this.testProject.getExtensions().findByType(ForgeExtension.class);   // unlike getByType(), does not throw exception
         assertNotNull(this.ext);
+		this.ext.setSuppressVersionTest(true);
     }
 
     // Invalid version notation! The following are valid notations. BuildNumber, version, version-branch, mcversion-version-branch, and pomotion (sic)
