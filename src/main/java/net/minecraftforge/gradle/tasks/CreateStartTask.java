@@ -39,9 +39,11 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.logging.LogLevel;
+import org.gradle.api.logging.LoggingManager; 
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.util.GradleVersion;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
@@ -125,7 +127,7 @@ public class CreateStartTask extends CachedTask
                     col = col.plus(config);
             }
 
-            AntBuilder ant = this.getAnt();
+            AntBuilder ant = this.setupAnt();
             // Remove errors on normal runs
             LogLevel startLevel = getProject().getGradle().getStartParameter().getLogLevel();
             if (startLevel.compareTo(LogLevel.LIFECYCLE) >= 0) {
@@ -162,6 +164,30 @@ public class CreateStartTask extends CachedTask
             });
         }
 
+    }
+
+    private AntBuilder setupAnt()
+    {
+        AntBuilder ant = this.getAnt();
+        LogLevel startLevel = getProject().getGradle().getStartParameter().getLogLevel();
+        if (startLevel.compareTo(LogLevel.LIFECYCLE) >= 0)
+        {
+            GradleVersion v2_14 = GradleVersion.version("2.14");
+            if (GradleVersion.current().compareTo(v2_14) >= 0)
+            {
+                ant.setLifecycleLogLevel(AntMessagePriority.ERROR);
+            }
+            else
+            {
+                try {
+                    LoggingManager.class.getMethod("setLevel", LogLevel.class).invoke(getLogging(), LogLevel.ERROR);
+                } catch (Exception e) {
+                    //Couldn't find it? We are on some weird version oh well.
+                    this.getLogger().info("Could not set log level:", e);
+                }
+            }
+        }
+        return ant;
     }
 
     @SuppressWarnings("rawtypes")
