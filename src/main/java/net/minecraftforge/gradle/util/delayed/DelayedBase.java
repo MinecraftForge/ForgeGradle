@@ -26,15 +26,15 @@ public abstract class DelayedBase<V> extends Closure<V>
 {
     protected TokenReplacer replacer;
 
-    public DelayedBase(ReplacementProvider provider, String pattern)
+    public DelayedBase(Class<?> owner, ReplacementProvider provider, String pattern)
     {
-        super(null);
+        super(owner);
         replacer = new TokenReplacer(provider, pattern);
     }
     
-    public DelayedBase(TokenReplacer replacer)
+    public DelayedBase(Class<?> owner, TokenReplacer replacer)
     {
-        super(null);
+        super(owner);
         this.replacer = replacer;
     }
 

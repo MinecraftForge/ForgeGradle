@@ -76,7 +76,7 @@ public abstract class PatcherUserBasePlugin<T extends UserBaseExtension> extends
             extractUserdev.exclude("META-INF/**", "META-INF/**");
             extractUserdev.dependsOn(TASK_DL_VERSION_JSON);
 
-            extractUserdev.doLast(new Closure<Boolean>(project) // normalizes to linux endings
+            extractUserdev.doLast(new Closure<Boolean>(PatcherUserBasePlugin.class) // normalizes to linux endings
             {
                 @Override
                 public Boolean call()

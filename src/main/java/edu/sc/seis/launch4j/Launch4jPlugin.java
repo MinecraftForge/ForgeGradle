@@ -137,7 +137,7 @@ public class Launch4jPlugin implements Plugin<Project>
         task.setGroup(LAUNCH4J_GROUP);
         // more stuff with the java plugin
         //task.with(configureDistSpec(project));
-        task.into(new Closure<File>(null)
+        task.into(new Closure<File>(Launch4jPlugin.class)
         {
             @Override
             public File call(Object... obj)
@@ -180,7 +180,7 @@ public class Launch4jPlugin implements Plugin<Project>
     @SuppressWarnings({ "serial", "unused" })
     private static CopySpec configureDistSpec(Project project)
     {
-        CopySpec distSpec = project.copySpec(new Closure<Object>(null) {});
+        CopySpec distSpec = project.copySpec(new Closure<Object>(Launch4jPlugin.class) {});
         Jar jar = (Jar) project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
 
         distSpec.from(jar);
