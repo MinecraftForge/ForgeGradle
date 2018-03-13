@@ -34,7 +34,7 @@ import java.util.Map.Entry;
 
 public abstract class BaseExtension
 {
-    protected static final transient Map<String, String> MCP_VERSION_MAP = ImmutableMap.of("1.8", "9.10");
+    protected static final transient Map<String, String> MCP_VERSION_MAP = ImmutableMap.of("1.12", "9.40", "1.12.1", "9.41", "1.12.2", "9.42");
 
     private static final String MIN_VERSION = "1.12";
     // The max supported version of minecraft. null means latest is supported
