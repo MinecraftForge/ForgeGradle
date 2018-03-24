@@ -274,10 +274,10 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         LOGGER.lifecycle("         ForgeGradle {}        ", this.getVersionString());
         LOGGER.lifecycle("  https://github.com/MinecraftForge/ForgeGradle  ");
         LOGGER.lifecycle("#################################################");
-        LOGGER.lifecycle("               Powered by MCP {}               ", this.getExtension().getMcpVersion());
+        LOGGER.lifecycle("                 Powered by MCP                  ");
         LOGGER.lifecycle("             http://modcoderpack.com             ");
-        LOGGER.lifecycle("         by: Searge, ProfMobius, Fesh0r,         ");
-        LOGGER.lifecycle("         R4wk, ZeuX, IngisKahn, bspkrs           ");
+        LOGGER.lifecycle("     by: Searge, ProfMobius, R4wk, ZeuX          ");
+        LOGGER.lifecycle("     Fesh0r, IngisKahn, bspkrs, LexManos         ");
         LOGGER.lifecycle("#################################################");
 
         for (String str : lines)
