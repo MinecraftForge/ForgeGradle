@@ -42,8 +42,6 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.util.PatternFilterable;
 import org.gradle.api.tasks.util.PatternSet;
 
-import com.google.common.base.Throwables;
-
 public class SplitJarTask extends CachedTask implements PatternFilterable
 {
     @InputFile
@@ -111,7 +109,7 @@ public class SplitJarTask extends CachedTask implements PatternFilterable
                     }
                     catch (IOException e)
                     {
-                        Throwables.propagate(e);
+                        throw new RuntimeException(e);
                     }
                 }
             });

@@ -30,6 +30,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.util.ThrowableUtil;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
 
@@ -206,10 +207,9 @@ public class CreateStartTask extends CachedTask
         {
             return Resources.toString(resource, Charsets.UTF_8);
         }
-        catch (Exception e)
+        catch (IOException e)
         {
-            Throwables.propagate(e);
-            return "";
+            throw new RuntimeException(e);
         }
     }
 

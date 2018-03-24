@@ -42,7 +42,6 @@ import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
@@ -191,7 +190,7 @@ public class TaskRecompileMc extends CachedTask
             }
             catch (IOException e)
             {
-                Throwables.propagate(e);
+                throw new RuntimeException(e);
             }
         }
 
@@ -212,7 +211,7 @@ public class TaskRecompileMc extends CachedTask
             }
             catch (IOException e)
             {
-                Throwables.propagate(e);
+                throw new RuntimeException(e);
             }
         }
     }

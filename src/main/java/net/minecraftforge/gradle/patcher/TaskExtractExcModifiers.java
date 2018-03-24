@@ -36,7 +36,6 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Throwables;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
@@ -44,7 +43,7 @@ class TaskExtractExcModifiers extends DefaultTask
 {
     @InputFile
     private Object inJar;
-    
+
     @OutputFile
     private Object outExc;
 
@@ -53,11 +52,11 @@ class TaskExtractExcModifiers extends DefaultTask
      * Default is for minecraft
      */
     String matchingPrefix = "net/minecraft/";
-    
+
     //@formatter:off
     public TaskExtractExcModifiers() { super(); }
     //@formatter:on
-    
+
     @TaskAction
     public void doStuff() throws IOException
     {
@@ -69,7 +68,7 @@ class TaskExtractExcModifiers extends DefaultTask
 
         output.getParentFile().mkdirs();
         output.createNewFile();
-        
+
         try (BufferedWriter writer = Files.newWriter(output, Charsets.UTF_8);
             ZipInputStream zin = new ZipInputStream(new FileInputStream(input)))
         {
@@ -94,7 +93,7 @@ class TaskExtractExcModifiers extends DefaultTask
             }
         }
     }
-    
+
     private static class GenerateMapClassAdapter extends ClassVisitor
     {
         String className;
@@ -132,7 +131,7 @@ class TaskExtractExcModifiers extends DefaultTask
             }
             catch (IOException e)
             {
-                Throwables.propagate(e);
+                throw new RuntimeException(e);
             }
             return super.visitMethod(access, name, desc, signature, exceptions);
         }

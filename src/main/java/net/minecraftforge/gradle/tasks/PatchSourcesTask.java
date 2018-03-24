@@ -29,6 +29,7 @@ import java.util.Map;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
+import net.minecraftforge.gradle.util.ThrowableUtil;
 import net.minecraftforge.gradle.util.patching.ContextualPatch;
 import net.minecraftforge.gradle.util.patching.ContextualPatch.PatchStatus;
 
@@ -45,7 +46,6 @@ import org.gradle.api.tasks.Optional;
 import com.cloudbees.diff.PatchException;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
-import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 
@@ -291,7 +291,7 @@ public class PatchSourcesTask extends AbstractEditJarTask
 
         if (failure != null && failOnError)
         {
-            Throwables.propagate(failure);
+            ThrowableUtil.propagate(failure);
         }
 
         if (fuzzed)

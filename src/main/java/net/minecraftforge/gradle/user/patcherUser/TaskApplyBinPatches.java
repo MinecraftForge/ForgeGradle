@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.*;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,7 +47,6 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteStreams;
@@ -168,7 +166,7 @@ public class TaskApplyBinPatches extends CachedTask
                     }
                     catch (IOException e)
                     {
-                        throw Throwables.propagate(e);
+                        throw new RuntimeException(e);
                     }
                 }
 
@@ -197,9 +195,9 @@ public class TaskApplyBinPatches extends CachedTask
             }
             bytes = jarBytes.toByteArray();
         }
-        catch (Exception e)
+        catch (IOException e)
         {
-            throw Throwables.propagate(e);
+            throw new RuntimeException(e);
         }
 
         log("Reading Patches:");
@@ -223,7 +221,7 @@ public class TaskApplyBinPatches extends CachedTask
         }
         catch (IOException e)
         {
-            throw Throwables.propagate(e);
+            throw new RuntimeException(e);
         }
         log("Read %d binary patches", patchlist.size());
         log("Patch list :\n\t%s", Joiner.on("\n\t").join(patchlist.entrySet()));

@@ -45,7 +45,6 @@ import org.gradle.api.tasks.*;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
@@ -287,10 +286,8 @@ public class ApplyS2STask extends DefaultTask
         }
         catch (IOException e)
         {
-            Throwables.propagate(e);
+            throw new RuntimeException(e);
         }
-
-        return null;
     }
 
     @InputFiles @SkipWhenEmpty

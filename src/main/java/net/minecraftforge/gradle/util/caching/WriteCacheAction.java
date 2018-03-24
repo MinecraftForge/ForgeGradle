@@ -23,11 +23,11 @@ import java.io.File;
 import java.util.List;
 
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.util.ThrowableUtil;
 
 import org.gradle.api.Action;
 import org.gradle.api.Task;
 
-import com.google.common.base.Throwables;
 import com.google.common.io.Files;
 
 public class WriteCacheAction implements Action<Task>
@@ -64,7 +64,7 @@ public class WriteCacheAction implements Action<Task>
         // error? spit it and do the task.
         catch (Exception e)
         {
-            Throwables.propagate(e);
+            ThrowableUtil.propagate(e);
         }
     }
 

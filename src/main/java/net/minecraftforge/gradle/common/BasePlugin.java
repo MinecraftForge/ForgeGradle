@@ -28,7 +28,6 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -446,9 +445,9 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                             Files.write(buf.toString().getBytes(Charsets.UTF_8), delayedFile("jsons/" + Constants.REPLACE_MC_VERSION + ".json").call());
                         }
                     }
-                    catch (Throwable t)
+                    catch (IOException e)
                     {
-                        Throwables.propagate(t);
+                        throw new RuntimeException(e);
                     }
                     return true;
                 }
@@ -772,7 +771,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             }
             catch (IOException e)
             {
-                Throwables.propagate(e);
+                throw new RuntimeException(e);
             }
         }
 
@@ -801,10 +800,10 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             {
                 version = JsonFactory.loadVersion(file, delayedString(REPLACE_MC_VERSION).call(), inheritanceDirs);
             }
-            catch (Exception e)
+            catch (IOException e)
             {
                 LOGGER.error("" + file + " could not be parsed");
-                Throwables.propagate(e);
+                throw new RuntimeException(e);
             }
         }
 

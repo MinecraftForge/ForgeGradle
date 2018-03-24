@@ -34,6 +34,7 @@ import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.util.ThrowableUtil;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import net.minecraftforge.gradle.util.mcp.FFPatcher;
@@ -55,7 +56,6 @@ import com.github.abrarsyed.jastyle.ASFormatter;
 import com.github.abrarsyed.jastyle.OptParser;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
@@ -251,7 +251,7 @@ public class PostDecompileTask extends AbstractEditJarTask
         if (fuzzed)
             getLogger().lifecycle("Patches Fuzzed!");
         if (error != null) {
-            Throwables.propagate(error);
+            ThrowableUtil.propagate(error);
         }
     }
 

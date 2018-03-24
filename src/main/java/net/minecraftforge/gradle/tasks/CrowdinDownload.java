@@ -43,7 +43,6 @@ import org.gradle.api.tasks.TaskAction;
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
@@ -118,10 +117,10 @@ public class CrowdinDownload extends DefaultTask
         {
             con.connect();
         }
-        catch (Throwable e)
+        catch (IOException e)
         {
             // just in case people dont have internet at the moment.
-            Throwables.propagate(e);
+            throw new RuntimeException(e);
         }
 
         int reponse = con.getResponseCode();
