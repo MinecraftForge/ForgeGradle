@@ -439,7 +439,7 @@ public class DeobfuscateJar extends CachedTask
     @SuppressWarnings("serial")
     public Closure<File> getDelayedOutput()
     {
-        return new Closure<File>(getProject(), this) {
+        return new Closure<File>(DeobfuscateJar.class) {
             public File call()
             {
                 return getOutJar();

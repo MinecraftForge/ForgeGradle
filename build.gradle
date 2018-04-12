@@ -91,6 +91,8 @@ dependencies {
     //Stuff used in the GradleStart classes
     compileOnly 'com.mojang:authlib:1.5.16'
     compileOnly "net.minecraft:launchwrapper:1.11"
+
+    testCompile 'junit:junit:4.12'
 }
 
 sourceSets {

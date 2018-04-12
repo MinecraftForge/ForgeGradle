@@ -33,14 +33,18 @@ import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
 
+import org.gradle.api.AntBuilder;
+import org.gradle.api.Task; 
+import org.gradle.api.AntBuilder.AntMessagePriority;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
-import org.gradle.api.logging.LoggingManager;
 import org.gradle.api.logging.LogLevel;
+import org.gradle.api.logging.LoggingManager; 
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.util.GradleVersion;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
@@ -124,14 +128,14 @@ public class CreateStartTask extends CachedTask
                     col = col.plus(config);
             }
 
+            AntBuilder ant = CreateStartTask.setupAnt(this);
             // Remove errors on normal runs
-            LoggingManager log = getLogging();
             LogLevel startLevel = getProject().getGradle().getStartParameter().getLogLevel();
             if (startLevel.compareTo(LogLevel.LIFECYCLE) >= 0) {
-                log.setLevel(LogLevel.ERROR);
+                ant.setLifecycleLogLevel(AntMessagePriority.ERROR);
             }
             // INVOKE!
-            this.getAnt().invokeMethod("javac", ImmutableMap.builder()
+            ant.invokeMethod("javac", ImmutableMap.builder()
                     .put("srcDir", resourceDir.getCanonicalPath())
                     .put("destDir", compiled.getCanonicalPath())
                     .put("failonerror", true)
@@ -161,6 +165,30 @@ public class CreateStartTask extends CachedTask
             });
         }
 
+    }
+
+    public static AntBuilder setupAnt(Task task)
+    {
+        AntBuilder ant = task.getAnt();
+        LogLevel startLevel = task.getProject().getGradle().getStartParameter().getLogLevel();
+        if (startLevel.compareTo(LogLevel.LIFECYCLE) >= 0)
+        {
+            GradleVersion v2_14 = GradleVersion.version("2.14");
+            if (GradleVersion.current().compareTo(v2_14) >= 0)
+            {
+                ant.setLifecycleLogLevel(AntMessagePriority.ERROR);
+            }
+            else
+            {
+                try {
+                    LoggingManager.class.getMethod("setLevel", LogLevel.class).invoke(task.getLogging(), LogLevel.ERROR);
+                } catch (Exception e) {
+                    //Couldn't find it? We are on some weird version oh well.
+                    task.getLogger().info("Could not set log level:", e);
+                }
+            }
+        }
+        return ant;
     }
 
     @SuppressWarnings("rawtypes")
