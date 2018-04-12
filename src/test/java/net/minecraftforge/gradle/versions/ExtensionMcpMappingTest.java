@@ -46,7 +46,8 @@ public class ExtensionMcpMappingTest
 
         this.ext = this.testProject.getExtensions().findByType(TweakerExtension.class);   // unlike getByType(), does not throw exception
         assertNotNull(this.ext);
-        
+        this.ext.setSuppressVersionTest(true);
+ 
         this.ext.setTweakClass("some.thing.other"); // to ignore any issues regarding this.
     }
     private static final String VERSION_17 = "1.7.10";
