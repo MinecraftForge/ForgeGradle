@@ -856,7 +856,12 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             JavaExec exec = makeTask("runClient", JavaExec.class);
             exec.getOutputs().dir(delayedFile(REPLACE_RUN_DIR));
             exec.setMain(GRADLE_START_CLIENT);
-            exec.doFirst(task -> ((JavaExec) task).workingDir(delayedFile(REPLACE_RUN_DIR)));
+            exec.doFirst(new Action<Task>() {
+                @Override
+                public void execute(Task task) {
+                    ((JavaExec) task).workingDir(delayedFile(REPLACE_RUN_DIR));
+                }
+            });
             exec.setStandardOutput(System.out);
             exec.setErrorOutput(System.err);
 
@@ -873,7 +878,12 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             JavaExec exec = makeTask("runServer", JavaExec.class);
             exec.getOutputs().dir(delayedFile(REPLACE_RUN_DIR));
             exec.setMain(GRADLE_START_SERVER);
-            exec.doFirst(task -> ((JavaExec) task).workingDir(delayedFile(REPLACE_RUN_DIR)));
+            exec.doFirst(new Action<Task>() {
+                @Override
+                public void execute(Task task) {
+                    ((JavaExec) task).workingDir(delayedFile(REPLACE_RUN_DIR));
+                }
+            });
             exec.setStandardOutput(System.out);
             exec.setStandardInput(System.in);
             exec.setErrorOutput(System.err);
