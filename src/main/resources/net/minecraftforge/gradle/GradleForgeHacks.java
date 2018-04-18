@@ -19,17 +19,21 @@
  */
 package net.minecraftforge.gradle;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
@@ -61,7 +65,7 @@ public class GradleForgeHacks
 
     public static final Map<String, File> coreMap        = Maps.newHashMap();
 
-    public static void searchCoremods(GradleStartCommon common) throws Exception
+    public static void searchCoremods(GradleStartCommon common)
     {
         // check for argument
         if (common.extras.contains(NO_CORE_SEARCH))
@@ -75,54 +79,19 @@ public class GradleForgeHacks
             return;
         }
 
-        // intialize AT hack Method
-        Method atRegistrar = null;
-        try
+        // initialize AT hack Method
+        AtRegistrar atRegistrar = new AtRegistrar();
+
+        URLClassLoader urlClassLoader = (URLClassLoader) GradleStartCommon.class.getClassLoader();
+        for (URL url : urlClassLoader.getURLs())
         {
-            atRegistrar = Class.forName(MOD_ATD_CLASS).getDeclaredMethod(MOD_AT_METHOD, JarFile.class);
-        }
-        catch (Throwable t)
-        {}
-
-        for (URL url : ((URLClassLoader) GradleStartCommon.class.getClassLoader()).getURLs())
-        {
-            if (!url.getProtocol().startsWith("file")) // because file urls start with file://
-                continue; //         this isnt a file
-
-            File coreMod = new File(url.toURI().getPath());
-            Manifest manifest = null;
-
-            if (!coreMod.exists())
-                continue;
-
-            if (coreMod.isDirectory())
+            try
             {
-                File manifestMF = new File(coreMod, "META-INF/MANIFEST.MF");
-                if (manifestMF.exists())
-                {
-                    FileInputStream stream = new FileInputStream(manifestMF);
-                    manifest = new Manifest(stream);
-                    stream.close();
-                }
+                searchCoremodAtUrl(url, atRegistrar);
             }
-            else if (coreMod.getName().endsWith("jar")) // its a jar
+            catch (IOException | InvocationTargetException | IllegalAccessException | URISyntaxException e)
             {
-                JarFile jar = new JarFile(coreMod);
-                manifest = jar.getManifest();
-                if (atRegistrar != null && manifest != null)
-                    atRegistrar.invoke(null, jar);
-                jar.close();
-            }
-
-            // we got the manifest? use it.
-            if (manifest != null)
-            {
-                String clazz = manifest.getMainAttributes().getValue(COREMOD_MF);
-                if (!Strings.isNullOrEmpty(clazz))
-                {
-                    GradleStartCommon.LOGGER.info("Found and added coremod: " + clazz);
-                    coreMap.put(clazz, coreMod);
-                }
+                GradleStartCommon.LOGGER.warn("GradleForgeHacks failed to search for coremod at url {}", url, e);
             }
         }
 
@@ -138,6 +107,107 @@ public class GradleForgeHacks
         {
             common.extras.add("--tweakClass");
             common.extras.add("net.minecraftforge.gradle.tweakers.CoremodTweaker");
+        }
+    }
+
+    private static void searchCoremodAtUrl(URL url, AtRegistrar atRegistrar) throws IOException, InvocationTargetException, IllegalAccessException, URISyntaxException
+    {
+        if (!url.getProtocol().startsWith("file")) // because file urls start with file://
+            return; //         this isn't a file
+
+        File coreMod = new File(url.toURI().getPath());
+        Manifest manifest = null;
+
+        if (!coreMod.exists())
+            return;
+
+        if (coreMod.isDirectory())
+        {
+            File manifestMF = new File(coreMod, "META-INF/MANIFEST.MF");
+            if (manifestMF.exists())
+            {
+                FileInputStream stream = new FileInputStream(manifestMF);
+                manifest = new Manifest(stream);
+                stream.close();
+            }
+        }
+        else if (coreMod.getName().endsWith("jar")) // its a jar
+        {
+            try (JarFile jar = new JarFile(coreMod))
+            {
+                manifest = jar.getManifest();
+                if (manifest != null)
+                {
+                    atRegistrar.addJar(jar, manifest);
+                }
+            }
+        }
+
+        // we got the manifest? use it.
+        if (manifest != null)
+        {
+            String clazz = manifest.getMainAttributes().getValue(COREMOD_MF);
+            if (!Strings.isNullOrEmpty(clazz))
+            {
+                GradleStartCommon.LOGGER.info("Found and added coremod: " + clazz);
+                coreMap.put(clazz, coreMod);
+            }
+        }
+    }
+
+    /**
+     * Hack to register jar ATs with Minecraft Forge
+     */
+    private static final class AtRegistrar
+    {
+        private static final Attributes.Name FMLAT = new Attributes.Name("FMLAT");
+
+        @Nullable
+        private Method newMethod = null;
+        @Nullable
+        private Method oldMethod = null;
+
+        private AtRegistrar()
+        {
+            try
+            {
+                Class<?> modAtdClass = Class.forName(MOD_ATD_CLASS);
+                try
+                {
+                    newMethod = modAtdClass.getDeclaredMethod(MOD_AT_METHOD, JarFile.class, String.class);
+                }
+                catch (NoSuchMethodException | SecurityException ignored)
+                {
+                    try
+                    {
+                        oldMethod = modAtdClass.getDeclaredMethod(MOD_AT_METHOD, JarFile.class);
+                    }
+                    catch (NoSuchMethodException | SecurityException ignored2)
+                    {
+                        GradleStartCommon.LOGGER.error("Failed to find method {}.{}", MOD_ATD_CLASS, MOD_AT_METHOD);
+                    }
+                }
+            }
+            catch (ClassNotFoundException e)
+            {
+                GradleStartCommon.LOGGER.error("Failed to find class {}", MOD_ATD_CLASS);
+            }
+        }
+
+        public void addJar(JarFile jarFile, Manifest manifest) throws InvocationTargetException, IllegalAccessException
+        {
+            if (newMethod != null)
+            {
+                String ats = manifest.getMainAttributes().getValue(FMLAT);
+                if (ats != null && !ats.isEmpty())
+                {
+                    newMethod.invoke(null, jarFile, ats);
+                }
+            }
+            else if (oldMethod != null)
+            {
+                oldMethod.invoke(null, jarFile);
+            }
         }
     }
 
