@@ -84,7 +84,7 @@ dependencies {
 
     // mcp stuff
     shade 'de.oceanlabs.mcp:RetroGuard:3.6.6'
-    shade('de.oceanlabs.mcp:mcinjector:3.4-SNAPSHOT'){
+    shade('de.oceanlabs.mcp:mcinjector:3.6'){
      exclude group: 'org.ow2.asm', module: 'asm-debug-all'
     }
     shade('net.minecraftforge.srg2source:Srg2Source:4.0-SNAPSHOT'){
