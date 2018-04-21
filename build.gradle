@@ -85,7 +85,7 @@ dependencies {
 
     // mcp stuff
     shade 'de.oceanlabs.mcp:RetroGuard:3.6.6'
-    shade 'de.oceanlabs.mcp:mcinjector:3.4-SNAPSHOT'
+    shade 'de.oceanlabs.mcp:mcinjector:3.6'
     shade 'net.minecraftforge.srg2source:Srg2Source:4.0-SNAPSHOT'
 
     //Stuff used in the GradleStart classes
