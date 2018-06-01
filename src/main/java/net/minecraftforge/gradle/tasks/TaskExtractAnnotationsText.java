@@ -19,17 +19,12 @@
  */
 package net.minecraftforge.gradle.tasks;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
-
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
@@ -41,7 +36,6 @@ import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.AnnotationUtils;
 import net.minecraftforge.gradle.util.AnnotationUtils.ASMInfo;
 import net.minecraftforge.gradle.util.AnnotationUtils.Annotation;
@@ -98,6 +92,8 @@ public class TaskExtractAnnotationsText extends DefaultTask
                 // correct source name
                 if (e.getName().endsWith(".class"))
                 {
+                  if (e.getName().endsWith("$.class")) //Scala synthetic class, skip
+                    continue;
                     byte[] data = ByteStreams.toByteArray(in.getInputStream(e));
                     ASMInfo info = AnnotationUtils.processClass(data);
                     if (info != null)
