@@ -349,7 +349,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
     {
         EtagDownloadTask getVersionJson = makeTask(TASK_DL_VERSION_JSON, EtagDownloadTask.class);
         {
-            getVersionJson.setUrl(new Closure<String>(null, null) {
+            getVersionJson.setUrl(new Closure<String>(BasePlugin.class) {
                 @Override
                 public String call()
                 {
@@ -358,7 +358,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             });
             getVersionJson.setFile(delayedFile(JSON_VERSION));
             getVersionJson.setDieWithError(false);
-            getVersionJson.doLast(new Closure<Boolean>(project) // normalizes to linux endings
+            getVersionJson.doLast(new Closure<Boolean>(BasePlugin.class) // normalizes to linux endings
             {
                 @Override
                 public Boolean call()
@@ -404,7 +404,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         EtagDownloadTask getAssetsIndex = makeTask(TASK_DL_ASSET_INDEX, EtagDownloadTask.class);
         {
-            getAssetsIndex.setUrl(new Closure<String>(null, null) {
+            getAssetsIndex.setUrl(new Closure<String>(BasePlugin.class) {
                 @Override
                 public String call()
                 {
@@ -426,7 +426,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         Download dlClient = makeTask(TASK_DL_CLIENT, Download.class);
         {
             dlClient.setOutput(delayedFile(JAR_CLIENT_FRESH));
-            dlClient.setUrl(new Closure<String>(null, null) {
+            dlClient.setUrl(new Closure<String>(BasePlugin.class) {
                 @Override
                 public String call()
                 {
@@ -440,7 +440,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         Download dlServer = makeTask(TASK_DL_SERVER, Download.class);
         {
             dlServer.setOutput(delayedFile(JAR_SERVER_FRESH));
-            dlServer.setUrl(new Closure<String>(null, null) {
+            dlServer.setUrl(new Closure<String>(BasePlugin.class) {
                 @Override
                 public String call()
                 {
@@ -807,7 +807,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                     new CacheLoader<String, DelayedString>() {
                         public DelayedString load(String key)
                         {
-                            return new DelayedString(replacerCache.getUnchecked(key));
+                            return new DelayedString(CacheLoader.class, replacerCache.getUnchecked(key));
                         }
                     });
     private LoadingCache<String, DelayedFile> fileCache = CacheBuilder.newBuilder()
@@ -816,7 +816,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                     new CacheLoader<String, DelayedFile>() {
                         public DelayedFile load(String key)
                         {
-                            return new DelayedFile(project, replacerCache.getUnchecked(key));
+                            return new DelayedFile(CacheLoader.class, project, replacerCache.getUnchecked(key));
                         }
                     });
 
@@ -832,7 +832,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
     public DelayedFileTree delayedTree(String path)
     {
-        return new DelayedFileTree(project, replacerCache.getUnchecked(path));
+        return new DelayedFileTree(BasePlugin.class, project, replacerCache.getUnchecked(path));
     }
 
     protected File cacheFile(String path)

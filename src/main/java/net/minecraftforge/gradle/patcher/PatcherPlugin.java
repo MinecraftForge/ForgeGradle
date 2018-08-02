@@ -238,7 +238,7 @@ public class PatcherPlugin extends BasePlugin<PatcherExtension>
         Zip installer = makeTask(TASK_BUILD_INSTALLER, Zip.class);
         {
             installer.from(outputJar);
-            installer.from(delayedTree(JAR_INSTALLER), new CopyInto("", "!*.json", "!*.png"));
+            installer.from(delayedTree(JAR_INSTALLER), new CopyInto(PatcherPlugin.class, "", "!*.json", "!*.png"));
             installer.from(delayedTree(JSON_INSTALLER));
             installer.setBaseName(project.getName());
             installer.setClassifier("installer");

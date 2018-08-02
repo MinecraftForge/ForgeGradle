@@ -30,23 +30,23 @@ public class DelayedFileTree extends DelayedBase<FileTree>
     protected final File hardcoded;
     protected transient final Project project;
     
-    public DelayedFileTree(File file)
+    public DelayedFileTree(Class<?> owner, File file)
     {
-        super((TokenReplacer)null);
+        super(owner, (TokenReplacer)null);
         hardcoded = file;
         project = null;
     }
     
-    public DelayedFileTree(Project project, ReplacementProvider provider, String pattern)
+    public DelayedFileTree(Class<?> owner, Project project, ReplacementProvider provider, String pattern)
     {
-        super(provider, pattern);
+        super(owner, provider, pattern);
         hardcoded = null;
         this.project = project;
     }
     
-    public DelayedFileTree(Project project, TokenReplacer replacer)
+    public DelayedFileTree(Class<?> owner, Project project, TokenReplacer replacer)
     {
-        super(replacer);
+        super(owner, replacer);
         hardcoded = null;
         this.project = project;
         

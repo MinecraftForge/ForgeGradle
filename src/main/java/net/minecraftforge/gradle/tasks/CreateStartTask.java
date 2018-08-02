@@ -33,10 +33,11 @@ import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
 
+import org.gradle.api.AntBuilder;
+import org.gradle.api.AntBuilder.AntMessagePriority;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
-import org.gradle.api.logging.LoggingManager;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputDirectory;
@@ -124,14 +125,14 @@ public class CreateStartTask extends CachedTask
                     col = col.plus(config);
             }
 
+            AntBuilder ant = this.getAnt();
             // Remove errors on normal runs
-            LoggingManager log = getLogging();
             LogLevel startLevel = getProject().getGradle().getStartParameter().getLogLevel();
             if (startLevel.compareTo(LogLevel.LIFECYCLE) >= 0) {
-                log.setLevel(LogLevel.ERROR);
+                ant.setLifecycleLogLevel(AntMessagePriority.ERROR);
             }
             // INVOKE!
-            this.getAnt().invokeMethod("javac", ImmutableMap.builder()
+            ant.invokeMethod("javac", ImmutableMap.builder()
                     .put("srcDir", resourceDir.getCanonicalPath())
                     .put("destDir", compiled.getCanonicalPath())
                     .put("failonerror", true)
