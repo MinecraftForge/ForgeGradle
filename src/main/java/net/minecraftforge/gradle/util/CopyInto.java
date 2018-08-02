@@ -35,16 +35,16 @@ public class CopyInto extends Closure<Object>
     private String[] filters;
     private HashMap<String, Object> expands = new HashMap<String, Object>();
     
-    public CopyInto(String dir)
+    public CopyInto(Class<?> owner, String dir)
     {
-        super(null);
+        super(owner);
         this.dir = dir;
         this.filters = new String[] {};
     }
 
-    public CopyInto(String dir, String... filters)
+    public CopyInto(Class<?> owner, String dir, String... filters)
     {
-        super(null);
+        super(owner);
         this.dir = dir;
         this.filters = filters;
     }
