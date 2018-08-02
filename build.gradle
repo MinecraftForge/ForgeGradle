@@ -1,8 +1,22 @@
 apply plugin: 'java'
+apply plugin: 'maven-publish'
 
 group = 'net.minecraftforge.gradle'
 version = '3.0.0-SNAPSHOT'
 
 dependencies {
     implementation gradleApi()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url "$buildDir/repo"
+        }
+    }
 }
