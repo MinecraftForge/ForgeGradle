@@ -58,9 +58,7 @@ public class ValidateMCPConfigTask extends DefaultTask {
     }
 
     private interface StepAdder {
-
         void addStep(String type, MCPFunction function, Map<String, String> arguments);
-
     }
 
 }
