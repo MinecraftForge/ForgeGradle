@@ -49,7 +49,6 @@ public class DownloadMCPConfigTask extends DefaultTask {
     }
 
     private File downloadConfigFile(String config) {
-        System.out.println("Downloading config: " + config);
         return MavenArtifactDownloader.download(getProject(), config).iterator().next();
     }
 
