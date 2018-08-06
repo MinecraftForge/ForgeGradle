@@ -3,25 +3,48 @@ package net.minecraftforge.gradle.forgedev.mcp.function;
 import net.minecraftforge.gradle.forgedev.mcp.util.MCPEnvironment;
 import org.gradle.internal.hash.HashUtil;
 import org.gradle.internal.hash.HashValue;
+import org.gradle.internal.impldep.com.google.gson.JsonObject;
 import org.gradle.internal.impldep.org.apache.commons.io.FileUtils;
 import org.gradle.internal.impldep.org.apache.commons.io.IOUtils;
 import org.gradle.internal.impldep.org.apache.ivy.util.FileUtil;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
+import java.util.stream.Collectors;
+import java.util.zip.ZipFile;
 
 public class StripJarFunction implements MCPFunction {
+
+    private String mappings;
+    private Set<String> filter;
+
+    @Override
+    public void loadData(JsonObject data) {
+        mappings = data.get("mappings").getAsString();
+    }
+
+    @Override
+    public void initialize(MCPEnvironment environment, ZipFile zip) throws IOException {
+        // Read valid file names from mapping
+        BufferedReader br = new BufferedReader(new InputStreamReader(zip.getInputStream(zip.getEntry(mappings))));
+        filter = br.lines().filter(l -> !l.startsWith("\t")).map(s -> s.split(" ")[0] + ".class").collect(Collectors.toSet());
+        br.close();
+    }
 
     @Override
     public File execute(MCPEnvironment environment) throws Exception {
         File input = new File(environment.getArguments().get("input"));
         File inHashFile = environment.getFile("lastinput.sha1");
         File output = environment.getFile("output.jar");
+        boolean whitelist = environment.getArguments().getOrDefault("mode", "whitelist").equalsIgnoreCase("whitelist");
 
         if (environment.shouldSkipStep()) return output;
 
@@ -40,19 +63,19 @@ public class StripJarFunction implements MCPFunction {
         FileUtils.writeStringToFile(inHashFile, inputHash.asHexString());
 
         if (output.exists()) output.delete();
-        strip(input, output);
+        strip(input, output, whitelist);
 
         return output;
     }
 
-    private void strip(File input, File output) throws IOException {
+    private void strip(File input, File output, boolean whitelist) throws IOException {
         JarInputStream is = new JarInputStream(new FileInputStream(input));
         JarOutputStream os = new JarOutputStream(new FileOutputStream(output));
 
         // Ignore any entry that's not allowed
         JarEntry entry;
         while ((entry = is.getNextJarEntry()) != null) {
-            if (!isEntryValid(entry)) continue;
+            if (!isEntryValid(entry, whitelist)) continue;
             os.putNextEntry(entry);
             IOUtils.copyLarge(is, os, 0, entry.getSize());
             os.closeEntry();
@@ -62,18 +85,10 @@ public class StripJarFunction implements MCPFunction {
         is.close();
     }
 
-    private boolean isEntryValid(JarEntry entry) {
+    private boolean isEntryValid(JarEntry entry, boolean whitelist) {
         if (entry.isDirectory()) return false;
         String name = entry.getName();
-        return !name.startsWith("META-INF/")
-                // Server
-                && !name.startsWith("org/bouncycastle/") && !name.startsWith("org/bouncycastle/") && !name.startsWith("org/apache/")
-                && !name.startsWith("com/google/") && !name.startsWith("com/mojang/authlib/") && !name.startsWith("com/mojang/util/")
-                && !name.startsWith("gnu/trove/") && !name.startsWith("io/netty/") && !name.startsWith("javax/annotation/")
-                && !name.startsWith("argo/") && !name.startsWith("it/unimi/dsi/fastutil/") && !name.startsWith("joptsimple/")
-                && !name.startsWith("com/mojang/")
-                // Client
-                && !name.startsWith("assets/") && !name.startsWith("data/");
+        return !name.startsWith("META-INF/") && filter.contains(name) == whitelist;
     }
 
 }
