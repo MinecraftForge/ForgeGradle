@@ -53,6 +53,10 @@ public class MCPPlugin implements Plugin<Project> {
 
     public static MCPFunction createBuiltInFunction(String type) {
         switch (type) {
+            case "downloadManifest":
+                return new DownloadManifestFunction();
+            case "downloadJson":
+                return new DownloadVersionJSONFunction();
             default:
                 return null;
         }
