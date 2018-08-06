@@ -9,7 +9,7 @@ import org.gradle.api.tasks.options.Option;
 
 public class SetupMCPTask extends DefaultTask {
 
-    public String skip;
+    public String skip = "";
 
     @Input
     public MCPConfig config;
