@@ -71,6 +71,7 @@ public class StripJarFunction implements MCPFunction {
                 && !name.startsWith("com/google/") && !name.startsWith("com/mojang/authlib/") && !name.startsWith("com/mojang/util/")
                 && !name.startsWith("gnu/trove/") && !name.startsWith("io/netty/") && !name.startsWith("javax/annotation/")
                 && !name.startsWith("argo/") && !name.startsWith("it/unimi/dsi/fastutil/") && !name.startsWith("joptsimple/")
+                && !name.startsWith("com/mojang/")
                 // Client
                 && !name.startsWith("assets/") && !name.startsWith("data/");
     }
