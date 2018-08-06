@@ -23,21 +23,23 @@ public class MCPConfig {
         public final List<Step> sharedSteps = new LinkedList<>();
         public final List<Step> srcSteps = new LinkedList<>();
 
-        public void addShared(String type, MCPFunction function, Map<String, String> arguments) {
-            sharedSteps.add(new Step(type, function, arguments));
+        public void addShared(String name, String type, MCPFunction function, Map<String, String> arguments) {
+            sharedSteps.add(new Step(name, type, function, arguments));
         }
 
-        public void addSrc(String type, MCPFunction function, Map<String, String> arguments) {
-            srcSteps.add(new Step(type, function, arguments));
+        public void addSrc(String name, String type, MCPFunction function, Map<String, String> arguments) {
+            srcSteps.add(new Step(name, type, function, arguments));
         }
 
         public class Step {
 
+            public final String name;
             public final String type;
             public final MCPFunction function;
             public final Map<String, String> arguments;
 
-            private Step(String type, MCPFunction function, Map<String, String> arguments) {
+            private Step(String name, String type, MCPFunction function, Map<String, String> arguments) {
+                this.name = name;
                 this.type = type;
                 this.function = function;
                 this.arguments = arguments;

@@ -72,9 +72,9 @@ public class LoadMCPConfigTask extends DefaultTask {
             JsonObject step = element.getAsJsonObject();
             StepInfo stepInfo = readStep(step);
             if (foundDecompile |= stepInfo.type.equals("decompile")) { // If we find the decompilation task, switch to src-only
-                rawConfig.pipeline.addSrc(stepInfo.type, stepInfo.arguments);
+                rawConfig.pipeline.addSrc(stepInfo.name, stepInfo.type, stepInfo.arguments);
             } else {
-                rawConfig.pipeline.addShared(stepInfo.type, stepInfo.arguments);
+                rawConfig.pipeline.addShared(stepInfo.name, stepInfo.type, stepInfo.arguments);
             }
         }
 
@@ -89,16 +89,20 @@ public class LoadMCPConfigTask extends DefaultTask {
             String[] jvmArgs = function.has("jvmargs") ? toStringArray(function.get("jvmargs").getAsJsonArray()) : new String[0];
             String[] envVars = function.has("envvars") ? toStringArray(function.get("envvars").getAsJsonArray()) : new String[0];
 
-            rawConfig.addFunction(name, version, repo, runArgs, jvmArgs, envVars);
+            rawConfig.addFunction(name, version, repo, jvmArgs, runArgs, envVars);
         }
     }
 
     private StepInfo readStep(JsonObject step) {
+        String name = null;
         String type = null;
         Map<String, String> arguments = new HashMap<>();
 
         for (Map.Entry<String, JsonElement> element : step.entrySet()) {
             switch (element.getKey()) {
+                case "name":
+                    name = element.getValue().getAsString();
+                    break;
                 case "type":
                     type = element.getValue().getAsString();
                     break;
@@ -108,7 +112,11 @@ public class LoadMCPConfigTask extends DefaultTask {
             }
         }
 
-        return new StepInfo(type, arguments);
+        if (name == null) {
+            name = type;
+        }
+
+        return new StepInfo(name, type, arguments);
     }
 
     private String[] toStringArray(JsonArray array) {
@@ -121,10 +129,12 @@ public class LoadMCPConfigTask extends DefaultTask {
 
     private class StepInfo {
 
+        private final String name;
         private final String type;
         private final Map<String, String> arguments;
 
-        public StepInfo(String type, Map<String, String> arguments) {
+        public StepInfo(String name, String type, Map<String, String> arguments) {
+            this.name = name;
             this.type = type;
             this.arguments = arguments;
         }

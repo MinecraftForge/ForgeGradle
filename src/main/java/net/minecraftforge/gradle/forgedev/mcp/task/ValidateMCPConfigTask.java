@@ -43,7 +43,7 @@ public class ValidateMCPConfigTask extends DefaultTask {
                 throw new IllegalStateException("Expected a function of type '" + step.type + "' to be available, but it's not!");
             }
             function.loadData(unprocessed.data);
-            adder.addStep(step.type, function, step.arguments);
+            adder.addStep(step.name, step.type, function, step.arguments);
         }
     }
 
@@ -58,7 +58,7 @@ public class ValidateMCPConfigTask extends DefaultTask {
     }
 
     private interface StepAdder {
-        void addStep(String type, MCPFunction function, Map<String, String> arguments);
+        void addStep(String name, String type, MCPFunction function, Map<String, String> arguments);
     }
 
 }

@@ -44,7 +44,7 @@ public class DownloadMCPConfigTask extends DefaultTask {
         } else if (config instanceof File) {
             return (File) config;
         } else {
-            throw new IllegalArgumentException("Expected the configFile to be a File or a String, but instead got " + config.getClass().getName());
+            throw new IllegalArgumentException("Expected the config to be a File or a String, but instead got " + config.getClass().getName());
         }
     }
 
