@@ -2,6 +2,7 @@ package net.minecraftforge.gradle.forgedev.mcp.util;
 
 import net.minecraftforge.gradle.forgedev.mcp.function.MCPFunction;
 import org.gradle.api.Project;
+import org.gradle.api.logging.Logger;
 
 import java.io.File;
 import java.util.Map;
@@ -11,6 +12,7 @@ public class MCPEnvironment {
     private final MCPRuntime runtime;
     public final Project project;
     public final String mcVersion;
+    public Logger logger;
 
     public MCPEnvironment(MCPRuntime runtime, String mcVersion) {
         this.runtime = runtime;
@@ -27,7 +29,10 @@ public class MCPEnvironment {
     }
 
     public File getFile(String name) {
-        if (name.startsWith("/")) {
+        File file = new File(name);
+        if (file.getAbsolutePath().equals(name)) { // If this is already an absolute path, don't mess with it
+            return file;
+        } else if (name.startsWith("/")) {
             return new File(runtime.mcpDirectory, name);
         } else {
             return new File(getWorkingDir(), name);

@@ -87,7 +87,12 @@ public class LoadMCPConfigTask extends DefaultTask {
             String repo = function.get("repo").getAsString();
             String[] runArgs = function.has("args") ? toStringArray(function.get("args").getAsJsonArray()) : new String[0];
             String[] jvmArgs = function.has("jvmargs") ? toStringArray(function.get("jvmargs").getAsJsonArray()) : new String[0];
-            String[] envVars = function.has("envvars") ? toStringArray(function.get("envvars").getAsJsonArray()) : new String[0];
+            Map<String, String> envVars = new HashMap<>();
+            if (function.has("envvars")) {
+                for (Map.Entry<String, JsonElement> entry : function.getAsJsonObject("envvars").entrySet()) {
+                    envVars.put(entry.getKey(), entry.getValue().getAsString());
+                }
+            }
 
             rawConfig.addFunction(name, version, repo, jvmArgs, runArgs, envVars);
         }

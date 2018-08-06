@@ -47,6 +47,8 @@ public class MCPRuntime {
     }
 
     public void execute(Logger logger) throws Exception {
+        environment.logger = logger;
+
         logger.info("Setting up MCP environment!");
 
         logger.info("Initializing steps!");

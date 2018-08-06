@@ -1,14 +1,28 @@
 package net.minecraftforge.gradle.forgedev.mcp.function;
 
 import net.minecraftforge.gradle.forgedev.mcp.util.MCPEnvironment;
+import org.gradle.api.tasks.JavaExec;
 import org.gradle.internal.impldep.com.google.gson.JsonElement;
 import org.gradle.internal.impldep.com.google.gson.JsonObject;
+import org.gradle.internal.impldep.org.apache.commons.io.FileUtils;
+import org.gradle.internal.impldep.org.apache.commons.io.output.NullOutputStream;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 public class ExecuteFunction implements MCPFunction {
 
@@ -17,11 +31,11 @@ public class ExecuteFunction implements MCPFunction {
     private final CompletableFuture<File> jar;
     private final String[] jvmArgs;
     private final String[] runArgs;
-    private final String[] envVars;
+    private final Map<String, String> envVars;
 
     private JsonObject data;
 
-    public ExecuteFunction(CompletableFuture<File> jar, String[] jvmArgs, String[] runArgs, String[] envVars) {
+    public ExecuteFunction(CompletableFuture<File> jar, String[] jvmArgs, String[] runArgs, Map<String, String> envVars) {
         this.jar = jar;
         this.jvmArgs = jvmArgs;
         this.runArgs = runArgs;
@@ -34,38 +48,46 @@ public class ExecuteFunction implements MCPFunction {
     }
 
     @Override
-    public File execute(MCPEnvironment environment) throws Exception {
-        String[] args = new String[jvmArgs.length + runArgs.length + 3];
+    public void initialize(MCPEnvironment environment, ZipFile zip) throws IOException {
+        analyzeAndExtract(environment, zip, jvmArgs);
+        analyzeAndExtract(environment, zip, runArgs);
+    }
 
-        // Java and JVM args
-        args[0] = "java";
-        System.arraycopy(jvmArgs, 0, args, 1, jvmArgs.length);
-
-        // Jar
-        args[jvmArgs.length + 1] = "-jar";
-        args[jvmArgs.length + 2] = jar.get().getAbsolutePath();
-
-        // Run arguments
-        System.arraycopy(runArgs, 0, args, jvmArgs.length + 3, runArgs.length);
-
+    @Override
+    public File execute(MCPEnvironment environment) throws IOException, InterruptedException, ExecutionException {
         // Add an output and log argument if there wasn't one
         Map<String, String> arguments = environment.getArguments();
         String outputExtension = arguments.getOrDefault("outputExtension", "jar");
         arguments.computeIfAbsent("output", k -> environment.getFile("output." + outputExtension).getAbsolutePath());
         arguments.computeIfAbsent("log", k -> environment.getFile("log.log").getAbsolutePath());
 
-        // Argument replacements
-        for (int i = 0; i < args.length; i++) {
-            args[i] = applyVariableSubstitutions(args[i], arguments);
-        }
-
-        // Run the command
+        // Set up working directory
         File workingDir = environment.getWorkingDir();
         workingDir.mkdirs();
-        Runtime.getRuntime().exec(args, envVars, workingDir).waitFor();
+
+        // Locate main class in jar file
+        File jar = this.jar.get();
+        JarFile jarFile = new JarFile(jar);
+        String mainClass = jarFile.getManifest().getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
+        jarFile.close();
+
+        // Execute command
+        JavaExec java = environment.project.getTasks().create("_", JavaExec.class);
+        java.setJvmArgs(applyVariableSubstitutions(Arrays.asList(jvmArgs), arguments));
+        java.setArgs(applyVariableSubstitutions(Arrays.asList(runArgs), arguments));
+        java.setClasspath(environment.project.files(jar));
+        java.setWorkingDir(workingDir);
+        java.setMain(mainClass);
+        java.setStandardOutput(new NullOutputStream());
+        java.exec();
+        environment.project.getTasks().remove(java);
 
         // Return the "output" argument
         return environment.getFile(environment.getArguments().get("output"));
+    }
+
+    private List<String> applyVariableSubstitutions(List<String> list, Map<String, String> arguments) {
+        return list.stream().map(s -> applyVariableSubstitutions(s, arguments)).collect(Collectors.toList());
     }
 
     private String applyVariableSubstitutions(String value, Map<String, String> arguments) {
@@ -85,6 +107,41 @@ public class ExecuteFunction implements MCPFunction {
             }
         }
         throw new IllegalStateException("The string '" + value + "' did not return a valid substitution match!");
+    }
+
+    private void analyzeAndExtract(MCPEnvironment environment, ZipFile zip, String[] args) throws IOException {
+        for (String arg : args) {
+            Matcher matcher = REPLACE_PATTERN.matcher(arg);
+            if (!matcher.find()) continue;
+
+            String argName = matcher.group(1);
+            if (argName == null) continue;
+
+            JsonElement dataElement = data.get(argName);
+            if (dataElement == null) continue;
+            String referencedData = dataElement.getAsString();
+
+            ZipEntry entry = zip.getEntry(referencedData);
+            if (entry == null) continue;
+            String entryName = entry.getName();
+
+            if (entry.isDirectory()) {
+                Enumeration<? extends ZipEntry> entries = zip.entries();
+                while (entries.hasMoreElements()) {
+                    ZipEntry e = entries.nextElement();
+                    if (e.isDirectory()) continue;
+                    if (e.getName().startsWith(entryName)) {
+                        InputStream stream = zip.getInputStream(e);
+                        FileUtils.copyInputStreamToFile(stream, environment.getFile(e.getName()));
+                        stream.close();
+                    }
+                }
+            } else {
+                InputStream stream = zip.getInputStream(entry);
+                FileUtils.copyInputStreamToFile(stream, environment.getFile(entryName));
+                stream.close();
+            }
+        }
     }
 
 }

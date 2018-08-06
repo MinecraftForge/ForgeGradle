@@ -19,7 +19,7 @@ public class RawMCPConfig {
     public final Map<String, Function> functions = new HashMap<>();
     public final Libraries libraries = new Libraries();
 
-    public void addFunction(String name, String version, String repo, String[] jvmArgs, String[] runArgs, String[] envVars) {
+    public void addFunction(String name, String version, String repo, String[] jvmArgs, String[] runArgs, Map<String, String> envVars) {
         functions.put(name, new Function(version, repo, jvmArgs, runArgs, envVars));
     }
 
@@ -59,9 +59,9 @@ public class RawMCPConfig {
 
         public final String[] jvmArgs;
         public final String[] runArgs;
-        public final String[] envVars;
+        public final Map<String, String> envVars;
 
-        public Function(String version, String repo, String[] jvmArgs, String[] runArgs, String[] envVars) {
+        public Function(String version, String repo, String[] jvmArgs, String[] runArgs, Map<String, String> envVars) {
             this.version = version;
             this.repo = repo;
             this.jvmArgs = jvmArgs;
