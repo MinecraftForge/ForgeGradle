@@ -17,7 +17,7 @@ import java.util.Set;
 public class ListLibrariesFunction implements MCPFunction {
 
     @Override
-    public File execute(MCPEnvironment environment) throws Exception {
+    public File execute(MCPEnvironment environment) {
         String outputString = environment.getArguments().getOrDefault("output", "libraries.txt");
         File output = environment.getFile(outputString);
 

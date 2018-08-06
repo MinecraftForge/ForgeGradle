@@ -1,17 +1,15 @@
 package net.minecraftforge.gradle.forgedev.mcp.function;
 
 import net.minecraftforge.gradle.forgedev.mcp.util.MCPEnvironment;
+import net.minecraftforge.gradle.forgedev.mcp.util.Utils;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.internal.impldep.com.google.gson.JsonElement;
 import org.gradle.internal.impldep.com.google.gson.JsonObject;
-import org.gradle.internal.impldep.org.apache.commons.io.FileUtils;
 import org.gradle.internal.impldep.org.apache.commons.io.output.NullOutputStream;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -135,20 +133,9 @@ public class ExecuteFunction implements MCPFunction {
             String entryName = entry.getName();
 
             if (entry.isDirectory()) {
-                Enumeration<? extends ZipEntry> entries = zip.entries();
-                while (entries.hasMoreElements()) {
-                    ZipEntry e = entries.nextElement();
-                    if (e.isDirectory()) continue;
-                    if (e.getName().startsWith(entryName)) {
-                        InputStream stream = zip.getInputStream(e);
-                        FileUtils.copyInputStreamToFile(stream, environment.getFile(e.getName()));
-                        stream.close();
-                    }
-                }
+                Utils.extractDirectory(environment, zip, entryName);
             } else {
-                InputStream stream = zip.getInputStream(entry);
-                FileUtils.copyInputStreamToFile(stream, environment.getFile(entryName));
-                stream.close();
+                Utils.extractFile(zip, entry, environment.getFile(entryName));
             }
         }
     }
