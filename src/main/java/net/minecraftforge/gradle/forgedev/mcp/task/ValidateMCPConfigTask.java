@@ -54,7 +54,7 @@ public class ValidateMCPConfigTask extends DefaultTask {
             processed.dependencies.put(function.version, jar); // Pull the jar from maven later
             return new ExecuteFunction(jar, function.jvmArgs, function.runArgs, function.envVars);
         }
-        return MCPPlugin.createBuiltInFunction(getProject(), type);
+        return MCPPlugin.createBuiltInFunction(type);
     }
 
     private interface StepAdder {

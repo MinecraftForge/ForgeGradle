@@ -1,8 +1,13 @@
 package net.minecraftforge.gradle.forgedev.mcp;
 
+import net.minecraftforge.gradle.forgedev.mcp.function.DownloadClientFunction;
+import net.minecraftforge.gradle.forgedev.mcp.function.DownloadManifestFunction;
+import net.minecraftforge.gradle.forgedev.mcp.function.DownloadServerFunction;
+import net.minecraftforge.gradle.forgedev.mcp.function.DownloadVersionJSONFunction;
 import net.minecraftforge.gradle.forgedev.mcp.function.MCPFunction;
-import net.minecraftforge.gradle.forgedev.mcp.task.DownloadMCPDependenciesTask;
+import net.minecraftforge.gradle.forgedev.mcp.function.StripJarFunction;
 import net.minecraftforge.gradle.forgedev.mcp.task.DownloadMCPConfigTask;
+import net.minecraftforge.gradle.forgedev.mcp.task.DownloadMCPDependenciesTask;
 import net.minecraftforge.gradle.forgedev.mcp.task.LoadMCPConfigTask;
 import net.minecraftforge.gradle.forgedev.mcp.task.SetupMCPTask;
 import net.minecraftforge.gradle.forgedev.mcp.task.ValidateMCPConfigTask;
@@ -46,8 +51,11 @@ public class MCPPlugin implements Plugin<Project> {
         });
     }
 
-    public static MCPFunction createBuiltInFunction(Project project, String type) {
-        return null;
+    public static MCPFunction createBuiltInFunction(String type) {
+        switch (type) {
+            default:
+                return null;
+        }
     }
 
 }
