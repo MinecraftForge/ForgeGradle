@@ -4,6 +4,7 @@ import net.minecraftforge.gradle.forgedev.mcp.function.DownloadClientFunction;
 import net.minecraftforge.gradle.forgedev.mcp.function.DownloadManifestFunction;
 import net.minecraftforge.gradle.forgedev.mcp.function.DownloadServerFunction;
 import net.minecraftforge.gradle.forgedev.mcp.function.DownloadVersionJSONFunction;
+import net.minecraftforge.gradle.forgedev.mcp.function.InjectFunction;
 import net.minecraftforge.gradle.forgedev.mcp.function.ListLibrariesFunction;
 import net.minecraftforge.gradle.forgedev.mcp.function.MCPFunction;
 import net.minecraftforge.gradle.forgedev.mcp.function.MCPFunctionOverlay;
@@ -76,6 +77,7 @@ public class MCPPlugin implements Plugin<Project> {
             case "listLibraries":
                 return new ListLibrariesFunction();
             case "inject":
+                return new InjectFunction();
             case "patch":
                 return new NullFunction();
             default:
