@@ -15,7 +15,7 @@ public class DownloadMCPConfigTask extends DefaultTask {
     @Input
     public Object config;
     @OutputFile
-    public File output = new File("build/mcp/mcp_config.zip"); // TODO: Do this the right way
+    public File output = getProject().file("mcp/mcp_config.zip"); // TODO: Do this the right way
 
     @TaskAction
     public void downloadMCPConfig() throws IOException {
