@@ -1,6 +1,7 @@
 package net.minecraftforge.gradle.forgedev.mcp.util;
 
 import net.minecraftforge.gradle.forgedev.mcp.function.MCPFunction;
+import org.gradle.api.Project;
 
 import java.io.File;
 import java.util.Map;
@@ -8,10 +9,12 @@ import java.util.Map;
 public class MCPEnvironment {
 
     private final MCPRuntime runtime;
+    public final Project project;
     public final String mcVersion;
 
     public MCPEnvironment(MCPRuntime runtime, String mcVersion) {
         this.runtime = runtime;
+        this.project = runtime.project;
         this.mcVersion = mcVersion;
     }
 

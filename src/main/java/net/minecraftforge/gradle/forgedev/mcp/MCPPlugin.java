@@ -4,6 +4,7 @@ import net.minecraftforge.gradle.forgedev.mcp.function.DownloadClientFunction;
 import net.minecraftforge.gradle.forgedev.mcp.function.DownloadManifestFunction;
 import net.minecraftforge.gradle.forgedev.mcp.function.DownloadServerFunction;
 import net.minecraftforge.gradle.forgedev.mcp.function.DownloadVersionJSONFunction;
+import net.minecraftforge.gradle.forgedev.mcp.function.ListLibrariesFunction;
 import net.minecraftforge.gradle.forgedev.mcp.function.MCPFunction;
 import net.minecraftforge.gradle.forgedev.mcp.function.StripJarFunction;
 import net.minecraftforge.gradle.forgedev.mcp.task.DownloadMCPConfigTask;
@@ -63,6 +64,8 @@ public class MCPPlugin implements Plugin<Project> {
                 return new DownloadServerFunction();
             case "strip":
                 return new StripJarFunction();
+            case "listLibraries":
+                return new ListLibrariesFunction();
             default:
                 return null;
         }

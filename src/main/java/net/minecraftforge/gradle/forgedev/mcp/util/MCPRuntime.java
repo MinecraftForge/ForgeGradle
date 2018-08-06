@@ -15,6 +15,7 @@ public class MCPRuntime {
 
     private static final Pattern OUTPUT_REPLACE_PATTERN = Pattern.compile("^\\{(\\w+)Output\\}$");
 
+    final Project project;
     final MCPEnvironment environment;
     final File mcpDirectory;
 
@@ -22,6 +23,7 @@ public class MCPRuntime {
     Step currentStep;
 
     public MCPRuntime(Project project, MCPConfig config, boolean generateSrc) {
+        this.project = project;
         this.environment = new MCPEnvironment(this, config.mcVersion);
         this.mcpDirectory = project.file("mcp/");
 
