@@ -86,9 +86,7 @@ public class StripJarFunction implements MCPFunction {
     }
 
     private boolean isEntryValid(JarEntry entry, boolean whitelist) {
-        if (entry.isDirectory()) return false;
-        String name = entry.getName();
-        return !name.startsWith("META-INF/") && filter.contains(name) == whitelist;
+        return !entry.isDirectory() && filter.contains(entry.getName()) == whitelist;
     }
 
 }
