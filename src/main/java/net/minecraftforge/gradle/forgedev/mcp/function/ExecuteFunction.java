@@ -61,6 +61,15 @@ public class ExecuteFunction implements MCPFunction {
         arguments.computeIfAbsent("output", k -> environment.getFile("output." + outputExtension).getAbsolutePath());
         arguments.computeIfAbsent("log", k -> environment.getFile("log.log").getAbsolutePath());
 
+        // Get output file
+        File output = environment.getFile(environment.getArguments().get("output"));
+
+        // If we should skip it, don't bother
+        if (environment.shouldSkipStep()) return output;
+
+        // Delete previous output
+        if (output.exists()) output.delete();
+
         // Set up working directory
         File workingDir = environment.getWorkingDir();
         workingDir.mkdirs();
@@ -82,8 +91,8 @@ public class ExecuteFunction implements MCPFunction {
         java.exec();
         environment.project.getTasks().remove(java);
 
-        // Return the "output" argument
-        return environment.getFile(environment.getArguments().get("output"));
+        // Return the output file
+        return output;
     }
 
     private List<String> applyVariableSubstitutions(List<String> list, Map<String, String> arguments) {

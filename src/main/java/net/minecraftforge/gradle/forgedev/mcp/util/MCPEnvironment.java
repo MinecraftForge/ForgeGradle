@@ -20,6 +20,10 @@ public class MCPEnvironment {
         this.mcVersion = mcVersion;
     }
 
+    public boolean shouldSkipStep() {
+        return runtime.currentStep.skip;
+    }
+
     public Map<String, String> getArguments() {
         return runtime.currentStep.arguments;
     }

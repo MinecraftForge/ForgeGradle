@@ -21,6 +21,8 @@ public class ListLibrariesFunction implements MCPFunction {
         String outputString = environment.getArguments().getOrDefault("output", "libraries.txt");
         File output = environment.getFile(outputString);
 
+        if (environment.shouldSkipStep()) return output;
+
         try {
             Gson gson = new Gson();
             Reader reader = new FileReader(environment.getStepOutput(DownloadVersionJSONFunction.class));

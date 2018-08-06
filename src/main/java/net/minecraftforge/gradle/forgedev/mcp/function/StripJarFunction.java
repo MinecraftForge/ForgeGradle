@@ -23,6 +23,8 @@ public class StripJarFunction implements MCPFunction {
         File inHashFile = environment.getFile("lastinput.sha1");
         File output = environment.getFile("output.jar");
 
+        if (environment.shouldSkipStep()) return output;
+
         HashValue inputHash = HashUtil.sha1(input);
 
         // If this has already been computed, skip
