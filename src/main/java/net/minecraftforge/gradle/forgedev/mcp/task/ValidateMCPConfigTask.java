@@ -3,6 +3,7 @@ package net.minecraftforge.gradle.forgedev.mcp.task;
 import net.minecraftforge.gradle.forgedev.mcp.MCPPlugin;
 import net.minecraftforge.gradle.forgedev.mcp.function.ExecuteFunction;
 import net.minecraftforge.gradle.forgedev.mcp.function.MCPFunction;
+import net.minecraftforge.gradle.forgedev.mcp.function.MCPFunctionOverlay;
 import net.minecraftforge.gradle.forgedev.mcp.util.MCPConfig;
 import net.minecraftforge.gradle.forgedev.mcp.util.RawMCPConfig;
 import org.gradle.api.DefaultTask;
@@ -27,6 +28,7 @@ public class ValidateMCPConfigTask extends DefaultTask {
     @TaskAction
     public void validate() throws Exception {
         processed.mcVersion = unprocessed.mcVersion;
+        processed.zipFile = unprocessed.zipFile;
 
         processSteps(unprocessed.pipeline.sharedSteps, processed.pipeline::addShared);
         processSteps(unprocessed.pipeline.srcSteps, processed.pipeline::addSrc);
@@ -43,7 +45,13 @@ public class ValidateMCPConfigTask extends DefaultTask {
                 throw new IllegalStateException("Expected a function of type '" + step.type + "' to be available, but it's not!");
             }
             function.loadData(unprocessed.data);
-            adder.addStep(step.name, step.type, function, step.arguments);
+
+            MCPFunctionOverlay overlay = MCPPlugin.createFunctionOverlay(step.type);
+            if (overlay != null) {
+                overlay.loadData(unprocessed.data);
+            }
+
+            adder.addStep(step.name, step.type, function, overlay, step.arguments);
         }
     }
 
@@ -58,7 +66,7 @@ public class ValidateMCPConfigTask extends DefaultTask {
     }
 
     private interface StepAdder {
-        void addStep(String name, String type, MCPFunction function, Map<String, String> arguments);
+        void addStep(String name, String type, MCPFunction function, MCPFunctionOverlay overlay, Map<String, String> arguments);
     }
 
 }

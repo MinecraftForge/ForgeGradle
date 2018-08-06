@@ -2,6 +2,7 @@ package net.minecraftforge.gradle.forgedev.mcp.util;
 
 import org.gradle.internal.impldep.com.google.gson.JsonObject;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -12,6 +13,7 @@ import java.util.Set;
 public class RawMCPConfig {
 
     public String mcVersion;
+    public File zipFile;
     public JsonObject data;
     public final Pipeline pipeline = new Pipeline();
     public final Map<String, Function> functions = new HashMap<>();

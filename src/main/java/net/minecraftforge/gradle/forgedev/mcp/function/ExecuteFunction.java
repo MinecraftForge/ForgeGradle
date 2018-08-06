@@ -29,6 +29,11 @@ public class ExecuteFunction implements MCPFunction {
     }
 
     @Override
+    public void loadData(JsonObject data) {
+        this.data = data;
+    }
+
+    @Override
     public File execute(MCPEnvironment environment) throws Exception {
         String[] args = new String[jvmArgs.length + runArgs.length + 3];
 
@@ -61,11 +66,6 @@ public class ExecuteFunction implements MCPFunction {
 
         // Return the "output" argument
         return environment.getFile(environment.getArguments().get("output"));
-    }
-
-    @Override
-    public void loadData(JsonObject data) {
-        this.data = data;
     }
 
     private String applyVariableSubstitutions(String value, Map<String, String> arguments) {

@@ -2,7 +2,6 @@ package net.minecraftforge.gradle.forgedev.mcp.task;
 
 import net.minecraftforge.gradle.forgedev.mcp.util.RawMCPConfig;
 import org.gradle.api.DefaultTask;
-import org.gradle.api.file.FileTree;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -48,22 +47,23 @@ public class LoadMCPConfigTask extends DefaultTask {
 
         zip.close();
 
-        loadConfig(json, getProject().zipTree(configFile));
+        loadConfig(json, configFile);
     }
 
-    private void loadConfig(JsonObject json, FileTree zip) {
+    private void loadConfig(JsonObject json, File zipFile) {
         int spec = json.get("spec").getAsInt();
         switch (spec) {
             case 1:
-                loadConfigV1(json, zip);
+                loadConfigV1(json, zipFile);
                 return;
             default:
                 throw new IllegalStateException("Unsupported spec version '" + spec + "'.");
         }
     }
 
-    private void loadConfigV1(JsonObject json, FileTree zip) {
+    private void loadConfigV1(JsonObject json, File zipFile) {
         rawConfig.mcVersion = json.get("version").getAsString();
+        rawConfig.zipFile = zipFile;
         rawConfig.data = json.get("data").getAsJsonObject();
 
         JsonArray steps = json.get("steps").getAsJsonObject().get(pipeline).getAsJsonArray();

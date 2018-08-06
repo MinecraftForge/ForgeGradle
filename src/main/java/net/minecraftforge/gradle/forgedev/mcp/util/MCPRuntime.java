@@ -1,6 +1,7 @@
 package net.minecraftforge.gradle.forgedev.mcp.util;
 
 import net.minecraftforge.gradle.forgedev.mcp.function.MCPFunction;
+import net.minecraftforge.gradle.forgedev.mcp.function.MCPFunctionOverlay;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipFile;
 
 public class MCPRuntime {
 
@@ -19,6 +21,8 @@ public class MCPRuntime {
     final MCPEnvironment environment;
     final File mcpDirectory;
 
+    private final File zipFile;
+
     final Map<String, Step> steps = new LinkedHashMap<>();
     Step currentStep;
 
@@ -26,6 +30,8 @@ public class MCPRuntime {
         this.project = project;
         this.environment = new MCPEnvironment(this, config.mcVersion);
         this.mcpDirectory = project.file("mcp/");
+
+        this.zipFile = config.zipFile;
 
         initSteps(config.pipeline.sharedSteps);
         if (generateSrc) {
@@ -36,18 +42,30 @@ public class MCPRuntime {
     private void initSteps(List<MCPConfig.Pipeline.Step> steps) {
         for (MCPConfig.Pipeline.Step step : steps) {
             File workingDir = new File(this.mcpDirectory, step.name);
-            this.steps.put(step.name, new Step(step.name, step.function, step.arguments, workingDir));
+            this.steps.put(step.name, new Step(step.name, step.function, step.overlay, step.arguments, workingDir));
         }
     }
 
     public void execute(Logger logger) throws Exception {
         logger.info("Setting up MCP environment!");
+
+        logger.info("Initializing steps!");
+        ZipFile zip = new ZipFile(zipFile);
+        for (Step step : steps.values()) {
+            logger.info(" > Initializing '" + step.name + "'");
+            currentStep = step;
+            step.initialize(zip);
+        }
+        zip.close();
+
+        logger.info("Executing steps!");
         for (Step step : steps.values()) {
             logger.info(" > Running '" + step.name + "'");
             currentStep = step;
             step.arguments.replaceAll((key, value) -> applyStepOutputSubstitutions(value));
             step.execute();
         }
+
         logger.info("MCP environment setup is complete!");
     }
 
@@ -66,19 +84,28 @@ public class MCPRuntime {
 
         private final String name;
         private final MCPFunction function;
+        private final MCPFunctionOverlay overlay;
         final Map<String, String> arguments;
         final File workingDirectory;
         File output;
 
-        private Step(String name, MCPFunction function, Map<String, String> arguments, File workingDirectory) {
+        private Step(String name, MCPFunction function, MCPFunctionOverlay overlay,
+                     Map<String, String> arguments, File workingDirectory) {
             this.name = name;
             this.function = function;
+            this.overlay = overlay;
             this.arguments = arguments;
             this.workingDirectory = workingDirectory;
         }
 
+        private void initialize(ZipFile zip) throws Exception {
+            function.initialize(environment, zip);
+            if (overlay != null) overlay.initialize(environment, zip);
+        }
+
         private void execute() throws Exception {
             output = function.execute(environment);
+            if (overlay != null) overlay.onExecuted(environment);
         }
 
         boolean isOfType(Class<? extends MCPFunction> type) {
