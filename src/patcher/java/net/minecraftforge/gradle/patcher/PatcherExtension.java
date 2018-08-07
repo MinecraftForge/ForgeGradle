@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.forgedev.patcher;
+package net.minecraftforge.gradle.patcher;
 
 import org.gradle.api.Project;
 
