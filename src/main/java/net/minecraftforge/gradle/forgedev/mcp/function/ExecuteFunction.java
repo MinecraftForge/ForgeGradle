@@ -133,7 +133,7 @@ public class ExecuteFunction implements MCPFunction {
             String entryName = entry.getName();
 
             if (entry.isDirectory()) {
-                Utils.extractDirectory(environment, zip, entryName);
+                Utils.extractDirectory(environment::getFile, zip, entryName);
             } else {
                 Utils.extractFile(zip, entry, environment.getFile(entryName));
             }

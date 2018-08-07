@@ -30,7 +30,7 @@ public class InjectFunction implements MCPFunction {
 
     @Override
     public void initialize(MCPEnvironment environment, ZipFile zip) throws IOException {
-        Utils.extractDirectory(environment, zip, inject);
+        Utils.extractDirectory(environment::getFile, zip, inject);
     }
 
     @Override

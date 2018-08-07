@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
+import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -21,13 +22,13 @@ public class Utils {
         stream.close();
     }
 
-    public static void extractDirectory(MCPEnvironment environment, ZipFile zip, String directory) throws IOException {
+    public static void extractDirectory(Function<String, File> fileLocator, ZipFile zip, String directory) throws IOException {
         Enumeration<? extends ZipEntry> entries = zip.entries();
         while (entries.hasMoreElements()) {
             ZipEntry e = entries.nextElement();
             if (e.isDirectory()) continue;
             if (!e.getName().startsWith(directory)) continue;
-            extractFile(zip, e, environment.getFile(e.getName()));
+            extractFile(zip, e, fileLocator.apply(e.getName()));
         }
     }
 
