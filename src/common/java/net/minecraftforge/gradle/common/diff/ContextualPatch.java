@@ -40,13 +40,27 @@
  */
 package net.minecraftforge.gradle.common.diff;
 
+import com.cloudbees.diff.Hunk;
+import com.cloudbees.diff.PatchException;
 import org.apache.commons.io.IOUtils;
 
-import java.io.*;
-import java.util.*;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Applies contextual patches to files. The patch file can contain patches for multiple files. 
