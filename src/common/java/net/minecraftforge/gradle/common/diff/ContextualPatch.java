@@ -50,7 +50,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -83,7 +82,7 @@ public final class ContextualPatch {
     private final Pattern normalDeleteRangePattern = Pattern.compile("(\\d+),(\\d+)d(\\d+)");
     private final Pattern binaryHeaderPattern = Pattern.compile("MIME: (.*?); encoding: (.*?); length: (-?\\d+?)"); 
     
-    private final File patchFile;
+    private final PatchFile patchFile;
     private final File suggestedContext;
 
     private File            context;
@@ -92,11 +91,11 @@ public final class ContextualPatch {
     private boolean         patchLineRead;
     private int             lastPatchedLine;    // the last line that was successfuly patched
 
-    public static ContextualPatch create(File patchFile, File context) {
+    public static ContextualPatch create(PatchFile patchFile, File context) {
         return new ContextualPatch(patchFile, context); 
     }
     
-    private ContextualPatch(File patchFile, File context) {
+    private ContextualPatch(PatchFile patchFile, File context) {
         this.patchFile = patchFile;
         this.suggestedContext = context;
     }
@@ -135,7 +134,7 @@ public final class ContextualPatch {
     }
     
     private void init() throws IOException {
-        patchReader = new BufferedReader(new FileReader(patchFile));
+        patchReader = new BufferedReader(new InputStreamReader(patchFile.openStream()));
         String encoding = "ISO-8859-1";
         String line = patchReader.readLine();
         if (MAGIC.equals(line)) {
@@ -145,13 +144,13 @@ public final class ContextualPatch {
         patchReader.close();
 
         byte[] buffer = new byte[MAGIC.length()];
-        InputStream in = new FileInputStream(patchFile);
+        InputStream in = patchFile.openStream();
         int read = in.read(buffer);
         in.close();
         if (read != -1 && MAGIC.equals(new String(buffer, "utf8"))) {  // NOI18N
             encoding = "utf8"; // NOI18N
         }
-        patchReader = new BufferedReader(new InputStreamReader(new FileInputStream(patchFile), encoding));
+        patchReader = new BufferedReader(new InputStreamReader(patchFile.openStream(), encoding));
     }
     
     private void applyPatch(SinglePatch patch, boolean dryRun) throws IOException, PatchException {
