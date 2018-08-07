@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.forgedev.mcp.util;
+package net.minecraftforge.gradle.mcp.util;
 
 import org.gradle.internal.impldep.com.google.gson.JsonObject;
 

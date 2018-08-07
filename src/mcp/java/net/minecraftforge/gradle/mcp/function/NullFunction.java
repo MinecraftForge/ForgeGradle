@@ -1,6 +1,6 @@
-package net.minecraftforge.gradle.forgedev.mcp.function;
+package net.minecraftforge.gradle.mcp.function;
 
-import net.minecraftforge.gradle.forgedev.mcp.util.MCPEnvironment;
+import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 
 import java.io.File;
 

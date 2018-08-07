@@ -1,7 +1,7 @@
-package net.minecraftforge.gradle.forgedev.mcp.util;
+package net.minecraftforge.gradle.mcp.util;
 
-import net.minecraftforge.gradle.forgedev.mcp.function.MCPFunction;
-import net.minecraftforge.gradle.forgedev.mcp.function.MCPFunctionOverlay;
+import net.minecraftforge.gradle.mcp.function.MCPFunction;
+import net.minecraftforge.gradle.mcp.function.MCPFunctionOverlay;
 
 import java.io.File;
 import java.util.HashMap;

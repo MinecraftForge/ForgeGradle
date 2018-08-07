@@ -1,11 +1,11 @@
-package net.minecraftforge.gradle.forgedev.mcp.task;
+package net.minecraftforge.gradle.mcp.task;
 
-import net.minecraftforge.gradle.forgedev.mcp.MCPPlugin;
-import net.minecraftforge.gradle.forgedev.mcp.function.ExecuteFunction;
-import net.minecraftforge.gradle.forgedev.mcp.function.MCPFunction;
-import net.minecraftforge.gradle.forgedev.mcp.function.MCPFunctionOverlay;
-import net.minecraftforge.gradle.forgedev.mcp.util.MCPConfig;
-import net.minecraftforge.gradle.forgedev.mcp.util.RawMCPConfig;
+import net.minecraftforge.gradle.mcp.MCPPlugin;
+import net.minecraftforge.gradle.mcp.function.ExecuteFunction;
+import net.minecraftforge.gradle.mcp.function.MCPFunction;
+import net.minecraftforge.gradle.mcp.function.MCPFunctionOverlay;
+import net.minecraftforge.gradle.mcp.util.MCPConfig;
+import net.minecraftforge.gradle.mcp.util.RawMCPConfig;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;

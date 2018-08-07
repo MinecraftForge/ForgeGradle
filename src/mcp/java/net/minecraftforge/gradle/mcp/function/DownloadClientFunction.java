@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.forgedev.mcp.function;
+package net.minecraftforge.gradle.mcp.function;
 
 public class DownloadClientFunction extends AbstractDownloadMCFunction {
 

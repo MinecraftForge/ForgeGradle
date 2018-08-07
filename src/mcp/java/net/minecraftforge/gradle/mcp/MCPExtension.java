@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.forgedev.mcp;
+package net.minecraftforge.gradle.mcp;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;

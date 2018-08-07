@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.forgedev.mcp.task;
+package net.minecraftforge.gradle.mcp.task;
 
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import org.gradle.api.DefaultTask;

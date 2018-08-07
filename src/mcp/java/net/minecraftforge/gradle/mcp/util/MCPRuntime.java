@@ -1,7 +1,7 @@
-package net.minecraftforge.gradle.forgedev.mcp.util;
+package net.minecraftforge.gradle.mcp.util;
 
-import net.minecraftforge.gradle.forgedev.mcp.function.MCPFunction;
-import net.minecraftforge.gradle.forgedev.mcp.function.MCPFunctionOverlay;
+import net.minecraftforge.gradle.mcp.function.MCPFunction;
+import net.minecraftforge.gradle.mcp.function.MCPFunctionOverlay;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 import org.gradle.internal.impldep.org.apache.commons.lang.ArrayUtils;

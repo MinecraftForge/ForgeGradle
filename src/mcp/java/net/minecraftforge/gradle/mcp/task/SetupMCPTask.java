@@ -1,7 +1,7 @@
-package net.minecraftforge.gradle.forgedev.mcp.task;
+package net.minecraftforge.gradle.mcp.task;
 
-import net.minecraftforge.gradle.forgedev.mcp.util.MCPConfig;
-import net.minecraftforge.gradle.forgedev.mcp.util.MCPRuntime;
+import net.minecraftforge.gradle.mcp.util.MCPConfig;
+import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
