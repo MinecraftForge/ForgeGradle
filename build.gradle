@@ -16,9 +16,13 @@ configurations {
     compile.extendsFrom mcpImplementation, patcherImplementation
 }
 
+repositories {
+    jcenter()
+}
+
 dependencies {
     commonImplementation gradleApi()
-    //commonImplementation 'com.cloudbees:diff4j:1.2'
+    commonImplementation 'com.cloudbees:diff4j:1.2'
 
     mcpImplementation sourceSets.common.output
     patcherImplementation sourceSets.common.output
