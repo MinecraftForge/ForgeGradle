@@ -4,8 +4,24 @@ apply plugin: 'maven-publish'
 group = 'net.minecraftforge.gradle'
 version = '3.0.0-SNAPSHOT'
 
+sourceSets {
+    common
+    mcp
+    patcher
+}
+
+configurations {
+    mcpImplementation.extendsFrom commonImplementation
+    patcherImplementation.extendsFrom commonImplementation
+    compile.extendsFrom mcpImplementation, patcherImplementation
+}
+
 dependencies {
-    implementation gradleApi()
+    commonImplementation gradleApi()
+    //commonImplementation 'com.cloudbees:diff4j:1.2'
+
+    mcpImplementation sourceSets.common.output
+    patcherImplementation sourceSets.common.output
 }
 
 publishing {
