@@ -42,6 +42,7 @@ package net.minecraftforge.gradle.common.diff;
 
 import com.cloudbees.diff.Hunk;
 import com.cloudbees.diff.PatchException;
+import net.minecraftforge.gradle.common.util.Utils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedReader;
@@ -219,7 +220,7 @@ public final class ContextualPatch {
             if (patch.hunks.length == 0) {
                 patch.targetFile.delete();
             } else {
-                byte [] content = Base64.decode(patch.hunks[0].lines);
+                byte [] content = Utils.base64DecodeStringList(patch.hunks[0].lines);
                 copyStreamsCloseAll(new FileOutputStream(patch.targetFile), new ByteArrayInputStream(content));
             }
         } else {

@@ -2,10 +2,13 @@ package net.minecraftforge.gradle.common.util;
 
 import org.gradle.internal.impldep.org.apache.commons.io.FileUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Base64;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -30,6 +33,14 @@ public class Utils {
             if (!e.getName().startsWith(directory)) continue;
             extractFile(zip, e, fileLocator.apply(e.getName()));
         }
+    }
+
+    public static byte[] base64DecodeStringList(List<String> strings) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        for (String string : strings) {
+            bos.write(Base64.getDecoder().decode(string));
+        }
+        return bos.toByteArray();
     }
 
 }
