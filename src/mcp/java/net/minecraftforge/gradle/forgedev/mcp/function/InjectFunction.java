@@ -1,7 +1,7 @@
 package net.minecraftforge.gradle.forgedev.mcp.function;
 
+import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.forgedev.mcp.util.MCPEnvironment;
-import net.minecraftforge.gradle.forgedev.mcp.util.Utils;
 import org.gradle.internal.impldep.com.google.gson.JsonObject;
 import org.gradle.internal.impldep.org.apache.commons.io.IOUtils;
 

@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.forgedev.mcp.util;
+package net.minecraftforge.gradle.common.util;
 
 import org.gradle.internal.impldep.org.apache.commons.io.FileUtils;
 
