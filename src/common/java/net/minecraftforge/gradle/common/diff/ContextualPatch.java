@@ -82,6 +82,8 @@ public final class ContextualPatch {
     private final Pattern normalDeleteRangePattern = Pattern.compile("(\\d+),(\\d+)d(\\d+)");
     private final Pattern binaryHeaderPattern = Pattern.compile("MIME: (.*?); encoding: (.*?); length: (-?\\d+?)"); 
     
+    private final PatchContextProvider contextProvider;
+
     private final PatchFile patchFile;
     private final File suggestedContext;
 
@@ -91,13 +93,14 @@ public final class ContextualPatch {
     private boolean         patchLineRead;
     private int             lastPatchedLine;    // the last line that was successfuly patched
 
-    public static ContextualPatch create(PatchFile patchFile, File context) {
-        return new ContextualPatch(patchFile, context); 
+    public static ContextualPatch create(PatchFile patchFile, PatchContextProvider context) {
+        return new ContextualPatch(patchFile, context);
     }
     
-    private ContextualPatch(PatchFile patchFile, File context) {
+    private ContextualPatch(PatchFile patchFile, PatchContextProvider context) {
         this.patchFile = patchFile;
-        this.suggestedContext = context;
+        this.suggestedContext = null;
+        this.contextProvider = context;
     }
 
     /**
@@ -154,6 +157,10 @@ public final class ContextualPatch {
     }
     
     private void applyPatch(SinglePatch patch, boolean dryRun) throws IOException, PatchException {
+        if (contextProvider != null) {
+            contextProvider.applyPatch(this, patch, dryRun);
+            return;
+        }
         lastPatchedLine = 1;
         List<String> target;
         patch.targetFile = computeTargetFile(patch);
@@ -178,7 +185,7 @@ public final class ContextualPatch {
         }
     }
 
-    private boolean patchCreatesNewFileThatAlreadyExists(SinglePatch patch, List<String> originalFile) throws PatchException {
+    boolean patchCreatesNewFileThatAlreadyExists(SinglePatch patch, List<String> originalFile) throws PatchException {
         if (patch.hunks.length != 1) return false;
         Hunk hunk = patch.hunks[0];
         if (hunk.baseStart != 0 || hunk.baseCount != 0 || hunk.modifiedStart != 1 || hunk.modifiedCount != originalFile.size()) return false;
@@ -239,7 +246,7 @@ public final class ContextualPatch {
         }
     }
 
-    private void applyHunk(List<String> target, Hunk hunk) throws PatchException {
+    void applyHunk(List<String> target, Hunk hunk) throws PatchException {
         int idx = findHunkIndex(target, hunk);
         if (idx == -1) throw new PatchException("Cannot apply hunk @@ " + hunk.baseCount);
         applyHunk(target, hunk, idx, false);
@@ -696,7 +703,7 @@ public final class ContextualPatch {
         return new File(context, patch.targetPath);
     }
 
-    private static class SinglePatch {
+    static class SinglePatch {
         String      targetIndex;
         String      targetPath;
         Hunk []     hunks;
