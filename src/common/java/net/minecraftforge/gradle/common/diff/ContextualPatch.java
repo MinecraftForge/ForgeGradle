@@ -138,6 +138,7 @@ public final class ContextualPatch {
     
     private void init() throws IOException {
         patchReader = new BufferedReader(new InputStreamReader(patchFile.openStream()));
+        if (!patchFile.requiresFurtherProcessing()) return;
         String encoding = "ISO-8859-1";
         String line = patchReader.readLine();
         if (MAGIC.equals(line)) {
