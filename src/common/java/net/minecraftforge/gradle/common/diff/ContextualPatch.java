@@ -148,9 +148,10 @@ public final class ContextualPatch {
         patchReader.close();
 
         byte[] buffer = new byte[MAGIC.length()];
-        InputStream in = patchFile.openStream();
-        int read = in.read(buffer);
-        in.close();
+        int read;
+        try(InputStream in = patchFile.openStream()) {
+            read = in.read(buffer);
+        }
         if (read != -1 && MAGIC.equals(new String(buffer, "utf8"))) {  // NOI18N
             encoding = "utf8"; // NOI18N
         }
@@ -231,9 +232,8 @@ public final class ContextualPatch {
                 copyStreamsCloseAll(new FileOutputStream(patch.targetFile), new ByteArrayInputStream(content));
             }
         } else {
-            PrintWriter w = new PrintWriter(new OutputStreamWriter(new FileOutputStream(patch.targetFile), getEncoding(patch.targetFile))); 
-            try {
-                if (lines.size() == 0) return;
+            if (lines.size() == 0) return;
+            try(PrintWriter w = new PrintWriter(new OutputStreamWriter(new FileOutputStream(patch.targetFile), getEncoding(patch.targetFile)))) {
                 for (String line : lines.subList(0, lines.size() - 1)) {
                     w.println(line);
                 }
@@ -241,8 +241,6 @@ public final class ContextualPatch {
                 if (!patch.noEndingNewline) {
                     w.println();
                 }
-            } finally {
-                w.close();
             }
         }
     }
