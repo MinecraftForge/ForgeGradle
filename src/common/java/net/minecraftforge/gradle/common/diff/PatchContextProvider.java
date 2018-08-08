@@ -12,34 +12,4 @@ public interface PatchContextProvider {
 
     void setData(String target, List<String> data);
 
-    default void applyPatch(ContextualPatch contextualPatch, ContextualPatch.SinglePatch patch, boolean dryRun) throws PatchException {
-        List<String> target = getData(patch.targetPath);
-
-        if (target != null && !patch.binary) {
-            if (contextualPatch.patchCreatesNewFileThatAlreadyExists(patch, target)) {
-                return; // Skipped!
-            }
-        } else if (target == null) {
-            target = new ArrayList<>();
-        }
-
-        if (patch.mode == ContextualPatch.Mode.DELETE) {
-            target = new ArrayList<>();
-        } else {
-            if (!patch.binary) {
-                for (Hunk hunk : patch.hunks) {
-                    try {
-                        contextualPatch.applyHunk(target, hunk);
-                    } catch (Exception ex) {
-                        throw new PatchException("Failed to apply patch!"); // Failure!
-                    }
-                }
-            }
-        }
-
-        if (!dryRun) {
-            setData(patch.targetPath, target);
-        }
-    }
-
 }

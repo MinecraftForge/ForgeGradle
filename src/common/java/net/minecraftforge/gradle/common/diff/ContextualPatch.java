@@ -82,7 +82,7 @@ public final class ContextualPatch {
     private final Pattern normalDeleteRangePattern = Pattern.compile("(\\d+),(\\d+)d(\\d+)");
     private final Pattern binaryHeaderPattern = Pattern.compile("MIME: (.*?); encoding: (.*?); length: (-?\\d+?)"); 
     
-    private final PatchContextProvider contextProvider;
+    final PatchContextProvider contextProvider;
 
     private final PatchFile patchFile;
     private final File suggestedContext;
@@ -160,7 +160,7 @@ public final class ContextualPatch {
     
     private void applyPatch(SinglePatch patch, boolean dryRun) throws IOException, PatchException {
         if (contextProvider != null) {
-            contextProvider.applyPatch(this, patch, dryRun);
+            PatchUtils.applyPatch(this, patch, dryRun);
             return;
         }
         lastPatchedLine = 1;
