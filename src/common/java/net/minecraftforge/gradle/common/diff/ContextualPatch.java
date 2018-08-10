@@ -135,10 +135,9 @@ public final class ContextualPatch {
             computeContext(patches);
             for (SinglePatch patch : patches) {
                 try {
-                    applyPatch(patch, dryRun);
-                    report.add(new PatchReport(patch.targetFile, computeBackup(patch.targetFile), patch.binary, PatchStatus.Patched, null));
+                    report.add(applyPatch(patch, dryRun));
                 } catch (Exception e) {
-                    report.add(new PatchReport(patch.targetFile, null, patch.binary, PatchStatus.Failure, e));
+                    report.add(new PatchReport(patch.targetPath, patch.binary, PatchStatus.Failure, e, new ArrayList<>()));
                 }
             }
             return report;
@@ -169,11 +168,17 @@ public final class ContextualPatch {
         patchReader = new BufferedReader(new InputStreamReader(patchFile.openStream(), encoding));
     }
     
-    private void applyPatch(SinglePatch patch, boolean dryRun) throws IOException, PatchException {
+    private PatchReport applyPatch(SinglePatch patch, boolean dryRun) throws IOException, PatchException {
         lastPatchedLine = 1;
         List<String> target = contextProvider.getData(patch);
+        List<HunkReport> hunkReports = new ArrayList<>();
         if (target != null && !patch.binary) {
-            if (patchCreatesNewFileThatAlreadyExists(patch, target)) return;
+            if (patchCreatesNewFileThatAlreadyExists(patch, target)) {
+                for (int x = 0; x < patch.hunks.length; x++) {
+                    hunkReports.add(new HunkReport(PatchStatus.Skipped, null, 0, 0, x));
+                }
+                return new PatchReport(patch.targetPath, patch.binary, PatchStatus.Skipped, null, hunkReports);
+            }
         } else {
             target = new ArrayList<String>();
         }
@@ -184,13 +189,23 @@ public final class ContextualPatch {
                 int x = 0;
                 for (Hunk hunk : patch.hunks) {
                     x++;
-                    applyHunk(target, hunk, x);
+                    try {
+                        hunkReports.add(applyHunk(target, hunk, x));
+                    } catch (Exception e) {
+                        hunkReports.add(new HunkReport(PatchStatus.Failure, e, 0, 0, x, hunk));
+                    }
                 }
             }
         }
         if (!dryRun) {
             contextProvider.setData(patch, target);
         }
+        for (HunkReport hunk : hunkReports) {
+            if (hunk.status == PatchStatus.Failure) {
+                return new PatchReport(patch.targetPath, patch.binary, PatchStatus.Failure, hunk.failure, hunkReports);
+            }
+        }
+        return new PatchReport(patch.targetPath, patch.binary, PatchStatus.Patched, null, hunkReports);
     }
 
     boolean patchCreatesNewFileThatAlreadyExists(SinglePatch patch, List<String> originalFile) throws PatchException {
@@ -251,7 +266,7 @@ public final class ContextualPatch {
         }
     }
 
-    private boolean applyHunk(List<String> target, Hunk hunk, int hunkID) throws PatchException {
+    private HunkReport applyHunk(List<String> target, Hunk hunk, int hunkID) throws PatchException {
         int idx = -1;
         int fuzz = 0;
         for (; idx == -1 && fuzz <= this.maxFuzz; fuzz++) {
@@ -264,17 +279,17 @@ public final class ContextualPatch {
 
     private int findHunkIndex(List<String> target, Hunk hunk, int fuzz, int hunkID) throws PatchException {
         int idx = hunk.modifiedStart;  // first guess from the hunk range specification
-        if (idx >= lastPatchedLine && applyHunk(target, hunk, idx, true, fuzz, hunkID)) {
+        if (idx >= lastPatchedLine && applyHunk(target, hunk, idx, true, fuzz, hunkID).status.success) {
             return idx;
         } else {
             // try to search for the context
             for (int i = idx - 1; i >= lastPatchedLine; i--) {
-                if (applyHunk(target, hunk, i, true, fuzz, hunkID)) {
+                if (applyHunk(target, hunk, i, true, fuzz, hunkID).status.success) {
                     return i;
                 }
             }
             for (int i = idx + 1; i < target.size(); i++) {
-                if (applyHunk(target, hunk, i, true, fuzz, hunkID)) {
+                if (applyHunk(target, hunk, i, true, fuzz, hunkID).status.success) {
                     return i;
                 }
             }
@@ -283,9 +298,9 @@ public final class ContextualPatch {
     }
 
     /**
-     * @return true if the application succeeded
+     * @return hunk report
      */
-    private boolean applyHunk(List<String> target, Hunk hunk, int idx, boolean dryRun, int fuzz, int hunkID) throws PatchException {
+    private HunkReport applyHunk(List<String> target, Hunk hunk, int idx, boolean dryRun, int fuzz, int hunkID) throws PatchException {
         int startIdx = idx;
         idx--; // indices in the target list are 0-based
         int hunkIdx = -1;
@@ -295,9 +310,9 @@ public final class ContextualPatch {
             if (!isAddition) {
                 if (idx >= target.size()) {
                     if (dryRun) {
-                        return false;
+                        return new HunkReport(PatchStatus.Failure, null, idx, fuzz, hunkID);
                     } else {
-                        throw new PatchException("Unapplicable hunk @@ " + hunk.baseStart);
+                        throw new PatchException("Unapplicable hunk #" + hunkID + " @@ " + startIdx);
                     }
                 }
                 boolean match = PatchUtils.similar(this, target.get(idx), hunkLine.substring(1), hunkLine.charAt(0));
@@ -306,7 +321,7 @@ public final class ContextualPatch {
                 }
                 if (!match) {
                     if (dryRun) {
-                        return false;
+                        return new HunkReport(PatchStatus.Failure, null, idx, fuzz, hunkID);
                     } else {
                         throw new PatchException("Unapplicable hunk #" + hunkID + " @@ " + startIdx);
                     }
@@ -328,7 +343,7 @@ public final class ContextualPatch {
         }
         idx++; // indices in the target list are 0-based
         lastPatchedLine = idx;
-        return true;
+        return new HunkReport(fuzz != 0 ? PatchStatus.Fuzzed : PatchStatus.Patched, null, startIdx, fuzz, hunkID);
     }
 
     private boolean isAdditionLine(String hunkLine) {
@@ -746,30 +761,34 @@ public final class ContextualPatch {
         DELETE
     }
 
-    public static enum PatchStatus { Patched, Missing, Failure };
+    enum PatchStatus {
+        Patched(true),
+        Missing(false),
+        Failure(false),
+        Skipped(true),
+        Fuzzed(true);
+        boolean success;
+        PatchStatus(boolean success) { this.success = success; }
+    }
 
     public static final class PatchReport {
 
-        private File        file;
-        private File        originalBackupFile;
+        private String target;
         private boolean     binary;
         private PatchStatus status;
         private Throwable   failure;
+        private List<HunkReport> hunkReports;
 
-        PatchReport(File file, File originalBackupFile, boolean binary, PatchStatus status, Throwable failure) {
-            this.file = file;
-            this.originalBackupFile = originalBackupFile;
+        PatchReport(String target, boolean binary, PatchStatus status, Throwable failure, List<HunkReport> hunkReports) {
+            this.target = target;
             this.binary = binary;
             this.status = status;
             this.failure = failure;
+            this.hunkReports = hunkReports;
         }
 
-        public File getFile() {
-            return file;
-        }
-
-        public File getOriginalBackupFile() {
-            return originalBackupFile;
+        public String getTarget() {
+            return target;
         }
 
         public boolean isBinary() {
