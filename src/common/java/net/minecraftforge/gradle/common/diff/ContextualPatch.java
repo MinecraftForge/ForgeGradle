@@ -102,7 +102,7 @@ public final class ContextualPatch {
     private ContextualPatch(PatchFile patchFile, PatchContextProvider context) {
         this.patchFile = patchFile;
         this.suggestedContext = null;
-        this.contextProvider = context;
+        this.contextProvider = context != null ? context : new LocalContext(this);
     }
 
     public void setCanonialization(boolean access, boolean whitespace) {
@@ -170,15 +170,9 @@ public final class ContextualPatch {
     }
     
     private void applyPatch(SinglePatch patch, boolean dryRun) throws IOException, PatchException {
-        if (contextProvider != null) {
-            PatchUtils.applyPatch(this, patch, dryRun);
-            return;
-        }
         lastPatchedLine = 1;
-        List<String> target;
-        patch.targetFile = computeTargetFile(patch);
-        if (patch.targetFile.exists() && !patch.binary) {
-            target = readFile(patch.targetFile);
+        List<String> target = contextProvider.getData(patch);
+        if (target != null && !patch.binary) {
             if (patchCreatesNewFileThatAlreadyExists(patch, target)) return;
         } else {
             target = new ArrayList<String>();
@@ -195,8 +189,7 @@ public final class ContextualPatch {
             }
         }
         if (!dryRun) {
-            backup(patch.targetFile);
-            writeFile(patch, target);
+            contextProvider.setData(patch, target);
         }
     }
 
@@ -210,7 +203,7 @@ public final class ContextualPatch {
         return target.equals(originalFile);
     }
 
-    private void backup(File target) throws IOException {
+    void backup(File target) throws IOException {
         if (target.exists()) {
             copyStreamsCloseAll(new FileOutputStream(computeBackup(target)), new FileInputStream(target));
         }
@@ -230,7 +223,7 @@ public final class ContextualPatch {
         reader.close();
     }
 
-    private void writeFile(SinglePatch patch, List<String> lines) throws IOException {
+    void writeFile(SinglePatch patch, List<String> lines) throws IOException {
         if (patch.mode==Mode.DELETE) {
             patch.targetFile.delete();
             return;
@@ -350,7 +343,7 @@ public final class ContextualPatch {
         return Charset.defaultCharset();
     }
 
-    private List<String> readFile(File target) throws IOException {
+    List<String> readFile(File target) throws IOException {
         BufferedReader r = new BufferedReader(new InputStreamReader(new FileInputStream(target), getEncoding(target)));
         try {
             List<String> lines = new ArrayList<String>();
@@ -725,7 +718,7 @@ public final class ContextualPatch {
         context = bestContext;
     }
 
-    private File computeTargetFile(SinglePatch patch) {
+    File computeTargetFile(SinglePatch patch) {
         if (patch.targetPath == null) {
             patch.targetPath = context.getAbsolutePath();
         }
