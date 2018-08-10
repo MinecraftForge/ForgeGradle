@@ -83,6 +83,8 @@ public final class ContextualPatch {
     private final Pattern binaryHeaderPattern = Pattern.compile("MIME: (.*?); encoding: (.*?); length: (-?\\d+?)"); 
     
     final PatchContextProvider contextProvider;
+    boolean c14nAccess = false, c14nWhitespace = false;
+    private int maxFuzz = 0;
 
     private final PatchFile patchFile;
     private final File suggestedContext;
@@ -101,6 +103,15 @@ public final class ContextualPatch {
         this.patchFile = patchFile;
         this.suggestedContext = null;
         this.contextProvider = context;
+    }
+
+    public void setCanonialization(boolean access, boolean whitespace) {
+        this.c14nAccess = access;
+        this.c14nWhitespace = whitespace;
+    }
+
+    public void setMaxFuzz(int maxFuzz) {
+        this.maxFuzz = maxFuzz;
     }
 
     /**
@@ -176,8 +187,10 @@ public final class ContextualPatch {
             target = new ArrayList<String>();
         } else {
             if (!patch.binary) {
+                int x = 0;
                 for (Hunk hunk : patch.hunks) {
-                    applyHunk(target, hunk);
+                    x++;
+                    applyHunk(target, hunk, x);
                 }
             }
         }
@@ -193,7 +206,7 @@ public final class ContextualPatch {
         if (hunk.baseStart != 0 || hunk.baseCount != 0 || hunk.modifiedStart != 1 || hunk.modifiedCount != originalFile.size()) return false;
 
         List<String> target = new ArrayList<String>(hunk.modifiedCount);
-        applyHunk(target, hunk);
+        applyHunk(target, hunk, 0);
         return target.equals(originalFile);
     }
 
@@ -245,25 +258,30 @@ public final class ContextualPatch {
         }
     }
 
-    void applyHunk(List<String> target, Hunk hunk) throws PatchException {
-        int idx = findHunkIndex(target, hunk);
-        if (idx == -1) throw new PatchException("Cannot apply hunk @@ " + hunk.baseCount);
-        applyHunk(target, hunk, idx, false);
+    private boolean applyHunk(List<String> target, Hunk hunk, int hunkID) throws PatchException {
+        int idx = -1;
+        int fuzz = 0;
+        for (; idx == -1 && fuzz <= this.maxFuzz; fuzz++) {
+            idx = findHunkIndex(target, hunk, fuzz, hunkID);
+            if (idx != -1) break;
+        }
+        if (idx == -1) throw new PatchException("Cannot find hunk target");
+        return applyHunk(target, hunk, idx, false, fuzz, hunkID);
     }
 
-    private int findHunkIndex(List<String> target, Hunk hunk) throws PatchException {
+    private int findHunkIndex(List<String> target, Hunk hunk, int fuzz, int hunkID) throws PatchException {
         int idx = hunk.modifiedStart;  // first guess from the hunk range specification
-        if (idx >= lastPatchedLine && applyHunk(target, hunk, idx, true)) {
+        if (idx >= lastPatchedLine && applyHunk(target, hunk, idx, true, fuzz, hunkID)) {
             return idx;
         } else {
             // try to search for the context
             for (int i = idx - 1; i >= lastPatchedLine; i--) {
-                if (applyHunk(target, hunk, i, true)) {
+                if (applyHunk(target, hunk, i, true, fuzz, hunkID)) {
                     return i;
                 }
             }
             for (int i = idx + 1; i < target.size(); i++) {
-                if (applyHunk(target, hunk, i, true)) {
+                if (applyHunk(target, hunk, i, true, fuzz, hunkID)) {
                     return i;
                 }
             }
@@ -274,17 +292,30 @@ public final class ContextualPatch {
     /**
      * @return true if the application succeeded
      */
-    private boolean applyHunk(List<String> target, Hunk hunk, int idx, boolean dryRun) throws PatchException {
+    private boolean applyHunk(List<String> target, Hunk hunk, int idx, boolean dryRun, int fuzz, int hunkID) throws PatchException {
+        int startIdx = idx;
         idx--; // indices in the target list are 0-based
+        int hunkIdx = -1;
         for (String hunkLine : hunk.lines) {
+            hunkIdx++;
             boolean isAddition = isAdditionLine(hunkLine);
             if (!isAddition) {
-                String targetLine = target.get(idx).trim();
-                if (!targetLine.equals(hunkLine.substring(1).trim())) { // be optimistic, compare trimmed context lines
+                if (idx >= target.size()) {
                     if (dryRun) {
                         return false;
                     } else {
                         throw new PatchException("Unapplicable hunk @@ " + hunk.baseStart);
+                    }
+                }
+                boolean match = PatchUtils.similar(this, target.get(idx), hunkLine.substring(1), hunkLine.charAt(0));
+                if (!match && fuzz != 0 && !isRemovalLine(hunkLine)) {
+                    match = hunkIdx < fuzz || hunkIdx >= hunk.lines.size() - fuzz;
+                }
+                if (!match) {
+                    if (dryRun) {
+                        return false;
+                    } else {
+                        throw new PatchException("Unapplicable hunk #" + hunkID + " @@ " + startIdx);
                     }
                 }
             }
