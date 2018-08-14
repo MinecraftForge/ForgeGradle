@@ -62,9 +62,6 @@ public class ExecuteFunction implements MCPFunction {
         // Get output file
         File output = environment.getFile(environment.getArguments().get("output"));
 
-        // If we should skip it, don't bother
-        if (environment.shouldSkipStep()) return output;
-
         // Delete previous output
         if (output.exists()) output.delete();
 

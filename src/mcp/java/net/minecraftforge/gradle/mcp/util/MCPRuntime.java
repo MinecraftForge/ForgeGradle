@@ -4,7 +4,6 @@ import net.minecraftforge.gradle.mcp.function.MCPFunction;
 import net.minecraftforge.gradle.mcp.function.MCPFunctionOverlay;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
-import org.gradle.internal.impldep.org.apache.commons.lang.ArrayUtils;
 
 import java.io.File;
 import java.util.LinkedHashMap;
@@ -47,7 +46,7 @@ public class MCPRuntime {
         }
     }
 
-    public File execute(Logger logger, String[] skippedSteps) throws Exception {
+    public File execute(Logger logger) throws Exception {
         environment.logger = logger;
 
         logger.info("Setting up MCP environment!");
@@ -55,7 +54,6 @@ public class MCPRuntime {
         logger.info("Initializing steps!");
         ZipFile zip = new ZipFile(zipFile);
         for (Step step : steps.values()) {
-            step.skip = ArrayUtils.contains(skippedSteps, step.name);
             logger.info(" > Initializing '" + step.name + "'");
             currentStep = step;
             step.initialize(zip);
@@ -93,7 +91,6 @@ public class MCPRuntime {
         private final MCPFunctionOverlay overlay;
         final Map<String, String> arguments;
         final File workingDirectory;
-        boolean skip = false;
         File output;
 
         private Step(String name, MCPFunction function, MCPFunctionOverlay overlay,

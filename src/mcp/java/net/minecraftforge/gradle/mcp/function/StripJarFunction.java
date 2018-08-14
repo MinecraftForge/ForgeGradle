@@ -46,8 +46,6 @@ public class StripJarFunction implements MCPFunction {
         File output = environment.getFile("output.jar");
         boolean whitelist = environment.getArguments().getOrDefault("mode", "whitelist").equalsIgnoreCase("whitelist");
 
-        if (environment.shouldSkipStep()) return output;
-
         HashValue inputHash = HashUtil.sha1(input);
 
         // If this has already been computed, skip

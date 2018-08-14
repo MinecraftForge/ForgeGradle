@@ -1,19 +1,7 @@
 package net.minecraftforge.gradle.mcp.function;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
-import java.util.zip.ZipFile;
-
-import org.apache.commons.io.IOUtils;
-
 import com.cloudbees.diff.PatchException;
 import com.google.gson.JsonObject;
-
 import net.minecraftforge.gradle.common.diff.ContextualPatch;
 import net.minecraftforge.gradle.common.diff.ContextualPatch.PatchReport;
 import net.minecraftforge.gradle.common.diff.HunkReport;
@@ -22,6 +10,16 @@ import net.minecraftforge.gradle.common.diff.ZipContext;
 import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
+import org.apache.commons.io.IOUtils;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import java.util.zip.ZipFile;
 
 public class PatchFunction implements MCPFunction {
 
@@ -51,8 +49,6 @@ public class PatchFunction implements MCPFunction {
         File input = new File(environment.getArguments().get("input"));
         File inHashFile = environment.getFile("lastinput.sha1");
         File output = environment.getFile("output.jar");
-
-        if (environment.shouldSkipStep()) return output; //TODO: Should move this to a helper function?
 
         Map<String, String> inputs = new HashMap<>();
         inputs.put("input", HashFunction.SHA1.hash(input));

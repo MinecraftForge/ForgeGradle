@@ -29,8 +29,6 @@ public abstract class AbstractFileDownloadFunction implements MCPFunction {
         File output = environment.getFile(outputString);
         File download = !output.exists() ? output : environment.getFile(outputString + ".new");
 
-        if (environment.shouldSkipStep()) return output;
-
         if (download.exists()) {
             download.delete(); // This file should never exist, but abrupt termination of the process may leave it behind
         }

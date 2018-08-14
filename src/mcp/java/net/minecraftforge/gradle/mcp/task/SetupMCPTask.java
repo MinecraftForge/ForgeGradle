@@ -14,8 +14,6 @@ import java.util.List;
 
 public class SetupMCPTask extends DefaultTask {
 
-    private String _skip = "";
-
     private List<String> accessTransformers;
     private MCPConfig config;
 
@@ -51,16 +49,11 @@ public class SetupMCPTask extends DefaultTask {
     public void setupMCP() throws Exception {
         getLogger().info("Setting up MCP!");
         MCPRuntime runtime = new MCPRuntime(getProject(), config, true);
-        File out = runtime.execute(getLogger(), _skip.split(","));
+        File out = runtime.execute(getLogger());
         if (FileUtils.contentEquals(out, output)) return;
         if (output.exists()) output.delete();
         if (!output.getParentFile().exists()) output.getParentFile().mkdirs();
         FileUtils.copyFile(out, output);
     }
 
-    //Is there any real world use for Skip, besides FG dev testing?
-    @Option(option = "skip", description = "Comma-separated list of tasks to be skipped")
-    public void setSkipped(String skip) {
-        this._skip = skip;
-    }
 }

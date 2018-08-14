@@ -55,8 +55,6 @@ public class InjectFunction implements MCPFunction {
         File inHashFile = environment.getFile("lastinput.sha1");
         File output = environment.getFile("output.jar");
 
-        if (environment.shouldSkipStep()) return output; //TODO: Should move this to a helper function?
-
         Map<String, String> inputs = new HashMap<>();
         inputs.put("input", HashFunction.SHA1.hash(input));
         if (template != null) {
