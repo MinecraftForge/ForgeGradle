@@ -8,12 +8,10 @@ import net.minecraftforge.gradle.mcp.function.InjectFunction;
 import net.minecraftforge.gradle.mcp.function.ListLibrariesFunction;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
 import net.minecraftforge.gradle.mcp.function.MCPFunctionOverlay;
-import net.minecraftforge.gradle.mcp.function.NullFunction;
 import net.minecraftforge.gradle.mcp.function.PatchFunction;
 import net.minecraftforge.gradle.mcp.function.StripJarFunction;
 import net.minecraftforge.gradle.mcp.task.DownloadMCPConfigTask;
 import net.minecraftforge.gradle.mcp.task.DownloadMCPDependenciesTask;
-import net.minecraftforge.gradle.mcp.task.DownloadMCPMappingsTask;
 import net.minecraftforge.gradle.mcp.task.LoadMCPConfigTask;
 import net.minecraftforge.gradle.mcp.task.SetupMCPTask;
 import net.minecraftforge.gradle.mcp.task.ValidateMCPConfigTask;
@@ -33,16 +31,16 @@ public class MCPPlugin implements Plugin<Project> {
         TaskProvider<LoadMCPConfigTask> loadConfig = project.getTasks().register("loadConfig", LoadMCPConfigTask.class);
         TaskProvider<ValidateMCPConfigTask> validateConfig = project.getTasks().register("validateConfig", ValidateMCPConfigTask.class);
         TaskProvider<DownloadMCPDependenciesTask> downloadDeps = project.getTasks().register("downloadDependencies", DownloadMCPDependenciesTask.class);
-        TaskProvider<DownloadMCPMappingsTask> downloadMappings = project.getTasks().register("downloadMappings", DownloadMCPMappingsTask.class);
         TaskProvider<SetupMCPTask> setupMCP = project.getTasks().register("setupMCP", SetupMCPTask.class);
 
         downloadConfig.configure(task -> {
             task.setConfig(extension.config);
+            task.setOutput(project.file("build/mcp_config.zip"));
         });
         loadConfig.configure(task -> {
             task.dependsOn(downloadConfig);
             task.setPipeline(extension.pipeline);
-            task.setConfigFile(downloadConfig.get().getOutputLazy());
+            task.setConfigFile(downloadConfig.get().getOutput());
         });
         validateConfig.configure(task -> {
             task.dependsOn(loadConfig);
@@ -52,14 +50,11 @@ public class MCPPlugin implements Plugin<Project> {
             task.dependsOn(validateConfig);
             task.config = validateConfig.get().processed;
         });
-        downloadMappings.configure(task -> {
-            task.dependsOn(validateConfig);
-            task.setVersion(() -> validateConfig.get().processed.mcVersion);
-            task.setMappings(extension.getMappings());
-        });
         setupMCP.configure(task -> {
             task.dependsOn(validateConfig, downloadDeps);
-            task.config = validateConfig.get().processed;
+            task.setConfig(validateConfig.get().processed);
+            task.setAccessTransformers(extension.getAccessTransformers());
+            task.setOutput(project.file("build/" + task.getName() + "/output.zip"));
         });
     }
 

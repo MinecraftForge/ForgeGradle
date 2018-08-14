@@ -1,38 +1,49 @@
 package net.minecraftforge.gradle.patcher.task;
 
-import java.io.File;
-import java.util.function.Supplier;
-
 import org.gradle.api.DefaultTask;
+import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import com.google.common.base.Suppliers;
+import java.io.File;
 
 public class TaskApplyPatches extends DefaultTask {
-    private Supplier<File> _base;
-    @InputFile public File getBase() { return _base.get(); }
-    public Supplier<File> getBaseLazy() { return _base; }
-    public void setBase(Supplier<File> value) { _base = Suppliers.memoize(value::get); }
-    public void setBase(File value) { _base = () -> value; }
 
-
-    private Supplier<File> _patches;
-    @InputFile public File getPatches() { return _patches.get(); }
-    public Supplier<File> getPatchesLazy() { return _patches; }
-    public void setPatches(Supplier<File> value) { _patches = Suppliers.memoize(value::get); }
-    public void setPatches(File value) { _patches = () -> value; }
-
-    private Supplier<File> _output;
-    @OutputFile public File getOutput() { return _output.get(); }
-    public Supplier<File> getOutputLazy() { return _output; }
-    public void setOutput(Supplier<File> value) { _output = Suppliers.memoize(value::get); }
-    public void setOutput(File value) { _output = () -> value; }
+    private File clean;
+    private File patches;
+    private File output = getProject().file("build/" + getName() + "/output.zip");
 
     @TaskAction
     public void applyPatches() {
-        getProject().getLogger().lifecycle(getBase().getAbsolutePath());
+        getProject().getLogger().lifecycle(clean.getAbsolutePath());
+    }
+
+    @InputFile
+    public File getClean() {
+        return clean;
+    }
+
+    @InputDirectory
+    public File getPatches() {
+        return patches;
+    }
+
+    @OutputFile
+    public File getOutput() {
+        return output;
+    }
+
+    public void setClean(File clean) {
+        this.clean = clean;
+    }
+
+    public void setPatches(File value) {
+        patches = value;
+    }
+
+    public void setOutput(File value) {
+        output = value;
     }
 
 }

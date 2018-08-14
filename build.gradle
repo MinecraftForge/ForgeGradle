@@ -34,7 +34,6 @@ dependencies {
 
 
     mcpImplementation sourceSets.common.output
-    patcherImplementation sourceSets.mcp.output
     patcherImplementation sourceSets.common.output
 }
 

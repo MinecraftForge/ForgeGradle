@@ -2,48 +2,60 @@ package net.minecraftforge.gradle.mcp.task;
 
 import net.minecraftforge.gradle.mcp.util.MCPConfig;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.internal.impldep.org.apache.commons.io.FileUtils;
+
+import java.io.File;
+import java.util.List;
 
 public class SetupMCPTask extends DefaultTask {
 
     private String _skip = "";
-    @Input public String getSkipped() { return _skip; }
 
-    private List<Supplier<String>> _ats = new ArrayList<>();
-    private List<String> _ats_compiled = null;
-    @Input public List<String> getAccessTransformers() {
-        if (_ats_compiled == null) {
-            _ats_compiled = _ats.stream().map(e -> e.get()).collect(Collectors.toList());
-        }
-        return _ats_compiled;
+    private List<String> accessTransformers;
+    private MCPConfig config;
+
+    private File output;
+
+    public void setAccessTransformers(List<String> accessTransformers) {
+        this.accessTransformers = accessTransformers;
     }
-    public void addAccessTransformer(Supplier<String> value) {
-        _ats.add(value);
-        _ats_compiled = null;
+
+    @Input
+    public List<String> getAccessTransformers() {
+        return accessTransformers;
     }
-    public void addAccessTranformer(String value) { addAccessTransformer(() -> value); }
 
-    private File _output;
-    public Supplier<File> getOutput() { return () -> _output; } //Supplier only valid after this task has run...
+    public MCPConfig getConfig() {
+        return config;
+    }
 
-    @Input //Doesnt work on Fields...
-    public MCPConfig config;
+    @OutputFile
+    public File getOutput() {
+        return output;
+    }
+
+    public void setConfig(MCPConfig config) {
+        this.config = config;
+    }
+
+    public void setOutput(File output) {
+        this.output = output;
+    }
 
     @TaskAction
     public void setupMCP() throws Exception {
         getLogger().info("Setting up MCP!");
         MCPRuntime runtime = new MCPRuntime(getProject(), config, true);
-        _output = runtime.execute(getLogger(), getSkipped().split(","));
+        File out = runtime.execute(getLogger(), _skip.split(","));
+        if (FileUtils.contentEquals(out, output)) return;
+        if (output.exists()) output.delete();
+        if (!output.getParentFile().exists()) output.getParentFile().mkdirs();
+        FileUtils.copyFile(out, output);
     }
 
     //Is there any real world use for Skip, besides FG dev testing?
