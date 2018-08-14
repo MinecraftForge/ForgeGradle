@@ -752,7 +752,7 @@ public final class ContextualPatch {
         Mode        mode;
     }
 
-    enum Mode {
+    public enum Mode {
         /** Update to existing file */
         CHANGE,
         /** Adding a new file */
@@ -761,14 +761,15 @@ public final class ContextualPatch {
         DELETE
     }
 
-    enum PatchStatus {
+    public enum PatchStatus {
         Patched(true),
         Missing(false),
         Failure(false),
         Skipped(true),
         Fuzzed(true);
-        boolean success;
+        private boolean success;
         PatchStatus(boolean success) { this.success = success; }
+        public boolean isSuccess() { return this.success; }
     }
 
     public static final class PatchReport {
@@ -801,6 +802,10 @@ public final class ContextualPatch {
 
         public Throwable getFailure() {
             return failure;
+        }
+
+        public List<HunkReport> hunkReports() {
+            return hunkReports;
         }
     }
 }

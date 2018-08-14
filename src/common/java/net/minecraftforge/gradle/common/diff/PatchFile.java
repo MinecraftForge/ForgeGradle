@@ -9,11 +9,11 @@ import java.nio.charset.StandardCharsets;
 
 public class PatchFile {
 
-    static PatchFile fromString(String string) {
+    public static PatchFile from(String string) {
         return new PatchFile(() -> new ByteArrayInputStream(string.getBytes(StandardCharsets.UTF_8)), false);
     }
 
-    static PatchFile fromFile(File file) {
+    public static PatchFile from(File file) {
         return new PatchFile(() -> new FileInputStream(file), true);
     }
 
