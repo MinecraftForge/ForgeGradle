@@ -75,6 +75,8 @@ public class InjectFunction implements MCPFunction {
         // Store the hash of the input for future reference
         if (inHashFile.exists()) inHashFile.delete();
         if (output.exists()) output.delete();
+        if (!output.getParentFile().exists()) output.getParentFile().mkdirs();
+        output.createNewFile();
 
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(input));
             ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(output)) ) {
