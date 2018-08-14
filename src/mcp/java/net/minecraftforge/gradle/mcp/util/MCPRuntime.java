@@ -109,8 +109,18 @@ public class MCPRuntime {
         }
 
         private void execute() throws Exception {
-            output = function.execute(environment);
-            if (overlay != null) overlay.onExecuted(environment);
+            try {
+                output = function.execute(environment);
+            } finally {
+                function.cleanup(environment);
+            }
+            if (overlay != null) {
+                try {
+                    overlay.onExecuted(environment);
+                } finally {
+                    overlay.cleanup(environment);
+                }
+            }
         }
 
         boolean isOfType(Class<? extends MCPFunction> type) {

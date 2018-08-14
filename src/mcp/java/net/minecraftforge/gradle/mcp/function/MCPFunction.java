@@ -16,4 +16,7 @@ public interface MCPFunction {
 
     File execute(MCPEnvironment environment) throws Exception;
 
+    default void cleanup(MCPEnvironment environment) {
+    }
+
 }

@@ -16,4 +16,6 @@ public interface MCPFunctionOverlay {
     default void onExecuted(MCPEnvironment environment) throws Exception {
     }
 
+    default void cleanup(MCPEnvironment environment) {
+    }
 }
