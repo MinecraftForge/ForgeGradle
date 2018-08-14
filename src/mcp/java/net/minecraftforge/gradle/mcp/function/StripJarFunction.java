@@ -1,12 +1,11 @@
 package net.minecraftforge.gradle.mcp.function;
 
-import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
-import org.gradle.internal.hash.HashUtil;
-import org.gradle.internal.hash.HashValue;
 import com.google.gson.JsonObject;
+import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.gradle.internal.impldep.org.apache.ivy.util.FileUtil;
+import org.gradle.internal.hash.HashUtil;
+import org.gradle.internal.hash.HashValue;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -50,7 +49,7 @@ public class StripJarFunction implements MCPFunction {
 
         // If this has already been computed, skip
         if (inHashFile.exists() && output.exists()) {
-            HashValue cachedHash = HashValue.parse(FileUtil.readEntirely(inHashFile));
+            HashValue cachedHash = HashValue.parse(FileUtils.readFileToString(inHashFile));
             if (inputHash.equals(cachedHash)) {
                 return output;
             }

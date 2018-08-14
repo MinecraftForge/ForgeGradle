@@ -1,11 +1,11 @@
 package net.minecraftforge.gradle.patcher.task;
 
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
+import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.internal.impldep.org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;

@@ -1,9 +1,9 @@
 package net.minecraftforge.gradle.mcp.function;
 
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
+import org.apache.commons.io.FileUtils;
 import org.gradle.internal.hash.HashUtil;
 import org.gradle.internal.hash.HashValue;
-import org.gradle.internal.impldep.org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.net.URL;

@@ -1,11 +1,11 @@
 package net.minecraftforge.gradle.mcp.function;
 
-import net.minecraftforge.gradle.common.util.Utils;
-import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
-import org.gradle.api.tasks.JavaExec;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.gradle.internal.impldep.org.apache.commons.io.output.NullOutputStream;
+import net.minecraftforge.gradle.common.util.Utils;
+import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
+import org.apache.commons.io.output.NullOutputStream;
+import org.gradle.api.tasks.JavaExec;
 
 import java.io.File;
 import java.io.IOException;
