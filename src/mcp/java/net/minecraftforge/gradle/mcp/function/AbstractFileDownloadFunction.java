@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.mcp.function;
 
+import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import org.apache.commons.io.FileUtils;
 import org.gradle.internal.hash.HashUtil;
@@ -29,9 +30,7 @@ public abstract class AbstractFileDownloadFunction implements MCPFunction {
         File output = environment.getFile(outputString);
         File download = !output.exists() ? output : environment.getFile(outputString + ".new");
 
-        if (download.exists()) {
-            download.delete(); // This file should never exist, but abrupt termination of the process may leave it behind
-        }
+        Utils.delete(download); // This file should never exist, but abrupt termination of the process may leave it behind
 
         DownloadInfo info = downloadGetter.apply(environment);
         if (info.hash != null && output.exists() && HashUtil.sha1(output).equals(info.hash)) {

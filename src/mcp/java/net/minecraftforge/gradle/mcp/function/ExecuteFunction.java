@@ -2,6 +2,7 @@ package net.minecraftforge.gradle.mcp.function;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import org.apache.commons.io.output.NullOutputStream;
@@ -10,8 +11,10 @@ import org.gradle.api.tasks.JavaExec;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.jar.Attributes;
@@ -59,8 +62,30 @@ public class ExecuteFunction implements MCPFunction {
         arguments.computeIfAbsent("output", k -> environment.getFile("output." + outputExtension).getAbsolutePath());
         arguments.computeIfAbsent("log", k -> environment.getFile("log.log").getAbsolutePath());
 
-        // Get output file
+        // Get input and output files
+        File jar = this.jar.get();
         File output = environment.getFile(environment.getArguments().get("output"));
+        File log = environment.getFile(environment.getArguments().get("log"));
+
+        // Find out what the inputs are
+        Set<String> replacedArgs = new HashSet<>();
+        List<String> jvmArgList = applyVariableSubstitutions(Arrays.asList(jvmArgs), arguments, replacedArgs);
+        List<String> runArgList = applyVariableSubstitutions(Arrays.asList(runArgs), arguments, replacedArgs);
+        Set<File> inputFiles = new HashSet<>();
+        for (String string : replacedArgs) {
+            try {
+                inputFiles.add(environment.project.file(string));
+            } catch (Exception ex) {
+                // NO-OP
+            }
+        }
+        inputFiles.remove(output);
+        inputFiles.remove(log);
+        inputFiles.add(jar);
+
+        File hashFile = environment.getFile("lastinput.sha1");
+        HashStore hashStore = new HashStore(environment.project).load(hashFile);
+        if (hashStore.areSame(inputFiles) && output.exists()) return output;
 
         // Delete previous output
         if (output.exists()) output.delete();
@@ -70,15 +95,14 @@ public class ExecuteFunction implements MCPFunction {
         workingDir.mkdirs();
 
         // Locate main class in jar file
-        File jar = this.jar.get();
         JarFile jarFile = new JarFile(jar);
         String mainClass = jarFile.getManifest().getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
         jarFile.close();
 
         // Execute command
         JavaExec java = environment.project.getTasks().create("_", JavaExec.class);
-        java.setJvmArgs(applyVariableSubstitutions(Arrays.asList(jvmArgs), arguments));
-        java.setArgs(applyVariableSubstitutions(Arrays.asList(runArgs), arguments));
+        java.setJvmArgs(jvmArgList);
+        java.setArgs(runArgList);
         java.setClasspath(environment.project.files(jar));
         java.setWorkingDir(workingDir);
         java.setMain(mainClass);
@@ -87,14 +111,15 @@ public class ExecuteFunction implements MCPFunction {
         environment.project.getTasks().remove(java);
 
         // Return the output file
+        hashStore.save(hashFile);
         return output;
     }
 
-    private List<String> applyVariableSubstitutions(List<String> list, Map<String, String> arguments) {
-        return list.stream().map(s -> applyVariableSubstitutions(s, arguments)).collect(Collectors.toList());
+    private List<String> applyVariableSubstitutions(List<String> list, Map<String, String> arguments, Set<String> inputs) {
+        return list.stream().map(s -> applyVariableSubstitutions(s, arguments, inputs)).collect(Collectors.toList());
     }
 
-    private String applyVariableSubstitutions(String value, Map<String, String> arguments) {
+    private String applyVariableSubstitutions(String value, Map<String, String> arguments, Set<String> inputs) {
         Matcher matcher = REPLACE_PATTERN.matcher(value);
         if (!matcher.find()) return value; // Not a replaceable string
 

@@ -1,9 +1,8 @@
 package net.minecraftforge.gradle.mcp.function;
 
-import net.minecraftforge.gradle.common.util.HashFunction;
-import net.minecraftforge.gradle.common.util.Utils;
-import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import com.google.gson.JsonObject;
+import net.minecraftforge.gradle.common.util.HashStore;
+import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
@@ -11,7 +10,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -52,26 +50,12 @@ public class InjectFunction implements MCPFunction {
     @Override
     public File execute(MCPEnvironment environment) throws Exception {
         File input = environment.getFile(environment.getArguments().get("input"));
-        File inHashFile = environment.getFile("lastinput.sha1");
         File output = environment.getFile("output.jar");
 
-        Map<String, String> inputs = new HashMap<>();
-        inputs.put("input", HashFunction.SHA1.hash(input));
-        if (template != null) {
-            inputs.put("template", HashFunction.SHA1.hash(template));
-        }
-        added.entrySet().forEach(e -> inputs.put(e.getKey(), HashFunction.SHA1.hash(e.getValue())));
+        File hashFile = environment.getFile("lastinput.sha1");
+        HashStore hashStore = new HashStore(environment.project).load(hashFile);
+        if (hashStore.isSame(input) && output.exists()) return output;
 
-        // If this has already been computed, skip
-        if (inHashFile.exists() && output.exists()) {
-            Map<String, String> cache = Utils.loadHashMap(inHashFile);
-            if (cache.equals(inputs)) {
-                return output;
-            }
-        }
-
-        // Store the hash of the input for future reference
-        if (inHashFile.exists()) inHashFile.delete();
         if (output.exists()) output.delete();
         if (!output.getParentFile().exists()) output.getParentFile().mkdirs();
         output.createNewFile();
@@ -105,9 +89,9 @@ public class InjectFunction implements MCPFunction {
                 zos.write(add.getValue());
                 zos.closeEntry();
             }
-            Utils.saveHashMap(inHashFile, inputs);
         }
 
+        hashStore.save(hashFile);
         return output;
     }
 

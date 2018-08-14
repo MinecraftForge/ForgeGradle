@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.mcp.task;
 
+import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPConfig;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import org.apache.commons.io.FileUtils;
@@ -46,12 +47,10 @@ public class SetupMCPTask extends DefaultTask {
 
     @TaskAction
     public void setupMCP() throws Exception {
-        getLogger().info("Setting up MCP!");
         MCPRuntime runtime = new MCPRuntime(getProject(), config, true);
         File out = runtime.execute(getLogger());
         if (FileUtils.contentEquals(out, output)) return;
-        if (output.exists()) output.delete();
-        if (!output.getParentFile().exists()) output.getParentFile().mkdirs();
+        Utils.delete(output);
         FileUtils.copyFile(out, output);
     }
 

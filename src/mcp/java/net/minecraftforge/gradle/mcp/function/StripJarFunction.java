@@ -1,11 +1,10 @@
 package net.minecraftforge.gradle.mcp.function;
 
 import com.google.gson.JsonObject;
+import net.minecraftforge.gradle.common.util.HashStore;
+import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.gradle.internal.hash.HashUtil;
-import org.gradle.internal.hash.HashValue;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -41,27 +40,17 @@ public class StripJarFunction implements MCPFunction {
     @Override
     public File execute(MCPEnvironment environment) throws Exception {
         File input = new File(environment.getArguments().get("input"));
-        File inHashFile = environment.getFile("lastinput.sha1");
         File output = environment.getFile("output.jar");
         boolean whitelist = environment.getArguments().getOrDefault("mode", "whitelist").equalsIgnoreCase("whitelist");
 
-        HashValue inputHash = HashUtil.sha1(input);
+        File hashFile = environment.getFile("lastinput.sha1");
+        HashStore hashStore = new HashStore(environment.project).load(hashFile);
+        if (hashStore.isSame(input) && output.exists()) return output;
 
-        // If this has already been computed, skip
-        if (inHashFile.exists() && output.exists()) {
-            HashValue cachedHash = HashValue.parse(FileUtils.readFileToString(inHashFile));
-            if (inputHash.equals(cachedHash)) {
-                return output;
-            }
-        }
-
-        // Store the hash of the input for future reference
-        if (inHashFile.exists()) inHashFile.delete();
-        FileUtils.writeStringToFile(inHashFile, inputHash.asHexString());
-
-        if (output.exists()) output.delete();
+        Utils.createEmpty(output);
         strip(input, output, whitelist);
 
+        hashStore.save(hashFile);
         return output;
     }
 

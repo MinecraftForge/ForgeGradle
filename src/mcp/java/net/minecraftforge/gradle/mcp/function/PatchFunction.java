@@ -7,14 +7,12 @@ import net.minecraftforge.gradle.common.diff.ContextualPatch.PatchReport;
 import net.minecraftforge.gradle.common.diff.HunkReport;
 import net.minecraftforge.gradle.common.diff.PatchFile;
 import net.minecraftforge.gradle.common.diff.ZipContext;
-import net.minecraftforge.gradle.common.util.HashFunction;
-import net.minecraftforge.gradle.common.util.Utils;
+import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -47,24 +45,11 @@ public class PatchFunction implements MCPFunction {
     @Override
     public File execute(MCPEnvironment environment) throws Exception {
         File input = new File(environment.getArguments().get("input"));
-        File inHashFile = environment.getFile("lastinput.sha1");
         File output = environment.getFile("output.jar");
 
-        Map<String, String> inputs = new HashMap<>();
-        inputs.put("input", HashFunction.SHA1.hash(input));
-        patches.forEach((k,v) -> inputs.put(k, HashFunction.SHA1.hash(v)));
-
-        // If this has already been computed, skip
-        if (inHashFile.exists() && output.exists()) {
-            Map<String, String> cache = Utils.loadHashMap(inHashFile);
-            if (cache.equals(inputs)) {
-                return output;
-            }
-        }
-
-        // Store the hash of the input for future reference
-        if (inHashFile.exists()) inHashFile.delete();
-        if (output.exists()) output.delete();
+        File hashFile = environment.getFile("lastinput.sha1");
+        HashStore hashStore = new HashStore(environment.project).load(hashFile);
+        if (hashStore.isSame(input) && output.exists()) return output;
 
         try (ZipFile zip = new ZipFile(input)) {
             ZipContext context = new ZipContext(zip);
@@ -102,7 +87,7 @@ public class PatchFunction implements MCPFunction {
 
             if (success) {
                 context.save(output);
-                Utils.saveHashMap(inHashFile, inputs);
+                hashStore.save(hashFile);
             }
         }
 
