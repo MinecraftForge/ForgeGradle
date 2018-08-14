@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -72,7 +73,9 @@ public class ZipContext implements PatchContextProvider {
 
     public void save(File file) throws IOException {
         Set<String> files = new HashSet<>();
-        zip.entries().asIterator().forEachRemaining(e -> files.add(e.getName()));
+        for (Enumeration<? extends ZipEntry> entries = zip.entries(); entries.hasMoreElements();) {
+            files.add(entries.nextElement().getName());
+        }
         files.addAll(modified.keySet());
         files.addAll(delete);
         files.addAll(binary.keySet());
