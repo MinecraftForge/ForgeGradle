@@ -1,6 +1,6 @@
 package net.minecraftforge.gradle.mcp.util;
 
-import org.gradle.internal.impldep.com.google.gson.JsonObject;
+import com.google.gson.JsonObject;
 
 import java.io.File;
 import java.util.HashMap;

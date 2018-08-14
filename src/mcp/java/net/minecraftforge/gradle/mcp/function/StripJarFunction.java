@@ -3,9 +3,9 @@ package net.minecraftforge.gradle.mcp.function;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import org.gradle.internal.hash.HashUtil;
 import org.gradle.internal.hash.HashValue;
-import org.gradle.internal.impldep.com.google.gson.JsonObject;
-import org.gradle.internal.impldep.org.apache.commons.io.FileUtils;
-import org.gradle.internal.impldep.org.apache.commons.io.IOUtils;
+import com.google.gson.JsonObject;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.gradle.internal.impldep.org.apache.ivy.util.FileUtil;
 
 import java.io.BufferedReader;
@@ -77,7 +77,7 @@ public class StripJarFunction implements MCPFunction {
         while ((entry = is.getNextJarEntry()) != null) {
             if (!isEntryValid(entry, whitelist)) continue;
             os.putNextEntry(entry);
-            IOUtils.copyLarge(is, os, 0, entry.getSize());
+            IOUtils.copyLarge(is, os);
             os.closeEntry();
         }
 

@@ -7,44 +7,52 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.internal.impldep.org.apache.commons.io.FileUtils;
 
+import com.google.common.base.Suppliers;
+
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Supplier;
 
 public class DownloadMCPConfigTask extends DefaultTask {
 
-    @Input
-    public Object config;
-    @OutputFile
-    public File output = getProject().file("mcp/mcp_config.zip"); // TODO: Do this the right way
+    private Object _config;
+    @Input public Object getConfig() { return this._config; }
+    public void setConfig(Object value) { this._config = value; }
+
+    private Supplier<File> _output = Suppliers.memoize(() -> getProject().file("build/mcp_config.zip"));
+    @OutputFile public File getOutput() { return _output.get(); }
+    public Supplier<File> getOutputLazy() { return _output; }
+    public void setOutput(File value) { this._output = () -> value; }
+    public void setOutput(Supplier<File> value) { this._output = Suppliers.memoize(value::get); } //SUPER ugly because we're not using groovy, but whatever...
 
     @TaskAction
     public void downloadMCPConfig() throws IOException {
         File file = getConfigFile();
 
-        if (output.exists()) {
-            if (FileUtils.contentEquals(file, output)) {
+        if (getOutput().exists()) {
+            if (FileUtils.contentEquals(file, getOutput())) {
                 // NO-OP: The contents of both files are the same, we're up to date
                 setDidWork(false);
                 return;
             } else {
-                output.delete();
+                getOutput().delete();
             }
         }
-        FileUtils.copyFile(file, output);
+        FileUtils.copyFile(file, getOutput());
         setDidWork(true);
     }
 
     private File getConfigFile() {
-        if (config instanceof String) {
-            if (((String) config).contains(":")) {
-                return downloadConfigFile((String) config);
+        if (getConfig() instanceof String) {
+            if (((String) getConfig()).contains(":")) {
+                return downloadConfigFile((String) getConfig());
             } else {
-                return new File((String) config);
+                return new File((String) getConfig());
             }
-        } else if (config instanceof File) {
-            return (File) config;
+        } else if (getConfig() instanceof File) {
+            return (File) getConfig();
         } else {
-            throw new IllegalArgumentException("Expected the config to be a File or a String, but instead got " + config.getClass().getName());
+            throw new IllegalArgumentException("Expected the config to be a File or a String, but instead got " + getConfig().getClass().getName());
         }
     }
 

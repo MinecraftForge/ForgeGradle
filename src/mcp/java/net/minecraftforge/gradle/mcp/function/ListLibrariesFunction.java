@@ -2,9 +2,9 @@ package net.minecraftforge.gradle.mcp.function;
 
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
-import org.gradle.internal.impldep.com.google.gson.Gson;
-import org.gradle.internal.impldep.com.google.gson.JsonElement;
-import org.gradle.internal.impldep.com.google.gson.JsonObject;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import java.io.File;
 import java.io.FileReader;

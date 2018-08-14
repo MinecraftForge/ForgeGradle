@@ -5,10 +5,12 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.internal.impldep.com.google.gson.Gson;
-import org.gradle.internal.impldep.com.google.gson.JsonArray;
-import org.gradle.internal.impldep.com.google.gson.JsonElement;
-import org.gradle.internal.impldep.com.google.gson.JsonObject;
+
+import com.google.common.base.Suppliers;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,6 +18,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -25,29 +28,35 @@ public class LoadMCPConfigTask extends DefaultTask {
 
     private final Gson gson = new Gson();
 
-    @InputFile
-    public File configFile;
-    @Input
-    public String pipeline;
+    private Supplier<File> _configFile;
+    @InputFile public File getConfigFile() { return this._configFile.get(); }
+    public void setConfigFile(File value) { this._configFile = () -> value; }
+    public void setConfigFile(Supplier<File> value) { this._configFile = Suppliers.memoize(value::get); }
 
-    public final RawMCPConfig rawConfig = new RawMCPConfig();
+    private String _pipeline;
+    @Input public String getPipeline() { return this._pipeline; }
+    public void setPipeline(String value) { this._pipeline = value; }
+
+    public final RawMCPConfig rawConfig = new RawMCPConfig(); //TODO: This is not cacheable as there is no output?
 
     @TaskAction
     public void validate() throws IOException {
-        ZipFile zip = new ZipFile(configFile);
+        JsonObject json = null;
+        try (ZipFile zip = new ZipFile(getConfigFile())) {
 
-        ZipEntry configEntry = zip.getEntry(CONFIG_FILE_NAME);
-        if (configEntry == null) {
-            throw new IllegalStateException("Could not find '" + CONFIG_FILE_NAME + "' in " + configFile.getAbsolutePath());
+            ZipEntry configEntry = zip.getEntry(CONFIG_FILE_NAME);
+            if (configEntry == null) {
+                throw new IllegalStateException("Could not find '" + CONFIG_FILE_NAME + "' in " + getConfigFile().getAbsolutePath());
+            }
+
+            try (InputStream configStream = zip.getInputStream(configEntry)) {
+                json = gson.fromJson(new InputStreamReader(configStream), JsonObject.class);
+            }
         }
 
-        InputStream configStream = zip.getInputStream(configEntry);
-        JsonObject json = gson.fromJson(new InputStreamReader(configStream), JsonObject.class);
-        configStream.close();
-
-        zip.close();
-
-        loadConfig(json, configFile);
+        if (json != null) {
+            loadConfig(json, getConfigFile());
+        }
     }
 
     private void loadConfig(JsonObject json, File zipFile) {
@@ -65,8 +74,13 @@ public class LoadMCPConfigTask extends DefaultTask {
         rawConfig.mcVersion = json.get("version").getAsString();
         rawConfig.zipFile = zipFile;
         rawConfig.data = json.get("data").getAsJsonObject();
+        rawConfig.data.entrySet().stream().map(Map.Entry::getKey).forEach(key -> {
+            if (rawConfig.data.get(key).isJsonObject() && rawConfig.data.get(key).getAsJsonObject().has(getPipeline())) {
+                rawConfig.data.add(key, rawConfig.data.get(key).getAsJsonObject().get(getPipeline()));
+            }
+        });
 
-        JsonArray steps = json.get("steps").getAsJsonObject().get(pipeline).getAsJsonArray();
+        JsonArray steps = json.get("steps").getAsJsonObject().get(getPipeline()).getAsJsonArray();
         boolean foundDecompile = false;
         for (JsonElement element : steps) {
             JsonObject step = element.getAsJsonObject();

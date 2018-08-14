@@ -1,7 +1,7 @@
 package net.minecraftforge.gradle.mcp.function;
 
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
-import org.gradle.internal.impldep.com.google.gson.JsonObject;
+import com.google.gson.JsonObject;
 
 import java.util.zip.ZipFile;
 
@@ -16,4 +16,6 @@ public interface MCPFunctionOverlay {
     default void onExecuted(MCPEnvironment environment) throws Exception {
     }
 
+    default void cleanup(MCPEnvironment environment) {
+    }
 }
