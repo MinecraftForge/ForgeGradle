@@ -37,12 +37,12 @@ public class MCPPlugin implements Plugin<Project> {
         TaskProvider<SetupMCPTask> setupMCP = project.getTasks().register("setupMCP", SetupMCPTask.class);
 
         downloadConfig.configure(task -> {
-            task.config = extension.config;
+            task.setConfig(extension.config);
         });
         loadConfig.configure(task -> {
             task.dependsOn(downloadConfig);
-            task.pipeline = extension.pipeline;
-            task.configFile = downloadConfig.get().output;
+            task.setPipeline(extension.pipeline);
+            task.setConfigFile(downloadConfig.get().getOutputLazy());
         });
         validateConfig.configure(task -> {
             task.dependsOn(loadConfig);
@@ -54,8 +54,8 @@ public class MCPPlugin implements Plugin<Project> {
         });
         downloadMappings.configure(task -> {
             task.dependsOn(validateConfig);
-            task.config = validateConfig.get().processed;
-            task.mappings = extension.getMappings();
+            task.setVersion(() -> validateConfig.get().processed.mcVersion);
+            task.setMappings(extension.getMappings());
         });
         setupMCP.configure(task -> {
             task.dependsOn(validateConfig, downloadDeps);
