@@ -14,7 +14,8 @@ import java.util.Map;
 public class HashStore {
 
     private final Project project;
-    private final Map<String, HashValue> hashes = new HashMap<>();
+    private final Map<String, HashValue> oldHashes = new HashMap<>();
+    private final Map<String, HashValue> newHashes = new HashMap<>();
 
     public HashStore(Project project) {
         this.project = project;
@@ -36,25 +37,25 @@ public class HashStore {
 
     public boolean isSame(File file) {
         String path = getPath(file);
-        HashValue hash = hashes.get(path);
+        HashValue hash = oldHashes.get(path);
         if (hash == null) {
             if (file.exists()) {
-                hashes.put(path, HashUtil.sha1(file));
+                oldHashes.put(path, HashUtil.sha1(file));
                 return false;
             }
             return true;
         }
         HashValue fileHash = HashUtil.sha1(file);
-        hashes.put(path, fileHash);
+        newHashes.put(path, fileHash);
         return fileHash.equals(hash);
     }
 
     public HashStore load(File file) throws IOException {
-        hashes.clear();
+        oldHashes.clear();
         if(!file.exists()) return this;
         for (String line : FileUtils.readLines(file)) {
             String[] split = line.split("=");
-            hashes.put(split[0], HashValue.parse(split[1]));
+            oldHashes.put(split[0], HashValue.parse(split[1]));
         }
         return this;
     }
@@ -62,7 +63,7 @@ public class HashStore {
     public void save(File file) throws IOException {
         Utils.createEmpty(file);
         PrintWriter pw = new PrintWriter(file);
-        hashes.forEach((path, hash) -> pw.println(path + "=" + hash.asHexString()));
+        newHashes.forEach((path, hash) -> pw.println(path + "=" + hash.asHexString()));
         pw.flush();
         pw.close();
     }
