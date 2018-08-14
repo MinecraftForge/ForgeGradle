@@ -30,6 +30,7 @@ dependencies {
     commonImplementation gradleApi()
     commonImplementation 'com.cloudbees:diff4j:1.2'
     commonImplementation 'com.google.code.gson:gson:2.8.5'
+    commonImplementation 'com.google.guava:guava:26.0-jre'
 
 
     mcpImplementation sourceSets.common.output

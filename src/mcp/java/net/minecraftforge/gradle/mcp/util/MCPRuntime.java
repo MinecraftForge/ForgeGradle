@@ -30,7 +30,7 @@ public class MCPRuntime {
     public MCPRuntime(Project project, MCPConfig config, boolean generateSrc) {
         this.project = project;
         this.environment = new MCPEnvironment(this, config.mcVersion);
-        this.mcpDirectory = project.file("mcp/");
+        this.mcpDirectory = project.file("build/mcp/");
 
         this.zipFile = config.zipFile;
 
@@ -47,7 +47,7 @@ public class MCPRuntime {
         }
     }
 
-    public void execute(Logger logger, String[] skippedSteps) throws Exception {
+    public File execute(Logger logger, String[] skippedSteps) throws Exception {
         environment.logger = logger;
 
         logger.info("Setting up MCP environment!");
@@ -62,15 +62,17 @@ public class MCPRuntime {
         }
         zip.close();
 
+        File ret = null;
         logger.info("Executing steps!");
         for (Step step : steps.values()) {
             logger.info(" > Running '" + step.name + "'");
             currentStep = step;
             step.arguments.replaceAll((key, value) -> applyStepOutputSubstitutions(value));
-            step.execute();
+            ret = step.execute();
         }
 
         logger.info("MCP environment setup is complete!");
+        return ret;
     }
 
     private String applyStepOutputSubstitutions(String value) {
@@ -108,7 +110,7 @@ public class MCPRuntime {
             if (overlay != null) overlay.initialize(environment, zip);
         }
 
-        private void execute() throws Exception {
+        private File execute() throws Exception {
             try {
                 output = function.execute(environment);
             } finally {
@@ -121,6 +123,7 @@ public class MCPRuntime {
                     overlay.cleanup(environment);
                 }
             }
+            return output;
         }
 
         boolean isOfType(Class<? extends MCPFunction> type) {
