@@ -2,8 +2,8 @@ package net.minecraftforge.gradle.mcp.function;
 
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
-import org.gradle.internal.impldep.com.google.gson.JsonObject;
-import org.gradle.internal.impldep.org.apache.commons.io.IOUtils;
+import com.google.gson.JsonObject;
+import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -45,7 +45,7 @@ public class InjectFunction implements MCPFunction {
         ZipEntry entry;
         while ((entry = zis.getNextEntry()) != null) {
             zos.putNextEntry(entry);
-            IOUtils.copyLarge(zis, zos, 0, entry.getSize());
+            IOUtils.copyLarge(zis, zos);
             zos.closeEntry();
         }
 

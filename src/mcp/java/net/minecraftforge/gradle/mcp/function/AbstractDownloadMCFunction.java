@@ -2,8 +2,8 @@ package net.minecraftforge.gradle.mcp.function;
 
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import org.gradle.internal.hash.HashValue;
-import org.gradle.internal.impldep.com.google.gson.Gson;
-import org.gradle.internal.impldep.com.google.gson.JsonObject;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 import java.io.FileReader;
 import java.io.IOException;

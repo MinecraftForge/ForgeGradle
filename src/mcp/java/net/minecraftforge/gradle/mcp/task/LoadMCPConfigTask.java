@@ -5,10 +5,10 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.internal.impldep.com.google.gson.Gson;
-import org.gradle.internal.impldep.com.google.gson.JsonArray;
-import org.gradle.internal.impldep.com.google.gson.JsonElement;
-import org.gradle.internal.impldep.com.google.gson.JsonObject;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,20 +34,22 @@ public class LoadMCPConfigTask extends DefaultTask {
 
     @TaskAction
     public void validate() throws IOException {
-        ZipFile zip = new ZipFile(configFile);
+        JsonObject json = null;
+        try (ZipFile zip = new ZipFile(configFile)) {
 
-        ZipEntry configEntry = zip.getEntry(CONFIG_FILE_NAME);
-        if (configEntry == null) {
-            throw new IllegalStateException("Could not find '" + CONFIG_FILE_NAME + "' in " + configFile.getAbsolutePath());
+            ZipEntry configEntry = zip.getEntry(CONFIG_FILE_NAME);
+            if (configEntry == null) {
+                throw new IllegalStateException("Could not find '" + CONFIG_FILE_NAME + "' in " + configFile.getAbsolutePath());
+            }
+
+            try (InputStream configStream = zip.getInputStream(configEntry)) {
+                json = gson.fromJson(new InputStreamReader(configStream), JsonObject.class);
+            }
         }
 
-        InputStream configStream = zip.getInputStream(configEntry);
-        JsonObject json = gson.fromJson(new InputStreamReader(configStream), JsonObject.class);
-        configStream.close();
-
-        zip.close();
-
-        loadConfig(json, configFile);
+        if (json != null) {
+            loadConfig(json, configFile);
+        }
     }
 
     private void loadConfig(JsonObject json, File zipFile) {
@@ -65,6 +67,11 @@ public class LoadMCPConfigTask extends DefaultTask {
         rawConfig.mcVersion = json.get("version").getAsString();
         rawConfig.zipFile = zipFile;
         rawConfig.data = json.get("data").getAsJsonObject();
+        rawConfig.data.entrySet().stream().map(Map.Entry::getKey).forEach(key -> {
+            if (rawConfig.data.get(key).isJsonObject() && rawConfig.data.get(key).getAsJsonObject().has(pipeline)) {
+                rawConfig.data.add(key, rawConfig.data.get(key).getAsJsonObject().get(pipeline));
+            }
+        });
 
         JsonArray steps = json.get("steps").getAsJsonObject().get(pipeline).getAsJsonArray();
         boolean foundDecompile = false;
