@@ -3,7 +3,7 @@ package net.minecraftforge.gradle.patcher;
 import net.minecraftforge.gradle.patcher.task.DownloadMCPMappingsTask;
 import net.minecraftforge.gradle.patcher.task.TaskApplyPatches;
 import net.minecraftforge.gradle.patcher.task.TaskGeneratePatches;
-import net.minecraftforge.gradle.patcher.task.TaskSrg2Src;
+import net.minecraftforge.gradle.patcher.task.TaskMCPToSRG;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.Copy;
@@ -20,7 +20,7 @@ public class PatcherPlugin implements Plugin<Project> {
         TaskProvider<DownloadMCPMappingsTask> downloadMappings = project.getTasks().register("downloadMappings", DownloadMCPMappingsTask.class);
         TaskProvider<TaskApplyPatches> applyConfig = project.getTasks().register("applyPatches", TaskApplyPatches.class);
         TaskProvider<Copy> toMCPConfig = project.getTasks().register("srg2mcp", Copy.class);
-        TaskProvider<TaskSrg2Src> toSrgConfig = project.getTasks().register("mcp2srg", TaskSrg2Src.class, "mcp", "srg");
+        TaskProvider<TaskMCPToSRG> toSrgConfig = project.getTasks().register("mcp2srg", TaskMCPToSRG.class);
         TaskProvider<TaskGeneratePatches> genConfig = project.getTasks().register("genPatches", TaskGeneratePatches.class);
 
         downloadMappings.configure(task -> {
@@ -38,13 +38,19 @@ public class PatcherPlugin implements Plugin<Project> {
                     return line; // Apply replacements
                 });
             });
+            task.setDestinationDir(extension.patchedSrc);
             task.setOnlyIf(t -> extension.getMappings() != null);
         });
         toSrgConfig.configure(task -> {
             task.dependsOn(downloadMappings);
+            task.setInput(extension.patchedSrc);
+            task.setMappings(downloadMappings.get().getOutput());
         });
         genConfig.configure(task -> {
             task.dependsOn(toSrgConfig);
+            task.setClean(extension.cleanSrc);
+            task.setModified(toSrgConfig.get().getOutput());
+            task.setPatches(extension.patches);
         });
 
 //        if (extension.parent != null) { //If there is no parent, then, well, they have to configure everything themselves.
