@@ -32,6 +32,7 @@ dependencies {
     commonImplementation 'commons-io:commons-io:2.4'
     commonImplementation 'com.google.code.gson:gson:2.8.5'
     commonImplementation 'com.google.guava:guava:26.0-jre'
+    commonImplementation 'de.siegmar:fastcsv:1.0.2'
 
 
     mcpImplementation sourceSets.common.output

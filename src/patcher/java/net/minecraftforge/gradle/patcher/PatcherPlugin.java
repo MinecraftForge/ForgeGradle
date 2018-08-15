@@ -1,6 +1,7 @@
 package net.minecraftforge.gradle.patcher;
 
 import net.minecraftforge.gradle.patcher.task.DownloadMCPMappingsTask;
+import net.minecraftforge.gradle.patcher.task.TaskApplyMappings;
 import net.minecraftforge.gradle.patcher.task.TaskApplyPatches;
 import net.minecraftforge.gradle.patcher.task.TaskGeneratePatches;
 import net.minecraftforge.gradle.patcher.task.TaskMCPToSRG;
@@ -19,7 +20,7 @@ public class PatcherPlugin implements Plugin<Project> {
 
         TaskProvider<DownloadMCPMappingsTask> downloadMappings = project.getTasks().register("downloadMappings", DownloadMCPMappingsTask.class);
         TaskProvider<TaskApplyPatches> applyConfig = project.getTasks().register("applyPatches", TaskApplyPatches.class);
-        TaskProvider<Copy> toMCPConfig = project.getTasks().register("srg2mcp", Copy.class);
+        TaskProvider<TaskApplyMappings> toMCPConfig = project.getTasks().register("srg2mcp", TaskApplyMappings.class);
         TaskProvider<TaskMCPToSRG> toSrgConfig = project.getTasks().register("mcp2srg", TaskMCPToSRG.class);
         TaskProvider<TaskGeneratePatches> genConfig = project.getTasks().register("genPatches", TaskGeneratePatches.class);
 
@@ -32,13 +33,10 @@ public class PatcherPlugin implements Plugin<Project> {
             task.finalizedBy(toMCPConfig);
         });
         toMCPConfig.configure(task -> {
-            task.dependsOn(downloadMappings);
-            task.eachFile(file -> {
-                file.filter(line -> {
-                    return line; // Apply replacements
-                });
-            });
-            task.setDestinationDir(extension.patchedSrc);
+            task.dependsOn(downloadMappings, applyConfig);
+            task.setInput(applyConfig.get().getOutput());
+            task.setMappings(downloadMappings.get().getOutput());
+            task.setOutput(extension.patchedSrc);
             task.setOnlyIf(t -> extension.getMappings() != null);
         });
         toSrgConfig.configure(task -> {
