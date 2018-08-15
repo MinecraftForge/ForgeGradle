@@ -40,7 +40,7 @@ public class HashStore {
         HashValue hash = oldHashes.get(path);
         if (hash == null) {
             if (file.exists()) {
-                oldHashes.put(path, HashUtil.sha1(file));
+                newHashes.put(path, HashUtil.sha1(file));
                 return false;
             }
             return true;
