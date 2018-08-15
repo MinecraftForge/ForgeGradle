@@ -7,7 +7,6 @@ import net.minecraftforge.gradle.patcher.task.TaskGeneratePatches;
 import net.minecraftforge.gradle.patcher.task.TaskMCPToSRG;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.TaskProvider;
 
 import javax.annotation.Nonnull;
@@ -28,24 +27,31 @@ public class PatcherPlugin implements Plugin<Project> {
             task.setMappings(extension.getMappings());
         });
         applyConfig.configure(task -> {
+            task.finalizedBy(toMCPConfig);
+            task.setOnlyIf(t -> extension.patches != null);
+
             task.setClean(extension.cleanSrc);
             task.setPatches(extension.patches);
-            task.finalizedBy(toMCPConfig);
         });
         toMCPConfig.configure(task -> {
             task.dependsOn(downloadMappings, applyConfig);
+            task.setOnlyIf(t -> extension.getMappings() != null);
+
             task.setInput(applyConfig.get().getOutput());
             task.setMappings(downloadMappings.get().getOutput());
             task.setOutput(extension.patchedSrc);
-            task.setOnlyIf(t -> extension.getMappings() != null);
         });
         toSrgConfig.configure(task -> {
             task.dependsOn(downloadMappings);
+            task.setOnlyIf(t -> extension.getMappings() != null);
+
             task.setInput(extension.patchedSrc);
             task.setMappings(downloadMappings.get().getOutput());
         });
         genConfig.configure(task -> {
             task.dependsOn(toSrgConfig);
+            task.setOnlyIf(t -> extension.patches != null);
+
             task.setClean(extension.cleanSrc);
             task.setModified(toSrgConfig.get().getOutput());
             task.setPatches(extension.patches);

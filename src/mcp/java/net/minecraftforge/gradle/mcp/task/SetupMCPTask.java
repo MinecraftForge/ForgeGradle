@@ -6,6 +6,7 @@ import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -17,19 +18,11 @@ public class SetupMCPTask extends DefaultTask {
     private List<String> accessTransformers;
     private MCPConfig config;
 
-    private File output;
-
-    public void setAccessTransformers(List<String> accessTransformers) {
-        this.accessTransformers = accessTransformers;
-    }
+    private File output = getProject().file("build/" + getName() + "/output.zip");
 
     @Input
     public List<String> getAccessTransformers() {
         return accessTransformers;
-    }
-
-    public MCPConfig getConfig() {
-        return config;
     }
 
     @OutputFile
@@ -37,12 +30,25 @@ public class SetupMCPTask extends DefaultTask {
         return output;
     }
 
-    public void setConfig(MCPConfig config) {
-        this.config = config;
+    public MCPConfig getConfig() {
+        return config;
+    }
+
+    @InputFile // Somewhat clean hack to support task caching
+    public File getConfigFile() {
+        return config.zipFile;
+    }
+
+    public void setAccessTransformers(List<String> accessTransformers) {
+        this.accessTransformers = accessTransformers;
     }
 
     public void setOutput(File output) {
         this.output = output;
+    }
+
+    public void setConfig(MCPConfig config) {
+        this.config = config;
     }
 
     @TaskAction

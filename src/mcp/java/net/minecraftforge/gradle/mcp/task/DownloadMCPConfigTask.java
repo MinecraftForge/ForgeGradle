@@ -3,7 +3,7 @@ package net.minecraftforge.gradle.mcp.task;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -32,9 +32,23 @@ public class DownloadMCPConfigTask extends DefaultTask {
         setDidWork(true);
     }
 
-    @Input
     public Object getConfig() {
         return this.config;
+    }
+
+    @InputFile
+    private File getConfigFile() {
+        if (config instanceof String) {
+            if (((String) config).contains(":")) {
+                return downloadConfigFile((String) config);
+            } else {
+                return new File((String) config);
+            }
+        } else if (config instanceof File) {
+            return (File) config;
+        } else {
+            throw new IllegalArgumentException("Expected the config to be a File or a String, but instead got " + config.getClass().getName());
+        }
     }
 
     @OutputFile
@@ -48,20 +62,6 @@ public class DownloadMCPConfigTask extends DefaultTask {
 
     public void setOutput(File value) {
         this.output = value;
-    }
-
-    private File getConfigFile() {
-        if (config instanceof String) {
-            if (((String) config).contains(":")) {
-                return downloadConfigFile((String) config);
-            } else {
-                return new File((String) config);
-            }
-        } else if (config instanceof File) {
-            return (File) config;
-        } else {
-            throw new IllegalArgumentException("Expected the config to be a File or a String, but instead got " + config.getClass().getName());
-        }
     }
 
     private File downloadConfigFile(String config) {

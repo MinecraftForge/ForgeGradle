@@ -48,13 +48,12 @@ public class MCPPlugin implements Plugin<Project> {
         });
         downloadDeps.configure(task -> {
             task.dependsOn(validateConfig);
-            task.config = validateConfig.get().processed;
+            task.setConfig(validateConfig.get().processed);
         });
         setupMCP.configure(task -> {
             task.dependsOn(validateConfig, downloadDeps);
             task.setConfig(validateConfig.get().processed);
             task.setAccessTransformers(extension.getAccessTransformers());
-            task.setOutput(project.file("build/" + task.getName() + "/output.zip"));
         });
     }
 

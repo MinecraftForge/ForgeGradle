@@ -1,16 +1,14 @@
 package net.minecraftforge.gradle.mcp.task;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import net.minecraftforge.gradle.mcp.util.RawMCPConfig;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
-
-import com.google.common.base.Suppliers;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,7 +16,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -28,14 +25,26 @@ public class LoadMCPConfigTask extends DefaultTask {
 
     private final Gson gson = new Gson();
 
-    private Supplier<File> _configFile;
-    @InputFile public File getConfigFile() { return this._configFile.get(); }
-    public void setConfigFile(File value) { this._configFile = () -> value; }
-    public void setConfigFile(Supplier<File> value) { this._configFile = Suppliers.memoize(value::get); }
+    private File configFile;
+    private String pipeline;
 
-    private String _pipeline;
-    @Input public String getPipeline() { return this._pipeline; }
-    public void setPipeline(String value) { this._pipeline = value; }
+    @InputFile
+    public File getConfigFile() {
+        return configFile;
+    }
+
+    @Input
+    public String getPipeline() {
+        return this.pipeline;
+    }
+
+    public void setConfigFile(File value) {
+        this.configFile = value;
+    }
+
+    public void setPipeline(String value) {
+        this.pipeline = value;
+    }
 
     public final RawMCPConfig rawConfig = new RawMCPConfig(); //TODO: This is not cacheable as there is no output?
 
