@@ -55,7 +55,7 @@ public class ReobfTaskFactory implements NamedDomainObjectFactory<IReobfuscator>
         task.dependsOn(Constants.TASK_GENERATE_SRGS, jarName);
         task.mustRunAfter("test");
 
-        task.setJar(new Closure<File>(null) {
+        task.setJar(new Closure<File>(ReobfTaskFactory.class) {
             public File call()
             {
                 return ((Jar) plugin.project.getTasks().getByName(jarName)).getArchivePath();
