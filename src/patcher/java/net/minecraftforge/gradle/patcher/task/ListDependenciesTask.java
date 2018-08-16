@@ -27,7 +27,7 @@ public class ListDependenciesTask extends DefaultTask {
         return output;
     }
 
-    public void getVersionMeta(File file) {
+    public void setVersionMeta(File file) {
         this.versionMeta = file;
     }
 
