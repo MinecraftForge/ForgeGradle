@@ -18,7 +18,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -26,14 +25,19 @@ import java.util.Set;
 public class TaskExtractRangeMap extends DefaultTask {
 
     private Set<File> sources;
-    private Set<File> dependencies = new HashSet<>();
+    private Set<FileCollection> dependencies = new HashSet<>();
     private File output = getProject().file("build/" + getName() + "/output.txt");
     private File log = getProject().file("build/" + getName() + "/log.txt");
 
     @TaskAction
     public void extractRangeMap() throws IOException {
         RangeExtractor extract = new RangeExtractor(RangeExtractor.JAVA_1_8);
-        getDependencies().forEach(extract::addLibs);
+        for (FileCollection files : getDependencies()) {
+            for (File file : files) {
+                getProject().getLogger().lifecycle("Lib: " + file);
+                extract.addLibs(file);
+            }
+        }
         if (getOutput().exists()) {
             try (InputStream fin = new FileInputStream(getOutput())) {
                 extract.loadCache(fin);
@@ -93,7 +97,7 @@ public class TaskExtractRangeMap extends DefaultTask {
     }
 
     @InputFiles
-    public Set<File> getDependencies() {
+    public Set<FileCollection> getDependencies() {
         return dependencies;
     }
 
@@ -106,13 +110,13 @@ public class TaskExtractRangeMap extends DefaultTask {
         this.sources = sources;
     }
 
-    public void addDependencies(Collection<File> dependencies) {
-        this.dependencies.addAll(dependencies);
+    public void addDependencies(FileCollection dependencies) {
+        this.dependencies.add(dependencies);
     }
 
     public void addDependencies(File... dependencies) {
         for (File dep : dependencies) {
-            this.dependencies.add(dep);
+            this.dependencies.add(getProject().files(dep));
         }
     }
 
