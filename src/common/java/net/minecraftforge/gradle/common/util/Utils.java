@@ -13,6 +13,8 @@ import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.gradle.api.Project;
+
 public class Utils {
 
     public static void extractFile(ZipFile zip, String name, File output) throws IOException {
@@ -59,4 +61,10 @@ public class Utils {
         return file;
     }
 
+    public static File getCacheBase(Project project) {
+        return new File(project.getGradle().getGradleUserHomeDir(), "caches/forge_gradle");
+    }
+    public static File getCache(Project project, String... tail) {
+        return new File(getCacheBase(project), String.join(File.separator, tail));
+    }
 }

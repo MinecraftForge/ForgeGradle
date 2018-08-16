@@ -13,13 +13,15 @@ import org.apache.commons.io.IOUtils;
 
 //These are all standard hashing functions the JRE is REQUIRED to have, so add a nice factory that doesnt require catching annoying exceptions;
 public enum HashFunction {
-    MD5("md5"),
-    SHA1("SHA-1"),
-    SHA256("SHA256");
+    MD5("md5", 32),
+    SHA1("SHA-1", 40),
+    SHA256("SHA256", 64);
 
     private String algo;
-    private HashFunction(String algo) {
+    private String pad;
+    private HashFunction(String algo, int length) {
         this.algo = algo;
+        this.pad = String.format("%0" + length + "d", 0);
     }
 
     public MessageDigest get() {
@@ -45,6 +47,7 @@ public enum HashFunction {
     }
 
     public String hash(byte[] data) {
-        return new BigInteger(1, get().digest(data)).toString(16);
+        String hash = new BigInteger(1, get().digest(data)).toString(16);
+        return (pad + hash).substring(hash.length());
     }
 }
