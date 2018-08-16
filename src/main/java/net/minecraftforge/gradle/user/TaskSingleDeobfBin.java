@@ -39,8 +39,8 @@ import org.gradle.api.tasks.ParallelizableTask;
 import org.gradle.api.tasks.TaskAction;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.Remapper;
-import org.objectweb.asm.commons.RemappingClassAdapter;
 
 import au.com.bytecode.opencsv.CSVReader;
 
@@ -141,7 +141,7 @@ public class TaskSingleDeobfBin extends CachedTask
                 return mappedName != null ? mappedName : name;
             }
         };
-        RemappingClassAdapter adapter = new RemappingClassAdapter(writer, remapper);
+        ClassRemapper adapter = new ClassRemapper(writer, remapper);
         reader.accept(adapter, ClassReader.EXPAND_FRAMES);
         return writer.toByteArray();
     }

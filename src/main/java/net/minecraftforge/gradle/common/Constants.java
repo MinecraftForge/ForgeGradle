@@ -87,7 +87,7 @@ public class Constants
     public static final String GROUP_FG = "ForgeGradle";
 
     @SuppressWarnings("serial")
-    public static final Closure<Boolean> CALL_FALSE = new Closure<Boolean>(null) {
+    public static final Closure<Boolean> CALL_FALSE = new Closure<Boolean>(Constants.class) {
         public Boolean call(Object o)
         {
             return false;

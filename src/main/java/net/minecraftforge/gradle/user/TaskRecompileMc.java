@@ -29,13 +29,13 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import net.minecraftforge.gradle.tasks.CreateStartTask;
 import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.caching.CachedTask;
 
+import org.gradle.api.AntBuilder;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
-import org.gradle.api.logging.LoggingManager;
-import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Optional;
@@ -46,9 +46,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
-
-import groovy.lang.Closure;
-import groovy.util.BuilderSupport;
 
 public class TaskRecompileMc extends CachedTask
 {
@@ -82,15 +79,10 @@ public class TaskRecompileMc extends CachedTask
         // extract sources
         extractSources(tempSrc, inJar);
 
-        // Remove errors on normal runs
-        LoggingManager log = getLogging();
-        LogLevel startLevel = getProject().getGradle().getStartParameter().getLogLevel();
-        if (startLevel.compareTo(LogLevel.LIFECYCLE) >= 0) {
-            log.setLevel(LogLevel.ERROR);
-        }
-
+        AntBuilder ant = CreateStartTask.setupAnt(this);
+        getExtPath();
         // recompile
-        this.getAnt().invokeMethod("javac", new Object[] {
+        ant.invokeMethod("javac",
             ImmutableMap.builder()
                 .put("srcDir", tempSrc.getCanonicalPath())
                 .put("destDir", tempCls.getCanonicalPath())
@@ -101,34 +93,32 @@ public class TaskRecompileMc extends CachedTask
                 .put("source", "1.6")
                 .put("target", "1.6")
                 .put("debug", "true")
-                .build(),
-            new Closure<Object>(this, this) {
-                protected Object doCall(Object arguments) {
-                    String currentExtDirs = System.getProperty("java.ext.dirs");
-                    String newExtDirs = "";
-                    String[] parts = currentExtDirs.split(File.pathSeparator);
-                    if (parts.length > 0) {
-                        String lastPart = parts[parts.length - 1];
-                        for (String part : parts) {
-                            if (!part.equals("/System/Library/Java/Extensions")) {
-                                newExtDirs += part;
-                                if (!part.equals(lastPart)) {
-                                    newExtDirs += File.pathSeparator;
-                                }
-                            }
-                        }
-                    }
-                    ((BuilderSupport) getDelegate()).invokeMethod("compilerarg",
-                        // Remove old vecmath
-                        ImmutableMap.of("line", "-Djava.ext.dirs=${newExtDirs}")
-                    );
-                    return null;
-                }
-            }
-        });
+                //.put("Djava.ext.dirs", )
+                .build()
+        );
 
         outJar.getParentFile().mkdirs();
         createOutput(outJar, inJar, tempCls, getInResources());
+    }
+
+    private static String getExtPath()
+    {
+        String currentExtDirs = System.getProperty("java.ext.dirs");
+        String newExtDirs = "";
+        String[] parts = currentExtDirs.split(File.pathSeparator);
+        if (parts.length > 0) {
+            String lastPart = parts[parts.length - 1];
+            for (String part : parts) {
+                if (!part.equals("/System/Library/Java/Extensions")) {
+                    newExtDirs += part;
+                    if (!part.equals(lastPart)) {
+                        newExtDirs += File.pathSeparator;
+                    }
+                }
+            }
+        }
+        System.setProperty("java.ext.dirs", newExtDirs);
+        return newExtDirs;
     }
 
     private static void extractSources(File tempDir, File inJar) throws IOException
@@ -159,7 +149,7 @@ public class TaskRecompileMc extends CachedTask
         JarOutputStream zout = new JarOutputStream(new FileOutputStream(outJar));
 
         Visitor visitor = new Visitor(zout, elementsAdded);
-        
+
         // custom resources should override existing ones, so resources first.
         if (resourceJar != null)
         {

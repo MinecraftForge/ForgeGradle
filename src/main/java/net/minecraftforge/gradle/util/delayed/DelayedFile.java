@@ -29,23 +29,23 @@ public class DelayedFile extends DelayedBase<File>
     protected final File hardcoded;
     protected transient final Project project;
     
-    public DelayedFile(File file)
+    public DelayedFile(Class<?> owner, File file)
     {
-        super((TokenReplacer)null);
+        super(owner, (TokenReplacer)null);
         hardcoded = file;
         project = null;
     }
     
-    public DelayedFile(Project project, ReplacementProvider provider, String pattern)
+    public DelayedFile(Class<?> owner, Project project, ReplacementProvider provider, String pattern)
     {
-        super(provider, pattern);
+        super(owner, provider, pattern);
         hardcoded = null;
         this.project = project;
     }
     
-    public DelayedFile(Project project, TokenReplacer replacer)
+    public DelayedFile(Class<?> owner, Project project, TokenReplacer replacer)
     {
-        super(replacer);
+        super(owner, replacer);
         hardcoded = null;
         this.project = project;
         
@@ -63,9 +63,9 @@ public class DelayedFile extends DelayedBase<File>
     public DelayedFileTree toZipTree()
     {
         if (hardcoded != null)
-            return new DelayedFileTree(hardcoded);
+            return new DelayedFileTree(DelayedFile.class, hardcoded);
         else
-            return new DelayedFileTree(project, replacer);
+            return new DelayedFileTree(DelayedFile.class, project, replacer);
         
     }
 }

@@ -19,13 +19,13 @@
  */
 package net.minecraftforge.gradle.util;
 
-import com.beust.jcommander.internal.Lists;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import net.minecraftforge.srg2source.util.io.InputSupplier;
 import net.minecraftforge.srg2source.util.io.OutputSupplier;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.file.SourceDirectorySet;
-import org.testng.collections.Maps;
 
 import java.io.*;
 import java.util.List;
