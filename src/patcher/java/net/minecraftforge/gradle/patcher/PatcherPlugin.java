@@ -38,7 +38,7 @@ public class PatcherPlugin implements Plugin<Project> {
         });
         listDepsConfig.configure(task -> {
             task.dependsOn(dlMCMetaConfig);
-            task.getVersionMeta(dlMCMetaConfig.get().getOutput());
+            task.setVersionMeta(dlMCMetaConfig.get().getOutput());
         });
         applyConfig.configure(task -> {
             task.finalizedBy(toMCPConfig);
