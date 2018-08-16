@@ -1,15 +1,19 @@
 package net.minecraftforge.gradle.patcher;
 
+import net.minecraftforge.gradle.patcher.task.DownloadMCMetaTask;
 import net.minecraftforge.gradle.patcher.task.DownloadMCPMappingsTask;
+import net.minecraftforge.gradle.patcher.task.ListDependenciesTask;
 import net.minecraftforge.gradle.patcher.task.TaskApplyMappings;
 import net.minecraftforge.gradle.patcher.task.TaskApplyPatches;
+import net.minecraftforge.gradle.patcher.task.TaskApplyRangeMap;
+import net.minecraftforge.gradle.patcher.task.TaskExtractRangeMap;
 import net.minecraftforge.gradle.patcher.task.TaskGeneratePatches;
-import net.minecraftforge.gradle.patcher.task.TaskMCPToSRG;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskProvider;
 
 import javax.annotation.Nonnull;
+import java.util.Collections;
 
 public class PatcherPlugin implements Plugin<Project> {
 
@@ -17,14 +21,24 @@ public class PatcherPlugin implements Plugin<Project> {
     public void apply(@Nonnull Project project) {
         PatcherExtension extension = project.getExtensions().create("patcher", PatcherExtension.class, project);
 
-        TaskProvider<DownloadMCPMappingsTask> downloadMappings = project.getTasks().register("downloadMappings", DownloadMCPMappingsTask.class);
+        TaskProvider<DownloadMCPMappingsTask> dlMappingsConfig = project.getTasks().register("downloadMappings", DownloadMCPMappingsTask.class);
+        TaskProvider<DownloadMCMetaTask> dlMCMetaConfig = project.getTasks().register("downloadMCMeta", DownloadMCMetaTask.class);
+        TaskProvider<ListDependenciesTask> listDepsConfig = project.getTasks().register("listDependencies", ListDependenciesTask.class);
         TaskProvider<TaskApplyPatches> applyConfig = project.getTasks().register("applyPatches", TaskApplyPatches.class);
         TaskProvider<TaskApplyMappings> toMCPConfig = project.getTasks().register("srg2mcp", TaskApplyMappings.class);
-        TaskProvider<TaskMCPToSRG> toSrgConfig = project.getTasks().register("mcp2srg", TaskMCPToSRG.class);
+        TaskProvider<TaskExtractRangeMap> extractRangeConfig = project.getTasks().register("extractRangeMap", TaskExtractRangeMap.class);
+        TaskProvider<TaskApplyRangeMap> applyRangeConfig = project.getTasks().register("applyRangeMap", TaskApplyRangeMap.class);
         TaskProvider<TaskGeneratePatches> genConfig = project.getTasks().register("genPatches", TaskGeneratePatches.class);
 
-        downloadMappings.configure(task -> {
+        dlMappingsConfig.configure(task -> {
             task.setMappings(extension.getMappings());
+        });
+        dlMCMetaConfig.configure(task -> {
+            task.setMcVersion(extension.mcVersion);
+        });
+        listDepsConfig.configure(task -> {
+            task.dependsOn(dlMCMetaConfig);
+            task.getVersionMeta(dlMCMetaConfig.get().getOutput());
         });
         applyConfig.configure(task -> {
             task.finalizedBy(toMCPConfig);
@@ -34,26 +48,33 @@ public class PatcherPlugin implements Plugin<Project> {
             task.setPatches(extension.patches);
         });
         toMCPConfig.configure(task -> {
-            task.dependsOn(downloadMappings, applyConfig);
+            task.dependsOn(dlMappingsConfig, applyConfig);
             task.setOnlyIf(t -> extension.getMappings() != null);
 
             task.setInput(applyConfig.get().getOutput());
-            task.setMappings(downloadMappings.get().getOutput());
+            task.setMappings(dlMappingsConfig.get().getOutput());
             task.setOutput(extension.patchedSrc);
         });
-        toSrgConfig.configure(task -> {
-            task.dependsOn(downloadMappings);
-            task.setOnlyIf(t -> extension.getMappings() != null);
+        extractRangeConfig.configure(task -> {
+            task.dependsOn(listDepsConfig);
+            task.setSources(Collections.singleton(extension.cleanSrc));
+            task.setDependencies(listDepsConfig.get().getOutput());
+        });
+        applyRangeConfig.configure(task -> {
+            task.dependsOn(extractRangeConfig);
 
-            task.setInput(extension.patchedSrc);
-            task.setMappings(downloadMappings.get().getOutput());
+            task.setSources(extension.patchedSrc);
+            task.setRangeMap(extractRangeConfig.get().getOutput());
+            // TODO: Add support for extra mappings and EXCs from the extension
+            // task.setMappings();
+            // task.setExcs();
         });
         genConfig.configure(task -> {
-            task.dependsOn(toSrgConfig);
+            task.dependsOn(applyRangeConfig);
             task.setOnlyIf(t -> extension.patches != null);
 
             task.setClean(extension.cleanSrc);
-            task.setModified(toSrgConfig.get().getOutput());
+            task.setModified(applyRangeConfig.get().getOutput());
             task.setPatches(extension.patches);
         });
 

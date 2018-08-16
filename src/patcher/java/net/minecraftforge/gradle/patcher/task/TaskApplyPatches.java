@@ -4,6 +4,7 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -17,7 +18,9 @@ import net.minecraftforge.gradle.common.diff.ContextualPatch.PatchReport;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.zip.ZipFile;
 
 public class TaskApplyPatches extends DefaultTask {
@@ -26,8 +29,8 @@ public class TaskApplyPatches extends DefaultTask {
     private File patches;
     private File output = getProject().file("build/" + getName() + "/output.zip");
     private int maxFuzz = 0;
-    private boolean canonializeAccess = true;
-    private boolean canonializeWhitespace = true;
+    private boolean canonicalizeAccess = true;
+    private boolean canonicalizeWhitespace = true;
 
     @TaskAction
     public void applyPatches() {
@@ -39,7 +42,7 @@ public class TaskApplyPatches extends DefaultTask {
             .map(p -> {
                 boolean success = true;
                 ContextualPatch patch = ContextualPatch.create(PatchFile.from(p.toFile()), context);
-                patch.setCanonialization(getCanonializeAccess(), getCanonializeWhitespace());
+                patch.setCanonialization(getCanonicalizeAccess(), getCanonicalizeWhitespace());
                 patch.setMaxFuzz(getMaxFuzz());
                 String name = p.toFile().getAbsolutePath().substring(getPatches().getAbsolutePath().length() + 1);
 
@@ -94,13 +97,13 @@ public class TaskApplyPatches extends DefaultTask {
     }
 
     @Input
-    public boolean getCanonializeWhitespace() {
-        return canonializeWhitespace;
+    public boolean getCanonicalizeWhitespace() {
+        return canonicalizeWhitespace;
     }
 
     @Input
-    public boolean getCanonializeAccess() {
-        return canonializeAccess;
+    public boolean getCanonicalizeAccess() {
+        return canonicalizeAccess;
     }
 
     @OutputFile
@@ -120,12 +123,12 @@ public class TaskApplyPatches extends DefaultTask {
         maxFuzz = value;
     }
 
-    public void setCanonializeWhitespace(boolean value) {
-        canonializeWhitespace = value;
+    public void setCanonicalizeWhitespace(boolean value) {
+        canonicalizeWhitespace = value;
     }
 
-    public void setCanonializeAccess(boolean value) {
-        canonializeAccess = value;
+    public void setCanonicalizeAccess(boolean value) {
+        canonicalizeAccess = value;
     }
 
     public void setOutput(File value) {
