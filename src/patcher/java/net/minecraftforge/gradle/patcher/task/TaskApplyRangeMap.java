@@ -33,6 +33,7 @@ public class TaskApplyRangeMap extends DefaultTask {
 
     private File rangeMap;
     public boolean annotate = false;
+    public boolean keepImports = true;
 
     private File output = getProject().file("build/" + getName() + "/output.zip");
     private File log = getProject().file("build/" + getName() + "/log.txt");
@@ -41,8 +42,9 @@ public class TaskApplyRangeMap extends DefaultTask {
     public void applyRangeMap() throws IOException {
         RangeApplier apply = new RangeApplier();
 
-        apply.readSrg(srgs);
-        apply.readParamMap(excs);
+        apply.readSrg(getSrgFiles());
+        apply.readParamMap(getExcFiles());
+        apply.setKeepImports(getKeepImports());
 
         try (FileOutputStream fos = new FileOutputStream(log);
             OutputSupplier out = new ZipOutputSupplier(getOutput())) {
@@ -109,6 +111,13 @@ public class TaskApplyRangeMap extends DefaultTask {
     }
     public void setAnnotate(boolean value) {
         this.annotate = value;
+    }
+    @Input
+    public boolean getKeepImports() {
+        return keepImports;
+    }
+    public void setKeepImports(boolean value) {
+        this.keepImports = value;
     }
 
     @InputFiles
