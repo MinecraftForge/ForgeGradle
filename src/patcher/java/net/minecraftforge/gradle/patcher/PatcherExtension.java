@@ -10,6 +10,7 @@ import java.util.Map;
 
 public class PatcherExtension {
 
+    public Project parent;
     public File cleanSrc;
     public File patchedSrc;
     public File patches;

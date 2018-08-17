@@ -6,6 +6,7 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import net.minecraftforge.gradle.common.util.ChainedInputSupplier;
 import net.minecraftforge.srg2source.ast.RangeExtractor;
 import net.minecraftforge.srg2source.util.io.FolderSupplier;
 import net.minecraftforge.srg2source.util.io.InputSupplier;
@@ -17,9 +18,7 @@ import java.io.PrintStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class TaskExtractRangeMap extends DefaultTask {
@@ -34,7 +33,7 @@ public class TaskExtractRangeMap extends DefaultTask {
         RangeExtractor extract = new RangeExtractor(RangeExtractor.JAVA_1_8);
         for (FileCollection files : getDependencies()) {
             for (File file : files) {
-                getProject().getLogger().lifecycle("Lib: " + file);
+                //getProject().getLogger().lifecycle("Lib: " + file);
                 extract.addLibs(file);
             }
         }
@@ -52,43 +51,15 @@ public class TaskExtractRangeMap extends DefaultTask {
         }
     }
 
+    @SuppressWarnings("resource")
     private InputSupplier getInputSupplier() throws IOException {
-        final List<InputSupplier> inputs = new ArrayList<>();
+        ChainedInputSupplier inputs = new ChainedInputSupplier();
         for (File src : getSources()) {
             if (src.exists()) {
                 inputs.add(src.isDirectory() ? new FolderSupplier(src) : new ZipInputSupplier(src));
             }
         }
-
-        if (inputs.size() == 1) {
-            return inputs.get(0);
-        } else {
-            return new InputSupplier() {
-                @Override
-                public void close() throws IOException {
-                    for (InputSupplier sup : inputs) {
-                        sup.close();
-                    }
-                }
-
-                @Override
-                public String getRoot(String resource) {
-                    return inputs.stream().map(sup -> sup.getRoot(resource)).filter(v -> v != null).findFirst().orElse(null);
-                }
-
-                @Override
-                public InputStream getInput(String resource) {
-                    return inputs.stream().map(sup -> sup.getInput(resource)).filter(v -> v != null).findFirst().orElse(null);
-                }
-
-                @Override
-                public List<String> gatherAll(String path) {
-                    List<String> ret = new ArrayList<>();
-                    inputs.forEach(s -> ret.addAll(s.gatherAll(path)));
-                    return ret;
-                }
-            };
-        }
+        return inputs.shrink();
     }
 
     @InputFiles

@@ -55,39 +55,19 @@ public class TaskApplyMappings extends DefaultTask {
         }
 
         try (ZipFile zin = new ZipFile(getInput())) {
-            if (getOutput().isFile()) {
-                try (FileOutputStream fos = new FileOutputStream(getOutput());
-                     ZipOutputStream out = new ZipOutputStream(fos)) {
-                    zin.stream().forEach(e -> {
-                        try {
-                            ZipEntry entry = new ZipEntry(e.getName());
-                            entry.setTime(0);
-                            out.putNextEntry(entry);
-                            if (!e.getName().endsWith(".java")) {
-                                IOUtils.copy(zin.getInputStream(e), out);
-                            } else {
-                                out.write(replace(zin.getInputStream(e), names).getBytes(StandardCharsets.UTF_8));
-                            }
-                            out.closeEntry();
-                        } catch (IOException e1) {
-                            throw new RuntimeException(e1);
-                        }
-                    });
-                }
-            } else {
+            try (FileOutputStream fos = new FileOutputStream(getOutput());
+                 ZipOutputStream out = new ZipOutputStream(fos)) {
                 zin.stream().forEach(e -> {
-                    File target = new File(getOutput(), e.getName());
-                    File parent = target.getParentFile();
-                    if (!parent.exists()) {
-                        parent.mkdirs();
-                    }
-
-                    try (FileOutputStream out = new FileOutputStream(target)) {
+                    try {
+                        ZipEntry entry = new ZipEntry(e.getName());
+                        entry.setTime(0);
+                        out.putNextEntry(entry);
                         if (!e.getName().endsWith(".java")) {
                             IOUtils.copy(zin.getInputStream(e), out);
                         } else {
                             out.write(replace(zin.getInputStream(e), names).getBytes(StandardCharsets.UTF_8));
                         }
+                        out.closeEntry();
                     } catch (IOException e1) {
                         throw new RuntimeException(e1);
                     }

@@ -34,10 +34,11 @@ dependencies {
     commonImplementation 'com.google.code.gson:gson:2.8.5'
     commonImplementation 'com.google.guava:guava:26.0-jre'
     commonImplementation 'de.siegmar:fastcsv:1.0.2'
-    commonImplementation 'net.minecraftforge:Srg2Source:4.1.+'
+    commonImplementation 'net.minecraftforge:Srg2Source:4.2.+'
 
 
     mcpImplementation sourceSets.common.output
+    patcherImplementation sourceSets.mcp.output
     patcherImplementation sourceSets.common.output
 }
 
