@@ -3,7 +3,6 @@ package net.minecraftforge.gradle.mcp;
 import org.gradle.api.Project;
 
 import javax.inject.Inject;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -14,21 +13,10 @@ public class MCPExtension {
     public Object config;
     public String pipeline;
 
-    private Object mappings;
-
     private final List<Object> accessTransformers = new ArrayList<>();
 
     @Inject
     public MCPExtension(Project project) {
-    }
-
-    public void setMappings(Object obj) {
-        if (obj instanceof String || //Custom full artifact
-                obj instanceof File) { //Custom zip file
-            mappings = obj;
-        } else {
-            throw new IllegalArgumentException("Mappings must be file, string, or map");
-        }
     }
 
     public void addAccessTransformer(String transformer) {
@@ -43,6 +31,7 @@ public class MCPExtension {
         return accessTransformers.stream().map(MCPExtension::getTransformer).collect(Collectors.toList());
     }
 
+    @SuppressWarnings("unchecked")
     private static String getTransformer(Object o) {
         if (o instanceof String) {
             return (String) o;

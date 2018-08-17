@@ -68,4 +68,13 @@ public class PatcherExtension {
         extraExcs.add(exc); // TODO: Type check!
     }
 
+    void copyFrom(PatcherExtension other) {
+        if (mappings == null) {
+            this.setMappings(other.getMappings());
+        }
+        if (this.mcVersion == null) {
+            this.mcVersion = other.mcVersion;
+        }
+    }
+
 }

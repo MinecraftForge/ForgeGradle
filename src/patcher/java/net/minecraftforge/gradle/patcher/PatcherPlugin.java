@@ -76,12 +76,9 @@ public class PatcherPlugin implements Plugin<Project> {
             task.setMcVersion(extension.mcVersion);
         });
         injectClasspath.configure(task -> {
+            task.dependsOn(dlMCMetaConfig.get());
             task.getOutputs().upToDateWhen(a -> false);
             task.doFirst(p -> {
-                project.getRepositories().maven(e -> {
-                    e.setUrl("https://libraries.minecraft.net/");
-                    e.metadataSources(src -> src.artifact());
-                });
                 try (InputStream input = new FileInputStream(dlMCMetaConfig.get().getOutput())) {
                     VersionJson json = GSON.fromJson(new InputStreamReader(input), VersionJson.class);
                     for (Library lib : json.libraries) {
@@ -95,30 +92,27 @@ public class PatcherPlugin implements Plugin<Project> {
             });
         });
         applyConfig.configure(task -> {
-            task.setOnlyIf(t -> extension.patches != null);
             task.setPatches(extension.patches);
         });
         toMCPConfig.configure(task -> {
             task.dependsOn(dlMappingsConfig, applyConfig);
-            task.setOnlyIf(t -> extension.getMappings() != null);
-
             task.setInput(applyConfig.get().getOutput());
             task.setMappings(dlMappingsConfig.get().getOutput());
         });
         extractMapped.configure(task -> {
             task.dependsOn(toMCPConfig);
-            task.from(toMCPConfig.get().getOutput());
+            task.from(project.zipTree(toMCPConfig.get().getOutput()));
             task.into(extension.patchedSrc);
         });
         extractRangeConfig.configure(task -> {
             Jar jar = (Jar)project.getTasks().getByName("jar");
             task.dependsOn(injectClasspath, jar);
+
             Set<File> src = new HashSet<>();
-            for (SourceSet set : javaConv.getSourceSets()) {
-                if (!set.getName().toLowerCase(Locale.ENGLISH).equals("test")) {
-                    src.addAll(set.getJava().getSrcDirs());
-                }
-            }
+            javaConv.getSourceSets().stream()
+            .filter(s -> s.getName().toLowerCase(Locale.ENGLISH).startsWith("test"))
+            .forEach(s -> src.addAll(s.getJava().getSrcDirs()));
+
             task.setSources(src);
             task.addDependencies(project.getConfigurations().getByName(MC_DEP_CONFIG));
             task.addDependencies(jar.getArchivePath());
@@ -147,21 +141,32 @@ public class PatcherPlugin implements Plugin<Project> {
         });
 
         project.afterEvaluate(p -> {
-            //Add PatchedSrc as a new source set
-            baseSource.java(v -> {
-                //project.getLogger().lifecycle("Base: " + extension.patchedSrc);
-                v.srcDir(extension.patchedSrc);
+
+            //Add Known repos
+            project.getRepositories().maven(e -> {
+                e.setUrl("https://libraries.minecraft.net/");
+                e.metadataSources(src -> src.artifact());
             });
+            project.getRepositories().maven(e -> {
+                e.setUrl("http://files.minecraftforge.net/maven/");
+            });
+
+            //Add PatchedSrc as a new source set
+            baseSource.java(v -> { v.srcDir(extension.patchedSrc); });
             baseSource.resources(v -> { }); //TODO: Asset downloading, needs asset index from json.
             applyRangeConfig.get().setSources(baseSource.getJava().getSrcDirs());
 
-            if (extension.parent != null) {
+            if (extension.patches != null && !extension.patches.exists()) { //Auto-make folders so that gradle doesnt explode some tasks.
+                extension.patches.mkdirs();
+            }
+
+            if (extension.parent != null) { //Most of this is done after evaluate, and checks for nulls to allow the build script to override us. We can't do it in the config step because if someone configs a task in the build script it resolves our config during evaluation.
                 TaskContainer tasks = extension.parent.getTasks();
                 MCPPlugin mcp = extension.parent.getPlugins().findPlugin(MCPPlugin.class);
                 PatcherPlugin patcher = extension.parent.getPlugins().findPlugin(PatcherPlugin.class);
 
                 if (mcp != null) {
-                    //project.getLogger().lifecycle("Clean: " + ((SetupMCPTask)tasks.getByName("setupMCP")).getOutput());
+
                     if (extension.cleanSrc == null) {
                         extension.cleanSrc = ((SetupMCPTask)tasks.getByName("setupMCP")).getOutput();
                         applyConfig.get().dependsOn(tasks.getByName("setupMCP"));
@@ -207,9 +212,17 @@ public class PatcherPlugin implements Plugin<Project> {
 
 
                 } else if (patcher != null) {
+                    PatcherExtension pExt = extension.parent.getExtensions().getByType(PatcherExtension.class);
+                    extension.copyFrom(pExt);
+
+                    if (dlMappingsConfig.get().getMappings() == null) {
+                        dlMappingsConfig.get().setMappings(extension.getMappings());
+                    }
+
                     if (extension.cleanSrc == null) {
-                        extension.cleanSrc = ((SetupMCPTask)tasks.getByName("applyPatches")).getOutput();
-                        applyConfig.get().dependsOn(tasks.getByName("applyPatches"));
+                        TaskApplyPatches task = (TaskApplyPatches)tasks.getByName(applyConfig.get().getName());
+                        extension.cleanSrc = task.getOutput();
+                        applyConfig.get().dependsOn(task);
                     }
                     if (applyConfig.get().getClean() == null) {
                         applyConfig.get().setClean(extension.cleanSrc);

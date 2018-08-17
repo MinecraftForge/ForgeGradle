@@ -4,7 +4,7 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -18,9 +18,7 @@ import net.minecraftforge.gradle.common.diff.ContextualPatch.PatchReport;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.zip.ZipFile;
 
 public class TaskApplyPatches extends DefaultTask {
@@ -36,6 +34,11 @@ public class TaskApplyPatches extends DefaultTask {
     public void applyPatches() {
         try (ZipFile zip = new ZipFile(getClean())) {
             ZipContext context = new ZipContext(zip);
+
+            if (getPatches() == null) {
+                context.save(getOutput());
+                return;
+            }
 
             boolean all_success = Files.walk(getPatches().toPath())
             .filter(p -> Files.isRegularFile(p) && p.getFileName().endsWith(".patch"))
@@ -86,6 +89,7 @@ public class TaskApplyPatches extends DefaultTask {
         return clean;
     }
 
+    @Optional
     @InputDirectory
     public File getPatches() {
         return patches;

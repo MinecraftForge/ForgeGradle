@@ -55,6 +55,18 @@ public class MCPPlugin implements Plugin<Project> {
             task.setConfig(validateConfig.get().processed);
             task.setAccessTransformers(extension.getAccessTransformers());
         });
+
+        project.afterEvaluate(p -> {
+            //Add Known repos
+            project.getRepositories().maven(e -> {
+                e.setUrl("https://libraries.minecraft.net/");
+                e.metadataSources(src -> src.artifact());
+            });
+            project.getRepositories().maven(e -> {
+                e.setUrl("http://files.minecraftforge.net/maven/");
+            });
+            project.getRepositories().mavenCentral(); //Needed for MCP Deps
+        });
     }
 
     public static MCPFunctionOverlay createFunctionOverlay(String type) {
