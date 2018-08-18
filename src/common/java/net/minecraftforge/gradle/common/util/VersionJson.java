@@ -1,6 +1,8 @@
 package net.minecraftforge.gradle.common.util;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -9,6 +11,24 @@ public class VersionJson {
     public String assets;
     public Map<String, Download> downloads;
     public Library[] libraries;
+
+    private List<LibraryDownload> _natives = null;
+
+    public List<LibraryDownload> getNatives() {
+        if (_natives == null) {
+            _natives = new ArrayList<>();
+            OS os = OS.getCurrent();
+            for (Library lib : libraries) {
+                if (lib.natives != null && lib.downloads.classifiers != null && lib.natives.containsKey(os.getName())) {
+                    LibraryDownload l = lib.downloads.classifiers.get(lib.natives.get(os.getName()));
+                    if (l != null) {
+                        _natives.add(l);
+                    }
+                }
+            }
+        }
+        return _natives;
+    }
 
     public static class AssetIndex extends Download {
         public String id;

@@ -2,8 +2,11 @@ package net.minecraftforge.gradle.common.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Base64;
@@ -13,9 +16,17 @@ import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import net.minecraftforge.gradle.common.util.VersionJson.Download;
+
 public class Utils {
+    public static final Gson GSON = new GsonBuilder().create();
 
     public static void extractFile(ZipFile zip, String name, File output) throws IOException {
         extractFile(zip, zip.getEntry(name), output);
@@ -66,5 +77,43 @@ public class Utils {
     }
     public static File getCache(Project project, String... tail) {
         return new File(getCacheBase(project), String.join(File.separator, tail));
+    }
+
+    public static void extractZip(File source, File target, boolean overwrite) throws IOException {
+        try (ZipFile zip = new ZipFile(source)) {
+            Enumeration<? extends ZipEntry> enu = zip.entries();
+            while (enu.hasMoreElements()) {
+                ZipEntry e = enu.nextElement();
+                if (e.isDirectory()) continue;
+                File out = new File(target, e.getName());
+                if (out.exists() && !overwrite) continue;
+                File parent = out.getParentFile();
+                if (!parent.exists()) {
+                    parent.mkdirs();
+                }
+                try (FileOutputStream fos = new FileOutputStream(out)) {
+                    IOUtils.copy(zip.getInputStream(e), fos);
+                }
+            }
+        }
+    }
+
+    public static File updateDownload(Project project, File target, Download dl) throws IOException {
+        if (!target.exists() || !HashFunction.SHA1.hash(target).equals(dl.sha1)) {
+            project.getLogger().lifecycle("Downloading: " + dl.url);
+
+            if (!target.getParentFile().exists()) {
+                target.getParentFile().mkdirs();
+            }
+
+            FileUtils.copyURLToFile(dl.url, target);
+        }
+        return target;
+    }
+
+    public static <T> T loadJson(File target, Class<T> clz) throws IOException {
+        try (InputStream in = new FileInputStream(target)) {
+            return GSON.fromJson(new InputStreamReader(in), clz);
+        }
     }
 }
