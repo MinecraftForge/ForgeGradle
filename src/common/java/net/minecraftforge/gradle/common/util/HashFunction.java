@@ -8,6 +8,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Locale;
 
 import org.apache.commons.io.IOUtils;
 
@@ -19,9 +20,14 @@ public enum HashFunction {
 
     private String algo;
     private String pad;
+
     private HashFunction(String algo, int length) {
         this.algo = algo;
         this.pad = String.format("%0" + length + "d", 0);
+    }
+
+    public String getExtension() {
+         return this.name().toLowerCase(Locale.ENGLISH);
     }
 
     public MessageDigest get() {

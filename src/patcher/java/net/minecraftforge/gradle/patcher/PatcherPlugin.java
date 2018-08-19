@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.patcher;
 
+import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPPlugin;
 import net.minecraftforge.gradle.mcp.task.DownloadMCPConfigTask;
@@ -16,7 +17,6 @@ import net.minecraftforge.gradle.patcher.task.TaskExtractRangeMap;
 import net.minecraftforge.gradle.patcher.task.TaskExtractMCPData;
 import net.minecraftforge.gradle.patcher.task.TaskExtractNatives;
 import net.minecraftforge.gradle.patcher.task.TaskGeneratePatches;
-import net.minecraftforge.gradle.patcher.task.TaskInjectDependencies;
 
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Plugin;
@@ -27,7 +27,6 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.Jar;
-import org.gradle.api.tasks.compile.AbstractCompile;
 import org.gradle.plugins.ide.eclipse.GenerateEclipseClasspath;
 import org.xml.sax.SAXException;
 
@@ -66,7 +65,6 @@ public class PatcherPlugin implements Plugin<Project> {
 
         TaskProvider<DownloadMCPMappingsTask> dlMappingsConfig = project.getTasks().register("downloadMappings", DownloadMCPMappingsTask.class);
         TaskProvider<DownloadMCMetaTask> dlMCMetaConfig = project.getTasks().register("downloadMCMeta", DownloadMCMetaTask.class);
-        TaskProvider<TaskInjectDependencies> injectClasspath = project.getTasks().register("injectClasspath", TaskInjectDependencies.class);
         TaskProvider<TaskExtractNatives> extractNatives = project.getTasks().register("extractNatives", TaskExtractNatives.class);
         TaskProvider<TaskApplyPatches> applyConfig = project.getTasks().register("applyPatches", TaskApplyPatches.class);
         TaskProvider<TaskApplyMappings> toMCPConfig = project.getTasks().register("srg2mcp", TaskApplyMappings.class);
@@ -86,11 +84,6 @@ public class PatcherPlugin implements Plugin<Project> {
         });
         dlMCMetaConfig.configure(task -> {
             task.setMcVersion(extension.mcVersion);
-        });
-        injectClasspath.configure(task -> {
-            task.dependsOn(dlMCMetaConfig.get());
-            task.setMeta(dlMCMetaConfig.get().getOutput());
-            task.setConfig(MC_DEP_CONFIG);
         });
         extractNatives.configure(task -> {
             task.dependsOn(dlMCMetaConfig.get());
@@ -116,8 +109,6 @@ public class PatcherPlugin implements Plugin<Project> {
         });
         extractRangeConfig.configure(task -> {
             Jar jar = (Jar)project.getTasks().getByName("jar");
-            task.dependsOn(injectClasspath, jar);
-
             Set<File> src = new HashSet<>();
             javaConv.getSourceSets().stream()
             .filter(s -> s.getName().toLowerCase(Locale.ENGLISH).startsWith("test"))
@@ -290,11 +281,12 @@ public class PatcherPlugin implements Plugin<Project> {
                     throw new IllegalStateException("Parent must either be a Patcher or MCP project");
                 }
             }
+            MinecraftRepo.attach(project);
+            project.getDependencies().add("compile", "net.minecraft:client:" + extension.mcVersion + ":extra");
 
             //Make sure tasks that require a valid classpath happen after making the classpath
-            p.getTasks().withType(GenerateEclipseClasspath.class, t -> { t.dependsOn(injectClasspath.get(), extractNatives.get(), downloadAssets.get()); });
+            p.getTasks().withType(GenerateEclipseClasspath.class, t -> { t.dependsOn(extractNatives.get(), downloadAssets.get()); });
             //TODO: IntelliJ plugin?
-            p.getTasks().withType(AbstractCompile.class, t -> { t.dependsOn(injectClasspath.get()); });
 
             doEclipseFixes(project, natives_folder);
         });

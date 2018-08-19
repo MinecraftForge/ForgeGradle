@@ -116,4 +116,19 @@ public class Utils {
             return GSON.fromJson(new InputStreamReader(in), clz);
         }
     }
+
+    public static void updateHash(File target) throws IOException {
+        updateHash(target, HashFunction.values());
+    }
+    public static void updateHash(File target, HashFunction... functions) throws IOException {
+        for (HashFunction function : functions) {
+            File cache = new File(target.getAbsolutePath() + "." + function.getExtension());
+            if (target.exists()) {
+                String hash = function.hash(target);
+                Files.write(cache.toPath(), hash.getBytes());
+            } else if (cache.exists()) {
+                cache.delete();
+            }
+        }
+    }
 }

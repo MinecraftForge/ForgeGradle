@@ -35,6 +35,7 @@ dependencies {
     commonImplementation 'com.google.guava:guava:26.0-jre'
     commonImplementation 'de.siegmar:fastcsv:1.0.2'
     commonImplementation 'net.minecraftforge:Srg2Source:4.2.+'
+    commonImplementation 'com.amadornes:artifactural:1.0.+'
 
 
     mcpImplementation sourceSets.common.output

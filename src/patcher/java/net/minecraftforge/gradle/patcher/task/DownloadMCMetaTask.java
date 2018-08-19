@@ -9,6 +9,8 @@ import org.gradle.api.tasks.TaskAction;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import net.minecraftforge.gradle.common.util.ManifestJson;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,14 +28,12 @@ public class DownloadMCMetaTask extends DefaultTask {
     @TaskAction
     public void downloadMCMeta() throws IOException {
         try (InputStream manin = new URL(MANIFEST_URL).openStream()) {
-            Manifest meta = GSON.fromJson(new InputStreamReader(manin), Manifest.class);
-            for (VersionInfo info : meta.versions) {
-                if (getMCVersion().equals(info.id)) {
-                    FileUtils.copyURLToFile(info.url, getOutput());
-                    return;
-                }
+            URL url = GSON.fromJson(new InputStreamReader(manin), ManifestJson.class).getUrl(getMCVersion());
+            if (url != null) {
+                FileUtils.copyURLToFile(url, getOutput());
+            } else {
+                throw new RuntimeException("Missing version from manifest: " + getMCVersion());
             }
-            throw new RuntimeException("Missing version from manifest: " + getMCVersion());
         }
     }
 
@@ -61,13 +61,5 @@ public class DownloadMCMetaTask extends DefaultTask {
 
     public void setOutput(File output) {
         this.output = output;
-    }
-
-    private static class Manifest {
-        public VersionInfo[] versions;
-    }
-    private static class VersionInfo {
-        public String id;
-        public URL url;
     }
 }
