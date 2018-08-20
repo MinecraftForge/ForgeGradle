@@ -68,7 +68,9 @@ public class TaskApplyPatches extends DefaultTask {
                             }
                         }
                     }
-                } catch (PatchException | IOException e) {
+                } catch (PatchException e) {
+                    getLogger().error("  " + e.getMessage());
+                } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
                 return success;

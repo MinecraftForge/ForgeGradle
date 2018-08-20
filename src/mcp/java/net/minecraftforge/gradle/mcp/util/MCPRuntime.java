@@ -6,9 +6,11 @@ import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
@@ -26,7 +28,7 @@ public class MCPRuntime {
     final Map<String, Step> steps = new LinkedHashMap<>();
     Step currentStep;
 
-    public MCPRuntime(Project project, MCPConfig config, boolean generateSrc) {
+    public MCPRuntime(Project project, MCPConfig config, boolean generateSrc, Map<String, MCPFunction> extraPres) {
         this.project = project;
         this.environment = new MCPEnvironment(this, config.mcVersion);
         this.mcpDirectory = project.file("build/mcp/");
@@ -34,6 +36,19 @@ public class MCPRuntime {
         this.zipFile = config.zipFile;
 
         initSteps(config.pipeline.sharedSteps);
+        if (!extraPres.isEmpty()) {
+            String input = config.pipeline.srcSteps.get(0).arguments.get("input"); //Decompile's input
+            String lastName = null;
+            for (Entry<String, MCPFunction> entry : extraPres.entrySet()) {
+                String name = entry.getKey();
+                Map<String, String> args = new HashMap<>();
+                args.put("input", input);
+                this.steps.put(name, new Step(name, entry.getValue(), null, args, new File(this.mcpDirectory, name)));
+                input = "{" + name +"Output}";
+                lastName = name;
+            }
+            config.pipeline.srcSteps.get(0).arguments.put("input", "{" + lastName + "Output}");
+        }
         if (generateSrc) {
             initSteps(config.pipeline.srcSteps);
         }
@@ -128,5 +143,4 @@ public class MCPRuntime {
         }
 
     }
-
 }

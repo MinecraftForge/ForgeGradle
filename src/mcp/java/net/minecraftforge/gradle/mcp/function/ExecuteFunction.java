@@ -11,10 +11,9 @@ import org.gradle.api.tasks.JavaExec;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.jar.Attributes;
@@ -65,27 +64,29 @@ public class ExecuteFunction implements MCPFunction {
         // Get input and output files
         File jar = this.jar.get();
         File output = environment.getFile(environment.getArguments().get("output"));
-        File log = environment.getFile(environment.getArguments().get("log"));
 
         // Find out what the inputs are
-        Set<String> replacedArgs = new HashSet<>();
-        List<String> jvmArgList = applyVariableSubstitutions(Arrays.asList(jvmArgs), arguments, replacedArgs);
-        List<String> runArgList = applyVariableSubstitutions(Arrays.asList(runArgs), arguments, replacedArgs);
-        Set<File> inputFiles = new HashSet<>();
-        for (String string : replacedArgs) {
-            try {
-                inputFiles.add(environment.project.file(string));
-            } catch (Exception ex) {
-                // NO-OP
-            }
-        }
-        inputFiles.remove(output);
-        inputFiles.remove(log);
-        inputFiles.add(jar);
+        Map<String, Object> replacedArgs = new HashMap<>();
+        List<String> jvmArgList = applyVariableSubstitutions(environment, Arrays.asList(jvmArgs), arguments, replacedArgs);
+        List<String> runArgList = applyVariableSubstitutions(environment, Arrays.asList(runArgs), arguments, replacedArgs);
+
+        replacedArgs.remove("output");
+        replacedArgs.remove("log");
 
         File hashFile = environment.getFile("lastinput.sha1");
         HashStore hashStore = new HashStore(environment.project).load(hashFile);
-        if (hashStore.areSame(inputFiles) && output.exists()) return output;
+        hashStore.add("args", String.join(" ", runArgs));
+        hashStore.add("jvmargs", String.join(" ", runArgs));
+        hashStore.add("jar", jar);
+        replacedArgs.forEach((key, value) -> {
+            if (value instanceof File) {
+                hashStore.add(key, (File)value);
+            } else if (value instanceof String) {
+                hashStore.add(key, (String)value);
+            }
+        });
+        addInputs(hashStore);
+        if (hashStore.isSame() && output.exists()) return output;
 
         // Delete previous output
         if (output.exists()) output.delete();
@@ -115,11 +116,11 @@ public class ExecuteFunction implements MCPFunction {
         return output;
     }
 
-    private List<String> applyVariableSubstitutions(List<String> list, Map<String, String> arguments, Set<String> inputs) {
-        return list.stream().map(s -> applyVariableSubstitutions(s, arguments, inputs)).collect(Collectors.toList());
+    private List<String> applyVariableSubstitutions(MCPEnvironment environment, List<String> list, Map<String, String> arguments, Map<String, Object> inputs) {
+        return list.stream().map(s -> applyVariableSubstitutions(environment, s, arguments, inputs)).collect(Collectors.toList());
     }
 
-    private String applyVariableSubstitutions(String value, Map<String, String> arguments, Set<String> inputs) {
+    private String applyVariableSubstitutions(MCPEnvironment environment, String value, Map<String, String> arguments, Map<String, Object> inputs) {
         Matcher matcher = REPLACE_PATTERN.matcher(value);
         if (!matcher.find()) return value; // Not a replaceable string
 
@@ -127,11 +128,13 @@ public class ExecuteFunction implements MCPFunction {
         if (argName != null) {
             String argument = arguments.get(argName);
             if (argument != null) {
+                inputs.put(argName, argument);
                 return argument;
             }
 
             JsonElement dataElement = data.get(argName);
             if (dataElement != null) {
+                inputs.put(argName, environment.getFile(dataElement.getAsString()));
                 return dataElement.getAsString();
             }
         }
@@ -160,6 +163,10 @@ public class ExecuteFunction implements MCPFunction {
                 Utils.extractFile(zip, entry, environment.getFile(entryName));
             }
         }
+    }
+
+    protected void addInputs(HashStore cache) {
+
     }
 
 }

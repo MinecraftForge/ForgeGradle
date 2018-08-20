@@ -3,6 +3,7 @@ package net.minecraftforge.gradle.patcher;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPPlugin;
+import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
 import net.minecraftforge.gradle.mcp.task.DownloadMCPConfigTask;
 import net.minecraftforge.gradle.mcp.task.SetupMCPTask;
 import net.minecraftforge.gradle.patcher.task.DownloadMCMetaTask;
@@ -284,6 +285,15 @@ public class PatcherPlugin implements Plugin<Project> {
             MinecraftRepo.attach(project);
             project.getDependencies().add("compile", "net.minecraft:client:" + extension.mcVersion + ":extra");
 
+            if (!extension.getAccessTransformers().isEmpty()) {
+                Project mcp = getMcpParent(project);
+                if (mcp == null) {
+                    throw new IllegalStateException("AccessTransformers specified, with no MCP Parent");
+                }
+                SetupMCPTask setupMCP = (SetupMCPTask)mcp.getTasks().getByName("setupMCP");
+                setupMCP.addPreDecompile(project.getName() + "AccessTransformer", new AccessTransformerFunction(mcp, extension.getAccessTransformers()));
+            }
+
             //Make sure tasks that require a valid classpath happen after making the classpath
             p.getTasks().withType(GenerateEclipseClasspath.class, t -> { t.dependsOn(extractNatives.get(), downloadAssets.get()); });
             //TODO: IntelliJ plugin?
@@ -361,6 +371,21 @@ public class PatcherPlugin implements Plugin<Project> {
             ret.put(data[x], data[x + 1]);
         }
         return ret;
+    }
+
+    private Project getMcpParent(Project project) {
+        final PatcherExtension extension = project.getExtensions().findByType(PatcherExtension.class);
+        if (extension == null || extension.parent == null) {
+            return null;
+        }
+        MCPPlugin mcp = extension.parent.getPlugins().findPlugin(MCPPlugin.class);
+        PatcherPlugin patcher = extension.parent.getPlugins().findPlugin(PatcherPlugin.class);
+        if (mcp != null) {
+            return extension.parent;
+        } else if (patcher != null) {
+            return getMcpParent(extension.parent);
+        }
+        return null;
     }
 
 }

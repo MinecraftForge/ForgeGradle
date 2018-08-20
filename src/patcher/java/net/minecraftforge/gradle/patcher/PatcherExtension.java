@@ -18,6 +18,7 @@ public class PatcherExtension {
     private Object mappings;
     private List<Object> extraMappings = new ArrayList<>();
     private List<Object> extraExcs = new ArrayList<>();
+    private List<File> accessTransformers = new ArrayList<>();
 
     @Inject
     public PatcherExtension(Project project) {
@@ -33,6 +34,10 @@ public class PatcherExtension {
 
     public List<Object> getExtraExcs() {
         return extraExcs;
+    }
+
+    public List<File> getAccessTransformers() {
+        return accessTransformers;
     }
 
     // mappings channel: 'snapshot', version: '20180101'
@@ -75,6 +80,15 @@ public class PatcherExtension {
         if (this.mcVersion == null) {
             this.mcVersion = other.mcVersion;
         }
+    }
+
+    public void setAccessTransformers(List<File> files) {
+         this.accessTransformers.clear();
+         this.accessTransformers.addAll(files);
+    }
+
+    public void setAccessTransformer(File file) {
+        this.accessTransformers.add(file);
     }
 
 }

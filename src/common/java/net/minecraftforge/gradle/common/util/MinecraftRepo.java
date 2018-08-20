@@ -31,8 +31,6 @@ import com.amadornes.artifactural.gradle.GradleRepositoryAdapter;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import net.minecraftforge.gradle.common.util.VersionJson.OS;
 
-import static net.minecraftforge.gradle.common.util.HashFunction.*;
-
 public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
     private static MinecraftRepo INSTANCE;
     private static int CACHE_TIMEOUT = 1000 * 60 * 60 * 1; //1 hour, Timeout used for version_manifest.json so we dont ping their server every request.
@@ -96,6 +94,10 @@ public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
             File ret = null;
             if ("pom".equals(ext)) {
                 ret = findPom(side, version);
+            } else if ("json".equals(ext)) {
+                if ("".equals(classifier)) {
+                    ret = findVersion(version);
+                }
             } else {
                 switch (classifier) {
                     case "":       ret = findRaw(side, version); break;
@@ -117,14 +119,14 @@ public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
         File manifest = cache("versions/manifest.json");
         if (!manifest.exists() || manifest.lastModified() < System.currentTimeMillis() - CACHE_TIMEOUT) {
             FileUtils.copyURLToFile(new URL(MANIFEST_URL), manifest);
-            Utils.updateHash(manifest, SHA1);
+            Utils.updateHash(manifest);
         }
         File json = cache("versions", version, "version.json");
         if (!json.exists() || json.lastModified() < System.currentTimeMillis() - CACHE_TIMEOUT) {
             URL url =  Utils.loadJson(manifest, ManifestJson.class).getUrl(version);
             if (url != null) {
                 FileUtils.copyURLToFile(url, json);
-                Utils.updateHash(json, SHA1);
+                Utils.updateHash(json);
             } else {
                 throw new RuntimeException("Missing version from manifest: " + version);
             }

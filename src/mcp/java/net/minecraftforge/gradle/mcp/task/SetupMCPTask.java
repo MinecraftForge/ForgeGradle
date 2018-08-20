@@ -1,29 +1,26 @@
 package net.minecraftforge.gradle.mcp.task;
 
 import net.minecraftforge.gradle.common.util.Utils;
+import net.minecraftforge.gradle.mcp.function.MCPFunction;
 import net.minecraftforge.gradle.mcp.util.MCPConfig;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class SetupMCPTask extends DefaultTask {
 
-    private List<String> accessTransformers;
+    private Map<String, MCPFunction> extrasPre = new LinkedHashMap<>(); //TODO: Make this cacheable somehow?
     private MCPConfig config;
 
     private File output = getProject().file("build/" + getName() + "/output.zip");
 
-    @Input
-    public List<String> getAccessTransformers() {
-        return accessTransformers;
-    }
 
     @OutputFile
     public File getOutput() {
@@ -39,10 +36,6 @@ public class SetupMCPTask extends DefaultTask {
         return config.zipFile;
     }
 
-    public void setAccessTransformers(List<String> accessTransformers) {
-        this.accessTransformers = accessTransformers;
-    }
-
     public void setOutput(File output) {
         this.output = output;
     }
@@ -53,11 +46,15 @@ public class SetupMCPTask extends DefaultTask {
 
     @TaskAction
     public void setupMCP() throws Exception {
-        MCPRuntime runtime = new MCPRuntime(getProject(), config, true);
+        MCPRuntime runtime = new MCPRuntime(getProject(), config, true, extrasPre);
         File out = runtime.execute(getLogger());
         if (FileUtils.contentEquals(out, output)) return;
         Utils.delete(output);
         FileUtils.copyFile(out, output);
+    }
+
+    public void addPreDecompile(String name, MCPFunction function) {
+        this.extrasPre.put(name, function);
     }
 
 }

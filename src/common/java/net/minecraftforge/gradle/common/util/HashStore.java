@@ -6,10 +6,8 @@ import org.gradle.internal.hash.HashUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 public class HashStore {

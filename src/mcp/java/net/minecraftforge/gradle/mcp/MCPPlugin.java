@@ -53,7 +53,6 @@ public class MCPPlugin implements Plugin<Project> {
         setupMCP.configure(task -> {
             task.dependsOn(validateConfig, downloadDeps);
             task.setConfig(validateConfig.get().processed);
-            task.setAccessTransformers(extension.getAccessTransformers());
         });
 
         project.afterEvaluate(p -> {
