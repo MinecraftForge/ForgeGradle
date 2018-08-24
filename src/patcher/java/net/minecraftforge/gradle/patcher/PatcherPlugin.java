@@ -1,5 +1,8 @@
 package net.minecraftforge.gradle.patcher;
 
+import groovy.util.Node;
+import groovy.util.XmlParser;
+import groovy.xml.XmlUtil;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPPlugin;
@@ -14,11 +17,12 @@ import net.minecraftforge.gradle.patcher.task.TaskApplyRangeMap;
 import net.minecraftforge.gradle.patcher.task.TaskCreateExc;
 import net.minecraftforge.gradle.patcher.task.TaskCreateSrg;
 import net.minecraftforge.gradle.patcher.task.TaskDownloadAssets;
-import net.minecraftforge.gradle.patcher.task.TaskExtractRangeMap;
 import net.minecraftforge.gradle.patcher.task.TaskExtractMCPData;
 import net.minecraftforge.gradle.patcher.task.TaskExtractNatives;
+import net.minecraftforge.gradle.patcher.task.TaskExtractRangeMap;
+import net.minecraftforge.gradle.patcher.task.TaskGenerateBinPatches;
 import net.minecraftforge.gradle.patcher.task.TaskGeneratePatches;
-
+import net.minecraftforge.gradle.patcher.task.TaskReobfuscateJar;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -28,16 +32,17 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.Jar;
+import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.plugins.ide.eclipse.GenerateEclipseClasspath;
 import org.xml.sax.SAXException;
 
-import groovy.util.Node;
-import groovy.util.XmlParser;
-import groovy.xml.XmlUtil;
-
 import javax.annotation.Nonnull;
 import javax.xml.parsers.ParserConfigurationException;
-
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,11 +50,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 
 public class PatcherPlugin implements Plugin<Project> {
     private static final String MC_DEP_CONFIG = "compile"; //TODO: Separate config?
@@ -64,6 +64,8 @@ public class PatcherPlugin implements Plugin<Project> {
         final JavaPluginConvention javaConv = (JavaPluginConvention)project.getConvention().getPlugins().get("java");
         final File natives_folder = project.file("build/natives/");
 
+        TaskProvider<Jar> jarConfig = (TaskProvider) project.getTasks().named("jar");
+
         TaskProvider<DownloadMCPMappingsTask> dlMappingsConfig = project.getTasks().register("downloadMappings", DownloadMCPMappingsTask.class);
         TaskProvider<DownloadMCMetaTask> dlMCMetaConfig = project.getTasks().register("downloadMCMeta", DownloadMCMetaTask.class);
         TaskProvider<TaskExtractNatives> extractNatives = project.getTasks().register("extractNatives", TaskExtractNatives.class);
@@ -76,6 +78,11 @@ public class PatcherPlugin implements Plugin<Project> {
         TaskProvider<TaskApplyRangeMap> applyRangeConfig = project.getTasks().register("applyRangeMapBase", TaskApplyRangeMap.class);
         TaskProvider<TaskGeneratePatches> genConfig = project.getTasks().register("genPatches", TaskGeneratePatches.class);
         TaskProvider<TaskDownloadAssets> downloadAssets = project.getTasks().register("downloadAssets", TaskDownloadAssets.class);
+        TaskProvider<TaskReobfuscateJar> reobfJar = project.getTasks().register("reobfJar", TaskReobfuscateJar.class);
+        TaskProvider<TaskGenerateBinPatches> genJoinedBinPatches = project.getTasks().register("genJoinedBinPatches", TaskGenerateBinPatches.class);
+        TaskProvider<TaskGenerateBinPatches> genClientBinPatches = project.getTasks().register("genClientBinPatches", TaskGenerateBinPatches.class);
+        TaskProvider<TaskGenerateBinPatches> genServerBinPatches = project.getTasks().register("genServerBinPatches", TaskGenerateBinPatches.class);
+        TaskProvider<Zip> packageSrcPatches = project.getTasks().register("packageSrcPatches", Zip.class);
 
         //Add the patched output to a new sourceset so we can tell the difference when creating patches.
         SourceSet baseSource = javaConv.getSourceSets().maybeCreate(BASE_SOURCE);
@@ -109,15 +116,14 @@ public class PatcherPlugin implements Plugin<Project> {
             task.into(extension.patchedSrc);
         });
         extractRangeConfig.configure(task -> {
-            Jar jar = (Jar)project.getTasks().getByName("jar");
             Set<File> src = new HashSet<>();
             javaConv.getSourceSets().stream()
-            .filter(s -> s.getName().toLowerCase(Locale.ENGLISH).startsWith("test"))
-            .forEach(s -> src.addAll(s.getJava().getSrcDirs()));
+                    .filter(s -> s.getName().toLowerCase(Locale.ENGLISH).startsWith("test"))
+                    .forEach(s -> src.addAll(s.getJava().getSrcDirs()));
 
             task.setSources(src);
             task.addDependencies(project.getConfigurations().getByName(MC_DEP_CONFIG));
-            task.addDependencies(jar.getArchivePath());
+            task.addDependencies(jarConfig.get().getArchivePath());
         });
 
         createSrg.configure(task -> {
@@ -140,6 +146,44 @@ public class PatcherPlugin implements Plugin<Project> {
             task.setOnlyIf(t -> extension.patches != null);
             task.setModified(applyRangeConfig.get().getOutput());
             task.setPatches(extension.patches);
+        });
+
+        reobfJar.configure(task -> {
+            task.dependsOn(jarConfig); // Require the jar to be built before we remap it
+            task.dependsOn(dlMappingsConfig);
+            task.setInput(jarConfig.get().getArchivePath());
+            // task.setSrgMappings(???); TODO: Somehow get SRG mappings into this task
+            task.setMcpMappings(dlMappingsConfig.get().getOutput());
+        });
+        genJoinedBinPatches.configure(task -> {
+            task.dependsOn(reobfJar);
+            // task.setOnlyIf(t -> ); TODO: Only run if pipeline is joined
+            task.setRawJar(extension.joinedJar);
+            task.setPatchedJar(reobfJar.get().getOutput());
+        });
+        genClientBinPatches.configure(task -> {
+            task.dependsOn(reobfJar);
+            // task.setOnlyIf(t -> ); TODO: Only run if pipeline is joined or client
+            task.setRawJar(extension.clientJar);
+            task.setPatchedJar(reobfJar.get().getOutput());
+        });
+        genServerBinPatches.configure(task -> {
+            task.dependsOn(reobfJar);
+            // task.setOnlyIf(t -> ); TODO: Only run if pipeline is joined or server
+            task.setRawJar(extension.serverJar);
+            task.setPatchedJar(reobfJar.get().getOutput());
+        });
+
+        // Packaging
+        jarConfig.configure(task -> {
+            task.dependsOn(genClientBinPatches, genServerBinPatches);
+            task.from(genClientBinPatches.get().getOutput());
+            task.from(genServerBinPatches.get().getOutput());
+        });
+        packageSrcPatches.configure(task -> {
+            task.dependsOn(genConfig);
+            task.from(genConfig.get().getPatches());
+            task.setArchiveName("srcpatches.zip");
         });
 
         project.afterEvaluate(p -> {

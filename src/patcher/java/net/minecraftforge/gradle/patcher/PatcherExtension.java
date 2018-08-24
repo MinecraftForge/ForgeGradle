@@ -11,6 +11,9 @@ import java.util.Map;
 public class PatcherExtension {
 
     public Project parent;
+    public File joinedJar;
+    public File clientJar;
+    public File serverJar;
     public File cleanSrc;
     public File patchedSrc;
     public File patches;
