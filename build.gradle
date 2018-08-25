@@ -34,6 +34,8 @@ dependencies {
     commonImplementation gradleApi()
     commonImplementation 'com.cloudbees:diff4j:1.2'
     commonImplementation 'commons-io:commons-io:2.4'
+    commonImplementation 'com.github.jponge:lzma-java:1.3' // replaces the LZMA binary
+    commonImplementation 'com.nothome:javaxdelta:2.0.1' // GDIFF implementation for BinPatches
     commonImplementation 'com.google.code.gson:gson:2.8.5'
     commonImplementation 'com.google.guava:guava:26.0-jre'
     commonImplementation 'de.siegmar:fastcsv:1.0.2'

@@ -12,6 +12,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Base64;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -129,6 +130,12 @@ public class Utils {
             } else if (cache.exists()) {
                 cache.delete();
             }
+        }
+    }
+
+    public static void forZip(ZipFile zip, Consumer<ZipEntry> consumer) {
+        for (Enumeration<? extends ZipEntry> entries = zip.entries(); entries.hasMoreElements();) {
+            consumer.accept(entries.nextElement());
         }
     }
 }

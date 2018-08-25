@@ -16,6 +16,7 @@ import java.util.zip.ZipFile;
 
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -32,6 +33,7 @@ public class TaskCreateSrg extends DefaultTask {
 
     private File srg;
     private File mappings;
+    private boolean notch = false;
     private File output = getProject().file("build/" + getName() + "/output.srg");
 
 
@@ -54,34 +56,75 @@ public class TaskCreateSrg extends DefaultTask {
             boolean tsrg = false;
             if (pts[0].startsWith("\t")) {
                 tsrg = true;
+                pts[0] = pts[0].substring(1);
             }
             if (pts[0].indexOf(':') != -1) {
                 if (pts[0].equals("PK:") || pts[0].equals("CL:")) {
-                    pts[1] = pts[2]; //Classes stay the same
+                    if (notch) {
+                        swap(pts, 1, 2);
+                    } else {
+                        pts[1] = pts[2]; //Classes stay the same
+                    }
                 } else if (pts[0].equals("FD:")) {
-                    pts[1] = remapSrg(pts[2], names);
+                    if (notch) {
+                        swap(pts, 1, 2);
+                        pts[1] = remapSrg(pts[1], names);
+                    } else {
+                        pts[1] = remapSrg(pts[2], names);
+                    }
                 } else if (pts[0].equals("MD:")) {
-                    pts[1] = remapSrg(pts[3], names);
-                    pts[2] = pts[4];
+                    if (notch) {
+                        swap(pts, 1, 3);
+                        swap(pts, 2, 4);
+                        pts[1] = remapSrg(pts[1], names);
+                    } else {
+                        pts[1] = remapSrg(pts[3], names);
+                        pts[2] = pts[4];
+                    }
                 }
             } else if (tsrg) {
-                if (pts.length == 2) {
-                    pts[0] = "\t" + names.getOrDefault(pts[1], pts[1]);
-                } else if (pts.length == 3) {
-                    pts[0] = "\t" + names.getOrDefault(pts[2], pts[2]);
+                if (pts.length == 2) { //OBF NAME
+                    if (notch) {
+                        swap(pts, 0, 1);
+                        pts[0] = names.getOrDefault(pts[0], pts[0]);
+                    } else {
+                        pts[0] = names.getOrDefault(pts[1], pts[1]);
+                    }
+                } else if (pts.length == 3) { //OBF DESC NAME
+                    if (notch) {
+                        swap(pts, 0, 2);
+                        pts[0] = names.getOrDefault(pts[0], pts[0]);
+                    } else {
+                        pts[0] = names.getOrDefault(pts[2], pts[2]);
+                    }
                     pts[1] = remapDesc(pts[1], classes);
                 } else {
                     throw new IllegalStateException("Invalid TSRG line: " + String.join(" ", pts));
                 }
+                pts[0] = '\t' + pts[0];
             } else {
-                if (pts.length == 2) {
-                    pts[0] = pts[1];
-                } else if (pts.length == 3) {
+                if (pts.length == 2) { //OBF NAME
+                    if (notch) {
+                        swap(pts, 0, 1);
+                    } else {
+                        pts[0] = pts[1];
+                    }
+                } else if (pts.length == 3) { // CLASS OBF NAME
                     pts[0] = classes.getOrDefault(pts[0], pts[0]);
-                    pts[1] = names.getOrDefault(pts[2], pts[2]);
-                } else if (pts.length == 4) {
+                    if (notch) {
+                        swap(pts, 1, 2);
+                        pts[1] = names.getOrDefault(pts[1], pts[1]);
+                    } else {
+                        pts[1] = names.getOrDefault(pts[2], pts[2]);
+                    }
+                } else if (pts.length == 4) { //CLASS OBF DESC NAME
                     pts[0] = classes.getOrDefault(pts[0], pts[0]);
-                    pts[1] = names.getOrDefault(pts[3], pts[3]);
+                    if (notch) {
+                        swap(pts, 1, 3);
+                        pts[1] = names.getOrDefault(pts[1], pts[1]);
+                    } else {
+                        pts[1] = names.getOrDefault(pts[3], pts[3]);
+                    }
                     pts[2] = remapDesc(pts[2], classes);
                 } else {
                     throw new IllegalStateException("Invalid CSRG line: " + String.join(" ", pts));
@@ -146,6 +189,12 @@ public class TaskCreateSrg extends DefaultTask {
         return names;
     }
 
+    private void swap(String[] value, int i1, int i2) {
+        String tmp = value[i1];
+        value[i1] = value[i2];
+        value[i2] = tmp;
+    }
+
     @InputFile
     public File getSrg() {
         return this.srg;
@@ -160,6 +209,17 @@ public class TaskCreateSrg extends DefaultTask {
     }
     public void setMappings(File value) {
         this.mappings = value;
+    }
+
+    @Input
+    public boolean getNotch() {
+        return notch;
+    }
+    public void toNotch() {
+        this.notch = true;
+    }
+    public void toSrg() {
+        this.notch = false;
     }
 
     @OutputFile

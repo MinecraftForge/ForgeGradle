@@ -80,6 +80,12 @@ public class TaskExtractRangeMap extends DefaultTask {
     public void setSources(Set<File> sources) {
         this.sources = sources;
     }
+    public void addSources(Set<File> values) {
+        if (this.sources == null) {
+            this.sources = new HashSet<>();
+        }
+        this.sources.addAll(values);
+    }
 
     public void addDependencies(FileCollection dependencies) {
         this.dependencies.add(dependencies);

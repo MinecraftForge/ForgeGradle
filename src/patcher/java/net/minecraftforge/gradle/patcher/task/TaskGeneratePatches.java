@@ -44,7 +44,7 @@ public class TaskGeneratePatches extends DefaultTask {
                 String diff = makePatch(o, clean.getInputStream(clean.getEntry(o)), newEntry == null ? null : dirty.getInputStream(newEntry));
                 _new.remove(o);
                 if (diff != null) {
-                    File patch = new File(getPatches(), o);
+                    File patch = new File(getPatches(), o + ".patch");
                     writePatch(patch, diff);
                     paths.remove(patch.toPath());
                 }
@@ -52,7 +52,7 @@ public class TaskGeneratePatches extends DefaultTask {
             for (String n : _new) {
                 String diff = makePatch(n, null, dirty.getInputStream(dirty.getEntry(n)));
                 if (diff != null) {
-                    File patch = new File(getPatches(), n);
+                    File patch = new File(getPatches(), n + ".patch");
                     writePatch(patch, diff);
                     paths.remove(patch.toPath());
                 }

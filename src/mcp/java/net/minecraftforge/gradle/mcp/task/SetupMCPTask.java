@@ -57,4 +57,15 @@ public class SetupMCPTask extends DefaultTask {
         this.extrasPre.put(name, function);
     }
 
+    //TODO: Not hardcode names
+    public File getClientJar() {
+        return getProject().file("build/mcp/downloadClient/client.jar");
+    }
+    public File getServerJar() {
+        return getProject().file("build/mcp/downloadServer/server.jar");
+    }
+    public File getJoinedJar() {
+        return getProject().file("build/mcp/merge/output.jar");
+    }
+
 }
