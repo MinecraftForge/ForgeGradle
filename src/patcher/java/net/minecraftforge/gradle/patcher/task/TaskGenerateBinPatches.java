@@ -235,7 +235,7 @@ public class TaskGenerateBinPatches extends DefaultTask {
     }
     public void setSide(String value) {
         this.side = value;
-        if (getOutput() == null) {
+        if (output == null) {
             setOutput(getProject().file("build/" + getName() + "/" + getSide() + ".lzma"));
         }
     }

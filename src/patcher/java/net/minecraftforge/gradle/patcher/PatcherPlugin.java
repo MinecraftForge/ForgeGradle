@@ -11,6 +11,7 @@ import net.minecraftforge.gradle.mcp.task.DownloadMCPConfigTask;
 import net.minecraftforge.gradle.mcp.task.SetupMCPTask;
 import net.minecraftforge.gradle.patcher.task.DownloadMCMetaTask;
 import net.minecraftforge.gradle.patcher.task.DownloadMCPMappingsTask;
+import net.minecraftforge.gradle.patcher.task.TakeGenerateUserdevConfig;
 import net.minecraftforge.gradle.patcher.task.TaskApplyMappings;
 import net.minecraftforge.gradle.patcher.task.TaskApplyPatches;
 import net.minecraftforge.gradle.patcher.task.TaskApplyRangeMap;
@@ -20,6 +21,7 @@ import net.minecraftforge.gradle.patcher.task.TaskDownloadAssets;
 import net.minecraftforge.gradle.patcher.task.TaskExtractMCPData;
 import net.minecraftforge.gradle.patcher.task.TaskExtractNatives;
 import net.minecraftforge.gradle.patcher.task.TaskExtractRangeMap;
+import net.minecraftforge.gradle.patcher.task.TaskFilterNewJar;
 import net.minecraftforge.gradle.patcher.task.TaskGenerateBinPatches;
 import net.minecraftforge.gradle.patcher.task.TaskGeneratePatches;
 import net.minecraftforge.gradle.patcher.task.TaskReobfuscateJar;
@@ -33,7 +35,6 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.Jar;
-import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.plugins.ide.eclipse.GenerateEclipseClasspath;
 import org.xml.sax.SAXException;
 
@@ -86,8 +87,16 @@ public class PatcherPlugin implements Plugin<Project> {
         TaskProvider<TaskGenerateBinPatches> genClientBinPatches = project.getTasks().register("genClientBinPatches", TaskGenerateBinPatches.class);
         TaskProvider<TaskGenerateBinPatches> genServerBinPatches = project.getTasks().register("genServerBinPatches", TaskGenerateBinPatches.class);
         TaskProvider<DefaultTask> genBinPatches = project.getTasks().register("genBinPatches", DefaultTask.class);
-        TaskProvider<Zip> packageSrcPatches = project.getTasks().register("packageSrcPatches", Zip.class);
+        TaskProvider<TaskFilterNewJar> filterNew = project.getTasks().register("filterJarNew", TaskFilterNewJar.class);
+        TaskProvider<Jar> sourcesJar = project.getTasks().register("sourcesJar", Jar.class);
+        TaskProvider<Jar> universalJar = project.getTasks().register("universalJar", Jar.class);
+        TaskProvider<Jar> userdevJar = project.getTasks().register("userdevJar", Jar.class);
+        TaskProvider<TakeGenerateUserdevConfig> userdevConfig = project.getTasks().register("userdevConfig", TakeGenerateUserdevConfig.class);
+        TaskProvider<DefaultTask> release = project.getTasks().register("release", DefaultTask.class);
 
+        release.configure(task -> {
+            task.dependsOn(sourcesJar, universalJar, userdevJar);
+        });
         dlMappingsConfig.configure(task -> {
             task.setMappings(extension.getMappings());
         });
@@ -189,10 +198,53 @@ public class PatcherPlugin implements Plugin<Project> {
         genBinPatches.configure(task -> {
             task.dependsOn(genJoinedBinPatches.get(), genClientBinPatches.get(), genServerBinPatches.get());
         });
-        packageSrcPatches.configure(task -> {
-            task.dependsOn(genConfig);
-            task.from(genConfig.get().getPatches());
-            task.setArchiveName("srcpatches.zip");
+        filterNew.configure(task -> {
+            task.dependsOn(reobfJar, createMcp2Obf);
+            task.setInput(reobfJar.get().getOutput());
+            task.setSrg(createMcp2Obf.get().getOutput());
+        });
+        /*
+         * All sources in SRG names.
+         * patches in /patches/
+         */
+        sourcesJar.configure(task -> {
+            task.dependsOn(genConfig, applyRangeConfig);
+            task.from(project.zipTree(applyRangeConfig.get().getOutput()));
+            task.setClassifier("sources");
+        });
+        /* Universal:
+         * All of our classes and resources as normal jar.
+         *   Should only be OUR classes, not parent patcher projects.
+         * client.lzma
+         * server.lzma
+         */
+        universalJar.configure(task -> {
+            task.dependsOn(filterNew, genClientBinPatches, genServerBinPatches);
+            task.from(project.zipTree(filterNew.get().getOutput()));
+            task.from(genClientBinPatches.get().getOutput());
+            task.from(genServerBinPatches.get().getOutput());
+            task.from(javaConv.getSourceSets().getByName("main").getResources());
+            task.setClassifier("universal");
+        });
+        /*UserDev:
+         * config.json
+         * joined.lzma
+         * sources.jar
+         * universal.jar
+         * patches/
+         *   net/minecraft/item/Item.java.patch
+         * ats/
+         *   at1.cfg
+         *   at2.cfg
+         */
+        userdevJar.configure(task -> {
+            task.dependsOn(userdevConfig, genJoinedBinPatches, sourcesJar, universalJar, genConfig);
+            task.from(userdevConfig.get().getOutput(), e -> {e.rename(f -> "config.json"); });
+            task.from(genJoinedBinPatches.get().getOutput(), e -> { e.rename(f -> "joined.lzma"); });
+            task.from(sourcesJar.get().getArchivePath(), e-> {e.rename(f -> "sources.jar"); });
+            task.from(universalJar.get().getArchivePath(), e-> {e.rename(f -> "universal.jar"); });
+            task.from(genConfig.get().getPatches(), e -> { e.into("patches/"); });
+            task.setClassifier("userdev");
         });
 
         project.afterEvaluate(p -> {
@@ -279,6 +331,8 @@ public class PatcherPlugin implements Plugin<Project> {
                     genClientBinPatches.get().dependsOn(setupMCP);
                     genServerBinPatches.get().setCleanJar(setupMCP.getServerJar());
                     genServerBinPatches.get().dependsOn(setupMCP);
+                    filterNew.get().dependsOn(setupMCP);
+                    filterNew.get().addBlacklist(setupMCP.getJoinedJar());
 
                 } else if (patcher != null) {
                     PatcherExtension pExt = extension.parent.getExtensions().getByType(PatcherExtension.class);
@@ -358,6 +412,9 @@ public class PatcherPlugin implements Plugin<Project> {
                             task.get().addPatchSet(patches);
                         }
                     }
+
+                    filterNew.get().dependsOn(tasks.getByName("jar"));
+                    filterNew.get().addBlacklist(((Jar)tasks.getByName("jar")).getArchivePath());
                 } else {
                     throw new IllegalStateException("Parent must either be a Patcher or MCP project");
                 }
@@ -372,6 +429,18 @@ public class PatcherPlugin implements Plugin<Project> {
                 }
                 SetupMCPTask setupMCP = (SetupMCPTask)mcp.getTasks().getByName("setupMCP");
                 setupMCP.addPreDecompile(project.getName() + "AccessTransformer", new AccessTransformerFunction(mcp, extension.getAccessTransformers()));
+                extension.getAccessTransformers().forEach(f -> {
+                    userdevJar.get().from(f, e -> e.into("ats/"));
+                    userdevConfig.get().addAT(f);
+                });
+            }
+
+            if (!extension.getExtraMappings().isEmpty()) {
+                extension.getExtraMappings().stream().filter(e -> e instanceof File).map(e -> (File)e).forEach(e -> {
+                    userdevJar.get().from(e, c -> c.into("srgs/"));
+                    userdevConfig.get().addSRG(e);
+                });
+                extension.getExtraMappings().stream().filter(e -> e instanceof String).map(e -> (String)e).forEach(e -> userdevConfig.get().addSRGLine(e));
             }
 
             //Make sure tasks that require a valid classpath happen after making the classpath

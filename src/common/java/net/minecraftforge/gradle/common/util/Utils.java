@@ -12,7 +12,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.Base64;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -27,7 +26,7 @@ import com.google.gson.GsonBuilder;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
 
 public class Utils {
-    public static final Gson GSON = new GsonBuilder().create();
+    public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     public static void extractFile(ZipFile zip, String name, File output) throws IOException {
         extractFile(zip, zip.getEntry(name), output);
@@ -133,9 +132,13 @@ public class Utils {
         }
     }
 
-    public static void forZip(ZipFile zip, Consumer<ZipEntry> consumer) {
+    public static void forZip(ZipFile zip, IOConsumer<ZipEntry> consumer) throws IOException {
         for (Enumeration<? extends ZipEntry> entries = zip.entries(); entries.hasMoreElements();) {
             consumer.accept(entries.nextElement());
         }
+    }
+    @FunctionalInterface
+    public static interface IOConsumer<T> {
+        public void accept(T value) throws IOException;
     }
 }
