@@ -11,7 +11,7 @@ import net.minecraftforge.gradle.mcp.task.DownloadMCPConfigTask;
 import net.minecraftforge.gradle.mcp.task.SetupMCPTask;
 import net.minecraftforge.gradle.patcher.task.DownloadMCMetaTask;
 import net.minecraftforge.gradle.patcher.task.DownloadMCPMappingsTask;
-import net.minecraftforge.gradle.patcher.task.TakeGenerateUserdevConfig;
+import net.minecraftforge.gradle.patcher.task.TaskGenerateUserdevConfig;
 import net.minecraftforge.gradle.patcher.task.TaskApplyMappings;
 import net.minecraftforge.gradle.patcher.task.TaskApplyPatches;
 import net.minecraftforge.gradle.patcher.task.TaskApplyRangeMap;
@@ -91,7 +91,7 @@ public class PatcherPlugin implements Plugin<Project> {
         TaskProvider<Jar> sourcesJar = project.getTasks().register("sourcesJar", Jar.class);
         TaskProvider<Jar> universalJar = project.getTasks().register("universalJar", Jar.class);
         TaskProvider<Jar> userdevJar = project.getTasks().register("userdevJar", Jar.class);
-        TaskProvider<TakeGenerateUserdevConfig> userdevConfig = project.getTasks().register("userdevConfig", TakeGenerateUserdevConfig.class);
+        TaskProvider<TaskGenerateUserdevConfig> userdevConfig = project.getTasks().register("userdevConfig", TaskGenerateUserdevConfig.class);
         TaskProvider<DefaultTask> release = project.getTasks().register("release", DefaultTask.class);
 
         release.configure(task -> {

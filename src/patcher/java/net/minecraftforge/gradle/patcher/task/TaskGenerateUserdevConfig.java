@@ -22,7 +22,7 @@ import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPExtension;
 import net.minecraftforge.gradle.patcher.PatcherExtension;
 
-public class TakeGenerateUserdevConfig extends DefaultTask {
+public class TaskGenerateUserdevConfig extends DefaultTask {
     private Set<File> ats = new TreeSet<>();
     private Set<File> srgs = new TreeSet<>();
     private List<String> srgLines = new ArrayList<>();
