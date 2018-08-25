@@ -35,6 +35,7 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.Jar;
+import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.plugins.ide.eclipse.GenerateEclipseClasspath;
 import org.xml.sax.SAXException;
 
@@ -161,9 +162,7 @@ public class PatcherPlugin implements Plugin<Project> {
             //TODO: Extra SRG/EXCs
         });
         genConfig.configure(task -> {
-            task.dependsOn(applyRangeBaseConfig);
             task.setOnlyIf(t -> extension.patches != null);
-            task.setModified(applyRangeBaseConfig.get().getOutput());
             task.setPatches(extension.patches);
         });
 
@@ -208,7 +207,7 @@ public class PatcherPlugin implements Plugin<Project> {
          * patches in /patches/
          */
         sourcesJar.configure(task -> {
-            task.dependsOn(genConfig, applyRangeConfig);
+            task.dependsOn(applyRangeConfig);
             task.from(project.zipTree(applyRangeConfig.get().getOutput()));
             task.setClassifier("sources");
         });
@@ -239,6 +238,7 @@ public class PatcherPlugin implements Plugin<Project> {
          */
         userdevJar.configure(task -> {
             task.dependsOn(userdevConfig, genJoinedBinPatches, sourcesJar, universalJar, genConfig);
+            task.setOnlyIf(t -> extension.srgPatches);
             task.from(userdevConfig.get().getOutput(), e -> {e.rename(f -> "config.json"); });
             task.from(genJoinedBinPatches.get().getOutput(), e -> { e.rename(f -> "joined.lzma"); });
             task.from(sourcesJar.get().getArchivePath(), e-> {e.rename(f -> "sources.jar"); });
@@ -441,6 +441,31 @@ public class PatcherPlugin implements Plugin<Project> {
                     userdevConfig.get().addSRG(e);
                 });
                 extension.getExtraMappings().stream().filter(e -> e instanceof String).map(e -> (String)e).forEach(e -> userdevConfig.get().addSRGLine(e));
+            }
+
+            //Allow generation of patches to skip S2S. For in-dev patches while the code doesn't compile.
+            if (extension.srgPatches) {
+                genConfig.get().dependsOn(applyRangeBaseConfig);
+                genConfig.get().setModified(applyRangeBaseConfig.get().getOutput());
+            } else {
+                //Remap the 'clean' with out mappings.
+                TaskApplyMappings toMCPClean = project.getTasks().register("srg2mcpClean", TaskApplyMappings.class).get();
+                toMCPClean.dependsOn(dlMappingsConfig, Lists.newArrayList(applyConfig.get().getDependsOn()));
+                toMCPClean.setInput(applyConfig.get().getClean());
+                toMCPClean.setMappings(dlMappingsConfig.get().getOutput());
+
+                //Zip up the current working folder as genPatches takes a zip
+                Zip dirtyZip = project.getTasks().register("patchedZip", Zip.class).get();
+                dirtyZip.from(extension.patchedSrc);
+                dirtyZip.setArchiveName("output.zip");
+                dirtyZip.setDestinationDir(project.file("build/" + dirtyZip.getName() + "/"));
+
+                //Fixup the inputs.
+                applyConfig.get().setDependsOn(Lists.newArrayList(toMCPClean));
+                applyConfig.get().setClean(toMCPClean.getOutput());
+                genConfig.get().setDependsOn(Lists.newArrayList(toMCPClean, dirtyZip));
+                genConfig.get().setClean(toMCPClean.getOutput());
+                genConfig.get().setModified(dirtyZip.getArchivePath());
             }
 
             //Make sure tasks that require a valid classpath happen after making the classpath

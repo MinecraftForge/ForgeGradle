@@ -26,7 +26,7 @@ import java.util.zip.ZipFile;
 
 public class TaskGeneratePatches extends DefaultTask {
     private String originalPrefix = "a/";
-    private String modifiedPrefix = "a/";
+    private String modifiedPrefix = "b/";
     private File clean;
     private File modified;
     private File patches;
