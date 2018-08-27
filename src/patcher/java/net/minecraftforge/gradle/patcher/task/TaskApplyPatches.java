@@ -41,7 +41,7 @@ public class TaskApplyPatches extends DefaultTask {
             }
 
             boolean all_success = Files.walk(getPatches().toPath())
-            .filter(p -> Files.isRegularFile(p) && p.getFileName().endsWith(".patch"))
+            .filter(p -> Files.isRegularFile(p) && p.getFileName().toString().endsWith(".patch"))
             .map(p -> {
                 boolean success = true;
                 ContextualPatch patch = ContextualPatch.create(PatchFile.from(p.toFile()), context);
