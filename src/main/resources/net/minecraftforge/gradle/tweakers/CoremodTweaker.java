@@ -46,11 +46,11 @@ public class CoremodTweaker implements ITweaker
     {
         try
         {
-            Field coreModList = Class.forName("net.minecraftforge.fml.relauncher.CoreModManager", true, classLoader).getDeclaredField("loadPlugins");
+            Field coreModList = Class.forName("net.minecraftforge.fml.relauncher.CoreModManager", true, classLoader.getClass().getClassLoader()).getDeclaredField("loadPlugins");
             coreModList.setAccessible(true);
 
             // grab constructor.
-            Class<ITweaker> clazz = (Class<ITweaker>) Class.forName("net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper", true, classLoader);
+            Class<ITweaker> clazz = (Class<ITweaker>) Class.forName("net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper", true, classLoader.getClass().getClassLoader());
             Constructor<ITweaker> construct = (Constructor<ITweaker>) clazz.getConstructors()[0];
             construct.setAccessible(true);
 
@@ -103,7 +103,7 @@ public class CoremodTweaker implements ITweaker
         // make sure its after the deobf tweaker
         try
         {
-            Field f = Class.forName(COREMOD_CLASS, true, classLoader).getDeclaredField(TWEAKER_SORT_FIELD);
+            Field f = Class.forName(COREMOD_CLASS, true, classLoader.getClass().getClassLoader()).getDeclaredField(TWEAKER_SORT_FIELD);
             f.setAccessible(true);
             ((Map<String, Integer>) f.get(null)).put(atTweaker, Integer.valueOf(1001));
         }
