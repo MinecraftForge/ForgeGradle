@@ -1,8 +1,22 @@
+plugins {
+  //id 'net.minecrell.licenser' version '0.3'
+  id 'org.ajoberstar.grgit' version '2.3.0'
+  //id 'com.github.johnrengelman.shadow' version '2.0.4'
+}
+
 apply plugin: 'java'
 apply plugin: 'maven-publish'
 
 group = 'net.minecraftforge.gradle'
-version = '3.0.0-SNAPSHOT'
+version = gitVersion()
+def gitVersion() {
+    def desc = grgit.describe(longDescr: true).split('-') as List
+    def hash = desc.remove(desc.size() - 1)
+    def offset = desc.remove(desc.size() - 1)
+    def tag = desc.join('-')
+    def branch = grgit.branch.current().name    
+    return "${tag}.${offset}${t -> if (branch != 'master') t << '-' + branch}"
+}
 
 sourceSets {
     common
@@ -58,7 +72,15 @@ publishing {
     }
     repositories {
         maven {
-            url "$buildDir/repo"
+            if (project.hasProperty('forgeMavenPassword')) {
+                credentials {
+                    username project.properties.forgeMavenUser
+                    password project.properties.forgeMavenPassword
+                }
+                url 'http://files.minecraftforge.net/maven/manage/upload'
+            } else {
+                url 'file://' + rootProject.file('repo').getAbsolutePath()
+            }
         }
     }
 }

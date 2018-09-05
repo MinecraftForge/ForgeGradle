@@ -1,1 +1,2 @@
 rootProject.name = 'ForgeGradle'
+enableFeaturePreview('STABLE_PUBLISHING') //Make building shut up.
