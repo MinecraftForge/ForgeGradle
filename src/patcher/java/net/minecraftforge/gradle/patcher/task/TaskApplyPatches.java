@@ -55,22 +55,25 @@ public class TaskApplyPatches extends DefaultTask {
                     for (int x = 0; x < result.size(); x++) {
                         PatchReport report = result.get(x);
                         if (!report.getStatus().isSuccess()) {
+                            getLogger().error("  Apply Patch: " + name);
                             success = false;
                             for (int y = 0; y < report.hunkReports().size(); y++) {
                                 HunkReport hunk = report.hunkReports().get(y);
                                 if (hunk.hasFailed()) {
                                     if (hunk.failure == null) {
-                                        getLogger().error("  Hunk #" + hunk.hunkID + " Failed @" + hunk.index + " Fuzz: " + hunk.fuzz);
+                                        getLogger().error("    Hunk #" + hunk.hunkID + " Failed @" + hunk.index + " Fuzz: " + hunk.fuzz);
                                     } else {
-                                        getLogger().error("  Hunk #" + hunk.hunkID + " Failed: " + hunk.failure.getMessage());
+                                        getLogger().error("    Hunk #" + hunk.hunkID + " Failed: " + hunk.failure.getMessage());
                                     }
                                 }
                             }
                         }
                     }
                 } catch (PatchException e) {
-                    getLogger().error("  " + e.getMessage());
+                    getLogger().error("  Apply Patch: " + name);
+                    getLogger().error("    " + e.getMessage());
                 } catch (IOException e) {
+                    getLogger().error("  Apply Patch: " + name);
                     throw new RuntimeException(e);
                 }
                 return success;

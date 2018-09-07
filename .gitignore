@@ -1,6 +1,7 @@
 # gradle
 .gradle
 build
+repo
 
 # eclipse
 .settings

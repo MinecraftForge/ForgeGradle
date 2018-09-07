@@ -26,9 +26,8 @@ public abstract class AbstractFileDownloadFunction implements MCPFunction {
 
     @Override
     public File execute(MCPEnvironment environment) throws Exception {
-        String outputString = environment.getArguments().getOrDefault("output", outputGetter.apply(environment));
-        File output = environment.getFile(outputString);
-        File download = !output.exists() ? output : environment.getFile(outputString + ".new");
+        File output = (File)environment.getArguments().computeIfAbsent("output", k -> environment.getFile(outputGetter.apply(environment)));
+        File download = !output.exists() ? output : environment.getFile(output.getAbsolutePath() + ".new");
 
         Utils.delete(download); // This file should never exist, but abrupt termination of the process may leave it behind
 

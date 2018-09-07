@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.mcp.function;
 
+import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import com.google.gson.JsonObject;
 
@@ -17,6 +18,9 @@ public interface MCPFunction {
     File execute(MCPEnvironment environment) throws Exception;
 
     default void cleanup(MCPEnvironment environment) {
+    }
+
+    default void addInputs(HashStore cache, String prefix) {
     }
 
 }

@@ -2,6 +2,7 @@ package net.minecraftforge.gradle.mcp.function;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
@@ -28,10 +29,10 @@ public class ExecuteFunction implements MCPFunction {
 
     private static final Pattern REPLACE_PATTERN = Pattern.compile("^\\{(\\w+)\\}$");
 
-    private final CompletableFuture<File> jar;
-    private final String[] jvmArgs;
-    private final String[] runArgs;
-    private final Map<String, String> envVars;
+    protected final CompletableFuture<File> jar;
+    protected final String[] jvmArgs;
+    protected final String[] runArgs;
+    protected final Map<String, String> envVars;
 
     private JsonObject data;
 
@@ -56,14 +57,14 @@ public class ExecuteFunction implements MCPFunction {
     @Override
     public File execute(MCPEnvironment environment) throws IOException, InterruptedException, ExecutionException {
         // Add an output and log argument if there wasn't one
-        Map<String, String> arguments = environment.getArguments();
-        String outputExtension = arguments.getOrDefault("outputExtension", "jar");
-        arguments.computeIfAbsent("output", k -> environment.getFile("output." + outputExtension).getAbsolutePath());
-        arguments.computeIfAbsent("log", k -> environment.getFile("log.log").getAbsolutePath());
+        Map<String, Object> arguments = environment.getArguments();
+        String outputExtension = (String)arguments.getOrDefault("outputExtension", "jar");
+        arguments.computeIfAbsent("output", k -> environment.getFile("output." + outputExtension));
+        arguments.computeIfAbsent("log", k -> environment.getFile("log.log"));
 
         // Get input and output files
         File jar = this.jar.get();
-        File output = environment.getFile(environment.getArguments().get("output"));
+        File output = (File)environment.getArguments().get("output");
 
         // Find out what the inputs are
         Map<String, Object> replacedArgs = new HashMap<>();
@@ -73,8 +74,7 @@ public class ExecuteFunction implements MCPFunction {
         replacedArgs.remove("output");
         replacedArgs.remove("log");
 
-        File hashFile = environment.getFile("lastinput.sha1");
-        HashStore hashStore = new HashStore(environment.project).load(hashFile);
+        HashStore hashStore = new HashStore(environment.project).load(environment.getFile("lastinput.sha1"));
         hashStore.add("args", String.join(" ", runArgs));
         hashStore.add("jvmargs", String.join(" ", runArgs));
         hashStore.add("jar", jar);
@@ -112,24 +112,27 @@ public class ExecuteFunction implements MCPFunction {
         environment.project.getTasks().remove(java);
 
         // Return the output file
-        hashStore.save(hashFile);
+        hashStore.save();
         return output;
     }
 
-    private List<String> applyVariableSubstitutions(MCPEnvironment environment, List<String> list, Map<String, String> arguments, Map<String, Object> inputs) {
+    private List<String> applyVariableSubstitutions(MCPEnvironment environment, List<String> list, Map<String, Object> arguments, Map<String, Object> inputs) {
         return list.stream().map(s -> applyVariableSubstitutions(environment, s, arguments, inputs)).collect(Collectors.toList());
     }
 
-    private String applyVariableSubstitutions(MCPEnvironment environment, String value, Map<String, String> arguments, Map<String, Object> inputs) {
+    private String applyVariableSubstitutions(MCPEnvironment environment, String value, Map<String, Object> arguments, Map<String, Object> inputs) {
         Matcher matcher = REPLACE_PATTERN.matcher(value);
         if (!matcher.find()) return value; // Not a replaceable string
 
         String argName = matcher.group(1);
         if (argName != null) {
-            String argument = arguments.get(argName);
-            if (argument != null) {
+            Object argument = arguments.get(argName);
+            if (argument instanceof File) {
                 inputs.put(argName, argument);
-                return argument;
+                return ((File)argument).getAbsolutePath();
+            } else if (argument instanceof String) {
+                inputs.put(argName, argument);
+                return (String)argument;
             }
 
             JsonElement dataElement = data.get(argName);

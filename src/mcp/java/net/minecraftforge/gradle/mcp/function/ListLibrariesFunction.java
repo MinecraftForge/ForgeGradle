@@ -18,8 +18,7 @@ public class ListLibrariesFunction implements MCPFunction {
 
     @Override
     public File execute(MCPEnvironment environment) {
-        String outputString = environment.getArguments().getOrDefault("output", "libraries.txt");
-        File output = environment.getFile(outputString);
+        File output = (File)environment.getArguments().computeIfAbsent("output", (key) -> environment.getFile("libraries.txt"));
 
         try {
             Gson gson = new Gson();

@@ -15,7 +15,7 @@ def gitVersion() {
     def offset = desc.remove(desc.size() - 1)
     def tag = desc.join('-')
     def branch = grgit.branch.current().name    
-    return "${tag}.${offset}${t -> if (branch != 'master') t << '-' + branch}"
+    return "${tag}.${offset}" //${t -> if (branch != 'master') t << '-' + branch}"
 }
 
 sourceSets {

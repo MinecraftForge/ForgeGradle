@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.mcp.task;
 
+import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
 import net.minecraftforge.gradle.mcp.util.MCPConfig;
@@ -11,15 +12,32 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class SetupMCPTask extends DefaultTask {
 
-    private Map<String, MCPFunction> extrasPre = new LinkedHashMap<>(); //TODO: Make this cacheable somehow?
+    private Map<String, MCPFunction> extrasPre = new LinkedHashMap<>();
     private MCPConfig config;
 
     private File output = getProject().file("build/" + getName() + "/output.zip");
+
+    public SetupMCPTask() {
+        this.getOutputs().upToDateWhen(task -> {
+            HashStore cache = new HashStore(getProject());
+            try {
+                cache.load(getProject().file("build/" + getName() + "/inputcache.sha1"));
+                cache.add("configFile", getConfigFile());
+                extrasPre.forEach((key, func) -> func.addInputs(cache, key + "."));
+                cache.save();
+                return cache.isSame() && getOutput().exists();
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            }
+        });
+    }
 
 
     @OutputFile

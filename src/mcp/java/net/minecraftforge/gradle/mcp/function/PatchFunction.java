@@ -44,7 +44,7 @@ public class PatchFunction implements MCPFunction {
 
     @Override
     public File execute(MCPEnvironment environment) throws Exception {
-        File input = new File(environment.getArguments().get("input"));
+        File input = (File)environment.getArguments().get("input");
         File output = environment.getFile("output.jar");
 
         File hashFile = environment.getFile("lastinput.sha1");

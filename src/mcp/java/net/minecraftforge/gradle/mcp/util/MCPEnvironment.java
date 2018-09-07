@@ -20,7 +20,7 @@ public class MCPEnvironment {
         this.mcVersion = mcVersion;
     }
 
-    public Map<String, String> getArguments() {
+    public Map<String, Object> getArguments() {
         return runtime.currentStep.arguments;
     }
 

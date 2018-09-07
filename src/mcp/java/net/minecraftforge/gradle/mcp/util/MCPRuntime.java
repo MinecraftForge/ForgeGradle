@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
 public class MCPRuntime {
@@ -80,7 +81,7 @@ public class MCPRuntime {
         for (Step step : steps.values()) {
             logger.lifecycle(" > Running '" + step.name + "'");
             currentStep = step;
-            step.arguments.replaceAll((key, value) -> applyStepOutputSubstitutions(value));
+            step.arguments.replaceAll((key, value) -> value instanceof String ? applyStepOutputSubstitutions((String)value) : value);
             ret = step.execute();
         }
 
@@ -88,13 +89,13 @@ public class MCPRuntime {
         return ret;
     }
 
-    private String applyStepOutputSubstitutions(String value) {
+    private Object applyStepOutputSubstitutions(String value) {
         Matcher matcher = OUTPUT_REPLACE_PATTERN.matcher(value);
         if (!matcher.find()) return value; // Not a replaceable string
 
         String stepName = matcher.group(1);
         if (stepName != null) {
-            return environment.getStepOutput(stepName).getAbsolutePath();
+            return environment.getStepOutput(stepName);
         }
         throw new IllegalStateException("The string '" + value + "' did not return a valid substitution match!");
     }
@@ -104,7 +105,7 @@ public class MCPRuntime {
         private final String name;
         private final MCPFunction function;
         private final MCPFunctionOverlay overlay;
-        final Map<String, String> arguments;
+        final Map<String, Object> arguments;
         final File workingDirectory;
         File output;
 
@@ -113,7 +114,7 @@ public class MCPRuntime {
             this.name = name;
             this.function = function;
             this.overlay = overlay;
-            this.arguments = arguments;
+            this.arguments = arguments.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> (Object)e.getValue()));
             this.workingDirectory = workingDirectory;
         }
 

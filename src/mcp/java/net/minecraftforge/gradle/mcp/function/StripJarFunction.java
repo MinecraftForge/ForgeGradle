@@ -39,9 +39,9 @@ public class StripJarFunction implements MCPFunction {
 
     @Override
     public File execute(MCPEnvironment environment) throws Exception {
-        File input = new File(environment.getArguments().get("input"));
+        File input = (File)environment.getArguments().get("input");
         File output = environment.getFile("output.jar");
-        boolean whitelist = environment.getArguments().getOrDefault("mode", "whitelist").equalsIgnoreCase("whitelist");
+        boolean whitelist = ((String)environment.getArguments().getOrDefault("mode", "whitelist")).equalsIgnoreCase("whitelist");
 
         File hashFile = environment.getFile("lastinput.sha1");
         HashStore hashStore = new HashStore(environment.project).load(hashFile);

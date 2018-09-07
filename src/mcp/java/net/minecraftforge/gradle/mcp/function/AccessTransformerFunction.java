@@ -1,17 +1,22 @@
 package net.minecraftforge.gradle.mcp.function;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
 import org.gradle.api.Project;
 
 import com.google.gson.JsonObject;
 
+import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.mcp.task.ValidateMCPConfigTask;
 import net.minecraftforge.gradle.mcp.util.MCPConfig;
+import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 
 public class AccessTransformerFunction extends ExecuteFunction {
     private List<File> files;
@@ -45,5 +50,17 @@ public class AccessTransformerFunction extends ExecuteFunction {
     @Override
     protected void addInputs(HashStore cache) {
         cache.add(files);
+    }
+
+    @Override
+    public void addInputs(HashStore cache, String prefix) { //Called by setupMain before executed
+        cache.add(prefix + "args", String.join(" ", runArgs));
+        cache.add(prefix + "jvmargs", String.join(" ", runArgs));
+        try {
+            cache.add(prefix + "jar", jar.get());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        addInputs(cache);
     }
 }
