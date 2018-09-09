@@ -85,7 +85,7 @@ public class TaskGeneratePatches extends DefaultTask {
         String originalData = original == null ? "" : new String(IOUtils.toByteArray(original), StandardCharsets.UTF_8);
         String modifiedData = modified == null ? "" : new String(IOUtils.toByteArray(modified), StandardCharsets.UTF_8);
 
-        final Diff diff = Diff.diff(new StringReader(originalData), new StringReader(modifiedData), true);
+        final Diff diff = Diff.diff(new StringReader(originalData), new StringReader(modifiedData), false);
 
         if (!diff.isEmpty()) {
             return diff.toUnifiedDiff(originalRelative, modifiedRelative,
