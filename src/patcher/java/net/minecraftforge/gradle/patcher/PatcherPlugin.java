@@ -4,7 +4,6 @@ import groovy.util.Node;
 import groovy.util.XmlParser;
 import groovy.xml.XmlUtil;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
-import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPPlugin;
 import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
 import net.minecraftforge.gradle.mcp.task.DownloadMCPConfigTask;
@@ -54,6 +53,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class PatcherPlugin implements Plugin<Project> {
     private static final String MC_DEP_CONFIG = "compile";
@@ -100,9 +100,6 @@ public class PatcherPlugin implements Plugin<Project> {
         });
         dlMappingsConfig.configure(task -> {
             task.setMappings(extension.getMappings());
-        });
-        dlMCMetaConfig.configure(task -> {
-            task.setMcVersion(extension.mcVersion);
         });
         extractNatives.configure(task -> {
             task.dependsOn(dlMCMetaConfig.get());
@@ -338,6 +335,11 @@ public class PatcherPlugin implements Plugin<Project> {
                     PatcherExtension pExt = extension.parent.getExtensions().getByType(PatcherExtension.class);
                     extension.copyFrom(pExt);
 
+
+                    if (dlMCMetaConfig.get().getMCVersion() == null) {
+                        dlMCMetaConfig.get().setMCVersion(extension.mcVersion);
+                    }
+
                     if (dlMappingsConfig.get().getMappings() == null) {
                         dlMappingsConfig.get().setMappings(extension.getMappings());
                     }
@@ -472,12 +474,12 @@ public class PatcherPlugin implements Plugin<Project> {
             p.getTasks().withType(GenerateEclipseClasspath.class, t -> { t.dependsOn(extractNatives.get(), downloadAssets.get()); });
             //TODO: IntelliJ plugin?
 
-            doEclipseFixes(project, natives_folder, extension);
+            doEclipseFixes(project, natives_folder, extension, downloadAssets.get().getOutput());
         });
     }
 
     @SuppressWarnings("unchecked")
-    private void doEclipseFixes(Project project, File natives, PatcherExtension extension) {
+    private void doEclipseFixes(Project project, File natives, PatcherExtension extension, File assets) {
         final String LIB_ATTR = "org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY";
         project.getTasks().withType(GenerateEclipseClasspath.class, task -> {
             task.doFirst(t -> {
@@ -524,9 +526,20 @@ public class PatcherPlugin implements Plugin<Project> {
                         xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.MAIN_TYPE", "value", main));
                         xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.PROJECT_ATTR", "value", project.getName()));
                         xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.WORKING_DIRECTORY", "value", run_dir.getAbsolutePath()));
+
                         Node env = xml.appendNode("mapAttribute", props("key", "org.eclipse.debug.core.environmentVariables"));
-                        env.appendNode("mapEntry", props("key", "assetDirectory", "value", Utils.getCache(project, "assets/").getAbsolutePath()));
-                        (client ? extension.getClientRun().getEnv() : extension.getServerRun().getEnv()).forEach((k,v) -> env.appendNode("mapEntry", props("key", k, "value", v)));
+                        env.appendNode("mapEntry", props("key", "assetDirectory", "value", assets.getAbsolutePath()));
+                        (client ? extension.getClientRun() : extension.getServerRun()).getEnvironment().forEach((k,v) -> env.appendNode("mapEntry", props("key", k, "value", v)));
+
+                        String props = (client ? extension.getClientRun() : extension.getServerRun()).getProperties().entrySet().stream().map(e -> {
+                            String val = e.getValue();
+                            if (val.indexOf(' ') != -1) val = "\"" + e.getValue().replaceAll("\"", "\\\"") + "\"";
+                            return "-D" + e.getKey() + "=" + val;
+                        }).collect(Collectors.joining("\n"));
+
+                        if (!props.isEmpty()) {
+                            xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.VM_ARGUMENTS", "value", props));
+                        }
 
                         try (OutputStream fos = new FileOutputStream(project.file(client ? "RunClient" + niceName +".launch" : "RunServer" + niceName +".launch"))) {
                             IOUtils.write(XmlUtil.serialize(xml), fos, StandardCharsets.UTF_8);

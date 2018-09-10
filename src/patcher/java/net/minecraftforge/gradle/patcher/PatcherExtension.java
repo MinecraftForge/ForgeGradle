@@ -1,6 +1,5 @@
 package net.minecraftforge.gradle.patcher;
 
-import org.gradle.api.Action;
 import org.gradle.api.Project;
 
 import groovy.lang.Closure;
@@ -121,24 +120,39 @@ public class PatcherExtension {
     public static class RunConfig {
         private String main;
         private Map<String, String> env = new HashMap<>();
+        private Map<String, String> props = new HashMap<>();
 
-        public void env(Map<String, Object> map) {
+        public void setEnvironment(Map<String, Object> map) {
             map.forEach((k,v) -> env.put(k, v instanceof File ? ((File)v).getAbsolutePath() : (String)v));
         }
-        public void env(String key, String value) {
+        public void environment(String key, String value) {
             env.put(key, value);
         }
-        public void env(String key, File value) {
+        public void environment(String key, File value) {
             env.put(key, value.getAbsolutePath());
         }
-        public Map<String, String> getEnv() {
+        public Map<String, String> getEnvironment() {
             return env;
         }
+
         public void setMain(String value) {
             this.main = value;
         }
         public String getMain() {
             return this.main;
+        }
+
+        public void setProperties(Map<String, Object> map) {
+            map.forEach((k,v) -> props.put(k, v instanceof File ? ((File)v).getAbsolutePath() : (String)v));
+        }
+        public void property(String key, String value) {
+            props.put(key, value);
+        }
+        public void property(String key, File value) {
+            props.put(key, value.getAbsolutePath());
+        }
+        public Map<String, String> getProperties() {
+            return props;
         }
     }
 }

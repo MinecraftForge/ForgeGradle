@@ -50,6 +50,10 @@ public class TaskDownloadAssets extends DefaultTask {
         this.meta = value;
     }
 
+    public File getOutput() {
+        return Utils.getCache(getProject(), "assets/");
+    }
+
     private static class AssetIndex {
         Map<String, Asset> objects;
     }

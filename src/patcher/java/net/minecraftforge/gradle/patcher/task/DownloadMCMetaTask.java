@@ -51,7 +51,7 @@ public class DownloadMCMetaTask extends DefaultTask {
         return output;
     }
 
-    public void setMcVersion(String mcVersion) {
+    public void setMCVersion(String mcVersion) {
         this.mcVersion = mcVersion;
     }
 
