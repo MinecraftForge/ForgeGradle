@@ -472,12 +472,12 @@ public class PatcherPlugin implements Plugin<Project> {
             p.getTasks().withType(GenerateEclipseClasspath.class, t -> { t.dependsOn(extractNatives.get(), downloadAssets.get()); });
             //TODO: IntelliJ plugin?
 
-            doEclipseFixes(project, natives_folder);
+            doEclipseFixes(project, natives_folder, extension);
         });
     }
 
     @SuppressWarnings("unchecked")
-    private void doEclipseFixes(Project project, File natives) {
+    private void doEclipseFixes(Project project, File natives, PatcherExtension extension) {
         final String LIB_ATTR = "org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY";
         project.getTasks().withType(GenerateEclipseClasspath.class, task -> {
             task.doFirst(t -> {
@@ -519,11 +519,14 @@ public class PatcherPlugin implements Plugin<Project> {
                     String niceName = project.getName().substring(0, 1).toUpperCase() + project.getName().substring(1);
                     for (boolean client : new boolean[] {true, false}) {
                         xml = new Node(null, "launchConfiguration", props("type", "org.eclipse.jdt.launching.localJavaApplication"));
-                        xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.MAIN_TYPE", "value", client ? "mcp.client.Start" : "net.minecraft.server.MinecraftServer"));
+                        String main = client ? (extension.getClientRun().getMain() != null ? extension.getClientRun().getMain() : "mcp.client.Start") :
+                                               (extension.getServerRun().getMain() != null ? extension.getServerRun().getMain() : "net.minecraft.server.MinecraftServer" );
+                        xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.MAIN_TYPE", "value", main));
                         xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.PROJECT_ATTR", "value", project.getName()));
                         xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.WORKING_DIRECTORY", "value", run_dir.getAbsolutePath()));
                         Node env = xml.appendNode("mapAttribute", props("key", "org.eclipse.debug.core.environmentVariables"));
                         env.appendNode("mapEntry", props("key", "assetDirectory", "value", Utils.getCache(project, "assets/").getAbsolutePath()));
+                        (client ? extension.getClientRun().getEnv() : extension.getServerRun().getEnv()).forEach((k,v) -> env.appendNode("mapEntry", props("key", k, "value", v)));
 
                         try (OutputStream fos = new FileOutputStream(project.file(client ? "RunClient" + niceName +".launch" : "RunServer" + niceName +".launch"))) {
                             IOUtils.write(XmlUtil.serialize(xml), fos, StandardCharsets.UTF_8);

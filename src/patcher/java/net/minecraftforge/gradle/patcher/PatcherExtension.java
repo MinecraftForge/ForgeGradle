@@ -1,10 +1,14 @@
 package net.minecraftforge.gradle.patcher;
 
+import org.gradle.api.Action;
 import org.gradle.api.Project;
+
+import groovy.lang.Closure;
 
 import javax.inject.Inject;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +24,8 @@ public class PatcherExtension {
     private List<Object> extraMappings = new ArrayList<>();
     private List<Object> extraExcs = new ArrayList<>();
     private List<File> accessTransformers = new ArrayList<>();
+    private RunConfig clientRun = new RunConfig();
+    private RunConfig serverRun = new RunConfig();
 
     @Inject
     public PatcherExtension(Project project) {
@@ -92,4 +98,47 @@ public class PatcherExtension {
         this.accessTransformers.add(file);
     }
 
+    public void setClientRun(Closure<? super RunConfig> action) {
+        action.setResolveStrategy(Closure.DELEGATE_FIRST);
+        action.setDelegate(clientRun);
+        action.call();
+    }
+
+    public RunConfig getClientRun() {
+        return clientRun;
+    }
+
+    public void setServerRun(Closure<? super RunConfig> action) {
+        action.setResolveStrategy(Closure.DELEGATE_FIRST);
+        action.setDelegate(serverRun);
+        action.call();
+    }
+
+    public RunConfig getServerRun() {
+        return serverRun;
+    }
+
+    public static class RunConfig {
+        private String main;
+        private Map<String, String> env = new HashMap<>();
+
+        public void env(Map<String, Object> map) {
+            map.forEach((k,v) -> env.put(k, v instanceof File ? ((File)v).getAbsolutePath() : (String)v));
+        }
+        public void env(String key, String value) {
+            env.put(key, value);
+        }
+        public void env(String key, File value) {
+            env.put(key, value.getAbsolutePath());
+        }
+        public Map<String, String> getEnv() {
+            return env;
+        }
+        public void setMain(String value) {
+            this.main = value;
+        }
+        public String getMain() {
+            return this.main;
+        }
+    }
 }
