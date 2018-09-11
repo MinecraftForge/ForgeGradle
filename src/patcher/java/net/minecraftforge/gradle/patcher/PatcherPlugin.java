@@ -152,6 +152,7 @@ public class PatcherPlugin implements Plugin<Project> {
             //TODO: Extra SRG/EXCs
         });
         applyRangeBaseConfig.configure(task -> {
+            task.setOnlyIf(t -> extension.patches != null);
             task.dependsOn(extractRangeConfig, createMcp2Srg, createExc);
             task.setRangeMap(extractRangeConfig.get().getOutput());
             task.setSrgFiles(createMcp2Srg.get().getOutput());
