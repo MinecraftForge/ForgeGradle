@@ -336,11 +336,6 @@ public class PatcherPlugin implements Plugin<Project> {
                     PatcherExtension pExt = extension.parent.getExtensions().getByType(PatcherExtension.class);
                     extension.copyFrom(pExt);
 
-
-                    if (dlMCMetaConfig.get().getMCVersion() == null) {
-                        dlMCMetaConfig.get().setMCVersion(extension.mcVersion);
-                    }
-
                     if (dlMappingsConfig.get().getMappings() == null) {
                         dlMappingsConfig.get().setMappings(extension.getMappings());
                     }
@@ -424,6 +419,10 @@ public class PatcherPlugin implements Plugin<Project> {
             }
             MinecraftRepo.attach(project);
             project.getDependencies().add(MC_DEP_CONFIG, "net.minecraft:client:" + extension.mcVersion + ":extra");
+
+            if (dlMCMetaConfig.get().getMCVersion() == null) {
+                dlMCMetaConfig.get().setMCVersion(extension.mcVersion);
+            }
 
             if (!extension.getAccessTransformers().isEmpty()) {
                 Project mcp = getMcpParent(project);

@@ -8,6 +8,7 @@ import java.io.File;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class MavenArtifactDownloader {
 
@@ -17,6 +18,9 @@ public class MavenArtifactDownloader {
         Configuration cfg = project.getConfigurations().create("downloadDeps" + COUNTERS.getOrDefault(project, 0));
         Dependency dependency = project.getDependencies().create(artifact);
         cfg.getDependencies().add(dependency);
+        cfg.resolutionStrategy(strat -> {
+           strat.cacheDynamicVersionsFor(10, TimeUnit.MINUTES);
+        });
         Set<File> files = cfg.resolve();
         project.getConfigurations().remove(cfg);
         COUNTERS.compute(project, (proj, prev) -> (prev != null ? prev : 0) + 1);

@@ -1,22 +1,17 @@
 package net.minecraftforge.gradle.mcp.function;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
 import org.gradle.api.Project;
 
 import com.google.gson.JsonObject;
 
-import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.mcp.task.ValidateMCPConfigTask;
 import net.minecraftforge.gradle.mcp.util.MCPConfig;
-import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 
 public class AccessTransformerFunction extends ExecuteFunction {
     private List<File> files;
@@ -30,7 +25,7 @@ public class AccessTransformerFunction extends ExecuteFunction {
     private static CompletableFuture<File> getJar(Project mcp) {
         MCPConfig cfg  = ((ValidateMCPConfigTask)mcp.getTasks().getByName("validateConfig")).processed;
         CompletableFuture<File> jar = new CompletableFuture<>();
-        cfg.dependencies.put("net.minecraftforge:accesstransformers:0.10.0-rc.4.10+:fatjar", jar); //TODO: configurable version?
+        cfg.dependencies.put("net.minecraftforge:accesstransformers:0.10.0-rc.4.+:fatjar", jar); //TODO: configurable version?
         return jar;
     }
 
