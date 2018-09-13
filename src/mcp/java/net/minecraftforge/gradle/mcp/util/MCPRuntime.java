@@ -65,9 +65,9 @@ public class MCPRuntime {
     public File execute(Logger logger) throws Exception {
         environment.logger = logger;
 
-        logger.lifecycle("Setting up MCP environment!");
+        logger.lifecycle("Setting up MCP environment");
 
-        logger.lifecycle("Initializing steps!");
+        logger.lifecycle("Initializing steps");
         ZipFile zip = new ZipFile(zipFile);
         for (Step step : steps.values()) {
             logger.info(" > Initializing '" + step.name + "'");
@@ -77,7 +77,7 @@ public class MCPRuntime {
         zip.close();
 
         File ret = null;
-        logger.lifecycle("Executing steps!");
+        logger.lifecycle("Executing steps");
         for (Step step : steps.values()) {
             logger.lifecycle(" > Running '" + step.name + "'");
             currentStep = step;
@@ -85,7 +85,7 @@ public class MCPRuntime {
             ret = step.execute();
         }
 
-        logger.lifecycle("MCP environment setup is complete!");
+        logger.lifecycle("MCP environment setup is complete");
         return ret;
     }
 
