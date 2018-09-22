@@ -129,6 +129,9 @@ public class TaskApplyRangeMap extends DefaultTask {
             this.excs.add(value);
         }
     }
+    public void setExcFiles(Collection<File> values) {
+        this.excs.addAll(values);
+    }
     /*
     @Input
     public Set<String> getExcExtra() {

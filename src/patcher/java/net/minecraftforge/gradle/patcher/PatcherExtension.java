@@ -23,6 +23,7 @@ public class PatcherExtension {
     private List<Object> extraMappings = new ArrayList<>();
     private List<Object> extraExcs = new ArrayList<>();
     private List<File> accessTransformers = new ArrayList<>();
+    private List<File> excs = new ArrayList<>();
     private RunConfig clientRun = new RunConfig();
     private RunConfig serverRun = new RunConfig();
 
@@ -44,6 +45,10 @@ public class PatcherExtension {
 
     public List<File> getAccessTransformers() {
         return accessTransformers;
+    }
+
+    public List<File> getExcs() {
+        return excs;
     }
 
     // mappings channel: 'snapshot', version: '20180101'
@@ -95,6 +100,15 @@ public class PatcherExtension {
 
     public void setAccessTransformer(File file) {
         this.accessTransformers.add(file);
+    }
+
+    public void setExc(List<File> files) {
+         this.excs.clear();
+         this.excs.addAll(files);
+    }
+
+    public void setExc(File file) {
+        this.excs.add(file);
     }
 
     public void setClientRun(Closure<? super RunConfig> action) {

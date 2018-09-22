@@ -17,6 +17,7 @@ import net.minecraftforge.gradle.patcher.task.TaskApplyRangeMap;
 import net.minecraftforge.gradle.patcher.task.TaskCreateExc;
 import net.minecraftforge.gradle.patcher.task.TaskCreateSrg;
 import net.minecraftforge.gradle.patcher.task.TaskDownloadAssets;
+import net.minecraftforge.gradle.patcher.task.TaskExtractExistingFiles;
 import net.minecraftforge.gradle.patcher.task.TaskExtractMCPData;
 import net.minecraftforge.gradle.patcher.task.TaskExtractNatives;
 import net.minecraftforge.gradle.patcher.task.TaskExtractRangeMap;
@@ -28,6 +29,7 @@ import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.file.FileTree;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.SourceSet;
@@ -35,6 +37,7 @@ import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
+import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.plugins.ide.eclipse.GenerateEclipseClasspath;
 import org.xml.sax.SAXException;
 
@@ -68,6 +71,7 @@ public class PatcherPlugin implements Plugin<Project> {
         final File natives_folder = project.file("build/natives/");
 
         Jar jarConfig = (Jar)project.getTasks().getByName("jar");
+        JavaCompile javaCompile = (JavaCompile)project.getTasks().getByName("compileJava");
 
         TaskProvider<DownloadMCPMappingsTask> dlMappingsConfig = project.getTasks().register("downloadMappings", DownloadMCPMappingsTask.class);
         TaskProvider<DownloadMCMetaTask> dlMCMetaConfig = project.getTasks().register("downloadMCMeta", DownloadMCMetaTask.class);
@@ -124,8 +128,8 @@ public class PatcherPlugin implements Plugin<Project> {
             task.into(extension.patchedSrc);
         });
         extractRangeConfig.configure(task -> {
+            task.dependsOn(jarConfig);
             task.setOnlyIf(t -> extension.patches != null);
-            task.addDependencies(project.getConfigurations().getByName(MC_DEP_CONFIG));
             task.addDependencies(jarConfig.getArchivePath());
         });
 
@@ -149,7 +153,6 @@ public class PatcherPlugin implements Plugin<Project> {
             task.setRangeMap(extractRangeConfig.get().getOutput());
             task.setSrgFiles(createMcp2Srg.get().getOutput());
             task.setExcFiles(createExc.get().getOutput());
-            //TODO: Extra SRG/EXCs
         });
         applyRangeBaseConfig.configure(task -> {
             task.setOnlyIf(t -> extension.patches != null);
@@ -157,7 +160,6 @@ public class PatcherPlugin implements Plugin<Project> {
             task.setRangeMap(extractRangeConfig.get().getOutput());
             task.setSrgFiles(createMcp2Srg.get().getOutput());
             task.setExcFiles(createExc.get().getOutput());
-            //TODO: Extra SRG/EXCs
         });
         genConfig.configure(task -> {
             task.setOnlyIf(t -> extension.patches != null);
@@ -263,6 +265,7 @@ public class PatcherPlugin implements Plugin<Project> {
             mainSource.java(v -> { v.srcDir(extension.patchedSrc); });
             mainSource.resources(v -> { }); //TODO: Asset downloading, needs asset index from json.
             javaConv.getSourceSets().stream().forEach(s -> extractRangeConfig.get().addSources(s.getJava().getSrcDirs()));
+            extractRangeConfig.get().addDependencies(javaCompile.getClasspath());
 
             if (extension.patches != null && !extension.patches.exists()) { //Auto-make folders so that gradle doesnt explode some tasks.
                 extension.patches.mkdirs();
@@ -437,6 +440,9 @@ public class PatcherPlugin implements Plugin<Project> {
                 });
             }
 
+            applyRangeConfig.get().setExcFiles(extension.getExcs());
+            applyRangeBaseConfig.get().setExcFiles(extension.getExcs());
+
             if (!extension.getExtraMappings().isEmpty()) {
                 extension.getExtraMappings().stream().filter(e -> e instanceof File).map(e -> (File)e).forEach(e -> {
                     userdevJar.get().from(e, c -> c.into("srgs/"));
@@ -475,6 +481,31 @@ public class PatcherPlugin implements Plugin<Project> {
             //TODO: IntelliJ plugin?
 
             doEclipseFixes(project, natives_folder, extension, downloadAssets.get().getOutput());
+
+            if (project.hasProperty("UPDATE_MAPPINGS")) {
+                String version = (String)project.property("UPDATE_MAPPINGS");
+                String channel = project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String)project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot";
+
+                TaskProvider<DownloadMCPMappingsTask> dlMappingsNew = project.getTasks().register("downloadMappingsNew", DownloadMCPMappingsTask.class);
+                dlMappingsNew.get().setMappings("de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip");
+
+                TaskProvider<TaskApplyMappings> toMCPNew = project.getTasks().register("srg2mcpNew", TaskApplyMappings.class);
+                toMCPNew.get().dependsOn(dlMappingsNew.get(), applyRangeConfig.get());
+                toMCPNew.get().setInput(applyRangeConfig.get().getOutput());
+                toMCPNew.get().setMappings(dlMappingsConfig.get().getOutput());
+
+                TaskProvider<TaskExtractExistingFiles> extractMappedNew = project.getTasks().register("extractMappedNew", TaskExtractExistingFiles.class);
+                extractMappedNew.get().dependsOn(toMCPNew.get());
+                extractMappedNew.get().setArchive(toMCPNew.get().getOutput());
+                for (File dir : mainSource.getJava().getSrcDirs()) {
+                    if (dir.equals(extension.patchedSrc)) //Don't overwrite the patched code, re-setup the project.
+                        continue;
+                    extractMappedNew.get().addTarget(dir);
+                }
+
+                TaskProvider<DefaultTask> updateMappings = project.getTasks().register("updateMappings", DefaultTask.class);
+                updateMappings.get().dependsOn(extractMappedNew.get());
+            }
         });
     }
 
