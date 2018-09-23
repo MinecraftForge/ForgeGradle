@@ -14,7 +14,7 @@ pipeline {
     stages {
         stage('fetch') {
             steps {
-                git(url: 'https://github.com/MinecraftForge/ForgeGradle.git', changelog: false)
+                //git(url: 'https://github.com/MinecraftForge/ForgeGradle.git', changelog: false)
             }
         }
         stage('buildandtest') {
