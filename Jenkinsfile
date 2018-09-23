@@ -14,7 +14,7 @@ pipeline {
     stages {
         stage('fetch') {
             steps {
-                git(url: 'https://github.com/MinecraftForge/ForgeGradle.git', changelog: true)
+                git(url: 'https://github.com/MinecraftForge/ForgeGradle.git') //, changelog: true)
             }
         }
         stage('buildandtest') {
@@ -24,12 +24,14 @@ pipeline {
                     env.MYVERSION = sh(returnStdout: true, script: './gradlew properties -q | grep "version:" | awk \'{print $2}\'').trim()
                 }
             }
+            /*
             post {
                 success {
                     writeChangelog(currentBuild, 'build/changelog.txt')
                     archiveArtifacts artifacts: 'build/changelog.txt', fingerprint: false
                 }
             }
+            */
         }
         stage('publish') {
             when {
