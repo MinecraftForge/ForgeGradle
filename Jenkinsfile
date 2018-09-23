@@ -12,11 +12,13 @@ pipeline {
     }
 
     stages {
+        /*
         stage('fetch') {
             steps {
                 //git(url: 'https://github.com/MinecraftForge/ForgeGradle.git', changelog: false)
             }
         }
+        */
         stage('buildandtest') {
             steps {
                 sh './gradlew ${GRADLE_ARGS} --refresh-dependencies --continue build test'
