@@ -9,9 +9,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -23,6 +25,7 @@ import org.gradle.api.Project;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import groovy.lang.Closure;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
 
 public class Utils {
@@ -140,5 +143,52 @@ public class Utils {
     @FunctionalInterface
     public static interface IOConsumer<T> {
         public void accept(T value) throws IOException;
+    }
+
+    /**
+     * Resolves the supplied object to a string.
+     * If the input is null, this will return null.
+     * Closures and Callables are called with no arguments.
+     * Arrays use Arrays.toString().
+     * File objects return their absolute paths.
+     * All other objects have their toString run.
+     * @param obj Object to resolve
+     * @return resolved string
+     */
+    @SuppressWarnings("rawtypes")
+    public static String resolveString(Object obj) {
+        if (obj == null)
+            return null;
+        else if (obj instanceof String) // stop early if its the right type. no need to do more expensive checks
+            return (String)obj;
+        else if (obj instanceof Closure)
+            return resolveString(((Closure)obj).call());// yes recursive.
+        else if (obj instanceof Callable) {
+            try {
+                return resolveString(((Callable)obj).call());
+            } catch (Exception e) {
+                return null;
+            }
+        } else if (obj instanceof File)
+            return ((File) obj).getAbsolutePath();
+        else if (obj.getClass().isArray()) { // arrays
+            if (obj instanceof Object[])
+                return Arrays.toString(((Object[]) obj));
+            else if (obj instanceof byte[])
+                return Arrays.toString(((byte[]) obj));
+            else if (obj instanceof char[])
+                return Arrays.toString(((char[]) obj));
+            else if (obj instanceof int[])
+                return Arrays.toString(((int[]) obj));
+            else if (obj instanceof float[])
+                return Arrays.toString(((float[]) obj));
+            else if (obj instanceof double[])
+                return Arrays.toString(((double[]) obj));
+            else if (obj instanceof long[])
+                return Arrays.toString(((long[]) obj));
+            else
+                return obj.getClass().getSimpleName();
+        }
+        return obj.toString();
     }
 }
