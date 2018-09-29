@@ -3,6 +3,7 @@ package net.minecraftforge.gradle.patcher;
 import groovy.util.Node;
 import groovy.util.XmlParser;
 import groovy.xml.XmlUtil;
+import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.mcp.MCPPlugin;
 import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
@@ -166,40 +167,35 @@ public class PatcherPlugin implements Plugin<Project> {
         });
 
         reobfJar.configure(task -> {
-            task.dependsOn(jarConfig, dlMappingsConfig, createMcp2Obf);
+            task.dependsOn(jarConfig, dlMappingsConfig);
             task.setInput(jarConfig.getArchivePath());
-            task.setSrg(createMcp2Obf.get().getOutput());
             task.setClasspath(project.getConfigurations().getByName(MC_DEP_CONFIG));
             //TODO: Extra SRGs
         });
         genJoinedBinPatches.configure(task -> {
-            task.dependsOn(reobfJar, createMcp2Obf);
+            task.dependsOn(reobfJar);
             task.setDirtyJar(reobfJar.get().getOutput());
             task.addPatchSet(extension.patches);
-            task.setSrg(createMcp2Obf.get().getOutput());
             task.setSide("joined");
         });
         genClientBinPatches.configure(task -> {
-            task.dependsOn(reobfJar, createMcp2Obf);
+            task.dependsOn(reobfJar);
             task.setDirtyJar(reobfJar.get().getOutput());
             task.addPatchSet(extension.patches);
-            task.setSrg(createMcp2Obf.get().getOutput());
             task.setSide("client");
         });
         genServerBinPatches.configure(task -> {
-            task.dependsOn(reobfJar, createMcp2Obf);
+            task.dependsOn(reobfJar);
             task.setDirtyJar(reobfJar.get().getOutput());
             task.addPatchSet(extension.patches);
-            task.setSrg(createMcp2Obf.get().getOutput());
             task.setSide("server");
         });
         genBinPatches.configure(task -> {
             task.dependsOn(genJoinedBinPatches.get(), genClientBinPatches.get(), genServerBinPatches.get());
         });
         filterNew.configure(task -> {
-            task.dependsOn(reobfJar, createMcp2Obf);
+            task.dependsOn(reobfJar);
             task.setInput(reobfJar.get().getOutput());
-            task.setSrg(createMcp2Obf.get().getOutput());
         });
         /*
          * All sources in SRG names.
@@ -213,14 +209,10 @@ public class PatcherPlugin implements Plugin<Project> {
         /* Universal:
          * All of our classes and resources as normal jar.
          *   Should only be OUR classes, not parent patcher projects.
-         * client.lzma
-         * server.lzma
          */
         universalJar.configure(task -> {
-            task.dependsOn(filterNew, genClientBinPatches, genServerBinPatches);
+            task.dependsOn(filterNew);
             task.from(project.zipTree(filterNew.get().getOutput()));
-            task.from(genClientBinPatches.get().getOutput());
-            task.from(genServerBinPatches.get().getOutput());
             task.from(javaConv.getSourceSets().getByName("main").getResources());
             task.setClassifier("universal");
         });
@@ -249,6 +241,7 @@ public class PatcherPlugin implements Plugin<Project> {
         project.afterEvaluate(p -> {
 
             //Add Known repos
+            MinecraftRepo.attach(project);
             project.getRepositories().maven(e -> {
                 e.setUrl("https://libraries.minecraft.net/");
                 e.metadataSources(src -> src.artifact());
@@ -324,16 +317,6 @@ public class PatcherPlugin implements Plugin<Project> {
                         createExc.get().setConstructors(ext.get().getOutput());
                         createExc.get().dependsOn(ext);
                     }
-
-                    genJoinedBinPatches.get().setCleanJar(setupMCP.getJoinedJar());
-                    genJoinedBinPatches.get().dependsOn(setupMCP);
-                    genClientBinPatches.get().setCleanJar(setupMCP.getClientJar());
-                    genClientBinPatches.get().dependsOn(setupMCP);
-                    genServerBinPatches.get().setCleanJar(setupMCP.getServerJar());
-                    genServerBinPatches.get().dependsOn(setupMCP);
-                    filterNew.get().dependsOn(setupMCP);
-                    filterNew.get().addBlacklist(setupMCP.getJoinedJar());
-
                 } else if (patcher != null) {
                     PatcherExtension pExt = extension.parent.getExtensions().getByType(PatcherExtension.class);
                     extension.copyFrom(pExt);
@@ -406,8 +389,6 @@ public class PatcherPlugin implements Plugin<Project> {
                     }
                     for (TaskProvider<TaskGenerateBinPatches> task : Lists.newArrayList(genJoinedBinPatches, genClientBinPatches, genServerBinPatches)) {
                         TaskGenerateBinPatches pgen = (TaskGenerateBinPatches)tasks.getByName(task.get().getName());
-                        task.get().dependsOn(pgen.getDependsOn());
-                        task.get().setCleanJar(pgen.getCleanJar());
                         for (File patches : pgen.getPatchSets()) {
                             task.get().addPatchSet(patches);
                         }
@@ -419,7 +400,6 @@ public class PatcherPlugin implements Plugin<Project> {
                     throw new IllegalStateException("Parent must either be a Patcher or MCP project");
                 }
             }
-            MinecraftRepo.attach(project);
             project.getDependencies().add(MC_DEP_CONFIG, "net.minecraft:client:" + extension.mcVersion + ":extra");
 
             if (dlMCMetaConfig.get().getMCVersion() == null) {
@@ -473,6 +453,76 @@ public class PatcherPlugin implements Plugin<Project> {
                 genConfig.get().setDependsOn(Lists.newArrayList(toMCPClean, dirtyZip));
                 genConfig.get().setClean(toMCPClean.getOutput());
                 genConfig.get().setModified(dirtyZip.getArchivePath());
+            }
+
+            // Configure reobf and packages:
+            {
+                Project mcp = getMcpParent(project);
+                if (mcp == null) {
+                    throw new IllegalStateException("Could not find MCP parent project, you must specify a parent chain to MCP.");
+                }
+                SetupMCPTask setupMCP = (SetupMCPTask)mcp.getTasks().getByName("setupMCP");
+
+                File client = MavenArtifactDownloader.single(project, "net.minecraft:client:" + extension.mcVersion);
+                File server = MavenArtifactDownloader.single(project, "net.minecraft:server:" + extension.mcVersion);
+                File joined = setupMCP.getJoinedJar();
+
+                if (extension.srgUniversal) {
+                    TaskProvider<TaskReobfuscateJar> joinedSrg = project.getTasks().register("joinedJarSrg", TaskReobfuscateJar.class);
+                    joinedSrg.get().dependsOn(setupMCP);
+                    joinedSrg.get().setInput(joined);
+                    joinedSrg.get().setClasspath(project.getConfigurations().getByName(MC_DEP_CONFIG));
+                    joinedSrg.get().setSrg(createMcp2Srg.get().getSrg());
+                    TaskProvider<TaskReobfuscateJar> clientSrg = project.getTasks().register("clientJarSrg", TaskReobfuscateJar.class);
+                    clientSrg.get().dependsOn(setupMCP);
+                    clientSrg.get().setInput(client);
+                    clientSrg.get().setClasspath(project.getConfigurations().getByName(MC_DEP_CONFIG));
+                    clientSrg.get().setSrg(createMcp2Srg.get().getSrg());
+                    TaskProvider<TaskReobfuscateJar> serverSrg = project.getTasks().register("serverJarSrg", TaskReobfuscateJar.class);
+                    serverSrg.get().dependsOn(setupMCP);
+                    serverSrg.get().setInput(server);
+                    serverSrg.get().setClasspath(project.getConfigurations().getByName(MC_DEP_CONFIG));
+                    serverSrg.get().setSrg(createMcp2Srg.get().getSrg());
+
+
+                    reobfJar.get().dependsOn(createMcp2Srg);
+                    reobfJar.get().setSrg(createMcp2Srg.get().getOutput());
+                    //TODO: Extra SRGs, I dont think this is needed tho...
+
+                    genJoinedBinPatches.get().dependsOn(createMcp2Srg, joinedSrg);
+                    genJoinedBinPatches.get().setSrg(createMcp2Srg.get().getOutput());
+                    genJoinedBinPatches.get().setCleanJar(joinedSrg.get().getOutput());
+
+                    genClientBinPatches.get().dependsOn(createMcp2Srg, clientSrg);
+                    genClientBinPatches.get().setSrg(createMcp2Srg.get().getOutput());
+                    genClientBinPatches.get().setCleanJar(clientSrg.get().getOutput());
+
+                    genServerBinPatches.get().dependsOn(createMcp2Srg, serverSrg);
+                    genServerBinPatches.get().setSrg(createMcp2Srg.get().getOutput());
+                    genServerBinPatches.get().setCleanJar(serverSrg.get().getOutput());
+
+                    filterNew.get().dependsOn(setupMCP, joinedSrg);
+                    filterNew.get().setSrg(createMcp2Srg.get().getOutput());
+                    filterNew.get().addBlacklist(joinedSrg.get().getOutput());
+                } else {
+                    reobfJar.get().dependsOn(createMcp2Obf);
+                    reobfJar.get().setSrg(createMcp2Obf.get().getOutput());
+                    //TODO: Extra SRGs, I dont think this is needed tho...
+
+                    genJoinedBinPatches.get().dependsOn(setupMCP);
+                    genJoinedBinPatches.get().setSrg(createMcp2Obf.get().getOutput());
+                    genJoinedBinPatches.get().setCleanJar(joined);
+
+                    genClientBinPatches.get().setSrg(createMcp2Obf.get().getOutput());
+                    genClientBinPatches.get().setCleanJar(client);
+
+                    genServerBinPatches.get().setSrg(createMcp2Obf.get().getOutput());
+                    genServerBinPatches.get().setCleanJar(server);
+
+                    filterNew.get().dependsOn(setupMCP);
+                    filterNew.get().setSrg(createMcp2Obf.get().getOutput());
+                    filterNew.get().addBlacklist(joined);
+                }
             }
 
             //Make sure tasks that require a valid classpath happen after making the classpath
