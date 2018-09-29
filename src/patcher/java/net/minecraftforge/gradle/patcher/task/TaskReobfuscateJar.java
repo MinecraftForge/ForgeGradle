@@ -40,12 +40,12 @@ public class TaskReobfuscateJar extends DefaultTask {
 
     private String tool = "net.md-5:SpecialSource:1.8.3:shaded";
     private String[] args = new String[] {"--in-jar", "{input}", "--out-jar", "{output}", "--srg-in", "{srg}", "--live"};
+    private FileCollection classpath = null;
     private File input;
     private File srg;
     //TODO: Extra SRGs
     private boolean keepPackages = false;
     private boolean keepData = false;
-    public FileCollection classpath = null;
     private File output = getProject().file("build/" + getName() + "/output.jar");
     private File output_temp = getProject().file("build/" + getName() + "/output_temp.jar");
 
