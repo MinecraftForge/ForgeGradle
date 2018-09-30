@@ -12,13 +12,11 @@ pipeline {
     }
 
     stages {
-        /*
         stage('fetch') {
             steps {
-                //git(url: 'https://github.com/MinecraftForge/ForgeGradle.git', changelog: false)
+                checkout scm
             }
         }
-        */
         stage('buildandtest') {
             steps {
                 sh './gradlew ${GRADLE_ARGS} --refresh-dependencies --continue build test'
@@ -52,8 +50,6 @@ pipeline {
     post {
         always {
             archiveArtifacts artifacts: 'build/libs/**/*.jar', fingerprint: true
-            junit 'build/test-results/*/*.xml'
-            jacoco sourcePattern: '**/src/*/java'
         }
     }
 }
