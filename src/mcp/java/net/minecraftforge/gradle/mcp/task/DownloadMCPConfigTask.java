@@ -12,7 +12,7 @@ import java.io.IOException;
 
 public class DownloadMCPConfigTask extends DefaultTask {
 
-    private Object config;
+    private String config;
     private File output;
 
     @TaskAction
@@ -38,17 +38,7 @@ public class DownloadMCPConfigTask extends DefaultTask {
 
     @InputFile
     private File getConfigFile() {
-        if (config instanceof String) {
-            if (((String) config).contains(":")) {
-                return downloadConfigFile((String) config);
-            } else {
-                return new File((String) config);
-            }
-        } else if (config instanceof File) {
-            return (File) config;
-        } else {
-            throw new IllegalArgumentException("Expected the config to be a File or a String, but instead got " + config.getClass().getName());
-        }
+        return downloadConfigFile(config);
     }
 
     @OutputFile
@@ -56,7 +46,7 @@ public class DownloadMCPConfigTask extends DefaultTask {
         return output;
     }
 
-    public void setConfig(Object value) {
+    public void setConfig(String value) {
         this.config = value;
     }
 

@@ -59,45 +59,9 @@ public class VersionJson {
 
         public Artifact getArtifact() {
             if (_artifact == null) {
-                _artifact = new Artifact(name);
+                _artifact = Artifact.from(name);
             }
             return _artifact;
-        }
-    }
-
-    public static class Artifact {
-        public final String group;
-        public final String name;
-        public final String version;
-        public final String classifier;
-        public final String ext;
-        public final String path;
-
-        public Artifact(String artifact) {
-            int idx = artifact.indexOf('@');
-            if (idx != -1) {
-                ext = artifact.substring(idx + 1);
-                artifact = artifact.substring(0, idx);
-            } else {
-                ext = "jar";
-            }
-            String[] pts = artifact.split(":");
-            group = pts[0];
-            name = pts[1];
-            version = pts[2];
-            classifier = pts.length > 3 ? pts[3] : null;
-
-            StringBuilder buf = new StringBuilder();
-            buf.append(group.replace('.', '/')).append('/')
-            .append(name).append('/')
-            .append(version).append('/')
-            .append(name).append('-').append(version);
-
-            if (classifier != null) {
-                buf.append('-').append(classifier);
-            }
-            buf.append('.').append(ext);
-            path = buf.toString();
         }
     }
 

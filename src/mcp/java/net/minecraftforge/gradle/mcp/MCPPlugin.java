@@ -34,7 +34,7 @@ public class MCPPlugin implements Plugin<Project> {
         TaskProvider<SetupMCPTask> setupMCP = project.getTasks().register("setupMCP", SetupMCPTask.class);
 
         downloadConfig.configure(task -> {
-            task.setConfig(extension.config);
+            task.setConfig(extension.getConfig().toString());
             task.setOutput(project.file("build/mcp_config.zip"));
         });
         loadConfig.configure(task -> {

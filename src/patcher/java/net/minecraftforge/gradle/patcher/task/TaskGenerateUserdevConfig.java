@@ -17,7 +17,6 @@ import org.gradle.api.tasks.TaskAction;
 import com.google.common.io.Files;
 
 import net.minecraftforge.gradle.common.config.UserdevJsonV1;
-import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPExtension;
 import net.minecraftforge.gradle.patcher.PatcherExtension;
@@ -58,24 +57,7 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
             //TODO: MCP/Parents without separate projects?
         }
         if (mcp != null) {
-            File file = null;
-            if (mcp.config instanceof String) {
-                if (((String)mcp.config).contains(":")) {
-                    json.mcp = (String)mcp.config;
-                } else {
-                    file = new File((String)mcp.config);
-                }
-            } else if (mcp.config instanceof File) {
-                file = (File)mcp.config;
-            }
-
-            if (file != null) {
-                try {
-                    json.mcp = file.getName() + " " + HashFunction.MD5.hash(file);
-                } catch (IOException e) {
-                    //Eat it, worse case the config sets mcp to null and there isn't a base we can use.
-                }
-            }
+            json.mcp = mcp.getConfig().toString();;
         }
     }
 

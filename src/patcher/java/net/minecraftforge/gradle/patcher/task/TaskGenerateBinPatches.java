@@ -101,6 +101,10 @@ public class TaskGenerateBinPatches extends DefaultTask {
         }
     }
 
+    public String getResolvedVersion() {
+        return MavenArtifactDownloader.getVersion(getProject(), getTool());
+    }
+
     @Input
     public String getTool() {
         return tool;
