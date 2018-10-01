@@ -4,11 +4,18 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -28,6 +35,7 @@ import com.amadornes.artifactural.base.repository.ArtifactProviderBuilder;
 import com.amadornes.artifactural.base.repository.SimpleRepository;
 import com.amadornes.artifactural.gradle.GradleRepositoryAdapter;
 
+import joptsimple.internal.Strings;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import net.minecraftforge.gradle.common.util.VersionJson.OS;
 
@@ -37,6 +45,7 @@ public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
                                                            //manifest doesn't include sha1's so we use this for the per-version json as well.
     private static final String GROUP = "net.minecraft";
     private static final String MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
+    private static final String FORGE_MAVEN = "https://files.minecraftforge.net/maven/";
     private static final String CURRENT_OS = OS.getCurrent().getName();
 
     private File cache;
@@ -101,6 +110,8 @@ public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
             } else {
                 switch (classifier) {
                     case "":       ret = findRaw(side, version); break;
+                    case "slim":   ret = findSlim(side, version); break;
+                    case "data":   ret = findData(side, version); break;
                     case "extra":  ret = findExtra(side, version); break;
                 }
             }
@@ -113,6 +124,36 @@ public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
             log(e.getMessage());
             throw new RuntimeException(e);
         }
+    }
+
+    private File findMcp(String version) throws IOException {
+        net.minecraftforge.gradle.common.util.Artifact mcp = net.minecraftforge.gradle.common.util.Artifact.from("de.oceanlabs.mcp:mcp_config:" + version + "@zip");
+        File zip = cache("versions", version, "mcp.zip");
+        if (!zip.exists()) {
+            FileUtils.copyURLToFile(new URL(FORGE_MAVEN + mcp.getPath()), zip);
+            Utils.updateHash(zip);
+        }
+        return zip;
+    }
+
+    private File findMappings(String version) throws IOException {
+        File mappings = cache("versions", version, "mappings.txt");
+        if (!mappings.exists()) {
+            try (ZipFile mcp = new ZipFile(findMcp(version));
+                 InputStream cstream = mcp.getInputStream(mcp.getEntry("config.json"))) {
+                McpConfig cfg = Utils.loadJson(cstream, McpConfig.class);
+                Object value = cfg.data.get("mappings");
+                if (!(value instanceof String))
+                    throw new IOException("Ivalid MCP zip: Missing mappings entry");
+
+                try (InputStream data = mcp.getInputStream(mcp.getEntry((String)value));
+                     OutputStream output = new FileOutputStream(mappings)) {
+                    IOUtils.copy(data, output);
+                    Utils.updateHash(mappings);
+                }
+            }
+        }
+        return mappings;
     }
 
     public File findVersion(String version) throws IOException {
@@ -160,8 +201,10 @@ public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
                         }
                     }
                 }
+            } else {
+                builder.dependencies().add(GROUP + ":" + side + ":" + version, "compile").withClassifier("extra"); //Compile right?
             }
-            builder.dependencies().add(GROUP + ":" + side + ":" + version, "compile").withClassifier("extra"); //Compile right?
+            builder.dependencies().add(GROUP + ":" + side + ":" + version, "compile").withClassifier("data");
             builder.dependencies().add("com.google.code.findbugs:jsr305:3.0.1", "compile"); //TODO: Pull this from MCPConfig.
 
             String ret = builder.tryBuild();
@@ -192,10 +235,77 @@ public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
 
     private File findExtra(String side, String version) throws IOException {
         File raw = findRaw(side, version);
+        File mappings = findMappings(version);
         File extra = cache("versions", version, side + "-extra.jar");
-        HashStore cache = new HashStore(this.cache).load(cache("versions", version, side + "-extra.input")).add("raw", raw);
-        //TODO: For now we just strip all class files in default package, or net/minecraft.
-        //      We *should* download the mappings from somewhere and only filter Minecraft's classes.
+        HashStore cache = new HashStore(this.cache).load(cache("versions", version, side + "-extra.input"))
+                .add("raw", raw)
+                .add("mappings", mappings);
+
+        if (!cache.isSame() || !extra.exists()) {
+            splitJar(raw, mappings, extra, false);
+            cache.save();
+        }
+
+        return extra;
+    }
+    private File findSlim(String side, String version) throws IOException {
+        File raw = findRaw(side, version);
+        File mappings = findMappings(version);
+        File extra = cache("versions", version, side + "-slim.jar");
+        HashStore cache = new HashStore(this.cache).load(cache("versions", version, side + "-slim.input"))
+                .add("raw", raw)
+                .add("mappings", mappings);
+
+        if (!cache.isSame() || !extra.exists()) {
+            splitJar(raw, mappings, extra, true);
+            cache.save();
+        }
+
+
+        return extra;
+    }
+
+    private void splitJar(File raw, File mappings, File output, boolean notch) throws IOException {
+        try (ZipFile zin = new ZipFile(raw);
+             FileOutputStream fos = new FileOutputStream(output);
+             ZipOutputStream out = new ZipOutputStream(fos)) {
+
+            Set<String> whitelist = new HashSet<>();
+            List<String> lines = Files.lines(Paths.get(mappings.getAbsolutePath())).map(line -> line.split("#")[0]).filter(l -> !Strings.isNullOrEmpty(l.trim())).collect(Collectors.toList()); //Strip comments and empty lines
+            lines.stream()
+            .filter(line -> !line.startsWith("\t") || (line.indexOf(':') != -1 && line.startsWith("CL:"))) // Class lines only
+            .map(line -> line.indexOf(':') != -1 ? line.substring(4).split(" ") : line.split(" ")) //Convert to: OBF SRG
+            .filter(pts -> pts.length == 2 && !pts[0].endsWith("/")) //Skip packages
+            .forEach(pts -> whitelist.add(pts[0]));
+
+            List<String> files = new ArrayList<>();
+            for (Enumeration<? extends ZipEntry> entries = zin.entries(); entries.hasMoreElements();) {
+                String name = entries.nextElement().getName();
+                if (name.endsWith(".class")) {
+                    boolean isNotch = whitelist.contains(name.substring(0, name.length() - 6 /*.class*/));
+                    if (notch == isNotch)
+                        files.add(name);
+                }
+            }
+            Collections.sort(files);
+            for (String file : files) {
+                ZipEntry entry = new ZipEntry(file);
+                entry.setTime(0);
+                out.putNextEntry(entry);
+                try (InputStream ein = zin.getInputStream(zin.getEntry(file))) {
+                    IOUtils.copy(ein, out);
+                }
+                out.closeEntry();
+            }
+        }
+        Utils.updateHash(output);
+    }
+
+    private File findData(String side, String version) throws IOException {
+        File raw = findRaw(side, version);
+        File extra = cache("versions", version, side + "-data.jar");
+        HashStore cache = new HashStore(this.cache).load(cache("versions", version, side + "-extra.input"))
+                .add("raw", raw);
 
         if (!cache.isSame() || !extra.exists()) {
             try (ZipFile zin = new ZipFile(raw);
@@ -205,9 +315,8 @@ public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
                 List<String> files = new ArrayList<>();
                 for (Enumeration<? extends ZipEntry> entries = zin.entries(); entries.hasMoreElements();) {
                     String name = entries.nextElement().getName();
-                    if (!name.endsWith(".class") || (!name.startsWith("net/minecraft/") && name.indexOf('/') != -1)) {
+                    if (!name.endsWith(".class"))
                         files.add(name);
-                    }
                 }
                 Collections.sort(files);
                 for (String file : files) {
@@ -252,6 +361,11 @@ public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
     @SuppressWarnings("unused")
     private String clean(ArtifactIdentifier art) {
         return art.getGroup() + ":" + art.getName() + ":" + art.getVersion() + ":" + art.getClassifier() + "@" + art.getExtension();
+    }
+
+    public static class McpConfig {
+        public int spec;
+        public Map<String, Object> data;
     }
 
 }

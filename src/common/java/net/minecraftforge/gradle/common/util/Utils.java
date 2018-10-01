@@ -119,6 +119,9 @@ public class Utils {
             return GSON.fromJson(new InputStreamReader(in), clz);
         }
     }
+    public static <T> T loadJson(InputStream in, Class<T> clz) throws IOException {
+        return GSON.fromJson(new InputStreamReader(in), clz);
+    }
 
     public static void updateHash(File target) throws IOException {
         updateHash(target, HashFunction.values());

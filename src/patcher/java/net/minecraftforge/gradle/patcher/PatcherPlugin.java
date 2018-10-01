@@ -23,7 +23,7 @@ import net.minecraftforge.gradle.patcher.task.TaskExtractMCPData;
 import net.minecraftforge.gradle.patcher.task.TaskExtractNatives;
 import net.minecraftforge.gradle.patcher.task.TaskExtractRangeMap;
 import net.minecraftforge.gradle.patcher.task.TaskFilterNewJar;
-import net.minecraftforge.gradle.patcher.task.TaskGenerateBinPatches;
+import net.minecraftforge.gradle.patcher.task.GenerateBinPatches;
 import net.minecraftforge.gradle.patcher.task.TaskGeneratePatches;
 import net.minecraftforge.gradle.patcher.task.TaskReobfuscateJar;
 import org.apache.commons.io.IOUtils;
@@ -88,9 +88,9 @@ public class PatcherPlugin implements Plugin<Project> {
         TaskProvider<TaskGeneratePatches> genConfig = project.getTasks().register("genPatches", TaskGeneratePatches.class);
         TaskProvider<TaskDownloadAssets> downloadAssets = project.getTasks().register("downloadAssets", TaskDownloadAssets.class);
         TaskProvider<TaskReobfuscateJar> reobfJar = project.getTasks().register("reobfJar", TaskReobfuscateJar.class);
-        TaskProvider<TaskGenerateBinPatches> genJoinedBinPatches = project.getTasks().register("genJoinedBinPatches", TaskGenerateBinPatches.class);
-        TaskProvider<TaskGenerateBinPatches> genClientBinPatches = project.getTasks().register("genClientBinPatches", TaskGenerateBinPatches.class);
-        TaskProvider<TaskGenerateBinPatches> genServerBinPatches = project.getTasks().register("genServerBinPatches", TaskGenerateBinPatches.class);
+        TaskProvider<GenerateBinPatches> genJoinedBinPatches = project.getTasks().register("genJoinedBinPatches", GenerateBinPatches.class);
+        TaskProvider<GenerateBinPatches> genClientBinPatches = project.getTasks().register("genClientBinPatches", GenerateBinPatches.class);
+        TaskProvider<GenerateBinPatches> genServerBinPatches = project.getTasks().register("genServerBinPatches", GenerateBinPatches.class);
         TaskProvider<DefaultTask> genBinPatches = project.getTasks().register("genBinPatches", DefaultTask.class);
         TaskProvider<TaskFilterNewJar> filterNew = project.getTasks().register("filterJarNew", TaskFilterNewJar.class);
         TaskProvider<Jar> sourcesJar = project.getTasks().register("sourcesJar", Jar.class);
@@ -386,8 +386,8 @@ public class PatcherPlugin implements Plugin<Project> {
                             createExc.get().dependsOn(task);
                         }
                     }
-                    for (TaskProvider<TaskGenerateBinPatches> task : Lists.newArrayList(genJoinedBinPatches, genClientBinPatches, genServerBinPatches)) {
-                        TaskGenerateBinPatches pgen = (TaskGenerateBinPatches)tasks.getByName(task.get().getName());
+                    for (TaskProvider<GenerateBinPatches> task : Lists.newArrayList(genJoinedBinPatches, genClientBinPatches, genServerBinPatches)) {
+                        GenerateBinPatches pgen = (GenerateBinPatches)tasks.getByName(task.get().getName());
                         for (File patches : pgen.getPatchSets()) {
                             task.get().addPatchSet(patches);
                         }
@@ -462,8 +462,8 @@ public class PatcherPlugin implements Plugin<Project> {
                 }
                 SetupMCPTask setupMCP = (SetupMCPTask)mcp.getTasks().getByName("setupMCP");
 
-                File client = MavenArtifactDownloader.single(project, "net.minecraft:client:" + extension.mcVersion);
-                File server = MavenArtifactDownloader.single(project, "net.minecraft:server:" + extension.mcVersion);
+                File client = MavenArtifactDownloader.single(project, "net.minecraft:client:" + extension.mcVersion + ":slim");
+                File server = MavenArtifactDownloader.single(project, "net.minecraft:server:" + extension.mcVersion + ":slim");
                 File joined = setupMCP.getJoinedJar();
 
                 if (extension.srgUniversal) {
