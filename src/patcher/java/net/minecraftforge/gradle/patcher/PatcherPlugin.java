@@ -99,6 +99,16 @@ public class PatcherPlugin implements Plugin<Project> {
         TaskProvider<TaskGenerateUserdevConfig> userdevConfig = project.getTasks().register("userdevConfig", TaskGenerateUserdevConfig.class);
         TaskProvider<DefaultTask> release = project.getTasks().register("release", DefaultTask.class);
 
+        //Add Known repos
+        MinecraftRepo.attach(project);
+        project.getRepositories().maven(e -> {
+            e.setUrl("https://libraries.minecraft.net/");
+            e.metadataSources(src -> src.artifact());
+        });
+        project.getRepositories().maven(e -> {
+            e.setUrl("http://files.minecraftforge.net/maven/");
+        });
+
         release.configure(task -> {
             task.dependsOn(sourcesJar, universalJar, userdevJar);
         });
@@ -239,17 +249,6 @@ public class PatcherPlugin implements Plugin<Project> {
         });
 
         project.afterEvaluate(p -> {
-
-            //Add Known repos
-            MinecraftRepo.attach(project);
-            project.getRepositories().maven(e -> {
-                e.setUrl("https://libraries.minecraft.net/");
-                e.metadataSources(src -> src.artifact());
-            });
-            project.getRepositories().maven(e -> {
-                e.setUrl("http://files.minecraftforge.net/maven/");
-            });
-
             //Add PatchedSrc to a main sourceset and build range tasks
             SourceSet mainSource = javaConv.getSourceSets().getByName("main");
             applyRangeConfig.get().setSources(mainSource.getJava().getSrcDirs());

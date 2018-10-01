@@ -29,6 +29,7 @@ import java.util.jar.JarFile;
 public class TaskGenerateBinPatches extends DefaultTask {
 
     private String tool = "net.minecraftforge:binarypatcher:1.+:fatjar";
+    private File _tool;
     private String[] args = new String[] { "--clean", "{clean}", "--create", "{dirty}", "--output", "{output}", "--patches", "{patches}", "--srg", "{srg}"};
     private FileCollection classpath = null;
 
@@ -42,7 +43,7 @@ public class TaskGenerateBinPatches extends DefaultTask {
     @TaskAction
     public void apply() throws IOException {
 
-        File jar = MavenArtifactDownloader.download(getProject(), getTool()).iterator().next();
+        File jar = getToolJar();
 
         Map<String, String> replace = new HashMap<>();
         replace.put("{clean}", getCleanJar().getAbsolutePath());
@@ -103,6 +104,13 @@ public class TaskGenerateBinPatches extends DefaultTask {
 
     public String getResolvedVersion() {
         return MavenArtifactDownloader.getVersion(getProject(), getTool());
+    }
+
+    @InputFile
+    public File getToolJar() {
+        if (_tool == null)
+            _tool = MavenArtifactDownloader.single(getProject(), getTool());
+        return _tool;
     }
 
     @Input
