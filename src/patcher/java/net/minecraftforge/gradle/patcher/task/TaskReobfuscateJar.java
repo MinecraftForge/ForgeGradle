@@ -51,7 +51,7 @@ public class TaskReobfuscateJar extends DefaultTask {
 
     @TaskAction
     public void apply() throws IOException {
-        File jar = MavenArtifactDownloader.download(getProject(), getTool()).iterator().next();
+        File jar = MavenArtifactDownloader.single(getProject(), getTool());
 
         Map<String, String> replace = new HashMap<>();
         replace.put("{input}", getInput().getAbsolutePath());

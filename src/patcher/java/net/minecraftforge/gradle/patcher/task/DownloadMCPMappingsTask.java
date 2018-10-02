@@ -51,7 +51,7 @@ public class DownloadMCPMappingsTask extends DefaultTask {
     private File getMappingFile() {
         if (getMappings() instanceof String) {
             String artifact = (String) getMappings();
-            return MavenArtifactDownloader.download(getProject(), artifact).iterator().next();
+            return MavenArtifactDownloader.single(getProject(), artifact);
         } else if (getMappings() instanceof File) {
             return (File) getMappings();
         } else {

@@ -8,8 +8,6 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
@@ -34,8 +32,8 @@ import com.amadornes.artifactural.base.artifact.StreamableArtifact;
 import com.amadornes.artifactural.base.repository.ArtifactProviderBuilder;
 import com.amadornes.artifactural.base.repository.SimpleRepository;
 import com.amadornes.artifactural.gradle.GradleRepositoryAdapter;
+import com.google.common.base.Strings;
 
-import joptsimple.internal.Strings;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import net.minecraftforge.gradle.common.util.VersionJson.OS;
 
@@ -99,6 +97,8 @@ public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
             String version = artifact.getVersion();
             String classifier = artifact.getClassifier() == null ? "" : artifact.getClassifier();
             String ext = artifact.getExtension().split("\\.")[0];
+
+            //System.out.println("MinecraftRepo Request: " + artifact.getGroup() + ":" + side + ":" + version + ":" + classifier + "@" + ext);
 
             File ret = null;
             if ("pom".equals(ext)) {
@@ -278,24 +278,21 @@ public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
             .filter(pts -> pts.length == 2 && !pts[0].endsWith("/")) //Skip packages
             .forEach(pts -> whitelist.add(pts[0]));
 
-            List<String> files = new ArrayList<>();
             for (Enumeration<? extends ZipEntry> entries = zin.entries(); entries.hasMoreElements();) {
-                String name = entries.nextElement().getName();
+                ZipEntry entry = entries.nextElement();
+                String name = entry.getName();
                 if (name.endsWith(".class")) {
                     boolean isNotch = whitelist.contains(name.substring(0, name.length() - 6 /*.class*/));
-                    if (notch == isNotch)
-                        files.add(name);
+                    if (notch == isNotch) {
+                        ZipEntry _new = new ZipEntry(name);
+                        _new.setTime(0);
+                        out.putNextEntry(_new);
+                        try (InputStream ein = zin.getInputStream(entry)) {
+                            IOUtils.copy(ein, out);
+                        }
+                        out.closeEntry();
+                    }
                 }
-            }
-            Collections.sort(files);
-            for (String file : files) {
-                ZipEntry entry = new ZipEntry(file);
-                entry.setTime(0);
-                out.putNextEntry(entry);
-                try (InputStream ein = zin.getInputStream(zin.getEntry(file))) {
-                    IOUtils.copy(ein, out);
-                }
-                out.closeEntry();
             }
         }
         Utils.updateHash(output);
@@ -312,21 +309,18 @@ public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
                  FileOutputStream fos = new FileOutputStream(extra);
                  ZipOutputStream out = new ZipOutputStream(fos)) {
 
-                List<String> files = new ArrayList<>();
                 for (Enumeration<? extends ZipEntry> entries = zin.entries(); entries.hasMoreElements();) {
-                    String name = entries.nextElement().getName();
-                    if (!name.endsWith(".class"))
-                        files.add(name);
-                }
-                Collections.sort(files);
-                for (String file : files) {
-                    ZipEntry entry = new ZipEntry(file);
-                    entry.setTime(0);
-                    out.putNextEntry(entry);
-                    try (InputStream ein = zin.getInputStream(zin.getEntry(file))) {
-                        IOUtils.copy(ein, out);
+                    ZipEntry entry = entries.nextElement();
+                    String name = entry.getName();
+                    if (!name.endsWith(".class")) {
+                        ZipEntry _new = new ZipEntry(name);
+                        _new.setTime(0);
+                        out.putNextEntry(_new);
+                        try (InputStream ein = zin.getInputStream(entry)) {
+                            IOUtils.copy(ein, out);
+                        }
+                        out.closeEntry();
                     }
-                    out.closeEntry();
                 }
             }
 

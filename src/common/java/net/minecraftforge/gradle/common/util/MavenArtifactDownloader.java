@@ -2,7 +2,7 @@ package net.minecraftforge.gradle.common.util;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 
 import java.io.File;
@@ -19,13 +19,18 @@ public class MavenArtifactDownloader {
     private static final Map<String, String> VERSIONS = new HashMap<>();
 
     public static Set<File> download(Project project, String artifact) {
+        return download(project, artifact, false);
+    }
+    public static Set<File> download(Project project, String artifact, boolean changing) {
         Set<File> ret = CACHE.get(artifact);
         if (ret == null) {
             Configuration cfg = project.getConfigurations().create("downloadDeps" + COUNTERS.getOrDefault(project, 0));
-            Dependency dependency = project.getDependencies().create(artifact);
+            ExternalModuleDependency dependency = (ExternalModuleDependency)project.getDependencies().create(artifact);
+            dependency.setChanging(changing);
             cfg.getDependencies().add(dependency);
             cfg.resolutionStrategy(strat -> {
-               strat.cacheDynamicVersionsFor(10, TimeUnit.MINUTES);
+                strat.cacheChangingModulesFor(10, TimeUnit.MINUTES);
+                strat.cacheDynamicVersionsFor(10, TimeUnit.MINUTES);
             });
             ret = cfg.resolve();
 
@@ -46,7 +51,11 @@ public class MavenArtifactDownloader {
     }
 
     public static File single(Project project, String artifact) {
-        Set<File> ret = download(project, artifact);
+        return single(project, artifact, false);
+    }
+
+    public static File single(Project project, String artifact, boolean changing) {
+        Set<File> ret = download(project, artifact, changing);
         return ret == null ? null : ret.iterator().next();
     }
 
