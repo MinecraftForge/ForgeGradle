@@ -400,6 +400,7 @@ public class PatcherPlugin implements Plugin<Project> {
                 }
             }
             project.getDependencies().add(MC_DEP_CONFIG, "net.minecraft:client:" + extension.mcVersion + ":extra");
+            project.getDependencies().add(MC_DEP_CONFIG, "net.minecraft:client:" + extension.mcVersion + ":data");
 
             if (dlMCMetaConfig.get().getMCVersion() == null) {
                 dlMCMetaConfig.get().setMCVersion(extension.mcVersion);
