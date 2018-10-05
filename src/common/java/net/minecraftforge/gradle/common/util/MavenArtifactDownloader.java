@@ -45,7 +45,7 @@ public class MavenArtifactDownloader {
 
             project.getConfigurations().remove(cfg);
             COUNTERS.compute(project, (proj, prev) -> (prev != null ? prev : 0) + 1);
-            CACHE.put(artifact, ret);
+            //CACHE.put(artifact, ret); //Daemons break this
         }
         return ret;
     }

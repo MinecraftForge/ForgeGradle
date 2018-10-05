@@ -463,23 +463,23 @@ public class PatcherPlugin implements Plugin<Project> {
                 }
                 SetupMCPTask setupMCP = (SetupMCPTask)mcp.getTasks().getByName("setupMCP");
 
-                File client = MavenArtifactDownloader.single(project, "net.minecraft:client:" + extension.mcVersion + ":slim");
-                File server = MavenArtifactDownloader.single(project, "net.minecraft:server:" + extension.mcVersion + ":slim");
+                File client = MavenArtifactDownloader.single(project, "net.minecraft:client:" + extension.mcVersion + ":slim", true);
+                File server = MavenArtifactDownloader.single(project, "net.minecraft:server:" + extension.mcVersion + ":slim", true);
                 File joined = setupMCP.getJoinedJar();
 
                 if (extension.srgUniversal) {
                     TaskProvider<TaskReobfuscateJar> joinedSrg = project.getTasks().register("joinedJarSrg", TaskReobfuscateJar.class);
-                    joinedSrg.get().dependsOn(setupMCP);
+                    joinedSrg.get().dependsOn(setupMCP, createMcp2Srg.get());
                     joinedSrg.get().setInput(joined);
                     joinedSrg.get().setClasspath(project.getConfigurations().getByName(MC_DEP_CONFIG));
                     joinedSrg.get().setSrg(createMcp2Srg.get().getSrg());
                     TaskProvider<TaskReobfuscateJar> clientSrg = project.getTasks().register("clientJarSrg", TaskReobfuscateJar.class);
-                    clientSrg.get().dependsOn(setupMCP);
+                    clientSrg.get().dependsOn(setupMCP, createMcp2Srg.get());
                     clientSrg.get().setInput(client);
                     clientSrg.get().setClasspath(project.getConfigurations().getByName(MC_DEP_CONFIG));
                     clientSrg.get().setSrg(createMcp2Srg.get().getSrg());
                     TaskProvider<TaskReobfuscateJar> serverSrg = project.getTasks().register("serverJarSrg", TaskReobfuscateJar.class);
-                    serverSrg.get().dependsOn(setupMCP);
+                    serverSrg.get().dependsOn(setupMCP, createMcp2Srg.get());
                     serverSrg.get().setInput(server);
                     serverSrg.get().setClasspath(project.getConfigurations().getByName(MC_DEP_CONFIG));
                     serverSrg.get().setSrg(createMcp2Srg.get().getSrg());
