@@ -1,7 +1,6 @@
 package net.minecraftforge.gradle.mcp.util;
 
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
-import net.minecraftforge.gradle.mcp.function.MCPFunctionOverlay;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
@@ -13,7 +12,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
 public class MCPRuntime {
@@ -31,34 +29,34 @@ public class MCPRuntime {
 
     public MCPRuntime(Project project, MCPConfig config, boolean generateSrc, Map<String, MCPFunction> extraPres) {
         this.project = project;
-        this.environment = new MCPEnvironment(this, config.mcVersion);
+        this.environment = new MCPEnvironment(this, config.getMCVersion());
         this.mcpDirectory = project.file("build/mcp/");
 
-        this.zipFile = config.zipFile;
+        this.zipFile = config.getConfigZip();
 
-        initSteps(config.pipeline.sharedSteps);
+        initSteps(config.getSharedSteps());
         if (!extraPres.isEmpty()) {
-            String input = config.pipeline.srcSteps.get(0).arguments.get("input"); //Decompile's input
+            String input = config.getSrcSteps().get(0).getArguments().get("input"); //Decompile's input
             String lastName = null;
             for (Entry<String, MCPFunction> entry : extraPres.entrySet()) {
                 String name = entry.getKey();
                 Map<String, String> args = new HashMap<>();
                 args.put("input", input);
-                this.steps.put(name, new Step(name, entry.getValue(), null, args, new File(this.mcpDirectory, name)));
+                this.steps.put(name, new Step(name, entry.getValue(), args, new File(this.mcpDirectory, name)));
                 input = "{" + name +"Output}";
                 lastName = name;
             }
-            config.pipeline.srcSteps.get(0).arguments.put("input", "{" + lastName + "Output}");
+            config.getSrcSteps().get(0).getArguments().put("input", "{" + lastName + "Output}");
         }
         if (generateSrc) {
-            initSteps(config.pipeline.srcSteps);
+            initSteps(config.getSrcSteps());
         }
     }
 
-    private void initSteps(List<MCPConfig.Pipeline.Step> steps) {
-        for (MCPConfig.Pipeline.Step step : steps) {
-            File workingDir = new File(this.mcpDirectory, step.name);
-            this.steps.put(step.name, new Step(step.name, step.function, step.overlay, step.arguments, workingDir));
+    private void initSteps(List<MCPConfig.Step> steps) {
+        for (MCPConfig.Step step : steps) {
+            File workingDir = new File(this.mcpDirectory, step.getName());
+            this.steps.put(step.getName(), new Step(step.getName(), step.getFunction(), step.getArguments(), workingDir));
         }
     }
 
@@ -104,23 +102,19 @@ public class MCPRuntime {
 
         private final String name;
         private final MCPFunction function;
-        private final MCPFunctionOverlay overlay;
         final Map<String, Object> arguments;
         final File workingDirectory;
         File output;
 
-        private Step(String name, MCPFunction function, MCPFunctionOverlay overlay,
-                     Map<String, String> arguments, File workingDirectory) {
+        private Step(String name, MCPFunction function, Map<String, String> arguments, File workingDirectory) {
             this.name = name;
             this.function = function;
-            this.overlay = overlay;
-            this.arguments = arguments.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> (Object)e.getValue()));
+            this.arguments = new HashMap<>(arguments);
             this.workingDirectory = workingDirectory;
         }
 
         private void initialize(ZipFile zip) throws Exception {
             function.initialize(environment, zip);
-            if (overlay != null) overlay.initialize(environment, zip);
         }
 
         private File execute() throws Exception {
@@ -128,13 +122,6 @@ public class MCPRuntime {
                 output = function.execute(environment);
             } finally {
                 function.cleanup(environment);
-            }
-            if (overlay != null) {
-                try {
-                    overlay.onExecuted(environment);
-                } finally {
-                    overlay.cleanup(environment);
-                }
             }
             return output;
         }

@@ -15,7 +15,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
@@ -29,14 +28,14 @@ public class ExecuteFunction implements MCPFunction {
 
     private static final Pattern REPLACE_PATTERN = Pattern.compile("^\\{(\\w+)\\}$");
 
-    protected final CompletableFuture<File> jar;
-    protected final String[] jvmArgs;
+    protected final File jar;
+    private final String[] jvmArgs;
     protected final String[] runArgs;
-    protected final Map<String, String> envVars;
+    private final Map<String, String> envVars;
 
     private JsonObject data;
 
-    public ExecuteFunction(CompletableFuture<File> jar, String[] jvmArgs, String[] runArgs, Map<String, String> envVars) {
+    public ExecuteFunction(File jar, String[] jvmArgs, String[] runArgs, Map<String, String> envVars) {
         this.jar = jar;
         this.jvmArgs = jvmArgs;
         this.runArgs = runArgs;
@@ -63,8 +62,7 @@ public class ExecuteFunction implements MCPFunction {
         arguments.computeIfAbsent("log", k -> environment.getFile("log.log"));
 
         // Get input and output files
-        File jar = this.jar.get();
-        File output = (File)environment.getArguments().get("output");
+        File output = environment.getFile((String) environment.getArguments().get("output"));
 
         // Find out what the inputs are
         Map<String, Object> replacedArgs = new HashMap<>();

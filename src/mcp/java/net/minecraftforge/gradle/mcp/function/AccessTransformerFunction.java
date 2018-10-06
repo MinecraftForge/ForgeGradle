@@ -1,17 +1,14 @@
 package net.minecraftforge.gradle.mcp.function;
 
+import com.google.gson.JsonObject;
+import net.minecraftforge.gradle.common.util.HashStore;
+import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
+import org.gradle.api.Project;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import org.gradle.api.Project;
-
-import com.google.gson.JsonObject;
-
-import net.minecraftforge.gradle.common.util.HashStore;
-import net.minecraftforge.gradle.mcp.task.ValidateMCPConfigTask;
-import net.minecraftforge.gradle.mcp.util.MCPConfig;
 
 public class AccessTransformerFunction extends ExecuteFunction {
     private List<File> files;
@@ -22,11 +19,8 @@ public class AccessTransformerFunction extends ExecuteFunction {
         this.files = files;
     }
 
-    private static CompletableFuture<File> getJar(Project mcp) {
-        MCPConfig cfg  = ((ValidateMCPConfigTask)mcp.getTasks().getByName("validateConfig")).processed;
-        CompletableFuture<File> jar = new CompletableFuture<>();
-        cfg.dependencies.put("net.minecraftforge:accesstransformers:0.10.0-rc.4.+:fatjar", jar); //TODO: configurable version?
-        return jar;
+    private static File getJar(Project mcp) { //TODO: configurable version?
+        return MavenArtifactDownloader.download(mcp, "net.minecraftforge:accesstransformers:0.10.0-rc.4.+:fatjar").iterator().next();
     }
 
     private static String[] getArguments(List<File> files) {
@@ -39,7 +33,7 @@ public class AccessTransformerFunction extends ExecuteFunction {
             args.add("--atFile");
             args.add(f.getAbsolutePath());
         });
-        return args.toArray(new String[args.size()]);
+        return args.toArray(new String[0]);
     }
 
     @Override
@@ -52,7 +46,7 @@ public class AccessTransformerFunction extends ExecuteFunction {
         cache.add(prefix + "args", String.join(" ", runArgs));
         cache.add(prefix + "jvmargs", String.join(" ", runArgs));
         try {
-            cache.add(prefix + "jar", jar.get());
+            cache.add(prefix + "jar", jar);
         } catch (Exception e) {
             e.printStackTrace();
         }

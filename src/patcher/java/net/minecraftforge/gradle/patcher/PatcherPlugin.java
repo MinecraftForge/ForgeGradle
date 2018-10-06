@@ -113,6 +113,10 @@ public class PatcherPlugin implements Plugin<Project> {
             task.dependsOn(sourcesJar, universalJar, userdevJar);
         });
         dlMappingsConfig.configure(task -> {
+            Map<String, String> map = new HashMap<>();
+            map.put("channel", "snapshot");
+            map.put("version", "20180901-1.13");
+            extension.mappings(map);
             task.setMappings(extension.getMappings());
         });
         extractNatives.configure(task -> {

@@ -7,7 +7,6 @@ import net.minecraftforge.gradle.mcp.util.MCPConfig;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -15,11 +14,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public class SetupMCPTask extends DefaultTask {
 
     private Map<String, MCPFunction> extrasPre = new LinkedHashMap<>();
-    private MCPConfig config;
+    private CompletableFuture<MCPConfig> config;
 
     private File output = getProject().file("build/" + getName() + "/output.zip");
 
@@ -28,7 +28,7 @@ public class SetupMCPTask extends DefaultTask {
             HashStore cache = new HashStore(getProject());
             try {
                 cache.load(getProject().file("build/" + getName() + "/inputcache.sha1"));
-                cache.add("configFile", getConfigFile());
+                cache.add("configFile", config.getNow(null).getConfigZip());
                 extrasPre.forEach((key, func) -> func.addInputs(cache, key + "."));
                 cache.save();
                 return cache.isSame() && getOutput().exists();
@@ -45,26 +45,21 @@ public class SetupMCPTask extends DefaultTask {
         return output;
     }
 
-    public MCPConfig getConfig() {
+    public CompletableFuture<MCPConfig> getConfig() {
         return config;
-    }
-
-    @InputFile // Somewhat clean hack to support task caching
-    public File getConfigFile() {
-        return config.zipFile;
     }
 
     public void setOutput(File output) {
         this.output = output;
     }
 
-    public void setConfig(MCPConfig config) {
+    public void setConfig(CompletableFuture<MCPConfig> config) {
         this.config = config;
     }
 
     @TaskAction
     public void setupMCP() throws Exception {
-        MCPRuntime runtime = new MCPRuntime(getProject(), config, true, extrasPre);
+        MCPRuntime runtime = new MCPRuntime(getProject(), config.getNow(null), true, extrasPre);
         File out = runtime.execute(getLogger());
         if (FileUtils.contentEquals(out, output)) return;
         Utils.delete(output);

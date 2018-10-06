@@ -1,5 +1,15 @@
 package net.minecraftforge.gradle.common.util;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import groovy.lang.Closure;
+import net.minecraftforge.gradle.common.util.VersionJson.Download;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.gradle.api.Project;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,18 +25,10 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.stream.StreamSupport;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.gradle.api.Project;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
-import groovy.lang.Closure;
-import net.minecraftforge.gradle.common.util.VersionJson.Download;
 
 public class Utils {
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -194,4 +196,9 @@ public class Utils {
         }
         return obj.toString();
     }
+
+    public static <T> T[] toArray(JsonArray array, Function<JsonElement, T> adapter, IntFunction<T[]> arrayFactory) {
+        return StreamSupport.stream(array.spliterator(), false).map(adapter).toArray(arrayFactory);
+    }
+
 }
