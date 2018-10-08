@@ -44,7 +44,7 @@ public class MCPRepository {
         JsonObject json = LoadMCPConfigTask.readConfig(mcpConfig);
         MCPConfig config = MCPConfig.deserialize(project, mcpConfig, json, pipeline);
         File mcpDirectory = new File(project.getGradle().getGradleHomeDir(), "caches/mcp/" + mcVersion + "/" + pipeline + "/" + atHash);
-        this.runtime = new MCPRuntime(project, config, mcpDirectory, true, Collections.emptyMap());
+        this.runtime = new MCPRuntime(project, config, mcpDirectory, false, Collections.emptyMap());
 
         this.artifactName = GROUP + ":" + NAME + ":" + mcVersion + ":" + pipeline + "." + atHash + "@" + EXTENSION;
         this.extrasName = GROUP + ":" + NAME_EXTRAS + ":" + mcVersion + ":" + pipeline + "." + atHash + "@" + EXTENSION;
