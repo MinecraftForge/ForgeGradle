@@ -27,10 +27,10 @@ public class MCPRuntime {
     final Map<String, Step> steps = new LinkedHashMap<>();
     Step currentStep;
 
-    public MCPRuntime(Project project, MCPConfig config, boolean generateSrc, Map<String, MCPFunction> extraPres) {
+    public MCPRuntime(Project project, MCPConfig config, File mcpDirectory, boolean generateSrc, Map<String, MCPFunction> extraPres) {
         this.project = project;
         this.environment = new MCPEnvironment(this, config.getMCVersion());
-        this.mcpDirectory = project.file("build/mcp/");
+        this.mcpDirectory = mcpDirectory;
 
         this.zipFile = config.getConfigZip();
 

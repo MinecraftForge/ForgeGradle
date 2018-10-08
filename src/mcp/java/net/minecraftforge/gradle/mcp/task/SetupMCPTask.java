@@ -59,7 +59,7 @@ public class SetupMCPTask extends DefaultTask {
 
     @TaskAction
     public void setupMCP() throws Exception {
-        MCPRuntime runtime = new MCPRuntime(getProject(), config.getNow(null), true, extrasPre);
+        MCPRuntime runtime = new MCPRuntime(getProject(), config.getNow(null), getProject().file("build/mcp/"), true, extrasPre);
         File out = runtime.execute(getLogger());
         if (FileUtils.contentEquals(out, output)) return;
         Utils.delete(output);

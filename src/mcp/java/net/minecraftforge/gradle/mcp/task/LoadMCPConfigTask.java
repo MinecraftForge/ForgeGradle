@@ -19,8 +19,7 @@ import java.util.zip.ZipFile;
 public class LoadMCPConfigTask extends DefaultTask {
 
     private static final String CONFIG_FILE_NAME = "config.json";
-
-    private final Gson gson = new Gson();
+    private static final Gson GSON = new Gson();
 
     private File configFile;
     private String pipeline;
@@ -49,23 +48,25 @@ public class LoadMCPConfigTask extends DefaultTask {
     }
 
     @TaskAction
-    public void load() throws IOException {
-        JsonObject json;
-        try (ZipFile zip = new ZipFile(configFile)) {
+    public void load() {
+        JsonObject json = readConfig(configFile);
+        MCPConfig cfg = MCPConfig.deserialize(getProject(), configFile, json, pipeline);
+        this.config.complete(cfg);
+    }
+
+    public static JsonObject readConfig(File mcpConfigZip) {
+        try (ZipFile zip = new ZipFile(mcpConfigZip)) {
 
             ZipEntry configEntry = zip.getEntry(CONFIG_FILE_NAME);
             if (configEntry == null) {
-                throw new IllegalStateException("Could not find '" + CONFIG_FILE_NAME + "' in " + configFile.getAbsolutePath());
+                throw new IllegalStateException("Could not find '" + CONFIG_FILE_NAME + "' in " + mcpConfigZip.getAbsolutePath());
             }
 
             try (InputStream configStream = zip.getInputStream(configEntry)) {
-                json = gson.fromJson(new InputStreamReader(configStream), JsonObject.class);
+                return GSON.fromJson(new InputStreamReader(configStream), JsonObject.class);
             }
-        }
-
-        if (json != null) {
-            MCPConfig cfg = MCPConfig.deserialize(getProject(), configFile, json, pipeline);
-            this.config.complete(cfg);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
     }
 
