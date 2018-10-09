@@ -1,8 +1,5 @@
 package net.minecraftforge.gradle.mcp.function;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
@@ -29,11 +26,11 @@ public class ExecuteFunction implements MCPFunction {
     private static final Pattern REPLACE_PATTERN = Pattern.compile("^\\{(\\w+)\\}$");
 
     protected final File jar;
-    private final String[] jvmArgs;
-    protected final String[] runArgs;
-    private final Map<String, String> envVars;
+    protected final String[] jvmArgs;
+    protected String[] runArgs;
+    protected final Map<String, String> envVars;
 
-    private JsonObject data;
+    private Map<String, String> data;
 
     public ExecuteFunction(File jar, String[] jvmArgs, String[] runArgs, Map<String, String> envVars) {
         this.jar = jar;
@@ -43,7 +40,7 @@ public class ExecuteFunction implements MCPFunction {
     }
 
     @Override
-    public void loadData(JsonObject data) {
+    public void loadData(Map<String, String> data) {
         this.data = data;
     }
 
@@ -62,7 +59,7 @@ public class ExecuteFunction implements MCPFunction {
         arguments.computeIfAbsent("log", k -> environment.getFile("log.log"));
 
         // Get input and output files
-        File output = environment.getFile((String) environment.getArguments().get("output"));
+        File output = (File)environment.getArguments().get("output");
 
         // Find out what the inputs are
         Map<String, Object> replacedArgs = new HashMap<>();
@@ -74,7 +71,7 @@ public class ExecuteFunction implements MCPFunction {
 
         HashStore hashStore = new HashStore(environment.project).load(environment.getFile("lastinput.sha1"));
         hashStore.add("args", String.join(" ", runArgs));
-        hashStore.add("jvmargs", String.join(" ", runArgs));
+        hashStore.add("jvmargs", String.join(" ", jvmArgs));
         hashStore.add("jar", jar);
         replacedArgs.forEach((key, value) -> {
             if (value instanceof File) {
@@ -133,10 +130,10 @@ public class ExecuteFunction implements MCPFunction {
                 return (String)argument;
             }
 
-            JsonElement dataElement = data.get(argName);
+            String dataElement = data.get(argName);
             if (dataElement != null) {
-                inputs.put(argName, environment.getFile(dataElement.getAsString()));
-                return dataElement.getAsString();
+                inputs.put(argName, environment.getFile(dataElement));
+                return dataElement;
             }
         }
         throw new IllegalStateException("The string '" + value + "' did not return a valid substitution match!");
@@ -150,9 +147,9 @@ public class ExecuteFunction implements MCPFunction {
             String argName = matcher.group(1);
             if (argName == null) continue;
 
-            JsonElement dataElement = data.get(argName);
-            if (dataElement == null) continue;
-            String referencedData = dataElement.getAsString();
+
+            String referencedData = data.get(argName);
+            if (referencedData == null) continue;
 
             ZipEntry entry = zip.getEntry(referencedData);
             if (entry == null) continue;

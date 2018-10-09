@@ -12,12 +12,12 @@ import java.io.IOException;
 
 public class DownloadMCPMappingsTask extends DefaultTask {
 
-    private Object mappings;
+    private String mappings;
 
     private File output = getProject().file("build/mappings.zip");
 
     @Input
-    public Object getMappings() {
+    public String getMappings() {
         return this.mappings;
     }
 
@@ -26,7 +26,7 @@ public class DownloadMCPMappingsTask extends DefaultTask {
         return output;
     }
 
-    public void setMappings(Object value) {
+    public void setMappings(String value) {
         this.mappings = value;
     }
 
@@ -49,14 +49,7 @@ public class DownloadMCPMappingsTask extends DefaultTask {
     }
 
     private File getMappingFile() {
-        if (getMappings() instanceof String) {
-            String artifact = (String) getMappings();
-            return MavenArtifactDownloader.single(getProject(), artifact);
-        } else if (getMappings() instanceof File) {
-            return (File) getMappings();
-        } else {
-            throw new IllegalArgumentException("Expected the mappings to be a File or a String, but instead got " + (getMappings() == null ? "null" : getMappings().getClass().getName()));
-        }
+        return MavenArtifactDownloader.single(getProject(), getMappings());
     }
 
 }

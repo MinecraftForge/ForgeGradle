@@ -1,6 +1,5 @@
 package net.minecraftforge.gradle.mcp.function;
 
-import com.google.gson.JsonObject;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import org.apache.commons.io.IOUtils;
@@ -27,8 +26,8 @@ public class InjectFunction implements MCPFunction {
     private Map<String, byte[]> added;
 
     @Override
-    public void loadData(JsonObject data) {
-        inject = data.get("inject").getAsString();
+    public void loadData(Map<String, String> data) {
+        inject = data.get("inject");
     }
 
     @Override

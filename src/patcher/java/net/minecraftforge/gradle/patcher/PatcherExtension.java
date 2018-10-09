@@ -20,7 +20,7 @@ public class PatcherExtension {
     public String mcVersion;
     public boolean srgPatches = true;
     public boolean srgUniversal = false;
-    private Object mappings;
+    private String mappings;
     private List<Object> extraMappings = new ArrayList<>();
     private List<Object> extraExcs = new ArrayList<>();
     private List<File> accessTransformers = new ArrayList<>();
@@ -32,7 +32,7 @@ public class PatcherExtension {
     public PatcherExtension(Project project) {
     }
 
-    public Object getMappings() {
+    public String getMappings() {
         return mappings;
     }
 
@@ -64,13 +64,8 @@ public class PatcherExtension {
         setMappings("de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip");
     }
 
-    public void setMappings(Object obj) {
-        if (obj instanceof String || //Custom full artifact
-                obj instanceof File) { //Custom zip file
-            mappings = obj;
-        } else {
-            throw new IllegalArgumentException("Mappings must be file, string, or map");
-        }
+    public void setMappings(String value) {
+        mappings = value;
     }
 
     public void extraMapping(Object mapping) {

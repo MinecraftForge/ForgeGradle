@@ -16,7 +16,7 @@ import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.io.Files;
 
-import net.minecraftforge.gradle.common.config.UserdevJsonV1;
+import net.minecraftforge.gradle.common.config.UserdevConfigV1;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPExtension;
 import net.minecraftforge.gradle.patcher.PatcherExtension;
@@ -26,15 +26,17 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
     private Set<File> srgs = new TreeSet<>();
     private List<String> srgLines = new ArrayList<>();
     private File output = getProject().file("build/" + getName() + "/output.json");
+    private boolean srg = false;
 
     @TaskAction
     public void apply() throws IOException {
-        UserdevJsonV1 json = new UserdevJsonV1(); //TODO: Move this to plugin so we can re-use the names in both tasks?
+        UserdevConfigV1 json = new UserdevConfigV1(); //TODO: Move this to plugin so we can re-use the names in both tasks?
         json.spec = 1;
         json.binpatches = "joined.lzma";
         json.sources = "sources.jar";
         json.universal = "universal.jar";
         json.patches = "patches/";
+        json.srg = srg;
         getATs().forEach(at -> json.addAT("ats/" + at.getName()));
         getSRGs().forEach(srg -> json.addSRG("srgs/" + srg.getName()));
         getSRGLines().forEach(srg -> json.addSRGLine(srg));
@@ -43,20 +45,23 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
         Files.write(Utils.GSON.toJson(json).getBytes(StandardCharsets.UTF_8), getOutput());
     }
 
-    private void addParent(UserdevJsonV1 json, Project project) {
+    private void addParent(UserdevConfigV1 json, Project project) {
         PatcherExtension patcher = project.getExtensions().findByType(PatcherExtension.class);
         MCPExtension mcp = project.getExtensions().findByType(MCPExtension.class);
 
         if (patcher != null) {
             if (project != getProject() && patcher.patches != null) { //patches == null means they dont add anything, used by us as a 'clean' workspace.
-                json.addParent(String.format("%s:%s:%s:userdev", project.getGroup(), project.getName(), project.getVersion()));
+                if (json.parent == null) {
+                    json.parent = String.format("%s:%s:%s:userdev", project.getGroup(), project.getName(), project.getVersion());
+                    return;
+                }
             }
             if (patcher.parent != null) {
                 addParent(json, patcher.parent);
             }
             //TODO: MCP/Parents without separate projects?
         }
-        if (mcp != null) {
+        if (json.parent != null && mcp != null) { //Only specify mcp if we have no patcher parent.
             json.mcp = mcp.getConfig().toString();;
         }
     }
@@ -83,6 +88,14 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
     }
     public void addSRGLine(String value) {
         this.srgLines.add(value);
+    }
+
+    @Input
+    public boolean getSRG() {
+        return srg;
+    }
+    public void setSRG(boolean value) {
+        this.srg = value;
     }
 
     @OutputFile

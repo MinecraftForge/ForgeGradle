@@ -66,7 +66,7 @@ public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
         if (this.repo == null) {
             this.repo = SimpleRepository.of(ArtifactProviderBuilder.begin(ArtifactIdentifier.class)
                 .filter(ArtifactIdentifier.groupEquals(GROUP))
-                .filter(ArtifactIdentifier.nameMatches("^(client|server)$"))
+                //.filter(ArtifactIdentifier.nameMatches("^(client|server)$"))
                 .provide(this)
             );
         }
@@ -85,20 +85,33 @@ public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
         }
     }
 
+    protected String getMappings(String version) {
+        if (!version.contains("_mapped_")) {
+            return null;
+        }
+        return version.split("_mapped_")[0];
+    }
+
     @Override
     public Artifact getArtifact(ArtifactIdentifier artifact) {
         try {
             String side = artifact.getName();
+            log("MinecraftRepo Request: " + artifact.getGroup() + ":" + artifact.getName() + ":" + artifact.getVersion() + ":" + artifact.getClassifier() + "@" + artifact.getExtension());
 
             if (!artifact.getGroup().equals(GROUP) || (!"client".equals(side) && !"server".equals(side))) {
                 return Artifact.none();
             }
 
             String version = artifact.getVersion();
+            String mappings = getMappings(version);
+            if (mappings != null) {
+                version = version.substring(0, version.length() - mappings.length() + "_mapped_".length());
+                return Artifact.none(); //We do not support mappings
+            }
             String classifier = artifact.getClassifier() == null ? "" : artifact.getClassifier();
             String ext = artifact.getExtension().split("\\.")[0];
 
-            //System.out.println("MinecraftRepo Request: " + artifact.getGroup() + ":" + side + ":" + version + ":" + classifier + "@" + ext);
+            log("MinecraftRepo Request: " + artifact.getGroup() + ":" + side + ":" + version + ":" + classifier + "@" + ext);
 
             File ret = null;
             if ("pom".equals(ext)) {
@@ -156,7 +169,7 @@ public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
         return mappings;
     }
 
-    public File findVersion(String version) throws IOException {
+    private File findVersion(String version) throws IOException {
         File manifest = cache("versions/manifest.json");
         if (!manifest.exists() || manifest.lastModified() < System.currentTimeMillis() - CACHE_TIMEOUT) {
             FileUtils.copyURLToFile(new URL(MANIFEST_URL), manifest);

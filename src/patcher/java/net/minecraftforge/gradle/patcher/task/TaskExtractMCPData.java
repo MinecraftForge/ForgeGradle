@@ -19,7 +19,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import net.minecraftforge.gradle.common.config.Config;
-import net.minecraftforge.gradle.common.config.ConfigV1;
+import net.minecraftforge.gradle.common.config.MCPConfigV1;
 
 public class TaskExtractMCPData extends DefaultTask {
     private static final Gson GSON = new GsonBuilder().create();
@@ -36,9 +36,9 @@ public class TaskExtractMCPData extends DefaultTask {
             if (entry == null) {
                 throw new IllegalStateException("Could not find 'config.json' in " + getConfig().getAbsolutePath());
             }
-            int spec = GSON.fromJson(new InputStreamReader(zip.getInputStream(entry)), Config.class).spec;
+            int spec = Config.getSpec(zip.getInputStream(entry));
             if (spec == 1) {
-                ConfigV1 cfg = GSON.fromJson(new InputStreamReader(zip.getInputStream(entry)), ConfigV1.class);
+                MCPConfigV1 cfg = GSON.fromJson(new InputStreamReader(zip.getInputStream(entry)), MCPConfigV1.class);
                 String path = cfg.getData(key.split("/"));
                 if (path == null && "statics".equals(key)) { //TODO: Remove when I next push MCPConfig
                     path = "config/static_methods.txt";

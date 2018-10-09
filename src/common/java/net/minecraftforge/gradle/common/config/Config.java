@@ -1,5 +1,15 @@
 package net.minecraftforge.gradle.common.config;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+
+import net.minecraftforge.gradle.common.util.Utils;
+
 public class Config {
     public int spec;
+
+    public static int getSpec(InputStream stream) throws IOException {
+        return Utils.GSON.fromJson(new InputStreamReader(stream), Config.class).spec;
+    }
 }

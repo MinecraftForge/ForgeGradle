@@ -113,10 +113,6 @@ public class PatcherPlugin implements Plugin<Project> {
             task.dependsOn(sourcesJar, universalJar, userdevJar);
         });
         dlMappingsConfig.configure(task -> {
-            Map<String, String> map = new HashMap<>();
-            map.put("channel", "snapshot");
-            map.put("version", "20180901-1.13");
-            extension.mappings(map);
             task.setMappings(extension.getMappings());
         });
         extractNatives.configure(task -> {
@@ -472,6 +468,7 @@ public class PatcherPlugin implements Plugin<Project> {
                 File joined = setupMCP.getJoinedJar();
 
                 if (extension.srgUniversal) {
+                    userdevConfig.get().setSRG(true);
                     TaskProvider<TaskReobfuscateJar> joinedSrg = project.getTasks().register("joinedJarSrg", TaskReobfuscateJar.class);
                     joinedSrg.get().dependsOn(setupMCP, createMcp2Srg.get());
                     joinedSrg.get().setInput(joined);

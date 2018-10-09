@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -97,10 +98,13 @@ public class MCPConfig {
     private static MCPConfig deserializeV1(Project project, File zip, String pipeline, JsonObject json) {
         // Read JSON
         String mcVersion = json.get("version").getAsString();
-        JsonObject data = json.get("data").getAsJsonObject();
         JsonArray stepArray = json.get("steps").getAsJsonObject().get(pipeline).getAsJsonArray();
         JsonObject functions = json.get("functions").getAsJsonObject();
         JsonArray libraryArray = json.get("libraries").getAsJsonObject().get(pipeline).getAsJsonArray();
+
+
+        Map<String, String> data = json.get("data").getAsJsonObject().entrySet().stream().collect(Collectors.toMap(Entry::getKey,
+                e -> e.getValue().isJsonPrimitive() ? e.getValue().getAsString() : e.getValue().getAsJsonObject().get(pipeline).getAsString()));
 
         // Compute steps
         List<Step> sharedSteps = new LinkedList<>();
@@ -148,8 +152,8 @@ public class MCPConfig {
     private static MCPFunction deserializeV1Function(Project project, JsonObject json) {
         String version = json.get("version").getAsString();
         String repo = json.get("repo").getAsString();
-        JsonArray runArgArray = json.get("args").getAsJsonArray();
-        JsonArray jvmArgArray = json.get("jvmargs").getAsJsonArray();
+        JsonArray runArgArray = json.has("args") ? json.get("args").getAsJsonArray() : new JsonArray();
+        JsonArray jvmArgArray = json.has("jvmargs") ? json.get("jvmargs").getAsJsonArray() : new JsonArray();
 
         // Download the function's artifact
         project.getRepositories().maven(r -> {

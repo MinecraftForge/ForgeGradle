@@ -1,6 +1,5 @@
 package net.minecraftforge.gradle.mcp.function;
 
-import com.google.gson.JsonObject;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
@@ -12,6 +11,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Map;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
@@ -25,8 +25,8 @@ public class StripJarFunction implements MCPFunction {
     private Set<String> filter;
 
     @Override
-    public void loadData(JsonObject data) {
-        mappings = data.get("mappings").getAsString();
+    public void loadData(Map<String, String> data) {
+        mappings = data.get("mappings");
     }
 
     @Override

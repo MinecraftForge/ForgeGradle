@@ -1,26 +1,33 @@
 package net.minecraftforge.gradle.mcp.function;
 
-import com.google.gson.JsonObject;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
+import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
+
 import org.gradle.api.Project;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class AccessTransformerFunction extends ExecuteFunction {
     private List<File> files;
+    private String transformers;
 
     public AccessTransformerFunction(Project mcp, List<File> files) {
         super(getJar(mcp), new String[0], getArguments(files), new HashMap<>());
-        this.loadData(new JsonObject());
+        this.loadData(Collections.emptyMap());
         this.files = files;
     }
 
     private static File getJar(Project mcp) { //TODO: configurable version?
-        return MavenArtifactDownloader.download(mcp, "net.minecraftforge:accesstransformers:0.10.0-rc.4.+:fatjar").iterator().next();
+        return MavenArtifactDownloader.single(mcp, "net.minecraftforge:accesstransformers:0.10.0-rc.4.+:fatjar");
     }
 
     private static String[] getArguments(List<File> files) {
@@ -33,7 +40,28 @@ public class AccessTransformerFunction extends ExecuteFunction {
             args.add("--atFile");
             args.add(f.getAbsolutePath());
         });
-        return args.toArray(new String[0]);
+        return args.toArray(new String[args.size()]);
+    }
+
+    @Override
+    public File execute(MCPEnvironment env) throws IOException, InterruptedException, ExecutionException {
+
+        if (transformers != null) {
+            File tmp = File.createTempFile("FG_ats_", ".cfg");
+            tmp.deleteOnExit();
+            Files.write(tmp.toPath(), transformers.getBytes());
+            List<String> args = new ArrayList<>(Arrays.asList(runArgs));
+            args.add("--atFile");
+            args.add(tmp.getAbsolutePath());
+            runArgs = args.toArray(new String[args.size()]);
+        }
+        return super.execute(env);
+    }
+
+
+    public void addTransformer(String data) {
+        if (transformers == null) transformers = data;
+        else transformers += "\n#============================================================\n" + data;
     }
 
     @Override
@@ -45,6 +73,8 @@ public class AccessTransformerFunction extends ExecuteFunction {
     public void addInputs(HashStore cache, String prefix) { //Called by setupMain before executed
         cache.add(prefix + "args", String.join(" ", runArgs));
         cache.add(prefix + "jvmargs", String.join(" ", runArgs));
+        if (transformers != null)
+            cache.add(prefix + "transformers", transformers);
         try {
             cache.add(prefix + "jar", jar);
         } catch (Exception e) {

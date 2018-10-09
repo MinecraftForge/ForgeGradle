@@ -1,7 +1,6 @@
 package net.minecraftforge.gradle.mcp.function;
 
 import com.cloudbees.diff.PatchException;
-import com.google.gson.JsonObject;
 import net.minecraftforge.gradle.common.diff.ContextualPatch;
 import net.minecraftforge.gradle.common.diff.ContextualPatch.PatchReport;
 import net.minecraftforge.gradle.common.diff.HunkReport;
@@ -25,8 +24,8 @@ public class PatchFunction implements MCPFunction {
     private Map<String, String> patches;
 
     @Override
-    public  void loadData(JsonObject data) throws Exception {
-        path = data.get("patches").getAsString();
+    public  void loadData(Map<String, String> data) throws Exception {
+        path = data.get("patches");
     }
 
     @Override

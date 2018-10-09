@@ -53,7 +53,10 @@ public enum HashFunction {
     }
 
     public String hash(byte[] data) {
-        String hash = new BigInteger(1, get().digest(data)).toString(16);
+        return pad(new BigInteger(1, get().digest(data)).toString(16));
+    }
+
+    public String pad(String hash) {
         return (pad + hash).substring(hash.length());
     }
 }
