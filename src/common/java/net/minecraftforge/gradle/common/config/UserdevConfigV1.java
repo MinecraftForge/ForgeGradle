@@ -1,9 +1,21 @@
 package net.minecraftforge.gradle.common.config;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import net.minecraftforge.gradle.common.util.Utils;
+
 public class UserdevConfigV1 extends Config {
+    public static UserdevConfigV1 get(InputStream stream) {
+        return Utils.fromJson(stream, UserdevConfigV1.class);
+    }
+    public static UserdevConfigV1 get(byte[] data) {
+        return get(new ByteArrayInputStream(data));
+    }
+
     public String mcp;    // Do not specify this unless there is no parent.
     public String parent; // To fully resolve, we must walk the parents until we hit null, and that one must specify a MCP value.
     public List<String> ats;
@@ -21,6 +33,9 @@ public class UserdevConfigV1 extends Config {
             this.ats = new ArrayList<>();
         }
         this.ats.add(value);
+    }
+    public List<String> getATs() {
+        return this.ats == null ? Collections.emptyList() : this.ats;
     }
     public void addSRG(String value) {
         if (this.srgs == null) {

@@ -3,9 +3,12 @@ package net.minecraftforge.gradle.patcher;
 import groovy.util.Node;
 import groovy.util.XmlParser;
 import groovy.xml.XmlUtil;
+import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
+import net.minecraftforge.gradle.mcp.MCPExtension;
 import net.minecraftforge.gradle.mcp.MCPPlugin;
+import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
 import net.minecraftforge.gradle.mcp.task.DownloadMCPConfigTask;
 import net.minecraftforge.gradle.mcp.task.SetupMCPTask;
@@ -100,13 +103,16 @@ public class PatcherPlugin implements Plugin<Project> {
         TaskProvider<DefaultTask> release = project.getTasks().register("release", DefaultTask.class);
 
         //Add Known repos
-        MinecraftRepo.attach(project);
+        project.getRepositories().maven(e -> {
+            e.setUrl("http://files.minecraftforge.net/maven/");
+        });
+        new BaseRepo.Builder()
+            .add(MCPRepo.create(project))
+            .add(MinecraftRepo.create(project))
+            .attach(project);
         project.getRepositories().maven(e -> {
             e.setUrl("https://libraries.minecraft.net/");
             e.metadataSources(src -> src.artifact());
-        });
-        project.getRepositories().maven(e -> {
-            e.setUrl("http://files.minecraftforge.net/maven/");
         });
 
         release.configure(task -> {
@@ -272,7 +278,8 @@ public class PatcherPlugin implements Plugin<Project> {
 
                     if (extension.cleanSrc == null) {
                         extension.cleanSrc = setupMCP.getOutput();
-                        applyConfig.get().dependsOn(tasks.getByName("setupMCP"));
+                        applyConfig.get().dependsOn(setupMCP);
+                        genConfig.get().dependsOn(setupMCP);
                     }
                     if (applyConfig.get().getClean() == null) {
                         applyConfig.get().setClean(extension.cleanSrc);
@@ -328,6 +335,7 @@ public class PatcherPlugin implements Plugin<Project> {
                         TaskApplyPatches task = (TaskApplyPatches)tasks.getByName(applyConfig.get().getName());
                         extension.cleanSrc = task.getOutput();
                         applyConfig.get().dependsOn(task);
+                        genConfig.get().dependsOn(task);
                     }
                     if (applyConfig.get().getClean() == null) {
                         applyConfig.get().setClean(extension.cleanSrc);
@@ -461,56 +469,43 @@ public class PatcherPlugin implements Plugin<Project> {
                 if (mcp == null) {
                     throw new IllegalStateException("Could not find MCP parent project, you must specify a parent chain to MCP.");
                 }
-                SetupMCPTask setupMCP = (SetupMCPTask)mcp.getTasks().getByName("setupMCP");
-
-                File client = MavenArtifactDownloader.single(project, "net.minecraft:client:" + extension.mcVersion + ":slim", true);
-                File server = MavenArtifactDownloader.single(project, "net.minecraft:server:" + extension.mcVersion + ":slim", true);
-                File joined = setupMCP.getJoinedJar();
+                String mcp_version = mcp.getExtensions().findByType(MCPExtension.class).getConfig().getVersion();
 
                 if (extension.srgUniversal) {
                     userdevConfig.get().setSRG(true);
-                    TaskProvider<TaskReobfuscateJar> joinedSrg = project.getTasks().register("joinedJarSrg", TaskReobfuscateJar.class);
-                    joinedSrg.get().dependsOn(setupMCP, createMcp2Srg.get());
-                    joinedSrg.get().setInput(joined);
-                    joinedSrg.get().setClasspath(project.getConfigurations().getByName(MC_DEP_CONFIG));
-                    joinedSrg.get().setSrg(createMcp2Srg.get().getSrg());
-                    TaskProvider<TaskReobfuscateJar> clientSrg = project.getTasks().register("clientJarSrg", TaskReobfuscateJar.class);
-                    clientSrg.get().dependsOn(setupMCP, createMcp2Srg.get());
-                    clientSrg.get().setInput(client);
-                    clientSrg.get().setClasspath(project.getConfigurations().getByName(MC_DEP_CONFIG));
-                    clientSrg.get().setSrg(createMcp2Srg.get().getSrg());
-                    TaskProvider<TaskReobfuscateJar> serverSrg = project.getTasks().register("serverJarSrg", TaskReobfuscateJar.class);
-                    serverSrg.get().dependsOn(setupMCP, createMcp2Srg.get());
-                    serverSrg.get().setInput(server);
-                    serverSrg.get().setClasspath(project.getConfigurations().getByName(MC_DEP_CONFIG));
-                    serverSrg.get().setSrg(createMcp2Srg.get().getSrg());
 
+                    File client = MavenArtifactDownloader.single(project, "net.minecraft:client:" + mcp_version + ":srg", true);
+                    File server = MavenArtifactDownloader.single(project, "net.minecraft:server:" + mcp_version + ":srg", true);
+                    File joined = MavenArtifactDownloader.single(project, "net.minecraft:joined:" + mcp_version + ":srg", true);
 
                     reobfJar.get().dependsOn(createMcp2Srg);
                     reobfJar.get().setSrg(createMcp2Srg.get().getOutput());
                     //TODO: Extra SRGs, I dont think this is needed tho...
 
-                    genJoinedBinPatches.get().dependsOn(createMcp2Srg, joinedSrg);
+                    genJoinedBinPatches.get().dependsOn(createMcp2Srg);
                     genJoinedBinPatches.get().setSrg(createMcp2Srg.get().getOutput());
-                    genJoinedBinPatches.get().setCleanJar(joinedSrg.get().getOutput());
+                    genJoinedBinPatches.get().setCleanJar(joined);
 
-                    genClientBinPatches.get().dependsOn(createMcp2Srg, clientSrg);
+                    genClientBinPatches.get().dependsOn(createMcp2Srg);
                     genClientBinPatches.get().setSrg(createMcp2Srg.get().getOutput());
-                    genClientBinPatches.get().setCleanJar(clientSrg.get().getOutput());
+                    genClientBinPatches.get().setCleanJar(client);
 
-                    genServerBinPatches.get().dependsOn(createMcp2Srg, serverSrg);
+                    genServerBinPatches.get().dependsOn(createMcp2Srg);
                     genServerBinPatches.get().setSrg(createMcp2Srg.get().getOutput());
-                    genServerBinPatches.get().setCleanJar(serverSrg.get().getOutput());
+                    genServerBinPatches.get().setCleanJar(server);
 
-                    filterNew.get().dependsOn(setupMCP, joinedSrg);
+                    filterNew.get().dependsOn(createMcp2Srg);
                     filterNew.get().setSrg(createMcp2Srg.get().getOutput());
-                    filterNew.get().addBlacklist(joinedSrg.get().getOutput());
+                    filterNew.get().addBlacklist(joined);
                 } else {
+                    File client = MavenArtifactDownloader.single(project, "net.minecraft:client:" + extension.mcVersion + ":slim", true);
+                    File server = MavenArtifactDownloader.single(project, "net.minecraft:server:" + extension.mcVersion + ":slim", true);
+                    File joined = MavenArtifactDownloader.single(project, "net.minecraft:joined:" + mcp_version, true);
+
                     reobfJar.get().dependsOn(createMcp2Obf);
                     reobfJar.get().setSrg(createMcp2Obf.get().getOutput());
                     //TODO: Extra SRGs, I dont think this is needed tho...
 
-                    genJoinedBinPatches.get().dependsOn(setupMCP);
                     genJoinedBinPatches.get().setSrg(createMcp2Obf.get().getOutput());
                     genJoinedBinPatches.get().setCleanJar(joined);
 
@@ -520,7 +515,6 @@ public class PatcherPlugin implements Plugin<Project> {
                     genServerBinPatches.get().setSrg(createMcp2Obf.get().getOutput());
                     genServerBinPatches.get().setCleanJar(server);
 
-                    filterNew.get().dependsOn(setupMCP);
                     filterNew.get().setSrg(createMcp2Obf.get().getOutput());
                     filterNew.get().addBlacklist(joined);
                 }

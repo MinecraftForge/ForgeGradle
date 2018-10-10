@@ -8,9 +8,10 @@ import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.logging.Logger;
 
+import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
+import net.minecraftforge.gradle.mcp.MCPRepo;
 
-import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -21,12 +22,13 @@ public class UserDevPlugin implements Plugin<Project> {
 
     @Override
     public void apply(@Nonnull Project project) {
+        @SuppressWarnings("unused")
         final Logger logger = project.getLogger();
         final UserDevExtension extension = project.getExtensions().create("minecraft", UserDevExtension.class, project);
         if (project.getPluginManager().findPlugin("java") == null) {
             project.getPluginManager().apply("java");
         }
-        final File natives_folder = project.file("build/natives/");
+        //final File natives_folder = project.file("build/natives/");
         /* TODO: Make compile/jar tasks reobf?
         final JavaPluginConvention javaConv = (JavaPluginConvention)project.getConvention().getPlugins().get("java");
 
@@ -67,7 +69,11 @@ public class UserDevPlugin implements Plugin<Project> {
 
 
             // We have to add these AFTER our repo so that we get called first, this is annoying...
-            MinecraftRepo.attach(project); //Provides vanilla extra/slim/data jars. These don't care about OBF names.
+            new BaseRepo.Builder()
+                .add(mcrepo)
+                .add(MCPRepo.create(project))
+                .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
+                .attach(project);
             project.getRepositories().maven(e -> {
                 e.setUrl("http://files.minecraftforge.net/maven/");
             });

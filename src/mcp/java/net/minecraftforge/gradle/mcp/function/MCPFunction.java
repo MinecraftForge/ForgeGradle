@@ -8,7 +8,7 @@ import java.util.zip.ZipFile;
 
 public interface MCPFunction {
 
-    default void loadData(Map<String, String> data) throws Exception {
+    default void loadData(Map<String, String> data) {
     }
 
     default void initialize(MCPEnvironment environment, ZipFile zip) throws Exception {

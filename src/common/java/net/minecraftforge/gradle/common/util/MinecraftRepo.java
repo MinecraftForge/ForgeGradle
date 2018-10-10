@@ -4,14 +4,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -23,66 +21,51 @@ import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
-import com.amadornes.artifactural.api.artifact.Artifact;
 import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
-import com.amadornes.artifactural.api.artifact.ArtifactType;
 import com.amadornes.artifactural.api.repository.ArtifactProvider;
 import com.amadornes.artifactural.api.repository.Repository;
-import com.amadornes.artifactural.base.artifact.StreamableArtifact;
 import com.amadornes.artifactural.base.repository.ArtifactProviderBuilder;
 import com.amadornes.artifactural.base.repository.SimpleRepository;
 import com.amadornes.artifactural.gradle.GradleRepositoryAdapter;
+import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 
+import net.minecraftforge.gradle.common.config.Config;
+import net.minecraftforge.gradle.common.config.MCPConfigV1;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import net.minecraftforge.gradle.common.util.VersionJson.OS;
 
-public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
+public class MinecraftRepo extends BaseRepo {
     private static MinecraftRepo INSTANCE;
-    private static int CACHE_TIMEOUT = 1000 * 60 * 60 * 1; //1 hour, Timeout used for version_manifest.json so we dont ping their server every request.
+    public static int CACHE_TIMEOUT = 1000 * 60 * 60 * 1; //1 hour, Timeout used for version_manifest.json so we dont ping their server every request.
                                                            //manifest doesn't include sha1's so we use this for the per-version json as well.
     private static final String GROUP = "net.minecraft";
-    private static final String MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
+    public static final String MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
     private static final String FORGE_MAVEN = "https://files.minecraftforge.net/maven/";
-    private static final String CURRENT_OS = OS.getCurrent().getName();
+    public static final String CURRENT_OS = OS.getCurrent().getName();
 
-    private File cache;
-    private Repository repo;
-    private Logger log;
+    private final Repository repo;
     private MinecraftRepo(File cache, Logger log) {
-        this.cache = cache;
-        this.log = log;
+        super(cache, log);
+        this.repo = SimpleRepository.of(ArtifactProviderBuilder.begin(ArtifactIdentifier.class)
+            .filter(ArtifactIdentifier.groupEquals(GROUP))
+            .filter(ArtifactIdentifier.nameMatches("^(client|server)$"))
+            .provide(this)
+        );
+    }
+
+    private static MinecraftRepo getInstance(Project project) {
+        if (INSTANCE == null)
+            INSTANCE = new MinecraftRepo(Utils.getCache(project, "minecraft_repo"), project.getLogger());
+        return INSTANCE;
     }
 
     public static void attach(Project project) {
-        if (INSTANCE == null) {
-            File cache = Utils.getCache(project, "minecraft_repo");
-            INSTANCE = new MinecraftRepo(cache, project.getLogger());
-        }
-        GradleRepositoryAdapter.add(project.getRepositories(), "MINECRAFT_DYNAMIC", "http://minecraft_dynamic.fake/", INSTANCE.getRepo());
+        GradleRepositoryAdapter.add(project.getRepositories(), "MINECRAFT_DYNAMIC", "http://minecraft_dynamic.fake/", getInstance(project).repo);
     }
 
-    private Repository getRepo() {
-        if (this.repo == null) {
-            this.repo = SimpleRepository.of(ArtifactProviderBuilder.begin(ArtifactIdentifier.class)
-                .filter(ArtifactIdentifier.groupEquals(GROUP))
-                //.filter(ArtifactIdentifier.nameMatches("^(client|server)$"))
-                .provide(this)
-            );
-        }
-        return this.repo;
-    }
-
-    private File cache(String... path) {
-        return new File(cache, String.join(File.separator, path));
-    }
-
-    private void log(String line) {
-        if (this.log == null) {
-            System.out.println(line);
-        } else {
-            this.log.lifecycle(line);
-        }
+    public static ArtifactProvider<ArtifactIdentifier> create(Project project) {
+        return getInstance(project);
     }
 
     protected String getMappings(String version) {
@@ -93,50 +76,37 @@ public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
     }
 
     @Override
-    public Artifact getArtifact(ArtifactIdentifier artifact) {
-        try {
-            String side = artifact.getName();
-            log("MinecraftRepo Request: " + artifact.getGroup() + ":" + artifact.getName() + ":" + artifact.getVersion() + ":" + artifact.getClassifier() + "@" + artifact.getExtension());
+    public File findFile(ArtifactIdentifier artifact) throws IOException {
+        String side = artifact.getName();
 
-            if (!artifact.getGroup().equals(GROUP) || (!"client".equals(side) && !"server".equals(side))) {
-                return Artifact.none();
-            }
+        if (!artifact.getGroup().equals(GROUP) || (!"client".equals(side) && !"server".equals(side)))
+            return null;
 
-            String version = artifact.getVersion();
-            String mappings = getMappings(version);
-            if (mappings != null) {
-                version = version.substring(0, version.length() - mappings.length() + "_mapped_".length());
-                return Artifact.none(); //We do not support mappings
-            }
-            String classifier = artifact.getClassifier() == null ? "" : artifact.getClassifier();
-            String ext = artifact.getExtension().split("\\.")[0];
-
-            log("MinecraftRepo Request: " + artifact.getGroup() + ":" + side + ":" + version + ":" + classifier + "@" + ext);
-
-            File ret = null;
-            if ("pom".equals(ext)) {
-                ret = findPom(side, version);
-            } else if ("json".equals(ext)) {
-                if ("".equals(classifier)) {
-                    ret = findVersion(version);
-                }
-            } else {
-                switch (classifier) {
-                    case "":       ret = findRaw(side, version); break;
-                    case "slim":   ret = findSlim(side, version); break;
-                    case "data":   ret = findData(side, version); break;
-                    case "extra":  ret = findExtra(side, version); break;
-                }
-            }
-            if (ret != null) {
-                return provideFile(artifact, ret);
-            }
-            return Artifact.none();
-        } catch (IOException e) {
-            e.printStackTrace();
-            log(e.getMessage());
-            throw new RuntimeException(e);
+        String version = artifact.getVersion();
+        String mappings = getMappings(version);
+        if (mappings != null) {
+            version = version.substring(0, version.length() - mappings.length() + "_mapped_".length());
+            return null; //We do not support mappings
         }
+        String classifier = artifact.getClassifier() == null ? "" : artifact.getClassifier();
+        String ext = artifact.getExtension().split("\\.")[0];
+
+        debug("  " + REPO_NAME + " Request: " + artifact.getGroup() + ":" + side + ":" + version + ":" + classifier + "@" + ext);
+
+        if ("pom".equals(ext)) {
+            return findPom(side, version);
+        } else if ("json".equals(ext)) {
+            if ("".equals(classifier))
+                return findVersion(version);
+        } else {
+            switch (classifier) {
+                case "":       return findRaw(side, version);
+                case "slim":   return findSlim(side, version);
+                case "data":   return findData(side, version);
+                case "extra":  return findExtra(side, version);
+            }
+        }
+        return null;
     }
 
     private File findMcp(String version) throws IOException {
@@ -152,19 +122,10 @@ public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
     private File findMappings(String version) throws IOException {
         File mappings = cache("versions", version, "mappings.txt");
         if (!mappings.exists()) {
-            try (ZipFile mcp = new ZipFile(findMcp(version));
-                 InputStream cstream = mcp.getInputStream(mcp.getEntry("config.json"))) {
-                McpConfig cfg = Utils.loadJson(cstream, McpConfig.class);
-                Object value = cfg.data.get("mappings");
-                if (!(value instanceof String))
-                    throw new IOException("Ivalid MCP zip: Missing mappings entry");
-
-                try (InputStream data = mcp.getInputStream(mcp.getEntry((String)value));
-                     OutputStream output = new FileOutputStream(mappings)) {
-                    IOUtils.copy(data, output);
-                    Utils.updateHash(mappings);
-                }
-            }
+            File mcp = findMcp(version);
+            MCPWrapperSlim wrapper = new MCPWrapperSlim(mcp);
+            wrapper.extractData(mappings, "mappings");
+            Utils.updateHash(mappings);
         }
         return mappings;
     }
@@ -343,36 +304,27 @@ public class MinecraftRepo implements ArtifactProvider<ArtifactIdentifier> {
         return extra;
     }
 
-    private Artifact provideFile(ArtifactIdentifier artifact, File file) {
-        ArtifactType type = ArtifactType.OTHER;
-        if ("sources".equals(artifact.getClassifier())) {
-            type = ArtifactType.SOURCE;
-        } else if ("jar".equals(artifact.getExtension())) {
-            type = ArtifactType.BINARY;
+
+    private static class MCPWrapperSlim {
+        private final File data;
+        private final MCPConfigV1 config;
+        public MCPWrapperSlim(File data) throws IOException {
+            this.data = data;
+            byte[] cfg_data = Utils.getZipData(data, "config.json");
+            int spec = Config.getSpec(cfg_data);
+            if (spec != 1)
+                throw new IllegalStateException("Could not load MCP config, Unknown Spec: " + spec + " File: " + data);
+            this.config = MCPConfigV1.get(cfg_data);
         }
 
-        String[] pts  = artifact.getExtension().split("\\.");
-        if (pts.length == 1) {
-            //log(clean(artifact) + " " + file);
-            return StreamableArtifact.ofFile(artifact, type, file);
-        } else if (pts.length == 2) {
-            File hash = new File(file.getAbsolutePath() + "." + pts[1]);
-            if (hash.exists()) {
-                //log(clean(artifact) + " " + hash);
-                return StreamableArtifact.ofFile(artifact, type, hash);
+        public void extractData(File target, String... path) throws IOException {
+            String name = config.getData(path);
+            if (name == null)
+                throw new IOException("Unknown MCP Entry: " + Joiner.on("/").join(path));
+
+            try (ZipFile zip = new ZipFile(data)) {
+                Utils.extractFile(zip, name, target);
             }
         }
-        return Artifact.none();
     }
-
-    @SuppressWarnings("unused")
-    private String clean(ArtifactIdentifier art) {
-        return art.getGroup() + ":" + art.getName() + ":" + art.getVersion() + ":" + art.getClassifier() + "@" + art.getExtension();
-    }
-
-    public static class McpConfig {
-        public int spec;
-        public Map<String, Object> data;
-    }
-
 }

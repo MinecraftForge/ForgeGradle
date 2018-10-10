@@ -1,10 +1,15 @@
 package net.minecraftforge.gradle.mcp.util;
 
+import net.minecraftforge.gradle.common.config.MCPConfigV1;
+import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
+import net.minecraftforge.gradle.mcp.MCPPlugin;
+import net.minecraftforge.gradle.mcp.function.ExecuteFunction;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -12,6 +17,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
 public class MCPRuntime {
@@ -27,40 +33,80 @@ public class MCPRuntime {
     final Map<String, Step> steps = new LinkedHashMap<>();
     Step currentStep;
 
-    public MCPRuntime(Project project, MCPConfig config, File mcpDirectory, boolean generateSrc, Map<String, MCPFunction> extraPres) {
+    public MCPRuntime(Project project, File mcp_config, MCPConfigV1 config, String side,
+            File mcpDirectory, Map<String, MCPFunction> extraPres) {
         this.project = project;
-        this.environment = new MCPEnvironment(this, config.getMCVersion());
+        this.environment = new MCPEnvironment(this, config.getVersion());
         this.mcpDirectory = mcpDirectory;
 
-        this.zipFile = config.getConfigZip();
+        this.zipFile = mcp_config;
 
-        initSteps(config.getSharedSteps());
-        if (!extraPres.isEmpty()) {
-            String input = config.getSrcSteps().get(0).getArguments().get("input"); //Decompile's input
-            String lastName = null;
-            for (Entry<String, MCPFunction> entry : extraPres.entrySet()) {
-                String name = entry.getKey();
-                Map<String, String> args = new HashMap<>();
-                args.put("input", input);
-                this.steps.put(name, new Step(name, entry.getValue(), args, new File(this.mcpDirectory, name)));
-                input = "{" + name +"Output}";
-                lastName = name;
+        @SuppressWarnings("unchecked")
+        Map<String, String> data = config.getData().entrySet().stream().collect(Collectors.toMap(Entry::getKey,
+            e -> e.getValue() instanceof Map ? ((Map<String, String>)e.getValue()).get(side) : (String)e.getValue()
+        ));
+
+        List<MCPConfigV1.Step> steps = config.getSteps(side);
+        if (steps.isEmpty())
+            throw new IllegalArgumentException("Unknown side: " + side + " For Config: " + mcp_config);
+
+        boolean hasDownloadJson = false; //TODO: Remove when MCPConfig is published. I derped for the server -Lex
+        for (MCPConfigV1.Step step : steps) {
+            if (step.getName().equals("decompile")) { //TODO: Clearly define decomp vs bin, needs MCPConfig spec bump.
+                if (!extraPres.isEmpty()) {
+                    String input = step.getValues().get("input"); //Decompile's input
+                    String lastName = null;
+                    for (Entry<String, MCPFunction> entry : extraPres.entrySet()) {
+                        String name = entry.getKey();
+                        Map<String, String> args = new HashMap<>();
+                        args.put("input", input);
+                        this.steps.put(name, new Step(name, entry.getValue(), args, new File(this.mcpDirectory, name), data));
+                        input = "{" + name +"Output}";
+                        lastName = name;
+                    }
+                    step.getValues().put("input", "{" + lastName + "Output}");
+                }
             }
-            config.getSrcSteps().get(0).getArguments().put("input", "{" + lastName + "Output}");
-        }
-        if (generateSrc) {
-            initSteps(config.getSrcSteps());
-        }
-    }
 
-    private void initSteps(List<MCPConfig.Step> steps) {
-        for (MCPConfig.Step step : steps) {
+            MCPFunction function = MCPPlugin.createBuiltInFunction(step.getType());
+            if ("downloadJson".equals(step.getType())) hasDownloadJson = true;
+            if ("downloadServer".equals(step.getType()) && !hasDownloadJson) {
+                this.steps.put("downloadJson", new Step("downloadJson", MCPPlugin.createBuiltInFunction("downloadJson"), Collections.emptyMap(), new File(this.mcpDirectory, "downloadJson"), data));
+                hasDownloadJson = true; //I derped the server side steps, hack fix until I publish a new MCPConfig -Lex
+            }
+
+            if (function == null) {
+                MCPConfigV1.Function custom = config.getFunction(step.getType());
+                if (custom == null)
+                    throw new IllegalArgumentException("Invalid MCP Config, Unknown function step type: " + step.getType() + " File: " + mcp_config);
+
+                File jar = MavenArtifactDownloader.single(project, custom.getVersion());
+                if (jar == null || !jar.exists())
+                    throw new IllegalArgumentException("Could not download MCP Config dependency: " + custom.getVersion());
+                function = new ExecuteFunction(jar, custom.getJvmArgs().toArray(new String[custom.getJvmArgs().size()]),
+                                                    custom.getArgs().toArray(new String[custom.getArgs().size()]), Collections.emptyMap());
+            }
+
             File workingDir = new File(this.mcpDirectory, step.getName());
-            this.steps.put(step.getName(), new Step(step.getName(), step.getFunction(), step.getArguments(), workingDir));
+            this.steps.put(step.getName(), new Step(step.getName(), function, step.getValues(), workingDir, data));
         }
     }
 
     public File execute(Logger logger) throws Exception {
+        return execute(logger, null);
+    }
+
+    public File executeUpTo(Logger logger, String stop) throws Exception {
+        String last = null;
+        for(Step step : steps.values()) {
+            if (step.name.equals(stop))
+                break;
+            last = step.name;
+        }
+        return execute(logger, last);
+    }
+
+    public File execute(Logger logger, String stop) throws Exception {
         environment.logger = logger;
 
         logger.lifecycle("Setting up MCP environment");
@@ -81,6 +127,11 @@ public class MCPRuntime {
             currentStep = step;
             step.arguments.replaceAll((key, value) -> value instanceof String ? applyStepOutputSubstitutions((String)value) : value);
             ret = step.execute();
+
+            if (stop != null && stop.equals(step.name)) {
+                logger.lifecycle("Stopping at requested step: " + ret);
+                return ret;
+            }
         }
 
         logger.lifecycle("MCP environment setup is complete");
@@ -106,11 +157,12 @@ public class MCPRuntime {
         final File workingDirectory;
         File output;
 
-        private Step(String name, MCPFunction function, Map<String, String> arguments, File workingDirectory) {
+        private Step(String name, MCPFunction function, Map<String, String> arguments, File workingDirectory, Map<String, String> data) {
             this.name = name;
             this.function = function;
             this.arguments = new HashMap<>(arguments);
             this.workingDirectory = workingDirectory;
+            function.loadData(data);
         }
 
         private void initialize(ZipFile zip) throws Exception {

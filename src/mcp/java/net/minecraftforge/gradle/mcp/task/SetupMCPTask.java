@@ -1,12 +1,15 @@
 package net.minecraftforge.gradle.mcp.task;
 
+import net.minecraftforge.gradle.common.config.Config;
+import net.minecraftforge.gradle.common.config.MCPConfigV1;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
-import net.minecraftforge.gradle.mcp.util.MCPConfig;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -14,12 +17,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 public class SetupMCPTask extends DefaultTask {
+    private File config;
+    private String pipeline;
 
     private Map<String, MCPFunction> extrasPre = new LinkedHashMap<>();
-    private CompletableFuture<MCPConfig> config;
 
     private File output = getProject().file("build/" + getName() + "/output.zip");
 
@@ -28,7 +31,7 @@ public class SetupMCPTask extends DefaultTask {
             HashStore cache = new HashStore(getProject());
             try {
                 cache.load(getProject().file("build/" + getName() + "/inputcache.sha1"));
-                cache.add("configFile", config.getNow(null).getConfigZip());
+                cache.add("configFile", config);
                 extrasPre.forEach((key, func) -> func.addInputs(cache, key + "."));
                 cache.save();
                 return cache.isSame() && getOutput().exists();
@@ -39,27 +42,39 @@ public class SetupMCPTask extends DefaultTask {
         });
     }
 
+    @InputFile
+    public File getConfig() {
+        return config;
+    }
+    public void setConfig(File value) {
+        this.config = value;
+    }
+
+    @Input
+    public String getPipeline() {
+        return this.pipeline;
+    }
+    public void setPipeline(String value) {
+        this.pipeline = value;
+    }
 
     @OutputFile
     public File getOutput() {
         return output;
     }
 
-    public CompletableFuture<MCPConfig> getConfig() {
-        return config;
-    }
-
     public void setOutput(File output) {
         this.output = output;
     }
 
-    public void setConfig(CompletableFuture<MCPConfig> config) {
-        this.config = config;
-    }
-
     @TaskAction
     public void setupMCP() throws Exception {
-        MCPRuntime runtime = new MCPRuntime(getProject(), config.getNow(null), getProject().file("build/mcp/"), true, extrasPre);
+        byte[] config_data = Utils.getZipData(config, "config.json");
+        int spec = Config.getSpec(config_data);
+        if (spec != 1)
+            throw new IllegalStateException("Invalid MCP Config: " + config + " Unknown spec: " + spec);
+
+        MCPRuntime runtime = new MCPRuntime(getProject(), config, MCPConfigV1.get(config_data), getPipeline(), getProject().file("build/mcp/"), extrasPre);
         File out = runtime.execute(getLogger());
         if (FileUtils.contentEquals(out, output)) return;
         Utils.delete(output);
@@ -69,16 +84,4 @@ public class SetupMCPTask extends DefaultTask {
     public void addPreDecompile(String name, MCPFunction function) {
         this.extrasPre.put(name, function);
     }
-
-    //TODO: Not hardcode names
-    public File getClientJar() {
-        return getProject().file("build/mcp/downloadClient/client.jar");
-    }
-    public File getServerJar() {
-        return getProject().file("build/mcp/downloadServer/server.jar");
-    }
-    public File getJoinedJar() {
-        return getProject().file("build/mcp/merge/output.jar");
-    }
-
 }

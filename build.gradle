@@ -30,8 +30,8 @@ configurations {
     mcpImplementation.extendsFrom commonImplementation
     patcherImplementation.extendsFrom commonImplementation
     forgedevImplementation.extendsFrom patcherImplementation
-    userdevImplementation.extendsFrom commonImplementation
-    compile.extendsFrom mcpImplementation, patcherImplementation, forgedevImplementation
+    userdevImplementation.extendsFrom mcpImplementation
+    compile.extendsFrom mcpImplementation, patcherImplementation, forgedevImplementation, userdevImplementation
 }
 
 jar {
@@ -65,6 +65,7 @@ dependencies {
     forgedevImplementation sourceSets.mcp.output
     forgedevImplementation sourceSets.common.output
     forgedevImplementation sourceSets.patcher.output
+    userdevImplementation sourceSets.mcp.output
     userdevImplementation sourceSets.common.output
 }
 

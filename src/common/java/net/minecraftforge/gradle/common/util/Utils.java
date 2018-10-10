@@ -4,12 +4,17 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
+
 import groovy.lang.Closure;
+import net.minecraftforge.gradle.common.config.MCPConfigV1;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,7 +36,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class Utils {
-    public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    public static final Gson GSON = new GsonBuilder()
+        .registerTypeAdapter(MCPConfigV1.Step.class, new MCPConfigV1.Step.Deserializer())
+        .setPrettyPrinting().create();
 
     public static void extractFile(ZipFile zip, String name, File output) throws IOException {
         extractFile(zip, zip.getEntry(name), output);
@@ -199,6 +206,24 @@ public class Utils {
 
     public static <T> T[] toArray(JsonArray array, Function<JsonElement, T> adapter, IntFunction<T[]> arrayFactory) {
         return StreamSupport.stream(array.spliterator(), false).map(adapter).toArray(arrayFactory);
+    }
+
+    public static byte[] getZipData(File file, String name) throws IOException {
+        try (ZipFile zip = new ZipFile(file)) {
+            ZipEntry entry = zip.getEntry(name);
+            if (entry == null)
+                throw new IOException("Zip Missing Entry: " + name + " File: " + file);
+
+            return IOUtils.toByteArray(zip.getInputStream(entry));
+        }
+    }
+
+
+    public static <T> T fromJson(InputStream stream, Class<T> classOfT) throws JsonSyntaxException, JsonIOException {
+        return GSON.fromJson(new InputStreamReader(stream), classOfT);
+    }
+    public static <T> T fromJson(byte[] data, Class<T> classOfT) throws JsonSyntaxException, JsonIOException {
+        return GSON.fromJson(new InputStreamReader(new ByteArrayInputStream(data)), classOfT);
     }
 
 }

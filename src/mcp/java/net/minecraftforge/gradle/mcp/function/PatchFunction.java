@@ -24,7 +24,7 @@ public class PatchFunction implements MCPFunction {
     private Map<String, String> patches;
 
     @Override
-    public  void loadData(Map<String, String> data) throws Exception {
+    public  void loadData(Map<String, String> data) {
         path = data.get("patches");
     }
 

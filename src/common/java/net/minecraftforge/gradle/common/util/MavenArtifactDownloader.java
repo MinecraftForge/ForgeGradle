@@ -24,13 +24,18 @@ public class MavenArtifactDownloader {
     public static Set<File> download(Project project, String artifact, boolean changing) {
         Set<File> ret = CACHE.get(artifact);
         if (ret == null) {
-            Configuration cfg = project.getConfigurations().create("downloadDeps" + COUNTERS.getOrDefault(project, 0));
+            String name = "downloadDeps";
+            synchronized(project) {
+                name += COUNTERS.getOrDefault(project, 0);
+                COUNTERS.compute(project, (proj, prev) -> (prev != null ? prev : 0) + 1);
+            }
+            Configuration cfg = project.getConfigurations().create(name);
             ExternalModuleDependency dependency = (ExternalModuleDependency)project.getDependencies().create(artifact);
             dependency.setChanging(changing);
             cfg.getDependencies().add(dependency);
             cfg.resolutionStrategy(strat -> {
-                strat.cacheChangingModulesFor(10, TimeUnit.MINUTES);
-                strat.cacheDynamicVersionsFor(10, TimeUnit.MINUTES);
+                strat.cacheChangingModulesFor(1, TimeUnit.MINUTES);
+                strat.cacheDynamicVersionsFor(1, TimeUnit.MINUTES);
             });
             ret = cfg.resolve();
 
@@ -44,7 +49,6 @@ public class MavenArtifactDownloader {
             });
 
             project.getConfigurations().remove(cfg);
-            COUNTERS.compute(project, (proj, prev) -> (prev != null ? prev : 0) + 1);
             //CACHE.put(artifact, ret); //Daemons break this
         }
         return ret;

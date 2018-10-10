@@ -44,6 +44,23 @@ public enum HashFunction {
         }
     }
 
+    public String hash(Iterable<File> files) throws IOException {
+        MessageDigest hash = get();
+        byte[] buf = new byte[1024];
+
+        for (File file : files) {
+            if (!file.exists())
+                continue;
+
+            try (FileInputStream fin = new FileInputStream(file)) {
+                int count = -1;
+                while ((count = fin.read(buf)) != -1)
+                    hash.update(buf, 0, count);
+            }
+        }
+        return pad(new BigInteger(1, hash.digest()).toString(16));
+    }
+
     public String hash(String data) {
         return hash(data.getBytes(StandardCharsets.UTF_8));
     }
