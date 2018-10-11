@@ -67,6 +67,8 @@ public class AccessTransformerFunction extends ExecuteFunction {
     @Override
     protected void addInputs(HashStore cache) {
         cache.add(files);
+        if (transformers != null)
+            cache.add("transformers", transformers);
     }
 
     @Override

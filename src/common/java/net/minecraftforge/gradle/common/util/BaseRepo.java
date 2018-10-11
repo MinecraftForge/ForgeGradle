@@ -39,6 +39,9 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
     protected void debug(String message) {
         //this.log.lifecycle(message);
     }
+    protected void info(String message) {
+        this.log.lifecycle(message);
+    }
 
     @Override
     public final Artifact getArtifact(ArtifactIdentifier artifact) {

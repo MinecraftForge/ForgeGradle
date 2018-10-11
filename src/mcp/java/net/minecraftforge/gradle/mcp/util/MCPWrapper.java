@@ -72,4 +72,11 @@ public class MCPWrapper {
             Utils.extractFile(zip, name, target);
         }
     }
+
+    public byte[] getData(String... path) throws IOException {
+        String name = config.getData(path);
+        if (name == null)
+            throw new IOException("Unknown MCP Entry: " + Joiner.on("/").join(path));
+        return Utils.getZipData(data, name);
+    }
 }

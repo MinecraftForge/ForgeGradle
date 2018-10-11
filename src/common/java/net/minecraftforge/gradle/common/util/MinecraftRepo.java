@@ -91,19 +91,23 @@ public class MinecraftRepo extends BaseRepo {
         String classifier = artifact.getClassifier() == null ? "" : artifact.getClassifier();
         String ext = artifact.getExtension().split("\\.")[0];
 
+        File json = findVersion(version);
+        if (json == null)
+            return null; //Not a vanilla version, MCP?
+
         debug("  " + REPO_NAME + " Request: " + artifact.getGroup() + ":" + side + ":" + version + ":" + classifier + "@" + ext);
 
         if ("pom".equals(ext)) {
-            return findPom(side, version);
+            return findPom(side, version, json);
         } else if ("json".equals(ext)) {
             if ("".equals(classifier))
                 return findVersion(version);
         } else {
             switch (classifier) {
-                case "":       return findRaw(side, version);
-                case "slim":   return findSlim(side, version);
-                case "data":   return findData(side, version);
-                case "extra":  return findExtra(side, version);
+                case "":       return findRaw(side, version, json);
+                case "slim":   return findSlim(side, version, json);
+                case "data":   return findData(side, version, json);
+                case "extra":  return findExtra(side, version, json);
             }
         }
         return null;
@@ -143,14 +147,13 @@ public class MinecraftRepo extends BaseRepo {
                 FileUtils.copyURLToFile(url, json);
                 Utils.updateHash(json);
             } else {
-                throw new RuntimeException("Missing version from manifest: " + version);
+                return null;
             }
         }
         return json;
     }
 
-    private File findPom(String side, String version) throws IOException {
-        File json = findVersion(version);
+    protected File findPom(String side, String version, File json) throws IOException {
         File pom = cache("versions", version, side + ".pom");
         HashStore cache = new HashStore(this.cache).load(cache("versions", version, side + ".pom.input"));
 
@@ -193,8 +196,8 @@ public class MinecraftRepo extends BaseRepo {
         return pom;
     }
 
-    private File findRaw(String side, String version) throws IOException {
-        VersionJson json = Utils.loadJson(findVersion(version), VersionJson.class);
+    private File findRaw(String side, String version, File json_file) throws IOException {
+        VersionJson json = Utils.loadJson(json_file, VersionJson.class);
         if (json.downloads == null || !json.downloads.containsKey(side)) {
             throw new IllegalStateException(version +".json missing download for " + side);
         }
@@ -207,8 +210,8 @@ public class MinecraftRepo extends BaseRepo {
         return raw;
     }
 
-    private File findExtra(String side, String version) throws IOException {
-        File raw = findRaw(side, version);
+    private File findExtra(String side, String version, File json) throws IOException {
+        File raw = findRaw(side, version, json);
         File mappings = findMappings(version);
         File extra = cache("versions", version, side + "-extra.jar");
         HashStore cache = new HashStore(this.cache).load(cache("versions", version, side + "-extra.input"))
@@ -222,8 +225,8 @@ public class MinecraftRepo extends BaseRepo {
 
         return extra;
     }
-    private File findSlim(String side, String version) throws IOException {
-        File raw = findRaw(side, version);
+    private File findSlim(String side, String version, File json) throws IOException {
+        File raw = findRaw(side, version, json);
         File mappings = findMappings(version);
         File extra = cache("versions", version, side + "-slim.jar");
         HashStore cache = new HashStore(this.cache).load(cache("versions", version, side + "-slim.input"))
@@ -272,8 +275,8 @@ public class MinecraftRepo extends BaseRepo {
         Utils.updateHash(output);
     }
 
-    private File findData(String side, String version) throws IOException {
-        File raw = findRaw(side, version);
+    private File findData(String side, String version, File json) throws IOException {
+        File raw = findRaw(side, version, json);
         File extra = cache("versions", version, side + "-data.jar");
         HashStore cache = new HashStore(this.cache).load(cache("versions", version, side + "-extra.input"))
                 .add("raw", raw);

@@ -128,17 +128,29 @@ public class MCPConfigV1 extends Config {
         public String getVersion() {
             return version;
         }
+        public void setVersion(String value) {
+            this.version = value;
+        }
 
         public String getRepo() {
             return repo == null ? "https://libraries.minecraft.net/" : repo;
+        }
+        public void setRepo(String value) {
+            this.repo = value;
         }
 
         public List<String> getArgs() {
             return args == null ? Collections.emptyList() : args;
         }
+        public void setArgs(List<String> value) {
+            this.args = value;
+        }
 
         public List<String> getJvmArgs() {
             return jvmargs == null ? Collections.emptyList() : jvmargs;
+        }
+        public void setJvmArgs(List<String> value) {
+            this.jvmargs = value;
         }
     }
 }

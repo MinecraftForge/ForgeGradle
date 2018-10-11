@@ -21,7 +21,8 @@ import org.gradle.api.tasks.TaskAction;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 
 public class JarExec extends DefaultTask {
-
+    private static final OutputStream NULL = new OutputStream() { @Override public void write(int b) throws IOException { } };
+    protected boolean hasLog = true;
     protected String tool;
     private File _tool;
     protected String[] args;
@@ -44,7 +45,7 @@ public class JarExec extends DefaultTask {
 
         File logFile = new File(workDir, "log.txt");
 
-        try (OutputStream log = new BufferedOutputStream(new FileOutputStream(logFile))) {
+        try (OutputStream log = hasLog ? new BufferedOutputStream(new FileOutputStream(logFile)) : NULL) {
             // Execute command
             JavaExec java = getProject().getTasks().create("_", JavaExec.class);
             java.setArgs(filterArgs());
@@ -84,6 +85,14 @@ public class JarExec extends DefaultTask {
         return MavenArtifactDownloader.getVersion(getProject(), getTool());
     }
 
+    @Input
+    public boolean getHasLog() {
+        return hasLog;
+    }
+    public void setHasLog(boolean value) {
+        this.hasLog = value;
+    }
+
     @InputFile
     public File getToolJar() {
         if (_tool == null)
@@ -106,6 +115,9 @@ public class JarExec extends DefaultTask {
     }
     public void setArgs(String[] value) {
         this.args = value;
+    }
+    public void setArgs(List<String> value) {
+        setArgs(value.toArray(new String[value.size()]));
     }
 
     @Optional

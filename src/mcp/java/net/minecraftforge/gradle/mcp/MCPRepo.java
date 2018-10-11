@@ -127,7 +127,12 @@ public class MCPRepo extends BaseRepo {
     }
 
     private File getMCP(String version) {
-        return MavenArtifactDownloader.single(project, "de.oceanlabs.mcp:mcp_config:" + version + "@zip");
+        try {
+            return MavenArtifactDownloader.single(project, "de.oceanlabs.mcp:mcp_config:" + version + "@zip");
+        } catch (NullPointerException npe) {
+            debug("    Could not find MCP: " + version);
+            return null;
+        }
     }
 
     private String getMCVersion(String version) {
@@ -159,6 +164,8 @@ public class MCPRepo extends BaseRepo {
     private File findPom(String side, String version) throws IOException {
         File json = findVersion(getMCVersion(version));
         File mcp = getMCP(version);
+        if (mcp == null)
+            return null;
 
         File pom = cacheMC(side, version, null, "pom");
         debug("    Finding pom: " + pom);
@@ -216,6 +223,8 @@ public class MCPRepo extends BaseRepo {
 
     private File findStepOutput(String side, String version, String classifier, String ext, String step) throws IOException {
         File mcp = getMCP(version);
+        if (mcp == null)
+            return null;
         File raw = cacheMC(side, version, classifier, ext);
         debug("  Finding " + step + ": " + raw);
         HashStore cache = commonHash(mcp).load(cacheMC(side, version, classifier, ext + ".input"));

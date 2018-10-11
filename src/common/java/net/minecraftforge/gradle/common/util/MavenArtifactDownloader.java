@@ -24,7 +24,7 @@ public class MavenArtifactDownloader {
     public static Set<File> download(Project project, String artifact, boolean changing) {
         Set<File> ret = CACHE.get(artifact);
         if (ret == null) {
-            String name = "downloadDeps";
+            String name = "mavenDownloader_" + artifact.replace(":", "/");
             synchronized(project) {
                 name += COUNTERS.getOrDefault(project, 0);
                 COUNTERS.compute(project, (proj, prev) -> (prev != null ? prev : 0) + 1);
@@ -34,8 +34,8 @@ public class MavenArtifactDownloader {
             dependency.setChanging(changing);
             cfg.getDependencies().add(dependency);
             cfg.resolutionStrategy(strat -> {
-                strat.cacheChangingModulesFor(1, TimeUnit.MINUTES);
-                strat.cacheDynamicVersionsFor(1, TimeUnit.MINUTES);
+                strat.cacheChangingModulesFor(5, TimeUnit.MINUTES);
+                strat.cacheDynamicVersionsFor(5, TimeUnit.MINUTES);
             });
             ret = cfg.resolve();
 

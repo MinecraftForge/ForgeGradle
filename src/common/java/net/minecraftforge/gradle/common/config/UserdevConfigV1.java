@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import net.minecraftforge.gradle.common.config.MCPConfigV1.Function;
 import net.minecraftforge.gradle.common.util.Utils;
 
 public class UserdevConfigV1 extends Config {
@@ -22,11 +23,12 @@ public class UserdevConfigV1 extends Config {
     public List<String> srgs;
     public List<String> srg_lines;
     public String binpatches; //To be applied to joined.jar, remapped, and added to the classpath
-    public boolean srg; //True if binpatches and universal are in srg names
+    public Function binpatcher;
     public String patches;
     public String sources;
     public String universal; //Remapped and added to the classpath, Contains new classes and resources
     public List<String> libraries; //Additional libraries.
+
 
     public void addAT(String value) {
         if (this.ats == null) {
@@ -48,5 +50,10 @@ public class UserdevConfigV1 extends Config {
             this.srg_lines = new ArrayList<>();
         }
         this.srg_lines.add(value);
+    }
+    public void addLibrary(String value) {
+        if (this.libraries == null)
+            this.libraries = new ArrayList<>();
+        this.libraries.add(value);
     }
 }

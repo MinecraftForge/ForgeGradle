@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -16,6 +18,7 @@ import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.io.Files;
 
+import net.minecraftforge.gradle.common.config.MCPConfigV1.Function;
 import net.minecraftforge.gradle.common.config.UserdevConfigV1;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPExtension;
@@ -26,21 +29,30 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
     private Set<File> srgs = new TreeSet<>();
     private List<String> srgLines = new ArrayList<>();
     private File output = getProject().file("build/" + getName() + "/output.json");
-    private boolean srg = false;
+    private String universal;
+    private String source;
+    private String tool;
+    private String[] args;
+    private List<String> libraries;
 
     @TaskAction
     public void apply() throws IOException {
         UserdevConfigV1 json = new UserdevConfigV1(); //TODO: Move this to plugin so we can re-use the names in both tasks?
         json.spec = 1;
         json.binpatches = "joined.lzma";
-        json.sources = "sources.jar";
-        json.universal = "universal.jar";
+        json.sources = source;
+        json.universal = universal;
         json.patches = "patches/";
-        json.srg = srg;
+        if (libraries != null && !libraries.isEmpty())
+            libraries.forEach(json::addLibrary);
         getATs().forEach(at -> json.addAT("ats/" + at.getName()));
         getSRGs().forEach(srg -> json.addSRG("srgs/" + srg.getName()));
         getSRGLines().forEach(srg -> json.addSRGLine(srg));
         addParent(json, getProject());
+
+        json.binpatcher = new Function();
+        json.binpatcher.setVersion(getTool());
+        json.binpatcher.setArgs(Arrays.asList(args));
 
         Files.write(Utils.GSON.toJson(json).getBytes(StandardCharsets.UTF_8), getOutput());
     }
@@ -60,10 +72,58 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
                 addParent(json, patcher.parent);
             }
             //TODO: MCP/Parents without separate projects?
+        } else {
+            if (json.parent == null) { //Only specify mcp if we have no patcher parent.
+                if (mcp == null)
+                    throw new IllegalStateException("Could not determine MCP parent for userdev config");
+                json.mcp = mcp.getConfig().toString();;
+            }
         }
-        if (json.parent != null && mcp != null) { //Only specify mcp if we have no patcher parent.
-            json.mcp = mcp.getConfig().toString();;
-        }
+    }
+
+    @Input
+    public List<String> getLibraries() {
+        return libraries == null ? Collections.emptyList() : libraries;
+    }
+    public void setLibrary(String value) {
+        if (libraries == null)
+            libraries = new ArrayList<>();
+        libraries.add(value);
+    }
+    public void addLibrary(String value) {
+        setLibrary(value);
+    }
+
+    @Input
+    public String getUniversal() {
+        return universal;
+    }
+    public void setUniversal(String value) {
+        this.universal = value;
+    }
+
+    @Input
+    public String getSource() {
+        return universal;
+    }
+    public void setSource(String value) {
+        this.universal = value;
+    }
+
+    @Input
+    public String getTool() {
+        return tool;
+    }
+    public void setTool(String value) {
+        this.tool = value;
+    }
+
+    @Input
+    public String[] getArguments() {
+        return args == null ? new String[0] : args;
+    }
+    public void setArguments(String... value) {
+        this.args = value;
     }
 
     @Input
@@ -88,14 +148,6 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
     }
     public void addSRGLine(String value) {
         this.srgLines.add(value);
-    }
-
-    @Input
-    public boolean getSRG() {
-        return srg;
-    }
-    public void setSRG(boolean value) {
-        this.srg = value;
     }
 
     @OutputFile

@@ -236,7 +236,6 @@ public class PatcherPlugin implements Plugin<Project> {
          * config.json
          * joined.lzma
          * sources.jar
-         * universal.jar
          * patches/
          *   net/minecraft/item/Item.java.patch
          * ats/
@@ -244,12 +243,10 @@ public class PatcherPlugin implements Plugin<Project> {
          *   at2.cfg
          */
         userdevJar.configure(task -> {
-            task.dependsOn(userdevConfig, genJoinedBinPatches, sourcesJar, universalJar, genConfig);
+            task.dependsOn(userdevConfig, genJoinedBinPatches, sourcesJar, genConfig);
             task.setOnlyIf(t -> extension.srgPatches);
             task.from(userdevConfig.get().getOutput(), e -> {e.rename(f -> "config.json"); });
             task.from(genJoinedBinPatches.get().getOutput(), e -> { e.rename(f -> "joined.lzma"); });
-            task.from(sourcesJar.get().getArchivePath(), e-> {e.rename(f -> "sources.jar"); });
-            task.from(universalJar.get().getArchivePath(), e-> {e.rename(f -> "universal.jar"); });
             task.from(genConfig.get().getPatches(), e -> { e.into("patches/"); });
             task.setClassifier("userdev");
         });
@@ -257,7 +254,7 @@ public class PatcherPlugin implements Plugin<Project> {
         project.afterEvaluate(p -> {
             //Add PatchedSrc to a main sourceset and build range tasks
             SourceSet mainSource = javaConv.getSourceSets().getByName("main");
-            applyRangeConfig.get().setSources(mainSource.getJava().getSrcDirs());
+            applyRangeConfig.get().setSources(mainSource.getJava().getSrcDirs().stream().filter(f -> !f.equals(extension.patchedSrc)).collect(Collectors.toList()));
             applyRangeBaseConfig.get().setSources(extension.patchedSrc);
             mainSource.java(v -> { v.srcDir(extension.patchedSrc); });
             mainSource.resources(v -> { }); //TODO: Asset downloading, needs asset index from json.
@@ -266,6 +263,11 @@ public class PatcherPlugin implements Plugin<Project> {
 
             if (extension.patches != null && !extension.patches.exists()) { //Auto-make folders so that gradle doesnt explode some tasks.
                 extension.patches.mkdirs();
+            }
+
+            if (extension.patches != null) {
+                sourcesJar.get().dependsOn(genConfig);
+                sourcesJar.get().from(genConfig.get().getPatches(), e -> { e.into("patches/"); } );
             }
 
             if (extension.parent != null) { //Most of this is done after evaluate, and checks for nulls to allow the build script to override us. We can't do it in the config step because if someone configs a task in the build script it resolves our config during evaluation.
@@ -438,6 +440,17 @@ public class PatcherPlugin implements Plugin<Project> {
                 extension.getExtraMappings().stream().filter(e -> e instanceof String).map(e -> (String)e).forEach(e -> userdevConfig.get().addSRGLine(e));
             }
 
+            if (userdevConfig.get().getTool() == null) {
+                userdevConfig.get().setTool("net.minecraftforge:binarypatcher:" + genJoinedBinPatches.get().getResolvedVersion() + ":fatjar");
+                userdevConfig.get().setArguments("--clean", "{clean}", "--output", "{output}", "--apply", "{patch}");
+            }
+            if (userdevConfig.get().getUniversal() == null) {
+                userdevConfig.get().setUniversal(project.getGroup().toString() + ':' + universalJar.get().getBaseName() + ':' + project.getVersion() + ':' + universalJar.get().getClassifier() + '@' + universalJar.get().getExtension());
+            }
+            if (userdevConfig.get().getSource() == null) {
+                userdevConfig.get().setSource(project.getGroup().toString() + ':' + sourcesJar.get().getBaseName() + ':' + project.getVersion() + ':' + sourcesJar.get().getClassifier() + '@' + sourcesJar.get().getExtension());
+            }
+
             //Allow generation of patches to skip S2S. For in-dev patches while the code doesn't compile.
             if (extension.srgPatches) {
                 genConfig.get().dependsOn(applyRangeBaseConfig);
@@ -471,53 +484,30 @@ public class PatcherPlugin implements Plugin<Project> {
                 }
                 String mcp_version = mcp.getExtensions().findByType(MCPExtension.class).getConfig().getVersion();
 
-                if (extension.srgUniversal) {
-                    userdevConfig.get().setSRG(true);
 
-                    File client = MavenArtifactDownloader.single(project, "net.minecraft:client:" + mcp_version + ":srg", true);
-                    File server = MavenArtifactDownloader.single(project, "net.minecraft:server:" + mcp_version + ":srg", true);
-                    File joined = MavenArtifactDownloader.single(project, "net.minecraft:joined:" + mcp_version + ":srg", true);
+                File client = MavenArtifactDownloader.single(project, "net.minecraft:client:" + mcp_version + ":srg", true);
+                File server = MavenArtifactDownloader.single(project, "net.minecraft:server:" + mcp_version + ":srg", true);
+                File joined = MavenArtifactDownloader.single(project, "net.minecraft:joined:" + mcp_version + ":srg", true);
 
-                    reobfJar.get().dependsOn(createMcp2Srg);
-                    reobfJar.get().setSrg(createMcp2Srg.get().getOutput());
-                    //TODO: Extra SRGs, I dont think this is needed tho...
+                reobfJar.get().dependsOn(createMcp2Srg);
+                reobfJar.get().setSrg(createMcp2Srg.get().getOutput());
+                //TODO: Extra SRGs, I dont think this is needed tho...
 
-                    genJoinedBinPatches.get().dependsOn(createMcp2Srg);
-                    genJoinedBinPatches.get().setSrg(createMcp2Srg.get().getOutput());
-                    genJoinedBinPatches.get().setCleanJar(joined);
+                genJoinedBinPatches.get().dependsOn(createMcp2Srg);
+                genJoinedBinPatches.get().setSrg(createMcp2Srg.get().getOutput());
+                genJoinedBinPatches.get().setCleanJar(joined);
 
-                    genClientBinPatches.get().dependsOn(createMcp2Srg);
-                    genClientBinPatches.get().setSrg(createMcp2Srg.get().getOutput());
-                    genClientBinPatches.get().setCleanJar(client);
+                genClientBinPatches.get().dependsOn(createMcp2Srg);
+                genClientBinPatches.get().setSrg(createMcp2Srg.get().getOutput());
+                genClientBinPatches.get().setCleanJar(client);
 
-                    genServerBinPatches.get().dependsOn(createMcp2Srg);
-                    genServerBinPatches.get().setSrg(createMcp2Srg.get().getOutput());
-                    genServerBinPatches.get().setCleanJar(server);
+                genServerBinPatches.get().dependsOn(createMcp2Srg);
+                genServerBinPatches.get().setSrg(createMcp2Srg.get().getOutput());
+                genServerBinPatches.get().setCleanJar(server);
 
-                    filterNew.get().dependsOn(createMcp2Srg);
-                    filterNew.get().setSrg(createMcp2Srg.get().getOutput());
-                    filterNew.get().addBlacklist(joined);
-                } else {
-                    File client = MavenArtifactDownloader.single(project, "net.minecraft:client:" + extension.mcVersion + ":slim", true);
-                    File server = MavenArtifactDownloader.single(project, "net.minecraft:server:" + extension.mcVersion + ":slim", true);
-                    File joined = MavenArtifactDownloader.single(project, "net.minecraft:joined:" + mcp_version, true);
-
-                    reobfJar.get().dependsOn(createMcp2Obf);
-                    reobfJar.get().setSrg(createMcp2Obf.get().getOutput());
-                    //TODO: Extra SRGs, I dont think this is needed tho...
-
-                    genJoinedBinPatches.get().setSrg(createMcp2Obf.get().getOutput());
-                    genJoinedBinPatches.get().setCleanJar(joined);
-
-                    genClientBinPatches.get().setSrg(createMcp2Obf.get().getOutput());
-                    genClientBinPatches.get().setCleanJar(client);
-
-                    genServerBinPatches.get().setSrg(createMcp2Obf.get().getOutput());
-                    genServerBinPatches.get().setCleanJar(server);
-
-                    filterNew.get().setSrg(createMcp2Obf.get().getOutput());
-                    filterNew.get().addBlacklist(joined);
-                }
+                filterNew.get().dependsOn(createMcp2Srg);
+                filterNew.get().setSrg(createMcp2Srg.get().getOutput());
+                filterNew.get().addBlacklist(joined);
             }
 
             //Make sure tasks that require a valid classpath happen after making the classpath

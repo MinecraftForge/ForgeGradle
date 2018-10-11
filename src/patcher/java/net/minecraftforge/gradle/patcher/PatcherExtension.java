@@ -19,7 +19,6 @@ public class PatcherExtension {
     public File patches;
     public String mcVersion;
     public boolean srgPatches = true;
-    public boolean srgUniversal = false;
     private String mappings;
     private List<Object> extraMappings = new ArrayList<>();
     private List<Object> extraExcs = new ArrayList<>();
