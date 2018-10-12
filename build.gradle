@@ -6,6 +6,7 @@ plugins {
 
 apply plugin: 'java'
 apply plugin: 'maven-publish'
+apply plugin: 'eclipse'
 
 group = 'net.minecraftforge.gradle'
 version = gitVersion()
@@ -47,6 +48,11 @@ repositories {
     maven { url = 'http://files.minecraftforge.net/maven' }
 }
 
+wrapper {
+    gradleVersion = '4.9'
+    distributionType = Wrapper.DistributionType.ALL
+}
+
 dependencies {
     commonImplementation gradleApi()
     commonImplementation 'com.cloudbees:diff4j:1.2'
@@ -67,6 +73,21 @@ dependencies {
     forgedevImplementation sourceSets.patcher.output
     userdevImplementation sourceSets.mcp.output
     userdevImplementation sourceSets.common.output
+}
+
+//Gradle doesn't add it's own source when doing the API. So lets hack it in!
+import org.gradle.plugins.ide.eclipse.model.*
+import org.gradle.plugins.ide.eclipse.model.internal.*
+project.extensions.eclipse.classpath.file.whenMerged { Classpath cp ->
+    def gradleSrc = gradle.gradleHomeDir.absolutePath.replace(File.separator, '/') + '/src/'
+    cp.entries.each { entry ->
+        if ((entry in AbstractLibrary) && entry.library.file.name.startsWith('gradle-')) {
+            def type = (entry.library.file.name =~ "^gradle(-(.*))?-(${gradle.gradleVersion})")[0][2]
+            if (type == 'api') type = 'core-api' //Gradle name is different for cores
+            if (type == '') type = 'core'
+            entry.sourcePath = new FileReferenceFactory().fromPath(gradleSrc + type)
+        }
+    }
 }
 
 publishing {
