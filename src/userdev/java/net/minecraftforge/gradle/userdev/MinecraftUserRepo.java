@@ -24,6 +24,7 @@ import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
+import org.gradle.api.plugins.ExtraPropertiesExtension;
 
 import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
 import com.amadornes.artifactural.api.repository.Repository;
@@ -68,16 +69,6 @@ public class MinecraftUserRepo extends BaseRepo {
     /* TODO:
      * Steps to produce each dep:
      *
-     * bin:
-     *   join jar using MCP Config
-     *   If Patcher.srg:
-     *     remap joined jar to SRG
-     *   apply bin patches to joined jar
-     *   remap binpatched jar
-     *   remap universal jar
-     *   remap universal jar of every parent
-     *
-     *
      * src:
      *   decompile using MCPConfig with all AT's applied (Already set this up in MCP.getSrcRuntime)
      *   for each parent:
@@ -94,9 +85,8 @@ public class MinecraftUserRepo extends BaseRepo {
      *   Build general GradleStart that injects parent access transformers and natives folder.
      *
      * Version Setup:
-     *   [Version]_mapped_
+     *   [Version]_mapped_[mapping]_at_[AtHash]
      */
-
     public MinecraftUserRepo(Project project, String group, String name, String version, List<File> ats, String mapping) {
         super(Utils.getCache(project, "minecraft_user_repo"), project.getLogger());
         this.project = project;
@@ -117,6 +107,15 @@ public class MinecraftUserRepo extends BaseRepo {
             .filter(ArtifactIdentifier.nameEquals(NAME))
             .provide(this)
         );
+    }
+
+    public void validate() {
+        getParents();
+        if (mcp == null)
+            throw new IllegalStateException("Invalid minecraft dependency: " + GROUP + ":" + NAME + ":" + VERSION);
+        ExtraPropertiesExtension ext = project.getExtensions().getExtraProperties();
+        ext.set("MC_VERSION", mcp.getMCVersion());
+        ext.set("MCP_VERSION", mcp.getArtifact().getVersion());
     }
 
     @SuppressWarnings("unused")
@@ -473,15 +472,7 @@ public class MinecraftUserRepo extends BaseRepo {
                cls.getMethods().forEach(mtd -> _cls.addMethod(mtd.getMapped(), mtd.getMappedDescriptor(), mcp_names.rename(mtd.getMapped())));
             });
 
-            List<String> lines = srg_to_named.write(MappingFile.Format.TSRG, false);
-            if (!srg.getParentFile().exists())
-                srg.getParentFile().mkdirs();
-            try (FileOutputStream out = new FileOutputStream(srg)){
-                for (String line : lines) {
-                    out.write(line.getBytes());
-                    out.write('\n');
-                }
-            }
+            srg_to_named.write(MappingFile.Format.TSRG, srg, false);
             cache.save();
         }
 

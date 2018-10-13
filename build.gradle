@@ -8,6 +8,11 @@ apply plugin: 'java'
 apply plugin: 'maven-publish'
 apply plugin: 'eclipse'
 
+sourceCompatibility = targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
+compileJava {
+    sourceCompatibility = targetCompatibility = '1.8'
+}
+
 group = 'net.minecraftforge.gradle'
 version = gitVersion()
 def gitVersion() {

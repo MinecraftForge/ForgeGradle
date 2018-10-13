@@ -12,7 +12,9 @@ import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.ManifestJson;
+import net.minecraftforge.gradle.common.util.MappingFile;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
+import net.minecraftforge.gradle.common.util.McpNames;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.common.util.POMBuilder;
 import net.minecraftforge.gradle.common.util.Utils;
@@ -23,9 +25,12 @@ import net.minecraftforge.gradle.mcp.util.MCPWrapper;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
+
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -47,24 +52,32 @@ import java.util.Map;
  *       srg - Srg named jar file.
  *       srg-sources - Srg named decompiled/patched code.
  *
- * Note: It does NOT provide the Obfed named jars for server and client, as that is provided by MinecraftRepo.
+ *   Note: It does NOT provide the Obfed named jars for server and client, as that is provided by MinecraftRepo.
+ *
+ *  de.oceanlabs.mcp:
+ *    mcp_config:
+ *      obf-to-[srg|MapVersion].EXT
+ *      srg-to-[obf|MapVersion].EXT
+ *          Mapping file in the specified direction and format.
  */
 public class MCPRepo extends BaseRepo {
     private static MCPRepo INSTANCE = null;
-    private static final String GROUP = "net.minecraft";
+    private static final String GROUP_MINECRAFT = "net.minecraft";
+    private static final String NAMES_MINECRAFT = "^(client|server|joined)$";
+    private static final String GROUP_MCP = "de.oceanlabs.mcp";
+    private static final String NAMES_MCP = "^(mcp_config)$";
     private static final String STEP_MERGE = "merge"; //TODO: Design better way to get steps output, for now hardcode
     private static final String STEP_RENAME = "rename";
 
     private final Project project;
     private final Repository repo;
     private final Map<String, MCPWrapper> wrappers = Maps.newHashMap();
+    private final Map<String, McpNames> mapCache = new HashMap<>();
 
     private MCPRepo(Project project, File cache, Logger log) {
         super(cache, log);
         this.project = project;
         this.repo = SimpleRepository.of(ArtifactProviderBuilder.begin(ArtifactIdentifier.class)
-            .filter(ArtifactIdentifier.groupEquals(GROUP))
-            .filter(ArtifactIdentifier.nameMatches("^(client|server|joined)$"))
             .provide(this)
         );
     }
@@ -88,11 +101,10 @@ public class MCPRepo extends BaseRepo {
         return cache("net", "minecraft", side, version, side + '-' + version + '.' + ext);
     }
 
-    @SuppressWarnings("unused")
-    private File cacheMCP(String side, String version, String classifier, String ext) {
+    private File cacheMCP(String version, String classifier, String ext) {
         if (classifier != null)
-            return cache("de", "oceanlabs", "mcp", side, version, side + '-' + version + '-' + classifier + '.' + ext);
-        return cache("de", "oceanlabs", "mcp", side, version, side + '-' + version + '.' + ext);
+            return cache("de", "oceanlabs", "mcp", "mcp_config", version, "mcp_config-" + version + '-' + classifier + '.' + ext);
+        return cache("de", "oceanlabs", "mcp", "mcp_config", version, "mcp_config-" + version + '.' + ext);
     }
     private File cacheMCP(String version) {
         return cache("de", "oceanlabs", "mcp", "mcp_config", version);
@@ -100,22 +112,45 @@ public class MCPRepo extends BaseRepo {
 
     @Override
     public File findFile(ArtifactIdentifier artifact) throws IOException {
-        String side = artifact.getName();
-        if (!artifact.getGroup().equals(GROUP) || (!"client".equals(side) && !"server".equals(side) && !"joined".equals(side)))
+        String name = artifact.getName();
+        String group = artifact.getGroup();
+
+        if (group.equals(GROUP_MCP)) {
+            if (!name.matches(NAMES_MCP))
+                return null;
+        } else if (group.equals(GROUP_MINECRAFT)) {
+            if (!name.matches(NAMES_MINECRAFT))
+                return null;
+        } else
             return null;
 
         String version = artifact.getVersion();
         String classifier = artifact.getClassifier() == null ? "" : artifact.getClassifier();
         String ext = artifact.getExtension().split("\\.")[0];
 
-        debug("  " + REPO_NAME + " Request: " + artifact.getGroup() + ":" + side + ":" + version + ":" + classifier + "@" + ext);
+        debug("  " + REPO_NAME + " Request: " + artifact.getGroup() + ":" + name + ":" + version + ":" + classifier + "@" + ext);
 
-        if ("pom".equals(ext)) {
-            return findPom(side, version);
-        } else {
-            switch (classifier) {
-                case "":              return findRaw(side, version);
-                case "srg":           return findSrg(side, version);
+        if (group.equals(GROUP_MINECRAFT)) {
+            if ("pom".equals(ext)) {
+                return findPom(name, version);
+            } else {
+                switch (classifier) {
+                    case "":              return findRaw(name, version);
+                    case "srg":           return findSrg(name, version);
+                }
+            }
+        } else if (group.equals(GROUP_MCP)) {
+            MappingFile.Format format = MappingFile.Format.get(ext);
+            if (format != null) {
+                classifier = classifier.replace('!', '.'); //We hack around finding the extension by using a invalid path character
+                switch (classifier) {
+                    case "obf-to-srg": return findRenames(classifier, format, version, false);
+                    case "srg-to-obf": return findRenames(classifier, format, version, true);
+                }
+                if (classifier.startsWith("obf-to-")) return findRenames(classifier, format, version, classifier.substring(7), true, false);
+                if (classifier.startsWith("srg-to-")) return findRenames(classifier, format, version, classifier.substring(7), false,  false);
+                if (classifier.endsWith  ("-to-obf")) return findRenames(classifier, format, version, classifier.substring(0, classifier.length() - 7), true, true);
+                if (classifier.endsWith  ("-to-srg")) return findRenames(classifier, format, version, classifier.substring(0, classifier.length() - 7), false, true);
             }
         }
         return null;
@@ -130,7 +165,7 @@ public class MCPRepo extends BaseRepo {
         try {
             return MavenArtifactDownloader.single(project, "de.oceanlabs.mcp:mcp_config:" + version + "@zip");
         } catch (NullPointerException npe) {
-            debug("    Could not find MCP: " + version);
+            info("    Could not find MCP: " + version);
             return null;
         }
     }
@@ -174,7 +209,7 @@ public class MCPRepo extends BaseRepo {
             cache.add("json", json);
 
         if (!cache.isSame() || !pom.exists()) {
-            POMBuilder builder = new POMBuilder(GROUP, side, version);
+            POMBuilder builder = new POMBuilder(GROUP_MINECRAFT, side, version);
             if (!"server".equals(side)) {
                 VersionJson meta = Utils.loadJson(json, VersionJson.class);
                 for (VersionJson.Library lib : meta.libraries) {
@@ -204,7 +239,7 @@ public class MCPRepo extends BaseRepo {
                 return null;
             FileUtils.writeByteArrayToFile(pom, ret.getBytes());
             cache.save();
-            Utils.updateHash(pom);
+            Utils.updateHash(pom, HashFunction.SHA1);
         }
 
         return pom;
@@ -257,5 +292,91 @@ public class MCPRepo extends BaseRepo {
             wrappers.put(version, ret);
         }
         return ret;
+    }
+
+    private File findRenames(String classifier, MappingFile.Format format, String version, boolean toObf) throws IOException {
+        String ext = format.name().toLowerCase();
+        //File names = findNames(version));
+        File mcp = getMCP(version);
+        if (mcp == null)
+            return null;
+
+        File file = cacheMCP(version, classifier, ext);
+        debug("    Finding Renames: " + file);
+        HashStore cache = commonHash(mcp).load(cacheMCP(version, classifier, ext + ".input"));
+
+        if (!cache.isSame() || !file.exists()) {
+            MCPWrapper wrapper = getWrapper(version, mcp);
+            byte[] data = wrapper.getData("mappings");
+            MappingFile obf_to_srg = MappingFile.load(new ByteArrayInputStream(data));
+            obf_to_srg.write(format, file, toObf);
+            cache.save();
+            Utils.updateHash(file, HashFunction.SHA1);
+        }
+
+        return file;
+    }
+
+    private File findNames(String mapping) {
+        int idx = mapping.lastIndexOf('_');
+        if (idx == -1) return null; //Invalid format
+        String channel = mapping.substring(0, idx);
+        String version = mapping.substring(idx + 1);
+        String desc = "de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
+        debug("    Mapping: " + desc);
+        return MavenArtifactDownloader.single(project, desc);
+    }
+
+    private McpNames loadMCPNames(String name, File data) throws IOException {
+        McpNames map = mapCache.get(name);
+        String hash = HashFunction.SHA1.hash(data);
+        if (map == null || !hash.equals(map.hash)) {
+            map = McpNames.load(data);
+            mapCache.put(name, map);
+        }
+        return map;
+    }
+
+    private File findRenames(String classifier, MappingFile.Format format, String version, String mapping, boolean obf, boolean reverse) throws IOException {
+        String ext = format.name().toLowerCase();
+        File names = findNames(version);
+        File mcp = getMCP(version);
+        if (mcp == null || names == null)
+            return null;
+
+        File file = cacheMCP(version, classifier, ext);
+        debug("    Finding Renames: " + file);
+        HashStore cache = commonHash(mcp).load(cacheMCP(version, classifier, ext + ".input"));
+
+        if (!cache.isSame() || !file.exists()) {
+            MCPWrapper wrapper = getWrapper(version, mcp);
+            byte[] data = wrapper.getData("mappings");
+            MappingFile obf_to_srg = MappingFile.load(new ByteArrayInputStream(data));
+            McpNames mcp_names = loadMCPNames(mapping, names);
+            MappingFile ret = new MappingFile();
+            if (obf) {
+                obf_to_srg.getPackages().forEach(e -> ret.addPackage(e.getOriginal(), e.getMapped()));
+                obf_to_srg.getClasses().forEach(cls -> {
+                   ret.addClass(cls.getOriginal(), cls.getMapped());
+                   MappingFile.Cls _cls = ret.getClass(cls.getOriginal());
+                   cls.getFields().forEach(fld -> _cls.addField(fld.getOriginal(), mcp_names.rename(fld.getMapped())));
+                   cls.getMethods().forEach(mtd -> _cls.addMethod(mtd.getOriginal(), mtd.getDescriptor(), mcp_names.rename(mtd.getMapped())));
+                });
+            } else {
+                obf_to_srg.getPackages().forEach(e -> ret.addPackage(e.getMapped(), e.getMapped()));
+                obf_to_srg.getClasses().forEach(cls -> {
+                   ret.addClass(cls.getMapped(), cls.getMapped());
+                   MappingFile.Cls _cls = ret.getClass(cls.getMapped());
+                   cls.getFields().forEach(fld -> _cls.addField(fld.getMapped(), mcp_names.rename(fld.getMapped())));
+                   cls.getMethods().forEach(mtd -> _cls.addMethod(mtd.getMapped(), mtd.getMappedDescriptor(), mcp_names.rename(mtd.getMapped())));
+                });
+            }
+
+            ret.write(format, file, reverse);
+            cache.save();
+            Utils.updateHash(file, HashFunction.SHA1);
+        }
+
+        return file;
     }
 }

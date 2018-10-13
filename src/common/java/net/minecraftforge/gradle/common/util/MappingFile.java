@@ -2,6 +2,7 @@ package net.minecraftforge.gradle.common.util;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -19,7 +20,16 @@ import org.apache.commons.io.IOUtils;
 import com.google.common.base.Joiner;
 
 public class MappingFile {
-    public enum Format { SRG, CSRG, TSRG }
+    public enum Format {
+        SRG, CSRG, TSRG;
+        public static Format get(String value) {
+            try {
+                return Format.valueOf(value.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+    }
 
     private static final Joiner SPACE = Joiner.on(" ");
     private static final Pattern DESC = Pattern.compile("L([^;]+);");
@@ -115,6 +125,22 @@ public class MappingFile {
     }
     public Collection<Cls> getClasses() {
         return this.classes.values();
+    }
+
+    public void write(Format format, File file) throws IOException {
+        write(format, file, false);
+    }
+    public void write(Format format, File file, boolean reversed) throws IOException {
+        List<String> lines = write(format, reversed);
+        if (!file.getParentFile().exists())
+            file.getParentFile().mkdirs();
+
+        try (FileOutputStream out = new FileOutputStream(file)){
+            for (String line : lines) {
+                out.write(line.getBytes());
+                out.write('\n');
+            }
+        }
     }
 
     public List<String> write(Format format) {
