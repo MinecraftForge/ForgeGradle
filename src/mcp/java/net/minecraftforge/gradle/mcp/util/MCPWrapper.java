@@ -21,7 +21,7 @@ public class MCPWrapper {
     private final File data;
     private final File root;
     private final MCPConfigV1 config;
-    private final Map<String, MCPRuntime> runtimes = Maps.newHashMap();
+    protected final Map<String, MCPRuntime> runtimes = Maps.newHashMap();
 
     public MCPWrapper(File data, File root) throws IOException {
         this(HashFunction.SHA1.hash(data), data, root);

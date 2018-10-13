@@ -13,6 +13,10 @@ public class PatchFile {
         return new PatchFile(() -> new ByteArrayInputStream(string.getBytes(StandardCharsets.UTF_8)), false);
     }
 
+    public static PatchFile from(byte[] data) {
+        return new PatchFile(() -> new ByteArrayInputStream(data), false);
+    }
+
     public static PatchFile from(File file) {
         return new PatchFile(() -> new FileInputStream(file), true);
     }

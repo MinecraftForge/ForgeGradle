@@ -5,11 +5,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -30,10 +30,16 @@ import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
 import com.amadornes.artifactural.api.repository.Repository;
 import com.amadornes.artifactural.base.repository.ArtifactProviderBuilder;
 import com.amadornes.artifactural.base.repository.SimpleRepository;
+import com.cloudbees.diff.PatchException;
 import com.google.common.collect.Maps;
 
 import net.minecraftforge.gradle.common.config.Config;
 import net.minecraftforge.gradle.common.config.UserdevConfigV1;
+import net.minecraftforge.gradle.common.diff.ContextualPatch;
+import net.minecraftforge.gradle.common.diff.HunkReport;
+import net.minecraftforge.gradle.common.diff.PatchFile;
+import net.minecraftforge.gradle.common.diff.ZipContext;
+import net.minecraftforge.gradle.common.diff.ContextualPatch.PatchReport;
 import net.minecraftforge.gradle.common.util.Artifact;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.HashFunction;
@@ -227,7 +233,8 @@ public class MinecraftUserRepo extends BaseRepo {
             return findPom(mappings, rand);
         } else {
             switch (classifier) {
-                case "":       return findRaw(mappings);
+                case "":        return findRaw(mappings);
+                case "sources": return findSource(mappings);
             }
         }
         return null;
@@ -279,7 +286,7 @@ public class MinecraftUserRepo extends BaseRepo {
         debug("  Finding pom: " + pom);
         HashStore cache = commonHash(null).load(new File(pom.getAbsolutePath() + ".input"));
 
-        if (!cache.isSame() || !pom.exists() || "".equals("")) {
+        if (!cache.isSame() || !pom.exists()) {
             POMBuilder builder = new POMBuilder(rand + GROUP, NAME, getVersionWithAT(mapping) );
 
             builder.dependencies().add(rand + GROUP + ':' + NAME + ':' + getVersionWithAT(mapping), "compile");
@@ -324,17 +331,17 @@ public class MinecraftUserRepo extends BaseRepo {
         File names = findMapping(mapping);
         HashStore cache = commonHash(names);
 
-        File recomp = cacheMapped(mapping, "recomp", ".jar");
+        File recomp = cacheMapped(mapping, "recomp", "jar");
         if (recomp.exists()) { //Recompiled binary, use this first if valid!
-            cache.load(cacheMapped(mapping, "recomp", ".jar.input"));
+            cache.load(cacheMapped(mapping, "recomp", "jar.input"));
             debug("  Finding recomp: " + cache.isSame() + " " + recomp);
             if (cache.isSame())
                 return recomp;
         }
 
-        File bin = cacheMapped(mapping, ".jar");
-        cache.load(cacheMapped(mapping, ".jar.input"));
-        if (!cache.isSame() || !bin.exists() || "".equals("")) {
+        File bin = cacheMapped(mapping, "jar");
+        cache.load(cacheMapped(mapping, "jar.input"));
+        if (!cache.isSame() || !bin.exists()) {
 
             File srged = null;
             if (parent == null) { //Raw minecraft
@@ -403,7 +410,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 rename.setHasLog(false);
                 rename.setInput(srged);
                 rename.setOutput(bin);
-                rename.setMappings(findSrgToMcp(mapping));
+                rename.setMappings(findSrgToMcp(mapping, names));
                 rename.apply();
             }
 
@@ -424,31 +431,8 @@ public class MinecraftUserRepo extends BaseRepo {
         return map;
     }
 
-    private File findObfToMcp(String mapping) throws IOException {
+    private File findSrgToMcp(String mapping, File names) throws IOException {
         File root = cache(mcp.getArtifact().getGroup().replace('.', '/'), mcp.getArtifact().getName(), mcp.getArtifact().getVersion());
-        File names = findMapping(mapping);
-        String srg_name = (mapping == null ? "obf_to_srg" : "obf_to_" + mapping) + ".tsrg";
-        File srg = new File(root, srg_name);
-
-        HashStore cache = new HashStore()
-            .add("mcp", mcp.getZip())
-            .add("mapping", names)
-            .load(new File(root, srg_name + ".input"));
-
-        if (!cache.isSame() || !srg.exists()) {
-            info("Creating Obf -> MCP SRG");
-            byte[] data = mcp.getData("mappings");
-            String mapped = loadMCPNames(mapping, names).rename(new ByteArrayInputStream(data), false);
-            Files.write(srg.toPath(), mapped.getBytes(StandardCharsets.UTF_8));
-            cache.save();
-        }
-
-        return srg;
-    }
-
-    private File findSrgToMcp(String mapping) throws IOException {
-        File root = cache(mcp.getArtifact().getGroup().replace('.', '/'), mcp.getArtifact().getName(), mcp.getArtifact().getVersion());
-        File names = findMapping(mapping);
         String srg_name = "srg_to_" + mapping + ".tsrg";
         File srg = new File(root, srg_name);
 
@@ -479,13 +463,196 @@ public class MinecraftUserRepo extends BaseRepo {
         return srg;
     }
 
+    private File findDecomp() throws IOException {
+        HashStore cache = commonHash(null);
+
+        File decomp = cacheRaw("decomp", "jar");
+        debug("    Finding Decomp: " + decomp);
+        cache.load(cacheRaw("decomp", "jar.input"));
+
+        if (!cache.isSame() || !decomp.exists()) {
+            File output = mcp.getStepOutput("joined", null);
+            FileUtils.copyFile(output, decomp);
+            cache.save();
+            Utils.updateHash(decomp, HashFunction.SHA1);
+        }
+        return decomp;
+    }
+
+    private File findPatched() throws IOException {
+        File decomp = findDecomp();
+        if (decomp == null) return null;
+        if (parent == null) return decomp;
+
+        HashStore cache = commonHash(null).add("decomp", decomp);
+
+        File patched = cacheRaw("patched", "jar");
+        debug("    Finding patched: " + decomp);
+        cache.load(cacheRaw("patched", "jar.input"));
+
+        if (!cache.isSame() || !patched.exists()) {
+            LinkedList<Patcher> parents = new LinkedList<>();
+            Patcher patcher = parent;
+            while (patcher != null) {
+                parents.addFirst(patcher);
+                patcher = patcher.getParent();
+            }
+
+            try (ZipFile zip = new ZipFile(decomp)) {
+                ZipContext context = new ZipContext(zip);
+
+                boolean failed = false;
+                for (Patcher p : parents) {
+                    Map<String, PatchFile> patches = p.getPatches();
+                    if (!patches.isEmpty()) {
+                        debug("      Apply Patches: " + p.artifact);
+                        List<String> keys = new ArrayList<>(patches.keySet());
+                        Collections.sort(keys);
+                        for (String key : keys) {
+                            ContextualPatch patch = ContextualPatch.create(patches.get(key), context);
+                            patch.setCanonialization(true, false);
+                            patch.setMaxFuzz(0);
+                            try {
+                                debug("        Apply Patch: " + key);
+                                List<PatchReport> result = patch.patch(false);
+                                for (int x = 0; x < result.size(); x++) {
+                                    PatchReport report = result.get(x);
+                                    if (!report.getStatus().isSuccess()) {
+                                        log.error("  Failed to apply patch: " + p.artifact + ": " + key);
+                                        failed = true;
+                                        for (int y = 0; y < report.hunkReports().size(); y++) {
+                                            HunkReport hunk = report.hunkReports().get(y);
+                                            if (hunk.hasFailed()) {
+                                                if (hunk.failure == null) {
+                                                    log.error("    Hunk #" + hunk.hunkID + " Failed @" + hunk.index + " Fuzz: " + hunk.fuzz);
+                                                } else {
+                                                    log.error("    Hunk #" + hunk.hunkID + " Failed: " + hunk.failure.getMessage());
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (PatchException e) {
+                                log.error("  Apply Patch: " + p.artifact + ": " + key);
+                                log.error("    " + e.getMessage());
+                            }
+                        }
+                    }
+                }
+                if (failed)
+                    throw new RuntimeException("Failed to apply patches to source file, see log for details: " + decomp);
+                context.save(patched);
+                cache.save();
+                Utils.updateHash(patched, HashFunction.SHA1);
+            }
+        }
+        return patched;
+    }
+
+    private File findInjected() throws IOException {
+        File patched = findPatched();
+        if (patched == null) return null;
+        if (parent == null) return patched;
+
+        HashStore cache = commonHash(null).add("patched", patched);
+
+        File injected = cacheRaw("injected", "jar");
+        debug("    Finding injected: " + injected);
+        cache.load(cacheRaw("injected", "jar.input"));
+
+        if (!cache.isSame() || !injected.exists()) {
+            Set<String> added = new HashSet<>();
+            try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(injected))) {
+                try (ZipInputStream zin = new ZipInputStream(new FileInputStream(patched))) {
+                    ZipEntry entry;
+                    while ((entry = zin.getNextEntry()) != null) {
+                        if (added.contains(entry.getName()))
+                            continue;
+                        ZipEntry _new = new ZipEntry(entry.getName());
+                        _new.setTime(entry.getTime()); //Should be stable, but keeping time.
+                        zout.putNextEntry(_new);
+                        IOUtils.copy(zin, zout);
+                        added.add(entry.getName());
+                    }
+                }
+
+                // Walk parents and combine from bottom up so we get any overridden files.
+                Patcher patcher = parent;
+                while (patcher != null) {
+                    if (patcher.getSources() != null) {
+                        try (ZipInputStream zin = new ZipInputStream(new FileInputStream(patcher.getSources()))) {
+                            ZipEntry entry;
+                            while ((entry = zin.getNextEntry()) != null) {
+                                if (added.contains(entry.getName()) || entry.getName().startsWith("patches/")) //Skip patches, as they are included in src for reference.
+                                    continue;
+                                ZipEntry _new = new ZipEntry(entry.getName());
+                                _new.setTime(0); //SHOULD be the same time as the main entry, but NOOOO _new.setTime(entry.getTime()) throws DateTimeException, so you get 0, screw you!
+                                zout.putNextEntry(_new);
+                                IOUtils.copy(zin, zout);
+                                added.add(entry.getName());
+                            }
+                        }
+                    }
+                    patcher = patcher.getParent();
+                }
+            }
+            cache.save();
+            Utils.updateHash(patched, HashFunction.SHA1);
+        }
+        return injected;
+    }
+
+    private File findSource(String mapping) throws IOException {
+        File injected = findInjected();
+        if (injected == null) return null;
+        if (mapping == null) return injected;
+
+        File names = findMapping(mapping);
+        if (names == null) return null;
+
+        HashStore cache = commonHash(names);
+
+        File sources = cacheMapped(mapping, "sources", "jar");
+        debug("    Finding Source: " + sources);
+        cache.load(cacheMapped(mapping, "sources", "jar.input"));
+        if (!cache.isSame() || !sources.exists() || "".equals("")) {
+            McpNames map = McpNames.load(names);
+
+            if (!sources.getParentFile().exists())
+                sources.getParentFile().mkdirs();
+
+            try(ZipInputStream zin = new ZipInputStream(new FileInputStream(injected));
+                ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(sources))) {
+                ZipEntry _old;
+                while ((_old = zin.getNextEntry()) != null) {
+                    ZipEntry _new = new ZipEntry(_old.getName());
+                    _new.setTime(0);
+                    zout.putNextEntry(_new);
+
+                    if (_old.getName().endsWith(".java")) {
+                        String mapped = map.rename(zin, true);
+                        IOUtils.write(mapped, zout);
+                    } else {
+                        IOUtils.copy(zin, zout);
+                    }
+                }
+            }
+
+            Utils.updateHash(sources, HashFunction.SHA1);
+            cache.save();
+        }
+        return sources;
+    }
+
     private static class Patcher {
         private final File data;
         private final File universal;
+        private final File sources;
         private final Artifact artifact;
         private final UserdevConfigV1 config;
         private Patcher parent;
         private String ATs = null;
+        private Map<String, PatchFile> patches;
 
         private Patcher(Project project, File data, String artifact) {
             this.data = data;
@@ -497,6 +664,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 if (spec != 1)
                     throw new IllegalStateException("Could not load Patcher config, Unknown Spec: " + spec + " Dep: " + artifact);
                 this.config = UserdevConfigV1.get(cfg_data);
+
                 if (getParentDesc() == null)
                     throw new IllegalStateException("Invalid patcher dependency, missing MCP or parent: " + artifact);
 
@@ -506,6 +674,14 @@ public class MinecraftUserRepo extends BaseRepo {
                         throw new IllegalStateException("Invalid patcher dependency, could not resolve universal: " + universal);
                 } else {
                     universal = null;
+                }
+
+                if (config.sources != null) {
+                    sources = MavenArtifactDownloader.single(project, config.sources);
+                    if (sources == null)
+                        throw new IllegalStateException("Invalid patcher dependency, could not resolve sources: " + sources);
+                } else {
+                    sources = null;
                 }
             } catch (IOException e) {
                 throw new RuntimeException("Invalid patcher dependency: " + artifact, e);
@@ -564,18 +740,73 @@ public class MinecraftUserRepo extends BaseRepo {
         public File getUniversal() {
             return universal;
         }
+        public File getSources() {
+            return sources;
+        }
+
+        public Map<String, PatchFile> getPatches() throws IOException {
+            if (config.patches == null)
+                return Collections.emptyMap();
+
+            if (patches == null) {
+                patches = new HashMap<>();
+                try (ZipInputStream zin = new ZipInputStream(new FileInputStream(getZip()))) {
+                    ZipEntry entry;
+                    while ((entry = zin.getNextEntry()) != null) {
+                        if (!entry.getName().startsWith(config.patches) || !entry.getName().endsWith(".patch"))
+                            continue;
+                        byte[] data = IOUtils.toByteArray(zin);
+                        patches.put(entry.getName().substring(0, entry.getName().length() - 6), PatchFile.from(data));
+                    }
+                }
+            }
+            return patches;
+        }
     }
 
     private class MCP {
         private final MCPWrapper wrapper;
         private final Artifact artifact;
-        private MCPRuntime runtime;
 
         private MCP(File data, String artifact) {
             this.artifact = Artifact.from(artifact);
             try {
                 File mcp_dir = MinecraftUserRepo.this.cache("mcp", this.artifact.getVersion());
-                this.wrapper = new MCPWrapper(data, mcp_dir);
+                this.wrapper = new MCPWrapper(data, mcp_dir) {
+                    public MCPRuntime getRuntime(Project project, String side) {
+                        MCPRuntime ret = runtimes.get(side);
+                        if (ret == null) {
+                            File dir = new File(wrapper.getRoot(), side);
+                            String AT_HASH = MinecraftUserRepo.this.AT_HASH;
+                            List<File> ATS = MinecraftUserRepo.this.ATS;
+
+                            AccessTransformerFunction function = new AccessTransformerFunction(project, ATS);
+                            boolean empty = true;
+                            if (AT_HASH != null) {
+                                dir = new File(dir, AT_HASH);
+                                empty = false;
+                            }
+
+                            Patcher patcher = MinecraftUserRepo.this.parent;
+                            while (patcher != null) {
+                                String at = patcher.getATData();
+                                if (at != null && !at.isEmpty()) {
+                                    function.addTransformer(at);
+                                    empty = false;
+                                }
+                                patcher = patcher.getParent();
+                            }
+
+                            Map<String, MCPFunction> preDecomps = Maps.newHashMap();
+                            if (!empty)
+                                preDecomps.put("AccessTransformer", function);
+
+                            ret = new MCPRuntime(project, data, getConfig(), side, dir, preDecomps);
+                            runtimes.put(side, ret);
+                        }
+                        return ret;
+                    }
+                };
             } catch (IOException e) {
                 throw new RuntimeException("Invalid patcher dependency: " + artifact, e);
             }
@@ -605,37 +836,18 @@ public class MinecraftUserRepo extends BaseRepo {
             return wrapper.getConfig().getLibraries("joined");
         }
 
-        public MCPRuntime getRuntime(Patcher patcher) throws IOException {
-            if (runtime == null) {
-                Project project = MinecraftUserRepo.this.project;
-                File dir = new File(wrapper.getRoot(), "joined");
-                String AT_HASH = MinecraftUserRepo.this.AT_HASH;
-                List<File> ATS = MinecraftUserRepo.this.ATS;
-
-                AccessTransformerFunction function = new AccessTransformerFunction(project, ATS);
-                boolean empty = true;
-                if (AT_HASH != null) {
-                    dir = new File(dir, AT_HASH);
-                    empty = false;
-                }
-
-
-                while (patcher != null) {
-                    String at = patcher.getATData();
-                    if (at != null && !at.isEmpty()) {
-                        function.addTransformer(at);
-                        empty = false;
-                    }
-                    patcher = patcher.getParent();
-                }
-
-                Map<String, MCPFunction> preDecomps = Maps.newHashMap();
-                if (!empty)
-                    preDecomps.put("AccessTransformer", function);
-
-                runtime = new MCPRuntime(project, wrapper.getZip(), wrapper.getConfig(), "joined", dir, preDecomps);
+        public File getStepOutput(String side, String step) throws IOException {
+            MCPRuntime runtime = wrapper.getRuntime(project, side);
+            try {
+                return runtime.execute(log, step);
+            } catch (IOException e) {
+                throw e;
+            } catch (Exception e) {
+                e.printStackTrace();
+                log.lifecycle(e.getMessage());
+                if (e instanceof RuntimeException) throw (RuntimeException)e;
+                throw new RuntimeException(e);
             }
-            return runtime;
         }
     }
 }

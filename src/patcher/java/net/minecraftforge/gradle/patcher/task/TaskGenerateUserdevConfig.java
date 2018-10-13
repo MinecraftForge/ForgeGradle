@@ -104,10 +104,10 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
 
     @Input
     public String getSource() {
-        return universal;
+        return source;
     }
     public void setSource(String value) {
-        this.universal = value;
+        this.source = value;
     }
 
     @Input
