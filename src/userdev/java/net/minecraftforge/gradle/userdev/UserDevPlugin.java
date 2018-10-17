@@ -39,12 +39,6 @@ public class UserDevPlugin implements Plugin<Project> {
             project.getPluginManager().apply("java");
         }
         //final File natives_folder = project.file("build/natives/");
-        /* TODO: Make compile/jar tasks reobf?
-        final JavaPluginConvention javaConv = (JavaPluginConvention)project.getConvention().getPlugins().get("java");
-
-        Jar jarConfig = (Jar)project.getTasks().getByName("jar");
-        JavaCompile javaCompile = (JavaCompile)project.getTasks().getByName("compileJava");
-        */
 
         NamedDomainObjectContainer<RenameJarInPlace> reobf = project.container(RenameJarInPlace.class, new NamedDomainObjectFactory<RenameJarInPlace>() {
             @Override

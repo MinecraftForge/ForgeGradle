@@ -17,6 +17,7 @@ public class MavenArtifactDownloader {
     private static final Cache<String, File> CACHE = CacheBuilder.newBuilder()
             .expireAfterWrite(5, TimeUnit.MINUTES)
             .build();
+    private static final Map<Project, Integer> COUNTER = new HashMap<>();
 
     private static final Map<String, String> VERSIONS = new HashMap<>();
 
@@ -36,6 +37,11 @@ public class MavenArtifactDownloader {
 
     private static File gradleDownload(Project project, String artifact, boolean changing) {
         String name = "mavenDownloader_" + artifact;
+        synchronized(project) {
+            int count = COUNTER.getOrDefault(project, 1);
+            name += "_" + count++;
+            COUNTER.put(project, count);
+        }
 
         //TODO: Bypass gradle's crap?
         //List<ArtifactRepository> repos = project.getRepositories();
