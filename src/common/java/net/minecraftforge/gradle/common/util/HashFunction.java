@@ -62,7 +62,7 @@ public enum HashFunction {
     }
 
     public String hash(String data) {
-        return hash(data.getBytes(StandardCharsets.UTF_8));
+        return hash(data == null ? new byte[0] : data.getBytes(StandardCharsets.UTF_8));
     }
 
     public String hash(InputStream stream) throws IOException {

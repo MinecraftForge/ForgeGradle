@@ -225,7 +225,7 @@ public class MinecraftUserRepo extends BaseRepo {
         if (!group.equals(GROUP) || !artifact.getName().equals(NAME) || !version.equals(VERSION))
             return null;
 
-        if ((AT_HASH == null && athash != null) || (!AT_HASH.equals(athash)))
+        if ((AT_HASH == null && athash != null) || (AT_HASH != null && !AT_HASH.equals(athash)))
             return null;
 
         if (!isPatcher && mappings == null) //net.minecraft in obf names. We don't do that.
@@ -258,7 +258,8 @@ public class MinecraftUserRepo extends BaseRepo {
         }
         if (mapping != null)
             ret.add("mapping", mapping);
-        ret.add("ats", AT_HASH);
+        if (AT_HASH != null)
+            ret.add("ats", AT_HASH);
 
         return ret;
     }
