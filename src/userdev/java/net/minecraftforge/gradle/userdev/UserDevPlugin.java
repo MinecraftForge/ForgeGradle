@@ -10,13 +10,13 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.logging.Logger;
-import org.gradle.api.plugins.ExtraPropertiesExtension;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.Jar;
 
+import net.minecraftforge.gradle.common.task.DownloadMavenArtifact;
+import net.minecraftforge.gradle.common.task.ExtractMCPData;
 import net.minecraftforge.gradle.common.util.BaseRepo;
-import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.userdev.tasks.GenerateSRG;
@@ -57,13 +57,13 @@ public class UserDevPlugin implements Plugin<Project> {
 
                 project.getTasks().getByName("assemble").dependsOn(task);
 
-
                 // do after-Evaluate resolution, for the same of good error reporting
                 project.afterEvaluate(p -> {
                     Task jar = project.getTasks().getByName(jarName);
                     if (!(jar instanceof Jar))
                         throw new IllegalStateException(jarName + "  is not a jar task. Can only reobf jars!");
                     task.setInput(((Jar)jar).getArchivePath());
+                    task.dependsOn(jar);
                 });
 
                 return task;
@@ -75,8 +75,19 @@ public class UserDevPlugin implements Plugin<Project> {
         Configuration compile = project.getConfigurations().maybeCreate("compile");
         compile.extendsFrom(minecraft);
 
+        TaskProvider<DownloadMavenArtifact> downloadMcpConfig = project.getTasks().register("downloadMcpConfig", DownloadMavenArtifact.class);
+
+        TaskProvider<ExtractMCPData> extractSrg = project.getTasks().register("extractSrg", ExtractMCPData.class);
+        extractSrg.configure(task -> {
+            task.dependsOn(downloadMcpConfig);
+            task.setConfig(downloadMcpConfig.get().getOutput());
+        });
+
         TaskProvider<GenerateSRG> createMcpToSrg = project.getTasks().register("createMcpToSrg", GenerateSRG.class);
         createMcpToSrg.configure(task -> {
+            task.setReverse(true);
+            task.dependsOn(extractSrg);
+            task.setSrg(extractSrg.get().getOutput());
             task.setMappings(extension.getMappings());
         });
 
@@ -124,7 +135,7 @@ public class UserDevPlugin implements Plugin<Project> {
                 throw new IllegalStateException("Missing 'minecraft' dependency entry.");
             mcrepo.validate(); //This will set the MC_VERSION property.
 
-            createMcpToSrg.get().setMcp((String)project.getExtensions().getExtraProperties().get("MCP_VERSION"));
+            downloadMcpConfig.get().setArtifact("de.oceanlabs.mcp:mcp_config:" + project.getExtensions().getExtraProperties().get("MCP_VERSION") + "@zip");
 
             RenameJarInPlace reobfJar  = reobf.create("jar");
             reobfJar.dependsOn(createMcpToSrg);

@@ -137,6 +137,9 @@ public class MinecraftUserRepo extends BaseRepo {
     private File cacheMapped(String mapping, String classifier, String ext) {
         return cache(GROUP.replace('.', File.separatorChar), NAME, getVersion(mapping), NAME + '-' + getVersion(mapping) + '-' + classifier + '.' + ext);
     }
+    private File cacheAT(String classifier, String ext) {
+        return cache(GROUP.replace('.', File.separatorChar), NAME, getVersionAT(), NAME + '-' + getVersionAT() + '-' + classifier + '.' + ext);
+    }
 
     public String getDependencyString() {
         String ret = GROUP + ':' + NAME + ':' + VERSION;
@@ -165,6 +168,10 @@ public class MinecraftUserRepo extends BaseRepo {
     private String getVersionWithAT(String mappings) {
         if (AT_HASH == null) return getVersion(mappings);
         return getVersion(mappings) + "_at_" + AT_HASH;
+    }
+    private String getVersionAT() {
+        if (AT_HASH == null) return VERSION;
+        return VERSION + "_at_" + AT_HASH;
     }
 
     private Patcher getParents() {
@@ -466,9 +473,9 @@ public class MinecraftUserRepo extends BaseRepo {
     private File findDecomp() throws IOException {
         HashStore cache = commonHash(null);
 
-        File decomp = cacheRaw("decomp", "jar");
+        File decomp = cacheAT("decomp", "jar");
         debug("    Finding Decomp: " + decomp);
-        cache.load(cacheRaw("decomp", "jar.input"));
+        cache.load(cacheAT("decomp", "jar.input"));
 
         if (!cache.isSame() || !decomp.exists()) {
             File output = mcp.getStepOutput("joined", null);
@@ -486,9 +493,9 @@ public class MinecraftUserRepo extends BaseRepo {
 
         HashStore cache = commonHash(null).add("decomp", decomp);
 
-        File patched = cacheRaw("patched", "jar");
+        File patched = cacheAT("patched", "jar");
         debug("    Finding patched: " + decomp);
-        cache.load(cacheRaw("patched", "jar.input"));
+        cache.load(cacheAT("patched", "jar.input"));
 
         if (!cache.isSame() || !patched.exists()) {
             LinkedList<Patcher> parents = new LinkedList<>();
@@ -541,7 +548,32 @@ public class MinecraftUserRepo extends BaseRepo {
                 }
                 if (failed)
                     throw new RuntimeException("Failed to apply patches to source file, see log for details: " + decomp);
-                context.save(patched);
+
+                Set<String> added = new HashSet<>();
+                try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(patched))) {
+                    context.save(zout);
+
+                    // Walk parents and combine from bottom up so we get any overridden files.
+                    patcher = parent;
+                    while (patcher != null) {
+                        if (patcher.getSources() != null) {
+                            try (ZipInputStream zin = new ZipInputStream(new FileInputStream(patcher.getSources()))) {
+                                ZipEntry entry;
+                                while ((entry = zin.getNextEntry()) != null) {
+                                    if (added.contains(entry.getName()) || entry.getName().startsWith("patches/")) //Skip patches, as they are included in src for reference.
+                                        continue;
+                                    ZipEntry _new = new ZipEntry(entry.getName());
+                                    _new.setTime(0); //SHOULD be the same time as the main entry, but NOOOO _new.setTime(entry.getTime()) throws DateTimeException, so you get 0, screw you!
+                                    zout.putNextEntry(_new);
+                                    IOUtils.copy(zin, zout);
+                                    added.add(entry.getName());
+                                }
+                            }
+                        }
+                        patcher = patcher.getParent();
+                    }
+                }
+
                 cache.save();
                 Utils.updateHash(patched, HashFunction.SHA1);
             }
@@ -549,63 +581,10 @@ public class MinecraftUserRepo extends BaseRepo {
         return patched;
     }
 
-    private File findInjected() throws IOException {
+    private File findSource(String mapping) throws IOException {
         File patched = findPatched();
         if (patched == null) return null;
-        if (parent == null) return patched;
-
-        HashStore cache = commonHash(null).add("patched", patched);
-
-        File injected = cacheRaw("injected", "jar");
-        debug("    Finding injected: " + injected);
-        cache.load(cacheRaw("injected", "jar.input"));
-
-        if (!cache.isSame() || !injected.exists()) {
-            Set<String> added = new HashSet<>();
-            try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(injected))) {
-                try (ZipInputStream zin = new ZipInputStream(new FileInputStream(patched))) {
-                    ZipEntry entry;
-                    while ((entry = zin.getNextEntry()) != null) {
-                        if (added.contains(entry.getName()))
-                            continue;
-                        ZipEntry _new = new ZipEntry(entry.getName());
-                        _new.setTime(entry.getTime()); //Should be stable, but keeping time.
-                        zout.putNextEntry(_new);
-                        IOUtils.copy(zin, zout);
-                        added.add(entry.getName());
-                    }
-                }
-
-                // Walk parents and combine from bottom up so we get any overridden files.
-                Patcher patcher = parent;
-                while (patcher != null) {
-                    if (patcher.getSources() != null) {
-                        try (ZipInputStream zin = new ZipInputStream(new FileInputStream(patcher.getSources()))) {
-                            ZipEntry entry;
-                            while ((entry = zin.getNextEntry()) != null) {
-                                if (added.contains(entry.getName()) || entry.getName().startsWith("patches/")) //Skip patches, as they are included in src for reference.
-                                    continue;
-                                ZipEntry _new = new ZipEntry(entry.getName());
-                                _new.setTime(0); //SHOULD be the same time as the main entry, but NOOOO _new.setTime(entry.getTime()) throws DateTimeException, so you get 0, screw you!
-                                zout.putNextEntry(_new);
-                                IOUtils.copy(zin, zout);
-                                added.add(entry.getName());
-                            }
-                        }
-                    }
-                    patcher = patcher.getParent();
-                }
-            }
-            cache.save();
-            Utils.updateHash(patched, HashFunction.SHA1);
-        }
-        return injected;
-    }
-
-    private File findSource(String mapping) throws IOException {
-        File injected = findInjected();
-        if (injected == null) return null;
-        if (mapping == null) return injected;
+        if (mapping == null) return patched;
 
         File names = findMapping(mapping);
         if (names == null) return null;
@@ -621,7 +600,7 @@ public class MinecraftUserRepo extends BaseRepo {
             if (!sources.getParentFile().exists())
                 sources.getParentFile().mkdirs();
 
-            try(ZipInputStream zin = new ZipInputStream(new FileInputStream(injected));
+            try(ZipInputStream zin = new ZipInputStream(new FileInputStream(patched));
                 ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(sources))) {
                 ZipEntry _old;
                 while ((_old = zin.getNextEntry()) != null) {

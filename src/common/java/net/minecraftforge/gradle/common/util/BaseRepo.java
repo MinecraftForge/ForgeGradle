@@ -90,7 +90,7 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
                     new ArtifactProvider<ArtifactIdentifier>() {
                         @Override
                         public Artifact getArtifact(ArtifactIdentifier artifact) {
-                            return repos.stream().map(repo -> repo.getArtifact(artifact)).filter(art -> art != Artifact.none()).findFirst().orElse(Artifact.none());
+                            return repos.stream().map(repo -> repo.getArtifact(artifact)).filter(Artifact::isPresent).findFirst().orElse(Artifact.none());
                         }
                     }
                 ))

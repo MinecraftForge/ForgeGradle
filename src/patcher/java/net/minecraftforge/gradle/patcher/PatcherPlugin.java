@@ -3,6 +3,7 @@ package net.minecraftforge.gradle.patcher;
 import groovy.util.Node;
 import groovy.util.XmlParser;
 import groovy.xml.XmlUtil;
+import net.minecraftforge.gradle.common.task.ExtractMCPData;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
@@ -22,7 +23,6 @@ import net.minecraftforge.gradle.patcher.task.TaskCreateExc;
 import net.minecraftforge.gradle.patcher.task.TaskCreateSrg;
 import net.minecraftforge.gradle.patcher.task.TaskDownloadAssets;
 import net.minecraftforge.gradle.patcher.task.TaskExtractExistingFiles;
-import net.minecraftforge.gradle.patcher.task.TaskExtractMCPData;
 import net.minecraftforge.gradle.patcher.task.TaskExtractNatives;
 import net.minecraftforge.gradle.patcher.task.TaskExtractRangeMap;
 import net.minecraftforge.gradle.patcher.task.TaskFilterNewJar;
@@ -293,7 +293,7 @@ public class PatcherPlugin implements Plugin<Project> {
                     File mcpConfig = ((DownloadMCPConfigTask)tasks.getByName("downloadConfig")).getOutput();
 
                     if (createMcp2Srg.get().getSrg() == null) { //TODO: Make extractMCPData macro
-                        TaskProvider<TaskExtractMCPData> ext = project.getTasks().register("extractSrg", TaskExtractMCPData.class);
+                        TaskProvider<ExtractMCPData> ext = project.getTasks().register("extractSrg", ExtractMCPData.class);
                         ext.get().setConfig(mcpConfig);
                         createMcp2Srg.get().setSrg(ext.get().getOutput());
                         createMcp2Srg.get().dependsOn(ext);
@@ -309,7 +309,7 @@ public class PatcherPlugin implements Plugin<Project> {
                     }
 
                     if (createExc.get().getStatics() == null) {
-                        TaskProvider<TaskExtractMCPData> ext = project.getTasks().register("extractStatic", TaskExtractMCPData.class);
+                        TaskProvider<ExtractMCPData> ext = project.getTasks().register("extractStatic", ExtractMCPData.class);
                         ext.get().setConfig(mcpConfig);
                         ext.get().setKey("statics");
                         ext.get().setOutput(project.file("build/" + ext.get().getName() + "/output.txt"));
@@ -318,7 +318,7 @@ public class PatcherPlugin implements Plugin<Project> {
                     }
 
                     if (createExc.get().getConstructors() == null) {
-                        TaskProvider<TaskExtractMCPData> ext = project.getTasks().register("extractConstructors", TaskExtractMCPData.class);
+                        TaskProvider<ExtractMCPData> ext = project.getTasks().register("extractConstructors", ExtractMCPData.class);
                         ext.get().setConfig(mcpConfig);
                         ext.get().setKey("constructors");
                         ext.get().setOutput(project.file("build/" + ext.get().getName() + "/output.txt"));
@@ -347,7 +347,7 @@ public class PatcherPlugin implements Plugin<Project> {
                     }
 
                     if (createMcp2Srg.get().getSrg() == null) {
-                        TaskExtractMCPData extract = ((TaskExtractMCPData)tasks.getByName("extractSrg"));
+                        ExtractMCPData extract = ((ExtractMCPData)tasks.getByName("extractSrg"));
                         if (extract != null) {
                             createMcp2Srg.get().setSrg(extract.getOutput());
                             createMcp2Srg.get().dependsOn(extract);
@@ -364,7 +364,7 @@ public class PatcherPlugin implements Plugin<Project> {
                     }
 
                     if (createExc.get().getSrg() == null) { //TODO: Make a macro for Srg/Static/Constructors
-                        TaskExtractMCPData extract = ((TaskExtractMCPData)tasks.getByName("extractSrg"));
+                        ExtractMCPData extract = ((ExtractMCPData)tasks.getByName("extractSrg"));
                         if (extract != null) {
                             createExc.get().setSrg(extract.getOutput());
                             createExc.get().dependsOn(extract);
@@ -375,7 +375,7 @@ public class PatcherPlugin implements Plugin<Project> {
                         }
                     }
                     if (createExc.get().getStatics() == null) {
-                        TaskExtractMCPData extract = ((TaskExtractMCPData)tasks.getByName("extractStatic"));
+                        ExtractMCPData extract = ((ExtractMCPData)tasks.getByName("extractStatic"));
                         if (extract != null) {
                             createExc.get().setStatics(extract.getOutput());
                             createExc.get().dependsOn(extract);
@@ -386,7 +386,7 @@ public class PatcherPlugin implements Plugin<Project> {
                         }
                     }
                     if (createExc.get().getConstructors() == null) {
-                        TaskExtractMCPData extract = ((TaskExtractMCPData)tasks.getByName("extractConstructors"));
+                        ExtractMCPData extract = ((ExtractMCPData)tasks.getByName("extractConstructors"));
                         if (extract != null) {
                             createExc.get().setConstructors(extract.getOutput());
                             createExc.get().dependsOn(extract);

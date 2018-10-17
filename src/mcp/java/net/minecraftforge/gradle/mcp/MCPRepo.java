@@ -53,12 +53,6 @@ import java.util.Map;
  *       srg-sources - Srg named decompiled/patched code.
  *
  *   Note: It does NOT provide the Obfed named jars for server and client, as that is provided by MinecraftRepo.
- *
- *  de.oceanlabs.mcp:
- *    mcp_config:
- *      obf-to-[srg|MapVersion].EXT
- *      srg-to-[obf|MapVersion].EXT
- *          Mapping file in the specified direction and format.
  */
 public class MCPRepo extends BaseRepo {
     private static MCPRepo INSTANCE = null;
@@ -140,6 +134,7 @@ public class MCPRepo extends BaseRepo {
                 }
             }
         } else if (group.equals(GROUP_MCP)) {
+            /* Gradle fucks up caching for anything that isnt a zip or a jar, this is fucking annoying we can't do this.
             MappingFile.Format format = MappingFile.Format.get(ext);
             if (format != null) {
                 classifier = classifier.replace('!', '.'); //We hack around finding the extension by using a invalid path character
@@ -152,6 +147,7 @@ public class MCPRepo extends BaseRepo {
                 if (classifier.endsWith  ("-to-obf")) return findRenames(classifier, format, version, classifier.substring(0, classifier.length() - 7), true, true);
                 if (classifier.endsWith  ("-to-srg")) return findRenames(classifier, format, version, classifier.substring(0, classifier.length() - 7), false, true);
             }
+            */
         }
         return null;
     }

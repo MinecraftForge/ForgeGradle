@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -12,7 +13,7 @@ import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.McpNames;
 
 public class GenerateSRG extends DefaultTask {
-    private String mcp;
+    private File srg;
     private String mapping;
     private MappingFile.Format format = MappingFile.Format.TSRG;
     private boolean reverse;
@@ -23,11 +24,9 @@ public class GenerateSRG extends DefaultTask {
         File names = findNames(getMappings());
         if (names == null)
             throw new IllegalStateException("Invalid mappings: " + getMappings() + " Could not find archive");
-        File obf2srg = MavenArtifactDownloader.single(getProject(), "de.oceanlabs.mcp:mcp_config:" + getMcp() + ":obf-to-srg@tsrg");
-        if (obf2srg == null)
-            throw new IllegalArgumentException("Invalid MCP version: " + getMcp() + " could not download");
 
-        MappingFile obf_to_srg = MappingFile.load(obf2srg);
+
+        MappingFile obf_to_srg = MappingFile.load(srg);
         MappingFile ret = new MappingFile();
         McpNames map = McpNames.load(names);
         obf_to_srg.getPackages().forEach(e -> ret.addPackage(e.getMapped(), e.getMapped()));
@@ -50,20 +49,20 @@ public class GenerateSRG extends DefaultTask {
         return MavenArtifactDownloader.single(getProject(), desc);
     }
 
+    @InputFile
+    public File getSrg() {
+        return srg;
+    }
+    public void setSrg(File value) {
+        this.srg = value;
+    }
+
     @Input
     public String getMappings() {
         return mapping;
     }
     public void setMappings(String value) {
         this.mapping = value;
-    }
-
-    @Input
-    public String getMcp() {
-        return mcp;
-    }
-    public void setMcp(String value) {
-        this.mcp = value;
     }
 
     @Input

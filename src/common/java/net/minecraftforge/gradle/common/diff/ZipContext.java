@@ -72,6 +72,16 @@ public class ZipContext implements PatchContextProvider {
     }
 
     public void save(File file) throws IOException {
+        File parent = file.getParentFile();
+        if (!parent.exists())
+            parent.mkdirs();
+
+        try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(file))) {
+            save(out);
+        }
+    }
+
+    public void save(ZipOutputStream out) throws IOException {
         Set<String> files = new HashSet<>();
         for (Enumeration<? extends ZipEntry> entries = zip.entries(); entries.hasMoreElements();) {
             files.add(entries.nextElement().getName());
@@ -82,28 +92,21 @@ public class ZipContext implements PatchContextProvider {
         List<String> sorted = new ArrayList<>(files);
         Collections.sort(sorted);
 
-        File parent = file.getParentFile();
-        if (!parent.exists())
-            parent.mkdirs();
-
-        try (FileOutputStream fos = new FileOutputStream(file);
-             ZipOutputStream out = new ZipOutputStream(fos)) {
-            for (String key : sorted) {
-                if (delete.contains(key)) {
-                    continue; // It's Deleted, so NOOP
-                }
-                putNextEntry(out, key);
-                if (binary.containsKey(key)) {
-                    out.write(binary.get(key));
-                } else if (modified.containsKey(key)) {
-                    out.write(String.join("\n", modified.get(key)).getBytes(StandardCharsets.UTF_8));
-                } else {
-                    try (InputStream ein = zip.getInputStream(zip.getEntry(key))) {
-                        IOUtils.copy(ein, out);
-                    }
-                }
-                out.closeEntry();
+        for (String key : sorted) {
+            if (delete.contains(key)) {
+                continue; // It's Deleted, so NOOP
             }
+            putNextEntry(out, key);
+            if (binary.containsKey(key)) {
+                out.write(binary.get(key));
+            } else if (modified.containsKey(key)) {
+                out.write(String.join("\n", modified.get(key)).getBytes(StandardCharsets.UTF_8));
+            } else {
+                try (InputStream ein = zip.getInputStream(zip.getEntry(key))) {
+                    IOUtils.copy(ein, out);
+                }
+            }
+            out.closeEntry();
         }
     }
 

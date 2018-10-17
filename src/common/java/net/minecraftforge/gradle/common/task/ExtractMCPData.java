@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.patcher.task;
+package net.minecraftforge.gradle.common.task;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -21,7 +21,7 @@ import com.google.gson.GsonBuilder;
 import net.minecraftforge.gradle.common.config.Config;
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
 
-public class TaskExtractMCPData extends DefaultTask {
+public class ExtractMCPData extends DefaultTask {
     private static final Gson GSON = new GsonBuilder().create();
 
     private String key = "mappings";

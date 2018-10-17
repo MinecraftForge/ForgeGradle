@@ -35,7 +35,7 @@ public class MavenArtifactDownloader {
     }
 
     private static File gradleDownload(Project project, String artifact, boolean changing) {
-        String name = "mavenDownloader_" + artifact.replace(":", "/");
+        String name = "mavenDownloader_" + artifact;
 
         //TODO: Bypass gradle's crap?
         //List<ArtifactRepository> repos = project.getRepositories();
