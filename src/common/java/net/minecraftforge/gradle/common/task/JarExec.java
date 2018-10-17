@@ -71,7 +71,11 @@ public class JarExec extends DefaultTask {
             getProject().getTasks().remove(java);
         }
 
-        postProcess(logFile);
+        if (hasLog)
+            postProcess(logFile);
+
+        if (workDir.list().length == 0)
+            workDir.delete();
     }
 
     protected List<String> filterArgs() {

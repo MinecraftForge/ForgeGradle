@@ -32,7 +32,7 @@ public class MappingFile {
     }
 
     private static final Joiner SPACE = Joiner.on(" ");
-    private static final Pattern DESC = Pattern.compile("L([^;]+);");
+    private static final Pattern DESC = Pattern.compile("L(?<cls>[^;]+);");
 
     public static MappingFile load(File file) throws IOException {
         try (FileInputStream input = new FileInputStream(file)) {
@@ -167,11 +167,15 @@ public class MappingFile {
     public String remapClass(String cls) {
         String ret = cache.get(cls);
         if (ret == null) {
-            int idx = cls.lastIndexOf('$');
-            if (idx != -1)
-                ret = remapClass(cls.substring(0, idx)) + '$' + cls.substring(idx + 1);
-            else
-                ret = cls;
+            Cls _cls = classes.get(cls);
+            if (_cls == null) {
+                int idx = cls.lastIndexOf('$');
+                if (idx != -1)
+                    ret = remapClass(cls.substring(0, idx)) + '$' + cls.substring(idx + 1);
+                else
+                    ret = cls;
+            } else
+                ret = _cls.getMapped();
             //TODO: Package bulk moves? Issue: moving default package will move EVERYTHING, it's what its meant to do but we shouldn't.
             cache.put(cls, ret);
         }
@@ -182,8 +186,8 @@ public class MappingFile {
         Matcher matcher = DESC.matcher(desc);
         StringBuffer buf = new StringBuffer();
         while (matcher.find())
-            matcher.appendReplacement(buf, Matcher.quoteReplacement(remapClass(matcher.group())));
-            matcher.appendTail(buf);
+            matcher.appendReplacement(buf, Matcher.quoteReplacement("L" + remapClass(matcher.group("cls")) + ";"));
+        matcher.appendTail(buf);
         return buf.toString();
     }
 

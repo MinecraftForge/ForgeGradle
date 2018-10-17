@@ -423,7 +423,7 @@ public class MinecraftUserRepo extends BaseRepo {
             }
 
             //TODO: Apply ATs
-            Utils.updateHash(bin);
+            Utils.updateHash(bin, HashFunction.SHA1);
             cache.save();
         }
         return bin;
