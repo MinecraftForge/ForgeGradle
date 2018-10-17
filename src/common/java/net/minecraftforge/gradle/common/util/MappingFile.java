@@ -158,7 +158,7 @@ public class MappingFile {
             for (String fld : sort(cls.fields, reversed))
                 ret.add(cls.fields.get(fld).write(format, reversed));
 
-            for (String mtd : sort(cls.methods, reversed))
+            for (String mtd : sortMethods(cls.methods, reversed))
                 ret.add(cls.methods.get(mtd).write(format, reversed));
         }
         return ret;
@@ -191,6 +191,12 @@ public class MappingFile {
         if (!reversed)
             return map.keySet().stream().sorted().collect(Collectors.toList());
         return map.values().stream().sorted((n1, n2) -> n1.getMapped().compareTo(n2.getMapped())).map(Node::getOriginal).collect(Collectors.toList());
+    }
+    private static List<String> sortMethods(Map<String, Cls.Method> map, boolean reversed) {
+        if (!reversed)
+            return map.keySet().stream().sorted().collect(Collectors.toList());
+        return map.values().stream().sorted((n1, n2) -> (n1.getMapped() + n1.getMappedDescriptor()).compareTo(n2.getMapped() + n2.getMappedDescriptor()))
+                .map(m -> m.getOriginal() + m.getDescriptor()).collect(Collectors.toList());
     }
 
     public abstract class Node {
@@ -253,7 +259,7 @@ public class MappingFile {
         }
 
         public void addMethod(String original, String desc, String mapped) {
-            Method old = methods.put(original, new Method(original, desc, mapped));
+            Method old = methods.put(original + desc, new Method(original, desc, mapped));
             //TODO: Validate not changed?
         }
 

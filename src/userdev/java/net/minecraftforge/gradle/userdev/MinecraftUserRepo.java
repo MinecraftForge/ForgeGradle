@@ -595,7 +595,7 @@ public class MinecraftUserRepo extends BaseRepo {
         File sources = cacheMapped(mapping, "sources", "jar");
         debug("    Finding Source: " + sources);
         cache.load(cacheMapped(mapping, "sources", "jar.input"));
-        if (!cache.isSame() || !sources.exists() || "".equals("")) {
+        if (!cache.isSame() || !sources.exists()) {
             McpNames map = McpNames.load(names);
 
             if (!sources.getParentFile().exists())
