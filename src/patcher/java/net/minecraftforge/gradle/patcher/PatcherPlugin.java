@@ -4,7 +4,11 @@ import groovy.util.Node;
 import groovy.util.XmlParser;
 import groovy.xml.XmlUtil;
 import net.minecraftforge.gradle.common.task.ExtractMCPData;
+import net.minecraftforge.gradle.common.task.ExtractNatives;
+import net.minecraftforge.gradle.common.task.DownloadAssets;
+import net.minecraftforge.gradle.common.task.DownloadMCMeta;
 import net.minecraftforge.gradle.common.util.BaseRepo;
+import net.minecraftforge.gradle.common.util.EclipseHacks;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.mcp.MCPExtension;
@@ -13,7 +17,6 @@ import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
 import net.minecraftforge.gradle.mcp.task.DownloadMCPConfigTask;
 import net.minecraftforge.gradle.mcp.task.SetupMCPTask;
-import net.minecraftforge.gradle.patcher.task.DownloadMCMetaTask;
 import net.minecraftforge.gradle.patcher.task.DownloadMCPMappingsTask;
 import net.minecraftforge.gradle.patcher.task.TaskGenerateUserdevConfig;
 import net.minecraftforge.gradle.patcher.task.TaskApplyMappings;
@@ -21,9 +24,7 @@ import net.minecraftforge.gradle.patcher.task.TaskApplyPatches;
 import net.minecraftforge.gradle.patcher.task.TaskApplyRangeMap;
 import net.minecraftforge.gradle.patcher.task.TaskCreateExc;
 import net.minecraftforge.gradle.patcher.task.TaskCreateSrg;
-import net.minecraftforge.gradle.patcher.task.TaskDownloadAssets;
 import net.minecraftforge.gradle.patcher.task.TaskExtractExistingFiles;
-import net.minecraftforge.gradle.patcher.task.TaskExtractNatives;
 import net.minecraftforge.gradle.patcher.task.TaskExtractRangeMap;
 import net.minecraftforge.gradle.patcher.task.TaskFilterNewJar;
 import net.minecraftforge.gradle.patcher.task.GenerateBinPatches;
@@ -77,8 +78,8 @@ public class PatcherPlugin implements Plugin<Project> {
         JavaCompile javaCompile = (JavaCompile)project.getTasks().getByName("compileJava");
 
         TaskProvider<DownloadMCPMappingsTask> dlMappingsConfig = project.getTasks().register("downloadMappings", DownloadMCPMappingsTask.class);
-        TaskProvider<DownloadMCMetaTask> dlMCMetaConfig = project.getTasks().register("downloadMCMeta", DownloadMCMetaTask.class);
-        TaskProvider<TaskExtractNatives> extractNatives = project.getTasks().register("extractNatives", TaskExtractNatives.class);
+        TaskProvider<DownloadMCMeta> dlMCMetaConfig = project.getTasks().register("downloadMCMeta", DownloadMCMeta.class);
+        TaskProvider<ExtractNatives> extractNatives = project.getTasks().register("extractNatives", ExtractNatives.class);
         TaskProvider<TaskApplyPatches> applyConfig = project.getTasks().register("applyPatches", TaskApplyPatches.class);
         TaskProvider<TaskApplyMappings> toMCPConfig = project.getTasks().register("srg2mcp", TaskApplyMappings.class);
         TaskProvider<Copy> extractMapped = project.getTasks().register("extractMapped", Copy.class);
@@ -89,7 +90,7 @@ public class PatcherPlugin implements Plugin<Project> {
         TaskProvider<TaskApplyRangeMap> applyRangeConfig = project.getTasks().register("applyRangeMap", TaskApplyRangeMap.class);
         TaskProvider<TaskApplyRangeMap> applyRangeBaseConfig = project.getTasks().register("applyRangeMapBase", TaskApplyRangeMap.class);
         TaskProvider<TaskGeneratePatches> genConfig = project.getTasks().register("genPatches", TaskGeneratePatches.class);
-        TaskProvider<TaskDownloadAssets> downloadAssets = project.getTasks().register("downloadAssets", TaskDownloadAssets.class);
+        TaskProvider<DownloadAssets> downloadAssets = project.getTasks().register("downloadAssets", DownloadAssets.class);
         TaskProvider<TaskReobfuscateJar> reobfJar = project.getTasks().register("reobfJar", TaskReobfuscateJar.class);
         TaskProvider<GenerateBinPatches> genJoinedBinPatches = project.getTasks().register("genJoinedBinPatches", GenerateBinPatches.class);
         TaskProvider<GenerateBinPatches> genClientBinPatches = project.getTasks().register("genClientBinPatches", GenerateBinPatches.class);
@@ -514,7 +515,7 @@ public class PatcherPlugin implements Plugin<Project> {
             p.getTasks().withType(GenerateEclipseClasspath.class, t -> { t.dependsOn(extractNatives.get(), downloadAssets.get()); });
             //TODO: IntelliJ plugin?
 
-            doEclipseFixes(project, natives_folder, extension, downloadAssets.get().getOutput());
+            EclipseHacks.doEclipseFixes(project, extractNatives.get(), downloadAssets.get(), extension.getClientRun(), extension.getServerRun());
 
             if (project.hasProperty("UPDATE_MAPPINGS")) {
                 String version = (String)project.property("UPDATE_MAPPINGS");
@@ -543,90 +544,6 @@ public class PatcherPlugin implements Plugin<Project> {
         });
     }
 
-    @SuppressWarnings("unchecked")
-    private void doEclipseFixes(Project project, File natives, PatcherExtension extension, File assets) {
-        final String LIB_ATTR = "org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY";
-        project.getTasks().withType(GenerateEclipseClasspath.class, task -> {
-            task.doFirst(t -> {
-                task.getClasspath().getSourceSets().forEach(s -> {
-                    if (s.getName().equals("main")) { //Eclipse requires main to exist.. or it gets wonkey
-                        s.getAllSource().getSrcDirs().stream().filter(f -> !f.exists()).forEach(File::mkdirs);
-                    }
-                });
-            });
-            task.doLast(t -> {
-                try {
-                    Node xml = new XmlParser().parse(task.getOutputFile());
-
-                    List<Node> entries = (ArrayList<Node>)xml.get("classpathentry");
-                    Set<String> paths = new HashSet<>();
-                    List<Node> remove = new ArrayList<>();
-                    entries.stream().filter(e -> "src".equals(e.get("@kind"))).forEach(e -> {
-                        if (!paths.add((String)e.get("@path"))) { //Eclipse likes to duplicate things... No idea why, lets kill them off
-                            remove.add(e);
-                        }
-                        if (((List<Node>)e.get("attributes")).isEmpty()) {
-                            e.appendNode("attributes");
-                        }
-                        Node attr = ((List<Node>)e.get("attributes")).get(0);
-                        if (((List<Node>)attr.get("attribute")).stream().noneMatch(n -> LIB_ATTR.equals(n.get("@name")))) {
-                            attr.appendNode("attribute", props("name", LIB_ATTR, "value", natives.getAbsolutePath()));
-                        }
-                    });
-                    remove.forEach(xml::remove);
-                    try (OutputStream fos = new FileOutputStream(task.getOutputFile())) {
-                        IOUtils.write(XmlUtil.serialize(xml), fos, StandardCharsets.UTF_8);
-                    }
-
-                    File run_dir = project.file("run");
-                    if (!run_dir.exists()) {
-                        run_dir.mkdirs();
-                    }
-
-                    String niceName = project.getName().substring(0, 1).toUpperCase() + project.getName().substring(1);
-                    for (boolean client : new boolean[] {true, false}) {
-                        xml = new Node(null, "launchConfiguration", props("type", "org.eclipse.jdt.launching.localJavaApplication"));
-                        String main = client ? (extension.getClientRun().getMain() != null ? extension.getClientRun().getMain() : "mcp.client.Start") :
-                                               (extension.getServerRun().getMain() != null ? extension.getServerRun().getMain() : "net.minecraft.server.MinecraftServer" );
-                        xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.MAIN_TYPE", "value", main));
-                        xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.PROJECT_ATTR", "value", project.getName()));
-                        xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.WORKING_DIRECTORY", "value", run_dir.getAbsolutePath()));
-
-                        Node env = xml.appendNode("mapAttribute", props("key", "org.eclipse.debug.core.environmentVariables"));
-                        env.appendNode("mapEntry", props("key", "assetDirectory", "value", assets.getAbsolutePath()));
-                        (client ? extension.getClientRun() : extension.getServerRun()).getEnvironment().forEach((k,v) -> env.appendNode("mapEntry", props("key", k, "value", v)));
-
-                        String props = (client ? extension.getClientRun() : extension.getServerRun()).getProperties().entrySet().stream().map(e -> {
-                            String val = e.getValue();
-                            if (val.indexOf(' ') != -1) val = "\"" + e.getValue().replaceAll("\"", "\\\"") + "\"";
-                            return "-D" + e.getKey() + "=" + val;
-                        }).collect(Collectors.joining("\n"));
-
-                        if (!props.isEmpty()) {
-                            xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.VM_ARGUMENTS", "value", props));
-                        }
-
-                        try (OutputStream fos = new FileOutputStream(project.file(client ? "RunClient" + niceName +".launch" : "RunServer" + niceName +".launch"))) {
-                            IOUtils.write(XmlUtil.serialize(xml), fos, StandardCharsets.UTF_8);
-                        }
-                    }
-                } catch (IOException | SAXException | ParserConfigurationException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        });
-    }
-
-    private Map<String, String> props(String... data) {
-        if (data.length % 2 != 0) {
-            throw new IllegalArgumentException("Properties must be key,value pairs");
-        }
-        Map<String, String> ret = new HashMap<>();
-        for (int x = 0; x < data.length; x += 2) {
-            ret.put(data[x], data[x + 1]);
-        }
-        return ret;
-    }
 
     private Project getMcpParent(Project project) {
         final PatcherExtension extension = project.getExtensions().findByType(PatcherExtension.class);

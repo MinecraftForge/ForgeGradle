@@ -2,6 +2,9 @@ package net.minecraftforge.gradle.userdev;
 
 import org.gradle.api.Project;
 
+import groovy.lang.Closure;
+import net.minecraftforge.gradle.common.util.RunConfig;
+
 import javax.inject.Inject;
 import java.io.File;
 import java.util.ArrayList;
@@ -11,6 +14,8 @@ import java.util.Map;
 public class UserDevExtension {
     private String mappings;
     private List<File> accessTransformers = new ArrayList<>();
+    private RunConfig clientRun = new RunConfig();
+    private RunConfig serverRun = new RunConfig();
 
     @Inject
     public UserDevExtension(Project project) {
@@ -47,5 +52,25 @@ public class UserDevExtension {
 
     public void setAccessTransformer(File file) {
         this.accessTransformers.add(file);
+    }
+
+    public void setClientRun(Closure<? super RunConfig> action) {
+        action.setResolveStrategy(Closure.DELEGATE_FIRST);
+        action.setDelegate(clientRun);
+        action.call();
+    }
+
+    public RunConfig getClientRun() {
+        return clientRun;
+    }
+
+    public void setServerRun(Closure<? super RunConfig> action) {
+        action.setResolveStrategy(Closure.DELEGATE_FIRST);
+        action.setDelegate(serverRun);
+        action.call();
+    }
+
+    public RunConfig getServerRun() {
+        return serverRun;
     }
 }

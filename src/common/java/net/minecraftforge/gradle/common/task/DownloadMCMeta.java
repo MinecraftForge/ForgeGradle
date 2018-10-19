@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.patcher.task;
+package net.minecraftforge.gradle.common.task;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
@@ -17,7 +17,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 
-public class DownloadMCMetaTask extends DefaultTask {
+public class DownloadMCMeta extends DefaultTask {
     private static final String MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
     private static final Gson GSON = new GsonBuilder().create();
 

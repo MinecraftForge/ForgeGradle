@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.patcher.task;
+package net.minecraftforge.gradle.common.task;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,7 +11,7 @@ import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.common.util.VersionJson;
 import net.minecraftforge.gradle.common.util.VersionJson.LibraryDownload;
 
-public class TaskExtractNatives extends DefaultTask {
+public class ExtractNatives extends DefaultTask {
     private File meta;
     private File output;
 

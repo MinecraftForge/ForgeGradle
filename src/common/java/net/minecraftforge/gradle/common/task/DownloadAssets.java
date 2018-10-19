@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.patcher.task;
+package net.minecraftforge.gradle.common.task;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,7 +16,7 @@ import org.gradle.api.tasks.TaskAction;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.common.util.VersionJson;
 
-public class TaskDownloadAssets extends DefaultTask {
+public class DownloadAssets extends DefaultTask {
     private static final String RESOURCE_REPO = "http://resources.download.minecraft.net/";
     private File meta;
 

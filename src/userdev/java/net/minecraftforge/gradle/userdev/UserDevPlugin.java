@@ -14,14 +14,19 @@ import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.Jar;
 
+import net.minecraftforge.gradle.common.task.DownloadAssets;
+import net.minecraftforge.gradle.common.task.DownloadMCMeta;
 import net.minecraftforge.gradle.common.task.DownloadMavenArtifact;
 import net.minecraftforge.gradle.common.task.ExtractMCPData;
+import net.minecraftforge.gradle.common.task.ExtractNatives;
 import net.minecraftforge.gradle.common.util.BaseRepo;
+import net.minecraftforge.gradle.common.util.EclipseHacks;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.userdev.tasks.GenerateSRG;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 
+import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -38,7 +43,7 @@ public class UserDevPlugin implements Plugin<Project> {
         if (project.getPluginManager().findPlugin("java") == null) {
             project.getPluginManager().apply("java");
         }
-        //final File natives_folder = project.file("build/natives/");
+        final File natives_folder = project.file("build/natives/");
 
         NamedDomainObjectContainer<RenameJarInPlace> reobf = project.container(RenameJarInPlace.class, new NamedDomainObjectFactory<RenameJarInPlace>() {
             @Override
@@ -70,19 +75,32 @@ public class UserDevPlugin implements Plugin<Project> {
         compile.extendsFrom(minecraft);
 
         TaskProvider<DownloadMavenArtifact> downloadMcpConfig = project.getTasks().register("downloadMcpConfig", DownloadMavenArtifact.class);
-
         TaskProvider<ExtractMCPData> extractSrg = project.getTasks().register("extractSrg", ExtractMCPData.class);
+        TaskProvider<GenerateSRG> createMcpToSrg = project.getTasks().register("createMcpToSrg", GenerateSRG.class);
+        TaskProvider<DownloadMCMeta> downloadMCMeta = project.getTasks().register("downloadMCMeta", DownloadMCMeta.class);
+        TaskProvider<ExtractNatives> extractNatives = project.getTasks().register("extractNatives", ExtractNatives.class);
+        TaskProvider<DownloadAssets> downloadAssets = project.getTasks().register("downloadAssets", DownloadAssets.class);
+
         extractSrg.configure(task -> {
             task.dependsOn(downloadMcpConfig);
             task.setConfig(downloadMcpConfig.get().getOutput());
         });
 
-        TaskProvider<GenerateSRG> createMcpToSrg = project.getTasks().register("createMcpToSrg", GenerateSRG.class);
         createMcpToSrg.configure(task -> {
             task.setReverse(true);
             task.dependsOn(extractSrg);
             task.setSrg(extractSrg.get().getOutput());
             task.setMappings(extension.getMappings());
+        });
+
+        extractNatives.configure(task -> {
+            task.dependsOn(downloadMCMeta.get());
+            task.setMeta(downloadMCMeta.get().getOutput());
+            task.setOutput(natives_folder);
+        });
+        downloadAssets.configure(task -> {
+            task.dependsOn(downloadMCMeta.get());
+            task.setMeta(downloadMCMeta.get().getOutput());
         });
 
         project.afterEvaluate(p -> {
@@ -129,11 +147,15 @@ public class UserDevPlugin implements Plugin<Project> {
                 throw new IllegalStateException("Missing 'minecraft' dependency entry.");
             mcrepo.validate(); //This will set the MC_VERSION property.
 
-            downloadMcpConfig.get().setArtifact("de.oceanlabs.mcp:mcp_config:" + project.getExtensions().getExtraProperties().get("MCP_VERSION") + "@zip");
+            String mcVer = (String)project.getExtensions().getExtraProperties().get("MCP_VERSION");
+            downloadMcpConfig.get().setArtifact("de.oceanlabs.mcp:mcp_config:" + mcVer + "@zip");
+            downloadMCMeta.get().setMCVersion(mcVer);
 
             RenameJarInPlace reobfJar  = reobf.create("jar");
             reobfJar.dependsOn(createMcpToSrg);
             reobfJar.setMappings(createMcpToSrg.get().getOutput());
+
+            EclipseHacks.doEclipseFixes(project, extractNatives.get(), downloadAssets.get(), extension.getClientRun(), extension.getServerRun());
         });
     }
 
