@@ -82,7 +82,8 @@ public class MCPRepo extends BaseRepo {
         return INSTANCE;
     }
     public static void attach(Project project) {
-        GradleRepositoryAdapter.add(project.getRepositories(), "MCP_DYNAMIC", "http://mcp_dynamic.fake/", getInstance(project).repo);
+        MCPRepo instance = getInstance(project);
+        GradleRepositoryAdapter.add(project.getRepositories(), "MCP_DYNAMIC", instance.cache, instance.repo);
     }
 
     public static ArtifactProvider<ArtifactIdentifier> create(Project project) {
@@ -267,7 +268,7 @@ public class MCPRepo extends BaseRepo {
                 File output = runtime.execute(log, step);
                 FileUtils.copyFile(output, raw);
                 cache.save();
-                Utils.updateHash(raw);
+                Utils.updateHash(raw, HashFunction.SHA1);
             } catch (IOException e) {
                 throw e;
             } catch (Exception e) {

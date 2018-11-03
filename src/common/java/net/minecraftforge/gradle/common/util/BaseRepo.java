@@ -85,7 +85,8 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
 
         public void attach(Project project) {
             int random = new Random().nextInt();
-            GradleRepositoryAdapter.add(project.getRepositories(), "BUNDELED_" + random, "http://bundeled_" + random + ".fake/",
+            File cache = Utils.getCache(project, "bundeled_repo");
+            GradleRepositoryAdapter.add(project.getRepositories(), "BUNDELED_" + random, cache,
                 SimpleRepository.of(ArtifactProviderBuilder.begin(ArtifactIdentifier.class).provide(
                     new ArtifactProvider<ArtifactIdentifier>() {
                         @Override

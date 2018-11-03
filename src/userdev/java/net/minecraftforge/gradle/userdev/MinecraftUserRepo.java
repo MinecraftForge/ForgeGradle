@@ -147,7 +147,7 @@ public class MinecraftUserRepo extends BaseRepo {
             ret += "_mapped_" + MAPPING;
         if (AT_HASH != null)
             ret += "_at_" + AT_HASH;
-        ret = "rnd." + (new Random().nextInt()) + "." + ret; //Stupid hack to make gradle always try and ask for this file. This should be removed once we figure out why the hell gradle just randomly decides to not try to resolve us!
+        //ret = "rnd." + (new Random().nextInt()) + "." + ret; //Stupid hack to make gradle always try and ask for this file. This should be removed once we figure out why the hell gradle just randomly decides to not try to resolve us!
         return ret;
     }
 
@@ -353,9 +353,9 @@ public class MinecraftUserRepo extends BaseRepo {
 
             File srged = null;
             if (parent == null) { //Raw minecraft
-                srged = MavenArtifactDownloader.single(project, "net.minecraft:joined:" + mcp.getVersion() + ":srg"); //Download vanilla in srg name
+                srged = MavenArtifactDownloader.single(project, "net.minecraft:joined:" + mcp.getVersion() + ":srg", true); //Download vanilla in srg name
             } else { // Needs binpatches
-                File joined = MavenArtifactDownloader.single(project, "net.minecraft:joined:" + mcp.getVersion() + ":srg"); //Download vanilla in srg name
+                File joined = MavenArtifactDownloader.single(project, "net.minecraft:joined:" + mcp.getVersion() + ":srg", true); //Download vanilla in srg name
                 File binpatched = cacheRaw("binpatched", "jar");
 
                 //Apply bin patches to vanilla

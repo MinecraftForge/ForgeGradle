@@ -147,8 +147,9 @@ public class UserDevPlugin implements Plugin<Project> {
                 throw new IllegalStateException("Missing 'minecraft' dependency entry.");
             mcrepo.validate(); //This will set the MC_VERSION property.
 
-            String mcVer = (String)project.getExtensions().getExtraProperties().get("MCP_VERSION");
-            downloadMcpConfig.get().setArtifact("de.oceanlabs.mcp:mcp_config:" + mcVer + "@zip");
+            String mcVer = (String)project.getExtensions().getExtraProperties().get("MC_VERSION");
+            String mcpVer = (String)project.getExtensions().getExtraProperties().get("MCP_VERSION");
+            downloadMcpConfig.get().setArtifact("de.oceanlabs.mcp:mcp_config:" + mcpVer + "@zip");
             downloadMCMeta.get().setMCVersion(mcVer);
 
             RenameJarInPlace reobfJar  = reobf.create("jar");

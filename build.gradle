@@ -16,7 +16,8 @@ compileJava {
 group = 'net.minecraftforge.gradle'
 version = gitVersion()
 def gitVersion() {
-    def desc = grgit.describe(longDescr: true).split('-') as List
+    def raw = grgit.describe(longDescr: true)
+    def desc = (raw == null ? 'unknown.unknown.unknown' : raw).split('-') as List
     def hash = desc.remove(desc.size() - 1)
     def offset = desc.remove(desc.size() - 1)
     def tag = desc.join('-')
@@ -68,7 +69,7 @@ dependencies {
     commonImplementation 'com.google.guava:guava:26.0-jre'
     commonImplementation 'de.siegmar:fastcsv:1.0.2'
     commonImplementation 'net.minecraftforge:Srg2Source:4.2.+'
-    commonImplementation 'com.amadornes:artifactural:1.0.+'
+    commonImplementation 'net.minecraftforge:artifactural:1.0.+'
 
     mcpImplementation sourceSets.common.output
     patcherImplementation sourceSets.mcp.output
