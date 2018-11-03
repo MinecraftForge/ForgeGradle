@@ -657,7 +657,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 }
 
                 if (config.sources != null) {
-                    sources = MavenArtifactDownloader.single(project, config.sources);
+                    sources = MavenArtifactDownloader.single(project, config.sources); //TODO: Bypass ourselves when looking for sources....
                     if (sources == null)
                         throw new IllegalStateException("Invalid patcher dependency, could not resolve sources: " + sources);
                 } else {

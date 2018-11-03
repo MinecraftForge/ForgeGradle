@@ -4,11 +4,15 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
+import org.gradle.api.artifacts.repositories.ArtifactRepository;
+
+import com.amadornes.artifactural.gradle.GradleRepositoryAdapter;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -42,9 +46,19 @@ public class MavenArtifactDownloader {
             name += "_" + count++;
             COUNTER.put(project, count);
         }
+        Artifact mine = Artifact.from(artifact);
 
-        //TODO: Bypass gradle's crap?
-        //List<ArtifactRepository> repos = project.getRepositories();
+        //Searches for our fake repos, and attempts to get the artifact file from it, if not found move to gradle's internal stuff.
+        List<ArtifactRepository> repos = project.getRepositories();
+        for (ArtifactRepository repo : repos) {
+            if (repo instanceof GradleRepositoryAdapter) {
+                GradleRepositoryAdapter fake = (GradleRepositoryAdapter)repo;
+                File ret = fake.getArtifact(mine);
+                if (ret != null && ret.exists()) {
+                    return ret;
+                }
+            }
+        }
 
         Configuration cfg = project.getConfigurations().create(name);
         ExternalModuleDependency dependency = (ExternalModuleDependency)project.getDependencies().create(artifact);
@@ -56,7 +70,6 @@ public class MavenArtifactDownloader {
         });
         File ret = cfg.resolve().iterator().next(); //We only want the first, not transitive
 
-        Artifact mine = Artifact.from(artifact);
         cfg.getResolvedConfiguration().getResolvedArtifacts().forEach(art -> {
             ModuleVersionIdentifier resolved = art.getModuleVersion().getId();
             if (resolved.getGroup().equals(mine.getGroup()) && resolved.getName().equals(mine.getName())) {

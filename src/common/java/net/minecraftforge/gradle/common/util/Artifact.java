@@ -1,10 +1,12 @@
 package net.minecraftforge.gradle.common.util;
 
 import java.io.File;
+
+import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 
-public class Artifact {
+public class Artifact implements ArtifactIdentifier {
     //Descriptor parts: group:name:version[:classifier][@extension]
     private String group;
     private String name;
@@ -51,11 +53,16 @@ public class Artifact {
 
     public String getDescriptor(){ return descriptor; }
     public String getPath()      { return path;       }
+    @Override
     public String getGroup()     { return group;      }
+    @Override
     public String getName()      { return name;       }
+    @Override
     public String getVersion()   { return version;    }
+    @Override
     public String getClassifier(){ return classifier; }
-    public String getExt()       { return ext;        }
+    @Override
+    public String getExtension() { return ext;        }
     public String getFilename()  { return file;       }
     @Override
     public String toString() {

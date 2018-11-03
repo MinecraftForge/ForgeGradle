@@ -49,7 +49,7 @@ public class DownloadMavenArtifact extends DefaultTask {
     @OutputFile
     public File getOutput() {
         if (output == null)
-            output = getProject().file("build/" + getName() + "/output." + _artifact.getExt());
+            output = getProject().file("build/" + getName() + "/output." + _artifact.getExtension());
         return output;
     }
 
