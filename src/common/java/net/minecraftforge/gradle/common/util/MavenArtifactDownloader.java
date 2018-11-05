@@ -14,7 +14,6 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 public class MavenArtifactDownloader {
@@ -28,12 +27,17 @@ public class MavenArtifactDownloader {
     private static File _download(Project project, String artifact, boolean changing) {
         File ret = null;
         try {
-            ret = CACHE.get(artifact, () -> gradleDownload(project, artifact, changing));
+            ret = CACHE.getIfPresent(artifact);
             if (ret != null && !ret.exists()) {
                 CACHE.invalidate(artifact);
-                ret = CACHE.get(artifact, () -> gradleDownload(project, artifact, changing));
+                ret = null;
             }
-        } catch (ExecutionException e) {
+            if (ret == null) {
+                ret = gradleDownload(project, artifact, changing);
+                if (ret != null)
+                    CACHE.put(artifact, ret);
+            }
+        } catch (RuntimeException e) {
             e.printStackTrace();
         }
         return ret;
