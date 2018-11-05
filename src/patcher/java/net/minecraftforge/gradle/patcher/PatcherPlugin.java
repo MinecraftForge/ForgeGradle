@@ -1,8 +1,5 @@
 package net.minecraftforge.gradle.patcher;
 
-import groovy.util.Node;
-import groovy.util.XmlParser;
-import groovy.xml.XmlUtil;
 import net.minecraftforge.gradle.common.task.ExtractMCPData;
 import net.minecraftforge.gradle.common.task.ExtractNatives;
 import net.minecraftforge.gradle.common.task.DownloadAssets;
@@ -30,7 +27,6 @@ import net.minecraftforge.gradle.patcher.task.TaskFilterNewJar;
 import net.minecraftforge.gradle.patcher.task.GenerateBinPatches;
 import net.minecraftforge.gradle.patcher.task.TaskGeneratePatches;
 import net.minecraftforge.gradle.patcher.task.TaskReobfuscateJar;
-import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -43,23 +39,10 @@ import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.plugins.ide.eclipse.GenerateEclipseClasspath;
-import org.xml.sax.SAXException;
-
 import com.google.common.collect.Lists;
 
 import javax.annotation.Nonnull;
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class PatcherPlugin implements Plugin<Project> {
@@ -221,7 +204,7 @@ public class PatcherPlugin implements Plugin<Project> {
         sourcesJar.configure(task -> {
             task.dependsOn(applyRangeConfig);
             task.from(project.zipTree(applyRangeConfig.get().getOutput()));
-            task.setClassifier("sources");
+            task.setClassifier("userdev-sources");
         });
         /* Universal:
          * All of our classes and resources as normal jar.
