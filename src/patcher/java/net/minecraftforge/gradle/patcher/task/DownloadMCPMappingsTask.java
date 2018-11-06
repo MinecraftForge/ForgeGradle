@@ -49,7 +49,7 @@ public class DownloadMCPMappingsTask extends DefaultTask {
     }
 
     private File getMappingFile() {
-        return MavenArtifactDownloader.single(getProject(), getMappings());
+        return MavenArtifactDownloader.gradle(getProject(), getMappings(), false);
     }
 
 }

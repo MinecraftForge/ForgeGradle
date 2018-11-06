@@ -80,7 +80,7 @@ public class MCPRuntime {
                 if (custom == null)
                     throw new IllegalArgumentException("Invalid MCP Config, Unknown function step type: " + step.getType() + " File: " + mcp_config);
 
-                File jar = MavenArtifactDownloader.single(project, custom.getVersion());
+                File jar = MavenArtifactDownloader.gradle(project, custom.getVersion(), false);
                 if (jar == null || !jar.exists())
                     throw new IllegalArgumentException("Could not download MCP Config dependency: " + custom.getVersion());
                 function = new ExecuteFunction(jar, custom.getJvmArgs().toArray(new String[custom.getJvmArgs().size()]),

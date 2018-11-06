@@ -46,7 +46,7 @@ public class GenerateSRG extends DefaultTask {
         String channel = mapping.substring(0, idx);
         String version = mapping.substring(idx + 1);
         String desc = "de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
-        return MavenArtifactDownloader.single(getProject(), desc);
+        return MavenArtifactDownloader.gradle(getProject(), desc, false);
     }
 
     @InputFile

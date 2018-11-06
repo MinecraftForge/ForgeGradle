@@ -182,7 +182,7 @@ public class MinecraftUserRepo extends BaseRepo {
             Patcher last = null;
             while (artifact != null) {
                 debug("    Parent: " + artifact);
-                File dep = MavenArtifactDownloader.single(project, artifact);
+                File dep = MavenArtifactDownloader.gradle(project, artifact, false);
                 if (dep == null)
                     throw new IllegalStateException("Could not resolve dependency: " + artifact);
                 if (patcher) {
@@ -275,7 +275,7 @@ public class MinecraftUserRepo extends BaseRepo {
         debug("    Mapping: " + desc);
         //Artifact artifact = Artifact.from(desc);
 
-        File central = MavenArtifactDownloader.single(project, desc);
+        File central = MavenArtifactDownloader.gradle(project, desc, false);
         //TODO: Stick in cache?
         return central;
     }
@@ -353,9 +353,9 @@ public class MinecraftUserRepo extends BaseRepo {
 
             File srged = null;
             if (parent == null) { //Raw minecraft
-                srged = MavenArtifactDownloader.single(project, "net.minecraft:joined:" + mcp.getVersion() + ":srg", true); //Download vanilla in srg name
+                srged = MavenArtifactDownloader.generate(project, "net.minecraft:joined:" + mcp.getVersion() + ":srg", true); //Download vanilla in srg name
             } else { // Needs binpatches
-                File joined = MavenArtifactDownloader.single(project, "net.minecraft:joined:" + mcp.getVersion() + ":srg", true); //Download vanilla in srg name
+                File joined = MavenArtifactDownloader.generate(project, "net.minecraft:joined:" + mcp.getVersion() + ":srg", true); //Download vanilla in srg name
                 File binpatched = cacheRaw("binpatched", "jar");
 
                 //Apply bin patches to vanilla
@@ -649,7 +649,7 @@ public class MinecraftUserRepo extends BaseRepo {
                     throw new IllegalStateException("Invalid patcher dependency, missing MCP or parent: " + artifact);
 
                 if (config.universal != null) {
-                    universal = MavenArtifactDownloader.single(project, config.universal);
+                    universal = MavenArtifactDownloader.gradle(project, config.universal, false);
                     if (universal == null)
                         throw new IllegalStateException("Invalid patcher dependency, could not resolve universal: " + universal);
                 } else {
@@ -657,7 +657,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 }
 
                 if (config.sources != null) {
-                    sources = MavenArtifactDownloader.single(project, config.sources); //TODO: Bypass ourselves when looking for sources....
+                    sources = MavenArtifactDownloader.gradle(project, config.sources, false);
                     if (sources == null)
                         throw new IllegalStateException("Invalid patcher dependency, could not resolve sources: " + sources);
                 } else {

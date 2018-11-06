@@ -100,7 +100,7 @@ public class JarExec extends DefaultTask {
     @InputFile
     public File getToolJar() {
         if (_tool == null)
-            _tool = MavenArtifactDownloader.single(getProject(), getTool());
+            _tool = MavenArtifactDownloader.gradle(getProject(), getTool(), false);
         return _tool;
     }
 

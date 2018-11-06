@@ -160,7 +160,7 @@ public class MCPRepo extends BaseRepo {
 
     private File getMCP(String version) {
         try {
-            return MavenArtifactDownloader.single(project, "de.oceanlabs.mcp:mcp_config:" + version + "@zip");
+            return MavenArtifactDownloader.gradle(project, "de.oceanlabs.mcp:mcp_config:" + version + "@zip", false);
         } catch (NullPointerException npe) {
             info("    Could not find MCP: " + version);
             return null;
@@ -321,7 +321,7 @@ public class MCPRepo extends BaseRepo {
         String version = mapping.substring(idx + 1);
         String desc = "de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
         debug("    Mapping: " + desc);
-        return MavenArtifactDownloader.single(project, desc);
+        return MavenArtifactDownloader.gradle(project, desc, false);
     }
 
     private McpNames loadMCPNames(String name, File data) throws IOException {

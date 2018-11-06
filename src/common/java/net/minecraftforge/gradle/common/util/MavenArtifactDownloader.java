@@ -11,6 +11,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +25,7 @@ public class MavenArtifactDownloader {
 
     private static final Map<String, String> VERSIONS = new HashMap<>();
 
-    private static File _download(Project project, String artifact, boolean changing) {
+    private static File _download(Project project, String artifact, boolean changing, boolean generated, boolean gradle) {
         File ret = null;
         try {
             ret = CACHE.getIfPresent(artifact);
@@ -32,8 +33,13 @@ public class MavenArtifactDownloader {
                 CACHE.invalidate(artifact);
                 ret = null;
             }
-            if (ret == null) {
-                ret = gradleDownload(project, artifact, changing);
+            if (ret == null && generated) {
+                ret = _generate(project, artifact);
+                if (ret != null)
+                    CACHE.put(artifact, ret);
+            }
+            if (ret == null && gradle) {
+                ret = _gradle(project, artifact, changing);
                 if (ret != null)
                     CACHE.put(artifact, ret);
             }
@@ -43,26 +49,32 @@ public class MavenArtifactDownloader {
         return ret;
     }
 
-    private static File gradleDownload(Project project, String artifact, boolean changing) {
+    private static File _generate(Project project, String artifact) {
+        Artifact art = Artifact.from(artifact);
+        List<ArtifactRepository> repos = project.getRepositories();
+        for (ArtifactRepository repo : repos) {
+            if (repo instanceof GradleRepositoryAdapter) {
+                GradleRepositoryAdapter fake = (GradleRepositoryAdapter)repo;
+                File ret = fake.getArtifact(art);
+                if (ret != null && ret.exists())
+                    return ret;
+            }
+        }
+        return null;
+    }
+
+    private static File _gradle(Project project, String artifact, boolean changing) {
         String name = "mavenDownloader_" + artifact;
         synchronized(project) {
             int count = COUNTER.getOrDefault(project, 1);
             name += "_" + count++;
             COUNTER.put(project, count);
         }
-        Artifact mine = Artifact.from(artifact);
 
-        //Searches for our fake repos, and attempts to get the artifact file from it, if not found move to gradle's internal stuff.
+        Artifact mine = Artifact.from(artifact);
         List<ArtifactRepository> repos = project.getRepositories();
-        for (ArtifactRepository repo : repos) {
-            if (repo instanceof GradleRepositoryAdapter) {
-                GradleRepositoryAdapter fake = (GradleRepositoryAdapter)repo;
-                File ret = fake.getArtifact(mine);
-                if (ret != null && ret.exists()) {
-                    return ret;
-                }
-            }
-        }
+        List<ArtifactRepository> old = new ArrayList<>(repos);
+        repos.removeIf(e -> e instanceof GradleRepositoryAdapter); //Remove any fake repos
 
         Configuration cfg = project.getConfigurations().create(name);
         ExternalModuleDependency dependency = (ExternalModuleDependency)project.getDependencies().create(artifact);
@@ -83,19 +95,26 @@ public class MavenArtifactDownloader {
         });
 
         project.getConfigurations().remove(cfg);
+
+        repos.clear(); //Clear the repos so we can re-add in the correct oder.
+        repos.addAll(old); //Readd all the normal repos.
         return ret;
     }
 
-    public static File single(Project project, String artifact) {
-        return single(project, artifact, false);
-    }
-
-    public static File single(Project project, String artifact, boolean changing) {
-        return _download(project, artifact, changing);
+    public static File both(Project project, String artifact, boolean changing) {
+        return _download(project, artifact, changing, true, true);
     }
 
     public static String getVersion(Project project, String artifact) {
-        single(project, artifact);
+        gradle(project, artifact, true);
         return VERSIONS.get(artifact);
+    }
+
+    public static File gradle(Project project, String artifact, boolean changing) {
+        return _download(project, artifact, changing, false, true);
+    }
+
+    public static File generate(Project project, String artifact, boolean changing) {
+        return _download(project, artifact, changing, true, false);
     }
 }

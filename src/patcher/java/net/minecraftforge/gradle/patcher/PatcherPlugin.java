@@ -204,7 +204,7 @@ public class PatcherPlugin implements Plugin<Project> {
         sourcesJar.configure(task -> {
             task.dependsOn(applyRangeConfig);
             task.from(project.zipTree(applyRangeConfig.get().getOutput()));
-            task.setClassifier("userdev-sources");
+            task.setClassifier("sources");
         });
         /* Universal:
          * All of our classes and resources as normal jar.
@@ -469,9 +469,9 @@ public class PatcherPlugin implements Plugin<Project> {
                 String mcp_version = mcp.getExtensions().findByType(MCPExtension.class).getConfig().getVersion();
 
 
-                File client = MavenArtifactDownloader.single(project, "net.minecraft:client:" + mcp_version + ":srg", true);
-                File server = MavenArtifactDownloader.single(project, "net.minecraft:server:" + mcp_version + ":srg", true);
-                File joined = MavenArtifactDownloader.single(project, "net.minecraft:joined:" + mcp_version + ":srg", true);
+                File client = MavenArtifactDownloader.generate(project, "net.minecraft:client:" + mcp_version + ":srg", true);
+                File server = MavenArtifactDownloader.generate(project, "net.minecraft:server:" + mcp_version + ":srg", true);
+                File joined = MavenArtifactDownloader.generate(project, "net.minecraft:joined:" + mcp_version + ":srg", true);
 
                 reobfJar.get().dependsOn(createMcp2Srg);
                 reobfJar.get().setSrg(createMcp2Srg.get().getOutput());

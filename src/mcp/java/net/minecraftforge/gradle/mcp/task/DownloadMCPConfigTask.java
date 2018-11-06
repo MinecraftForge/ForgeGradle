@@ -55,7 +55,7 @@ public class DownloadMCPConfigTask extends DefaultTask {
     }
 
     private File downloadConfigFile(String config) {
-        return MavenArtifactDownloader.single(getProject(), config);
+        return MavenArtifactDownloader.gradle(getProject(), config, false);
     }
 
 }

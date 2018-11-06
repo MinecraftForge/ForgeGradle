@@ -27,7 +27,7 @@ public class AccessTransformerFunction extends ExecuteFunction {
     }
 
     private static File getJar(Project mcp) { //TODO: configurable version?
-        return MavenArtifactDownloader.single(mcp, "net.minecraftforge:accesstransformers:0.10.0-rc.4.+:fatjar");
+        return MavenArtifactDownloader.gradle(mcp, "net.minecraftforge:accesstransformers:0.10.0-rc.4.+:fatjar", false);
     }
 
     private static String[] getArguments(List<File> files) {

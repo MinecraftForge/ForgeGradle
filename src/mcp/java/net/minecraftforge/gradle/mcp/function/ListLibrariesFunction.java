@@ -30,7 +30,7 @@ public class ListLibrariesFunction implements MCPFunction {
             Set<File> files = new HashSet<>();
             for (JsonElement libElement : json.getAsJsonArray("libraries")) {
                 JsonObject library = libElement.getAsJsonObject();
-                files.add(MavenArtifactDownloader.single(environment.project, library.get("name").getAsString()));
+                files.add(MavenArtifactDownloader.gradle(environment.project, library.get("name").getAsString(), false));
             }
 
             // Write the list
