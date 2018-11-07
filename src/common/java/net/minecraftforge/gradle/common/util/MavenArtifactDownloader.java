@@ -64,7 +64,7 @@ public class MavenArtifactDownloader {
     }
 
     private static File _gradle(Project project, String artifact, boolean changing) {
-        String name = "mavenDownloader_" + artifact;
+        String name = "mavenDownloader_" + artifact.replace(':', '_');
         synchronized(project) {
             int count = COUNTER.getOrDefault(project, 1);
             name += "_" + count++;

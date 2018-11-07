@@ -34,6 +34,7 @@ import javax.annotation.Nonnull;
 
 public class UserDevPlugin implements Plugin<Project> {
     private static String MINECRAFT = "minecraft";
+    private static String DEOBF = "deobf";
 
     @Override
     public void apply(@Nonnull Project project) {
@@ -72,7 +73,9 @@ public class UserDevPlugin implements Plugin<Project> {
 
         Configuration minecraft = project.getConfigurations().maybeCreate(MINECRAFT);
         Configuration compile = project.getConfigurations().maybeCreate("compile");
+        Configuration deobf = project.getConfigurations().maybeCreate(DEOBF);
         compile.extendsFrom(minecraft);
+        compile.extendsFrom(deobf);
 
         TaskProvider<DownloadMavenArtifact> downloadMcpConfig = project.getTasks().register("downloadMcpConfig", DownloadMavenArtifact.class);
         TaskProvider<ExtractMCPData> extractSrg = project.getTasks().register("extractSrg", ExtractMCPData.class);
@@ -105,6 +108,7 @@ public class UserDevPlugin implements Plugin<Project> {
 
         project.afterEvaluate(p -> {
             MinecraftUserRepo mcrepo = null;
+            ModRemapingRepo deobfrepo = null;
 
             //TODO: UserDevRepo deobf = new UserDevRepo(project);
 
@@ -129,9 +133,22 @@ public class UserDevPlugin implements Plugin<Project> {
                 minecraft.getDependencies().add(ext);
             }
 
+            deps = deobf.getDependencies();
+            for (Dependency dep : deps.stream().collect(Collectors.toList())) {
+                if (!(dep instanceof ExternalModuleDependency)) //TODO: File deps as well.
+                    throw new IllegalArgumentException("deobf dependency must be a maven dependency. File deps are on the TODO");
+                deps.remove(dep);
+
+                if (deobfrepo == null)
+                    deobfrepo = new ModRemapingRepo(p, extension.getMappings());
+                String newDep = deobfrepo.addDep(dep.getGroup(), dep.getName(), dep.getVersion()); // Classifier?
+                deobf.getDependencies().add(p.getDependencies().create(newDep));
+            }
+
             // We have to add these AFTER our repo so that we get called first, this is annoying...
             new BaseRepo.Builder()
                 .add(mcrepo)
+                .add(deobfrepo)
                 .add(MCPRepo.create(project))
                 .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
                 .attach(project);
