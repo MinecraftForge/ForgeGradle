@@ -1,5 +1,5 @@
 plugins {
-  //id 'net.minecrell.licenser' version '0.3'
+  //id 'net.minecrell.licenser' version '0.4.1'
   id 'org.ajoberstar.grgit' version '2.3.0'
   //id 'com.github.johnrengelman.shadow' version '2.0.4'
 }
