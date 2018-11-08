@@ -174,7 +174,7 @@ public class MinecraftRepo extends BaseRepo {
                         if (lib.downloads.classifiers.containsKey("test")) {
                             builder.dependencies().add(lib.name, "test").withClassifier("test");
                         }
-                        if (lib.natives != null && lib.natives.containsKey(CURRENT_OS)) {
+                        if (lib.natives != null && lib.natives.containsKey(CURRENT_OS) && !lib.getArtifact().getName().contains("java-objc-bridge")) {
                             builder.dependencies().add(lib.name, "runtime").withClassifier(lib.natives.get(CURRENT_OS));
                         }
                     }
