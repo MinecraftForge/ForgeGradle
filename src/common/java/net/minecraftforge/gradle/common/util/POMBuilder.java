@@ -131,7 +131,7 @@ public class POMBuilder {
             Matcher matcher = PATTERN_ARTIFACT.matcher(artifact);
             if (!matcher.matches()) throw new IllegalArgumentException("Invalid maven artifact specifier: " + artifact);
             return add(matcher.group("group"), matcher.group("name"), matcher.group("version"),
-                    matcher.group("extension"), matcher.group("extension"), scope);
+                    matcher.group("classifier"), matcher.group("extension"), scope);
         }
 
         public Dependency add(String group, String name, String version,
