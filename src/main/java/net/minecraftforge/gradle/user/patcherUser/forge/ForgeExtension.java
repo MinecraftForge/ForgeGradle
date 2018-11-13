@@ -75,7 +75,7 @@ public class ForgeExtension extends UserBaseExtension
      *
      * @param inVersion The version
      *
-     * @see <a href="http://files.minecraftforge.net">http://files.minecraftforge.net</a>
+     * @see <a href="https://files.minecraftforge.net">https://files.minecraftforge.net</a>
      */
     @Override
     public void setVersion(String inVersion)
