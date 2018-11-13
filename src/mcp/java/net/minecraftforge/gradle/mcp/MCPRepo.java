@@ -176,20 +176,18 @@ public class MCPRepo extends BaseRepo {
 
     private File findVersion(String version) throws IOException {
         File manifest = cache("versions", "manifest.json");
-        if (!manifest.exists() || manifest.lastModified() < System.currentTimeMillis() - MinecraftRepo.CACHE_TIMEOUT) {
-            FileUtils.copyURLToFile(new URL(MinecraftRepo.MANIFEST_URL), manifest);
-            Utils.updateHash(manifest);
-        }
+        if (!Utils.downloadEtag(new URL(MinecraftRepo.MANIFEST_URL), manifest))
+            return null;
+        Utils.updateHash(manifest);
         File json = cache("versions", version, "version.json");
-        if (!json.exists() || json.lastModified() < System.currentTimeMillis() - MinecraftRepo.CACHE_TIMEOUT) {
-            URL url =  Utils.loadJson(manifest, ManifestJson.class).getUrl(version);
-            if (url != null) {
-                FileUtils.copyURLToFile(url, json);
-                Utils.updateHash(json);
-            } else {
-                throw new RuntimeException("Missing version from manifest: " + version);
-            }
-        }
+
+        URL url =  Utils.loadJson(manifest, ManifestJson.class).getUrl(version);
+        if (url == null)
+            throw new RuntimeException("Missing version from manifest: " + version);
+
+        if (!Utils.downloadEtag(url, json))
+            return null;
+        Utils.updateHash(json);
         return json;
     }
 

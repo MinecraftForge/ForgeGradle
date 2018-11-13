@@ -141,6 +141,8 @@ public class MinecraftRepo extends BaseRepo {
 
         File json = cache("versions", version, "version.json");
         URL url =  Utils.loadJson(manifest, ManifestJson.class).getUrl(version);
+        if (url == null)
+            throw new RuntimeException("Missing version from manifest: " + version);
 
         if (!Utils.downloadEtag(url, json))
             return null;
