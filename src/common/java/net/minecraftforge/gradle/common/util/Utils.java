@@ -22,10 +22,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -39,6 +43,8 @@ public class Utils {
     public static final Gson GSON = new GsonBuilder()
         .registerTypeAdapter(MCPConfigV1.Step.class, new MCPConfigV1.Step.Deserializer())
         .setPrettyPrinting().create();
+    private static int CACHE_TIMEOUT = 1000 * 60 * 60 * 1; //1 hour, Timeout used for version_manifest.json so we dont ping their server every request.
+                                                          //manifest doesn't include sha1's so we use this for the per-version json as well.
 
     public static void extractFile(ZipFile zip, String name, File output) throws IOException {
         extractFile(zip, zip.getEntry(name), output);
@@ -226,4 +232,51 @@ public class Utils {
         return GSON.fromJson(new InputStreamReader(new ByteArrayInputStream(data)), classOfT);
     }
 
+    public static boolean downloadEtag(URL url, File output) throws IOException {
+        if (output.exists() && output.lastModified() > System.currentTimeMillis() - CACHE_TIMEOUT) {
+            return true;
+        }
+        File efile = new File(output.getAbsolutePath() + ".etag");
+        String etag = "";
+        if (efile.exists())
+            etag = new String(Files.readAllBytes(efile.toPath()), StandardCharsets.UTF_8);
+
+        HttpURLConnection con = (HttpURLConnection)url.openConnection();
+        con.setInstanceFollowRedirects(true);
+        if (output.exists())
+            con.setIfModifiedSince(output.lastModified());
+        if (etag != null && !etag.isEmpty())
+            con.setRequestProperty("If-None-Match", etag);
+        con.connect();
+
+        if (con.getResponseCode() == 304) {
+            output.setLastModified(new Date().getTime());
+            return true;
+        } else if (con.getResponseCode() == 200) {
+            try {
+                InputStream stream = con.getInputStream();
+                int len = con.getContentLength();
+                int read = -1;
+                try (FileOutputStream out = new FileOutputStream(output)) {
+                    read = IOUtils.copy(stream, out);
+                }
+
+                if (read != len) {
+                    output.delete();
+                    throw new IOException("Failed to read all of data from " + url + " got " + read + " expected " + len);
+                }
+
+                etag = con.getHeaderField("ETag");
+                if (etag == null || etag.isEmpty())
+                    Files.write(efile.toPath(), new byte[0]);
+                else
+                    Files.write(efile.toPath(), etag.getBytes(StandardCharsets.UTF_8));
+                return true;
+            } catch (IOException e) {
+                output.delete();
+                throw e;
+            }
+        }
+        return false;
+    }
 }

@@ -37,8 +37,6 @@ import net.minecraftforge.gradle.common.util.VersionJson.OS;
 
 public class MinecraftRepo extends BaseRepo {
     private static MinecraftRepo INSTANCE;
-    public static int CACHE_TIMEOUT = 1000 * 60 * 60 * 1; //1 hour, Timeout used for version_manifest.json so we dont ping their server every request.
-                                                           //manifest doesn't include sha1's so we use this for the per-version json as well.
     private static final String GROUP = "net.minecraft";
     public static final String MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
     private static final String FORGE_MAVEN = "https://files.minecraftforge.net/maven/";
@@ -137,20 +135,16 @@ public class MinecraftRepo extends BaseRepo {
 
     private File findVersion(String version) throws IOException {
         File manifest = cache("versions/manifest.json");
-        if (!manifest.exists() || manifest.lastModified() < System.currentTimeMillis() - CACHE_TIMEOUT) {
-            FileUtils.copyURLToFile(new URL(MANIFEST_URL), manifest);
-            Utils.updateHash(manifest);
-        }
+        if (!Utils.downloadEtag(new URL(MANIFEST_URL), manifest))
+            return null;
+        Utils.updateHash(manifest);
+
         File json = cache("versions", version, "version.json");
-        if (!json.exists() || json.lastModified() < System.currentTimeMillis() - CACHE_TIMEOUT) {
-            URL url =  Utils.loadJson(manifest, ManifestJson.class).getUrl(version);
-            if (url != null) {
-                FileUtils.copyURLToFile(url, json);
-                Utils.updateHash(json);
-            } else {
-                return null;
-            }
-        }
+        URL url =  Utils.loadJson(manifest, ManifestJson.class).getUrl(version);
+
+        if (!Utils.downloadEtag(url, json))
+            return null;
+        Utils.updateHash(json);
         return json;
     }
 
