@@ -257,6 +257,7 @@ public class Utils {
                 InputStream stream = con.getInputStream();
                 int len = con.getContentLength();
                 int read = -1;
+                output.getParentFile().mkdirs();
                 try (FileOutputStream out = new FileOutputStream(output)) {
                     read = IOUtils.copy(stream, out);
                 }
