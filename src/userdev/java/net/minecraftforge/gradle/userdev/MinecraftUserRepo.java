@@ -1,3 +1,23 @@
+/*
+ * ForgeGradle
+ * Copyright (C) 2018 Forge Development LLC
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
+ * USA
+ */
+
 package net.minecraftforge.gradle.userdev;
 
 import java.io.ByteArrayInputStream;
@@ -5,6 +25,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,8 +74,10 @@ import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import net.minecraftforge.gradle.mcp.util.MCPWrapper;
+import net.minecraftforge.gradle.userdev.tasks.AccessTrasnformJar;
 import net.minecraftforge.gradle.userdev.tasks.ApplyBinPatches;
 import net.minecraftforge.gradle.userdev.tasks.RenameJar;
+import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 
 public class MinecraftUserRepo extends BaseRepo {
     private final Project project;
@@ -346,6 +369,16 @@ public class MinecraftUserRepo extends BaseRepo {
         File bin = cacheMapped(mapping, "jar");
         cache.load(cacheMapped(mapping, "jar.input"));
         if (!cache.isSame() || !bin.exists()) {
+            StringBuilder baseAT = new StringBuilder();
+
+            for (Patcher patcher = parent; patcher != null; patcher = patcher.parent) {
+                if (patcher.getATData() != null && !patcher.getATData().isEmpty()) {
+                    if (baseAT.length() != 0)
+                        baseAT.append("\n===========================================================\n");
+                    baseAT.append(patcher.getATData());
+                }
+            }
+            boolean hasAts = baseAT.length() != 0 || !ATS.isEmpty();
 
             File srged = null;
             if (parent == null) { //Raw minecraft
@@ -402,15 +435,58 @@ public class MinecraftUserRepo extends BaseRepo {
                                 }
                             }
                         }
+                        // Dev time specific files, such as launch helper.
+                        if (patcher.getInject() != null) {
+                            try (ZipInputStream zin = new ZipInputStream(new FileInputStream(patcher.getUniversal()))) {
+                                ZipEntry entry;
+                                while ((entry = zin.getNextEntry()) != null) {
+                                    if (entry.getName().startsWith(patcher.getInject()))
+                                        continue;
+                                    String name = entry.getName().substring(patcher.getInject().length() + 1);
+                                    if (added.contains(name))
+                                        continue;
+                                    ZipEntry _new = new ZipEntry(name);
+                                    _new.setTime(0);
+                                    zip.putNextEntry(_new);
+                                    IOUtils.copy(zin, zip);
+                                    added.add(name);
+                                }
+                            }
+                        }
                         patcher = patcher.getParent();
                     }
                 }
             }
+
+            if (hasAts) {
+                AccessTrasnformJar at = project.getTasks().create("_atJar_"+ new Random().nextInt() + "_", AccessTrasnformJar.class);
+                at.setInput(srged);
+                at.setOutput(bin);
+                at.setAts(ATS);
+
+                if (baseAT.length() != 0) {
+                    File parentAT = project.file("build/" + at.getName() + "/parent_at.cfg");
+                    if (!parentAT.getParentFile().exists())
+                        parentAT.getParentFile().mkdirs();
+                    Files.write(parentAT.toPath(), baseAT.toString().getBytes());
+                    at.setAts(parentAT);
+                }
+
+                at.apply();
+            }
+
             if (mapping == null) { //They didn't ask for MCP names, so serve them SRG!
                 FileUtils.copyFile(srged, bin);
+            } else if (hasAts) {
+                //Remap library to MCP names, in place, sorta hacky with ATs but it should work.
+                RenameJarInPlace rename = project.getTasks().create("_rename_" + new Random().nextInt() + "_", RenameJarInPlace.class);
+                rename.setHasLog(false);
+                rename.setInput(bin);
+                rename.setMappings(findSrgToMcp(mapping, names));
+                rename.apply();
             } else {
                 //Remap library to MCP names
-                RenameJar rename = project.getTasks().create("_" + new Random().nextInt() + "_", RenameJar.class);
+                RenameJar rename = project.getTasks().create("_rename_" + new Random().nextInt() + "_", RenameJar.class);
                 rename.setHasLog(false);
                 rename.setInput(srged);
                 rename.setOutput(bin);
@@ -418,7 +494,6 @@ public class MinecraftUserRepo extends BaseRepo {
                 rename.apply();
             }
 
-            //TODO: Apply ATs
             Utils.updateHash(bin, HashFunction.SHA1);
             cache.save();
         }
@@ -718,6 +793,10 @@ public class MinecraftUserRepo extends BaseRepo {
         }
         public File getSources() {
             return sources;
+        }
+
+        public String getInject() {
+            return config.inject;
         }
 
         public Map<String, PatchFile> getPatches() throws IOException {

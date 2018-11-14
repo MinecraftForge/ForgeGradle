@@ -1,5 +1,5 @@
 plugins {
-  //id 'net.minecrell.licenser' version '0.3'
+  id 'net.minecrell.licenser' version '0.4.1'
   id 'org.ajoberstar.grgit' version '2.3.0'
   //id 'com.github.johnrengelman.shadow' version '2.0.4'
 }
@@ -51,7 +51,18 @@ jar {
 
 repositories {
     jcenter()
-    maven { url = 'http://files.minecraftforge.net/maven' }
+    maven { url = 'https://files.minecraftforge.net/maven' }
+}
+
+license {
+    header = file('HEADER')
+    ext {
+        name = 'ForgeGradle'
+        year = 2018
+        fullname = 'Forge Development LLC'
+    }
+    exclude '**/*.properties'
+    exclude 'net/minecraftforge/gradle/common/diff/'
 }
 
 wrapper {

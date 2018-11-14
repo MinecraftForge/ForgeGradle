@@ -1,6 +1,6 @@
 /*
- * A Gradle plugin for the creation of Minecraft mods and MinecraftForge plugins.
- * Copyright (C) 2013-2018 Minecraft Forge
+ * ForgeGradle
+ * Copyright (C) 2018 Forge Development LLC
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -17,6 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
  * USA
  */
+
 package net.minecraftforge.gradle.common.util;
 
 import java.util.ArrayList;

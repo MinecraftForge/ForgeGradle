@@ -21,61 +21,69 @@
 package net.minecraftforge.gradle.userdev.tasks;
 
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 
 import net.minecraftforge.gradle.common.task.JarExec;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public class ApplyBinPatches extends JarExec {
-    private Supplier<File> clean;
+public class AccessTrasnformJar extends JarExec {
     private File input;
     private File output;
+    private List<File> ats;
 
-    public ApplyBinPatches() {
-        tool = "net.minecraftforge:binarypatcher:1.+:fatjar";
-        args = new String[] { "--clean", "{clean}", "--output", "{output}", "--apply", "{patch}"};
+    public AccessTrasnformJar() {
+        tool = "net.minecraftforge:accesstransformers:0.10.+:fatjar"; // AT spec *should* be standardized, it has been for years. So we *shouldn't* need to configure this.
+        args = new String[] { "--inJar", "{input}", "--outJar", "{output}"};
     }
 
     @Override
     protected List<String> filterArgs() {
         Map<String, String> replace = new HashMap<>();
-        replace.put("{clean}", getClean().getAbsolutePath());
+        replace.put("{input}", getInput().getAbsolutePath());
         replace.put("{output}", getOutput().getAbsolutePath());
-        replace.put("{patch}", getPatch().getAbsolutePath());
 
-        return Arrays.stream(getArgs()).map(arg -> replace.getOrDefault(arg, arg)).collect(Collectors.toList());
+        List<String> ret = Arrays.stream(getArgs()).map(arg -> replace.getOrDefault(arg, arg)).collect(Collectors.toList());
+        ats.forEach(f -> {
+            ret.add("--atFile");
+            ret.add(f.getAbsolutePath());
+        });
+        return ret;
+    }
+
+    @InputFiles
+    public List<File> getAts() {
+        return ats;
+    }
+    public void setAts(Iterable<File> values) {
+        if (ats == null)
+            ats = new ArrayList<>();
+        values.forEach(ats::add);
+    }
+    public void setAts(File... values) {
+        if (ats == null)
+            ats = new ArrayList<>();
+        for (File value : values)
+            ats.add(value);
     }
 
     @InputFile
-    public File getClean() {
-        return clean.get();
-    }
-    public void setClean(File value) {
-        this.clean = () -> value;
-    }
-    public void setClean(Supplier<File> value) {
-        this.clean = value;
-    }
-
-    @InputFile
-    public File getPatch() {
+    public File getInput() {
         return input;
     }
-    public void setPatch(File value) {
+    public void setInput(File value) {
         this.input = value;
     }
 
     @OutputFile
     public File getOutput() {
-        if (output == null)
-            setOutput(getProject().file("build/" + getName() + "/output.jar"));
         return output;
     }
     public void setOutput(File value) {
