@@ -1,6 +1,8 @@
 package net.minecraftforge.gradle.mcp.task;
 
-import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
+import net.minecraftforge.gradle.common.util.Artifact;
+import net.minecraftforge.gradle.common.util.Utils;
+
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.InputFile;
@@ -55,7 +57,7 @@ public class DownloadMCPConfigTask extends DefaultTask {
     }
 
     private File downloadConfigFile(String config) {
-        return MavenArtifactDownloader.gradle(getProject(), config, false);
+        return Utils.downloadMaven(getProject(), Artifact.from(config), false);
     }
 
 }

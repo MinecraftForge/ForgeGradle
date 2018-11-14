@@ -473,6 +473,10 @@ public class PatcherPlugin implements Plugin<Project> {
                 File server = MavenArtifactDownloader.generate(project, "net.minecraft:server:" + mcp_version + ":srg", true);
                 File joined = MavenArtifactDownloader.generate(project, "net.minecraft:joined:" + mcp_version + ":srg", true);
 
+                if (client == null || !client.exists()) throw new RuntimeException("Something horrible happenend, client SRG jar nor found");
+                if (server == null || !server.exists()) throw new RuntimeException("Something horrible happenend, server SRG jar nor found");
+                if (joined == null || !joined.exists()) throw new RuntimeException("Something horrible happenend, joined SRG jar nor found");
+
                 reobfJar.get().dependsOn(createMcp2Srg);
                 reobfJar.get().setSrg(createMcp2Srg.get().getOutput());
                 //TODO: Extra SRGs, I dont think this is needed tho...

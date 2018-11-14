@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class MavenArtifactDownloader {
@@ -84,7 +85,16 @@ public class MavenArtifactDownloader {
             strat.cacheChangingModulesFor(5, TimeUnit.MINUTES);
             strat.cacheDynamicVersionsFor(5, TimeUnit.MINUTES);
         });
-        File ret = cfg.resolve().iterator().next(); //We only want the first, not transitive
+        Set<File> files = null;
+        try {
+            files = cfg.resolve();
+        } catch (NullPointerException npe) {
+            // This happens for unknown reasons deep in Gradle code... so we SHOULD find a way to fix it, but
+            //honestly i'd rather deprecate this whole system and replace it with downloading things ourselves.
+            project.getLogger().error("Failed to download " + artifact + " gradle exploded");
+            return null;
+        }
+        File ret = files.iterator().next(); //We only want the first, not transitive
 
         cfg.getResolvedConfiguration().getResolvedArtifacts().forEach(art -> {
             ModuleVersionIdentifier resolved = art.getModuleVersion().getId();

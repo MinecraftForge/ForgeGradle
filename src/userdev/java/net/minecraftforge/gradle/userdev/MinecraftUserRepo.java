@@ -182,7 +182,7 @@ public class MinecraftUserRepo extends BaseRepo {
             Patcher last = null;
             while (artifact != null) {
                 debug("    Parent: " + artifact);
-                File dep = MavenArtifactDownloader.gradle(project, artifact, false);
+                File dep = Utils.downloadMaven(project, Artifact.from(artifact), false);
                 if (dep == null)
                     throw new IllegalStateException("Could not resolve dependency: " + artifact);
                 if (patcher) {
@@ -273,11 +273,7 @@ public class MinecraftUserRepo extends BaseRepo {
         String version = mapping.substring(idx + 1);
         String desc = "de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
         debug("    Mapping: " + desc);
-        //Artifact artifact = Artifact.from(desc);
-
-        File central = MavenArtifactDownloader.gradle(project, desc, false);
-        //TODO: Stick in cache?
-        return central;
+        return Utils.downloadMaven(project, Artifact.from(desc), false);
     }
 
     private File findPom(String mapping, String rand) throws IOException {
@@ -649,7 +645,7 @@ public class MinecraftUserRepo extends BaseRepo {
                     throw new IllegalStateException("Invalid patcher dependency, missing MCP or parent: " + artifact);
 
                 if (config.universal != null) {
-                    universal = MavenArtifactDownloader.gradle(project, config.universal, false);
+                    universal = Utils.downloadMaven(project, Artifact.from(config.universal), false);
                     if (universal == null)
                         throw new IllegalStateException("Invalid patcher dependency, could not resolve universal: " + universal);
                 } else {

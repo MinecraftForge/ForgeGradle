@@ -8,6 +8,7 @@ import com.amadornes.artifactural.base.repository.SimpleRepository;
 import com.amadornes.artifactural.gradle.GradleRepositoryAdapter;
 import com.google.common.collect.Maps;
 
+import net.minecraftforge.gradle.common.util.Artifact;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.HashStore;
@@ -158,13 +159,8 @@ public class MCPRepo extends BaseRepo {
             .add("mcp", mcp);
     }
 
-    private File getMCP(String version) {
-        try {
-            return MavenArtifactDownloader.gradle(project, "de.oceanlabs.mcp:mcp_config:" + version + "@zip", false);
-        } catch (NullPointerException npe) {
-            info("    Could not find MCP: " + version);
-            return null;
-        }
+    private File getMCP(String version) throws IOException {
+        return Utils.downloadMaven(project, Artifact.from("de.oceanlabs.mcp:mcp_config:" + version + "@zip"), false);
     }
 
     private String getMCVersion(String version) {
@@ -312,14 +308,14 @@ public class MCPRepo extends BaseRepo {
         return file;
     }
 
-    private File findNames(String mapping) {
+    private File findNames(String mapping) throws IOException {
         int idx = mapping.lastIndexOf('_');
         if (idx == -1) return null; //Invalid format
         String channel = mapping.substring(0, idx);
         String version = mapping.substring(idx + 1);
         String desc = "de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
         debug("    Mapping: " + desc);
-        return MavenArtifactDownloader.gradle(project, desc, false);
+        return Utils.downloadMaven(project, Artifact.from(desc), false);
     }
 
     private McpNames loadMCPNames(String name, File data) throws IOException {

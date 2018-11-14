@@ -8,9 +8,10 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import net.minecraftforge.gradle.common.util.Artifact;
 import net.minecraftforge.gradle.common.util.MappingFile;
-import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.McpNames;
+import net.minecraftforge.gradle.common.util.Utils;
 
 public class GenerateSRG extends DefaultTask {
     private File srg;
@@ -46,7 +47,7 @@ public class GenerateSRG extends DefaultTask {
         String channel = mapping.substring(0, idx);
         String version = mapping.substring(idx + 1);
         String desc = "de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
-        return MavenArtifactDownloader.gradle(getProject(), desc, false);
+        return Utils.downloadMaven(getProject(), Artifact.from(desc), false);
     }
 
     @InputFile
