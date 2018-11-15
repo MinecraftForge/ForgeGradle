@@ -437,12 +437,12 @@ public class MinecraftUserRepo extends BaseRepo {
                         }
                         // Dev time specific files, such as launch helper.
                         if (patcher.getInject() != null) {
-                            try (ZipInputStream zin = new ZipInputStream(new FileInputStream(patcher.getUniversal()))) {
+                            try (ZipInputStream zin = new ZipInputStream(new FileInputStream(patcher.getZip()))) {
                                 ZipEntry entry;
                                 while ((entry = zin.getNextEntry()) != null) {
-                                    if (entry.getName().startsWith(patcher.getInject()))
+                                    if (!entry.getName().startsWith(patcher.getInject()) || entry.getName().length() <= patcher.getInject().length())
                                         continue;
-                                    String name = entry.getName().substring(patcher.getInject().length() + 1);
+                                    String name = entry.getName().substring(patcher.getInject().length());
                                     if (added.contains(name))
                                         continue;
                                     ZipEntry _new = new ZipEntry(name);
