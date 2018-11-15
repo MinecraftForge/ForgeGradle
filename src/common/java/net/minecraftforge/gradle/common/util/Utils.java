@@ -35,14 +35,7 @@ import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
@@ -361,9 +354,16 @@ public class Utils {
                 return downloadString(con);
             }
         } else {
-            URLConnection con = url.openConnection();
-            con.connect();
-            return downloadString(con);
+            try
+            {
+                URLConnection con = url.openConnection();
+                con.connect();
+                return downloadString(con);
+            }
+            catch(FileNotFoundException e)
+            {
+                return null;
+            }
         }
         return null;
     }
