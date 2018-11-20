@@ -49,7 +49,7 @@ import net.minecraftforge.gradle.common.task.ExtractNatives;
 public class EclipseHacks {
 
     @SuppressWarnings("unchecked")
-    public static void doEclipseFixes(Project project, ExtractNatives nativesTask, DownloadAssets assetsTask, RunConfig clientRun, RunConfig serverRun) {
+    public static void doEclipseFixes(Project project, ExtractNatives nativesTask, DownloadAssets assetsTask, List<RunConfig> runs) {
         final File natives = nativesTask.getOutput();
         final File assets = assetsTask.getOutput();
 
@@ -87,25 +87,24 @@ public class EclipseHacks {
                         IOUtils.write(XmlUtil.serialize(xml), fos, StandardCharsets.UTF_8);
                     }
 
-                    File run_dir = project.file("run");
-                    if (!run_dir.exists()) {
-                        run_dir.mkdirs();
-                    }
-
-                    String niceName = project.getName().substring(0, 1).toUpperCase() + project.getName().substring(1);
-                    for (boolean client : new boolean[] {true, false}) {
+                    for (RunConfig runConfig : runs) {
                         xml = new Node(null, "launchConfiguration", props("type", "org.eclipse.jdt.launching.localJavaApplication"));
-                        String main = client ? (clientRun.getMain() != null ? clientRun.getMain() : "mcp.client.Start") :
-                                               (serverRun.getMain() != null ? serverRun.getMain() : "net.minecraft.server.MinecraftServer" );
+
+                        String workDir = runConfig.getWorkingDirectory();
+                        File file = new File(workDir);
+                        if(!file.exists())
+                            file.mkdirs();
+
+                        String main = runConfig.getMain();
                         xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.MAIN_TYPE", "value", main));
                         xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.PROJECT_ATTR", "value", project.getName()));
-                        xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.WORKING_DIRECTORY", "value", run_dir.getAbsolutePath()));
+                        xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.WORKING_DIRECTORY", "value", workDir));
 
                         Node env = xml.appendNode("mapAttribute", props("key", "org.eclipse.debug.core.environmentVariables"));
                         env.appendNode("mapEntry", props("key", "assetDirectory", "value", assets.getAbsolutePath()));
-                        (client ? clientRun : serverRun).getEnvironment().forEach((k,v) -> env.appendNode("mapEntry", props("key", k, "value", v)));
+                        runConfig.getEnvironment().forEach((k,v) -> env.appendNode("mapEntry", props("key", k, "value", v)));
 
-                        String props = (client ? clientRun : serverRun).getProperties().entrySet().stream().map(e -> {
+                        String props = runConfig.getProperties().entrySet().stream().map(e -> {
                             String val = e.getValue();
                             if (val.indexOf(' ') != -1) val = "\"" + e.getValue().replaceAll("\"", "\\\"") + "\"";
                             return "-D" + e.getKey() + "=" + val;
@@ -115,7 +114,7 @@ public class EclipseHacks {
                             xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.VM_ARGUMENTS", "value", props));
                         }
 
-                        try (OutputStream fos = new FileOutputStream(project.file(client ? "RunClient" + niceName +".launch" : "RunServer" + niceName +".launch"))) {
+                        try (OutputStream fos = new FileOutputStream(project.file(runConfig.getName() +".launch"))) {
                             IOUtils.write(XmlUtil.serialize(xml), fos, StandardCharsets.UTF_8);
                         }
                     }

@@ -34,8 +34,7 @@ import java.util.Map;
 public class UserDevExtension {
     private String mappings;
     private List<File> accessTransformers = new ArrayList<>();
-    private RunConfig clientRun = new RunConfig();
-    private RunConfig serverRun = new RunConfig();
+    private List<RunConfig> runConfigs = new ArrayList<>();
 
     @Inject
     public UserDevExtension(Project project) {
@@ -74,23 +73,26 @@ public class UserDevExtension {
         this.accessTransformers.add(file);
     }
 
-    public void setClientRun(Closure<? super RunConfig> action) {
+    public void setRunConfigs(List<RunConfig> runs) {
+        this.runConfigs.clear();
+        this.runConfigs.addAll(runs);
+    }
+
+    public void runConfig(RunConfig run) {
+        this.runConfigs.add(run);
+    }
+
+    public void runConfig(Closure<? super RunConfig> action) {
+        RunConfig run = new RunConfig();
         action.setResolveStrategy(Closure.DELEGATE_FIRST);
-        action.setDelegate(clientRun);
+        action.setDelegate(run);
         action.call();
+        this.runConfigs.add(run);
     }
 
-    public RunConfig getClientRun() {
-        return clientRun;
-    }
 
-    public void setServerRun(Closure<? super RunConfig> action) {
-        action.setResolveStrategy(Closure.DELEGATE_FIRST);
-        action.setDelegate(serverRun);
-        action.call();
-    }
-
-    public RunConfig getServerRun() {
-        return serverRun;
+    public List<RunConfig> getRunConfigs()
+    {
+        return this.runConfigs;
     }
 }

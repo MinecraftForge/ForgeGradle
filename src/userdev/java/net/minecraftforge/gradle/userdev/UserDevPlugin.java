@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.userdev;
 
+import net.minecraftforge.gradle.common.util.*;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NamedDomainObjectFactory;
 import org.gradle.api.Plugin;
@@ -31,6 +32,7 @@ import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.Jar;
 
@@ -39,14 +41,13 @@ import net.minecraftforge.gradle.common.task.DownloadMCMeta;
 import net.minecraftforge.gradle.common.task.DownloadMavenArtifact;
 import net.minecraftforge.gradle.common.task.ExtractMCPData;
 import net.minecraftforge.gradle.common.task.ExtractNatives;
-import net.minecraftforge.gradle.common.util.BaseRepo;
-import net.minecraftforge.gradle.common.util.EclipseHacks;
-import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.userdev.tasks.GenerateSRG;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -193,8 +194,44 @@ public class UserDevPlugin implements Plugin<Project> {
             reobfJar.dependsOn(createMcpToSrg);
             reobfJar.setMappings(createMcpToSrg.get().getOutput());
 
-            EclipseHacks.doEclipseFixes(project, extractNatives.get(), downloadAssets.get(), extension.getClientRun(), extension.getServerRun());
+            createRunConfigsTasks(project, extractNatives.get(), downloadAssets.get(), extension.getRunConfigs());
         });
     }
 
+    private void createRunConfigsTasks(@Nonnull Project project, ExtractNatives extractNatives, DownloadAssets downloadAssets, List<RunConfig> runs)
+    {
+        // Utility task to abstract the prerequisites when using the intellij run generation
+        TaskProvider<Task> prepareRun = project.getTasks().register("prepareRun", Task.class);
+        prepareRun.configure(task -> {
+            task.dependsOn(project.getTasks().getByName("classes"), extractNatives, downloadAssets);
+        });
+
+        runs.forEach(runConfig -> {
+            String taskName = runConfig.getName().replaceAll("[^a-zA-Z0-9\\-_]","");
+            if (!taskName.startsWith("run"))
+                taskName = "run" + taskName.substring(0,1).toUpperCase() + taskName.substring(1);
+            TaskProvider<JavaExec> runTask = project.getTasks().register(taskName, JavaExec.class);
+            runTask.configure(task -> {
+                task.dependsOn(prepareRun.get());
+
+                task.setMain(runConfig.getMain());
+                task.setArgs(runConfig.getArgs());
+                task.setSystemProperties(runConfig.getProperties());
+                task.setEnvironment(runConfig.getEnvironment());
+
+                String workDir = runConfig.getWorkingDirectory();
+                File file = new File(workDir);
+                if(!file.exists())
+                    file.mkdirs();
+
+                task.setWorkingDir(workDir);
+
+                JavaPluginConvention java = (JavaPluginConvention)project.getConvention().getPlugins().get("java");
+                task.setClasspath(java.getSourceSets().getByName("main").getRuntimeClasspath());
+            });
+        });
+
+        EclipseHacks.doEclipseFixes(project, extractNatives, downloadAssets, runs);
+        IntellijUtils.createIntellijRunsTask(project, extractNatives, downloadAssets, prepareRun.get(), runs);
+    }
 }

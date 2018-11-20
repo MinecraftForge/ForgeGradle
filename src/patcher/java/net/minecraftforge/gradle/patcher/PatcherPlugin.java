@@ -24,10 +24,7 @@ import net.minecraftforge.gradle.common.task.ExtractMCPData;
 import net.minecraftforge.gradle.common.task.ExtractNatives;
 import net.minecraftforge.gradle.common.task.DownloadAssets;
 import net.minecraftforge.gradle.common.task.DownloadMCMeta;
-import net.minecraftforge.gradle.common.util.BaseRepo;
-import net.minecraftforge.gradle.common.util.EclipseHacks;
-import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
-import net.minecraftforge.gradle.common.util.MinecraftRepo;
+import net.minecraftforge.gradle.common.util.*;
 import net.minecraftforge.gradle.mcp.MCPExtension;
 import net.minecraftforge.gradle.mcp.MCPPlugin;
 import net.minecraftforge.gradle.mcp.MCPRepo;
@@ -50,6 +47,7 @@ import net.minecraftforge.gradle.patcher.task.TaskReobfuscateJar;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.SourceSet;
@@ -63,6 +61,8 @@ import com.google.common.collect.Lists;
 
 import javax.annotation.Nonnull;
 import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class PatcherPlugin implements Plugin<Project> {
@@ -522,7 +522,8 @@ public class PatcherPlugin implements Plugin<Project> {
             p.getTasks().withType(GenerateEclipseClasspath.class, t -> { t.dependsOn(extractNatives.get(), downloadAssets.get()); });
             //TODO: IntelliJ plugin?
 
-            EclipseHacks.doEclipseFixes(project, extractNatives.get(), downloadAssets.get(), extension.getClientRun(), extension.getServerRun());
+            List<RunConfig> runs = Arrays.asList(extension.getClientRun(), extension.getServerRun());
+            EclipseHacks.doEclipseFixes(project, extractNatives.get(), downloadAssets.get(), runs);
 
             if (project.hasProperty("UPDATE_MAPPINGS")) {
                 String version = (String)project.property("UPDATE_MAPPINGS");

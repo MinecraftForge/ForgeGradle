@@ -21,13 +21,29 @@
 package net.minecraftforge.gradle.common.util;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class RunConfig {
+    private String name;
     private String main;
+    private List<String> args = new ArrayList<>();
     private Map<String, String> env = new HashMap<>();
     private Map<String, String> props = new HashMap<>();
+    private boolean singleInstance = false;
+    private String ideaModuleName = null;
+    private String workingDirectory;
+
+    public void setName(String value)
+    {
+        name = value;
+    }
+    public String getName()
+    {
+        return name;
+    }
 
     public void setEnvironment(Map<String, Object> map) {
         map.forEach((k,v) -> env.put(k, v instanceof File ? ((File)v).getAbsolutePath() : (String)v));
@@ -49,6 +65,28 @@ public class RunConfig {
         return this.main;
     }
 
+    public void arg(String value)
+    {
+        args.add(value);
+    }
+    public void setArgs(List<String> values)
+    {
+        args.addAll(values);
+    }
+    public List<String> getArgs()
+    {
+        return args;
+    }
+
+    public void setSingleInstance(boolean singleInstance)
+    {
+        this.singleInstance = singleInstance;
+    }
+    public boolean isSingleInstance()
+    {
+        return singleInstance;
+    }
+
     public void setProperties(Map<String, Object> map) {
         map.forEach((k,v) -> props.put(k, v instanceof File ? ((File)v).getAbsolutePath() : (String)v));
     }
@@ -60,5 +98,24 @@ public class RunConfig {
     }
     public Map<String, String> getProperties() {
         return props;
+    }
+
+    public void setIdeaModuleName(String ideaModuleName)
+    {
+        this.ideaModuleName = ideaModuleName;
+    }
+    public String getIdeaModuleName()
+    {
+        return ideaModuleName;
+    }
+
+    public String getWorkingDirectory()
+    {
+        return workingDirectory;
+    }
+
+    public void setWorkingDirectory(String workingDirectory)
+    {
+        this.workingDirectory = workingDirectory;
     }
 }

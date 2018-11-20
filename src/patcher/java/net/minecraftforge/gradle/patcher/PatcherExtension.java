@@ -49,6 +49,13 @@ public class PatcherExtension {
 
     @Inject
     public PatcherExtension(Project project) {
+        String niceName = project.getName().substring(0, 1).toUpperCase() + project.getName().substring(1);
+
+        clientRun.setName(niceName + " Client");
+        clientRun.setMain("mcp.client.Start");
+
+        serverRun.setName(niceName + " Server");
+        serverRun.setMain("net.minecraft.server.MinecraftServer");
     }
 
     public String getMappings() {
