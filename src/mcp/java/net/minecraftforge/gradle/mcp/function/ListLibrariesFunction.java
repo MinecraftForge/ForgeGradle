@@ -27,15 +27,15 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import java.io.File;
-import java.io.FileOutputStream
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
-import java.io.OutputStreamWriter
+import java.io.OutputStreamWriter;
 import java.util.HashSet;
 import java.util.Set;
-import java.nio.charset.StandardCharsets
+import java.nio.charset.StandardCharsets;
 
 public class ListLibrariesFunction implements MCPFunction {
 
