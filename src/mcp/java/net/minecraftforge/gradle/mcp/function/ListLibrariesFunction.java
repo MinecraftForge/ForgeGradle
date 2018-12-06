@@ -27,12 +27,15 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import java.io.File;
+import java.io.FileOutputStream
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
+import java.io.OutputStreamWriter
 import java.util.HashSet;
 import java.util.Set;
+import java.nio.charset.StandardCharsets
 
 public class ListLibrariesFunction implements MCPFunction {
 
@@ -57,7 +60,7 @@ public class ListLibrariesFunction implements MCPFunction {
             if (output.exists()) output.delete();
             output.getParentFile().mkdirs();
             output.createNewFile();
-            PrintWriter writer = new PrintWriter(output);
+            PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(output), StandardCharsets.UTF_8));
             for (File file : files) {
                 writer.println("-e=" + file.getAbsolutePath());
             }
