@@ -20,21 +20,11 @@
 
 package net.minecraftforge.gradle.userdev;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+
+import java.io.*;
+import java.nio.file.FileSystem;
+import java.nio.file.*;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -53,23 +43,14 @@ import com.amadornes.artifactural.base.repository.ArtifactProviderBuilder;
 import com.amadornes.artifactural.base.repository.SimpleRepository;
 import com.cloudbees.diff.PatchException;
 import com.google.common.collect.Maps;
-
 import net.minecraftforge.gradle.common.config.Config;
 import net.minecraftforge.gradle.common.config.UserdevConfigV1;
 import net.minecraftforge.gradle.common.diff.ContextualPatch;
+import net.minecraftforge.gradle.common.diff.ContextualPatch.PatchReport;
 import net.minecraftforge.gradle.common.diff.HunkReport;
 import net.minecraftforge.gradle.common.diff.PatchFile;
 import net.minecraftforge.gradle.common.diff.ZipContext;
-import net.minecraftforge.gradle.common.diff.ContextualPatch.PatchReport;
-import net.minecraftforge.gradle.common.util.Artifact;
-import net.minecraftforge.gradle.common.util.BaseRepo;
-import net.minecraftforge.gradle.common.util.HashFunction;
-import net.minecraftforge.gradle.common.util.HashStore;
-import net.minecraftforge.gradle.common.util.MappingFile;
-import net.minecraftforge.gradle.common.util.McpNames;
-import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
-import net.minecraftforge.gradle.common.util.POMBuilder;
-import net.minecraftforge.gradle.common.util.Utils;
+import net.minecraftforge.gradle.common.util.*;
 import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
@@ -400,6 +381,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 srged = cacheRaw("srg", "jar");
                 //Combine all universals and vanilla together.
                 Set<String> added = new HashSet<>();
+                Map<String, List<String>> servicesLists = new HashMap<>();
                 try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(srged))) {
 
                     //Add binpatched, then vanilla first, overrides any other entries added
@@ -425,13 +407,24 @@ public class MinecraftUserRepo extends BaseRepo {
                             try (ZipInputStream zin = new ZipInputStream(new FileInputStream(patcher.getUniversal()))) {
                                 ZipEntry entry;
                                 while ((entry = zin.getNextEntry()) != null) {
-                                    if (added.contains(entry.getName()))
+                                    String name = entry.getName();
+                                    if (added.contains(name))
                                         continue;
-                                    ZipEntry _new = new ZipEntry(entry.getName());
-                                    _new.setTime(0); //SHOULD be the same time as the main entry, but NOOOO _new.setTime(entry.getTime()) throws DateTimeException, so you get 0, screw you!
-                                    zip.putNextEntry(_new);
-                                    IOUtils.copy(zin, zip);
-                                    added.add(entry.getName());
+                                    if (name.startsWith("META-INF/services/") && !entry.isDirectory())
+                                    {
+                                        List<String> existing = servicesLists.computeIfAbsent(name, k -> new ArrayList<>());
+                                        if (existing.size() > 0) existing.add("");
+                                        existing.add(String.format("# %s - %s", patcher.artifact, patcher.getUniversal().getCanonicalFile().getName()));
+                                        existing.addAll(IOUtils.readLines(zin));
+                                    }
+                                    else
+                                    {
+                                        ZipEntry _new = new ZipEntry(name);
+                                        _new.setTime(0); //SHOULD be the same time as the main entry, but NOOOO _new.setTime(entry.getTime()) throws DateTimeException, so you get 0, screw you!
+                                        zip.putNextEntry(_new);
+                                        IOUtils.copy(zin, zip);
+                                        added.add(name);
+                                    }
                                 }
                             }
                         }
@@ -445,15 +438,35 @@ public class MinecraftUserRepo extends BaseRepo {
                                     String name = entry.getName().substring(patcher.getInject().length());
                                     if (added.contains(name))
                                         continue;
-                                    ZipEntry _new = new ZipEntry(name);
-                                    _new.setTime(0);
-                                    zip.putNextEntry(_new);
-                                    IOUtils.copy(zin, zip);
-                                    added.add(name);
+                                    if (name.startsWith("META-INF/services/") && !entry.isDirectory())
+                                    {
+                                        List<String> existing = servicesLists.computeIfAbsent(name, k -> new ArrayList<>());
+                                        if (existing.size() > 0) existing.add("");
+                                        existing.add(String.format("# %s - %s", patcher.artifact, patcher.getZip().getCanonicalFile().getName()));
+                                        existing.addAll(IOUtils.readLines(zin));
+                                    }
+                                    else
+                                    {
+                                        ZipEntry _new = new ZipEntry(name);
+                                        _new.setTime(0);
+                                        zip.putNextEntry(_new);
+                                        IOUtils.copy(zin, zip);
+                                        added.add(name);
+                                    }
                                 }
                             }
                         }
                         patcher = patcher.getParent();
+                    }
+
+                    for(Map.Entry<String, List<String>> kv : servicesLists.entrySet())
+                    {
+                        String name = kv.getKey();
+                        ZipEntry _new = new ZipEntry(name);
+                        _new.setTime(0);
+                        zip.putNextEntry(_new);
+                        IOUtils.writeLines(kv.getValue(), "\n", zip);
+                        added.add(name);
                     }
                 }
             }
