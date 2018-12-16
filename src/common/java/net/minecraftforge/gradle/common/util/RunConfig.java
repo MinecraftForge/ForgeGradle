@@ -34,7 +34,7 @@ public class RunConfig {
     private Map<String, String> props = new HashMap<>();
     private boolean singleInstance = false;
     private String ideaModuleName = null;
-    private String workingDirectory;
+    private String workingDirectory = ".";
 
     public void setName(String value)
     {

@@ -27,6 +27,7 @@ import net.minecraftforge.gradle.common.util.RunConfig;
 
 import javax.inject.Inject;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -53,9 +54,25 @@ public class PatcherExtension {
 
         clientRun.setName(niceName + " Client");
         clientRun.setMain("mcp.client.Start");
+        try
+        {
+            clientRun.setWorkingDirectory(project.file("run").getCanonicalPath());
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
 
         serverRun.setName(niceName + " Server");
         serverRun.setMain("net.minecraft.server.MinecraftServer");
+        try
+        {
+            serverRun.setWorkingDirectory(project.file("run").getCanonicalPath());
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     public String getMappings() {
