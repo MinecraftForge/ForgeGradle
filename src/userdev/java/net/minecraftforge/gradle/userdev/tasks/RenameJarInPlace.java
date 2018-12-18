@@ -41,7 +41,7 @@ public class RenameJarInPlace extends JarExec {
 
     public RenameJarInPlace() {
         tool = "net.md-5:SpecialSource:1.8.3:shaded"; // This is not use for binpatching, so we dont really need to let users config
-        args = new String[] { "--in-jar", "{input}", "--out-jar", "{output}", "--srg-in", "{mappings}"};
+        args = new String[] { "--in-jar", "{input}", "--out-jar", "{output}", "--srg-in", "{mappings}", "--live"};
         this.getOutputs().upToDateWhen(task -> false);
     }
 
