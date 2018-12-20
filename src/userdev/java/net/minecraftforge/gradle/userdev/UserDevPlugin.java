@@ -20,12 +20,12 @@
 
 package net.minecraftforge.gradle.userdev;
 
+import net.minecraftforge.gradle.common.task.*;
 import net.minecraftforge.gradle.common.util.*;
-import org.gradle.api.NamedDomainObjectContainer;
-import org.gradle.api.NamedDomainObjectFactory;
-import org.gradle.api.Plugin;
-import org.gradle.api.Project;
-import org.gradle.api.Task;
+import net.minecraftforge.gradle.mcp.MCPRepo;
+import net.minecraftforge.gradle.userdev.tasks.GenerateSRG;
+import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
+import org.gradle.api.*;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
@@ -33,25 +33,16 @@ import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.JavaExec;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.Jar;
 
-import net.minecraftforge.gradle.common.task.DownloadAssets;
-import net.minecraftforge.gradle.common.task.DownloadMCMeta;
-import net.minecraftforge.gradle.common.task.DownloadMavenArtifact;
-import net.minecraftforge.gradle.common.task.ExtractMCPData;
-import net.minecraftforge.gradle.common.task.ExtractNatives;
-import net.minecraftforge.gradle.mcp.MCPRepo;
-import net.minecraftforge.gradle.userdev.tasks.GenerateSRG;
-import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
-
+import javax.annotation.Nonnull;
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import javax.annotation.Nonnull;
+import java.util.stream.Stream;
 
 public class UserDevPlugin implements Plugin<Project> {
     private static String MINECRAFT = "minecraft";
@@ -66,12 +57,12 @@ public class UserDevPlugin implements Plugin<Project> {
             project.getPluginManager().apply("java");
         }
         final File natives_folder = project.file("build/natives/");
+        JavaPluginConvention java = (JavaPluginConvention)project.getConvention().getPlugins().get("java");
 
         NamedDomainObjectContainer<RenameJarInPlace> reobf = project.container(RenameJarInPlace.class, new NamedDomainObjectFactory<RenameJarInPlace>() {
             @Override
             public RenameJarInPlace create(String jarName) {
                 String name = Character.toUpperCase(jarName.charAt(0)) + jarName.substring(1);
-                JavaPluginConvention java = (JavaPluginConvention)project.getConvention().getPlugins().get("java");
 
                 final RenameJarInPlace task = project.getTasks().maybeCreate("reobf" + name, RenameJarInPlace.class);
                 task.setClasspath(java.getSourceSets().getByName("main").getCompileClasspath());
@@ -92,11 +83,25 @@ public class UserDevPlugin implements Plugin<Project> {
         });
         project.getExtensions().add("reobf", reobf);
 
+        SourceSet main = java.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        SourceSet test = java.getSourceSets().getByName(SourceSet.TEST_SOURCE_SET_NAME);
+        SourceSet api = java.getSourceSets().maybeCreate("api");
+
         Configuration minecraft = project.getConfigurations().maybeCreate(MINECRAFT);
-        Configuration compile = project.getConfigurations().maybeCreate("compile");
+        Configuration compile = project.getConfigurations().maybeCreate(main.getCompileConfigurationName());
+        Configuration apiCompile = project.getConfigurations().maybeCreate(api.getCompileConfigurationName());
+        Configuration testCompile = project.getConfigurations().maybeCreate(test.getCompileConfigurationName());
         Configuration deobf = project.getConfigurations().maybeCreate(DEOBF);
+
         compile.extendsFrom(minecraft);
         compile.extendsFrom(deobf);
+        apiCompile.extendsFrom(compile);
+        testCompile.extendsFrom(apiCompile);
+
+        Stream.of(main, test).forEach(sourceSet -> {
+            sourceSet.setCompileClasspath(sourceSet.getCompileClasspath().plus(api.getOutput()));
+            sourceSet.setRuntimeClasspath(sourceSet.getRuntimeClasspath().plus(api.getOutput()));
+        });
 
         TaskProvider<DownloadMavenArtifact> downloadMcpConfig = project.getTasks().register("downloadMcpConfig", DownloadMavenArtifact.class);
         TaskProvider<ExtractMCPData> extractSrg = project.getTasks().register("extractSrg", ExtractMCPData.class);
