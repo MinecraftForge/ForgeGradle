@@ -22,7 +22,6 @@ package net.minecraftforge.gradle.userdev;
 
 
 import java.io.*;
-import java.nio.file.FileSystem;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -57,6 +56,7 @@ import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import net.minecraftforge.gradle.mcp.util.MCPWrapper;
 import net.minecraftforge.gradle.userdev.tasks.AccessTrasnformJar;
 import net.minecraftforge.gradle.userdev.tasks.ApplyBinPatches;
+import net.minecraftforge.gradle.userdev.tasks.ApplyMCPFunction;
 import net.minecraftforge.gradle.userdev.tasks.RenameJar;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 
@@ -471,9 +471,22 @@ public class MinecraftUserRepo extends BaseRepo {
                 }
             }
 
+            File mcinject = cacheRaw("mci", "jar");
+
+            //Apply MCInjector so we can compile against this jar
+            ApplyMCPFunction mci = project.getTasks().create("_mciJar_" + new Random().nextInt() + "_", ApplyMCPFunction.class);
+            mci.setFunctionName("mcinject");
+            mci.setHasLog(false);
+            mci.setInput(srged);
+            mci.setMCP(mcp.getZip());
+            mci.setOutput(mcinject);
+            mci.apply();
+
             if (hasAts) {
+                if (bin.exists()) bin.delete(); // AT lib throws an exception if output file already exists
+
                 AccessTrasnformJar at = project.getTasks().create("_atJar_"+ new Random().nextInt() + "_", AccessTrasnformJar.class);
-                at.setInput(srged);
+                at.setInput(mcinject);
                 at.setOutput(bin);
                 at.setAts(ATS);
 
@@ -489,7 +502,7 @@ public class MinecraftUserRepo extends BaseRepo {
             }
 
             if (mapping == null) { //They didn't ask for MCP names, so serve them SRG!
-                FileUtils.copyFile(srged, bin);
+                FileUtils.copyFile(mcinject, bin);
             } else if (hasAts) {
                 //Remap library to MCP names, in place, sorta hacky with ATs but it should work.
                 RenameJarInPlace rename = project.getTasks().create("_rename_" + new Random().nextInt() + "_", RenameJarInPlace.class);
@@ -501,7 +514,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 //Remap library to MCP names
                 RenameJar rename = project.getTasks().create("_rename_" + new Random().nextInt() + "_", RenameJar.class);
                 rename.setHasLog(false);
-                rename.setInput(srged);
+                rename.setInput(mcinject);
                 rename.setOutput(bin);
                 rename.setMappings(findSrgToMcp(mapping, names));
                 rename.apply();
