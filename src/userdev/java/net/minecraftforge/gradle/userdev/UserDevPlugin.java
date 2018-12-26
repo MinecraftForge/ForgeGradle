@@ -216,8 +216,8 @@ public class UserDevPlugin implements Plugin<Project> {
 
                 task.setMain(runConfig.getMain());
                 task.setArgs(runConfig.getArgs());
-                task.setSystemProperties(runConfig.getProperties());
-                task.setEnvironment(runConfig.getEnvironment());
+                task.systemProperties(runConfig.getProperties());
+                task.environment(runConfig.getEnvironment());
 
                 String workDir = runConfig.getWorkingDirectory();
                 File file = new File(workDir);
