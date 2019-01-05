@@ -180,7 +180,7 @@ public class MinecraftUserRepo extends BaseRepo {
 
     private Patcher getParents() {
         if (!loadedParents) {
-            String artifact = isPatcher ? (GROUP + ':' + NAME + ':' + VERSION + ':' + "userdev") :
+            String artifact = isPatcher ? (GROUP + ":forge:" + VERSION + ':' + "userdev") :
                                         ("de.oceanlabs.mcp:mcp_config:" + VERSION + "@zip");
             boolean patcher = isPatcher;
             Patcher last = null;
