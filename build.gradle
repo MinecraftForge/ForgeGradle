@@ -1,3 +1,5 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation
+
 buildscript {
     repositories {
         maven {
@@ -7,6 +9,7 @@ buildscript {
     dependencies {
         classpath "com.gradle.publish:plugin-publish-plugin:0.9.1"
         classpath 'nl.javadude.gradle.plugins:license-gradle-plugin:0.11.0'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.3'
     }
 }
 
@@ -16,6 +19,7 @@ apply plugin: 'eclipse'
 apply plugin: 'maven'
 apply plugin: "com.gradle.plugin-publish"
 apply plugin: 'license'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 group = 'net.minecraftforge.gradle'
 version = '2.3-SNAPSHOT'
@@ -54,40 +58,38 @@ repositories {
 
 configurations {
     deployerJars
-    shade
-    compileOnly.extendsFrom shade
 }
 
 dependencies {
-    compile gradleApi()
+    shadow gradleApi()
 
     // moved to the beginning to be the overrider
     //compile 'org.ow2.asm:asm-debug-all:6.0'
-    compile 'com.google.guava:guava:18.0'
+    shadow 'com.google.guava:guava:18.0'
 
-    compile 'net.sf.opencsv:opencsv:2.3' // reading CSVs.. also used by SpecialSource
-    compile 'com.cloudbees:diff4j:1.1' // for difing and patching
-    compile 'com.github.abrarsyed.jastyle:jAstyle:1.3' // formatting
-    compile 'net.sf.trove4j:trove4j:2.1.0' // because its awesome.
+    shadow 'net.sf.opencsv:opencsv:2.3' // reading CSVs.. also used by SpecialSource
+    shadow 'com.cloudbees:diff4j:1.1' // for difing and patching
+    shadow 'com.github.abrarsyed.jastyle:jAstyle:1.3' // formatting
+    shadow 'net.sf.trove4j:trove4j:2.1.0' // because its awesome.
 
-    compile 'com.github.jponge:lzma-java:1.3' // replaces the LZMA binary
-    compile 'com.nothome:javaxdelta:2.0.1' // GDIFF implementation for BinPatches
-    compile 'com.google.code.gson:gson:2.2.4' // Used instead of Argo for buuilding changelog.
-    compile 'com.github.tony19:named-regexp:0.2.3' // 1.7 Named regexp features
-    compile 'net.minecraftforge:forgeflower:1.0.342-SNAPSHOT' // Fernflower Forge edition
+    shadow 'com.github.jponge:lzma-java:1.3' // replaces the LZMA binary
+    shadow 'com.nothome:javaxdelta:2.0.1' // GDIFF implementation for BinPatches
+    shadow 'com.google.code.gson:gson:2.2.4' // Used instead of Argo for buuilding changelog.
+    shadow 'com.github.tony19:named-regexp:0.2.3' // 1.7 Named regexp features
+    shadow 'net.minecraftforge:forgeflower:1.0.342-SNAPSHOT' // Fernflower Forge edition
 
-    shade 'net.md-5:SpecialSource:1.8.2' // deobf and reobf
+    implementation 'net.md-5:SpecialSource:1.8.2' // deobf and reobf
 
     // because curse
-    compile 'org.apache.httpcomponents:httpclient:4.3.3'
-    compile 'org.apache.httpcomponents:httpmime:4.3.3'
+    shadow 'org.apache.httpcomponents:httpclient:4.3.3'
+    shadow 'org.apache.httpcomponents:httpmime:4.3.3'
 
     // mcp stuff
-    shade 'de.oceanlabs.mcp:RetroGuard:3.6.6'
-    shade('de.oceanlabs.mcp:mcinjector:3.4-SNAPSHOT'){
+    implementation 'de.oceanlabs.mcp:RetroGuard:3.6.6'
+    implementation('de.oceanlabs.mcp:mcinjector:3.4-SNAPSHOT'){
      exclude group: 'org.ow2.asm', module: 'asm-debug-all'
     }
-    shade('net.minecraftforge.srg2source:Srg2Source:4.0-SNAPSHOT'){
+    implementation('net.minecraftforge.srg2source:Srg2Source:4.0-SNAPSHOT'){
         exclude group: 'org.ow2.asm',         module: 'asm-debug-all'
         exclude group: 'org.eclipse.equinox', module: 'org.eclipse.equinox.common'
     }
@@ -103,14 +105,7 @@ dependencies {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.14'
-}
-
-sourceSets {
-    main.compileClasspath += configurations.shade;
-    main.runtimeClasspath += configurations.shade;
-    test.compileClasspath += configurations.shade;
-    test.runtimeClasspath += configurations.shade;
+    gradleVersion = '4.10.3'
 }
 
 compileJava {
@@ -130,30 +125,17 @@ processResources {
 }
 
 jar {
-
-    configurations.shade.each { dep ->
-        /* I can use this again to find where dupes come from, so.. gunna just keep it here.
-        logger.lifecycle(dep.toString())
-        project.zipTree(dep).visit { 
-            element -> 
-                def path = element.relativePath.toString()
-                if (path.contains('org/eclipse/core') && path.endsWith('.class'))
-                    println "  $element.relativePath"
-            
-        }
-        */
-        from(project.zipTree(dep)){
-            exclude 'META-INF', 'META-INF/**', '.api_description', '.options', 'about.html', 'module-info.class', 'plugin.properties', 'plugin.xml', 'about_files/**'
-            duplicatesStrategy 'warn'
-        }
-    }
-
     manifest {
         attributes 'version':project.version
         attributes 'javaCompliance': project.targetCompatibility
         attributes 'group':project.group
         attributes 'Implementation-Version': project.version + getGitHash()
     }
+}
+
+shadowJar {
+    classifier = ''
+    exclude 'META-INF', 'META-INF/**', '.api_description', '.options', 'about.html', 'module-info.class', 'plugin.properties', 'plugin.xml', 'about_files/**'
 }
 
 javadoc {
@@ -171,7 +153,7 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 }
 
 artifacts {
-    archives jar
+    archives shadowJar
     archives javadocJar
 }
 
@@ -305,3 +287,10 @@ def getGitHash() {
     process.waitFor()
     return '-' + (process.exitValue() ? 'unknown' : process.text.trim())
 }
+
+task relocateShadowJar(type: ConfigureShadowRelocation) {
+    target = tasks.shadowJar
+    prefix = "com.minecraftforge.gradle.shadow"
+}
+
+tasks.shadowJar.dependsOn tasks.relocateShadowJar
