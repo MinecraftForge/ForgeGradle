@@ -108,7 +108,7 @@ public class MinecraftRepo extends BaseRepo {
             return null; //We do not support mappings
         }
         String classifier = artifact.getClassifier() == null ? "" : artifact.getClassifier();
-        String ext = artifact.getExtension().split("\\.")[0];
+        String ext = artifact.getExtension();
 
         File json = findVersion(version);
         if (json == null)

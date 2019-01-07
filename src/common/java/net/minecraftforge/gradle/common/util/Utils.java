@@ -305,21 +305,29 @@ public class Utils {
         return false;
     }
 
-    public static boolean downloadFile(URL url, File output) throws IOException {
+    public static boolean downloadFile(URL url, File output) {
         String proto = url.getProtocol().toLowerCase();
 
-        if ("http".equals(proto) || "https".equals(proto)) {
-            HttpURLConnection con = (HttpURLConnection)url.openConnection();
-            con.setInstanceFollowRedirects(true);
-            con.connect();
+        try {
+            if ("http".equals(proto) || "https".equals(proto)) {
+                HttpURLConnection con = (HttpURLConnection)url.openConnection();
+                con.setInstanceFollowRedirects(true);
+                con.connect();
 
-            if (con.getResponseCode() == 200) {
+                if (con.getResponseCode() == 200) {
+                    return downloadFile(con, output);
+                }
+            } else {
+                URLConnection con = url.openConnection();
+                con.connect();
                 return downloadFile(con, output);
             }
-        } else {
-            URLConnection con = url.openConnection();
-            con.connect();
-            return downloadFile(con, output);
+        } catch (IOException e) {
+            //Invalid URLs/File paths will cause FileNotFound or 404 errors.
+            //As well as any errors during download.
+            //So delete the output if it exists as it's invalid, and return false
+            if (output.exists())
+                output.delete();
         }
 
         return false;
@@ -397,7 +405,7 @@ public class Utils {
         return null;
     }
 
-    private static File _downloadMaven(Project project, URL maven, Artifact artifact, boolean changing) throws IOException{
+    private static File _downloadMaven(Project project, URL maven, Artifact artifact, boolean changing) throws IOException {
         if (artifact.getVersion().contains("+") || artifact.getVersion().contains("-SNAPSHOT"))
             throw new IllegalArgumentException("Dynamic versions are not supported, yet...");
 

@@ -117,7 +117,7 @@ public class ModRemapingRepo extends BaseRepo {
             return null; //Not one of our whitelisted deps
 
         String classifier = artifact.getClassifier() == null ? "" : artifact.getClassifier();
-        String ext = artifact.getExtension().split("\\.")[0];
+        String ext = artifact.getExtension();
 
         debug("  " + REPO_NAME + " Request: " + artifact.getGroup() + ":" + artifact.getName() + ":" + version + ":" + classifier + "@" + ext + " Mapping: " + mappings);
 

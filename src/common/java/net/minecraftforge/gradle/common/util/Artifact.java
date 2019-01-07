@@ -67,6 +67,16 @@ public class Artifact implements ArtifactIdentifier {
         return ret;
     }
 
+    public static Artifact from(String group, String name, String version, String classifier, String ext) {
+        StringBuilder buf = new StringBuilder();
+        buf.append(group).append(':').append(name).append(':').append(version);
+        if (classifier != null)
+            buf.append(':').append(classifier);
+        if (ext != null && !"jar".equals(ext))
+            buf.append('@').append(ext);
+        return from(buf.toString());
+    }
+
     public File getLocalPath(File base) {
         return new File(base, path.replace('/', File.separatorChar));
     }

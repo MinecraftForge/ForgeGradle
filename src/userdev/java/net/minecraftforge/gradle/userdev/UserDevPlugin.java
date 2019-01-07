@@ -148,7 +148,7 @@ public class UserDevPlugin implements Plugin<Project> {
                 {
                     ext.setChanging(true); //TODO: Remove when not in dev
                     minecraft.resolutionStrategy(strat -> {
-                        strat.cacheChangingModulesFor(0, TimeUnit.MINUTES);
+                        strat.cacheChangingModulesFor(10, TimeUnit.SECONDS);
                     });
                 }
                 minecraft.getDependencies().add(ext);
@@ -183,7 +183,7 @@ public class UserDevPlugin implements Plugin<Project> {
             project.getRepositories().mavenCentral(); //Needed for MCP Deps
             if (mcrepo == null)
                 throw new IllegalStateException("Missing 'minecraft' dependency entry.");
-            mcrepo.validate(); //This will set the MC_VERSION property.
+            mcrepo.validate(minecraft); //This will set the MC_VERSION property.
 
             String mcVer = (String)project.getExtensions().getExtraProperties().get("MC_VERSION");
             String mcpVer = (String)project.getExtensions().getExtraProperties().get("MCP_VERSION");

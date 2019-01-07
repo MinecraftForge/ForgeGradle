@@ -24,6 +24,7 @@ package net.minecraftforge.gradle.userdev;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -34,6 +35,8 @@ import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
 
 import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
@@ -61,6 +64,7 @@ import net.minecraftforge.gradle.userdev.tasks.RenameJar;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 
 public class MinecraftUserRepo extends BaseRepo {
+    private static final boolean CHANGING_USERDEV = true; //Used when testing to update the userdev cache every 30 seconds.
     private final Project project;
     private final String GROUP;
     private final String NAME;
@@ -119,13 +123,35 @@ public class MinecraftUserRepo extends BaseRepo {
         );
     }
 
-    public void validate() {
+    public void validate(Configuration cfg) {
         getParents();
         if (mcp == null)
             throw new IllegalStateException("Invalid minecraft dependency: " + GROUP + ":" + NAME + ":" + VERSION);
         ExtraPropertiesExtension ext = project.getExtensions().getExtraProperties();
         ext.set("MC_VERSION", mcp.getMCVersion());
         ext.set("MCP_VERSION", mcp.getArtifact().getVersion());
+
+        //Maven POMs can't self-reference apparently, so we have to add any deps that are self referential.
+        Patcher patcher = parent;
+        while (patcher != null) {
+            patcher.getLibraries().stream().map(Artifact::from)
+            .filter(e -> GROUP.equals(e.getGroup()) && NAME.equals(e.getName()))
+            .forEach(e -> {
+                String dep = getDependencyString();
+                if (e.getClassifier() != null)
+                    dep += ":" + e.getClassifier();
+                if (e.getExtension() != null && !"jar".equals(e.getExtension()))
+                    dep += "@" + e.getExtension();
+
+                debug("    New Self Dep: " + dep);
+                ExternalModuleDependency _dep = (ExternalModuleDependency)project.getDependencies().create(dep);
+                if (CHANGING_USERDEV) {
+                    _dep.setChanging(true);
+                }
+                cfg.getDependencies().add(_dep);
+            });
+            patcher = patcher.getParent();
+        }
     }
 
     @SuppressWarnings("unused")
@@ -180,13 +206,13 @@ public class MinecraftUserRepo extends BaseRepo {
 
     private Patcher getParents() {
         if (!loadedParents) {
-            String artifact = isPatcher ? (GROUP + ":forge:" + VERSION + ':' + "userdev") :
+            String artifact = isPatcher ? (GROUP + ":" + NAME +":" + VERSION + ':' + "userdev") :
                                         ("de.oceanlabs.mcp:mcp_config:" + VERSION + "@zip");
             boolean patcher = isPatcher;
             Patcher last = null;
             while (artifact != null) {
                 debug("    Parent: " + artifact);
-                File dep = Utils.downloadMaven(project, Artifact.from(artifact), false);
+                File dep = Utils.downloadMaven(project, Artifact.from(artifact), CHANGING_USERDEV);
                 if (dep == null)
                     throw new IllegalStateException("Could not resolve dependency: " + artifact);
                 if (patcher) {
@@ -236,7 +262,7 @@ public class MinecraftUserRepo extends BaseRepo {
             return null;
 
         String classifier = artifact.getClassifier() == null ? "" : artifact.getClassifier();
-        String ext = artifact.getExtension().split("\\.")[0];
+        String ext = artifact.getExtension();
 
         debug("  " + REPO_NAME + " Request: " + artifact.getGroup() + ":" + artifact.getName() + ":" + version + ":" + classifier + "@" + ext + " Mapping: " + mappings);
 
@@ -246,9 +272,9 @@ public class MinecraftUserRepo extends BaseRepo {
             switch (classifier) {
                 case "":        return findRaw(mappings);
                 case "sources": return findSource(mappings);
+                default:        return findExtraClassifier(mappings, classifier, ext);
             }
         }
-        return null;
     }
 
     private HashStore commonHash(File mapping) {
@@ -277,7 +303,7 @@ public class MinecraftUserRepo extends BaseRepo {
         String version = mapping.substring(idx + 1);
         String desc = "de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
         debug("    Mapping: " + desc);
-        return Utils.downloadMaven(project, Artifact.from(desc), false);
+        return Utils.downloadMaven(project, Artifact.from(desc), CHANGING_USERDEV);
     }
 
     private File findPom(String mapping, String rand) throws IOException {
@@ -297,14 +323,23 @@ public class MinecraftUserRepo extends BaseRepo {
         if (!cache.isSame() || !pom.exists()) {
             POMBuilder builder = new POMBuilder(rand + GROUP, NAME, getVersionWithAT(mapping) );
 
-            builder.dependencies().add(rand + GROUP + ':' + NAME + ':' + getVersionWithAT(mapping), "compile");
+            //builder.dependencies().add(rand + GROUP + ':' + NAME + ':' + getVersionWithAT(mapping), "compile"); //Normal poms dont reference themselves...
             builder.dependencies().add("net.minecraft:client:" + mcp.getMCVersion(), "compile").withClassifier("extra"); //Client as that has all deps as external list
             builder.dependencies().add("net.minecraft:client:" + mcp.getMCVersion(), "compile").withClassifier("data");
             mcp.getLibraries().forEach(e -> builder.dependencies().add(e, "compile"));
 
             Patcher patcher = parent;
             while (patcher != null) {
-                patcher.getLibraries().forEach(e -> builder.dependencies().add(e, "compile"));
+                for (String lib : patcher.getLibraries()) {
+                    Artifact af = Artifact.from(lib);
+                    //Gradle only allows one dependency with the same group:name. So if we depend on any claissified deps, repackage it ourselves.
+                    // Gradle also seems to not be able to reference itself. So we add it elseware.
+                    if (GROUP.equals(af.getGroup()) && NAME.equals(af.getName()) && VERSION.equals(af.getVersion())) {
+                        builder.dependencies().add(Artifact.from(rand + GROUP, NAME, getVersionWithAT(mapping), af.getClassifier(), af.getExtension()).getDescriptor(), "compile");
+                    } else {
+                        builder.dependencies().add(lib, "compile");
+                    }
+                }
                 patcher = patcher.getParent();
             }
 
@@ -721,6 +756,35 @@ public class MinecraftUserRepo extends BaseRepo {
         return sources;
     }
 
+    private File findExtraClassifier(String mapping, String classifier, String extension) throws IOException {
+        //These are extra classifiers shipped by the normal repo. Except that gradle doesn't allow two artifacts with the same group:name
+        // but different version. For good reason. So we change their version to ours. And provide them as is.
+
+        File target = cacheMapped(mapping, classifier, extension);
+        debug("    Finding Classified: " + target);
+
+        File original = Utils.downloadMaven(project, Artifact.from(GROUP, NAME, VERSION, classifier, extension), CHANGING_USERDEV);
+        HashStore cache = commonHash(null); //TODO: Remap from SRG?
+        if (original != null)
+            cache.add("original", original);
+
+        if (!cache.isSame() || !target.exists()) {
+            if (original == null) {
+                debug("      Failed to download original artifact.");
+                return null;
+            }
+            try {
+                FileUtils.copyFile(original, target);
+            } catch (IOException e) { //Something screwed up, nuke the file incase its invalid and return nothing.
+                if (target.exists())
+                    target.delete();
+            }
+            cache.save();
+            Utils.updateHash(target, HashFunction.SHA1);
+        }
+        return target;
+    }
+
     private static class Patcher {
         private final File data;
         private final File universal;
@@ -746,7 +810,7 @@ public class MinecraftUserRepo extends BaseRepo {
                     throw new IllegalStateException("Invalid patcher dependency, missing MCP or parent: " + artifact);
 
                 if (config.universal != null) {
-                    universal = Utils.downloadMaven(project, Artifact.from(config.universal), false);
+                    universal = Utils.downloadMaven(project, Artifact.from(config.universal), CHANGING_USERDEV);
                     if (universal == null)
                         throw new IllegalStateException("Invalid patcher dependency, could not resolve universal: " + universal);
                 } else {
@@ -754,7 +818,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 }
 
                 if (config.sources != null) {
-                    sources = MavenArtifactDownloader.gradle(project, config.sources, false);
+                    sources = Utils.downloadMaven(project, Artifact.from(config.sources), CHANGING_USERDEV);
                     if (sources == null)
                         throw new IllegalStateException("Invalid patcher dependency, could not resolve sources: " + sources);
                 } else {

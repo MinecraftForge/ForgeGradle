@@ -142,7 +142,7 @@ public class MCPRepo extends BaseRepo {
 
         String version = artifact.getVersion();
         String classifier = artifact.getClassifier() == null ? "" : artifact.getClassifier();
-        String ext = artifact.getExtension().split("\\.")[0];
+        String ext = artifact.getExtension();
 
         debug("  " + REPO_NAME + " Request: " + artifact.getGroup() + ":" + name + ":" + version + ":" + classifier + "@" + ext);
 
