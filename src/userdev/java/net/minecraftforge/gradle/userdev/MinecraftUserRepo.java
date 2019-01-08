@@ -22,7 +22,9 @@ package net.minecraftforge.gradle.userdev;
 
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -35,8 +37,10 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
+import org.gradle.api.tasks.compile.JavaCompile;
 
 import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
 import com.amadornes.artifactural.api.repository.Repository;
@@ -336,8 +340,8 @@ public class MinecraftUserRepo extends BaseRepo {
             POMBuilder builder = new POMBuilder(rand + GROUP, NAME, getVersionWithAT(mapping) );
 
             //builder.dependencies().add(rand + GROUP + ':' + NAME + ':' + getVersionWithAT(mapping), "compile"); //Normal poms dont reference themselves...
-            builder.dependencies().add("net.minecraft:client:" + mcp.getMCVersion(), "compile").withClassifier("extra"); //Client as that has all deps as external list
-            builder.dependencies().add("net.minecraft:client:" + mcp.getMCVersion(), "compile").withClassifier("data");
+            builder.dependencies().add("net.minecraft:client:" + mcp.getMCVersion() + ":extra", "compile"); //Client as that has all deps as external list
+            builder.dependencies().add("net.minecraft:client:" + mcp.getMCVersion() + ":data", "compile");
             mcp.getLibraries().forEach(e -> builder.dependencies().add(e, "compile"));
 
             if (mapping != null) {
@@ -393,13 +397,9 @@ public class MinecraftUserRepo extends BaseRepo {
         File names = findMapping(mapping);
         HashStore cache = commonHash(names);
 
-        File recomp = cacheMapped(mapping, "recomp", "jar");
-        if (recomp.exists()) { //Recompiled binary, use this first if valid!
-            cache.load(cacheMapped(mapping, "recomp", "jar.input"));
-            debug("  Finding recomp: " + cache.isSame() + " " + recomp);
-            if (cache.isSame())
-                return recomp;
-        }
+        File recomp = findRecomp(mapping);
+        if (recomp != null)
+            return recomp;
 
         File bin = cacheMapped(mapping, "jar");
         cache.load(cacheMapped(mapping, "jar.input"));
@@ -416,10 +416,21 @@ public class MinecraftUserRepo extends BaseRepo {
             boolean hasAts = baseAT.length() != 0 || !ATS.isEmpty();
 
             File srged = null;
+            File joined = MavenArtifactDownloader.generate(project, "net.minecraft:joined:" + mcp.getVersion() + ":srg", true); //Download vanilla in srg name
+
+            //Gather vanilla packages, so we can only inject the proper package-info classes.
+            Set<String> packages = new HashSet<>();
+            try (ZipFile tmp = new ZipFile(joined)) {
+                packages = tmp.stream()
+                .map(ZipEntry::getName)
+                .filter(e -> e.endsWith(".class"))
+                .map(e -> e.indexOf('/') == -1 ? "" : e.substring(0, e.lastIndexOf('/')))
+                .collect(Collectors.toSet());
+            }
+
             if (parent == null) { //Raw minecraft
-                srged = MavenArtifactDownloader.generate(project, "net.minecraft:joined:" + mcp.getVersion() + ":srg", true); //Download vanilla in srg name
+                srged = joined;
             } else { // Needs binpatches
-                File joined = MavenArtifactDownloader.generate(project, "net.minecraft:joined:" + mcp.getVersion() + ":srg", true); //Download vanilla in srg name
                 File binpatched = cacheRaw("binpatched", "jar");
 
                 //Apply bin patches to vanilla
@@ -464,15 +475,12 @@ public class MinecraftUserRepo extends BaseRepo {
                                     String name = entry.getName();
                                     if (added.contains(name))
                                         continue;
-                                    if (name.startsWith("META-INF/services/") && !entry.isDirectory())
-                                    {
+                                    if (name.startsWith("META-INF/services/") && !entry.isDirectory()) {
                                         List<String> existing = servicesLists.computeIfAbsent(name, k -> new ArrayList<>());
                                         if (existing.size() > 0) existing.add("");
                                         existing.add(String.format("# %s - %s", patcher.artifact, patcher.getUniversal().getCanonicalFile().getName()));
                                         existing.addAll(IOUtils.readLines(zin));
-                                    }
-                                    else
-                                    {
+                                    } else {
                                         ZipEntry _new = new ZipEntry(name);
                                         _new.setTime(0); //SHOULD be the same time as the main entry, but NOOOO _new.setTime(entry.getTime()) throws DateTimeException, so you get 0, screw you!
                                         zip.putNextEntry(_new);
@@ -513,8 +521,7 @@ public class MinecraftUserRepo extends BaseRepo {
                         patcher = patcher.getParent();
                     }
 
-                    for(Map.Entry<String, List<String>> kv : servicesLists.entrySet())
-                    {
+                    for(Map.Entry<String, List<String>> kv : servicesLists.entrySet()) {
                         String name = kv.getKey();
                         ZipEntry _new = new ZipEntry(name);
                         _new.setTime(0);
@@ -536,11 +543,74 @@ public class MinecraftUserRepo extends BaseRepo {
             mci.setOutput(mcinject);
             mci.apply();
 
+            //Build and inject MCP injected sources
+            File inject_src = cacheRaw("inject_src", "jar");
+            try (ZipInputStream zin = new ZipInputStream(new FileInputStream(mcp.getZip()));
+                 ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(inject_src)) ) {
+                String prefix = mcp.wrapper.getConfig().getData("inject");
+                String template = null;
+                ZipEntry entry = null;
+                while ((entry = zin.getNextEntry()) != null) {
+                    if (!entry.getName().startsWith(prefix) || entry.isDirectory())
+                        continue;
+                    String name = entry.getName().substring(prefix.length());
+                    if ("package-info-template.java".equals(name)) {
+                        template = new String(IOUtils.toByteArray(zin), StandardCharsets.UTF_8);
+                    } else {
+                        ZipEntry _new = new ZipEntry(name);
+                        _new.setTime(0);
+                        zos.putNextEntry(_new);
+                        IOUtils.copy(zin, zos);
+                        zos.closeEntry();
+                    }
+                }
+
+                if (template != null) {
+                    for (String pkg : packages) {
+                        ZipEntry _new = new ZipEntry(pkg + "/package-info.java");
+                        _new.setTime(0);
+                        zos.putNextEntry(_new);
+                        zos.write(template.replace("{PACKAGE}", pkg.replace("/", ".")).getBytes(StandardCharsets.UTF_8));
+                        zos.closeEntry();
+                    }
+                }
+            }
+
+            File compiled = compileJava(inject_src, mcinject);
+            if (compiled == null)
+                return null;
+
+            File injected = cacheRaw("injected", "jar");
+            try (ZipInputStream zmci = new ZipInputStream(new FileInputStream(mcinject));
+                 ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(injected))) {
+                ZipEntry entry = null;
+                while ((entry = zmci.getNextEntry()) != null) {
+                    ZipEntry _new = new ZipEntry(entry.getName());
+                    _new.setTime(0);
+                    zout.putNextEntry(_new);
+                    IOUtils.copy(zmci, zout);
+                    zout.closeEntry();
+                }
+                Files.walkFileTree(compiled.toPath(), new SimpleFileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                        try (InputStream fin = Files.newInputStream(file)) {
+                            ZipEntry _new = new ZipEntry(compiled.toPath().relativize(file).toString().replace('\\', '/'));
+                            _new.setTime(0);
+                            zout.putNextEntry(_new);
+                            IOUtils.copy(fin, zout);
+                            zout.closeEntry();
+                        }
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
+            }
+
             if (hasAts) {
                 if (bin.exists()) bin.delete(); // AT lib throws an exception if output file already exists
 
                 AccessTrasnformJar at = project.getTasks().create("_atJar_"+ new Random().nextInt() + "_", AccessTrasnformJar.class);
-                at.setInput(mcinject);
+                at.setInput(injected);
                 at.setOutput(bin);
                 at.setAts(ATS);
 
@@ -556,7 +626,7 @@ public class MinecraftUserRepo extends BaseRepo {
             }
 
             if (mapping == null) { //They didn't ask for MCP names, so serve them SRG!
-                FileUtils.copyFile(mcinject, bin);
+                FileUtils.copyFile(injected, bin);
             } else if (hasAts) {
                 //Remap library to MCP names, in place, sorta hacky with ATs but it should work.
                 RenameJarInPlace rename = project.getTasks().create("_rename_" + new Random().nextInt() + "_", RenameJarInPlace.class);
@@ -568,7 +638,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 //Remap library to MCP names
                 RenameJar rename = project.getTasks().create("_rename_" + new Random().nextInt() + "_", RenameJar.class);
                 rename.setHasLog(false);
-                rename.setInput(mcinject);
+                rename.setInput(injected);
                 rename.setOutput(bin);
                 rename.setMappings(findSrgToMcp(mapping, names));
                 rename.apply();
@@ -775,6 +845,47 @@ public class MinecraftUserRepo extends BaseRepo {
         return sources;
     }
 
+
+    private File findRecomp(String mapping) throws IOException {
+        File source = findSource(mapping);
+        File names = findMapping(mapping);
+        if (source == null || names == null)
+            return null;
+
+        HashStore cache = commonHash(names);
+        cache.add("source", source);
+        cache.load(cacheMapped(mapping, "recomp", "jar.input"));
+
+        File recomp = cacheMapped(mapping, "recomp", "jar");
+
+        if (!cache.isSame() || !recomp.exists()) {
+            debug("  Finding recomp: " + cache.isSame() + " " + recomp);
+
+            File compiled = compileJava(source);
+            if (compiled == null)
+                return null;
+
+            try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(recomp))) {
+                Files.walkFileTree(compiled.toPath(), new SimpleFileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                        try (InputStream fin = Files.newInputStream(file)) {
+                            ZipEntry _new = new ZipEntry(compiled.toPath().relativize(file).toString().replace('\\', '/'));
+                            _new.setTime(0);
+                            zout.putNextEntry(_new);
+                            IOUtils.copy(fin, zout);
+                            zout.closeEntry();
+                        }
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
+            }
+            Utils.updateHash(recomp, HashFunction.SHA1);
+            cache.save();
+        }
+        return recomp;
+    }
+
     private File findExtraClassifier(String mapping, String classifier, String extension) throws IOException {
         //These are extra classifiers shipped by the normal repo. Except that gradle doesn't allow two artifacts with the same group:name
         // but different version. For good reason. So we change their version to ours. And provide them as is.
@@ -803,6 +914,43 @@ public class MinecraftUserRepo extends BaseRepo {
             Utils.updateHash(target, HashFunction.SHA1);
         }
         return target;
+    }
+
+    private int compileTaskCount = 1;
+    private File compileJava(File source, File... extraDeps) {
+        JavaCompile compile = project.getTasks().create("_compileJava_" + compileTaskCount++, JavaCompile.class);
+        try {
+            File output = project.file("build/" + compile.getName() + "/");
+            if (output.exists())
+                FileUtils.cleanDirectory(output);
+            Configuration cfg = project.getConfigurations().create(compile.getName());
+            List<String> deps = new ArrayList<>();
+            deps.add("net.minecraft:client:" + mcp.getMCVersion() + ":extra");
+            deps.add("net.minecraft:client:" + mcp.getMCVersion() + ":data");
+            deps.addAll(mcp.getLibraries());
+            Patcher patcher = parent;
+            while (patcher != null) {
+                deps.addAll(patcher.getLibraries());
+                patcher = patcher.getParent();
+            }
+            deps.forEach(dep -> cfg.getDependencies().add(project.getDependencies().create(dep)));
+            Set<File> files = cfg.resolve();
+            for (File ext : extraDeps)
+                files.add(ext);
+            compile.setClasspath(project.files(files));
+            compile.setSourceCompatibility(parent.getConfig().getSourceCompatibility());
+            compile.setTargetCompatibility(parent.getConfig().getTargetCompatibility());
+            compile.setDestinationDir(output);
+            compile.setSource(source.isDirectory() ? project.fileTree(source) : project.zipTree(source));
+
+            compile.execute();
+            return output;
+        } catch (Exception e) { //Compile errors...?
+            e.printStackTrace();
+            return null;
+        } finally {
+            project.getTasks().remove(compile);
+        }
     }
 
     private static class Patcher {

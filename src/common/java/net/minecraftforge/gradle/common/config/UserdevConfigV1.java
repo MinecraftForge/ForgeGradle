@@ -53,6 +53,8 @@ public class UserdevConfigV1 extends Config {
     public List<String> libraries; //Additional libraries.
     public String inject;
     public Map<String, RunConfig> runs;
+    public String sourceCompatibility;
+    public String targetCompatibility;
 
 
     public void addAT(String value) {
@@ -85,5 +87,12 @@ public class UserdevConfigV1 extends Config {
         if (this.runs == null)
             this.runs = new HashMap<>();
         this.runs.put(name, value);
+    }
+
+    public String getSourceCompatibility() {
+        return sourceCompatibility == null ? "1.8" : sourceCompatibility;
+    }
+    public String getTargetCompatibility() {
+        return targetCompatibility == null ? "1.8" : targetCompatibility;
     }
 }
