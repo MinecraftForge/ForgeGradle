@@ -53,7 +53,7 @@ public class TaskExtractRangeMap extends DefaultTask {
         RangeExtractor extract = new RangeExtractor(RangeExtractor.JAVA_1_8);
         for (FileCollection files : getDependencies()) {
             for (File file : files) {
-                //getProject().getLogger().lifecycle("Lib: " + file);
+                getProject().getLogger().lifecycle("Lib: " + file);
                 extract.addLibs(file);
             }
         }
