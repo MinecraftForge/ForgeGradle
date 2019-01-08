@@ -24,7 +24,6 @@ package net.minecraftforge.gradle.userdev;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -123,7 +122,7 @@ public class MinecraftUserRepo extends BaseRepo {
         );
     }
 
-    public void validate(Configuration cfg) {
+    public void validate(Configuration cfg, Map<String, RunConfig> runs, File natives, File assets) {
         getParents();
         if (mcp == null)
             throw new IllegalStateException("Invalid minecraft dependency: " + GROUP + ":" + NAME + ":" + VERSION);
@@ -151,6 +150,19 @@ public class MinecraftUserRepo extends BaseRepo {
                 cfg.getDependencies().add(_dep);
             });
             patcher = patcher.getParent();
+        }
+
+        if (parent.getConfig().runs != null) {
+            Map<String, String> vars = new HashMap<>();
+            vars.put("assets_root", assets.getAbsolutePath());
+            vars.put("natives", natives.getAbsolutePath());
+            vars.put("mc_version", mcp.getMCVersion());
+            vars.put("mcp_version", mcp.getArtifact().getVersion());
+            vars.put("mcp_mappings", MAPPING);
+
+            parent.getConfig().runs.forEach((name, dev) -> {
+                runs.computeIfAbsent(name, k -> new RunConfig()).merge(dev, false, vars);
+            });
         }
     }
 
@@ -328,6 +340,13 @@ public class MinecraftUserRepo extends BaseRepo {
             builder.dependencies().add("net.minecraft:client:" + mcp.getMCVersion(), "compile").withClassifier("data");
             mcp.getLibraries().forEach(e -> builder.dependencies().add(e, "compile"));
 
+            if (mapping != null) {
+                int idx = mapping.lastIndexOf('_');
+                String channel = mapping.substring(0, idx);
+                String version = mapping.substring(idx + 1);
+                builder.dependencies().add("de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip", "compile"); //Runtime?
+            }
+
             Patcher patcher = parent;
             while (patcher != null) {
                 for (String lib : patcher.getLibraries()) {
@@ -335,7 +354,7 @@ public class MinecraftUserRepo extends BaseRepo {
                     //Gradle only allows one dependency with the same group:name. So if we depend on any claissified deps, repackage it ourselves.
                     // Gradle also seems to not be able to reference itself. So we add it elseware.
                     if (GROUP.equals(af.getGroup()) && NAME.equals(af.getName()) && VERSION.equals(af.getVersion())) {
-                        builder.dependencies().add(Artifact.from(rand + GROUP, NAME, getVersionWithAT(mapping), af.getClassifier(), af.getExtension()).getDescriptor(), "compile");
+                        builder.dependencies().add(rand + GROUP, NAME, getVersionWithAT(mapping), af.getClassifier(), af.getExtension(), "compile");
                     } else {
                         builder.dependencies().add(lib, "compile");
                     }
@@ -404,7 +423,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 File binpatched = cacheRaw("binpatched", "jar");
 
                 //Apply bin patches to vanilla
-                ApplyBinPatches apply = project.getTasks().create("_" + new Random().nextInt() + "_", ApplyBinPatches.class);
+                ApplyBinPatches apply = project.getTasks().create("_" + new Random().nextInt() + "_applyBinPatches", ApplyBinPatches.class);
                 apply.setHasLog(false);
                 apply.setTool(parent.getConfig().binpatcher.getVersion());
                 apply.setArgs(parent.getConfig().binpatcher.getArgs());
@@ -768,6 +787,7 @@ public class MinecraftUserRepo extends BaseRepo {
         if (original != null)
             cache.add("original", original);
 
+        cache.load(cacheMapped(mapping, classifier, extension + ".input"));
         if (!cache.isSame() || !target.exists()) {
             if (original == null) {
                 debug("      Failed to download original artifact.");

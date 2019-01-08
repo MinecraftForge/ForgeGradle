@@ -522,8 +522,7 @@ public class PatcherPlugin implements Plugin<Project> {
             p.getTasks().withType(GenerateEclipseClasspath.class, t -> { t.dependsOn(extractNatives.get(), downloadAssets.get()); });
             //TODO: IntelliJ plugin?
 
-            List<RunConfig> runs = Arrays.asList(extension.getClientRun(), extension.getServerRun());
-            EclipseHacks.doEclipseFixes(project, extractNatives.get(), downloadAssets.get(), runs);
+            EclipseHacks.doEclipseFixes(project, extractNatives.get(), downloadAssets.get(), extension.getRuns());
 
             if (project.hasProperty("UPDATE_MAPPINGS")) {
                 String version = (String)project.property("UPDATE_MAPPINGS");

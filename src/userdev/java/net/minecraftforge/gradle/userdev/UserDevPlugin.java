@@ -48,6 +48,7 @@ import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -183,7 +184,7 @@ public class UserDevPlugin implements Plugin<Project> {
             project.getRepositories().mavenCentral(); //Needed for MCP Deps
             if (mcrepo == null)
                 throw new IllegalStateException("Missing 'minecraft' dependency entry.");
-            mcrepo.validate(minecraft); //This will set the MC_VERSION property.
+            mcrepo.validate(minecraft, extension.getRuns(), extractNatives.get().getOutput(), downloadAssets.get().getOutput()); //This will set the MC_VERSION property.
 
             String mcVer = (String)project.getExtensions().getExtraProperties().get("MC_VERSION");
             String mcpVer = (String)project.getExtensions().getExtraProperties().get("MCP_VERSION");
@@ -194,11 +195,11 @@ public class UserDevPlugin implements Plugin<Project> {
             reobfJar.dependsOn(createMcpToSrg);
             reobfJar.setMappings(createMcpToSrg.get().getOutput());
 
-            createRunConfigsTasks(project, extractNatives.get(), downloadAssets.get(), extension.getRunConfigs());
+            createRunConfigsTasks(project, extractNatives.get(), downloadAssets.get(), extension.getRuns());
         });
     }
 
-    private void createRunConfigsTasks(@Nonnull Project project, ExtractNatives extractNatives, DownloadAssets downloadAssets, List<RunConfig> runs)
+    private void createRunConfigsTasks(@Nonnull Project project, ExtractNatives extractNatives, DownloadAssets downloadAssets, Map<String, RunConfig> runs)
     {
         // Utility task to abstract the prerequisites when using the intellij run generation
         TaskProvider<Task> prepareRun = project.getTasks().register("prepareRun", Task.class);
@@ -206,8 +207,8 @@ public class UserDevPlugin implements Plugin<Project> {
             task.dependsOn(project.getTasks().getByName("classes"), extractNatives, downloadAssets);
         });
 
-        runs.forEach(runConfig -> {
-            String taskName = runConfig.getName().replaceAll("[^a-zA-Z0-9\\-_]","");
+        runs.forEach((name, runConfig) -> {
+            String taskName = name.replaceAll("[^a-zA-Z0-9\\-_]","");
             if (!taskName.startsWith("run"))
                 taskName = "run" + taskName.substring(0,1).toUpperCase() + taskName.substring(1);
             TaskProvider<JavaExec> runTask = project.getTasks().register(taskName, JavaExec.class);

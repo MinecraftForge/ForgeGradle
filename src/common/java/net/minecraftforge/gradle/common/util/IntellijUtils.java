@@ -41,19 +41,16 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-public class IntellijUtils
-{
-    public static void createIntellijRunsTask(Project project, ExtractNatives extractNatives, DownloadAssets downloadAssets, Task prepareRun, List<RunConfig> runs)
-    {
+public class IntellijUtils {
+    public static void createIntellijRunsTask(Project project, ExtractNatives extractNatives, DownloadAssets downloadAssets, Task prepareRun, Map<String, RunConfig> runs) {
         TaskProvider<Task> genIntellijRuns = project.getTasks().register("genIntellijRuns", Task.class);
         genIntellijRuns.configure(task0 -> {
             task0.dependsOn(extractNatives, downloadAssets);
             task0.doLast(task1 -> {
-                try
-                {
+                try {
                     File runConfigurationsDir = new File(project.getProjectDir().getCanonicalFile(), ".idea/runConfigurations");
 
                     if (!runConfigurationsDir.exists())
@@ -64,27 +61,23 @@ public class IntellijUtils
 
                     TransformerFactory transformerFactory = TransformerFactory.newInstance();
                     Transformer transformer = transformerFactory.newTransformer();
-                    runs.forEach(runConfig -> {
-                        String moduleName = runConfig.getIdeaModuleName();
+                    runs.forEach((name, runConfig) -> {
+                        String moduleName = runConfig.getIdeaModule();
                         if (moduleName == null)
                             moduleName = project.getName() + "_main";
-                        createRunConfigurationXml(runConfig, runConfig.isSingleInstance(), docBuilder, transformer,
+                        createRunConfigurationXml(name, runConfig, runConfig.isSingleInstance(), docBuilder, transformer,
                                     moduleName, Collections.singletonList(prepareRun), runConfigurationsDir);
                     });
 
-                }
-                catch (IOException | ParserConfigurationException | TransformerConfigurationException e)
-                {
+                } catch (IOException | ParserConfigurationException | TransformerConfigurationException e) {
                     e.printStackTrace();
                 }
             });
         });
     }
 
-    public static void createRunConfigurationXml(Project project, RunConfig runConfig, boolean singleInstance, String moduleName, Collection<Task> dependencyTasks)
-    {
-        try
-        {
+    public static void createRunConfigurationXml(Project project, String runName, RunConfig runConfig, boolean singleInstance, String moduleName, Collection<Task> dependencyTasks) {
+        try {
             File runConfigurationsDir = new File(project.getProjectDir().getCanonicalFile(), ".idea/runConfigurations");
 
             if (!runConfigurationsDir.exists())
@@ -96,17 +89,13 @@ public class IntellijUtils
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
 
-            createRunConfigurationXml(runConfig, singleInstance, docBuilder, transformer, moduleName, dependencyTasks, runConfigurationsDir);
-        }
-        catch (IOException | ParserConfigurationException | TransformerConfigurationException e)
-        {
+            createRunConfigurationXml(runName, runConfig, singleInstance, docBuilder, transformer, moduleName, dependencyTasks, runConfigurationsDir);
+        } catch (IOException | ParserConfigurationException | TransformerConfigurationException e) {
             e.printStackTrace();
         }
     }
 
-    private static void createRunConfigurationXml(RunConfig runConfig, boolean singleInstance, DocumentBuilder docBuilder, Transformer transformer, String moduleName, Collection<Task> dependencyTasks, File runConfigurationsDir)
-    {
-        String taskName = runConfig.getName();
+    private static void createRunConfigurationXml(String taskName, RunConfig runConfig, boolean singleInstance, DocumentBuilder docBuilder, Transformer transformer, String moduleName, Collection<Task> dependencyTasks, File runConfigurationsDir) {
         String mainClass = runConfig.getMain();
         String workDir = runConfig.getWorkingDirectory();
         String props = runConfig.getProperties().entrySet().stream()
@@ -184,12 +173,9 @@ public class IntellijUtils
 
         DOMSource source = new DOMSource(doc);
         StreamResult result = new StreamResult(new File(runConfigurationsDir, taskName + ".xml"));
-        try
-        {
+        try {
             transformer.transform(source, result);
-        }
-        catch (TransformerException e)
-        {
+        } catch (TransformerException e) {
             e.printStackTrace();
         }
 

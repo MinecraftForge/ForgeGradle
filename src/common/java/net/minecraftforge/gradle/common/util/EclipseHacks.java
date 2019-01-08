@@ -49,7 +49,7 @@ import net.minecraftforge.gradle.common.task.ExtractNatives;
 public class EclipseHacks {
 
     @SuppressWarnings("unchecked")
-    public static void doEclipseFixes(Project project, ExtractNatives nativesTask, DownloadAssets assetsTask, List<RunConfig> runs) {
+    public static void doEclipseFixes(Project project, ExtractNatives nativesTask, DownloadAssets assetsTask, Map<String, RunConfig> runs) {
         final File natives = nativesTask.getOutput();
         final File assets = assetsTask.getOutput();
 
@@ -87,7 +87,8 @@ public class EclipseHacks {
                         IOUtils.write(XmlUtil.serialize(xml), fos, StandardCharsets.UTF_8);
                     }
 
-                    for (RunConfig runConfig : runs) {
+                    for (Map.Entry<String, RunConfig> entry : runs.entrySet()) {
+                        RunConfig runConfig = entry.getValue();
                         xml = new Node(null, "launchConfiguration", props("type", "org.eclipse.jdt.launching.localJavaApplication"));
 
                         String workDir = runConfig.getWorkingDirectory();
@@ -114,7 +115,7 @@ public class EclipseHacks {
                             xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.VM_ARGUMENTS", "value", props));
                         }
 
-                        try (OutputStream fos = new FileOutputStream(project.file(runConfig.getName() +".launch"))) {
+                        try (OutputStream fos = new FileOutputStream(project.file(entry.getKey() + ".launch"))) {
                             IOUtils.write(XmlUtil.serialize(xml), fos, StandardCharsets.UTF_8);
                         }
                     }

@@ -34,19 +34,12 @@ import java.util.Map;
 public class UserDevExtension {
     private String mappings;
     private List<File> accessTransformers = new ArrayList<>();
-    private List<RunConfig> runConfigs = new ArrayList<>();
+    private RunConfig.Container runs = new RunConfig.Container();
 
     @Inject
     public UserDevExtension(Project project) {
     }
 
-    public String getMappings() {
-        return mappings;
-    }
-
-    public List<File> getAccessTransformers() {
-        return accessTransformers;
-    }
 
     // mappings channel: 'snapshot', version: '20180101'
     public void mappings(Map<String, String> map) {
@@ -55,44 +48,35 @@ public class UserDevExtension {
         if (channel == null || version == null) {
             throw new IllegalArgumentException("Must specify mappings channel and version");
         }
-
-        //setMappings("de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip");
         setMappings(channel + '_' + version);
     }
-
     public void setMappings(String value) {
         mappings = value;
     }
+    public String getMappings() {
+        return mappings;
+    }
 
+    public void accessTransformer(File file) {
+        this.setAccessTransformer(file);
+    }
+    public void setAccessTransformer(File file) {
+        this.accessTransformers.add(file);
+    }
     public void setAccessTransformers(List<File> files) {
          this.accessTransformers.clear();
          this.accessTransformers.addAll(files);
     }
-
-    public void setAccessTransformer(File file) {
-        this.accessTransformers.add(file);
+    public List<File> getAccessTransformers() {
+        return accessTransformers;
     }
 
-    public void setRunConfigs(List<RunConfig> runs) {
-        this.runConfigs.clear();
-        this.runConfigs.addAll(runs);
+    public void runs(Closure<? super RunConfig.Container> value) {
+        value.setResolveStrategy(Closure.DELEGATE_FIRST);
+        value.setDelegate(runs);
+        value.call();
     }
-
-    public void runConfig(RunConfig run) {
-        this.runConfigs.add(run);
-    }
-
-    public void runConfig(Closure<? super RunConfig> action) {
-        RunConfig run = new RunConfig();
-        action.setResolveStrategy(Closure.DELEGATE_FIRST);
-        action.setDelegate(run);
-        action.call();
-        this.runConfigs.add(run);
-    }
-
-
-    public List<RunConfig> getRunConfigs()
-    {
-        return this.runConfigs;
+    public Map<String, RunConfig> getRuns() {
+        return this.runs.getRuns();
     }
 }

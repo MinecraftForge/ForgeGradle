@@ -24,9 +24,12 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import net.minecraftforge.gradle.common.config.MCPConfigV1.Function;
+import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
 
 public class UserdevConfigV1 extends Config {
@@ -49,6 +52,7 @@ public class UserdevConfigV1 extends Config {
     public String universal; //Remapped and added to the classpath, Contains new classes and resources
     public List<String> libraries; //Additional libraries.
     public String inject;
+    public Map<String, RunConfig> runs;
 
 
     public void addAT(String value) {
@@ -76,5 +80,10 @@ public class UserdevConfigV1 extends Config {
         if (this.libraries == null)
             this.libraries = new ArrayList<>();
         this.libraries.add(value);
+    }
+    public void addRun(String name, RunConfig value) {
+        if (this.runs == null)
+            this.runs = new HashMap<>();
+        this.runs.put(name, value);
     }
 }

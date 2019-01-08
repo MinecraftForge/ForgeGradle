@@ -45,38 +45,27 @@ public class PatcherExtension {
     private List<Object> extraExcs = new ArrayList<>();
     private List<File> accessTransformers = new ArrayList<>();
     private List<File> excs = new ArrayList<>();
-    private RunConfig clientRun = new RunConfig();
-    private RunConfig serverRun = new RunConfig();
+    private RunConfig.Container runs = new RunConfig.Container();
 
     @Inject
     public PatcherExtension(Project project) {
-        String niceName = project.getName().substring(0, 1).toUpperCase() + project.getName().substring(1);
-
-        clientRun.setName(niceName + " Client");
+        RunConfig clientRun = new RunConfig();
         clientRun.setMain("mcp.client.Start");
-        try
-        {
+        try {
             clientRun.setWorkingDirectory(project.file("run").getCanonicalPath());
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             e.printStackTrace();
         }
+        runs.getRuns().put(project.getName() + "_client", clientRun);
 
-        serverRun.setName(niceName + " Server");
+        RunConfig serverRun = new RunConfig();
         serverRun.setMain("net.minecraft.server.MinecraftServer");
-        try
-        {
+        try {
             serverRun.setWorkingDirectory(project.file("run").getCanonicalPath());
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public String getMappings() {
-        return mappings;
+        runs.getRuns().put(project.getName() + "_server", serverRun);
     }
 
     public List<Object> getExtraMappings() {
@@ -85,14 +74,6 @@ public class PatcherExtension {
 
     public List<Object> getExtraExcs() {
         return extraExcs;
-    }
-
-    public List<File> getAccessTransformers() {
-        return accessTransformers;
-    }
-
-    public List<File> getExcs() {
-        return excs;
     }
 
     // mappings channel: 'snapshot', version: '20180101'
@@ -106,9 +87,11 @@ public class PatcherExtension {
         if (!version.contains("-")) version = version + "-+";
         setMappings("de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip");
     }
-
     public void setMappings(String value) {
         mappings = value;
+    }
+    public String getMappings() {
+        return mappings;
     }
 
     public void extraMapping(Object mapping) {
@@ -132,41 +115,41 @@ public class PatcherExtension {
         }
     }
 
+    public void accessTransformer(File file) {
+        this.setAccessTransformer(file);
+    }
+    public void setAccessTransformer(File file) {
+        this.accessTransformers.add(file);
+    }
     public void setAccessTransformers(List<File> files) {
          this.accessTransformers.clear();
          this.accessTransformers.addAll(files);
     }
-
-    public void setAccessTransformer(File file) {
-        this.accessTransformers.add(file);
+    public List<File> getAccessTransformers() {
+        return accessTransformers;
     }
 
+
+    public void exc(File file) {
+        this.setExc(file);
+    }
+    public void setExc(File file) {
+        this.excs.add(file);
+    }
     public void setExc(List<File> files) {
          this.excs.clear();
          this.excs.addAll(files);
     }
-
-    public void setExc(File file) {
-        this.excs.add(file);
+    public List<File> getExcs() {
+        return excs;
     }
 
-    public void setClientRun(Closure<? super RunConfig> action) {
-        action.setResolveStrategy(Closure.DELEGATE_FIRST);
-        action.setDelegate(clientRun);
-        action.call();
+    public void runs(Closure<? super RunConfig.Container> value) {
+        value.setResolveStrategy(Closure.DELEGATE_FIRST);
+        value.setDelegate(runs);
+        value.call();
     }
-
-    public RunConfig getClientRun() {
-        return clientRun;
-    }
-
-    public void setServerRun(Closure<? super RunConfig> action) {
-        action.setResolveStrategy(Closure.DELEGATE_FIRST);
-        action.setDelegate(serverRun);
-        action.call();
-    }
-
-    public RunConfig getServerRun() {
-        return serverRun;
+    public Map<String, RunConfig> getRuns() {
+        return this.runs.getRuns();
     }
 }

@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -39,8 +40,10 @@ import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.io.Files;
 
+import groovy.lang.Closure;
 import net.minecraftforge.gradle.common.config.MCPConfigV1.Function;
 import net.minecraftforge.gradle.common.config.UserdevConfigV1;
+import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPExtension;
 import net.minecraftforge.gradle.patcher.PatcherExtension;
@@ -56,6 +59,7 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
     private String[] args;
     private List<String> libraries;
     private String inject;
+    private RunConfig.Container runs = null;
 
     @TaskAction
     public void apply() throws IOException {
@@ -72,6 +76,8 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
         getSRGs().forEach(srg -> json.addSRG("srgs/" + srg.getName()));
         getSRGLines().forEach(srg -> json.addSRGLine(srg));
         addParent(json, getProject());
+        if (runs != null)
+            runs.getRuns().forEach((k, v) -> json.addRun(k, v));
 
         json.binpatcher = new Function();
         json.binpatcher.setVersion(getTool());
@@ -180,6 +186,21 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
     }
     public void addSRGLine(String value) {
         this.srgLines.add(value);
+    }
+
+    @Input
+    @Optional
+    public Map<String, RunConfig> getRuns() {
+        if (this.runs == null)
+            return null;
+        return this.runs.getRuns();
+    }
+    public void runs(Closure<? super RunConfig.Container> value) {
+        if (runs == null)
+            runs = new RunConfig.Container();
+        value.setResolveStrategy(Closure.DELEGATE_FIRST);
+        value.setDelegate(runs);
+        value.call();
     }
 
     @OutputFile
