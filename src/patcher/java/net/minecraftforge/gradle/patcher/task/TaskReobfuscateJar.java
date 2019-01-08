@@ -93,9 +93,9 @@ public class TaskReobfuscateJar extends DefaultTask {
             workDir.mkdirs();
         }
 
+        JavaExec java = getProject().getTasks().create("_", JavaExec.class);
         try (OutputStream log = new BufferedOutputStream(new FileOutputStream(new File(workDir, "log.txt")))) {
             // Execute command
-            JavaExec java = getProject().getTasks().create("_", JavaExec.class);
             java.setArgs(_args);
             if (getClasspath() == null) {
                 java.setClasspath(getProject().files(jar));
@@ -117,7 +117,6 @@ public class TaskReobfuscateJar extends DefaultTask {
                 }
             });
             java.exec();
-            getProject().getTasks().remove(java);
 
             List<String> lines = Files.readLines(getSrg(), StandardCharsets.UTF_8);
             lines = lines.stream().map(line -> line.split("#")[0]).filter(l -> !Strings.isNullOrEmpty(l.trim())).collect(Collectors.toList()); //Strip empty/comments
@@ -153,6 +152,8 @@ public class TaskReobfuscateJar extends DefaultTask {
             }
 
             output_temp.delete();
+        } finally {
+            getProject().getTasks().remove(java);
         }
     }
 

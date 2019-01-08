@@ -43,7 +43,7 @@ import java.util.regex.Pattern;
 public class POMBuilder {
 
     private static final Pattern PATTERN_ARTIFACT = Pattern.compile(
-            "^(?<group>[^:]+):(?<name>[^:]+)(?::(?<version>[^:]+))(?::(?<classifier>[^:@]+))?(?:@(?<extension>[^:]+))?$");
+            "^(?<group>[^:]+):(?<name>[^:]+)(?::(?<version>[^:@]+))(?::(?<classifier>[^:@]+))?(?:@(?<extension>[^:]+))?$");
 
     private final String group, name, version;
     private final Dependencies dependencies = new Dependencies();
@@ -105,11 +105,11 @@ public class POMBuilder {
                 set(doc, dep, "groupId", dependency.group);
                 set(doc, dep, "artifactId", dependency.name);
                 set(doc, dep, "version", dependency.version);
-                if (dependency.classifier != null) {
+                if (dependency.classifier != null && !"jar".equals(dependency.classifier)) {
                     set(doc, dep, "classifier", dependency.classifier);
                 }
                 if (dependency.extension != null) {
-                    set(doc, dep, "extension", dependency.extension);
+                    set(doc, dep, "type", dependency.extension);
                 }
                 if (dependency.scope != null) {
                     set(doc, dep, "scope", dependency.scope);

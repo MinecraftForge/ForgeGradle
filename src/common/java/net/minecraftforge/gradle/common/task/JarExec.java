@@ -65,9 +65,9 @@ public class JarExec extends DefaultTask {
 
         File logFile = new File(workDir, "log.txt");
 
+        JavaExec java = getProject().getTasks().create("_", JavaExec.class);
         try (OutputStream log = hasLog ? new BufferedOutputStream(new FileOutputStream(logFile)) : NULL) {
             // Execute command
-            JavaExec java = getProject().getTasks().create("_", JavaExec.class);
             java.setArgs(filterArgs());
             if (getClasspath() == null)
                 java.setClasspath(getProject().files(jar));
@@ -88,6 +88,7 @@ public class JarExec extends DefaultTask {
                 }
             });
             java.exec();
+        } finally {
             getProject().getTasks().remove(java);
         }
 
