@@ -65,6 +65,7 @@ import java.util.zip.ZipFile;
 public class Utils {
     public static final Gson GSON = new GsonBuilder()
         .registerTypeAdapter(MCPConfigV1.Step.class, new MCPConfigV1.Step.Deserializer())
+        .registerTypeAdapter(VersionJson.Argument.class, new VersionJson.Argument.Deserializer())
         .setPrettyPrinting().create();
     private static int CACHE_TIMEOUT = 1000 * 60 * 60 * 1; //1 hour, Timeout used for version_manifest.json so we dont ping their server every request.
                                                           //manifest doesn't include sha1's so we use this for the per-version json as well.

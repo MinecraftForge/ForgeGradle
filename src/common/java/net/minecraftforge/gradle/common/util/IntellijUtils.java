@@ -31,6 +31,7 @@ import org.w3c.dom.Element;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
@@ -43,6 +44,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class IntellijUtils {
     public static void createIntellijRunsTask(Project project, ExtractNatives extractNatives, DownloadAssets downloadAssets, Task prepareRun, Map<String, RunConfig> runs) {
@@ -51,7 +53,7 @@ public class IntellijUtils {
             task0.dependsOn(extractNatives, downloadAssets);
             task0.doLast(task1 -> {
                 try {
-                    File runConfigurationsDir = new File(project.getProjectDir().getCanonicalFile(), ".idea/runConfigurations");
+                    File runConfigurationsDir = new File(project.getRootProject().getProjectDir().getCanonicalFile(), ".idea/runConfigurations");
 
                     if (!runConfigurationsDir.exists())
                         runConfigurationsDir.mkdirs();
@@ -61,6 +63,8 @@ public class IntellijUtils {
 
                     TransformerFactory transformerFactory = TransformerFactory.newInstance();
                     Transformer transformer = transformerFactory.newTransformer();
+                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                    transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
                     runs.forEach((name, runConfig) -> {
                         String moduleName = runConfig.getIdeaModule();
                         if (moduleName == null)
@@ -88,6 +92,8 @@ public class IntellijUtils {
 
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 
             createRunConfigurationXml(runName, runConfig, singleInstance, docBuilder, transformer, moduleName, dependencyTasks, runConfigurationsDir);
         } catch (IOException | ParserConfigurationException | TransformerConfigurationException e) {
@@ -98,10 +104,10 @@ public class IntellijUtils {
     private static void createRunConfigurationXml(String taskName, RunConfig runConfig, boolean singleInstance, DocumentBuilder docBuilder, Transformer transformer, String moduleName, Collection<Task> dependencyTasks, File runConfigurationsDir) {
         String mainClass = runConfig.getMain();
         String workDir = runConfig.getWorkingDirectory();
-        String props = runConfig.getProperties().entrySet().stream()
-                .map(kv -> String.format("-D%s=%s", kv.getKey(), kv.getValue()))
-                .collect(Collectors.joining(","));
-        ;
+        Stream<String> propStream = runConfig.getProperties().entrySet().stream()
+                .map(kv -> String.format("-D%s=%s", kv.getKey(), kv.getValue()));
+
+        String props = Stream.concat(propStream, runConfig.getJvmArgs().stream()).collect(Collectors.joining(" "));
         String args = String.join(" ", runConfig.getArgs());
 
         Document doc = docBuilder.newDocument();

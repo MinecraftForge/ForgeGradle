@@ -35,9 +35,12 @@ import groovy.lang.Closure;
 import groovy.lang.MissingPropertyException;
 
 public class RunConfig implements Serializable {
+    private static final String MCP_CLIENT_MAIN = "mcp.client.Start";
+    private static final String MC_CLIENT_MAIN = "net.minecraft.client.main.Main";
     private static final long serialVersionUID = 1L;
     private String main;
     private List<String> args;
+    private List<String> jvmArgs;
     private Map<String, String> env;
     private Map<String, String> props;
     private boolean singleInstance = false;
@@ -83,6 +86,18 @@ public class RunConfig implements Serializable {
         if (args == null)
             args = new ArrayList<>();
         return args;
+    }
+
+    public void jvmArg(String value) {
+        getJvmArgs().add(value);
+    }
+    public void jvmArgs(List<String> values) {
+        getJvmArgs().addAll(values);
+    }
+    public List<String> getJvmArgs() {
+        if (jvmArgs == null)
+            jvmArgs = new ArrayList<>();
+        return jvmArgs;
     }
 
     public void singleInstance(boolean value) {
@@ -194,6 +209,11 @@ public class RunConfig implements Serializable {
         String key = value.substring(1, value.length() - 1);
         String resolved = vars.get(key);
         return resolved == null ? value : resolved;
+    }
+
+    public boolean isClient() {
+        boolean isTargetClient = getEnvironment().getOrDefault("target", "").contains("client");
+        return isTargetClient || MCP_CLIENT_MAIN.equals(getMain()) || MC_CLIENT_MAIN.equals(getMain());
     }
 
     public static class Container {

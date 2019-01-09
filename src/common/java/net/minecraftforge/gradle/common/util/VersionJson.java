@@ -20,13 +20,24 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import java.lang.reflect.Type;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class VersionJson {
+    public Arguments arguments;
     public AssetIndex assetIndex;
     public String assets;
     public Map<String, Download> downloads;
@@ -48,6 +59,93 @@ public class VersionJson {
             }
         }
         return _natives;
+    }
+
+    public List<String> getPlatformJvmArgs() {
+        return Stream.of(arguments.jvm).filter(arg -> arg.rules != null && arg.isAllowed()).
+                flatMap(arg -> arg.value.stream()).
+                map(s -> {
+                    if (s.indexOf(' ') != -1)
+                        return "\"" + s + "\"";
+                    else
+                        return s;
+                }).collect(Collectors.toList());
+    }
+
+    public static class Arguments {
+        public Argument[] game;
+        public Argument[] jvm;
+    }
+
+    public static class Argument {
+        public Rule[] rules;
+        public List<String> value;
+
+        public Argument(Rule[] rules, List<String> value) {
+            this.rules = rules;
+            this.value = value;
+        }
+
+        public boolean isAllowed() {
+            if (rules != null) {
+                for (Rule rule : rules) {
+                    if (!rule.allowsAction()) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        public static class Deserializer implements JsonDeserializer<VersionJson.Argument> {
+            @Override
+            public Argument deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+                if (json.isJsonPrimitive()) {
+                    return new Argument(null, Collections.singletonList(json.getAsString()));
+                }
+
+                JsonObject obj = json.getAsJsonObject();
+                if (!obj.has("rules") || !obj.has("value"))
+                    throw new JsonParseException("Error parsing arguments in version json. File is corrupt or its format has changed.");
+
+                JsonElement val = obj.get("value");
+                Rule[] rules = Utils.GSON.fromJson(obj.get("rules"), Rule[].class);
+                List<String> value = val.isJsonPrimitive() ? Collections.singletonList(val.getAsString()) : Utils.GSON.fromJson(val, List.class);
+
+                return new Argument(rules, value);
+            }
+        }
+    }
+
+    public static class Rule {
+        public String action;
+        public OsCondition os;
+
+        public boolean allowsAction() {
+            return os != null && os.platformMatches() == action.equals("allow");
+        }
+    }
+
+    public static class OsCondition {
+        public String name;
+        public String version;
+        public String arch;
+
+        public boolean nameMatches() {
+            return name == null || OS.getCurrent().getName().equals(name);
+        }
+
+        public boolean versionMatches() {
+            return version == null || Pattern.compile(version).matcher(System.getProperty("os.version")).find();
+        }
+
+        public boolean archMatches() {
+            return arch == null || Pattern.compile(arch).matcher(System.getProperty("os.arch")).find();
+        }
+
+        public boolean platformMatches() {
+            return nameMatches() && versionMatches() && archMatches();
+        }
     }
 
     public static class AssetIndex extends Download {
