@@ -37,7 +37,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
 import org.gradle.api.tasks.compile.JavaCompile;
@@ -287,7 +286,7 @@ public class MinecraftUserRepo extends BaseRepo {
         } else {
             switch (classifier) {
                 case "":        return findRaw(mappings);
-                case "sources": return findSource(mappings);
+                case "sources": return findSource(mappings, true);
                 default:        return findExtraClassifier(mappings, classifier, ext);
             }
         }
@@ -397,7 +396,7 @@ public class MinecraftUserRepo extends BaseRepo {
         File names = findMapping(mapping);
         HashStore cache = commonHash(names);
 
-        File recomp = findRecomp(mapping);
+        File recomp = findRecomp(mapping, false);
         if (recomp != null)
             return recomp;
 
@@ -446,7 +445,6 @@ public class MinecraftUserRepo extends BaseRepo {
                 srged = cacheRaw("srg", "jar");
                 //Combine all universals and vanilla together.
                 Set<String> added = new HashSet<>();
-                Map<String, List<String>> servicesLists = new HashMap<>();
                 try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(srged))) {
 
                     //Add binpatched, then vanilla first, overrides any other entries added
@@ -465,70 +463,7 @@ public class MinecraftUserRepo extends BaseRepo {
                         }
                     }
 
-                    // Walk parents and combine from bottom up so we get any overridden files.
-                    Patcher patcher = parent;
-                    while (patcher != null) {
-                        if (patcher.getUniversal() != null) {
-                            try (ZipInputStream zin = new ZipInputStream(new FileInputStream(patcher.getUniversal()))) {
-                                ZipEntry entry;
-                                while ((entry = zin.getNextEntry()) != null) {
-                                    String name = entry.getName();
-                                    if (added.contains(name))
-                                        continue;
-                                    if (name.startsWith("META-INF/services/") && !entry.isDirectory()) {
-                                        List<String> existing = servicesLists.computeIfAbsent(name, k -> new ArrayList<>());
-                                        if (existing.size() > 0) existing.add("");
-                                        existing.add(String.format("# %s - %s", patcher.artifact, patcher.getUniversal().getCanonicalFile().getName()));
-                                        existing.addAll(IOUtils.readLines(zin));
-                                    } else {
-                                        ZipEntry _new = new ZipEntry(name);
-                                        _new.setTime(0); //SHOULD be the same time as the main entry, but NOOOO _new.setTime(entry.getTime()) throws DateTimeException, so you get 0, screw you!
-                                        zip.putNextEntry(_new);
-                                        IOUtils.copy(zin, zip);
-                                        added.add(name);
-                                    }
-                                }
-                            }
-                        }
-                        // Dev time specific files, such as launch helper.
-                        if (patcher.getInject() != null) {
-                            try (ZipInputStream zin = new ZipInputStream(new FileInputStream(patcher.getZip()))) {
-                                ZipEntry entry;
-                                while ((entry = zin.getNextEntry()) != null) {
-                                    if (!entry.getName().startsWith(patcher.getInject()) || entry.getName().length() <= patcher.getInject().length())
-                                        continue;
-                                    String name = entry.getName().substring(patcher.getInject().length());
-                                    if (added.contains(name))
-                                        continue;
-                                    if (name.startsWith("META-INF/services/") && !entry.isDirectory())
-                                    {
-                                        List<String> existing = servicesLists.computeIfAbsent(name, k -> new ArrayList<>());
-                                        if (existing.size() > 0) existing.add("");
-                                        existing.add(String.format("# %s - %s", patcher.artifact, patcher.getZip().getCanonicalFile().getName()));
-                                        existing.addAll(IOUtils.readLines(zin));
-                                    }
-                                    else
-                                    {
-                                        ZipEntry _new = new ZipEntry(name);
-                                        _new.setTime(0);
-                                        zip.putNextEntry(_new);
-                                        IOUtils.copy(zin, zip);
-                                        added.add(name);
-                                    }
-                                }
-                            }
-                        }
-                        patcher = patcher.getParent();
-                    }
-
-                    for(Map.Entry<String, List<String>> kv : servicesLists.entrySet()) {
-                        String name = kv.getKey();
-                        ZipEntry _new = new ZipEntry(name);
-                        _new.setTime(0);
-                        zip.putNextEntry(_new);
-                        IOUtils.writeLines(kv.getValue(), "\n", zip);
-                        added.add(name);
-                    }
+                    copyResources(zip, added, true);
                 }
             }
 
@@ -581,6 +516,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 return null;
 
             File injected = cacheRaw("injected", "jar");
+            //Combine mci, and our recompiled MCP injected classes.
             try (ZipInputStream zmci = new ZipInputStream(new FileInputStream(mcinject));
                  ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(injected))) {
                 ZipEntry entry = null;
@@ -650,6 +586,75 @@ public class MinecraftUserRepo extends BaseRepo {
         return bin;
     }
 
+    private void copyResources(ZipOutputStream zip, Set<String> added, boolean includeClasses) throws IOException {
+        Map<String, List<String>> servicesLists = new HashMap<>();
+        // Walk parents and combine from bottom up so we get any overridden files.
+        Patcher patcher = parent;
+        while (patcher != null) {
+            if (patcher.getUniversal() != null) {
+                try (ZipInputStream zin = new ZipInputStream(new FileInputStream(patcher.getUniversal()))) {
+                    ZipEntry entry;
+                    while ((entry = zin.getNextEntry()) != null) {
+                        String name = entry.getName();
+                        if (added.contains(name))
+                            continue;
+                        if (!includeClasses && name.endsWith(".class"))
+                            continue;
+                        if (name.startsWith("META-INF/services/") && !entry.isDirectory()) {
+                            List<String> existing = servicesLists.computeIfAbsent(name, k -> new ArrayList<>());
+                            if (existing.size() > 0) existing.add("");
+                            existing.add(String.format("# %s - %s", patcher.artifact, patcher.getUniversal().getCanonicalFile().getName()));
+                            existing.addAll(IOUtils.readLines(zin));
+                        } else {
+                            ZipEntry _new = new ZipEntry(name);
+                            _new.setTime(0); //SHOULD be the same time as the main entry, but NOOOO _new.setTime(entry.getTime()) throws DateTimeException, so you get 0, screw you!
+                            zip.putNextEntry(_new);
+                            IOUtils.copy(zin, zip);
+                            added.add(name);
+                        }
+                    }
+                }
+            }
+            // Dev time specific files, such as launch helper.
+            if (patcher.getInject() != null) {
+                try (ZipInputStream zin = new ZipInputStream(new FileInputStream(patcher.getZip()))) {
+                    ZipEntry entry;
+                    while ((entry = zin.getNextEntry()) != null) {
+                        if (!entry.getName().startsWith(patcher.getInject()) || entry.getName().length() <= patcher.getInject().length())
+                            continue;
+                        String name = entry.getName().substring(patcher.getInject().length());
+                        if (added.contains(name))
+                            continue;
+                        if (!includeClasses && name.endsWith(".class"))
+                            continue;
+                        if (name.startsWith("META-INF/services/") && !entry.isDirectory()) {
+                            List<String> existing = servicesLists.computeIfAbsent(name, k -> new ArrayList<>());
+                            if (existing.size() > 0) existing.add("");
+                            existing.add(String.format("# %s - %s", patcher.artifact, patcher.getZip().getCanonicalFile().getName()));
+                            existing.addAll(IOUtils.readLines(zin));
+                        } else {
+                            ZipEntry _new = new ZipEntry(name);
+                            _new.setTime(0);
+                            zip.putNextEntry(_new);
+                            IOUtils.copy(zin, zip);
+                            added.add(name);
+                        }
+                    }
+                }
+            }
+            patcher = patcher.getParent();
+        }
+
+        for(Map.Entry<String, List<String>> kv : servicesLists.entrySet()) {
+            String name = kv.getKey();
+            ZipEntry _new = new ZipEntry(name);
+            _new.setTime(0);
+            zip.putNextEntry(_new);
+            IOUtils.writeLines(kv.getValue(), "\n", zip);
+            added.add(name);
+        }
+    }
+
     private McpNames loadMCPNames(String name, File data) throws IOException {
         McpNames map = mapCache.get(name);
         String hash = HashFunction.SHA1.hash(data);
@@ -692,24 +697,24 @@ public class MinecraftUserRepo extends BaseRepo {
         return srg;
     }
 
-    private File findDecomp() throws IOException {
+    private File findDecomp(boolean generate) throws IOException {
         HashStore cache = commonHash(null);
 
         File decomp = cacheAT("decomp", "jar");
         debug("    Finding Decomp: " + decomp);
         cache.load(cacheAT("decomp", "jar.input"));
 
-        if (!cache.isSame() || !decomp.exists()) {
+        if ((!cache.isSame() && (cache.exists() || generate)) || (!decomp.exists() && generate)) {
             File output = mcp.getStepOutput("joined", null);
             FileUtils.copyFile(output, decomp);
             cache.save();
             Utils.updateHash(decomp, HashFunction.SHA1);
         }
-        return decomp;
+        return decomp.exists() ? decomp : null;
     }
 
-    private File findPatched() throws IOException {
-        File decomp = findDecomp();
+    private File findPatched(boolean generate) throws IOException {
+        File decomp = findDecomp(generate);
         if (decomp == null) return null;
         if (parent == null) return decomp;
 
@@ -719,7 +724,7 @@ public class MinecraftUserRepo extends BaseRepo {
         debug("    Finding patched: " + decomp);
         cache.load(cacheAT("patched", "jar.input"));
 
-        if (!cache.isSame() || !patched.exists()) {
+        if ((!cache.isSame() && (cache.exists() || generate)) || (!patched.exists() && generate)) {
             LinkedList<Patcher> parents = new LinkedList<>();
             Patcher patcher = parent;
             while (patcher != null) {
@@ -800,11 +805,11 @@ public class MinecraftUserRepo extends BaseRepo {
                 Utils.updateHash(patched, HashFunction.SHA1);
             }
         }
-        return patched;
+        return patched.exists() ? patched : null;
     }
 
-    private File findSource(String mapping) throws IOException {
-        File patched = findPatched();
+    private File findSource(String mapping, boolean generate) throws IOException {
+        File patched = findPatched(generate);
         if (patched == null) return null;
         if (mapping == null) return patched;
 
@@ -816,7 +821,7 @@ public class MinecraftUserRepo extends BaseRepo {
         File sources = cacheMapped(mapping, "sources", "jar");
         debug("    Finding Source: " + sources);
         cache.load(cacheMapped(mapping, "sources", "jar.input"));
-        if (!cache.isSame() || !sources.exists()) {
+        if ((!cache.isSame() && (cache.exists() || generate)) || (!sources.exists() && generate)) {
             McpNames map = McpNames.load(names);
 
             if (!sources.getParentFile().exists())
@@ -842,12 +847,11 @@ public class MinecraftUserRepo extends BaseRepo {
             Utils.updateHash(sources, HashFunction.SHA1);
             cache.save();
         }
-        return sources;
+        return sources.exists() ? sources : null;
     }
 
-
-    private File findRecomp(String mapping) throws IOException {
-        File source = findSource(mapping);
+    private File findRecomp(String mapping, boolean generate) throws IOException {
+        File source = findSource(mapping, generate);
         File names = findMapping(mapping);
         if (source == null || names == null)
             return null;
@@ -865,20 +869,25 @@ public class MinecraftUserRepo extends BaseRepo {
             if (compiled == null)
                 return null;
 
+            Set<String> added = new HashSet<>();
             try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(recomp))) {
+                //Add all compiled code
                 Files.walkFileTree(compiled.toPath(), new SimpleFileVisitor<Path>() {
                     @Override
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                         try (InputStream fin = Files.newInputStream(file)) {
-                            ZipEntry _new = new ZipEntry(compiled.toPath().relativize(file).toString().replace('\\', '/'));
+                            String name = compiled.toPath().relativize(file).toString().replace('\\', '/');
+                            ZipEntry _new = new ZipEntry(name);
                             _new.setTime(0);
                             zout.putNextEntry(_new);
                             IOUtils.copy(fin, zout);
                             zout.closeEntry();
+                            added.add(name);
                         }
                         return FileVisitResult.CONTINUE;
                     }
                 });
+                copyResources(zout, added, false);
             }
             Utils.updateHash(recomp, HashFunction.SHA1);
             cache.save();

@@ -95,6 +95,10 @@ public class HashStore {
         return this;
     }
 
+    public boolean exists() {
+        return this.target != null && this.target.exists();
+    }
+
     public HashStore add(String key, String data) {
         newHashes.put(key, HashFunction.SHA1.hash(data));
         return this;
