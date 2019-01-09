@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -588,6 +589,7 @@ public class MinecraftUserRepo extends BaseRepo {
 
     private void copyResources(ZipOutputStream zip, Set<String> added, boolean includeClasses) throws IOException {
         Map<String, List<String>> servicesLists = new HashMap<>();
+        Predicate<String> filter = (name) -> added.contains(name) || (!includeClasses && name.endsWith(".class")) || (name.startsWith("META-INF") && (name.endsWith(".DSA") || name.endsWith(".SF")));
         // Walk parents and combine from bottom up so we get any overridden files.
         Patcher patcher = parent;
         while (patcher != null) {
@@ -596,10 +598,9 @@ public class MinecraftUserRepo extends BaseRepo {
                     ZipEntry entry;
                     while ((entry = zin.getNextEntry()) != null) {
                         String name = entry.getName();
-                        if (added.contains(name))
+                        if (filter.test(name))
                             continue;
-                        if (!includeClasses && name.endsWith(".class"))
-                            continue;
+
                         if (name.startsWith("META-INF/services/") && !entry.isDirectory()) {
                             List<String> existing = servicesLists.computeIfAbsent(name, k -> new ArrayList<>());
                             if (existing.size() > 0) existing.add("");
@@ -622,11 +623,11 @@ public class MinecraftUserRepo extends BaseRepo {
                     while ((entry = zin.getNextEntry()) != null) {
                         if (!entry.getName().startsWith(patcher.getInject()) || entry.getName().length() <= patcher.getInject().length())
                             continue;
+
                         String name = entry.getName().substring(patcher.getInject().length());
-                        if (added.contains(name))
+                        if (filter.test(name))
                             continue;
-                        if (!includeClasses && name.endsWith(".class"))
-                            continue;
+
                         if (name.startsWith("META-INF/services/") && !entry.isDirectory()) {
                             List<String> existing = servicesLists.computeIfAbsent(name, k -> new ArrayList<>());
                             if (existing.size() > 0) existing.add("");
