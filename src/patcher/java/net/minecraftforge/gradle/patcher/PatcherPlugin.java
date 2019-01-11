@@ -61,8 +61,11 @@ import com.google.common.collect.Lists;
 
 import javax.annotation.Nonnull;
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class PatcherPlugin implements Plugin<Project> {
@@ -518,11 +521,7 @@ public class PatcherPlugin implements Plugin<Project> {
                 filterNew.get().addBlacklist(joined);
             }
 
-            //Make sure tasks that require a valid classpath happen after making the classpath
-            p.getTasks().withType(GenerateEclipseClasspath.class, t -> { t.dependsOn(extractNatives.get(), downloadAssets.get()); });
-            //TODO: IntelliJ plugin?
-
-            EclipseHacks.doEclipseFixes(project, extractNatives.get(), downloadAssets.get(), extension.getRuns());
+            createRunConfigsTasks(project, extractNatives.get(), downloadAssets.get(), extension.getRuns());
 
             if (project.hasProperty("UPDATE_MAPPINGS")) {
                 String version = (String)project.property("UPDATE_MAPPINGS");
@@ -565,5 +564,33 @@ public class PatcherPlugin implements Plugin<Project> {
             return getMcpParent(extension.parent);
         }
         return null;
+    }
+
+    private void createRunConfigsTasks(@Nonnull Project project, ExtractNatives extractNatives, DownloadAssets downloadAssets, Map<String, RunConfig> runs)
+    {
+        project.getTasks().withType(GenerateEclipseClasspath.class, t -> { t.dependsOn(extractNatives, downloadAssets); });
+        // Utility task to abstract the prerequisites when using the intellij run generation
+        TaskProvider<Task> prepareRun = project.getTasks().register("prepareRun", Task.class);
+        prepareRun.configure(task -> {
+            task.dependsOn(project.getTasks().getByName("classes"), extractNatives, downloadAssets);
+        });
+
+        VersionJson json = null;
+
+        try {
+            json = Utils.loadJson(extractNatives.getMeta(), VersionJson.class);
+        }
+        catch (IOException e) {}
+
+        List<String> additionalClientArgs = json != null ? json.getPlatformJvmArgs() : Collections.emptyList();
+
+        runs.values().forEach(runConfig -> {
+            if (runConfig.isClient()) {
+                runConfig.jvmArgs(additionalClientArgs);
+            }
+        });
+
+        EclipseHacks.doEclipseFixes(project, extractNatives, downloadAssets, runs);
+        IntellijUtils.createIntellijRunsTask(project, extractNatives, downloadAssets, prepareRun.get(), runs);
     }
 }

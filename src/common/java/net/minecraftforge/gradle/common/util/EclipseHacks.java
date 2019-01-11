@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -106,11 +107,13 @@ public class EclipseHacks {
                         env.appendNode("mapEntry", props("key", "assetDirectory", "value", assets.getAbsolutePath()));
                         runConfig.getEnvironment().forEach((k,v) -> env.appendNode("mapEntry", props("key", k, "value", v)));
 
-                        String props = runConfig.getProperties().entrySet().stream().map(e -> {
+                        Stream<String> propStream = runConfig.getProperties().entrySet().stream().map(e -> {
                             String val = e.getValue();
                             if (val.indexOf(' ') != -1) val = "\"" + e.getValue().replaceAll("\"", "\\\"") + "\"";
                             return "-D" + e.getKey() + "=" + val;
-                        }).collect(Collectors.joining("\n"));
+                        });
+
+                        String props = Stream.concat(propStream, runConfig.getJvmArgs().stream()).collect(Collectors.joining("\n"));
 
                         if (!props.isEmpty()) {
                             xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.VM_ARGUMENTS", "value", props));
