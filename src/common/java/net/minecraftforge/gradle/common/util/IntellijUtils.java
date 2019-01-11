@@ -133,10 +133,12 @@ public class IntellijUtils {
         programParameters.setAttribute("value", args);
         configuration.appendChild(programParameters);
 
-        Element workingDirectory = doc.createElement("option");
-        workingDirectory.setAttribute("name", "WORKING_DIRECTORY");
-        workingDirectory.setAttribute("value", workDir);
-        configuration.appendChild(workingDirectory);
+        if (workDir != null) {
+            Element workingDirectory = doc.createElement("option");
+            workingDirectory.setAttribute("name", "WORKING_DIRECTORY");
+            workingDirectory.setAttribute("value", workDir);
+            configuration.appendChild(workingDirectory);
+        }
 
         Element module = doc.createElement("module");
         module.setAttribute("name", moduleName);

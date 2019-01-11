@@ -80,7 +80,7 @@ public class MinecraftRepo extends BaseRepo {
 
     public static void attach(Project project) {
         MinecraftRepo instance = getInstance(project);
-        GradleRepositoryAdapter.add(project.getRepositories(), "MINECRAFT_DYNAMIC", instance.cache, instance.repo);
+        GradleRepositoryAdapter.add(project.getRepositories(), "MINECRAFT_DYNAMIC", instance.getCacheRoot(), instance.repo);
     }
 
     public static ArtifactProvider<ArtifactIdentifier> create(Project project) {
@@ -172,7 +172,7 @@ public class MinecraftRepo extends BaseRepo {
 
     protected File findPom(String side, String version, File json) throws IOException {
         File pom = cache("versions", version, side + ".pom");
-        HashStore cache = new HashStore(this.cache).load(cache("versions", version, side + ".pom.input"));
+        HashStore cache = new HashStore(this.getCacheRoot()).load(cache("versions", version, side + ".pom.input"));
 
         if ("client".equals(side)) {
             cache.add(json);
@@ -231,7 +231,7 @@ public class MinecraftRepo extends BaseRepo {
         File raw = findRaw(side, version, json);
         File mappings = findMappings(version);
         File extra = cache("versions", version, side + "-extra.jar");
-        HashStore cache = new HashStore(this.cache).load(cache("versions", version, side + "-extra.input"))
+        HashStore cache = new HashStore(this.getCacheRoot()).load(cache("versions", version, side + "-extra.input"))
                 .add("raw", raw)
                 .add("mappings", mappings);
 
@@ -246,7 +246,7 @@ public class MinecraftRepo extends BaseRepo {
         File raw = findRaw(side, version, json);
         File mappings = findMappings(version);
         File extra = cache("versions", version, side + "-slim.jar");
-        HashStore cache = new HashStore(this.cache).load(cache("versions", version, side + "-slim.input"))
+        HashStore cache = new HashStore(this.getCacheRoot()).load(cache("versions", version, side + "-slim.input"))
                 .add("raw", raw)
                 .add("mappings", mappings);
 
@@ -295,7 +295,7 @@ public class MinecraftRepo extends BaseRepo {
     private File findData(String side, String version, File json) throws IOException {
         File raw = findRaw(side, version, json);
         File extra = cache("versions", version, side + "-data.jar");
-        HashStore cache = new HashStore(this.cache).load(cache("versions", version, side + "-extra.input"))
+        HashStore cache = new HashStore(this.getCacheRoot()).load(cache("versions", version, side + "-extra.input"))
                 .add("raw", raw);
 
         if (!cache.isSame() || !extra.exists()) {

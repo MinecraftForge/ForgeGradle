@@ -130,7 +130,7 @@ public class RunConfig implements Serializable {
         this.workDir = value;
     }
     public String getWorkingDirectory() {
-        return workDir == null ? "." : workDir;
+        return workDir;
     }
 
     public void source(SourceSet value) {

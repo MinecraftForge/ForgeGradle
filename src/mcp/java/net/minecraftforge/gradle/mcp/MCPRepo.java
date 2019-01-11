@@ -34,7 +34,6 @@ import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.ManifestJson;
 import net.minecraftforge.gradle.common.util.MappingFile;
-import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.McpNames;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.common.util.POMBuilder;
@@ -104,7 +103,7 @@ public class MCPRepo extends BaseRepo {
     }
     public static void attach(Project project) {
         MCPRepo instance = getInstance(project);
-        GradleRepositoryAdapter.add(project.getRepositories(), "MCP_DYNAMIC", instance.cache, instance.repo);
+        GradleRepositoryAdapter.add(project.getRepositories(), "MCP_DYNAMIC", instance.getCacheRoot(), instance.repo);
     }
 
     public static ArtifactProvider<ArtifactIdentifier> create(Project project) {
@@ -175,7 +174,7 @@ public class MCPRepo extends BaseRepo {
     }
 
     private HashStore commonHash(File mcp) {
-        return new HashStore(this.cache)
+        return new HashStore(this.getCacheRoot())
             .add("mcp", mcp);
     }
 

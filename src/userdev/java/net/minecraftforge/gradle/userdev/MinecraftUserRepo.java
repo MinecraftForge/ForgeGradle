@@ -126,6 +126,13 @@ public class MinecraftUserRepo extends BaseRepo {
         );
     }
 
+    @Override
+    protected File getCacheRoot() {
+        if (this.AT_HASH == null)
+            return super.getCacheRoot();
+        return project.file("build/fg_cache/");
+    }
+
     public void validate(Configuration cfg, Map<String, RunConfig> runs, File natives, File assets) {
         getParents();
         if (mcp == null)
@@ -295,7 +302,7 @@ public class MinecraftUserRepo extends BaseRepo {
 
     private HashStore commonHash(File mapping) {
         getParents();
-        HashStore ret = new HashStore(this.cache);
+        HashStore ret = new HashStore(this.getCacheRoot());
         ret.add(mcp.artifact.getDescriptor(), mcp.getZip());
         Patcher patcher = parent;
         while (patcher != null) {
@@ -417,6 +424,10 @@ public class MinecraftUserRepo extends BaseRepo {
 
             File srged = null;
             File joined = MavenArtifactDownloader.generate(project, "net.minecraft:joined:" + mcp.getVersion() + ":srg", true); //Download vanilla in srg name
+            if (joined == null || !joined.exists()) {
+                project.getLogger().error("MinecraftUserRepo: Failed to get Minecraft Joined SRG. Should not be possible.");
+                return null;
+            }
 
             //Gather vanilla packages, so we can only inject the proper package-info classes.
             Set<String> packages = new HashSet<>();

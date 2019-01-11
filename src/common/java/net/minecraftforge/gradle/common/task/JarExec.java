@@ -42,6 +42,7 @@ import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 
 public class JarExec extends DefaultTask {
     private static final OutputStream NULL = new OutputStream() { @Override public void write(int b) throws IOException { } };
+    private static int index = 0;
     protected boolean hasLog = true;
     protected String tool;
     private File _tool;
@@ -65,7 +66,7 @@ public class JarExec extends DefaultTask {
 
         File logFile = new File(workDir, "log.txt");
 
-        JavaExec java = getProject().getTasks().create("_", JavaExec.class);
+        JavaExec java = getProject().getTasks().create("_java_exec_" + index++ + "_", JavaExec.class);
         try (OutputStream log = hasLog ? new BufferedOutputStream(new FileOutputStream(logFile)) : NULL) {
             // Execute command
             java.setArgs(filterArgs());

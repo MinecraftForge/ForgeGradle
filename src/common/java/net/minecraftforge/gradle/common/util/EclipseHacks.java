@@ -92,14 +92,15 @@ public class EclipseHacks {
                         xml = new Node(null, "launchConfiguration", props("type", "org.eclipse.jdt.launching.localJavaApplication"));
 
                         String workDir = runConfig.getWorkingDirectory();
-                        File file = new File(workDir);
-                        if(!file.exists())
-                            file.mkdirs();
+                        if (workDir != null) {
+                            File file = new File(workDir);
+                            if(!file.exists())
+                                file.mkdirs();
+                            xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.WORKING_DIRECTORY", "value", workDir));
+                        }
 
-                        String main = runConfig.getMain();
-                        xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.MAIN_TYPE", "value", main));
+                        xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.MAIN_TYPE", "value", runConfig.getMain()));
                         xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.PROJECT_ATTR", "value", project.getName()));
-                        xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.WORKING_DIRECTORY", "value", workDir));
 
                         Node env = xml.appendNode("mapAttribute", props("key", "org.eclipse.debug.core.environmentVariables"));
                         env.appendNode("mapEntry", props("key", "assetDirectory", "value", assets.getAbsolutePath()));

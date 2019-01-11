@@ -39,7 +39,7 @@ import com.amadornes.artifactural.base.repository.SimpleRepository;
 import com.amadornes.artifactural.gradle.GradleRepositoryAdapter;
 
 public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
-    protected final File cache;
+    private final File cache;
     protected final Logger log;
     protected final String REPO_NAME = getClass().getSimpleName();
 
@@ -48,8 +48,12 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
         this.log = log;
     }
 
+    protected File getCacheRoot() {
+        return this.cache;
+    }
+
     protected File cache(String... path) {
-        return new File(cache, String.join(File.separator, path));
+        return new File(getCacheRoot(), String.join(File.separator, path));
     }
 
     protected String clean(ArtifactIdentifier art) {
@@ -57,7 +61,8 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
     }
 
     protected void debug(String message) {
-        //this.log.lifecycle(message);
+        if (System.getProperty("fg.debugRepo", "false").equals("true"))
+            this.log.lifecycle(message);
     }
     protected void info(String message) {
         this.log.lifecycle(message);
