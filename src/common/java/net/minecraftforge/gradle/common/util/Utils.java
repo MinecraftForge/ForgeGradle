@@ -35,6 +35,7 @@ import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 
+import javax.annotation.Nonnull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -446,4 +447,10 @@ public class Utils {
         updateHash(target, HashFunction.MD5);
         return target;
     }
+
+    @Nonnull
+    public static final String capitalize(@Nonnull final String toCapitalize) {
+        return toCapitalize.length() > 1 ? toCapitalize.substring(0, 1).toUpperCase() + toCapitalize.substring(1) : toCapitalize;
+    }
+
 }

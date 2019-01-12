@@ -20,7 +20,22 @@
 
 package net.minecraftforge.gradle.userdev;
 
-import net.minecraftforge.gradle.common.util.*;
+import net.minecraftforge.gradle.common.task.DownloadAssets;
+import net.minecraftforge.gradle.common.task.DownloadMCMeta;
+import net.minecraftforge.gradle.common.task.DownloadMavenArtifact;
+import net.minecraftforge.gradle.common.task.ExtractMCPData;
+import net.minecraftforge.gradle.common.task.ExtractNatives;
+import net.minecraftforge.gradle.common.util.BaseRepo;
+import net.minecraftforge.gradle.common.util.EclipseHacks;
+import net.minecraftforge.gradle.common.util.IntellijUtils;
+import net.minecraftforge.gradle.common.util.MinecraftRepo;
+import net.minecraftforge.gradle.common.util.RunConfig;
+import net.minecraftforge.gradle.common.util.Utils;
+import net.minecraftforge.gradle.common.util.VersionJson;
+import net.minecraftforge.gradle.mcp.MCPRepo;
+import net.minecraftforge.gradle.userdev.tasks.GenerateSRG;
+import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
+import org.gradle.api.GradleException;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NamedDomainObjectFactory;
 import org.gradle.api.Plugin;
@@ -35,17 +50,9 @@ import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.Jar;
-
-import net.minecraftforge.gradle.common.task.DownloadAssets;
-import net.minecraftforge.gradle.common.task.DownloadMCMeta;
-import net.minecraftforge.gradle.common.task.DownloadMavenArtifact;
-import net.minecraftforge.gradle.common.task.ExtractMCPData;
-import net.minecraftforge.gradle.common.task.ExtractNatives;
-import net.minecraftforge.gradle.mcp.MCPRepo;
-import net.minecraftforge.gradle.userdev.tasks.GenerateSRG;
-import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 import org.gradle.plugins.ide.eclipse.GenerateEclipseClasspath;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -53,8 +60,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import javax.annotation.Nonnull;
 
 public class UserDevPlugin implements Plugin<Project> {
     private static String MINECRAFT = "minecraft";
@@ -64,7 +69,8 @@ public class UserDevPlugin implements Plugin<Project> {
     public void apply(@Nonnull Project project) {
         @SuppressWarnings("unused")
         final Logger logger = project.getLogger();
-        final UserDevExtension extension = project.getExtensions().create("minecraft", UserDevExtension.class, project);
+        final UserDevExtension extension = project.getExtensions().create(UserDevExtension.class, UserDevExtension.EXTENSION_NAME, UserDevExtension.class, project);
+
         if (project.getPluginManager().findPlugin("java") == null) {
             project.getPluginManager().apply("java");
         }
@@ -186,7 +192,7 @@ public class UserDevPlugin implements Plugin<Project> {
             project.getRepositories().mavenCentral(); //Needed for MCP Deps
             if (mcrepo == null)
                 throw new IllegalStateException("Missing 'minecraft' dependency entry.");
-            mcrepo.validate(minecraft, extension.getRuns(), extractNatives.get().getOutput(), downloadAssets.get().getOutput()); //This will set the MC_VERSION property.
+            mcrepo.validate(minecraft, extension.getRuns().getAsMap(), extractNatives.get().getOutput(), downloadAssets.get().getOutput()); //This will set the MC_VERSION property.
 
             String mcVer = (String)project.getExtensions().getExtraProperties().get("MC_VERSION");
             String mcpVer = (String)project.getExtensions().getExtraProperties().get("MCP_VERSION");
@@ -197,58 +203,8 @@ public class UserDevPlugin implements Plugin<Project> {
             reobfJar.dependsOn(createMcpToSrg);
             reobfJar.setMappings(createMcpToSrg.get().getOutput());
 
-            createRunConfigsTasks(project, extractNatives.get(), downloadAssets.get(), extension.getRuns());
+            extension.createRunConfigTasks(extractNatives, downloadAssets);
         });
     }
 
-    private void createRunConfigsTasks(@Nonnull Project project, ExtractNatives extractNatives, DownloadAssets downloadAssets, Map<String, RunConfig> runs)
-    {
-        project.getTasks().withType(GenerateEclipseClasspath.class, t -> { t.dependsOn(extractNatives, downloadAssets); });
-        // Utility task to abstract the prerequisites when using the intellij run generation
-        TaskProvider<Task> prepareRun = project.getTasks().register("prepareRun", Task.class);
-        prepareRun.configure(task -> {
-            task.dependsOn(project.getTasks().getByName("classes"), extractNatives, downloadAssets);
-        });
-
-        VersionJson json = null;
-
-        try {
-            json = Utils.loadJson(extractNatives.getMeta(), VersionJson.class);
-        }
-        catch (IOException e) {}
-
-        List<String> additionalClientArgs = json != null ? json.getPlatformJvmArgs() : Collections.emptyList();
-
-        runs.forEach((name, runConfig) -> {
-            if (runConfig.isClient())
-                runConfig.jvmArgs(additionalClientArgs);
-
-            String taskName = name.replaceAll("[^a-zA-Z0-9\\-_]","");
-            if (!taskName.startsWith("run"))
-                taskName = "run" + taskName.substring(0,1).toUpperCase() + taskName.substring(1);
-            TaskProvider<JavaExec> runTask = project.getTasks().register(taskName, JavaExec.class);
-            runTask.configure(task -> {
-                task.dependsOn(prepareRun.get());
-
-                task.setMain(runConfig.getMain());
-                task.setArgs(runConfig.getArgs());
-                task.systemProperties(runConfig.getProperties());
-                task.environment(runConfig.getEnvironment());
-                task.jvmArgs(runConfig.getJvmArgs());
-
-                String workDir = runConfig.getWorkingDirectory();
-                File file = new File(workDir);
-                if(!file.exists())
-                    file.mkdirs();
-
-                task.setWorkingDir(workDir);
-
-                JavaPluginConvention java = (JavaPluginConvention)project.getConvention().getPlugins().get("java");
-                task.setClasspath(java.getSourceSets().getByName("main").getRuntimeClasspath());
-            });
-        });
-
-        EclipseHacks.doEclipseFixes(project, extractNatives, downloadAssets, runs);
-        IntellijUtils.createIntellijRunsTask(project, extractNatives, downloadAssets, prepareRun.get(), runs);
-    }
 }
