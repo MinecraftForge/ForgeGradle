@@ -81,21 +81,18 @@ public class ZipContext implements PatchContextProvider {
         }
     }
 
-    public void save(ZipOutputStream out) throws IOException {
+    public Set<String> save(ZipOutputStream out) throws IOException {
         Set<String> files = new HashSet<>();
         for (Enumeration<? extends ZipEntry> entries = zip.entries(); entries.hasMoreElements();) {
             files.add(entries.nextElement().getName());
         }
         files.addAll(modified.keySet());
-        files.addAll(delete);
         files.addAll(binary.keySet());
+        files.removeAll(delete);
         List<String> sorted = new ArrayList<>(files);
         Collections.sort(sorted);
 
         for (String key : sorted) {
-            if (delete.contains(key)) {
-                continue; // It's Deleted, so NOOP
-            }
             putNextEntry(out, key);
             if (binary.containsKey(key)) {
                 out.write(binary.get(key));
@@ -108,6 +105,7 @@ public class ZipContext implements PatchContextProvider {
             }
             out.closeEntry();
         }
+        return files;
     }
 
     private void putNextEntry(ZipOutputStream zip, String name) throws IOException {

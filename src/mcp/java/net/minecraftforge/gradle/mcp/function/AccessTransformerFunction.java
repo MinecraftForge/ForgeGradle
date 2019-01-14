@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class AccessTransformerFunction extends ExecuteFunction {
+    public static final String ACCESSTRANSFORMERCOORDINATE = "net.minecraftforge:accesstransformers:0.14.+:fatjar";
     private List<File> files;
     private String transformers;
 
@@ -47,7 +48,7 @@ public class AccessTransformerFunction extends ExecuteFunction {
     }
 
     private static File getJar(Project mcp) { //TODO: configurable version?
-        return MavenArtifactDownloader.gradle(mcp, "net.minecraftforge:accesstransformers:0.10.0-rc.4.+:fatjar", false);
+        return MavenArtifactDownloader.gradle(mcp, ACCESSTRANSFORMERCOORDINATE, false);
     }
 
     private static String[] getArguments(List<File> files) {

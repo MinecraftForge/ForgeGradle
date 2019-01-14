@@ -1,6 +1,7 @@
 plugins {
-  id 'net.minecrell.licenser' version '0.4.1'
-  id 'org.ajoberstar.grgit' version '2.3.0'
+    id 'net.minecrell.licenser' version '0.4.1'
+    id 'org.ajoberstar.grgit' version '3.0.0'
+    id 'com.github.ben-manes.versions' version '0.20.0'
   //id 'com.github.johnrengelman.shadow' version '2.0.4'
 }
 
@@ -16,8 +17,8 @@ compileJava {
 group = 'net.minecraftforge.gradle'
 version = gitVersion()
 def gitVersion() {
-    def raw = grgit.describe(longDescr: true)
-    def desc = (raw == null ? 'unknown.unknown.unknown' : raw).split('-') as List
+    def raw = grgit.describe(longDescr: true, tags: true)
+    def desc = (raw == null ? 'unknown-unknown-unknown' : raw).split('-') as List
     def hash = desc.remove(desc.size() - 1)
     def offset = desc.remove(desc.size() - 1)
     def tag = desc.join('-')
@@ -38,7 +39,7 @@ configurations {
     patcherImplementation.extendsFrom commonImplementation
     forgedevImplementation.extendsFrom patcherImplementation
     userdevImplementation.extendsFrom mcpImplementation
-    compile.extendsFrom mcpImplementation, patcherImplementation, forgedevImplementation, userdevImplementation
+    implementation.extendsFrom mcpImplementation, patcherImplementation, forgedevImplementation, userdevImplementation
 }
 
 jar {

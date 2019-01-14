@@ -60,7 +60,7 @@ import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import net.minecraftforge.gradle.mcp.util.MCPWrapper;
-import net.minecraftforge.gradle.userdev.tasks.AccessTrasnformJar;
+import net.minecraftforge.gradle.userdev.tasks.AccessTransformJar;
 import net.minecraftforge.gradle.userdev.tasks.ApplyBinPatches;
 import net.minecraftforge.gradle.userdev.tasks.ApplyMCPFunction;
 import net.minecraftforge.gradle.userdev.tasks.RenameJar;
@@ -557,7 +557,7 @@ public class MinecraftUserRepo extends BaseRepo {
             if (hasAts) {
                 if (bin.exists()) bin.delete(); // AT lib throws an exception if output file already exists
 
-                AccessTrasnformJar at = project.getTasks().create("_atJar_"+ new Random().nextInt() + "_", AccessTrasnformJar.class);
+                AccessTransformJar at = project.getTasks().create("_atJar_"+ new Random().nextInt() + "_", AccessTransformJar.class);
                 at.setInput(injected);
                 at.setOutput(bin);
                 at.setAts(ATS);
@@ -790,7 +790,7 @@ public class MinecraftUserRepo extends BaseRepo {
 
                 Set<String> added = new HashSet<>();
                 try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(patched))) {
-                    context.save(zout);
+                    added.addAll(context.save(zout));
 
                     // Walk parents and combine from bottom up so we get any overridden files.
                     patcher = parent;
