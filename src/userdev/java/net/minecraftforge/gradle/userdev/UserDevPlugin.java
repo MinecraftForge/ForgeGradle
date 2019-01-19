@@ -26,13 +26,11 @@ import org.gradle.api.NamedDomainObjectFactory;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.DependencySet;
-import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.artifacts.*;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.JavaExec;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.Jar;
 
@@ -48,27 +46,31 @@ import org.gradle.plugins.ide.eclipse.GenerateEclipseClasspath;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
 public class UserDevPlugin implements Plugin<Project> {
-    private static String MINECRAFT = "minecraft";
-    private static String DEOBF = "deobf";
+    private static String IMPLEMENTATION_LC = "implementation";
+    private static String IMPLEMENTATION_CP        = "Implementation";
+    private static String MINECRAFT         = "Minecraft";
+    private static String DEOBF             = "Deobf";
 
     @Override
     public void apply(@Nonnull Project project) {
         @SuppressWarnings("unused")
         final Logger logger = project.getLogger();
+        logger.warn("Applying ForgeGradle.");
         final UserDevExtension extension = project.getExtensions().create("minecraft", UserDevExtension.class, project);
         if (project.getPluginManager().findPlugin("java") == null) {
             project.getPluginManager().apply("java");
         }
         final File natives_folder = project.file("build/natives/");
+
+        final JavaPluginConvention javaPluginConvention = project.getConvention().getPlugin(JavaPluginConvention.class);
+        final Collection<SourceSet> sourceSets = javaPluginConvention.getSourceSets();
 
         NamedDomainObjectContainer<RenameJarInPlace> reobf = project.container(RenameJarInPlace.class, new NamedDomainObjectFactory<RenameJarInPlace>() {
             @Override
@@ -95,11 +97,7 @@ public class UserDevPlugin implements Plugin<Project> {
         });
         project.getExtensions().add("reobf", reobf);
 
-        Configuration minecraft = project.getConfigurations().maybeCreate(MINECRAFT);
-        Configuration compile = project.getConfigurations().maybeCreate("compile");
-        Configuration deobf = project.getConfigurations().maybeCreate(DEOBF);
-        compile.extendsFrom(minecraft);
-        compile.extendsFrom(deobf);
+        configureSourceSetDefaults(javaPluginConvention);
 
         TaskProvider<DownloadMavenArtifact> downloadMcpConfig = project.getTasks().register("downloadMcpConfig", DownloadMavenArtifact.class);
         TaskProvider<ExtractMCPData> extractSrg = project.getTasks().register("extractSrg", ExtractMCPData.class);
@@ -131,65 +129,76 @@ public class UserDevPlugin implements Plugin<Project> {
         });
 
         project.afterEvaluate(p -> {
-            MinecraftUserRepo mcrepo = null;
-            ModRemapingRepo deobfrepo = null;
+            //Collect all minecraft / deobf configurations
+            final List<Configuration> minecraftConfigurations = sourceSets.stream()
+                                                                  .map(sourceSet -> p.getConfigurations().maybeCreate(Utils.uncapitalizeString(sourceSet.getImplementationConfigurationName().replace(IMPLEMENTATION_LC, MINECRAFT).replace(IMPLEMENTATION_CP, MINECRAFT))))
+                                                                  .collect(Collectors.toList());
 
-            //TODO: UserDevRepo deobf = new UserDevRepo(project);
+            final List<Configuration> deobfConfigurations = sourceSets.stream()
+                                                              .map(sourceSet -> p.getConfigurations().maybeCreate(Utils.uncapitalizeString(sourceSet.getImplementationConfigurationName().replace(IMPLEMENTATION_LC, DEOBF).replace(IMPLEMENTATION_CP, DEOBF))))
+                                                              .collect(Collectors.toList());
 
-            DependencySet deps = minecraft.getDependencies();
-            for (Dependency dep : deps.stream().collect(Collectors.toList())) {
-                if (!(dep instanceof ExternalModuleDependency))
-                    throw new IllegalArgumentException("minecraft dependency must be a maven dependency.");
-                if (mcrepo != null)
-                    throw new IllegalArgumentException("Only allows one minecraft dependancy.");
-                deps.remove(dep);
+            final List<Configuration> validMinecraftConfigurations = this.validateMinecraftDependencies(minecraftConfigurations, p.getLogger());
 
-                mcrepo = new MinecraftUserRepo(p, dep.getGroup(), dep.getName(), dep.getVersion(), extension.getAccessTransformers(), extension.getMappings());
-                String newDep = mcrepo.getDependencyString();
-                p.getLogger().lifecycle("New Dep: " + newDep);
-                ExternalModuleDependency ext = (ExternalModuleDependency)p.getDependencies().create(newDep);
-                {
-                    ext.setChanging(true); //TODO: Remove when not in dev
-                    minecraft.resolutionStrategy(strat -> {
-                        strat.cacheChangingModulesFor(10, TimeUnit.SECONDS);
-                    });
-                }
-                minecraft.getDependencies().add(ext);
-            }
+            logger.warn("Found: " + validMinecraftConfigurations.stream().map(Object::toString).collect(Collectors.joining(", ")) + " as configuration containing minecraft.");
 
-            deps = deobf.getDependencies();
-            for (Dependency dep : deps.stream().collect(Collectors.toList())) {
-                if (!(dep instanceof ExternalModuleDependency)) //TODO: File deps as well.
-                    throw new IllegalArgumentException("deobf dependency must be a maven dependency. File deps are on the TODO");
-                deps.remove(dep);
+            final MinecraftUserRepo mcrepo = generateMinecraftUserRepo(p, extension, validMinecraftConfigurations);
+            final ExternalModuleDependency deobfuscatedMinecraftDependency = generateDeobfuscatedMinecraftDependency(mcrepo, logger);
 
-                if (deobfrepo == null)
-                    deobfrepo = new ModRemapingRepo(p, extension.getMappings());
-                String newDep = deobfrepo.addDep(dep.getGroup(), dep.getName(), dep.getVersion()); // Classifier?
-                deobf.getDependencies().add(p.getDependencies().create(newDep));
-            }
+            //TODO: Remove when not in dev/testing anymore
+            deobfuscatedMinecraftDependency.setChanging(true);
+
+            validMinecraftConfigurations.forEach(
+              minecraftConfiguration -> {
+                  DependencySet deps = minecraftConfiguration.getDependencies();
+                  //This only contains one dependency, since it has been validated.
+                  for (Dependency dep : new ArrayList<>(deps)) {
+                      deps.remove(dep);
+                      {
+                          //TODO: Remove when not in dev/testing anymore
+                          minecraftConfiguration.resolutionStrategy(strat -> {
+                              strat.cacheChangingModulesFor(10, TimeUnit.SECONDS);
+                          });
+                      }
+                      minecraftConfiguration.getDependencies().add(deobfuscatedMinecraftDependency);
+                  }
+              }
+            );
+
+            final ModRemapingRepo deobfrepo = new ModRemapingRepo(p, extension.getMappings());
+            deobfConfigurations.forEach(
+              deobfConfiguration -> {
+                  final DependencySet deps = deobfConfiguration.getDependencies();
+                  for (Dependency dep : new ArrayList<>(deps)) {
+                      if (!(dep instanceof ExternalModuleDependency)) //TODO: File deps as well.
+                          throw new IllegalArgumentException("deobf dependency must be a maven dependency. File deps are on the TODO");
+                      deps.remove(dep);
+
+                      String newDep = deobfrepo.addDep(dep.getGroup(), dep.getName(), dep.getVersion()); // Classifier?
+                      deobfConfiguration.getDependencies().add(p.getDependencies().create(newDep));
+                  }
+              }
+            );
 
             // We have to add these AFTER our repo so that we get called first, this is annoying...
             new BaseRepo.Builder()
                 .add(mcrepo)
                 .add(deobfrepo)
-                .add(MCPRepo.create(project))
-                .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
-                .attach(project);
-            project.getRepositories().maven(e -> {
+                .add(MCPRepo.create(p))
+                .add(MinecraftRepo.create(p)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
+                .attach(p);
+            p.getRepositories().maven(e -> {
                 e.setUrl("http://files.minecraftforge.net/maven/");
             });
-            project.getRepositories().maven(e -> {
+            p.getRepositories().maven(e -> {
                 e.setUrl("https://libraries.minecraft.net/");
                 e.metadataSources(src -> src.artifact());
             });
-            project.getRepositories().mavenCentral(); //Needed for MCP Deps
-            if (mcrepo == null)
-                throw new IllegalStateException("Missing 'minecraft' dependency entry.");
-            mcrepo.validate(minecraft, extension.getRuns(), extractNatives.get().getOutput(), downloadAssets.get().getOutput()); //This will set the MC_VERSION property.
+            p.getRepositories().mavenCentral(); //Needed for MCP Deps
+            mcrepo.validate(validMinecraftConfigurations, extension.getRuns(), extractNatives.get().getOutput(), downloadAssets.get().getOutput()); //This will set the MC_VERSION property.
 
-            String mcVer = (String)project.getExtensions().getExtraProperties().get("MC_VERSION");
-            String mcpVer = (String)project.getExtensions().getExtraProperties().get("MCP_VERSION");
+            String mcVer = (String)p.getExtensions().getExtraProperties().get("MC_VERSION");
+            String mcpVer = (String)p.getExtensions().getExtraProperties().get("MCP_VERSION");
             downloadMcpConfig.get().setArtifact("de.oceanlabs.mcp:mcp_config:" + mcpVer + "@zip");
             downloadMCMeta.get().setMCVersion(mcVer);
 
@@ -197,7 +206,7 @@ public class UserDevPlugin implements Plugin<Project> {
             reobfJar.dependsOn(createMcpToSrg);
             reobfJar.setMappings(createMcpToSrg.get().getOutput());
 
-            createRunConfigsTasks(project, extractNatives.get(), downloadAssets.get(), extension.getRuns());
+            createRunConfigsTasks(p, extractNatives.get(), downloadAssets.get(), extension.getRuns());
         });
     }
 
@@ -250,5 +259,140 @@ public class UserDevPlugin implements Plugin<Project> {
 
         EclipseHacks.doEclipseFixes(project, extractNatives, downloadAssets, runs);
         IntellijUtils.createIntellijRunsTask(project, extractNatives, downloadAssets, prepareRun.get(), runs);
+    }
+
+    private void configureSourceSetDefaults(JavaPluginConvention javaPluginConvention)
+    {
+        final Project project = javaPluginConvention.getProject();
+        final ConfigurationContainer configurations = project.getConfigurations();
+                
+        javaPluginConvention.getSourceSets().all(sourceSet -> {
+            final String implementationConfigurationName = sourceSet.getImplementationConfigurationName();
+            final Configuration implementationSourceSetConfiguration = configurations.maybeCreate(implementationConfigurationName);            
+            
+            final String minecraftConfigurationName = Utils.uncapitalizeString(implementationConfigurationName.replace(IMPLEMENTATION_LC, MINECRAFT).replace(IMPLEMENTATION_CP, MINECRAFT));
+            final String deobfuscatedConfigurationName = Utils.uncapitalizeString(implementationConfigurationName.replace(IMPLEMENTATION_LC, MINECRAFT).replace(IMPLEMENTATION_CP, MINECRAFT));
+            final String sourceSetName = sourceSet.toString();
+
+            Configuration minecraftConfiguration = configurations.maybeCreate(minecraftConfigurationName);
+            minecraftConfiguration.setVisible(false);
+            minecraftConfiguration.setDescription("Minecraft dependencies for " + sourceSetName + ".");
+            minecraftConfiguration.setCanBeConsumed(false);
+            minecraftConfiguration.setCanBeResolved(false);
+
+            Configuration deobfuscatedConfiguration = configurations.maybeCreate(deobfuscatedConfigurationName);
+            deobfuscatedConfiguration.setVisible(false);
+            deobfuscatedConfiguration.setDescription("Deobfuscated dependencies for " + sourceSetName + ".");
+            deobfuscatedConfiguration.setCanBeConsumed(false);
+            deobfuscatedConfiguration.setCanBeResolved(false);
+            
+            implementationSourceSetConfiguration.extendsFrom(minecraftConfiguration);
+            implementationSourceSetConfiguration.extendsFrom(deobfuscatedConfiguration);
+        });
+    }
+
+    /**
+     * Validates that the configurations used to set minecraft dependencies only contain one minecraft version instance.
+     * Filters out all configurations with not at exactly one minecraft dependency. If more the one is found an exception is thrown.
+     *
+     * This forces all minecraft configurations to have, either no minecraft dependency, or all the same minecraft dependency.
+     * No other configurations are valid.
+     *
+     * @param configurationsToCheck Configurations to check
+     * @return All configurations with minecraft dependencies.
+     * @throws IllegalStateException when either no configurations contain minecraft, or two different versions of minecraft are found.
+     */
+    private List<Configuration> validateMinecraftDependencies(List<Configuration> configurationsToCheck, Logger logger) throws IllegalStateException
+    {
+        if (configurationsToCheck.isEmpty())
+            throw new IllegalStateException("No configuration with a minecraft dependency found");
+
+        final List<Configuration> validConfigurations = new ArrayList<>();
+        String validInformation = "";
+        for (final Configuration configuration:
+            configurationsToCheck)
+        {
+            final String information = this.getMinecraftDependencyInformationFromConfiguration(configuration);
+            //This configuration (and with that its sourceSet) does not depend on minecraft skip it.
+            if (information.isEmpty())
+            {
+                logger.warn("Skipping configuration: " + configuration.getName() + " no minecraft dependency information has been found.");
+                continue;
+            }
+
+            if (validInformation.isEmpty())
+            {
+                validInformation = information;
+            }
+            else if (!validInformation.equals(information))
+            {
+                throw new IllegalStateException(String.format(
+                  "Found multiple minecraft dependencies, with different dependency information. This is not allowed. The entire project has to depend on one minecraft version: %s",
+                  validInformation));
+            }
+
+            logger.warn("Adding configuration: " + configuration.getName() + " as a configuration containing a dependency on minecraft with information: " + information);
+            validConfigurations.add(configuration);
+        }
+
+        if (validConfigurations.isEmpty())
+            throw new IllegalStateException("At least one configuration has to depend on minecraft.");
+
+        return validConfigurations;
+    }
+
+    /**
+     * Extracts the minecraft dependency information string from the configuration.
+     * If no dependency is found an empty string is returned.
+     *
+     * There needs to be exactly one, otherwise an exception is thrown.
+     * The minecraft dependency needs to be a maven dependency.
+     *
+     * @param configuration The configuration to extract the information from.
+     * @return A string containing the maven dependency information for minecraft, or an empty one, if no dependency is found.
+     * @throws IllegalStateException thrown when the configuration is not set up correctly.
+     */
+    private String getMinecraftDependencyInformationFromConfiguration(Configuration configuration) throws IllegalStateException
+    {
+        if (configuration.getDependencies().size() == 0)
+            return "";
+
+        if (configuration.getDependencies().size() > 1)
+            throw new IllegalStateException(String.format("Configuration: %s contains more then one minecraft dependency", configuration.getName()));
+
+        final Dependency minecraftDependency = new ArrayList<>(configuration.getDependencies()).get(0);
+        if (!(minecraftDependency instanceof ExternalModuleDependency))
+            throw new IllegalArgumentException("Minecraft dependency: " + minecraftDependency.toString() + " of configuration: " + configuration.getName() + " must be a maven dependency.");
+
+        return String.format("%s:%s:%s", minecraftDependency.getGroup(), minecraftDependency.getName(), minecraftDependency.getVersion());
+    }
+
+    /**
+     * Generates a minecraft user repo from the project and valid configurations.
+     *
+     * @param project The project to generate for.
+     * @param extension The extensions with the project information.
+     * @param validMinecraftConfigurations The valid configurations.
+     * @return The minecraft user repo.
+     */
+    private MinecraftUserRepo generateMinecraftUserRepo(Project project, UserDevExtension extension, List<Configuration> validMinecraftConfigurations)
+    {
+        //We can do this since the configurations have been validated.
+        final Dependency dependency = new ArrayList<>(validMinecraftConfigurations.get(0).getDependencies()).get(0);
+        return new MinecraftUserRepo(project, dependency.getGroup(), dependency.getName(), dependency.getVersion(), extension.getAccessTransformers(), extension.getMappings());
+    }
+
+    /**
+     * Generates a special dependency that represents a deobfuscated minecraft.
+     *
+     * @param repo The magic maven repo that performs the deobfuscation.
+     * @param logger The logger for the project.
+     * @return The magic dependency representing a deobfuscated minecraft.
+     */
+    private ExternalModuleDependency generateDeobfuscatedMinecraftDependency(MinecraftUserRepo repo, Logger logger)
+    {
+        final String minecraftDeobfuscatedDependencyString = repo.getDependencyString();
+        logger.info(String.format("Creating new deobfuscated minecraft dependency: %s", minecraftDeobfuscatedDependencyString));
+        return (ExternalModuleDependency) repo.getProject().getDependencies().create(minecraftDeobfuscatedDependencyString);
     }
 }

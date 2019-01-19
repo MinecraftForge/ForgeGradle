@@ -34,6 +34,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.internal.impldep.org.apache.commons.lang.text.StrBuilder;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -446,4 +447,16 @@ public class Utils {
         updateHash(target, HashFunction.MD5);
         return target;
     }
+
+    /**
+     * Uncapitalizes a string.
+     * Required due to both StringUtils classes not being on the classpath in certain gradle constructions.
+     *
+     * @param str The string.
+     * @return A uncapitalized version: CAT -> cAT, cat -> cat, Cat -> cat.
+     */
+    public static String uncapitalizeString(String str) {
+        return str != null && str.length() != 0 ? Character.toLowerCase(str.charAt(0)) + str.substring(1) : str;
+    }
+
 }

@@ -126,6 +126,11 @@ public class MinecraftUserRepo extends BaseRepo {
         );
     }
 
+    public Project getProject()
+    {
+        return project;
+    }
+
     @Override
     protected File getCacheRoot() {
         if (this.AT_HASH == null)
@@ -133,7 +138,7 @@ public class MinecraftUserRepo extends BaseRepo {
         return project.file("build/fg_cache/");
     }
 
-    public void validate(Configuration cfg, Map<String, RunConfig> runs, File natives, File assets) {
+    public void validate(List<Configuration> cfg, Map<String, RunConfig> runs, File natives, File assets) {
         getParents();
         if (mcp == null)
             throw new IllegalStateException("Invalid minecraft dependency: " + GROUP + ":" + NAME + ":" + VERSION);
@@ -158,7 +163,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 if (CHANGING_USERDEV) {
                     _dep.setChanging(true);
                 }
-                cfg.getDependencies().add(_dep);
+                cfg.forEach(minecraft -> minecraft.getDependencies().add(_dep));
             });
             patcher = patcher.getParent();
         }
