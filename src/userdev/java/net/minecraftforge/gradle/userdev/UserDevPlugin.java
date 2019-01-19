@@ -62,7 +62,6 @@ public class UserDevPlugin implements Plugin<Project> {
     public void apply(@Nonnull Project project) {
         @SuppressWarnings("unused")
         final Logger logger = project.getLogger();
-        logger.warn("Applying ForgeGradle.");
         final UserDevExtension extension = project.getExtensions().create("minecraft", UserDevExtension.class, project);
         if (project.getPluginManager().findPlugin("java") == null) {
             project.getPluginManager().apply("java");
@@ -139,8 +138,6 @@ public class UserDevPlugin implements Plugin<Project> {
                                                               .collect(Collectors.toList());
 
             final List<Configuration> validMinecraftConfigurations = this.validateMinecraftDependencies(minecraftConfigurations, p.getLogger());
-
-            logger.warn("Found: " + validMinecraftConfigurations.stream().map(Object::toString).collect(Collectors.joining(", ")) + " as configuration containing minecraft.");
 
             final MinecraftUserRepo mcrepo = generateMinecraftUserRepo(p, extension, validMinecraftConfigurations);
             final ExternalModuleDependency deobfuscatedMinecraftDependency = generateDeobfuscatedMinecraftDependency(mcrepo, logger);
@@ -316,7 +313,6 @@ public class UserDevPlugin implements Plugin<Project> {
             //This configuration (and with that its sourceSet) does not depend on minecraft skip it.
             if (information.isEmpty())
             {
-                logger.warn("Skipping configuration: " + configuration.getName() + " no minecraft dependency information has been found.");
                 continue;
             }
 
@@ -331,7 +327,6 @@ public class UserDevPlugin implements Plugin<Project> {
                   validInformation));
             }
 
-            logger.warn("Adding configuration: " + configuration.getName() + " as a configuration containing a dependency on minecraft with information: " + information);
             validConfigurations.add(configuration);
         }
 
