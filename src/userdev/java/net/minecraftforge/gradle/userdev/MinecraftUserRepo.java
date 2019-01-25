@@ -163,24 +163,18 @@ public class MinecraftUserRepo extends BaseRepo {
             patcher = patcher.getParent();
         }
 
-        Map<String, String> tokens = new HashMap<>();
-        tokens.put("assets_root", assets.getAbsolutePath());
-        tokens.put("natives", natives.getAbsolutePath());
-        tokens.put("mc_version", mcp.getMCVersion());
-        tokens.put("mcp_version", mcp.getArtifact().getVersion());
-        tokens.put("mcp_mappings", MAPPING);
-
         if (parent.getConfig().runs != null) {
-            parent.getConfig().runs.forEach((name, dev) -> {
-                final RunConfig run = runs.get(name);
+            Map<String, String> vars = new HashMap<>();
+            vars.put("assets_root", assets.getAbsolutePath());
+            vars.put("natives", natives.getAbsolutePath());
+            vars.put("mc_version", mcp.getMCVersion());
+            vars.put("mcp_version", mcp.getArtifact().getVersion());
+            vars.put("mcp_mappings", MAPPING);
 
-                if (run != null) {
-                    run.parent(0, dev);
-                }
+            parent.getConfig().runs.forEach((name, dev) -> {
+                runs.computeIfAbsent(name, k -> new RunConfig()).merge(dev, false, vars);
             });
         }
-
-        runs.forEach((name, run) -> run.setTokens(tokens));
     }
 
     @SuppressWarnings("unused")

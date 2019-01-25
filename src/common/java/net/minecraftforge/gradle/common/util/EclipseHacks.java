@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.Nonnull;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.io.IOUtils;
@@ -51,8 +50,7 @@ import net.minecraftforge.gradle.common.task.ExtractNatives;
 public class EclipseHacks {
 
     @SuppressWarnings("unchecked")
-    public static void doEclipseFixes(@Nonnull final MinecraftExtension minecraft, @Nonnull final ExtractNatives nativesTask, @Nonnull final DownloadAssets assetsTask) {
-        final Project project = minecraft.getProject();
+    public static void doEclipseFixes(Project project, ExtractNatives nativesTask, DownloadAssets assetsTask, Map<String, RunConfig> runs) {
         final File natives = nativesTask.getOutput();
         final File assets = assetsTask.getOutput();
 
@@ -90,7 +88,8 @@ public class EclipseHacks {
                         IOUtils.write(XmlUtil.serialize(xml), fos, StandardCharsets.UTF_8);
                     }
 
-                    for (final RunConfig runConfig : minecraft.getRuns()) {
+                    for (Map.Entry<String, RunConfig> entry : runs.entrySet()) {
+                        RunConfig runConfig = entry.getValue();
                         xml = new Node(null, "launchConfiguration", props("type", "org.eclipse.jdt.launching.localJavaApplication"));
 
                         String workDir = runConfig.getWorkingDirectory();
@@ -120,7 +119,7 @@ public class EclipseHacks {
                             xml.appendNode("stringAttribute", props("key", "org.eclipse.jdt.launching.VM_ARGUMENTS", "value", props));
                         }
 
-                        try (OutputStream fos = new FileOutputStream(project.file(runConfig.getUniqueFileName() + ".launch"))) {
+                        try (OutputStream fos = new FileOutputStream(project.file(entry.getKey() + ".launch"))) {
                             IOUtils.write(XmlUtil.serialize(xml), fos, StandardCharsets.UTF_8);
                         }
                     }

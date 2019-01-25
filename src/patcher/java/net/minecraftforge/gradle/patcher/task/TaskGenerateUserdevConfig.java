@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.gradle.api.DefaultTask;
-import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
@@ -49,13 +48,7 @@ import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPExtension;
 import net.minecraftforge.gradle.patcher.PatcherExtension;
 
-import javax.annotation.Nonnull;
-import javax.inject.Inject;
-
 public class TaskGenerateUserdevConfig extends DefaultTask {
-
-    private final NamedDomainObjectContainer<RunConfig> runs;
-
     private Set<File> ats = new TreeSet<>();
     private Set<File> srgs = new TreeSet<>();
     private List<String> srgLines = new ArrayList<>();
@@ -66,11 +59,7 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
     private String[] args;
     private List<String> libraries;
     private String inject;
-
-    @Inject
-    public TaskGenerateUserdevConfig(@Nonnull final Project project) {
-        this.runs = project.container(RunConfig.class, name -> new RunConfig(project, name));
-    }
+    private RunConfig.Container runs = null;
 
     @TaskAction
     public void apply() throws IOException {
@@ -85,10 +74,10 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
             libraries.forEach(json::addLibrary);
         getATs().forEach(at -> json.addAT("ats/" + at.getName()));
         getSRGs().forEach(srg -> json.addSRG("srgs/" + srg.getName()));
-        getSRGLines().forEach(json::addSRG);
+        getSRGLines().forEach(srg -> json.addSRGLine(srg));
         addParent(json, getProject());
-
-        runs.getAsMap().forEach(json::addRun);
+        if (runs != null)
+            runs.getRuns().forEach((k, v) -> json.addRun(k, v));
 
         json.binpatcher = new Function();
         json.binpatcher.setVersion(getTool());
@@ -199,15 +188,19 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
         this.srgLines.add(value);
     }
 
-    @Nonnull
-    public NamedDomainObjectContainer<RunConfig> runs(Closure closure) {
-        return runs.configure(closure);
-    }
-
     @Input
-    @Nonnull
-    public NamedDomainObjectContainer<RunConfig> getRuns() {
-        return runs;
+    @Optional
+    public Map<String, RunConfig> getRuns() {
+        if (this.runs == null)
+            return null;
+        return this.runs.getRuns();
+    }
+    public void runs(Closure<? super RunConfig.Container> value) {
+        if (runs == null)
+            runs = new RunConfig.Container();
+        value.setResolveStrategy(Closure.DELEGATE_FIRST);
+        value.setDelegate(runs);
+        value.call();
     }
 
     @OutputFile

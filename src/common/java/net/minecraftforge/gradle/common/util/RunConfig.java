@@ -20,79 +20,33 @@
 
 package net.minecraftforge.gradle.common.util;
 
-import com.google.common.collect.ImmutableList;
-import groovy.util.MapEntry;
-import org.gradle.api.Project;
-import org.gradle.api.Task;
-import org.gradle.api.plugins.JavaPluginConvention;
-import org.gradle.api.tasks.JavaExec;
-import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.TaskProvider;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import org.gradle.api.tasks.SourceSet;
+
+import com.google.common.base.Joiner;
+
+import groovy.lang.Closure;
+import groovy.lang.MissingPropertyException;
 
 public class RunConfig implements Serializable {
-
     private static final String MCP_CLIENT_MAIN = "mcp.client.Start";
     private static final String MC_CLIENT_MAIN = "net.minecraft.client.main.Main";
-
     private static final long serialVersionUID = 1L;
-
-    private transient final Project project;
-    private final String name;
-
-    private String taskName, main, ideaModule, workDir;
-
+    private String main;
+    private List<String> args;
+    private List<String> jvmArgs;
+    private Map<String, String> env;
+    private Map<String, String> props;
     private boolean singleInstance = false;
-
-    private List<String> args, jvmArgs;
+    private String ideaModule;
+    private String workDir;
     private List<SourceSet> sources;
-    private List<RunConfig> parents, children;
-    private Map<String, String> env, props, tokens;
-
-    public RunConfig(@Nonnull final Project project, @Nonnull final String name) {
-        this.project = project;
-        this.name = name;
-    }
-
-    public final String getName() {
-        return name;
-    }
-    public void setTaskName(String taskName) {
-        this.taskName = taskName;
-    }
-    public void taskName(String taskName) {
-        setTaskName(taskName);
-    }
-    public final String getTaskName() {
-        if (taskName == null) {
-            taskName = getName().replaceAll("[^a-zA-Z0-9\\-_]","");
-
-            if (!taskName.startsWith("run")) {
-                taskName = "run" + Utils.capitalize(taskName);
-            }
-        }
-
-        return taskName;
-    }
-    public final String getUniqueFileName() {
-        return project.getPath().length() > 1 ? String.join("_", String.join("_", project.getPath().substring(1).split(":")), getTaskName()) : getTaskName();
-    }
-    public final String getUniqueName() {
-        return getUniqueFileName().replaceAll("_", " ");
-    }
 
     public void environment(Map<String, Object> map) {
         this.setEnvironment(map);
@@ -180,11 +134,7 @@ public class RunConfig implements Serializable {
     public void setIdeaModule(String value) {
         this.ideaModule = value;
     }
-    public final String getIdeaModule() {
-        if (ideaModule == null) {
-            ideaModule = project.getName() + "_main";
-        }
-
+    public String getIdeaModule() {
         return ideaModule;
     }
 
@@ -195,10 +145,6 @@ public class RunConfig implements Serializable {
         this.workDir = value;
     }
     public String getWorkingDirectory() {
-        if (workDir == null) {
-            workDir = project.file("run").getAbsolutePath();
-        }
-
         return workDir;
     }
 
@@ -213,6 +159,7 @@ public class RunConfig implements Serializable {
             this.sources = new ArrayList<>();
         return this.sources;
     }
+
     private List<File> getSourceDirs() {
         final List<File> ret = new ArrayList<>();
         getSources().forEach(set -> {
@@ -223,104 +170,22 @@ public class RunConfig implements Serializable {
         return ret;
     }
 
-    public void setParents(List<RunConfig> parents) {
-        this.parents = parents;
-    }
-    public void parents(@Nonnull RunConfig... parents) {
-        getParents().addAll(Arrays.asList(parents));
-    }
-    public void parent(@Nonnull RunConfig parent) {
-        parents(parent);
-    }
-    public void parent(int index, @Nonnull RunConfig parent) {
-        getParents().add(Math.min(index, getParents().size()), parent);
-    }
-    public final List<RunConfig> getParents() {
-        if (parents == null) {
-            parents = new ArrayList<>();
-        }
+    public void merge(RunConfig other, boolean overwrite, Map<String, String> vars) {
+        vars.put("source_roots", Joiner.on(File.pathSeparator).join(getSourceDirs()));
 
-        return parents;
-    }
-
-    public void setChildren(List<RunConfig> children) {
-        this.children = children;
-    }
-    private Stream<RunConfig> entriesToRuns(@Nonnull MapEntry... children) {
-        return Stream.of(children).map(entry -> {
-            final Project project = entry.getKey() == null
-                    ? this.project : this.project.project(entry.getKey().toString());
-
-            final MinecraftExtension minecraft = project.getExtensions().findByType(MinecraftExtension.class);
-
-            return minecraft == null ? null : minecraft.getRuns().maybeCreate(entry.getValue().toString());
-        }).filter(Objects::nonNull);
-    }
-    public void setChildren(@Nonnull MapEntry... children) {
-        setChildren(entriesToRuns(children).collect(Collectors.toList()));
-    }
-    public void setChildren(@Nonnull Map<String, String> children) {
-        setChildren(children.entrySet().stream()
-                .map((entry) -> new MapEntry(entry.getKey(), entry.getValue()))
-                .toArray(MapEntry[]::new));
-    }
-    public void children(@Nonnull MapEntry... children) {
-        getChildren().addAll(entriesToRuns(children).collect(Collectors.toList()));
-    }
-    public void children(@Nonnull Map<String, String> children) {
-        children(children.entrySet().stream()
-                .map((entry) -> new MapEntry(entry.getKey(), entry.getValue()))
-                .toArray(MapEntry[]::new));
-    }
-    public void child(@Nullable String project, @Nullable String child) {
-        children(new MapEntry(project, child));
-    }
-    public void children(int index, @Nonnull MapEntry... children) {
-        getChildren().addAll(index, entriesToRuns(children).collect(Collectors.toList()));
-    }
-    public void children(int index, @Nonnull Map<String, String> children) {
-        children(index, children.entrySet().stream()
-                .map((entry) -> new MapEntry(entry.getKey(), entry.getValue()))
-                .toArray(MapEntry[]::new));
-    }
-    public void child(int index, @Nullable String project, @Nullable String child) {
-        children(index, new MapEntry(project, child));
-    }
-    public void children(@Nonnull RunConfig... children) {
-        getChildren().addAll(Arrays.asList(children));
-    }
-    public void child(@Nonnull RunConfig child) {
-        children(child);
-    }
-    public void children(int index, @Nonnull RunConfig... children) {
-        getChildren().addAll(Math.min(index, getParents().size()), Arrays.asList(children));
-    }
-    public void child(int index, @Nonnull RunConfig child) {
-        children(index, child);
-    }
-    public final List<RunConfig> getChildren() {
-        if (children == null) {
-            children = new ArrayList<>();
-        }
-
-        return children;
-    }
-
-    public void merge(RunConfig other, boolean overwrite) {
         this.singleInstance = other.singleInstance; // This always overwrite cuz there is no way to tell if it's set
         if (overwrite) {
             this.args = other.args == null ? this.args : other.args;
             this.main = other.main == null ? this.main : other.main;
             this.workDir = other.workDir == null ? this.workDir : other.workDir;
             this.ideaModule = other.ideaModule == null ? this.ideaModule : other.ideaModule;
-            this.sources = other.sources == null ? this.sources : other.sources;
 
             if (other.env != null) {
-                other.env.forEach((k,v) -> getEnvironment().put(k, v));
+                other.env.forEach((k,v) -> getEnvironment().put(k, replace(vars, v)));
             }
 
             if (other.props != null) {
-                other.props.forEach((k,v) -> getProperties().put(k, v));
+                other.props.forEach((k,v) -> getProperties().put(k, replace(vars, v)));
             }
         } else {
             this.args = other.args == null || this.args != null ? this.args : other.args;
@@ -329,42 +194,13 @@ public class RunConfig implements Serializable {
             this.ideaModule = other.ideaModule == null || this.ideaModule != null ? this.ideaModule : other.ideaModule;
 
             if (other.env != null) {
-                other.env.forEach((k,v) -> getEnvironment().putIfAbsent(k, v));
+                other.env.forEach((k,v) -> getEnvironment().putIfAbsent(k, replace(vars, v)));
             }
 
             if (other.props != null) {
-                other.props.forEach((k,v) -> getProperties().putIfAbsent(k, v));
-            }
-
-            if (other.sources != null) {
-                getSources().addAll(0, other.sources);
+                other.props.forEach((k,v) -> getProperties().putIfAbsent(k, replace(vars, v)));
             }
         }
-    }
-    public void merge(@Nonnull List<RunConfig> runs) {
-        runs.stream().distinct().filter(run -> run != this).forEach(run -> merge(run, false));
-    }
-    public void mergeParents() {
-        merge(getParents());
-    }
-    public void mergeChildren() {
-        merge(getChildren());
-    }
-
-    public void setTokens(Map<String, String> tokens) {
-        this.tokens = tokens;
-    }
-    private Map<String, String> getTokens() {
-        if (tokens == null) {
-            tokens = new HashMap<>();
-        }
-
-        return tokens;
-    }
-
-    private void replaceTokens() {
-        getEnvironment().keySet().forEach(key -> getEnvironment().compute(key, (k, value) -> replace(getTokens(), value)));
-        getProperties().keySet().forEach(key -> getProperties().compute(key, (k, value) -> replace(getTokens(), value)));
     }
 
     private String replace(Map<String, String> vars, String value) {
@@ -380,74 +216,35 @@ public class RunConfig implements Serializable {
         return isTargetClient || MCP_CLIENT_MAIN.equals(getMain()) || MC_CLIENT_MAIN.equals(getMain());
     }
 
-    @Nonnull
-    @SuppressWarnings("UnstableApiUsage")
-    public final TaskProvider<JavaExec> createRunTask(@Nonnull final TaskProvider<Task> prepareRuns, @Nonnull final List<String> additionalClientArgs) {
-        return createRunTask(prepareRuns.get(), additionalClientArgs);
-    }
+    public static class Container {
+        private Map<String, RunConfig> runs = new HashMap<>();
 
-    @Nonnull
-    @SuppressWarnings("UnstableApiUsage")
-    public final TaskProvider<JavaExec> createRunTask(@Nonnull final Task prepareRuns, @Nonnull final List<String> additionalClientArgs) {
-        final List<SourceSet> sources = getSources().isEmpty()
-                ? ImmutableList.of(project.getConvention().getPlugin(JavaPluginConvention.class)
-                        .getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME))
-                : getSources();
-
-        getTokens().put("class_roots", sources.stream()
-                .map(source -> source.getOutput().getClassesDirs().getFiles())
-                .flatMap(Collection::stream)
-                .distinct().map(File::getAbsolutePath)
-                .collect(Collectors.joining(File.pathSeparator)));
-
-        getTokens().put("resource_roots", sources.stream()
-                .map(source -> source.getOutput().getResourcesDir())
-                .distinct().map(File::getAbsolutePath)
-                .collect(Collectors.joining(File.pathSeparator)));
-
-        replaceTokens();
-
-        if (isClient()) {
-            jvmArgs(additionalClientArgs);
+        // This doesn't work, no idea why... so users must use =
+        public void methodMissing(String name, Object value) {
+            propertyMissing(name, value);
         }
 
-        TaskProvider<Task> prepareRun = project.getTasks().register("prepare" + Utils.capitalize(getTaskName()), Task.class, task -> {
-            task.dependsOn(prepareRuns, sources.stream().map(SourceSet::getClassesTaskName).toArray());
+        public Object propertyMissing(String name) {
+            if (!this.runs.containsKey(name))
+                throw new MissingPropertyException(name);
+            return this.runs.get(name);
+        }
 
-            File workDir = new File(getWorkingDirectory());
+        public void propertyMissing(String name, Object value) {
+            if (!(value instanceof Closure))
+                throw new IllegalArgumentException("Argument must be Closure");
 
-            if (!workDir.exists()) {
-                workDir.mkdirs();
-            }
-        });
+            @SuppressWarnings("unchecked")
+            Closure<? extends RunConfig> closure = (Closure<? extends RunConfig>)value;
+            RunConfig run = new RunConfig();
+            closure.setResolveStrategy(Closure.DELEGATE_FIRST);
+            closure.setDelegate(run);
+            closure.call();
+            this.runs.put(name, run);
+        }
 
-        return project.getTasks().register(getTaskName(), JavaExec.class, task -> {
-            task.dependsOn(prepareRun.get());
-
-            File workDir = new File(getWorkingDirectory());
-
-            if (!workDir.exists()) {
-                workDir.mkdirs();
-            }
-
-            task.setWorkingDir(workDir);
-            task.setMain(getMain());
-
-            task.args(getArgs());
-            task.jvmArgs(getJvmArgs());
-            task.environment(getEnvironment());
-            task.systemProperties(getProperties());
-
-            sources.stream().map(SourceSet::getRuntimeClasspath).forEach(task::classpath);
-
-            // Stop after this run task so it doesn't try to execute the run tasks, and their dependencies, of sub projects
-            task.doLast(t -> System.exit(0)); // TODO: Find better way to stop gracefully
-        });
+        public Map<String, RunConfig> getRuns() {
+            return runs;
+        }
     }
-
-    @Override
-    public String toString() {
-        return "RunConfig[project='" + project.getPath() + "', name='" + getName() + "']";
-    }
-
 }
