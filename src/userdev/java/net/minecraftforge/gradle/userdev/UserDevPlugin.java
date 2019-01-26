@@ -387,7 +387,11 @@ public class UserDevPlugin implements Plugin<Project> {
     private ExternalModuleDependency generateDeobfuscatedMinecraftDependency(MinecraftUserRepo repo, Logger logger)
     {
         final String minecraftDeobfuscatedDependencyString = repo.getDependencyString();
-        logger.info(String.format("Creating new deobfuscated minecraft dependency: %s", minecraftDeobfuscatedDependencyString));
+
+        //Log to the logger which MC has been selected for debugging purposes.
+        //Required by lex to see which version is being loaded.
+        logger.lifecycle(String.format("Creating new deobfuscated minecraft dependency: %s", minecraftDeobfuscatedDependencyString));
+
         return (ExternalModuleDependency) repo.getProject().getDependencies().create(minecraftDeobfuscatedDependencyString);
     }
 }
