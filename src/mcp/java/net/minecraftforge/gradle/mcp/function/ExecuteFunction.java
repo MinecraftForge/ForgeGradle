@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
@@ -115,8 +116,8 @@ public class ExecuteFunction implements MCPFunction {
         String mainClass = jarFile.getManifest().getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
         jarFile.close();
 
-        // Execute command
-        JavaExec java = environment.project.getTasks().create("_", JavaExec.class);
+        // Execute command // We have to randomize the task name in the event another instance is being used
+        JavaExec java = environment.project.getTasks().create("_" + new Random().nextInt(1237) * 51, JavaExec.class);
         java.setJvmArgs(jvmArgList);
         java.setArgs(runArgList);
         java.setClasspath(environment.project.files(jar));

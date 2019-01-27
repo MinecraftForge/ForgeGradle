@@ -491,6 +491,28 @@ public class MinecraftUserRepo extends BaseRepo {
             mci.setOutput(mcinject);
             mci.apply();
 
+            // Apply AT's before injecting sources for two reasons:
+            // - IDE's won't be able to tie binary dependencies to sources because of access differences
+            // - No verification if the AT will cause a verification error at runtime or access errors
+            if (hasAts) {
+                if (bin.exists()) bin.delete(); // AT lib throws an exception if output file already exists
+
+                AccessTransformJar at = project.getTasks().create("_atJar_"+ new Random().nextInt() + "_", AccessTransformJar.class);
+                at.setInput(mcinject);
+                at.setOutput(bin);
+                at.setAts(ATS);
+
+                if (baseAT.length() != 0) {
+                    File parentAT = project.file("build/" + at.getName() + "/parent_at.cfg");
+                    if (!parentAT.getParentFile().exists())
+                        parentAT.getParentFile().mkdirs();
+                    Files.write(parentAT.toPath(), baseAT.toString().getBytes());
+                    at.setAts(parentAT);
+                }
+
+                at.apply();
+            }
+
             //Build and inject MCP injected sources
             File inject_src = cacheRaw("inject_src", "jar");
             try (ZipInputStream zin = new ZipInputStream(new FileInputStream(mcp.getZip()));
@@ -555,24 +577,6 @@ public class MinecraftUserRepo extends BaseRepo {
                 });
             }
 
-            if (hasAts) {
-                if (bin.exists()) bin.delete(); // AT lib throws an exception if output file already exists
-
-                AccessTransformJar at = project.getTasks().create("_atJar_"+ new Random().nextInt() + "_", AccessTransformJar.class);
-                at.setInput(injected);
-                at.setOutput(bin);
-                at.setAts(ATS);
-
-                if (baseAT.length() != 0) {
-                    File parentAT = project.file("build/" + at.getName() + "/parent_at.cfg");
-                    if (!parentAT.getParentFile().exists())
-                        parentAT.getParentFile().mkdirs();
-                    Files.write(parentAT.toPath(), baseAT.toString().getBytes());
-                    at.setAts(parentAT);
-                }
-
-                at.apply();
-            }
 
             if (mapping == null) { //They didn't ask for MCP names, so serve them SRG!
                 FileUtils.copyFile(injected, bin);
