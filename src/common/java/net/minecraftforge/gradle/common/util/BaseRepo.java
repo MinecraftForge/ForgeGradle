@@ -75,10 +75,12 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
             String[] pts  = artifact.getExtension().split("\\.");
 
             File ret = null;
-            if (pts.length == 1)
-                ret = findFile(artifact);
-            else // Call without the .md5/.sha extension.
-                ret = findFile(net.minecraftforge.gradle.common.util.Artifact.from(artifact.getGroup(), artifact.getName(), artifact.getVersion(), artifact.getClassifier(), pts[0]));
+            synchronized (this) {
+                if (pts.length == 1)
+                    ret = findFile(artifact);
+                else // Call without the .md5/.sha extension.
+                    ret = findFile(net.minecraftforge.gradle.common.util.Artifact.from(artifact.getGroup(), artifact.getName(), artifact.getVersion(), artifact.getClassifier(), pts[0]));
+            }
 
             if (ret != null) {
                 ArtifactType type = ArtifactType.OTHER;
