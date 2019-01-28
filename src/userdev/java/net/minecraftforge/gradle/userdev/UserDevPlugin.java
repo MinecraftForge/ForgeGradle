@@ -177,7 +177,7 @@ public class UserDevPlugin implements Plugin<Project> {
                 .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
                 .attach(project);
             project.getRepositories().maven(e -> {
-                e.setUrl("http://files.minecraftforge.net/maven/");
+                e.setUrl(Utils.FORGE_MAVEN);
             });
             project.getRepositories().maven(e -> {
                 e.setUrl("https://libraries.minecraft.net/");
