@@ -59,7 +59,6 @@ public class MinecraftRepo extends BaseRepo {
     private static MinecraftRepo INSTANCE;
     private static final String GROUP = "net.minecraft";
     public static final String MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
-    private static final String FORGE_MAVEN = "https://files.minecraftforge.net/maven/";
     public static final String CURRENT_OS = OS.getCurrent().getName();
 
     private final Repository repo;
@@ -136,7 +135,7 @@ public class MinecraftRepo extends BaseRepo {
         net.minecraftforge.gradle.common.util.Artifact mcp = net.minecraftforge.gradle.common.util.Artifact.from("de.oceanlabs.mcp:mcp_config:" + version + "@zip");
         File zip = cache("versions", version, "mcp.zip");
         if (!zip.exists()) {
-            FileUtils.copyURLToFile(new URL(FORGE_MAVEN + mcp.getPath()), zip);
+            FileUtils.copyURLToFile(new URL(Utils.FORGE_MAVEN + mcp.getPath()), zip);
             Utils.updateHash(zip);
         }
         return zip;

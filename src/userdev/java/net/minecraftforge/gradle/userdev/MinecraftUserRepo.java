@@ -40,6 +40,7 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
+import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.compile.JavaCompile;
 
 import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
@@ -168,7 +169,7 @@ public class MinecraftUserRepo extends BaseRepo {
             patcher = patcher.getParent();
         }
 
-        if (parent.getConfig().runs != null) {
+        if (parent != null && parent.getConfig().runs != null) { // There might be no patchers to parent, so it may only be a vanilla mcp dependency
             Map<String, String> vars = new HashMap<>();
             vars.put("assets_root", assets.getAbsolutePath());
             vars.put("natives", natives.getAbsolutePath());
@@ -964,8 +965,16 @@ public class MinecraftUserRepo extends BaseRepo {
             for (File ext : extraDeps)
                 files.add(ext);
             compile.setClasspath(project.files(files));
-            compile.setSourceCompatibility(parent.getConfig().getSourceCompatibility());
-            compile.setTargetCompatibility(parent.getConfig().getTargetCompatibility());
+            if (parent != null) {
+                compile.setSourceCompatibility(parent.getConfig().getSourceCompatibility());
+                compile.setTargetCompatibility(parent.getConfig().getTargetCompatibility());
+            } else {
+                final JavaPluginConvention java = project.getConvention().findPlugin(JavaPluginConvention.class);
+                if (java != null) {
+                    compile.setSourceCompatibility(java.getSourceCompatibility().toString());
+                    compile.setTargetCompatibility(java.getTargetCompatibility().toString());
+                }
+            }
             compile.setDestinationDir(output);
             compile.setSource(source.isDirectory() ? project.fileTree(source) : project.zipTree(source));
 

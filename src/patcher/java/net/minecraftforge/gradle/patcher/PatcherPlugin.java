@@ -111,7 +111,7 @@ public class PatcherPlugin implements Plugin<Project> {
 
         //Add Known repos
         project.getRepositories().maven(e -> {
-            e.setUrl("http://files.minecraftforge.net/maven/");
+            e.setUrl(Utils.FORGE_MAVEN);
         });
         new BaseRepo.Builder()
             .add(MCPRepo.create(project))

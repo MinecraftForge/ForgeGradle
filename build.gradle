@@ -122,7 +122,7 @@ publishing {
                     username project.properties.forgeMavenUser
                     password project.properties.forgeMavenPassword
                 }
-                url 'http://files.minecraftforge.net/maven/manage/upload'
+                url 'https://files.minecraftforge.net/maven/manage/upload'
             } else {
                 url 'file://' + rootProject.file('repo').getAbsolutePath()
             }

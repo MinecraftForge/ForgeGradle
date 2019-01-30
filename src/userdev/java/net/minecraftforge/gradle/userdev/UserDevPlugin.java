@@ -185,7 +185,7 @@ public class UserDevPlugin implements Plugin<Project> {
                 .add(MinecraftRepo.create(p)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
                 .attach(p);
             p.getRepositories().maven(e -> {
-                e.setUrl("http://files.minecraftforge.net/maven/");
+                e.setUrl(Utils.FORGE_MAVEN);
             });
             p.getRepositories().maven(e -> {
                 e.setUrl("https://libraries.minecraft.net/");
@@ -262,11 +262,11 @@ public class UserDevPlugin implements Plugin<Project> {
     {
         final Project project = javaPluginConvention.getProject();
         final ConfigurationContainer configurations = project.getConfigurations();
-                
+
         javaPluginConvention.getSourceSets().all(sourceSet -> {
             final String implementationConfigurationName = sourceSet.getImplementationConfigurationName();
-            final Configuration implementationSourceSetConfiguration = configurations.maybeCreate(implementationConfigurationName);            
-            
+            final Configuration implementationSourceSetConfiguration = configurations.maybeCreate(implementationConfigurationName);
+
             final String minecraftConfigurationName = Utils.uncapitalizeString(implementationConfigurationName.replace(IMPLEMENTATION_LC, MINECRAFT).replace(IMPLEMENTATION_CP, MINECRAFT));
             final String deobfuscatedConfigurationName = Utils.uncapitalizeString(implementationConfigurationName.replace(IMPLEMENTATION_LC, MINECRAFT).replace(IMPLEMENTATION_CP, MINECRAFT));
             final String sourceSetName = sourceSet.toString();
@@ -282,7 +282,7 @@ public class UserDevPlugin implements Plugin<Project> {
             deobfuscatedConfiguration.setDescription("Deobfuscated dependencies for " + sourceSetName + ".");
             deobfuscatedConfiguration.setCanBeConsumed(false);
             deobfuscatedConfiguration.setCanBeResolved(false);
-            
+
             implementationSourceSetConfiguration.extendsFrom(minecraftConfiguration);
             implementationSourceSetConfiguration.extendsFrom(deobfuscatedConfiguration);
         });

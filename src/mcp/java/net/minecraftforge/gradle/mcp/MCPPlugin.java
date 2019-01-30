@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.mcp;
 
+import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.function.DownloadClientFunction;
 import net.minecraftforge.gradle.mcp.function.DownloadManifestFunction;
 import net.minecraftforge.gradle.mcp.function.DownloadServerFunction;
@@ -63,7 +64,7 @@ public class MCPPlugin implements Plugin<Project> {
                 e.metadataSources(src -> src.artifact());
             });
             project.getRepositories().maven(e -> {
-                e.setUrl("http://files.minecraftforge.net/maven/");
+                e.setUrl(Utils.FORGE_MAVEN);
             });
             project.getRepositories().mavenCentral(); //Needed for MCP Deps
         });
