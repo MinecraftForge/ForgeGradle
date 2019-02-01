@@ -236,7 +236,7 @@ public class MinecraftUserRepo extends BaseRepo {
             Patcher last = null;
             while (artifact != null) {
                 debug("    Parent: " + artifact);
-                File dep = Utils.downloadMaven(project, Artifact.from(artifact), CHANGING_USERDEV);
+                File dep = MavenArtifactDownloader.manual(project, artifact, CHANGING_USERDEV);
                 if (dep == null)
                     throw new IllegalStateException("Could not resolve dependency: " + artifact);
                 if (patcher) {
@@ -327,7 +327,7 @@ public class MinecraftUserRepo extends BaseRepo {
         String version = mapping.substring(idx + 1);
         String desc = "de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
         debug("    Mapping: " + desc);
-        return Utils.downloadMaven(project, Artifact.from(desc), CHANGING_USERDEV);
+        return MavenArtifactDownloader.manual(project, desc, CHANGING_USERDEV);
     }
 
     private File findPom(String mapping, String rand) throws IOException {
@@ -915,7 +915,7 @@ public class MinecraftUserRepo extends BaseRepo {
         File target = cacheMapped(mapping, classifier, extension);
         debug("    Finding Classified: " + target);
 
-        File original = Utils.downloadMaven(project, Artifact.from(GROUP, NAME, VERSION, classifier, extension), CHANGING_USERDEV);
+        File original = MavenArtifactDownloader.manual(project, Artifact.from(GROUP, NAME, VERSION, classifier, extension).getDescriptor(), CHANGING_USERDEV);
         HashStore cache = commonHash(null); //TODO: Remap from SRG?
         if (original != null)
             cache.add("original", original);
@@ -1008,7 +1008,7 @@ public class MinecraftUserRepo extends BaseRepo {
                     throw new IllegalStateException("Invalid patcher dependency, missing MCP or parent: " + artifact);
 
                 if (config.universal != null) {
-                    universal = Utils.downloadMaven(project, Artifact.from(config.universal), CHANGING_USERDEV);
+                    universal = MavenArtifactDownloader.manual(project, config.universal, CHANGING_USERDEV);
                     if (universal == null)
                         throw new IllegalStateException("Invalid patcher dependency, could not resolve universal: " + universal);
                 } else {
@@ -1016,7 +1016,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 }
 
                 if (config.sources != null) {
-                    sources = Utils.downloadMaven(project, Artifact.from(config.sources), CHANGING_USERDEV);
+                    sources = MavenArtifactDownloader.manual(project, config.sources, CHANGING_USERDEV);
                     if (sources == null)
                         throw new IllegalStateException("Invalid patcher dependency, could not resolve sources: " + sources);
                 } else {

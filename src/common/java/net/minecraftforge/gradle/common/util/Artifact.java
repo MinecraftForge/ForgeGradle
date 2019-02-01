@@ -21,12 +21,14 @@
 package net.minecraftforge.gradle.common.util;
 
 import java.io.File;
+import java.util.Locale;
+import org.apache.maven.artifact.versioning.ComparableVersion;
 
 import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 
-public class Artifact implements ArtifactIdentifier {
+public class Artifact implements ArtifactIdentifier, Comparable<Artifact> {
     //Descriptor parts: group:name:version[:classifier][@extension]
     private String group;
     private String name;
@@ -38,6 +40,8 @@ public class Artifact implements ArtifactIdentifier {
     private String path;
     private String file;
     private String descriptor;
+    private ComparableVersion comp;
+    private boolean isSnapshot = false;
 
     public static Artifact from(String descriptor) {
         Artifact ret = new Artifact();
@@ -55,6 +59,9 @@ public class Artifact implements ArtifactIdentifier {
         }
 
         ret.version = pts[2];
+        ret.comp = new ComparableVersion(ret.version);
+        ret.isSnapshot = ret.version.toLowerCase(Locale.ENGLISH).endsWith("-snapshot");
+
         if (pts.length > 3)
             ret.classifier = pts[3];
 
@@ -94,8 +101,22 @@ public class Artifact implements ArtifactIdentifier {
     @Override
     public String getExtension() { return ext;        }
     public String getFilename()  { return file;       }
+    public boolean isSnapshot()  { return isSnapshot; }
     @Override
     public String toString() {
         return getDescriptor();
+    }
+
+    @Override
+    public int compareTo(Artifact o) {
+        int ret = 0;
+        if ((ret = group.compareTo(o.group)) != 0) return ret;
+        if ((ret = name.compareTo(o.name)) != 0) return ret;
+        if ((ret = comp.compareTo(o.comp)) != 0) return ret;
+        if (isSnapshot) {
+            //TODO: Timestamps
+        }
+        if ((ret = classifier.compareTo(o.classifier)) != 0) return ret;
+        return ext.compareTo(o.ext);
     }
 }

@@ -79,7 +79,7 @@ public class DownloadMavenArtifact extends DefaultTask {
 
     @TaskAction
     public void run() throws IOException {
-        File out = MavenArtifactDownloader.both(getProject(), _artifact.getDescriptor(), getChanging());
+        File out = MavenArtifactDownloader.download(getProject(), _artifact.getDescriptor(), getChanging());
         this.setDidWork(out != null && out.exists());
 
         if (FileUtils.contentEquals(out, output)) return;

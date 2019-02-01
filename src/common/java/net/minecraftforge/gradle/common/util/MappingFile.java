@@ -39,6 +39,7 @@ import org.apache.commons.io.IOUtils;
 
 import com.google.common.base.Joiner;
 
+@SuppressWarnings("unused")
 public class MappingFile {
     public enum Format {
         SRG, CSRG, TSRG;

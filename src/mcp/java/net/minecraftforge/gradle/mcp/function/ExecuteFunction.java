@@ -23,7 +23,6 @@ package net.minecraftforge.gradle.mcp.function;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
-import org.apache.commons.io.output.NullOutputStream;
 import org.gradle.api.tasks.JavaExec;
 
 import java.io.BufferedOutputStream;

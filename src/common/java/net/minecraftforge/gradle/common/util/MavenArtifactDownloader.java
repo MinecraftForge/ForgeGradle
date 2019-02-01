@@ -20,23 +20,36 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.maven.artifact.versioning.ArtifactVersion;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.xml.sax.SAXException;
 
 import com.amadornes.artifactural.gradle.GradleRepositoryAdapter;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
+import groovy.util.Node;
+import groovy.util.XmlParser;
+
 import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import javax.xml.parsers.ParserConfigurationException;
 
 public class MavenArtifactDownloader {
     private static final Cache<String, File> CACHE = CacheBuilder.newBuilder()
@@ -46,7 +59,31 @@ public class MavenArtifactDownloader {
 
     private static final Map<String, String> VERSIONS = new HashMap<>();
 
-    private static File _download(Project project, String artifact, boolean changing, boolean generated, boolean gradle) {
+
+    public static File download(Project project, String artifact, boolean changing) {
+        return _download(project, artifact, changing, true, true, true);
+    }
+
+    public static String getVersion(Project project, String artifact) {
+        _download(project, artifact, true, false, true, true);
+        return VERSIONS.get(artifact);
+    }
+
+    public static File gradle(Project project, String artifact, boolean changing) {
+        return _download(project, artifact, changing, false, true, true);
+    }
+
+    public static File generate(Project project, String artifact, boolean changing) {
+        return _download(project, artifact, changing, true, false, true);
+    }
+
+    public static File manual(Project project, String artifact, boolean changing) {
+        return _download(project, artifact, changing, false, false, true);
+    }
+
+
+    private static File _download(Project project, String artifact, boolean changing, boolean generated, boolean gradle, boolean manual) {
+        Artifact art = Artifact.from(artifact);
         File ret = null;
         try {
             ret = CACHE.getIfPresent(artifact);
@@ -54,51 +91,158 @@ public class MavenArtifactDownloader {
                 CACHE.invalidate(artifact);
                 ret = null;
             }
+
+            List<MavenArtifactRepository> mavens = new ArrayList<>();
+            List<GradleRepositoryAdapter> fakes = new ArrayList<>();
+            List<ArtifactRepository> others = new ArrayList<>();
+
+            project.getRepositories().forEach( repo -> {
+                if (repo instanceof MavenArtifactRepository)
+                    mavens.add((MavenArtifactRepository)repo);
+                else if (repo instanceof GradleRepositoryAdapter)
+                    fakes.add((GradleRepositoryAdapter)repo);
+                else
+                    others.add(repo);
+            });
+
             if (ret == null && generated) {
-                ret = _generate(project, artifact);
-                if (ret != null)
-                    CACHE.put(artifact, ret);
+                ret = _generate(fakes, art);
             }
+
+            if (ret == null && manual) {
+                ret = _manual(project, mavens, art, changing);
+            }
+
             if (ret == null && gradle) {
-                ret = _gradle(project, artifact, changing);
-                if (ret != null)
-                    CACHE.put(artifact, ret);
+                ret = _gradle(project, others, art, changing);
             }
-        } catch (RuntimeException e) {
+
+            if (ret != null)
+                CACHE.put(artifact, ret);
+        } catch (RuntimeException | IOException e) {
             e.printStackTrace();
         }
         return ret;
     }
 
-    private static File _generate(Project project, String artifact) {
-        Artifact art = Artifact.from(artifact);
-        List<ArtifactRepository> repos = project.getRepositories();
-        for (ArtifactRepository repo : repos) {
-            if (repo instanceof GradleRepositoryAdapter) {
-                GradleRepositoryAdapter fake = (GradleRepositoryAdapter)repo;
-                File ret = fake.getArtifact(art);
-                if (ret != null && ret.exists())
-                    return ret;
-            }
+    private static File _generate(List<GradleRepositoryAdapter> repos, Artifact artifact) {
+        for (GradleRepositoryAdapter repo : repos) {
+            File ret = repo.getArtifact(artifact);
+            if (ret != null && ret.exists())
+                return ret;
         }
         return null;
     }
 
-    private static File _gradle(Project project, String artifact, boolean changing) {
-        String name = "mavenDownloader_" + artifact.replace(':', '_');
+    private static File _manual(Project project, List<MavenArtifactRepository> repos, Artifact artifact, boolean changing) throws IOException {
+        if (!artifact.getVersion().endsWith("+") && !artifact.isSnapshot()) {
+            for (MavenArtifactRepository repo : repos) {
+                Pair<Artifact, File> pair = _manualMaven(project, repo.getUrl().toURL(), artifact, changing);
+                if (pair != null && pair.getValue().exists())
+                    return pair.getValue();
+            }
+            return null;
+        }
+
+        List<Pair<Artifact, File>> versions = new ArrayList<>();
+
+        // Gather list of all versions from all repos.
+        for (MavenArtifactRepository repo : repos) {
+            Pair<Artifact, File> pair = _manualMaven(project, repo.getUrl().toURL(), artifact, changing);
+            if (pair != null && pair.getValue().exists())
+                versions.add(pair);
+        }
+
+        Artifact version = null;
+        File ret = null;
+        for (Pair<Artifact, File> ver : versions) {
+            //Select highest version
+            if (version == null || version.compareTo(ver.getKey()) < 0) {
+                version = ver.getKey();
+                ret = ver.getValue();
+            }
+        }
+        VERSIONS.put(artifact.getDescriptor(), version.getVersion());
+        return ret;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Pair<Artifact, File> _manualMaven(Project project, URL maven, Artifact artifact, boolean changing) throws IOException {
+        if (artifact.getVersion().endsWith("+")) {
+            //I THINK +'s are only valid in the end version, So 1.+ and not 1.+.4 as that'd make no sense.
+            //It also appears you can't do something like 1.5+ to NOT get 1.4/1.3. So.. mimic that.
+            File meta = _downloadWithCache(project, maven, artifact.getGroup().replace('.', '/') + '/' + artifact.getName() + "/maven-metadata.xml", true, true);
+            if (meta == null)
+                return null; //Don't error, other repos might have it.
+            try {
+                Node xml = new XmlParser().parse(meta);
+                Node versioning = getPath(xml, "versioning/versions");
+                List<Node> versions = versioning == null ? null : (List<Node>)versioning.get("version");
+                if (versions == null) {
+                    meta.delete();
+                    throw new IOException("Invalid maven-metadata.xml file, missing version list");
+                }
+                String prefix = artifact.getVersion().substring(0, artifact.getVersion().length() - 1); // Trim +
+                ArtifactVersion minVersion = (!prefix.endsWith(".") && prefix.length() > 0) ? new DefaultArtifactVersion(prefix) : null;
+                if (minVersion != null) { //Support min version like 1.5+ by saving it, and moving the prefix
+                    //minVersion = new DefaultArtifactVersion(prefix);
+                    int idx = prefix.lastIndexOf('.');
+                    prefix = idx == -1 ? "" : prefix.substring(0, idx + 1);
+                }
+                final String prefix_ = prefix;
+                ArtifactVersion highest = versions.stream().map(Node::text)
+                    .filter(s -> s.startsWith(prefix_))
+                    .map(DefaultArtifactVersion::new)
+                    .filter(v -> minVersion == null || minVersion.compareTo(v) <= 0)
+                    .sorted()
+                    .reduce((first, second) -> second).orElse(null);
+                if (highest == null)
+                    return null; //We have no versions that match what we want, so move on to next repo.
+                artifact = Artifact.from(artifact.getGroup(), artifact.getName(), highest.toString(), artifact.getClassifier(), artifact.getExtension());
+            } catch (SAXException | ParserConfigurationException e) {
+                meta.delete();
+                throw new IOException("Invalid maven-metadata.xml file", e);
+            }
+        } else if (artifact.getVersion().contains("-SNAPSHOT")) {
+            return null; //TODO
+            //throw new IllegalArgumentException("Snapshot versions are not supported, yet... " + artifact.getDescriptor());
+        }
+
+        String base = maven.toString();
+        if (!base.endsWith("/") && !base.endsWith("\\"))
+            base += "/";
+
+        File ret = _downloadWithCache(project, maven, artifact.getPath(), changing, false);
+        return ret == null ? null : ImmutablePair.of(artifact, ret);
+    }
+
+    //I'm sure there is a better way but not sure at the moment
+    @SuppressWarnings("unchecked")
+    private static Node getPath(Node node, String path) {
+        Node tmp = node;
+        for (String pt : path.split("/")) {
+            tmp = ((List<Node>)tmp.get(pt)).stream().findFirst().orElse(null);
+            if (tmp == null)
+                return null;
+        }
+        return tmp;
+    }
+
+    private static File _gradle(Project project, List<ArtifactRepository> repos, Artifact mine, boolean changing) {
+        String name = "mavenDownloader_" + mine.getDescriptor().replace(':', '_');
         synchronized(project) {
             int count = COUNTER.getOrDefault(project, 1);
             name += "_" + count++;
             COUNTER.put(project, count);
         }
 
-        Artifact mine = Artifact.from(artifact);
-        List<ArtifactRepository> repos = project.getRepositories();
-        List<ArtifactRepository> old = new ArrayList<>(repos);
-        repos.removeIf(e -> e instanceof GradleRepositoryAdapter); //Remove any fake repos
+        //Remove old repos, and only use the ones we're told to.
+        List<ArtifactRepository> old = new ArrayList<>(project.getRepositories());
+        project.getRepositories().clear();
+        project.getRepositories().addAll(repos);
 
         Configuration cfg = project.getConfigurations().create(name);
-        ExternalModuleDependency dependency = (ExternalModuleDependency)project.getDependencies().create(artifact);
+        ExternalModuleDependency dependency = (ExternalModuleDependency)project.getDependencies().create(mine.getDescriptor());
         dependency.setChanging(changing);
         cfg.getDependencies().add(dependency);
         cfg.resolutionStrategy(strat -> {
@@ -111,7 +255,7 @@ public class MavenArtifactDownloader {
         } catch (NullPointerException npe) {
             // This happens for unknown reasons deep in Gradle code... so we SHOULD find a way to fix it, but
             //honestly i'd rather deprecate this whole system and replace it with downloading things ourselves.
-            project.getLogger().error("Failed to download " + artifact + " gradle exploded");
+            project.getLogger().error("Failed to download " + mine.getDescriptor() + " gradle exploded");
             return null;
         }
         File ret = files.iterator().next(); //We only want the first, not transitive
@@ -120,31 +264,20 @@ public class MavenArtifactDownloader {
             ModuleVersionIdentifier resolved = art.getModuleVersion().getId();
             if (resolved.getGroup().equals(mine.getGroup()) && resolved.getName().equals(mine.getName())) {
                 if ((mine.getClassifier() == null && art.getClassifier() == null) || mine.getClassifier().equals(art.getClassifier()))
-                    VERSIONS.put(artifact, resolved.getVersion());
+                    VERSIONS.put(mine.getDescriptor(), resolved.getVersion());
             }
         });
 
         project.getConfigurations().remove(cfg);
 
-        repos.clear(); //Clear the repos so we can re-add in the correct oder.
-        repos.addAll(old); //Readd all the normal repos.
+        project.getRepositories().clear(); //Clear the repos so we can re-add in the correct oder.
+        project.getRepositories().addAll(old); //Readd all the normal repos.
         return ret;
     }
 
-    public static File both(Project project, String artifact, boolean changing) {
-        return _download(project, artifact, changing, true, true);
-    }
 
-    public static String getVersion(Project project, String artifact) {
-        gradle(project, artifact, true);
-        return VERSIONS.get(artifact);
-    }
-
-    public static File gradle(Project project, String artifact, boolean changing) {
-        return _download(project, artifact, changing, false, true);
-    }
-
-    public static File generate(Project project, String artifact, boolean changing) {
-        return _download(project, artifact, changing, true, false);
+    private static File _downloadWithCache(Project project, URL maven, String path, boolean changing, boolean bypassLocal) throws IOException {
+        File target = new File(Utils.getCache(project, "maven_downloader"), path);
+        return Utils.downloadWithCache(new URL(maven + path), target, changing, bypassLocal);
     }
 }

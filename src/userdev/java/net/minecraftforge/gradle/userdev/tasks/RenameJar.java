@@ -24,6 +24,7 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 
 import net.minecraftforge.gradle.common.task.JarExec;
+import net.minecraftforge.gradle.common.util.Utils;
 
 import java.io.File;
 import java.util.Arrays;
@@ -38,7 +39,7 @@ public class RenameJar extends JarExec {
     private File mappings;
 
     public RenameJar() {
-        tool = "net.md-5:SpecialSource:1.8.3:shaded"; // This is not use for binpatching, so we dont really need to let users config
+        tool = Utils.SPECIALSOURCE;
         args = new String[] { "--in-jar", "{input}", "--out-jar", "{output}", "--srg-in", "{mappings}"};
     }
 

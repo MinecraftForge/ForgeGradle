@@ -21,9 +21,7 @@
 package net.minecraftforge.gradle.mcp.util;
 
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
-import net.minecraftforge.gradle.common.util.Artifact;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
-import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPPlugin;
 import net.minecraftforge.gradle.mcp.function.ExecuteFunction;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
@@ -31,7 +29,6 @@ import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -103,7 +100,7 @@ public class MCPRuntime {
                 if (custom == null)
                     throw new IllegalArgumentException("Invalid MCP Config, Unknown function step type: " + step.getType() + " File: " + mcp_config);
 
-                File jar = Utils.downloadMaven(project, Artifact.from(custom.getVersion()), false);
+                File jar = MavenArtifactDownloader.manual(project, custom.getVersion(), false);
                 if (jar == null || !jar.exists())
                     throw new IllegalArgumentException("Could not download MCP Config dependency: " + custom.getVersion());
                 function = new ExecuteFunction(jar, custom.getJvmArgs().toArray(new String[custom.getJvmArgs().size()]),
