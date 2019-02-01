@@ -26,13 +26,17 @@ import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import org.apache.commons.io.output.NullOutputStream;
 import org.gradle.api.tasks.JavaExec;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.regex.Matcher;
@@ -117,14 +121,25 @@ public class ExecuteFunction implements MCPFunction {
 
         // Execute command
         JavaExec java = environment.project.getTasks().create("_", JavaExec.class);
-        java.setJvmArgs(jvmArgList);
-        java.setArgs(runArgList);
-        java.setClasspath(environment.project.files(jar));
-        java.setWorkingDir(workingDir);
-        java.setMain(mainClass);
-        java.setStandardOutput(new NullOutputStream());
-        java.exec();
-        environment.project.getTasks().remove(java);
+        try (BufferedOutputStream log_out = new BufferedOutputStream(new FileOutputStream(environment.getFile("console.log")))) {
+            PrintWriter writer = new PrintWriter(log_out);
+            Function<String,String> quote = s -> '"' + s + '"';
+            writer.println("JVM Args:    " + jvmArgList.stream().map(quote).collect(Collectors.joining(", ")));
+            writer.println("Run Args:    " + jvmArgList.stream().map(quote).collect(Collectors.joining(", ")));
+            writer.println("Classpath:   " + jar.getAbsolutePath());
+            writer.println("Working Dir: " + workingDir.getAbsolutePath());
+            writer.println("Main Class:  " + mainClass);
+            writer.flush();
+            java.setJvmArgs(jvmArgList);
+            java.setArgs(runArgList);
+            java.setClasspath(environment.project.files(jar));
+            java.setWorkingDir(workingDir);
+            java.setMain(mainClass);
+            java.setStandardOutput(log_out);
+            java.exec();
+        } finally {
+            environment.project.getTasks().remove(java);
+        }
 
         // Return the output file
         hashStore.save();
