@@ -20,9 +20,7 @@
 
 package net.minecraftforge.gradle.patcher.task;
 
-import net.minecraftforge.gradle.common.util.Artifact;
-import net.minecraftforge.gradle.common.util.Utils;
-
+import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
@@ -71,7 +69,7 @@ public class DownloadMCPMappingsTask extends DefaultTask {
     }
 
     private File getMappingFile() {
-        return Utils.downloadMaven(getProject(), Artifact.from(getMappings()), false);
+        return MavenArtifactDownloader.manual(getProject(), getMappings(), false);
     }
 
 }

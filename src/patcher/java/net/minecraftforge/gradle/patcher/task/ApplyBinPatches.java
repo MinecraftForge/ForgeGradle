@@ -24,6 +24,7 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 
 import net.minecraftforge.gradle.common.task.JarExec;
+import net.minecraftforge.gradle.common.util.Utils;
 
 import java.io.File;
 import java.util.Arrays;
@@ -39,7 +40,7 @@ public class ApplyBinPatches extends JarExec {
     private File output;
 
     public ApplyBinPatches() {
-        tool = "net.minecraftforge:binarypatcher:1.+:fatjar";
+        tool = Utils.BINPATCHER;
         args = new String[] { "--clean", "{clean}", "--output", "{output}", "--apply", "{input}"};
     }
 

@@ -33,6 +33,7 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import net.minecraftforge.gradle.common.task.JarExec;
+import net.minecraftforge.gradle.common.util.Utils;
 
 public class RenameJarInPlace extends JarExec {
     private File input;
@@ -40,7 +41,7 @@ public class RenameJarInPlace extends JarExec {
     private File mappings;
 
     public RenameJarInPlace() {
-        tool = "net.md-5:SpecialSource:1.8.3:shaded"; // This is not use for binpatching, so we dont really need to let users config
+        tool = Utils.SPECIALSOURCE;
         args = new String[] { "--in-jar", "{input}", "--out-jar", "{output}", "--srg-in", "{mappings}", "--live"};
         this.getOutputs().upToDateWhen(task -> false);
     }

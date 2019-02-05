@@ -40,6 +40,7 @@ import net.minecraftforge.gradle.common.util.Artifact;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.HashStore;
+import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.McpNames;
 import net.minecraftforge.gradle.common.util.SrgJarRenamer;
 import net.minecraftforge.gradle.common.util.Utils;
@@ -51,7 +52,7 @@ import net.minecraftforge.gradle.common.util.Utils;
 public class ModRemapingRepo extends BaseRepo {
     private final Project project;
     private final String MAPPING;
-    private final Map<String, McpNames> mapCache = new HashMap<>();
+    //private final Map<String, McpNames> mapCache = new HashMap<>();
     private final Map<String, Artifact> external = new HashMap<>();
     @SuppressWarnings("unused")
     private Repository repo;
@@ -141,14 +142,14 @@ public class ModRemapingRepo extends BaseRepo {
         String version = mapping.substring(idx + 1);
         String desc = "de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
         debug("    Mapping: " + desc);
-        return Utils.downloadMaven(project, Artifact.from(desc), false);
+        return MavenArtifactDownloader.manual(project, desc, false);
     }
 
     private File findPom(Artifact artifact, String mapping) throws IOException {
         if (mapping == null)
             return null;
 
-        File clean = Utils.downloadMaven(project, Artifact.from(artifact.getGroup() + ':' + artifact.getName() + ':' + artifact.getVersion() + "@pom"), false);
+        File clean = MavenArtifactDownloader.manual(project, artifact.getGroup() + ':' + artifact.getName() + ':' + artifact.getVersion() + "@pom", false);
         if (clean == null || !clean.exists())
             return null;
 
@@ -173,7 +174,7 @@ public class ModRemapingRepo extends BaseRepo {
         if (names == null || !names.exists())
             return null;
 
-        File orig = Utils.downloadMaven(project, artifact, false);
+        File orig = MavenArtifactDownloader.manual(project, artifact.getDescriptor(), false);
         if (orig == null || !orig.exists())
             return null;
 
@@ -197,7 +198,7 @@ public class ModRemapingRepo extends BaseRepo {
         if (names == null || !names.exists())
             return null;
 
-        File orig = Utils.downloadMaven(project, Artifact.from(artifact.getGroup() + ':' + artifact.getName() + ':' + artifact.getVersion() + ":sources"), false);
+        File orig = MavenArtifactDownloader.manual(project, artifact.getGroup() + ':' + artifact.getName() + ':' + artifact.getVersion() + ":sources", false);
         if (orig == null || !orig.exists())
             return null;
 

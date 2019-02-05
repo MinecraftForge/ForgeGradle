@@ -20,12 +20,12 @@
 
 package net.minecraftforge.gradle.userdev.tasks;
 
-import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 
 import net.minecraftforge.gradle.common.task.JarExec;
+import net.minecraftforge.gradle.common.util.Utils;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -41,7 +41,7 @@ public class AccessTransformJar extends JarExec {
     private List<File> ats;
 
     public AccessTransformJar() {
-        tool = AccessTransformerFunction.ACCESSTRANSFORMERCOORDINATE; // AT spec *should* be standardized, it has been for years. So we *shouldn't* need to configure this.
+        tool = Utils.ACCESSTRANSFORMER; // AT spec *should* be standardized, it has been for years. So we *shouldn't* need to configure this.
         args = new String[] { "--inJar", "{input}", "--outJar", "{output}", "--logFile", "accesstransform.log"};
     }
 

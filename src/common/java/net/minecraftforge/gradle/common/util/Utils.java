@@ -33,12 +33,11 @@ import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,7 +56,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.function.IntFunction;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -70,6 +68,9 @@ public class Utils {
     private static int CACHE_TIMEOUT = 1000 * 60 * 60 * 1; //1 hour, Timeout used for version_manifest.json so we dont ping their server every request.
                                                           //manifest doesn't include sha1's so we use this for the per-version json as well.
     public static final String FORGE_MAVEN = "https://files.minecraftforge.net/maven/";
+    public static final String BINPATCHER =  "net.minecraftforge:binarypatcher:1.+:fatjar";
+    public static final String ACCESSTRANSFORMER = "net.minecraftforge:accesstransformers:0.14.+:fatjar";
+    public static final String SPECIALSOURCE = "net.md-5:SpecialSource:1.8.3:shaded";
 
     public static void extractFile(ZipFile zip, String name, File output) throws IOException {
         extractFile(zip, zip.getEntry(name), output);
@@ -306,7 +307,7 @@ public class Utils {
         return false;
     }
 
-    public static boolean downloadFile(URL url, File output) {
+    public static boolean downloadFile(URL url, File output, boolean deleteOn404) {
         String proto = url.getProtocol().toLowerCase();
 
         try {
@@ -317,12 +318,18 @@ public class Utils {
 
                 if (con.getResponseCode() == 200) {
                     return downloadFile(con, output);
+                } if (con.getResponseCode() == 404) {
+                    if (deleteOn404 && output.exists())
+                        output.delete();
                 }
             } else {
                 URLConnection con = url.openConnection();
                 con.connect();
                 return downloadFile(con, output);
             }
+        } catch (FileNotFoundException e) {
+            if (deleteOn404 && output.exists())
+                output.delete();
         } catch (IOException e) {
             //Invalid URLs/File paths will cause FileNotFound or 404 errors.
             //As well as any errors during download.
@@ -376,6 +383,7 @@ public class Utils {
         }
         return null;
     }
+
     private static String downloadString(URLConnection con) throws IOException {
         InputStream stream = con.getInputStream();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -386,40 +394,11 @@ public class Utils {
         return new String(out.toByteArray(), StandardCharsets.UTF_8); //Read encoding from header?
     }
 
-    public static File downloadMaven(Project project, Artifact artifact, boolean changing) {
-        List<MavenArtifactRepository> repos = project.getRepositories().stream()
-                .filter(e -> e instanceof MavenArtifactRepository)
-                .map(e -> (MavenArtifactRepository)e)
-                .collect(Collectors.toList());
-
-        for (MavenArtifactRepository repo : repos) {
-            try {
-                //project.getLogger().lifecycle("Downloading: " + repo.getUrl() + " " + artifact.getPath());
-                File ret = _downloadMaven(project, repo.getUrl().toURL(), artifact, changing);
-                if (ret != null)
-                    return ret;
-            } catch (IOException e) {
-                // Eat it.
-                e.printStackTrace();
-            }
-        }
-        return null;
-    }
-
-    private static File _downloadMaven(Project project, URL maven, Artifact artifact, boolean changing) throws IOException {
-        if (artifact.getVersion().contains("+") || artifact.getVersion().contains("-SNAPSHOT"))
-            throw new IllegalArgumentException("Dynamic versions are not supported, yet...");
-
-        String base = maven.toString();
-        if (!base.endsWith("/") && !base.endsWith("\\"))
-            base += "/";
-
-        File cache = getCache(project, "maven_downloader");
-        File target = new File(cache, artifact.getPath());
-        File md5_file = new File(cache, artifact.getPath() + ".md5");
+    public static File downloadWithCache(URL url, File target, boolean changing, boolean bypassLocal) throws IOException {
+        File md5_file = new File(target.getAbsolutePath() + ".md5");
         String actual = target.exists() ? HashFunction.MD5.hash(target) : null;
 
-        if (target.exists() && !changing) {
+        if (target.exists() && !(changing || bypassLocal)) {
             String expected = md5_file.exists() ? new String(Files.readAllBytes(md5_file.toPath()), StandardCharsets.UTF_8) : null;
             if (expected == null || expected.equals(actual))
                 return target;
@@ -428,17 +407,18 @@ public class Utils {
 
         String expected = null;
         try {
-            expected = downloadString(new URL(maven + artifact.getPath() + ".md5"));
+            expected = downloadString(new URL(url.toString() + ".md5"));
         } catch (IOException e) {
             //Eat it, some repos don't have a simple checksum.
         }
+        if (expected == null && bypassLocal) return null; // Ignore local file if the remote doesn't have it.
         if (expected == null && target.exists()) return target; //Assume we're good cuz they didn't have a MD5 on the server.
         if (expected != null && expected.equals(actual)) return target;
 
         if (target.exists())
             target.delete(); //Invalid checksum, delete and grab new
 
-        if (!downloadFile(new URL(maven + artifact.getPath()), target)) {
+        if (!downloadFile(url, target, false)) {
             target.delete();
             return null;
         }
@@ -446,7 +426,7 @@ public class Utils {
         updateHash(target, HashFunction.MD5);
         return target;
     }
-
+  
     /**
      * Uncapitalizes a string.
      * Required due to both StringUtils classes not being on the classpath in certain gradle constructions.
@@ -457,5 +437,4 @@ public class Utils {
     public static String uncapitalizeString(String str) {
         return str != null && str.length() != 0 ? Character.toLowerCase(str.charAt(0)) + str.substring(1) : str;
     }
-
 }

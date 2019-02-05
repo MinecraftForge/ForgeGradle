@@ -83,6 +83,7 @@ dependencies {
     commonImplementation 'net.minecraftforge:Srg2Source:4.2.+' // TODO: Invoke as a runnable jar so we can decouple versions/asm?
     commonImplementation 'net.minecraftforge:artifactural:1.0.+'
     commonImplementation 'org.ow2.asm:asm-commons:6.2.1' //TODO: Remove and make standalone external tools?
+    commonImplementation 'org.apache.maven:maven-artifact:3.6.0'
 
     mcpImplementation sourceSets.common.output
     patcherImplementation sourceSets.mcp.output
