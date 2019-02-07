@@ -92,6 +92,8 @@ public class InjectFunction implements MCPFunction {
                 if (template != null) {
                     String pkg = entry.isDirectory() && !entry.getName().endsWith("/") ? entry.getName() : entry.getName().indexOf('/') == -1 ? "" : entry.getName().substring(0, entry.getName().lastIndexOf('/'));
                     if (visited.add(pkg)) {
+                        if (!pkg.startsWith("net/minecraft/"))
+                            continue;
                         ZipEntry info = new ZipEntry(pkg + "/package-info.java");
                         info.setTime(0);
                         zos.putNextEntry(info);
