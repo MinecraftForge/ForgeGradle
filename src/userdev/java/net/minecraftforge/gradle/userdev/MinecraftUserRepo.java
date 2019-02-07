@@ -424,7 +424,7 @@ public class MinecraftUserRepo extends BaseRepo {
             boolean hasAts = baseAT.length() != 0 || !ATS.isEmpty();
 
             File srged = null;
-            File joined = MavenArtifactDownloader.generate(project, "net.minecraft:" + (isPatcher? "joined" : NAME) + ":" + mcp.getVersion() + ":srg", true); //Download vanilla in srg name
+            File joined = MavenArtifactDownloader.generate(project, "net.minecraft:joined:" + mcp.getVersion() + ":srg", true); //Download vanilla in srg name
             if (joined == null || !joined.exists()) {
                 project.getLogger().error("MinecraftUserRepo: Failed to get Minecraft Joined SRG. Should not be possible.");
                 return null;
@@ -718,7 +718,7 @@ public class MinecraftUserRepo extends BaseRepo {
         cache.load(cacheAT("decomp", "jar.input"));
 
         if ((!cache.isSame() && (cache.exists() || generate)) || (!decomp.exists() && generate)) {
-            File output = mcp.getStepOutput(isPatcher ? "joined" : NAME, null);
+            File output = mcp.getStepOutput("joined", null);
             FileUtils.copyFile(output, decomp);
             cache.save();
             Utils.updateHash(decomp, HashFunction.SHA1);
