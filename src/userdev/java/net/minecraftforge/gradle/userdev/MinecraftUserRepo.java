@@ -33,6 +33,7 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import com.google.common.collect.Sets;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -83,6 +84,7 @@ public class MinecraftUserRepo extends BaseRepo {
     private MCP mcp;
     @SuppressWarnings("unused")
     private Repository repo;
+    private Set<File> files;
 
     /* TODO:
      * Steps to produce each dep:
@@ -176,6 +178,23 @@ public class MinecraftUserRepo extends BaseRepo {
                 runs.computeIfAbsent(name, k -> new RunConfig()).merge(dev, false, vars);
             });
         }
+        this.files = this.doCompile();
+    }
+
+    private Set<File> doCompile() {
+        Configuration cfg = project.getConfigurations().create(getNextCompileName());
+        List<String> deps = new ArrayList<>();
+        deps.add("net.minecraft:client:" + mcp.getMCVersion() + ":extra");
+        deps.add("net.minecraft:client:" + mcp.getMCVersion() + ":data");
+        deps.addAll(mcp.getLibraries());
+        Patcher patcher = parent;
+        while (patcher != null) {
+            deps.addAll(patcher.getLibraries());
+            patcher = patcher.getParent();
+        }
+        deps.forEach(dep -> cfg.getDependencies().add(project.getDependencies().create(dep)));
+        Set<File> files = cfg.resolve();
+        return files;
     }
 
     @SuppressWarnings("unused")
@@ -938,28 +957,22 @@ public class MinecraftUserRepo extends BaseRepo {
         return target;
     }
 
+    private String getNextCompileName() {
+        return "_compileJava_" + compileTaskCount++;
+    }
+
     private int compileTaskCount = 1;
     private File compileJava(File source, File... extraDeps) {
-        JavaCompile compile = project.getTasks().create("_compileJava_" + compileTaskCount++, JavaCompile.class);
+        JavaCompile compile = project.getTasks().create(getNextCompileName(), JavaCompile.class);
         try {
             File output = project.file("build/" + compile.getName() + "/");
             if (output.exists())
                 FileUtils.cleanDirectory(output);
-            Configuration cfg = project.getConfigurations().create(compile.getName());
-            List<String> deps = new ArrayList<>();
-            deps.add("net.minecraft:client:" + mcp.getMCVersion() + ":extra");
-            deps.add("net.minecraft:client:" + mcp.getMCVersion() + ":data");
-            deps.addAll(mcp.getLibraries());
-            Patcher patcher = parent;
-            while (patcher != null) {
-                deps.addAll(patcher.getLibraries());
-                patcher = patcher.getParent();
-            }
-            deps.forEach(dep -> cfg.getDependencies().add(project.getDependencies().create(dep)));
-            Set<File> files = cfg.resolve();
-            for (File ext : extraDeps)
-                files.add(ext);
-            compile.setClasspath(project.files(files));
+
+            Set<File> ourFiles = Sets.newHashSet(this.files);
+
+            ourFiles.addAll(Arrays.asList(extraDeps));
+            compile.setClasspath(project.files(ourFiles));
             if (parent != null) {
                 compile.setSourceCompatibility(parent.getConfig().getSourceCompatibility());
                 compile.setTargetCompatibility(parent.getConfig().getTargetCompatibility());
