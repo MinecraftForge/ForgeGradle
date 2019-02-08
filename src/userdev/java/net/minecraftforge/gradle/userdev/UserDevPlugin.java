@@ -20,6 +20,8 @@
 
 package net.minecraftforge.gradle.userdev;
 
+import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
+import com.amadornes.artifactural.base.artifact.SimpleArtifactIdentifier;
 import net.minecraftforge.gradle.common.util.*;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NamedDomainObjectFactory;
@@ -48,6 +50,7 @@ import org.gradle.plugins.ide.eclipse.GenerateEclipseClasspath;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -136,6 +139,8 @@ public class UserDevPlugin implements Plugin<Project> {
 
             //TODO: UserDevRepo deobf = new UserDevRepo(project);
 
+            List<ArtifactIdentifier> toAdd = new ArrayList<>();
+
             DependencySet deps = minecraft.getDependencies();
             for (Dependency dep : deps.stream().collect(Collectors.toList())) {
                 if (!(dep instanceof ExternalModuleDependency))
@@ -155,6 +160,19 @@ public class UserDevPlugin implements Plugin<Project> {
                     });
                 }
                 minecraft.getDependencies().add(ext);
+
+                // Hack to avoid running tasks during dependency resolution
+                // We explicitly 'look up' all of the possible dependencies here, during
+                // plugin initialization. This will cause any uncached jars to be built (e.g. decomp,
+                // recomp).
+                //
+                // This ensures that when we catually need to result dependencies via BaseRepo#getArtifact,
+                // we'll have already built all of the jars we need to. This bypassess all of the nasty
+                // deadlock issues that come from running Gradle tasks in a dependency resolver.
+
+                toAdd.add(new SimpleArtifactIdentifier(ext.getGroup(), ext.getName(), ext.getVersion(), null, "pom"));
+                toAdd.add(new SimpleArtifactIdentifier(ext.getGroup(), ext.getName(), ext.getVersion(), null, ""));
+                toAdd.add(new SimpleArtifactIdentifier(ext.getGroup(), ext.getName(), ext.getVersion(), "sources", null));
             }
 
             deps = deobf.getDependencies();
@@ -186,7 +204,7 @@ public class UserDevPlugin implements Plugin<Project> {
             project.getRepositories().mavenCentral(); //Needed for MCP Deps
             if (mcrepo == null)
                 throw new IllegalStateException("Missing 'minecraft' dependency entry.");
-            mcrepo.validate(minecraft, extension.getRuns(), extractNatives.get().getOutput(), downloadAssets.get().getOutput()); //This will set the MC_VERSION property.
+            mcrepo.validate(minecraft, extension.getRuns(), extractNatives.get().getOutput(), downloadAssets.get().getOutput(), toAdd); //This will set the MC_VERSION property.
 
             String mcVer = (String)project.getExtensions().getExtraProperties().get("MC_VERSION");
             String mcpVer = (String)project.getExtensions().getExtraProperties().get("MCP_VERSION");

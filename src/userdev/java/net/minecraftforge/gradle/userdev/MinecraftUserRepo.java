@@ -83,6 +83,7 @@ public class MinecraftUserRepo extends BaseRepo {
     private MCP mcp;
     @SuppressWarnings("unused")
     private Repository repo;
+    private boolean alreadyBuiltDependencies = false;
 
     /* TODO:
      * Steps to produce each dep:
@@ -134,7 +135,7 @@ public class MinecraftUserRepo extends BaseRepo {
         return project.file("build/fg_cache/");
     }
 
-    public void validate(Configuration cfg, Map<String, RunConfig> runs, File natives, File assets) {
+    public void validate(Configuration cfg, Map<String, RunConfig> runs, File natives, File assets, List<ArtifactIdentifier> toAdd) {
         getParents();
         if (mcp == null)
             throw new IllegalStateException("Invalid minecraft dependency: " + GROUP + ":" + NAME + ":" + VERSION);
@@ -148,6 +149,7 @@ public class MinecraftUserRepo extends BaseRepo {
             patcher.getLibraries().stream().map(Artifact::from)
             .filter(e -> GROUP.equals(e.getGroup()) && NAME.equals(e.getName()))
             .forEach(e -> {
+                toAdd.add(e);
                 String dep = getDependencyString();
                 if (e.getClassifier() != null)
                     dep += ":" + e.getClassifier();
@@ -175,6 +177,67 @@ public class MinecraftUserRepo extends BaseRepo {
             parent.getConfig().runs.forEach((name, dev) -> {
                 runs.computeIfAbsent(name, k -> new RunConfig()).merge(dev, false, vars);
             });
+        }
+
+        for (ArtifactIdentifier id: toAdd) {
+            try {
+                this.findFile(id);
+            } catch (IOException e) {
+                log.lifecycle("Failed to resolve dependency: " + id, e);
+            }
+        }
+
+        // At this point, we should be all done running Gradle tasks
+        // to compile/decompile MC sources. Any calls to 'findFile' should
+        // therefore be served from our cache. If for some reason the
+        // cache later becomes invalid, 'checkCanBuildDependencies' will log an error
+        this.setDependenciesBuilt();
+    }
+
+    private void setDependenciesBuilt() {
+        this.alreadyBuiltDependencies = true;
+    }
+
+    /**
+     *
+     * Invoking Configuration#resolve or Task#execute from
+     * our dependency resolver can lead to deadlock. Here,
+     * we outline one potential scenario. Note that the deadlock
+     * may occur in slightly different ways (usually something involving
+     * 'org.gradle.internal.event.DefaultListenerManager')
+     *
+     * Previously, Configuration.resolve() was called indirectly from
+     * BaseRepo.getArtifact(). Due to the extensive amount of Gradle code that
+     * runs as a result of the resolve() call, deadlock could occur as follows:
+     *
+     * 1. Thread #1: During resolution of a dependency, Gradle calls
+     * BaseRepo#getArtifact(). The 'synchronized' block is entering,
+     * causing a lock to be taken on the artifact name
+     *
+     * 2. Thread #2: On a different thread, internal Gradle code takes a lock
+     * in the class org.gradle.internal.event.DefaultListenerManager.EventBroadcast.ListenerDispatch
+     *
+     * 3. Thread #1: Execution continues on the 'BaseRepo#getArtifact()' call
+     * stack, reaching the call to Configuration.resolve(). This call leads
+     * to Gradle internally dispatching events through the same class
+     * org.gradle.internal.event.DefaultListenerManager.EventBroadcast.ListenerDispatch.
+     * This thread is now blocked on the internal Gradle lock taken by Thread #2
+     *
+     * 4. Thread #2: Execution continues, and attempts to resolve the same
+     * dependency that Thread #1 is currently resolving. Since Thread #1 is
+     * still in the 'synchronized' block with the same artifact name, Thread #2
+     * blocks.
+     *
+     * These threads are now deadlocked: Thread #1 is holding the
+     * BaseRepo#getArtifact lock while waiting on an internal Gradle lock,
+     * while Thread #2 is holding the same internal Gradle lock while waiting
+     * on the BaseRepo#getArtifact lock.
+     *
+     * Visit https://git.io/fhHLk and https://git.io/fhH03 to see a stack dump showing this deadlock
+     */
+    private void checkCanBuildDependencies(String dep) {
+        if (this.alreadyBuiltDependencies) {
+            this.log.error("Tried to execute gradle task during dependency resolution! Please report this to ForgeGradle: " + dep, new Throwable());
         }
     }
 
@@ -345,6 +408,7 @@ public class MinecraftUserRepo extends BaseRepo {
         HashStore cache = commonHash(null).load(new File(pom.getAbsolutePath() + ".input"));
 
         if (!cache.isSame() || !pom.exists()) {
+            this.checkCanBuildDependencies(pom.getAbsolutePath());
             POMBuilder builder = new POMBuilder(rand + GROUP, NAME, getVersionWithAT(mapping) );
 
             //builder.dependencies().add(rand + GROUP + ':' + NAME + ':' + getVersionWithAT(mapping), "compile"); //Normal poms dont reference themselves...
@@ -412,6 +476,7 @@ public class MinecraftUserRepo extends BaseRepo {
         File bin = cacheMapped(mapping, "jar");
         cache.load(cacheMapped(mapping, "jar.input"));
         if (!cache.isSame() || !bin.exists()) {
+            this.checkCanBuildDependencies(bin.getAbsolutePath());
             StringBuilder baseAT = new StringBuilder();
 
             for (Patcher patcher = parent; patcher != null; patcher = patcher.parent) {
@@ -835,6 +900,7 @@ public class MinecraftUserRepo extends BaseRepo {
         debug("    Finding Source: " + sources);
         cache.load(cacheMapped(mapping, "sources", "jar.input"));
         if ((!cache.isSame() && (cache.exists() || generate)) || (!sources.exists() && generate)) {
+            this.checkCanBuildDependencies(sources.getAbsolutePath());
             McpNames map = McpNames.load(names);
 
             if (!sources.getParentFile().exists())
