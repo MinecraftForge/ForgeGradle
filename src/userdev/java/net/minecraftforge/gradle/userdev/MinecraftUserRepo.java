@@ -84,7 +84,7 @@ public class MinecraftUserRepo extends BaseRepo {
     private MCP mcp;
     @SuppressWarnings("unused")
     private Repository repo;
-    private Set<File> files;
+    private Set<File> extraDataFiles;
 
     /* TODO:
      * Steps to produce each dep:
@@ -178,10 +178,51 @@ public class MinecraftUserRepo extends BaseRepo {
                 runs.computeIfAbsent(name, k -> new RunConfig()).merge(dev, false, vars);
             });
         }
-        this.files = this.doCompile();
+        this.extraDataFiles = this.buildExtraDataFiles();
     }
 
-    private Set<File> doCompile() {
+    /**
+     * Previously, Configuration.resolve() was called indirectly from
+     * BaseRepo.getArtifact(). Due to the extensive amount of Gradle code that
+     * runs as a result of the resolve() call, deadlock could occur as follows:
+     *
+     * 1. Thread #1: During resolution of a dependency, Gradle calls
+     * BaseRepo#getArtifact(). The 'synchronized' block is entering,
+     * causing a lock to be taken on the artifact name
+     *
+     * 2. Thread #2: On a different thread, internal Gradle code takes a lock
+     * in the class org.gradle.internal.event.DefaultListenerManager.EventBroadcast.ListenerDispatch
+     *
+     * 3. Thread #1: Execution continues on the 'BaseRepo#getArtifact()' call
+     * stack, reaching the call to Configuration.resolve(). This call leads
+     * to Gradle internally dispatching events through the same class
+     * org.gradle.internal.event.DefaultListenerManager.EventBroadcast.ListenerDispatch.
+     * This thread is now blocked on the internal Gradle lock taken by Thread #2
+     *
+     * 4. Thread #2: Execution continues, and attempts to resolve the same
+     * dependency that Thread #1 is currently resolving. Since Thread #1 is
+     * still in the 'synchronized' block with the same artifact name, Thread #2
+     * blocks.
+     *
+     * These threads are now deadlocked: Thread #1 is holding the
+     * BaseRepo#getArtifact lock while waiting on an internal Gradle lock,
+     * while Thread #2 is holding the same internal Gradle lock while waiting
+     * on the BaseRepo#getArtifact lock.
+     *
+     * Visit https://git.io/fhHLk to see a stack dump showing this deadlock
+     *
+     * Fortunately, the solution is fairly simply. We can move the entire
+     * dependency creation/resolution block to an earlier point in
+     * ForgeGradle's execution. Since the client 'data'/'extra'/libraries only
+     * depend on the MCP config file, we can do this during plugin
+     * initialization.
+     *
+     * This has the added benefit of speeding up ForgeGradle - this block of
+     * code will only be executed once, instead of during every call to
+     * compileJava
+     * @return
+     */
+    private Set<File> buildExtraDataFiles() {
         Configuration cfg = project.getConfigurations().create(getNextCompileName());
         List<String> deps = new ArrayList<>();
         deps.add("net.minecraft:client:" + mcp.getMCVersion() + ":extra");
@@ -969,7 +1010,7 @@ public class MinecraftUserRepo extends BaseRepo {
             if (output.exists())
                 FileUtils.cleanDirectory(output);
 
-            Set<File> ourFiles = Sets.newHashSet(this.files);
+            Set<File> ourFiles = Sets.newHashSet(this.extraDataFiles);
 
             ourFiles.addAll(Arrays.asList(extraDeps));
             compile.setClasspath(project.files(ourFiles));
