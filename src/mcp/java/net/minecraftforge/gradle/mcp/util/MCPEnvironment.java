@@ -32,12 +32,14 @@ public class MCPEnvironment {
     private final MCPRuntime runtime;
     public final Project project;
     public final String mcVersion;
+    public final String side;
     public Logger logger;
 
-    public MCPEnvironment(MCPRuntime runtime, String mcVersion) {
+    public MCPEnvironment(MCPRuntime runtime, String mcVersion, String side) {
         this.runtime = runtime;
         this.project = runtime.project;
         this.mcVersion = mcVersion;
+        this.side = side;
     }
 
     public Map<String, Object> getArguments() {

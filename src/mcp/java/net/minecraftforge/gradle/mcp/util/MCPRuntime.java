@@ -56,7 +56,7 @@ public class MCPRuntime {
     public MCPRuntime(Project project, File mcp_config, MCPConfigV1 config, String side,
             File mcpDirectory, Map<String, MCPFunction> extraPres) {
         this.project = project;
-        this.environment = new MCPEnvironment(this, config.getVersion());
+        this.environment = new MCPEnvironment(this, config.getVersion(), side);
         this.mcpDirectory = mcpDirectory;
 
         this.zipFile = mcp_config;

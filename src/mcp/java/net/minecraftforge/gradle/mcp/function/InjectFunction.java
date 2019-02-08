@@ -104,6 +104,9 @@ public class InjectFunction implements MCPFunction {
             }
 
             for (Entry<String, byte[]> add : added.entrySet()) {
+                boolean filter = "server".equals(environment.side) ? add.getKey().contains("/client/") : add.getKey().contains("/server/");
+                if (filter)
+                    continue;
                 ZipEntry info = new ZipEntry(add.getKey());
                 info.setTime(0);
                 zos.putNextEntry(info);
