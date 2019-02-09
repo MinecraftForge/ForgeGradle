@@ -49,6 +49,7 @@ public class TaskApplyPatches extends DefaultTask {
     private int maxFuzz = 0;
     private boolean canonicalizeAccess = true;
     private boolean canonicalizeWhitespace = true;
+    private boolean failOnErrors = true;
 
     @TaskAction
     public void applyPatches() {
@@ -99,7 +100,7 @@ public class TaskApplyPatches extends DefaultTask {
                 return success;
             }).reduce(true, (a,b) -> a && b);
 
-            if (all_success) {
+            if (all_success || !failOnErrors) {
                 context.save(getOutput());
             } else {
                 throw new RuntimeException("Failed to apply patches. See log for details.");
@@ -133,6 +134,13 @@ public class TaskApplyPatches extends DefaultTask {
     @Input
     public boolean getCanonicalizeAccess() {
         return canonicalizeAccess;
+    }
+
+    public boolean getFailOnErrors() {
+        return failOnErrors;
+    }
+    public void setFailOnErrors(boolean value) {
+        this.failOnErrors = value;
     }
 
     @OutputFile
