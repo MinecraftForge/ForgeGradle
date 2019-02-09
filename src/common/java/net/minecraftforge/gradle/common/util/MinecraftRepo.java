@@ -102,10 +102,8 @@ public class MinecraftRepo extends BaseRepo {
 
         String version = artifact.getVersion();
         String mappings = getMappings(version);
-        if (mappings != null) {
-            version = version.substring(0, version.length() - mappings.length() + "_mapped_".length());
+        if (mappings != null)
             return null; //We do not support mappings
-        }
         String classifier = artifact.getClassifier() == null ? "" : artifact.getClassifier();
         String ext = artifact.getExtension();
 
