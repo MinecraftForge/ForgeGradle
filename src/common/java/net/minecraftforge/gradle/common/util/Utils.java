@@ -47,15 +47,20 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -124,21 +129,51 @@ public class Utils {
     }
 
     public static void extractZip(File source, File target, boolean overwrite) throws IOException {
+        extractZip(source, target, overwrite, false);
+    }
+
+    public static void extractZip(File source, File target, boolean overwrite, boolean deleteExtras) throws IOException {
+        Set<File> extra = deleteExtras ? Files.walk(target.toPath()).filter(Files::isRegularFile).map(Path::toFile).collect(Collectors.toSet()) : new HashSet<>();
+
         try (ZipFile zip = new ZipFile(source)) {
             Enumeration<? extends ZipEntry> enu = zip.entries();
             while (enu.hasMoreElements()) {
                 ZipEntry e = enu.nextElement();
                 if (e.isDirectory()) continue;
                 File out = new File(target, e.getName());
-                if (out.exists() && !overwrite) continue;
                 File parent = out.getParentFile();
                 if (!parent.exists()) {
                     parent.mkdirs();
                 }
+                extra.remove(out);
+
+                if (out.exists()) {
+                    if (!overwrite)
+                        continue;
+
+                    //Reading is fast, and prevents Disc wear, so check if it's equals before writing.
+                    try (FileInputStream fis = new FileInputStream(out)){
+                        if (IOUtils.contentEquals(zip.getInputStream(e), fis))
+                            continue;
+                    }
+                }
+
                 try (FileOutputStream fos = new FileOutputStream(out)) {
                     IOUtils.copy(zip.getInputStream(e), fos);
                 }
             }
+        }
+
+        if (deleteExtras) {
+            extra.forEach(File::delete);
+
+            //Delete empty directories
+            Files.walk(target.toPath())
+            .filter(Files::isDirectory)
+            .sorted(Comparator.reverseOrder())
+            .map(Path::toFile)
+            .filter(f -> f.list().length == 0)
+            .forEach(File::delete);
         }
     }
 

@@ -22,6 +22,7 @@ package net.minecraftforge.gradle.patcher;
 
 import net.minecraftforge.gradle.common.task.ExtractMCPData;
 import net.minecraftforge.gradle.common.task.ExtractNatives;
+import net.minecraftforge.gradle.common.task.ExtractZip;
 import net.minecraftforge.gradle.common.task.DownloadAssets;
 import net.minecraftforge.gradle.common.task.DownloadMCMeta;
 import net.minecraftforge.gradle.common.util.*;
@@ -87,7 +88,7 @@ public class PatcherPlugin implements Plugin<Project> {
         TaskProvider<ExtractNatives> extractNatives = project.getTasks().register("extractNatives", ExtractNatives.class);
         TaskProvider<TaskApplyPatches> applyConfig = project.getTasks().register("applyPatches", TaskApplyPatches.class);
         TaskProvider<TaskApplyMappings> toMCPConfig = project.getTasks().register("srg2mcp", TaskApplyMappings.class);
-        TaskProvider<Copy> extractMapped = project.getTasks().register("extractMapped", Copy.class);
+        TaskProvider<ExtractZip> extractMapped = project.getTasks().register("extractMapped", ExtractZip.class);
         TaskProvider<TaskCreateSrg> createMcp2Srg = project.getTasks().register("createMcp2Srg", TaskCreateSrg.class);
         TaskProvider<TaskCreateSrg> createMcp2Obf = project.getTasks().register("createMcp2Obf", TaskCreateSrg.class);
         TaskProvider<TaskCreateExc> createExc = project.getTasks().register("createExc", TaskCreateExc.class);
@@ -146,8 +147,8 @@ public class PatcherPlugin implements Plugin<Project> {
         });
         extractMapped.configure(task -> {
             task.dependsOn(toMCPConfig);
-            task.from(project.zipTree(toMCPConfig.get().getOutput()));
-            task.into(extension.patchedSrc);
+            task.setZip(toMCPConfig.get().getOutput());
+            task.setOutput(extension.patchedSrc);
         });
         extractRangeConfig.configure(task -> {
             task.dependsOn(jarConfig);
