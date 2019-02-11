@@ -20,35 +20,13 @@
 
 package net.minecraftforge.gradle.userdev;
 
-
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
-
-import org.apache.commons.io.Charsets;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.ExternalModuleDependency;
-import org.gradle.api.plugins.ExtraPropertiesExtension;
-import org.gradle.api.plugins.JavaPluginConvention;
-import org.gradle.api.tasks.compile.JavaCompile;
-
 import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
 import com.amadornes.artifactural.api.repository.Repository;
 import com.amadornes.artifactural.base.repository.ArtifactProviderBuilder;
 import com.amadornes.artifactural.base.repository.SimpleRepository;
 import com.cloudbees.diff.PatchException;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import net.minecraftforge.gradle.common.config.Config;
 import net.minecraftforge.gradle.common.config.UserdevConfigV1;
 import net.minecraftforge.gradle.common.diff.ContextualPatch;
@@ -56,7 +34,16 @@ import net.minecraftforge.gradle.common.diff.ContextualPatch.PatchReport;
 import net.minecraftforge.gradle.common.diff.HunkReport;
 import net.minecraftforge.gradle.common.diff.PatchFile;
 import net.minecraftforge.gradle.common.diff.ZipContext;
-import net.minecraftforge.gradle.common.util.*;
+import net.minecraftforge.gradle.common.util.Artifact;
+import net.minecraftforge.gradle.common.util.BaseRepo;
+import net.minecraftforge.gradle.common.util.HashFunction;
+import net.minecraftforge.gradle.common.util.HashStore;
+import net.minecraftforge.gradle.common.util.MappingFile;
+import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
+import net.minecraftforge.gradle.common.util.McpNames;
+import net.minecraftforge.gradle.common.util.POMBuilder;
+import net.minecraftforge.gradle.common.util.RunConfig;
+import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
@@ -66,6 +53,49 @@ import net.minecraftforge.gradle.userdev.tasks.ApplyBinPatches;
 import net.minecraftforge.gradle.userdev.tasks.ApplyMCPFunction;
 import net.minecraftforge.gradle.userdev.tasks.RenameJar;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.internal.OverlappingOutputs;
+import org.gradle.api.internal.TaskExecutionHistory;
+import org.gradle.api.internal.tasks.OriginTaskExecutionMetadata;
+import org.gradle.api.plugins.ExtraPropertiesExtension;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.compile.JavaCompile;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
+
+import javax.annotation.Nullable;
 
 public class MinecraftUserRepo extends BaseRepo {
     private static final boolean CHANGING_USERDEV = true; //Used when testing to update the userdev cache every 30 seconds.
@@ -943,8 +973,13 @@ public class MinecraftUserRepo extends BaseRepo {
         JavaCompile compile = project.getTasks().create("_compileJava_" + compileTaskCount++, JavaCompile.class);
         try {
             File output = project.file("build/" + compile.getName() + "/");
-            if (output.exists())
+            if (output.exists()) {
                 FileUtils.cleanDirectory(output);
+            } else {
+                // Due to the weird way that we invoke JavaCompile,
+                // we need to ensure that the output directory already exists
+                output.mkdirs();
+            }
             Configuration cfg = project.getConfigurations().create(compile.getName());
             List<String> deps = new ArrayList<>();
             deps.add("net.minecraft:client:" + mcp.getMCVersion() + ":extra");
@@ -973,7 +1008,42 @@ public class MinecraftUserRepo extends BaseRepo {
             compile.setDestinationDir(output);
             compile.setSource(source.isDirectory() ? project.fileTree(source) : project.zipTree(source));
 
-            compile.execute();
+            // What follows is a horrible hack to allow us to call JavaCompile
+            // from our dependency resolver.
+            // As described in https://github.com/MinecraftForge/ForgeGradle/issues/550,
+            // invoking Gradle tasks in the normal way can lead to deadlocks
+            // when done from a dependency resolver.
+
+            // To avoid these issues, we invoke the 'compile' method on JavaCompile
+            // using reflection.
+
+            // Normally, the output history is set by Gradle. Since we're bypassing
+            // the normal gradle task infrastructure, we need to do it ourselves.
+            compile.getOutputs().setHistory(new TaskExecutionHistory() {
+
+                @Override
+                public Set<File> getOutputFiles() {
+                    // We explicitly clear the output directory
+                    // ourselves, so it's okay that this is totally wrong.
+                    return Sets.newHashSet();
+                }
+
+                @Nullable
+                @Override
+                public OverlappingOutputs getOverlappingOutputs() {
+                    return null;
+                }
+
+                @Nullable
+                @Override
+                public OriginTaskExecutionMetadata getOriginExecutionMetadata() {
+                    return null;
+                }
+            });
+
+            Method compileMethod = JavaCompile.class.getDeclaredMethod("compile");
+            compileMethod.setAccessible(true);
+            compileMethod.invoke(compile);
             return output;
         } catch (Exception e) { //Compile errors...?
             e.printStackTrace();
