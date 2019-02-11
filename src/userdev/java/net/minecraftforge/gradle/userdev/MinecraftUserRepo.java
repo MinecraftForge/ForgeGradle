@@ -531,6 +531,18 @@ public class MinecraftUserRepo extends BaseRepo {
                 while ((entry = zin.getNextEntry()) != null) {
                     if (!entry.getName().startsWith(prefix) || entry.isDirectory())
                         continue;
+
+                    // If an entry has a specific side in its name, don't apply
+                    // it when we're on the opposite side. Entries without a specific
+                    // side should always be applied
+                    if ("server".equals(NAME) && entry.getName().contains("/client/")) {
+                        continue;
+                    }
+
+                    if ("client".equals(NAME) && entry.getName().contains("/server/")) {
+                        continue;
+                    }
+
                     String name = entry.getName().substring(prefix.length());
                     if ("package-info-template.java".equals(name)) {
                         template = new String(IOUtils.toByteArray(zin), StandardCharsets.UTF_8);
