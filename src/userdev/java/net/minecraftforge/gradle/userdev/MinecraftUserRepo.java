@@ -51,6 +51,7 @@ import net.minecraftforge.gradle.mcp.util.MCPWrapper;
 import net.minecraftforge.gradle.userdev.tasks.AccessTransformJar;
 import net.minecraftforge.gradle.userdev.tasks.ApplyBinPatches;
 import net.minecraftforge.gradle.userdev.tasks.ApplyMCPFunction;
+import net.minecraftforge.gradle.userdev.tasks.HackyJavaCompile;
 import net.minecraftforge.gradle.userdev.tasks.RenameJar;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 import org.apache.commons.io.Charsets;
@@ -1045,7 +1046,7 @@ public class MinecraftUserRepo extends BaseRepo {
 
     private int compileTaskCount = 1;
     private File compileJava(File source, File... extraDeps) {
-        JavaCompile compile = project.getTasks().create(getNextCompileName(), JavaCompile.class);
+        HackyJavaCompile compile = project.getTasks().create(getNextCompileName(), HackyJavaCompile.class);
         try {
             File output = project.file("build/" + compile.getName() + "/");
             if (output.exists()) {
@@ -1072,42 +1073,8 @@ public class MinecraftUserRepo extends BaseRepo {
             compile.setDestinationDir(output);
             compile.setSource(source.isDirectory() ? project.fileTree(source) : project.zipTree(source));
 
-            // What follows is a horrible hack to allow us to call JavaCompile
-            // from our dependency resolver.
-            // As described in https://github.com/MinecraftForge/ForgeGradle/issues/550,
-            // invoking Gradle tasks in the normal way can lead to deadlocks
-            // when done from a dependency resolver.
+            compile.doHackyCompile();
 
-            // To avoid these issues, we invoke the 'compile' method on JavaCompile
-            // using reflection.
-
-            // Normally, the output history is set by Gradle. Since we're bypassing
-            // the normal gradle task infrastructure, we need to do it ourselves.
-            compile.getOutputs().setHistory(new TaskExecutionHistory() {
-
-                @Override
-                public Set<File> getOutputFiles() {
-                    // We explicitly clear the output directory
-                    // ourselves, so it's okay that this is totally wrong.
-                    return Sets.newHashSet();
-                }
-
-                @Nullable
-                @Override
-                public OverlappingOutputs getOverlappingOutputs() {
-                    return null;
-                }
-
-                @Nullable
-                @Override
-                public OriginTaskExecutionMetadata getOriginExecutionMetadata() {
-                    return null;
-                }
-            });
-
-            Method compileMethod = JavaCompile.class.getDeclaredMethod("compile");
-            compileMethod.setAccessible(true);
-            compileMethod.invoke(compile);
             return output;
         } catch (Exception e) { //Compile errors...?
             e.printStackTrace();
