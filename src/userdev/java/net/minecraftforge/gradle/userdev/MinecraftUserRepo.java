@@ -20,35 +20,13 @@
 
 package net.minecraftforge.gradle.userdev;
 
-
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
-
-import org.apache.commons.io.Charsets;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.ExternalModuleDependency;
-import org.gradle.api.plugins.ExtraPropertiesExtension;
-import org.gradle.api.plugins.JavaPluginConvention;
-import org.gradle.api.tasks.compile.JavaCompile;
-
 import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
 import com.amadornes.artifactural.api.repository.Repository;
 import com.amadornes.artifactural.base.repository.ArtifactProviderBuilder;
 import com.amadornes.artifactural.base.repository.SimpleRepository;
 import com.cloudbees.diff.PatchException;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import net.minecraftforge.gradle.common.config.Config;
 import net.minecraftforge.gradle.common.config.UserdevConfigV1;
 import net.minecraftforge.gradle.common.diff.ContextualPatch;
@@ -56,7 +34,16 @@ import net.minecraftforge.gradle.common.diff.ContextualPatch.PatchReport;
 import net.minecraftforge.gradle.common.diff.HunkReport;
 import net.minecraftforge.gradle.common.diff.PatchFile;
 import net.minecraftforge.gradle.common.diff.ZipContext;
-import net.minecraftforge.gradle.common.util.*;
+import net.minecraftforge.gradle.common.util.Artifact;
+import net.minecraftforge.gradle.common.util.BaseRepo;
+import net.minecraftforge.gradle.common.util.HashFunction;
+import net.minecraftforge.gradle.common.util.HashStore;
+import net.minecraftforge.gradle.common.util.MappingFile;
+import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
+import net.minecraftforge.gradle.common.util.McpNames;
+import net.minecraftforge.gradle.common.util.POMBuilder;
+import net.minecraftforge.gradle.common.util.RunConfig;
+import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
@@ -64,8 +51,52 @@ import net.minecraftforge.gradle.mcp.util.MCPWrapper;
 import net.minecraftforge.gradle.userdev.tasks.AccessTransformJar;
 import net.minecraftforge.gradle.userdev.tasks.ApplyBinPatches;
 import net.minecraftforge.gradle.userdev.tasks.ApplyMCPFunction;
+import net.minecraftforge.gradle.userdev.tasks.HackyJavaCompile;
 import net.minecraftforge.gradle.userdev.tasks.RenameJar;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.internal.OverlappingOutputs;
+import org.gradle.api.internal.TaskExecutionHistory;
+import org.gradle.api.internal.tasks.OriginTaskExecutionMetadata;
+import org.gradle.api.plugins.ExtraPropertiesExtension;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.compile.JavaCompile;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
+
+import javax.annotation.Nullable;
 
 public class MinecraftUserRepo extends BaseRepo {
     private static final boolean CHANGING_USERDEV = true; //Used when testing to update the userdev cache every 30 seconds.
@@ -83,6 +114,7 @@ public class MinecraftUserRepo extends BaseRepo {
     private MCP mcp;
     @SuppressWarnings("unused")
     private Repository repo;
+    private Set<File> extraDataFiles;
 
     /* TODO:
      * Steps to produce each dep:
@@ -176,6 +208,64 @@ public class MinecraftUserRepo extends BaseRepo {
                 runs.computeIfAbsent(name, k -> new RunConfig()).merge(dev, false, vars);
             });
         }
+        this.extraDataFiles = this.buildExtraDataFiles();
+    }
+
+    /**
+     * Previously, Configuration.resolve() was called indirectly from
+     * BaseRepo.getArtifact(). Due to the extensive amount of Gradle code that
+     * runs as a result of the resolve() call, deadlock could occur as follows:
+     *
+     * 1. Thread #1: During resolution of a dependency, Gradle calls
+     * BaseRepo#getArtifact(). The 'synchronized' block is entering,
+     * causing a lock to be taken on the artifact name
+     *
+     * 2. Thread #2: On a different thread, internal Gradle code takes a lock
+     * in the class org.gradle.internal.event.DefaultListenerManager.EventBroadcast.ListenerDispatch
+     *
+     * 3. Thread #1: Execution continues on the 'BaseRepo#getArtifact()' call
+     * stack, reaching the call to Configuration.resolve(). This call leads
+     * to Gradle internally dispatching events through the same class
+     * org.gradle.internal.event.DefaultListenerManager.EventBroadcast.ListenerDispatch.
+     * This thread is now blocked on the internal Gradle lock taken by Thread #2
+     *
+     * 4. Thread #2: Execution continues, and attempts to resolve the same
+     * dependency that Thread #1 is currently resolving. Since Thread #1 is
+     * still in the 'synchronized' block with the same artifact name, Thread #2
+     * blocks.
+     *
+     * These threads are now deadlocked: Thread #1 is holding the
+     * BaseRepo#getArtifact lock while waiting on an internal Gradle lock,
+     * while Thread #2 is holding the same internal Gradle lock while waiting
+     * on the BaseRepo#getArtifact lock.
+     *
+     * Visit https://git.io/fhHLk to see a stack dump showing this deadlock
+     *
+     * Fortunately, the solution is fairly simply. We can move the entire
+     * dependency creation/resolution block to an earlier point in
+     * ForgeGradle's execution. Since the client 'data'/'extra'/libraries only
+     * depend on the MCP config file, we can do this during plugin
+     * initialization.
+     *
+     * This has the added benefit of speeding up ForgeGradle - this block of
+     * code will only be executed once, instead of during every call to
+     * compileJava
+     * @return
+     */
+    private Set<File> buildExtraDataFiles() {
+        Configuration cfg = project.getConfigurations().create(getNextCompileName());
+        List<String> deps = new ArrayList<>();
+        deps.add("net.minecraft:client:" + mcp.getMCVersion() + ":extra");
+        deps.add("net.minecraft:client:" + mcp.getMCVersion() + ":data");
+        deps.addAll(mcp.getLibraries());
+        Patcher patcher = parent;
+        while (patcher != null) {
+            deps.addAll(patcher.getLibraries());
+            patcher = patcher.getParent();
+        }
+        deps.forEach(dep -> cfg.getDependencies().add(project.getDependencies().create(dep)));
+        Set<File> files = cfg.resolve();
+        return files;
     }
 
     @SuppressWarnings("unused")
@@ -501,6 +591,18 @@ public class MinecraftUserRepo extends BaseRepo {
                 while ((entry = zin.getNextEntry()) != null) {
                     if (!entry.getName().startsWith(prefix) || entry.isDirectory())
                         continue;
+
+                    // If an entry has a specific side in its name, don't apply
+                    // it when we're on the opposite side. Entries without a specific
+                    // side should always be applied
+                    if ("server".equals(NAME) && entry.getName().contains("/client/")) {
+                        continue;
+                    }
+
+                    if ("client".equals(NAME) && entry.getName().contains("/server/")) {
+                        continue;
+                    }
+
                     String name = entry.getName().substring(prefix.length());
                     if ("package-info-template.java".equals(name)) {
                         template = new String(IOUtils.toByteArray(zin), StandardCharsets.UTF_8);
@@ -938,25 +1040,23 @@ public class MinecraftUserRepo extends BaseRepo {
         return target;
     }
 
+    private String getNextCompileName() {
+        return "_compileJava_" + compileTaskCount++;
+    }
+
     private int compileTaskCount = 1;
     private File compileJava(File source, File... extraDeps) {
-        JavaCompile compile = project.getTasks().create("_compileJava_" + compileTaskCount++, JavaCompile.class);
+        HackyJavaCompile compile = project.getTasks().create(getNextCompileName(), HackyJavaCompile.class);
         try {
             File output = project.file("build/" + compile.getName() + "/");
-            if (output.exists())
+            if (output.exists()) {
                 FileUtils.cleanDirectory(output);
-            Configuration cfg = project.getConfigurations().create(compile.getName());
-            List<String> deps = new ArrayList<>();
-            deps.add("net.minecraft:client:" + mcp.getMCVersion() + ":extra");
-            deps.add("net.minecraft:client:" + mcp.getMCVersion() + ":data");
-            deps.addAll(mcp.getLibraries());
-            Patcher patcher = parent;
-            while (patcher != null) {
-                deps.addAll(patcher.getLibraries());
-                patcher = patcher.getParent();
+            } else {
+                // Due to the weird way that we invoke JavaCompile,
+                // we need to ensure that the output directory already exists
+                output.mkdirs();
             }
-            deps.forEach(dep -> cfg.getDependencies().add(project.getDependencies().create(dep)));
-            Set<File> files = cfg.resolve();
+            Set<File> files = Sets.newHashSet(this.extraDataFiles);
             for (File ext : extraDeps)
                 files.add(ext);
             compile.setClasspath(project.files(files));
@@ -973,7 +1073,8 @@ public class MinecraftUserRepo extends BaseRepo {
             compile.setDestinationDir(output);
             compile.setSource(source.isDirectory() ? project.fileTree(source) : project.zipTree(source));
 
-            compile.execute();
+            compile.doHackyCompile();
+
             return output;
         } catch (Exception e) { //Compile errors...?
             e.printStackTrace();
