@@ -2,32 +2,15 @@ package net.minecraftforge.gradle.user.patch;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import net.minecraftforge.gradle.GradleConfigurationException;
 import net.minecraftforge.gradle.delayed.DelayedObject;
-import net.minecraftforge.gradle.json.forgeversion.ForgeBuild;
-import net.minecraftforge.gradle.json.forgeversion.ForgeVersion;
 import net.minecraftforge.gradle.user.UserExtension;
 
 import org.gradle.api.ProjectConfigurationException;
 
-import com.google.common.base.Strings;
-
 public class UserPatchExtension extends UserExtension
-{
-    // groups:  mcVersion  forgeVersion
-    //private static final Pattern VERSION_CHECK = Pattern.compile("(?:[\\w\\d.-]+):(?:[\\w\\d-]+):([\\d.]+)-([\\d.]+)-(?:[\\w\\d.]+)");
-    private static final String JUST_MC = "(\\d+\\.\\d+(?:\\.\\d+)?[_pre\\d]*)";
-    private static final String JUST_API = "((?:\\d+\\.){3}(\\d+))((?:-[\\w\\.]+)?)";
-    private static final Pattern API = Pattern.compile(JUST_API);
-    private static final Pattern STANDARD = Pattern.compile(JUST_MC+"-"+JUST_API);
-    
+{    
     private int maxFuzz = 0;
-    
-    protected ForgeVersion versionInfo;
 
     private String apiVersion;
     private ArrayList<Object> ats = new ArrayList<Object>();
@@ -87,148 +70,61 @@ public class UserPatchExtension extends UserExtension
     private void checkAndSetVersion(String str)
     {
         str = str.trim();
-        
-        // build number
-        if (isAllNums(str))
-        {
-            boolean worked = getFromBuildNumber(str);
-            if (worked)
-                return;
-        }
-        
-        // promotions
-        if (versionInfo.promos.containsKey(str))
-        {
-            boolean worked = getFromBuildNumber(versionInfo.promos.get(str));
-            project.getLogger().lifecycle("Selected version " +apiVersion);
-            if (worked)
-                return;
-        }
-        
-        // matches just an API version
-        Matcher matcher = API.matcher(str);
-        if (matcher.matches())
-        {
-            String branch = Strings.emptyToNull(matcher.group(3));
-            
-            String forgeVersion = matcher.group(1);
-            ForgeBuild build = versionInfo.number.get(Integer.valueOf(matcher.group(2)));
-            
-            if (build == null)
-            {
-                throw new GradleConfigurationException("No such version exists!");
-            }
-            
-            boolean branchMatches = false;
-            if (branch == null)
-                branchMatches = Strings.isNullOrEmpty(build.branch);
-            else
-                branchMatches = branch.substring(1).equals(build.branch);
-            
-            String outBranch = build.branch;
-            if (outBranch == null)
-                outBranch = "";
-            else
-                outBranch = "-" + build.branch;
-            
-            
-            if (!build.version.equals(forgeVersion) || !branchMatches)
-            {
-                throw new GradleConfigurationException(str+" is an invalid version! did you mean '"+build.version+outBranch+"' ?");
-            }
-            
-            version = build.mcversion.replace("_", "-");
-            apiVersion = version + "-" + build.version;
-            if (!Strings.isNullOrEmpty(build.branch) && !"null".equals(build.branch))
-                apiVersion += outBranch;
-            
-            return;
-        }
-        
-        // matches standard form.
-        matcher = STANDARD.matcher(str);
-        if (matcher.matches())
-        {
-            String branch = Strings.emptyToNull(matcher.group(4));
-            String mcversion = matcher.group(1);
-            
-            String forgeVersion = matcher.group(2);
-            String buildNumber = matcher.group(3);
-            
-            if ("0".equals(buildNumber))
-            {
-                project.getLogger().lifecycle("Assuming custom forge version!");
-                version = mcversion;
-                apiVersion = forgeVersion;
-                return;
-            }
-            
-            ForgeBuild build = versionInfo.number.get(Integer.parseInt(buildNumber));
-            
-            if (build == null)
-            {
-                throw new GradleConfigurationException("No such version exists!");
-            }
-            
-            boolean branchMatches = false;
-            if (branch == null)
-                branchMatches = Strings.isNullOrEmpty(build.branch);
-            else
-                branchMatches = branch.substring(1).equals(build.branch);
-            
-            boolean mcMatches = build.mcversion.equals(mcversion);
-            
-            String outBranch = build.branch;
-            if (outBranch == null)
-                outBranch = "";
-            else
-                outBranch = "-" + build.branch;
-            
-            if (!build.version.equals(forgeVersion) || !branchMatches || !mcMatches)
-            {
-                throw new GradleConfigurationException(str+" is an invalid version! did you mean '"+build.mcversion+"-"+build.version+outBranch+"' ?");
-            }
-            
-            version = build.mcversion.replace("_", "-");
-            apiVersion = version + "-" + build.version;
-            if (!Strings.isNullOrEmpty(build.branch) && !"null".equals(build.branch))
-                apiVersion += outBranch;
-            
-            return;
-        }
-        
-        throw new GradleConfigurationException("Invalid version notation, or version doesnt exist! The following are valid notations. Buildnumber, version, version-branch, mcversion-version-branch, and pomotion");
-    }
-    
-    private boolean isAllNums(String in)
-    {
-        for (char c : in.toCharArray())
-        {
-            if (!Character.isDigit(c))
-                return false;
-        }
-        
-        return true;
-    }
-    
-    private boolean getFromBuildNumber(String str)
-    {
-        return getFromBuildNumber(Integer.valueOf(str));
-    }
-    
-    private boolean getFromBuildNumber(Integer num)
-    {
-        ForgeBuild build = versionInfo.number.get(num);
-        if (build != null)
-        {
-            version = build.mcversion.replace("_", "-");
-            apiVersion = version + "-" + build.version;
-            if (!Strings.isNullOrEmpty(build.branch) && !"null".equals(build.branch))
-                apiVersion += "-" + build.branch;
-            
-            return true;
-        }
-        else
-            return false;
+        int idx = str.indexOf('-');
+        if (idx == -1)
+            throw new IllegalArgumentException("You must specify the full forge version, including MC version in your build.gradle. Example: 1.12.2-14.23.5.2811");
+        this.version = str.substring(0, idx); //MC Version
+        this.apiVersion = str.substring(idx + 1);
+
+        /*
+         * Old FG used to use a horribly outdated MASSIVE json file for trying to be 'smart' when processing the version information.
+         * It tried to allow for many 'shortcuts' when specifying the Forge version.
+         * All of this are horribly and stupid, and should of never existed in the first place.
+         * So I'm gutting them.
+         *
+         * But will document them here to the best of my understanding, so that if people need them we can re-implement them in less horribly hacky ways.
+         *
+         * JUST the build number:
+         *   Prior to 1.13, Forge used a unique build number to identify all versions. So in theory you could pick an exact build with just the build number.
+         *   Example:
+         *     Input: 2815
+         *     Output: 1.12.2-14.23.5.2815
+         *   Solution:
+         *     Download maven-metadata.xml, loop through all versions doing:
+         *       key = ver.split('-')[0].rsplit('.', 1)[1]
+         *       if (!map.containsKey(key))  //This is important because metadata is ordered oldest to newest, and new versions could duplicate the build number
+         *         map.put(key, ver)
+         *
+         *
+         * Promotion Name:
+         *   We publish 'promoted' builds of Forge. Typically 'latest' and 'recommended'. Simple enough way to make a auto updating version.
+         *   Example:
+         *     Input: 1.8-recommended
+         *     Output: 1.8-11.14.4.1563
+         *   Solution:
+         *     Again, Abrar downloaded a 2MB MASSIVE json file, when a slim json would do.
+         *     https://files.minecraftforge.net/maven/net/minecraftforge/forge/promotions_slim.json
+         *
+         *
+         * API-Wildcards:
+         *   Abrar tried to emulate dynamic versions which would be introduced into gradle far afterwords.
+         *   Example:
+         *     Input: 14.23.5.1
+         *     Output: 1.12.2-14.23.5.2811
+         *   Solution:
+         *     Again, can be solved using maven-metadata.xml, use Apache's ArtifactVersion library to parse out a easy comparable version for everything in the metadata, and the version the user input.
+         *     Set MinVersion = ArtifactVersion(input)
+         *     prefix = input.substring(0, input.lastIndexOf('.'))
+         *     MaxVersion = ArtifactVersion(prefix.rsplit('.', 1)[0] + '.' + (int(prefix.rsplit('.', 1)[1]) + 1))
+         *
+         *     Then find the max version that fits: MinVersion <= Version < MaxVersion
+         *
+         * Full Version:
+         *   Example:
+         *     Input: 1.12.2-14.23.5.2811
+         *     Output: 1.12.2-14.23.5.2811
+         *
+         *     This was just used to verify the version existed. This can be done via maven-metadata.xml
+         */
     }
 }

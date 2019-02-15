@@ -20,8 +20,6 @@ import java.util.List;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.json.JsonFactory;
-import net.minecraftforge.gradle.json.forgeversion.ForgeVersion;
 import net.minecraftforge.gradle.tasks.ProcessJarTask;
 import net.minecraftforge.gradle.tasks.ProcessSrcJarTask;
 import net.minecraftforge.gradle.tasks.RemapSourcesTask;
@@ -42,8 +40,6 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     public void applyPlugin()
     {
         super.applyPlugin();
-
-        setVersionInfoJson(); // stuff for version parsing
 
         // add the binPatching task
         {
@@ -135,15 +131,6 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
     public final UserPatchExtension getOverlayExtension()
     {
         return null; // nope.
-    }
-    
-    protected void setVersionInfoJson()
-    {
-        File jsonCache = Constants.cacheFile(project, "caches", "minecraft", getApiName()+"Versions.json");
-        File etagFile = new File(jsonCache.getAbsolutePath() + ".etag");
-        
-        ForgeVersion version = JsonFactory.GSON.fromJson(getWithEtag(getVersionsJsonUrl(), jsonCache, etagFile), ForgeVersion.class);
-        getExtension().versionInfo = version;
     }
 
     /**
