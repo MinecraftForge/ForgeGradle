@@ -91,7 +91,6 @@ dependencies {
 
 compileJava {
 	options.deprecation = true
-	options.compilerArgs += ["-Werror"]
 	//options.compilerArgs += ["-Werror", "-Xlint:unchecked"]
 }
 
