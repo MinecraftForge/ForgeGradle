@@ -128,15 +128,15 @@ test {
 
 uploadArchives {
     repositories {
-        if (project.hasProperty("filesmaven")) {
+        if (project.hasProperty("forgeMavenPass")) {
             logger.info('Publishing to files server')
 
             mavenDeployer {
                 configuration = configurations.deployerJars
 
-                repository(url: project.filesmaven.url) {
-                    authentication(userName: project.filesmaven.username, privateKey: project.filesmaven.key)
-                }
+				repository(url: "https://files.minecraftforge.net/maven/manage/upload") {
+					authentication(userName: "forge", password: project.getProperty('forgeMavenPass'))
+				}
 
                 pom {
                     groupId = project.group
