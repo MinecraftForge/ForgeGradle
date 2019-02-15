@@ -74,7 +74,7 @@ public class UserPatchExtension extends UserExtension
         if (idx == -1)
             throw new IllegalArgumentException("You must specify the full forge version, including MC version in your build.gradle. Example: 1.12.2-14.23.5.2811");
         this.version = str.substring(0, idx); //MC Version
-        this.apiVersion = str.substring(idx + 1);
+        this.apiVersion = str;
 
         /*
          * Old FG used to use a horribly outdated MASSIVE json file for trying to be 'smart' when processing the version information.

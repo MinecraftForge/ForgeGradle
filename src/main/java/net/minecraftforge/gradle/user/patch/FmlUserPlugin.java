@@ -42,10 +42,11 @@ public class FmlUserPlugin extends UserPatchBasePlugin
     }
     
     @Override
-    protected void doVersionChecks(int buildNumber)
+    protected void doVersionChecks(String version, int buildNumber)
     {
-        if (buildNumber < 883)
+        if (buildNumber < 883) {
             throw new IllegalArgumentException("ForgeGradle 1.2 only works for FML versions 7.2.132.882+");
+        }
     }
     
     @Override

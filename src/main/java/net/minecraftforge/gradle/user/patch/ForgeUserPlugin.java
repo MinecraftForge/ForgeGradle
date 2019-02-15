@@ -34,13 +34,19 @@ public class ForgeUserPlugin extends UserPatchBasePlugin
     }
 
     @Override
-    protected void doVersionChecks(int buildNumber)
+    protected void doVersionChecks(String version, int buildNumber)
     {
-        if (buildNumber == 1517 || buildNumber == 0)
-            return; // isolated newer 1.7 forge buildnumber, or 0 for testing
-
-        if (buildNumber < 1048 || buildNumber > 1502)
-            throw new IllegalArgumentException("ForgeGradle 1.2 only works for Forge versions 10.12.0.1048 -- 11.14.3.1502. Found: " + buildNumber);
+        if (version.startsWith("10.")) {
+            if (buildNumber < 1048) {
+                throw new IllegalArgumentException("ForgeGradle 1.2 only supports Forge 1.7 versions newer than 10.12.0.1048. Found: " + version);
+            }
+        } else if (version.startsWith("11.")) {
+            if (buildNumber > 1502) {
+                throw new IllegalArgumentException("ForgeGradle 1.2 only supports Forge 1.8 before 11.14.3.1503. Found: " + version);
+            }
+        } else {
+            throw new IllegalArgumentException("ForgeGradle 1.2 does not support forge " + version);
+        }
     }
 
     @Override

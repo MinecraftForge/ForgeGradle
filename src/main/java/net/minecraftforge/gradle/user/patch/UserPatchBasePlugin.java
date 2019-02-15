@@ -189,10 +189,10 @@ public abstract class UserPatchBasePlugin extends UserBasePlugin<UserPatchExtens
             version = version.split("-")[1]; // We get passed the full version, including MC ver and branch, we only want api's version.
         int buildNumber = Integer.parseInt(version.substring(version.lastIndexOf('.') + 1));
 
-        doVersionChecks(buildNumber);
+        doVersionChecks(version, buildNumber);
     }
 
-    protected abstract void doVersionChecks(int buildNumber);
+    protected abstract void doVersionChecks(String version, int buildNumber);
 
     @Override
     protected DelayedFile getDevJson()
