@@ -31,8 +31,6 @@ import org.gradle.api.Action;
 import org.gradle.api.tasks.bundling.Jar;
 
 import com.google.common.base.Strings;
-import com.google.gson.JsonSyntaxException;
-
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.tasks.CreateStartTask;
 import net.minecraftforge.gradle.user.ReobfMappingType;
@@ -41,10 +39,8 @@ import net.minecraftforge.gradle.user.TaskSingleReobf;
 import net.minecraftforge.gradle.user.UserConstants;
 import net.minecraftforge.gradle.user.patcherUser.PatcherUserBasePlugin;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
-import net.minecraftforge.gradle.util.json.JsonFactory;
 import net.minecraftforge.gradle.util.json.fgversion.FGVersion;
 import net.minecraftforge.gradle.util.json.fgversion.FGVersionWrapper;
-import net.minecraftforge.gradle.util.json.forgeversion.ForgeVersion;
 
 public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
 {
@@ -52,9 +48,6 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
     @Override
     protected void applyUserPlugin()
     {
-        // set the version info into the extension object
-        setForgeVersionJson();
-
         super.applyUserPlugin();
 
         // setup reobf
@@ -62,7 +55,7 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
             TaskSingleReobf reobf = (TaskSingleReobf) project.getTasks().getByName(TASK_REOBF);
             reobf.addPreTransformer(new McVersionTransformer(delayedString(REPLACE_MC_VERSION)));
         }
-        
+
         // add coremod loading hack to gradle start
         {
             CreateStartTask makeStart = ((CreateStartTask)project.getTasks().getByName(UserConstants.TASK_MAKE_START));
@@ -72,7 +65,7 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
             }
             makeStart.addExtraLine("net.minecraftforge.gradle.GradleForgeHacks.searchCoremods(this);");
         }
-        
+
         // configure eclipse task to do extra stuff.
         project.getTasks().getByName("eclipse").doLast(new Action() {
 
@@ -139,7 +132,7 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
         // add manifest things
         {
             Jar jarTask = (Jar) project.getTasks().getByName("jar");
-            
+
             if (!Strings.isNullOrEmpty(ext.getCoreMod()))
             {
                 jarTask.getManifest().getAttributes().put("FMLCorePlugin", ext.getCoreMod());
@@ -147,43 +140,23 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
         }
     }
 
-    private void setForgeVersionJson()
-    {
-        File jsonCache = cacheFile("ForgeVersion.json");
-        File etagFile = new File(jsonCache.getAbsolutePath() + ".etag");
-        String url = Constants.URL_FORGE_MAVEN + "/net/minecraftforge/forge/json";
-
-        try
-        {
-            getExtension().forgeJson = JsonFactory.GSON.fromJson(getWithEtag(url, jsonCache, etagFile), ForgeVersion.class);
-        }
-        catch(NullPointerException e)
-        {
-            getExtension().forgeJson = null;
-        }
-        catch(JsonSyntaxException e)
-        {
-            getExtension().forgeJson = null;
-        }
-    }
-    
     @Override
     protected void onVersionCheck(FGVersion version, FGVersionWrapper wrapper)
     {
         String forgeVersion = getExtension().getForgeVersion();
-        
+
         // isolate build number
         int index = forgeVersion.indexOf('-');
         if (index >= 0)
             forgeVersion = forgeVersion.substring(0, index);
         index = forgeVersion.lastIndexOf('.');
         forgeVersion.substring(index + 1);
-        
+
         int buildNum = Integer.parseInt(forgeVersion);
-        
+
         int minBuild = version.ext.get("forgeMinBuild").getAsInt();
         int maxBuild = version.ext.get("forgeMaxBuild").getAsInt();
-        
+
         if (buildNum < minBuild)
             throw new GradleConfigurationException("This version of ForgeGradle ("+getExtension().forgeGradleVersion+") does not support forge builds less than #"+minBuild);
         else if (buildNum > maxBuild)
@@ -255,7 +228,7 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
     {
         return ext.getResolvedServerRunArgs();
     }
-    
+
     @Override
     protected List<String> getClientJvmArgs(ForgeExtension ext)
     {

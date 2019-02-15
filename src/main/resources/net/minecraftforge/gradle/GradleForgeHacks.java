@@ -68,10 +68,10 @@ public class GradleForgeHacks
         {
             // no core searching
             GradleStartCommon.LOGGER.info("GradleStart coremod searching disabled!");
-            
+
             // remove it so it cant potentially screw up the bonced start class
             common.extras.remove(NO_CORE_SEARCH);
-            
+
             return;
         }
 
