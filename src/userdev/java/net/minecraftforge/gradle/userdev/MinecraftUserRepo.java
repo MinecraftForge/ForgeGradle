@@ -505,201 +505,204 @@ public class MinecraftUserRepo extends BaseRepo {
         File bin = cacheMapped(mapping, "jar");
         cache.load(cacheMapped(mapping, "jar.input"));
         if (!cache.isSame() || !bin.exists()) {
-            StringBuilder baseAT = new StringBuilder();
+            synchronized (lockRecompRawReplacement)
+            {
+                StringBuilder baseAT = new StringBuilder();
 
-            for (Patcher patcher = parent; patcher != null; patcher = patcher.parent) {
-                if (patcher.getATData() != null && !patcher.getATData().isEmpty()) {
-                    if (baseAT.length() != 0)
-                        baseAT.append("\n===========================================================\n");
-                    baseAT.append(patcher.getATData());
+                for (Patcher patcher = parent; patcher != null; patcher = patcher.parent) {
+                    if (patcher.getATData() != null && !patcher.getATData().isEmpty()) {
+                        if (baseAT.length() != 0)
+                            baseAT.append("\n===========================================================\n");
+                        baseAT.append(patcher.getATData());
+                    }
                 }
-            }
-            boolean hasAts = baseAT.length() != 0 || !ATS.isEmpty();
+                boolean hasAts = baseAT.length() != 0 || !ATS.isEmpty();
 
-            File srged = null;
-            File joined = MavenArtifactDownloader.generate(project, "net.minecraft:" + (isPatcher? "joined" : NAME) + ":" + mcp.getVersion() + ":srg", true); //Download vanilla in srg name
-            if (joined == null || !joined.exists()) {
-                project.getLogger().error("MinecraftUserRepo: Failed to get Minecraft Joined SRG. Should not be possible.");
-                return null;
-            }
+                File srged = null;
+                File joined = MavenArtifactDownloader.generate(project, "net.minecraft:" + (isPatcher? "joined" : NAME) + ":" + mcp.getVersion() + ":srg", true); //Download vanilla in srg name
+                if (joined == null || !joined.exists()) {
+                    project.getLogger().error("MinecraftUserRepo: Failed to get Minecraft Joined SRG. Should not be possible.");
+                    return null;
+                }
 
-            //Gather vanilla packages, so we can only inject the proper package-info classes.
-            Set<String> packages = new HashSet<>();
-            try (ZipFile tmp = new ZipFile(joined)) {
-                packages = tmp.stream()
-                .map(ZipEntry::getName)
-                .filter(e -> e.endsWith(".class"))
-                .map(e -> e.indexOf('/') == -1 ? "" : e.substring(0, e.lastIndexOf('/')))
-                .collect(Collectors.toSet());
-            }
+                //Gather vanilla packages, so we can only inject the proper package-info classes.
+                Set<String> packages = new HashSet<>();
+                try (ZipFile tmp = new ZipFile(joined)) {
+                    packages = tmp.stream()
+                                 .map(ZipEntry::getName)
+                                 .filter(e -> e.endsWith(".class"))
+                                 .map(e -> e.indexOf('/') == -1 ? "" : e.substring(0, e.lastIndexOf('/')))
+                                 .collect(Collectors.toSet());
+                }
 
-            if (parent == null) { //Raw minecraft
-                srged = joined;
-            } else { // Needs binpatches
-                File binpatched = cacheRaw("binpatched", "jar");
+                if (parent == null) { //Raw minecraft
+                    srged = joined;
+                } else { // Needs binpatches
+                    File binpatched = cacheRaw("binpatched", "jar");
 
-                //Apply bin patches to vanilla
-                ApplyBinPatches apply = project.getTasks().create("_" + new Random().nextInt() + "_applyBinPatches", ApplyBinPatches.class);
-                apply.setHasLog(false);
-                apply.setTool(parent.getConfig().binpatcher.getVersion());
-                apply.setArgs(parent.getConfig().binpatcher.getArgs());
-                apply.setClean(joined);
-                apply.setPatch(findBinPatches());
-                apply.setOutput(binpatched);
-                apply.apply();
+                    //Apply bin patches to vanilla
+                    ApplyBinPatches apply = project.getTasks().create("_" + new Random().nextInt() + "_applyBinPatches", ApplyBinPatches.class);
+                    apply.setHasLog(false);
+                    apply.setTool(parent.getConfig().binpatcher.getVersion());
+                    apply.setArgs(parent.getConfig().binpatcher.getArgs());
+                    apply.setClean(joined);
+                    apply.setPatch(findBinPatches());
+                    apply.setOutput(binpatched);
+                    apply.apply();
 
-                srged = cacheRaw("srg", "jar");
-                //Combine all universals and vanilla together.
-                Set<String> added = new HashSet<>();
-                try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(srged))) {
+                    srged = cacheRaw("srg", "jar");
+                    //Combine all universals and vanilla together.
+                    Set<String> added = new HashSet<>();
+                    try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(srged))) {
 
-                    //Add binpatched, then vanilla first, overrides any other entries added
-                    for (File file : new File[] {binpatched, joined}) {
-                        try (ZipInputStream zin = new ZipInputStream(new FileInputStream(file))) {
-                            ZipEntry entry;
-                            while ((entry = zin.getNextEntry()) != null) {
-                                if (added.contains(entry.getName()))
-                                    continue;
-                                ZipEntry _new = new ZipEntry(entry.getName());
-                                _new.setTime(entry.getTime()); //Should be stable, but keeping time.
-                                zip.putNextEntry(_new);
-                                IOUtils.copy(zin, zip);
-                                added.add(entry.getName());
+                        //Add binpatched, then vanilla first, overrides any other entries added
+                        for (File file : new File[] {binpatched, joined}) {
+                            try (ZipInputStream zin = new ZipInputStream(new FileInputStream(file))) {
+                                ZipEntry entry;
+                                while ((entry = zin.getNextEntry()) != null) {
+                                    if (added.contains(entry.getName()))
+                                        continue;
+                                    ZipEntry _new = new ZipEntry(entry.getName());
+                                    _new.setTime(entry.getTime()); //Should be stable, but keeping time.
+                                    zip.putNextEntry(_new);
+                                    IOUtils.copy(zin, zip);
+                                    added.add(entry.getName());
+                                }
                             }
                         }
-                    }
 
-                    copyResources(zip, added, true);
-                }
-            }
-
-            File mcinject = cacheRaw("mci", "jar");
-
-            //Apply MCInjector so we can compile against this jar
-            ApplyMCPFunction mci = project.getTasks().create("_mciJar_" + new Random().nextInt() + "_", ApplyMCPFunction.class);
-            mci.setFunctionName("mcinject");
-            mci.setHasLog(false);
-            mci.setInput(srged);
-            mci.setMCP(mcp.getZip());
-            mci.setOutput(mcinject);
-            mci.apply();
-
-            //Build and inject MCP injected sources
-            File inject_src = cacheRaw("inject_src", "jar");
-            try (ZipInputStream zin = new ZipInputStream(new FileInputStream(mcp.getZip()));
-                 ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(inject_src)) ) {
-                String prefix = mcp.wrapper.getConfig().getData("inject");
-                String template = null;
-                ZipEntry entry = null;
-                while ((entry = zin.getNextEntry()) != null) {
-                    if (!entry.getName().startsWith(prefix) || entry.isDirectory())
-                        continue;
-
-                    // If an entry has a specific side in its name, don't apply
-                    // it when we're on the opposite side. Entries without a specific
-                    // side should always be applied
-                    if ("server".equals(NAME) && entry.getName().contains("/client/")) {
-                        continue;
-                    }
-
-                    if ("client".equals(NAME) && entry.getName().contains("/server/")) {
-                        continue;
-                    }
-
-                    String name = entry.getName().substring(prefix.length());
-                    if ("package-info-template.java".equals(name)) {
-                        template = new String(IOUtils.toByteArray(zin), StandardCharsets.UTF_8);
-                    } else {
-                        ZipEntry _new = new ZipEntry(name);
-                        _new.setTime(0);
-                        zos.putNextEntry(_new);
-                        IOUtils.copy(zin, zos);
-                        zos.closeEntry();
+                        copyResources(zip, added, true);
                     }
                 }
 
-                if (template != null) {
-                    for (String pkg : packages) {
-                        ZipEntry _new = new ZipEntry(pkg + "/package-info.java");
-                        _new.setTime(0);
-                        zos.putNextEntry(_new);
-                        zos.write(template.replace("{PACKAGE}", pkg.replace("/", ".")).getBytes(StandardCharsets.UTF_8));
-                        zos.closeEntry();
-                    }
-                }
-            }
+                File mcinject = cacheRaw("mci", "jar");
 
-            File compiled = compileJava(inject_src, mcinject);
-            if (compiled == null)
-                return null;
+                //Apply MCInjector so we can compile against this jar
+                ApplyMCPFunction mci = project.getTasks().create("_mciJar_" + new Random().nextInt() + "_", ApplyMCPFunction.class);
+                mci.setFunctionName("mcinject");
+                mci.setHasLog(false);
+                mci.setInput(srged);
+                mci.setMCP(mcp.getZip());
+                mci.setOutput(mcinject);
+                mci.apply();
 
-            File injected = cacheRaw("injected", "jar");
-            //Combine mci, and our recompiled MCP injected classes.
-            try (ZipInputStream zmci = new ZipInputStream(new FileInputStream(mcinject));
-                 ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(injected))) {
-                ZipEntry entry = null;
-                while ((entry = zmci.getNextEntry()) != null) {
-                    ZipEntry _new = new ZipEntry(entry.getName());
-                    _new.setTime(0);
-                    zout.putNextEntry(_new);
-                    IOUtils.copy(zmci, zout);
-                    zout.closeEntry();
-                }
-                Files.walkFileTree(compiled.toPath(), new SimpleFileVisitor<Path>() {
-                    @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                        try (InputStream fin = Files.newInputStream(file)) {
-                            ZipEntry _new = new ZipEntry(compiled.toPath().relativize(file).toString().replace('\\', '/'));
-                            _new.setTime(0);
-                            zout.putNextEntry(_new);
-                            IOUtils.copy(fin, zout);
-                            zout.closeEntry();
+                //Build and inject MCP injected sources
+                File inject_src = cacheRaw("inject_src", "jar");
+                try (ZipInputStream zin = new ZipInputStream(new FileInputStream(mcp.getZip()));
+                     ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(inject_src)) ) {
+                    String prefix = mcp.wrapper.getConfig().getData("inject");
+                    String template = null;
+                    ZipEntry entry = null;
+                    while ((entry = zin.getNextEntry()) != null) {
+                        if (!entry.getName().startsWith(prefix) || entry.isDirectory())
+                            continue;
+
+                        // If an entry has a specific side in its name, don't apply
+                        // it when we're on the opposite side. Entries without a specific
+                        // side should always be applied
+                        if ("server".equals(NAME) && entry.getName().contains("/client/")) {
+                            continue;
                         }
-                        return FileVisitResult.CONTINUE;
+
+                        if ("client".equals(NAME) && entry.getName().contains("/server/")) {
+                            continue;
+                        }
+
+                        String name = entry.getName().substring(prefix.length());
+                        if ("package-info-template.java".equals(name)) {
+                            template = new String(IOUtils.toByteArray(zin), StandardCharsets.UTF_8);
+                        } else {
+                            ZipEntry _new = new ZipEntry(name);
+                            _new.setTime(0);
+                            zos.putNextEntry(_new);
+                            IOUtils.copy(zin, zos);
+                            zos.closeEntry();
+                        }
                     }
-                });
-            }
 
-            if (hasAts) {
-                if (bin.exists()) bin.delete(); // AT lib throws an exception if output file already exists
-
-                AccessTransformJar at = project.getTasks().create("_atJar_"+ new Random().nextInt() + "_", AccessTransformJar.class);
-                at.setInput(injected);
-                at.setOutput(bin);
-                at.setAts(ATS);
-
-                if (baseAT.length() != 0) {
-                    File parentAT = project.file("build/" + at.getName() + "/parent_at.cfg");
-                    if (!parentAT.getParentFile().exists())
-                        parentAT.getParentFile().mkdirs();
-                    Files.write(parentAT.toPath(), baseAT.toString().getBytes());
-                    at.setAts(parentAT);
+                    if (template != null) {
+                        for (String pkg : packages) {
+                            ZipEntry _new = new ZipEntry(pkg + "/package-info.java");
+                            _new.setTime(0);
+                            zos.putNextEntry(_new);
+                            zos.write(template.replace("{PACKAGE}", pkg.replace("/", ".")).getBytes(StandardCharsets.UTF_8));
+                            zos.closeEntry();
+                        }
+                    }
                 }
 
-                at.apply();
-            }
+                File compiled = compileJava(inject_src, mcinject);
+                if (compiled == null)
+                    return null;
 
-            if (mapping == null) { //They didn't ask for MCP names, so serve them SRG!
-                FileUtils.copyFile(injected, bin);
-            } else if (hasAts) {
-                //Remap library to MCP names, in place, sorta hacky with ATs but it should work.
-                RenameJarInPlace rename = project.getTasks().create("_rename_" + new Random().nextInt() + "_", RenameJarInPlace.class);
-                rename.setHasLog(false);
-                rename.setInput(bin);
-                rename.setMappings(findSrgToMcp(mapping, names));
-                rename.apply();
-            } else {
-                //Remap library to MCP names
-                RenameJar rename = project.getTasks().create("_rename_" + new Random().nextInt() + "_", RenameJar.class);
-                rename.setHasLog(false);
-                rename.setInput(injected);
-                rename.setOutput(bin);
-                rename.setMappings(findSrgToMcp(mapping, names));
-                rename.apply();
-            }
+                File injected = cacheRaw("injected", "jar");
+                //Combine mci, and our recompiled MCP injected classes.
+                try (ZipInputStream zmci = new ZipInputStream(new FileInputStream(mcinject));
+                     ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(injected))) {
+                    ZipEntry entry = null;
+                    while ((entry = zmci.getNextEntry()) != null) {
+                        ZipEntry _new = new ZipEntry(entry.getName());
+                        _new.setTime(0);
+                        zout.putNextEntry(_new);
+                        IOUtils.copy(zmci, zout);
+                        zout.closeEntry();
+                    }
+                    Files.walkFileTree(compiled.toPath(), new SimpleFileVisitor<Path>() {
+                        @Override
+                        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                            try (InputStream fin = Files.newInputStream(file)) {
+                                ZipEntry _new = new ZipEntry(compiled.toPath().relativize(file).toString().replace('\\', '/'));
+                                _new.setTime(0);
+                                zout.putNextEntry(_new);
+                                IOUtils.copy(fin, zout);
+                                zout.closeEntry();
+                            }
+                            return FileVisitResult.CONTINUE;
+                        }
+                    });
+                }
 
-            Utils.updateHash(bin, HashFunction.SHA1);
-            cache.save();
+                if (hasAts) {
+                    if (bin.exists()) bin.delete(); // AT lib throws an exception if output file already exists
+
+                    AccessTransformJar at = project.getTasks().create("_atJar_"+ new Random().nextInt() + "_", AccessTransformJar.class);
+                    at.setInput(injected);
+                    at.setOutput(bin);
+                    at.setAts(ATS);
+
+                    if (baseAT.length() != 0) {
+                        File parentAT = project.file("build/" + at.getName() + "/parent_at.cfg");
+                        if (!parentAT.getParentFile().exists())
+                            parentAT.getParentFile().mkdirs();
+                        Files.write(parentAT.toPath(), baseAT.toString().getBytes());
+                        at.setAts(parentAT);
+                    }
+
+                    at.apply();
+                }
+
+                if (mapping == null) { //They didn't ask for MCP names, so serve them SRG!
+                    FileUtils.copyFile(injected, bin);
+                } else if (hasAts) {
+                    //Remap library to MCP names, in place, sorta hacky with ATs but it should work.
+                    RenameJarInPlace rename = project.getTasks().create("_rename_" + new Random().nextInt() + "_", RenameJarInPlace.class);
+                    rename.setHasLog(false);
+                    rename.setInput(bin);
+                    rename.setMappings(findSrgToMcp(mapping, names));
+                    rename.apply();
+                } else {
+                    //Remap library to MCP names
+                    RenameJar rename = project.getTasks().create("_rename_" + new Random().nextInt() + "_", RenameJar.class);
+                    rename.setHasLog(false);
+                    rename.setInput(injected);
+                    rename.setOutput(bin);
+                    rename.setMappings(findSrgToMcp(mapping, names));
+                    rename.apply();
+                }
+
+                Utils.updateHash(bin, HashFunction.SHA1);
+                cache.save();
+            }
         }
         return bin;
     }
@@ -970,6 +973,8 @@ public class MinecraftUserRepo extends BaseRepo {
 
             if (rawFile != null && recompFile != null)
             {
+                //NOTE: This locks the access of this repo class to the raw jar.
+                // If other threads access it from somewhere else this has to be handled still.
                 synchronized (lockRecompRawReplacement)
                 {
                     try
@@ -1005,10 +1010,6 @@ public class MinecraftUserRepo extends BaseRepo {
                     }
                 }
             }
-            //NOTE: This locks the access of this repo class to the raw jar.
-            // If other threads access it from somewhere else this has to be handled still.
-
-            //TODO: Ensure locked file replacement of recompFile with rawFile
         }
         return sources.exists() ? sources : null;
     }
