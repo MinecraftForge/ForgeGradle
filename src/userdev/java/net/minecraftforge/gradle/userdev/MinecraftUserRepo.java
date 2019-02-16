@@ -961,6 +961,9 @@ public class MinecraftUserRepo extends BaseRepo {
 
             Utils.updateHash(sources, HashFunction.SHA1);
             cache.save();
+
+            //TODO: insert findRecomp(names, true)
+            //TODO: replace raw with recomp
         }
         return sources.exists() ? sources : null;
     }
