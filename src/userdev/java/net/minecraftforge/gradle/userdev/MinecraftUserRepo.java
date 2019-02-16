@@ -34,6 +34,8 @@ import net.minecraftforge.gradle.common.diff.ContextualPatch.PatchReport;
 import net.minecraftforge.gradle.common.diff.HunkReport;
 import net.minecraftforge.gradle.common.diff.PatchFile;
 import net.minecraftforge.gradle.common.diff.ZipContext;
+import net.minecraftforge.gradle.common.task.DownloadAssets;
+import net.minecraftforge.gradle.common.task.ExtractNatives;
 import net.minecraftforge.gradle.common.util.Artifact;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.HashFunction;
@@ -44,6 +46,7 @@ import net.minecraftforge.gradle.common.util.McpNames;
 import net.minecraftforge.gradle.common.util.POMBuilder;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
+import net.minecraftforge.gradle.common.util.VersionJson;
 import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
@@ -60,12 +63,8 @@ import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
-import org.gradle.api.internal.OverlappingOutputs;
-import org.gradle.api.internal.TaskExecutionHistory;
-import org.gradle.api.internal.tasks.OriginTaskExecutionMetadata;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
 import org.gradle.api.plugins.JavaPluginConvention;
-import org.gradle.api.tasks.compile.JavaCompile;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -73,7 +72,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -95,8 +93,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
-
-import javax.annotation.Nullable;
 
 public class MinecraftUserRepo extends BaseRepo {
     private static final boolean CHANGING_USERDEV = true; //Used when testing to update the userdev cache every 30 seconds.
@@ -166,7 +162,7 @@ public class MinecraftUserRepo extends BaseRepo {
         return project.file("build/fg_cache/");
     }
 
-    public void validate(Configuration cfg, Map<String, RunConfig> runs, File natives, File assets) {
+    public void validate(Configuration cfg, Map<String, RunConfig> runs, ExtractNatives extractNatives, DownloadAssets downloadAssets) {
         getParents();
         if (mcp == null)
             throw new IllegalStateException("Invalid minecraft dependency: " + GROUP + ":" + NAME + ":" + VERSION);
@@ -196,18 +192,25 @@ public class MinecraftUserRepo extends BaseRepo {
             patcher = patcher.getParent();
         }
 
-        if (parent != null && parent.getConfig().runs != null) { // There might be no patchers to parent, so it may only be a vanilla mcp dependency
-            Map<String, String> vars = new HashMap<>();
-            vars.put("assets_root", assets.getAbsolutePath());
-            vars.put("natives", natives.getAbsolutePath());
-            vars.put("mc_version", mcp.getMCVersion());
-            vars.put("mcp_version", mcp.getArtifact().getVersion());
-            vars.put("mcp_mappings", MAPPING);
+        Map<String, String> tokens = new HashMap<>();
+        tokens.put("assets_root", downloadAssets.getOutput().getAbsolutePath());
+        tokens.put("natives", extractNatives.getOutput().getAbsolutePath());
+        tokens.put("mc_version", mcp.getMCVersion());
+        tokens.put("mcp_version", mcp.getArtifact().getVersion());
+        tokens.put("mcp_mappings", MAPPING);
 
+        if (parent != null && parent.getConfig().runs != null) {
             parent.getConfig().runs.forEach((name, dev) -> {
-                runs.computeIfAbsent(name, k -> new RunConfig()).merge(dev, false, vars);
+                final RunConfig run = runs.get(name);
+
+                if (run != null) {
+                    run.parent(0, dev);
+                }
             });
         }
+
+        runs.forEach((name, run) -> run.setTokens(tokens));
+
         this.extraDataFiles = this.buildExtraDataFiles();
     }
 

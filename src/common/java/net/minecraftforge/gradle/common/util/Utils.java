@@ -33,6 +33,8 @@ import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
+
+import javax.annotation.Nonnull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -462,5 +464,9 @@ public class Utils {
         return target;
     }
 
+    @Nonnull
+    public static final String capitalize(@Nonnull final String toCapitalize) {
+        return toCapitalize.length() > 1 ? toCapitalize.substring(0, 1).toUpperCase() + toCapitalize.substring(1) : toCapitalize;
+    }
 
 }

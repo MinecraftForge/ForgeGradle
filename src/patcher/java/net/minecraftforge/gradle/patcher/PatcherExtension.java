@@ -20,136 +20,218 @@
 
 package net.minecraftforge.gradle.patcher;
 
+import com.google.common.collect.ImmutableMap;
+import net.minecraftforge.gradle.common.util.MinecraftExtension;
+import net.minecraftforge.gradle.common.util.RunConfig;
 import org.gradle.api.Project;
 
-import groovy.lang.Closure;
-import net.minecraftforge.gradle.common.util.RunConfig;
-
-import javax.inject.Inject;
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
-public class PatcherExtension {
+public class PatcherExtension extends MinecraftExtension {
+
+    public static final String EXTENSION_NAME = "patcher";
 
     public Project parent;
-    public File cleanSrc;
-    public File patchedSrc;
-    public File patches;
+
+    public File cleanSrc, patchedSrc, patches;
     public String mcVersion;
+
     public boolean srgPatches = true;
-    private String mappings;
-    private List<Object> extraMappings = new ArrayList<>();
-    private List<Object> extraExcs = new ArrayList<>();
-    private List<File> accessTransformers = new ArrayList<>();
-    private List<File> excs = new ArrayList<>();
-    private RunConfig.Container runs = new RunConfig.Container();
 
-    @Inject
-    public PatcherExtension(Project project) {
-        RunConfig clientRun = new RunConfig();
-        clientRun.setMain("mcp.client.Start");
-        try {
-            clientRun.setWorkingDirectory(project.file("run").getCanonicalPath());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        runs.getRuns().put(project.getName() + "_client", clientRun);
+    private List<File> excs;
+    private List<Object> extraExcs, extraMappings;
 
-        RunConfig serverRun = new RunConfig();
-        serverRun.setMain("net.minecraft.server.MinecraftServer");
-        try {
-            serverRun.setWorkingDirectory(project.file("run").getCanonicalPath());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        runs.getRuns().put(project.getName() + "_server", serverRun);
+    public PatcherExtension(@Nonnull final Project project) {
+        super(project);
+
+        ImmutableMap.<String, String>builder()
+                .put(project.getName() + "_client", "mcp.client.Start")
+                .put(project.getName() + "_server", "net.minecraft.server.MinecraftServer")
+                .build().forEach((name, main) -> {
+            RunConfig run = new RunConfig(project, name);
+
+            run.setTaskName(name);
+            run.setMain(main);
+
+            try {
+                run.setWorkingDirectory(project.file("run").getCanonicalPath());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            getRuns().add(run);
+        });
     }
 
-    public List<Object> getExtraMappings() {
-        return extraMappings;
-    }
-
-    public List<Object> getExtraExcs() {
-        return extraExcs;
-    }
-
-    // mappings channel: 'snapshot', version: '20180101'
-    public void mappings(Map<String, String> map) {
-        String channel = map.get("channel");
-        String version = map.get("version");
-        if (channel == null || version == null) {
-            throw new IllegalArgumentException("Must specify mappings channel and version");
+    @Override
+    public void mappings(@Nonnull String channel, @Nonnull String version) {
+        if (!version.contains("-")) {
+            version += "-+";
         }
 
-        if (!version.contains("-")) version = version + "-+";
         setMappings("de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip");
     }
-    public void setMappings(String value) {
-        mappings = value;
+
+    public void setParent(Project parent) {
+        this.parent = parent;
     }
-    public String getMappings() {
-        return mappings;
+
+    public void parent(Project parent) {
+        setParent(parent);
+    }
+
+    public Project getParent() {
+        return parent;
+    }
+
+    public void setCleanSrc(File cleanSrc) {
+        this.cleanSrc = cleanSrc;
+    }
+
+    public void cleanSrc(File cleanSrc) {
+        setCleanSrc(cleanSrc);
+    }
+
+    public File getCleanSrc() {
+        return cleanSrc;
+    }
+
+    public void setPatchedSrc(File patchedSrc) {
+        this.patchedSrc = patchedSrc;
+    }
+
+    public void patchedSrc(File patchedSrc) {
+        setPatchedSrc(patchedSrc);
+    }
+
+    public File getPatchedSrc() {
+        return patchedSrc;
+    }
+
+    public void setPatches(File patches) {
+        this.patches = patches;
+    }
+
+    public void patches(File patches) {
+        setPatches(patches);
+    }
+
+    public File getPatches() {
+        return patches;
+    }
+
+    public void setMcVersion(String mcVersion) {
+        this.mcVersion = mcVersion;
+    }
+
+    public void mcVersion(String mcVersion) {
+        setMcVersion(mcVersion);
+    }
+
+    public String getMcVersion() {
+        return mcVersion;
+    }
+
+    public void setSrgPatches(boolean srgPatches) {
+        this.srgPatches = srgPatches;
+    }
+
+    public void srgPatches(boolean srgPatches) {
+        setSrgPatches(srgPatches);
+    }
+
+    public void srgPatches() {
+        setSrgPatches(true);
+    }
+
+    public boolean isSrgPatches() {
+        return srgPatches;
+    }
+
+    public void setExcs(List<File> excs) {
+        this.excs = new ArrayList<>(excs);
+    }
+
+    public void setExcs(File... excs) {
+        setExcs(Arrays.asList(excs));
+    }
+
+    public void setExc(File exc) {
+        setExcs(exc);
+    }
+
+    public void excs(File... excs) {
+        getExcs().addAll(Arrays.asList(excs));
+    }
+
+    public void exc(File exc) {
+        excs(exc);
+    }
+
+    @Nonnull
+    public List<File> getExcs() {
+        if (excs == null) {
+            excs = new ArrayList<>();
+        }
+
+        return excs;
+    }
+
+    public void setExtraExcs(List<Object> extraExcs) {
+        this.extraExcs = new ArrayList<>(extraExcs);
+    }
+
+    public void extraExcs(Object... excs) {
+        getExtraExcs().addAll(Arrays.asList(excs)); // TODO: Type check!
+    }
+
+    public void extraExc(Object exc) {
+        extraExcs(exc); // TODO: Type check!
+    }
+
+    @Nonnull
+    public List<Object> getExtraExcs() {
+        if (extraExcs == null) {
+            extraExcs = new ArrayList<>();
+        }
+
+        return extraExcs;
     }
 
     public void extraMapping(Object mapping) {
         if (mapping instanceof String || mapping instanceof File) {
-            extraMappings.add(mapping);
+            getExtraMappings().add(mapping);
         } else {
             throw new IllegalArgumentException("Extra mappings must be a file or a string!");
         }
     }
 
-    public void extraExc(Object exc) {
-        extraExcs.add(exc); // TODO: Type check!
+    public void setExtraMappings(List<Object> extraMappings) {
+        this.extraMappings = new ArrayList<>(extraMappings);
+    }
+
+    @Nonnull
+    public List<Object> getExtraMappings() {
+        if (extraMappings == null) {
+            extraMappings = new ArrayList<>();
+        }
+
+        return extraMappings;
     }
 
     void copyFrom(PatcherExtension other) {
         if (mappings == null) {
-            this.setMappings(other.getMappings());
+            setMappings(other.getMappings());
         }
-        if (this.mcVersion == null) {
-            this.mcVersion = other.mcVersion;
+
+        if (mcVersion == null) {
+            setMcVersion(other.getMcVersion());
         }
     }
 
-    public void accessTransformer(File file) {
-        this.setAccessTransformer(file);
-    }
-    public void setAccessTransformer(File file) {
-        this.accessTransformers.add(file);
-    }
-    public void setAccessTransformers(List<File> files) {
-         this.accessTransformers.clear();
-         this.accessTransformers.addAll(files);
-    }
-    public List<File> getAccessTransformers() {
-        return accessTransformers;
-    }
-
-
-    public void exc(File file) {
-        this.setExc(file);
-    }
-    public void setExc(File file) {
-        this.excs.add(file);
-    }
-    public void setExc(List<File> files) {
-         this.excs.clear();
-         this.excs.addAll(files);
-    }
-    public List<File> getExcs() {
-        return excs;
-    }
-
-    public void runs(Closure<? super RunConfig.Container> value) {
-        value.setResolveStrategy(Closure.DELEGATE_FIRST);
-        value.setDelegate(runs);
-        value.call();
-    }
-    public Map<String, RunConfig> getRuns() {
-        return this.runs.getRuns();
-    }
 }

@@ -20,92 +20,187 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import groovy.lang.Closure;
+import groovy.lang.GroovyObjectSupport;
+import groovy.util.MapEntry;
+import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.JavaExec;
+import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.TaskProvider;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import org.gradle.api.tasks.SourceSet;
+public class RunConfig extends GroovyObjectSupport implements Serializable {
 
-import com.google.common.base.Joiner;
+    public static final String RUNS_GROUP = "fg_runs";
 
-import groovy.lang.Closure;
-import groovy.lang.MissingPropertyException;
-
-public class RunConfig implements Serializable {
     private static final String MCP_CLIENT_MAIN = "mcp.client.Start";
     private static final String MC_CLIENT_MAIN = "net.minecraft.client.main.Main";
+
     private static final long serialVersionUID = 1L;
-    private String main;
-    private List<String> args;
-    private List<String> jvmArgs;
-    private Map<String, String> env;
-    private Map<String, String> props;
+
+    private transient final Project project;
+    private transient NamedDomainObjectContainer<ModConfig> mods;
+
+    private final String name;
+
     private boolean singleInstance = false;
-    private String ideaModule;
-    private String workDir;
+
+    private String taskName, main, ideaModule, workDir;
+
     private List<SourceSet> sources;
+    private List<RunConfig> parents, children;
+    private List<String> args, jvmArgs;
+
+    private Map<String, String> env, props, tokens;
+
+    public RunConfig(final Project project, final String name) {
+        this.project = project;
+        this.name = name;
+
+        this.mods = project.container(ModConfig.class, modName -> new ModConfig(project, modName));
+    }
+
+    public final String getName() {
+        return name;
+    }
+
+    public void setTaskName(String taskName) {
+        this.taskName = taskName;
+    }
+
+    public void taskName(String taskName) {
+        setTaskName(taskName);
+    }
+
+    public final String getTaskName() {
+        if (taskName == null) {
+            taskName = getName().replaceAll("[^a-zA-Z0-9\\-_]", "");
+
+            if (!taskName.startsWith("run")) {
+                taskName = "run" + Utils.capitalize(taskName);
+            }
+        }
+
+        return taskName;
+    }
+
+    public final String getUniqueFileName() {
+        return project.getPath().length() > 1 ? String.join("_", String.join("_", project.getPath().substring(1).split(":")), getTaskName()) : getTaskName();
+    }
+
+    public final String getUniqueName() {
+        return getUniqueFileName().replaceAll("_", " ");
+    }
 
     public void environment(Map<String, Object> map) {
         this.setEnvironment(map);
     }
+
     public void setEnvironment(Map<String, Object> map) {
-        map.forEach((k,v) -> getEnvironment().put(k, v instanceof File ? ((File)v).getAbsolutePath() : (String)v));
+        map.forEach((k, v) -> getEnvironment().put(k, v instanceof File ? ((File) v).getAbsolutePath() : (String) v));
     }
+
     public void environment(String key, String value) {
         getEnvironment().put(key, value);
     }
+
     public void environment(String key, File value) {
         getEnvironment().put(key, value.getAbsolutePath());
     }
+
     public Map<String, String> getEnvironment() {
-        if (env == null)
+        if (env == null) {
             env = new HashMap<>();
+        }
+
         return env;
     }
 
     public void main(String value) {
         this.setMain(value);
     }
+
     public void setMain(String value) {
         this.main = value;
     }
+
     public String getMain() {
         return this.main;
     }
 
-    public void arg(String value) {
-        getArgs().add(value);
+    public void args(List<Object> values) {
+        setArgs(values);
     }
-    public void setArgs(List<String> values) {
-        getArgs().addAll(values);
+
+    public void args(Object... values) {
+        args(Arrays.asList(values));
     }
+
+    public void arg(Object value) {
+        args(value);
+    }
+
+    public void setArgs(List<Object> values) {
+        values.forEach(value -> getArgs().add(value instanceof File ? ((File) value).getAbsolutePath() : (String) value));
+    }
+
     public List<String> getArgs() {
-        if (args == null)
+        if (args == null) {
             args = new ArrayList<>();
+        }
+
         return args;
     }
 
-    public void jvmArg(String value) {
-        getJvmArgs().add(value);
-    }
     public void jvmArgs(List<String> values) {
+        setJvmArgs(values);
+    }
+
+    public void jvmArgs(String... values) {
+        jvmArgs(Arrays.asList(values));
+    }
+
+    public void jvmArg(String value) {
+        jvmArgs(value);
+    }
+
+    public void setJvmArgs(List<String> values) {
         getJvmArgs().addAll(values);
     }
+
     public List<String> getJvmArgs() {
-        if (jvmArgs == null)
+        if (jvmArgs == null) {
             jvmArgs = new ArrayList<>();
+        }
+
         return jvmArgs;
     }
 
     public void singleInstance(boolean value) {
         this.setSingleInstance(value);
     }
+
     public void setSingleInstance(boolean singleInstance) {
         this.singleInstance = singleInstance;
     }
+
     public boolean isSingleInstance() {
         return singleInstance;
     }
@@ -113,138 +208,409 @@ public class RunConfig implements Serializable {
     public void properties(Map<String, Object> map) {
         this.setProperties(map);
     }
+
     public void setProperties(Map<String, Object> map) {
-        map.forEach((k,v) -> getProperties().put(k, v instanceof File ? ((File)v).getAbsolutePath() : (String)v));
+        map.forEach((k, v) -> getProperties().put(k, v instanceof File ? ((File) v).getAbsolutePath() : (String) v));
     }
+
     public void property(String key, String value) {
         getProperties().put(key, value);
     }
+
     public void property(String key, File value) {
         getProperties().put(key, value.getAbsolutePath());
     }
+
     public Map<String, String> getProperties() {
-        if (props == null)
+        if (props == null) {
             props = new HashMap<>();
+        }
+
         return props;
     }
 
     public void ideaModule(String value) {
         this.setIdeaModule(value);
     }
+
     public void setIdeaModule(String value) {
         this.ideaModule = value;
     }
-    public String getIdeaModule() {
+
+    public final String getIdeaModule() {
+        if (ideaModule == null) {
+            ideaModule = project.getName() + "_main";
+        }
+
         return ideaModule;
     }
 
     public void workingDirectory(String value) {
-        this.setWorkingDirectory(value);
+        setWorkingDirectory(value);
     }
+
+    public void workingDirectory(File value) {
+        setWorkingDirectory(value.getAbsolutePath());
+    }
+
     public void setWorkingDirectory(String value) {
         this.workDir = value;
     }
+
     public String getWorkingDirectory() {
+        if (workDir == null) {
+            workDir = project.file("run").getAbsolutePath();
+        }
+
         return workDir;
     }
 
-    public void source(SourceSet value) {
-        this.getSources().add(value);
+    public NamedDomainObjectContainer<ModConfig> mods(Closure closure) {
+        return mods.configure(closure);
     }
-    public void setSources(List<SourceSet> value) {
-        this.sources = value;
+
+    public NamedDomainObjectContainer<ModConfig> getMods() {
+        return mods;
     }
+
+    public void setSources(List<SourceSet> sources) {
+        this.sources = sources;
+    }
+
+    public void sources(final List<SourceSet> sources) {
+        getSources().addAll(sources);
+    }
+
+    public void sources(final SourceSet... sources) {
+        sources(Arrays.asList(sources));
+    }
+
+    public void source(final SourceSet source) {
+        sources(source);
+    }
+
     public List<SourceSet> getSources() {
-        if (this.sources == null)
-            this.sources = new ArrayList<>();
-        return this.sources;
+        if (sources == null) {
+            sources = new ArrayList<>();
+        }
+
+        return sources;
     }
 
-    private List<File> getSourceDirs() {
-        final List<File> ret = new ArrayList<>();
-        getSources().forEach(set -> {
-            ret.add(set.getOutput().getResourcesDir());
-            ret.addAll(set.getOutput().getClassesDirs().getFiles());
-            ret.addAll(set.getOutput().getDirs().getFiles());
-        });
-        return ret;
+    private Stream<RunConfig> entriesToRuns(MapEntry... entries) {
+        return Stream.of(entries).map(entry -> {
+            final Project project = entry.getKey() == null
+                    ? this.project : this.project.project(entry.getKey().toString());
+
+            final MinecraftExtension minecraft = project.getExtensions().findByType(MinecraftExtension.class);
+
+            return minecraft == null ? null : minecraft.getRuns().maybeCreate(entry.getValue().toString());
+        }).filter(Objects::nonNull);
     }
 
-    public void merge(RunConfig other, boolean overwrite, Map<String, String> vars) {
-        vars.put("source_roots", Joiner.on(File.pathSeparator).join(getSourceDirs()));
+    public void setParents(List<RunConfig> parents) {
+        this.parents = parents;
+    }
 
-        this.singleInstance = other.singleInstance; // This always overwrite cuz there is no way to tell if it's set
-        if (overwrite) {
-            this.args = other.args == null ? this.args : other.args;
-            this.main = other.main == null ? this.main : other.main;
-            this.workDir = other.workDir == null ? this.workDir : other.workDir;
-            this.ideaModule = other.ideaModule == null ? this.ideaModule : other.ideaModule;
+    public void setParents(MapEntry... parents) {
+        setParents(entriesToRuns(parents).collect(Collectors.toList()));
+    }
 
-            if (other.env != null) {
-                other.env.forEach((k,v) -> getEnvironment().put(k, replace(vars, v)));
-            }
+    public void setParents(Map<String, String> parents) {
+        setParents(parents.entrySet().stream()
+                .map((entry) -> new MapEntry(entry.getKey(), entry.getValue()))
+                .toArray(MapEntry[]::new));
+    }
 
-            if (other.props != null) {
-                other.props.forEach((k,v) -> getProperties().put(k, replace(vars, v)));
-            }
-        } else {
-            this.args = other.args == null || this.args != null ? this.args : other.args;
-            this.main = other.main == null || this.main != null ? this.main : other.main;
-            this.workDir = other.workDir == null || this.workDir != null ? this.workDir : other.workDir;
-            this.ideaModule = other.ideaModule == null || this.ideaModule != null ? this.ideaModule : other.ideaModule;
+    public void parents(MapEntry... parents) {
+        getParents().addAll(entriesToRuns(parents).collect(Collectors.toList()));
+    }
 
-            if (other.env != null) {
-                other.env.forEach((k,v) -> getEnvironment().putIfAbsent(k, replace(vars, v)));
-            }
+    public void parents(Map<String, String> parents) {
+        parents(parents.entrySet().stream()
+                .map((entry) -> new MapEntry(entry.getKey(), entry.getValue()))
+                .toArray(MapEntry[]::new));
+    }
 
-            if (other.props != null) {
-                other.props.forEach((k,v) -> getProperties().putIfAbsent(k, replace(vars, v)));
-            }
+    public void parent(@Nullable String project, @Nullable String parent) {
+        parents(new MapEntry(project, parent));
+    }
+
+    public void parents(int index, MapEntry... parents) {
+        getParents().addAll(index, entriesToRuns(parents).collect(Collectors.toList()));
+    }
+
+    public void parents(int index, Map<String, String> parents) {
+        parents(index, parents.entrySet().stream()
+                .map((entry) -> new MapEntry(entry.getKey(), entry.getValue()))
+                .toArray(MapEntry[]::new));
+    }
+
+    public void parent(int index, @Nullable String project, @Nullable String parent) {
+        parents(index, new MapEntry(project, parent));
+    }
+
+    public void parents(RunConfig... parents) {
+        getParents().addAll(Arrays.asList(parents));
+    }
+
+    public void parent(RunConfig parent) {
+        parents(parent);
+    }
+
+    public void parents(int index, RunConfig... parents) {
+        getParents().addAll(Math.min(index, getParents().size()), Arrays.asList(parents));
+    }
+
+    public void parent(int index, RunConfig parent) {
+        parents(index, parent);
+    }
+
+    public final List<RunConfig> getParents() {
+        if (parents == null) {
+            parents = new ArrayList<>();
+        }
+
+        return parents;
+    }
+
+    public void setChildren(List<RunConfig> children) {
+        this.children = children;
+    }
+
+    public void setChildren(MapEntry... children) {
+        setChildren(entriesToRuns(children).collect(Collectors.toList()));
+    }
+
+    public void setChildren(Map<String, String> children) {
+        setChildren(children.entrySet().stream()
+                .map((entry) -> new MapEntry(entry.getKey(), entry.getValue()))
+                .toArray(MapEntry[]::new));
+    }
+
+    public void children(MapEntry... children) {
+        getChildren().addAll(entriesToRuns(children).collect(Collectors.toList()));
+    }
+
+    public void children(Map<String, String> children) {
+        children(children.entrySet().stream()
+                .map((entry) -> new MapEntry(entry.getKey(), entry.getValue()))
+                .toArray(MapEntry[]::new));
+    }
+
+    public void child(@Nullable String project, @Nullable String child) {
+        children(new MapEntry(project, child));
+    }
+
+    public void children(int index, MapEntry... children) {
+        getChildren().addAll(index, entriesToRuns(children).collect(Collectors.toList()));
+    }
+
+    public void children(int index, Map<String, String> children) {
+        children(index, children.entrySet().stream()
+                .map((entry) -> new MapEntry(entry.getKey(), entry.getValue()))
+                .toArray(MapEntry[]::new));
+    }
+
+    public void child(int index, @Nullable String project, @Nullable String child) {
+        children(index, new MapEntry(project, child));
+    }
+
+    public void children(RunConfig... children) {
+        getChildren().addAll(Arrays.asList(children));
+    }
+
+    public void child(RunConfig child) {
+        children(child);
+    }
+
+    public void children(int index, RunConfig... children) {
+        getChildren().addAll(Math.min(index, getParents().size()), Arrays.asList(children));
+    }
+
+    public void child(int index, RunConfig child) {
+        children(index, child);
+    }
+
+    public final List<RunConfig> getChildren() {
+        if (children == null) {
+            children = new ArrayList<>();
+        }
+
+        return children;
+    }
+
+    public void merge(final RunConfig other, boolean overwrite) {
+        singleInstance = other.singleInstance; // This always overwrite because there is no way to tell if it's set
+
+        RunConfig first = overwrite ? other : this;
+        RunConfig second = overwrite ? this : other;
+
+        args = first.args == null ? second.args : first.args;
+        main = first.main == null ? second.main : first.main;
+        mods = first.mods == null ? second.mods : first.mods;
+        sources = first.sources == null ? second.sources : first.sources;
+        workDir = first.workDir == null ? second.workDir : first.workDir;
+        ideaModule = first.ideaModule == null ? second.ideaModule : first.ideaModule;
+
+        if (other.env != null) {
+            other.env.forEach(overwrite
+                    ? (key, value) -> getEnvironment().put(key, value)
+                    : (key, value) -> getEnvironment().putIfAbsent(key, value));
+        }
+
+        if (other.props != null) {
+            other.props.forEach(overwrite
+                    ? (key, value) -> getProperties().put(key, value)
+                    : (key, value) -> getProperties().putIfAbsent(key, value));
+        }
+
+        if (other.mods != null) {
+            other.mods.forEach(otherMod -> {
+                final ModConfig thisMod = getMods().findByName(otherMod.getName());
+
+                if (thisMod == null) {
+                    getMods().add(otherMod);
+                } else {
+                    thisMod.merge(otherMod, false);
+                }
+            });
         }
     }
 
+    public void merge(List<RunConfig> runs) {
+        runs.stream().distinct().filter(run -> run != this).forEach(run -> merge(run, false));
+    }
+
+    public void mergeParents() {
+        merge(getParents());
+    }
+
+    public void mergeChildren() {
+        merge(getChildren());
+    }
+
+    public void setTokens(Map<String, String> tokens) {
+        this.tokens = tokens;
+    }
+
+    public void token(String key, String value) {
+        getTokens().put(key, value);
+    }
+
+    public Map<String, String> getTokens() {
+        if (tokens == null) {
+            tokens = new HashMap<>();
+        }
+
+        return tokens;
+    }
+
+    private void replaceTokens() {
+        getArgs().replaceAll(value -> replace(getTokens(), value));
+        getProperties().replaceAll((key, value) -> replace(getTokens(), value));
+        getEnvironment().replaceAll((key, value) -> replace(getTokens(), value));
+    }
+
     private String replace(Map<String, String> vars, String value) {
-        if (value == null || value.length() <= 2 || value.charAt(0) != '{' || value.charAt(value.length() - 1) != '}')
+        if (value.length() <= 2 || value.charAt(0) != '{' || value.charAt(value.length() - 1) != '}') {
             return value;
+        }
+
         String key = value.substring(1, value.length() - 1);
         String resolved = vars.get(key);
+
         return resolved == null ? value : resolved;
     }
 
     public boolean isClient() {
         boolean isTargetClient = getEnvironment().getOrDefault("target", "").contains("client");
+
         return isTargetClient || MCP_CLIENT_MAIN.equals(getMain()) || MC_CLIENT_MAIN.equals(getMain());
     }
 
-    public static class Container {
-        private Map<String, RunConfig> runs = new HashMap<>();
+    private List<SourceSet> getAllSources() {
+        List<SourceSet> sources = getSources();
 
-        // This doesn't work, no idea why... so users must use =
-        public void methodMissing(String name, Object value) {
-            propertyMissing(name, value);
+        getMods().stream().map(ModConfig::getSources).flatMap(Collection::stream).forEach(sources::add);
+
+        sources = sources.stream().distinct().collect(Collectors.toList());
+
+        if (sources.isEmpty()) {
+            final JavaPluginConvention main = project.getConvention().getPlugin(JavaPluginConvention.class);
+
+            sources.add(main.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME));
         }
 
-        public Object propertyMissing(String name) {
-            if (!this.runs.containsKey(name))
-                throw new MissingPropertyException(name);
-            return this.runs.get(name);
-        }
-
-        public void propertyMissing(String name, Object value) {
-            if (!(value instanceof Closure))
-                throw new IllegalArgumentException("Argument must be Closure");
-
-            @SuppressWarnings("unchecked")
-            Closure<? extends RunConfig> closure = (Closure<? extends RunConfig>)value;
-            RunConfig run = new RunConfig();
-            closure.setResolveStrategy(Closure.DELEGATE_FIRST);
-            closure.setDelegate(run);
-            closure.call();
-            this.runs.put(name, run);
-        }
-
-        public Map<String, RunConfig> getRuns() {
-            return runs;
-        }
+        return sources;
     }
+
+    @SuppressWarnings("UnstableApiUsage")
+    public final TaskProvider<JavaExec> createRunTask(final TaskProvider<Task> prepareRuns, final List<String> additionalClientArgs) {
+        return createRunTask(prepareRuns.get(), additionalClientArgs);
+    }
+
+    @SuppressWarnings("UnstableApiUsage")
+    public final TaskProvider<JavaExec> createRunTask(final Task prepareRuns, final List<String> additionalClientArgs) {
+        if (getMods().isEmpty()) {
+            final List<SourceSet> sources = getAllSources();
+
+            getTokens().put("source_roots", Stream.concat(sources.stream().map(source -> source.getOutput().getResourcesDir()),
+                    sources.stream().map(source -> source.getOutput().getClassesDirs().getFiles())
+                            .flatMap(Collection::stream)
+            ).map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator)));
+        } else {
+            getMods().forEach(mod -> mod.configureTokens(getTokens()));
+        }
+
+        replaceTokens();
+
+        // Ensure MOD_CLASSES is set
+        getEnvironment().putIfAbsent("MOD_CLASSES", "");
+
+        if (isClient()) {
+            jvmArgs(additionalClientArgs);
+        }
+
+        TaskProvider<Task> prepareRun = project.getTasks().register("prepare" + Utils.capitalize(getTaskName()), Task.class, task -> {
+            task.setGroup(RUNS_GROUP);
+            task.dependsOn(prepareRuns, getAllSources().stream().map(SourceSet::getClassesTaskName).toArray());
+
+            File workDir = new File(getWorkingDirectory());
+
+            if (!workDir.exists()) {
+                workDir.mkdirs();
+            }
+        });
+
+        return project.getTasks().register(getTaskName(), JavaExec.class, task -> {
+            task.setGroup(RUNS_GROUP);
+            task.dependsOn(prepareRun.get());
+
+            File workDir = new File(getWorkingDirectory());
+
+            if (!workDir.exists()) {
+                workDir.mkdirs();
+            }
+
+            task.setWorkingDir(workDir);
+            task.setMain(getMain());
+
+            task.args(getArgs());
+            task.jvmArgs(getJvmArgs());
+            task.environment(getEnvironment());
+            task.systemProperties(getProperties());
+
+            getAllSources().stream().map(SourceSet::getRuntimeClasspath).forEach(task::classpath);
+
+            // Stop after this run task so it doesn't try to execute the run tasks, and their dependencies, of sub projects
+            task.doLast(t -> System.exit(0)); // TODO: Find better way to stop gracefully
+        });
+    }
+
+    @Override
+    public String toString() {
+        return "RunConfig[project='" + project.getPath() + "', name='" + getName() + "']";
+    }
+
 }
