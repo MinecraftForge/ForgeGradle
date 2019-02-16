@@ -74,6 +74,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -99,6 +100,8 @@ import java.util.zip.ZipOutputStream;
 import javax.annotation.Nullable;
 
 public class MinecraftUserRepo extends BaseRepo {
+    private static final Object lockRecompRawReplacement = new Object();
+
     private static final boolean CHANGING_USERDEV = true; //Used when testing to update the userdev cache every 30 seconds.
     private final Project project;
     private final String GROUP;
@@ -962,8 +965,50 @@ public class MinecraftUserRepo extends BaseRepo {
             Utils.updateHash(sources, HashFunction.SHA1);
             cache.save();
 
-            //TODO: insert findRecomp(names, true)
-            //TODO: replace raw with recomp
+            final File recompFile = findRecomp(mapping, true);
+            final File rawFile = findRaw(mapping);
+
+            if (rawFile != null && recompFile != null)
+            {
+                synchronized (lockRecompRawReplacement)
+                {
+                    try
+                    {
+                        try (FileOutputStream outputStream = new FileOutputStream(rawFile))
+                        {
+                            try(FileInputStream inputStream = new FileInputStream(recompFile))
+                            {
+                                FileLock externalFileLocK = outputStream.getChannel().lock();
+
+                                if (rawFile.exists())
+                                    if (!rawFile.delete())
+                                        throw new IllegalStateException("Failed to delete raw file. Access denied!");
+
+                                if (!rawFile.createNewFile())
+                                    throw new IllegalStateException("Failed to create new raw file. Access denied!");
+
+                                byte[] buffer = new byte[1024];
+                                int length;
+                                while ((length = inputStream.read(buffer)) > 0) {
+                                    outputStream.write(buffer, 0, length);
+                                }
+
+                                externalFileLocK.release();
+
+                                debug("   -> Replaced main raw jar with recomp jar.");
+                            }
+                        }
+                    }
+                    catch (Throwable error)
+                    {
+                        this.log.error("Failed to replace raw jar with recompiled jar. Source lookup might fail!", error);
+                    }
+                }
+            }
+            //NOTE: This locks the access of this repo class to the raw jar.
+            // If other threads access it from somewhere else this has to be handled still.
+
+            //TODO: Ensure locked file replacement of recompFile with rawFile
         }
         return sources.exists() ? sources : null;
     }
