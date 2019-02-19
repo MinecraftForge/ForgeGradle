@@ -529,7 +529,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         return isTargetClient || MCP_CLIENT_MAIN.equals(getMain()) || MC_CLIENT_MAIN.equals(getMain());
     }
 
-    private List<SourceSet> getAllSources() {
+    public List<SourceSet> getAllSources() {
         List<SourceSet> sources = getSources();
 
         getMods().stream().map(ModConfig::getSources).flatMap(Collection::stream).forEach(sources::add);
