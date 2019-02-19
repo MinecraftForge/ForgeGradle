@@ -40,7 +40,7 @@ public class ModConfig extends GroovyObjectSupport {
     private transient final Project project;
 
     private final String name;
-    private File resource;
+    private FileCollection resources;
     private FileCollection classes;
 
     private List<SourceSet> sources;
@@ -70,18 +70,24 @@ public class ModConfig extends GroovyObjectSupport {
         return classes;
     }
 
-    public void setResource(@Nonnull final File resource) {
-        this.resource = resource;
+    public void setResources(@Nonnull final FileCollection resources) {
+        this.resources = resources;
     }
 
-    public void resource(@Nonnull final File resource) {
-        if (this.resource == null) {
-            setResource(resource);
+    public void resources(@Nonnull final Object... resources) {
+        setResources(getResources().plus(project.files(resources)));
+    }
+
+    public void resource(@Nonnull final Object resource) {
+        resources(resource);
+    }
+
+    public FileCollection getResources() {
+        if (resources == null) {
+            resources = project.files();
         }
-    }
 
-    public File getResource() {
-        return resource;
+        return resources;
     }
 
     public void setSources(List<SourceSet> sources) {
@@ -117,23 +123,25 @@ public class ModConfig extends GroovyObjectSupport {
         if (overwrite) {
             sources = other.sources == null ? sources : other.sources;
             classes = other.classes == null ? classes : other.classes;
-            resource = other.resource == null ? resource : other.resource;
+            resources = other.resources == null ? resources : other.resources;
         } else {
-            resource = other.resource == null || resource != null ? resource : other.resource;
-
-            if (other.sources != null) {
-                sources(other.getSources());
+            if (other.resources != null) {
+                resources(other.getResources());
             }
 
             if (other.classes != null) {
                 classes(other.getClasses());
+            }
+
+            if (other.sources != null) {
+                sources(other.getSources());
             }
         }
     }
 
     public void configureTokens(@Nonnull final Map<String, String> tokens) {
         final SourceSet main = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-        Stream<String> modClasses = Stream.concat(Stream.of(resource == null ? main.getOutput().getResourcesDir() : resource),
+        Stream<String> modClasses = Stream.concat((resources == null ? Stream.of(main.getOutput().getResourcesDir()) : resources.getFiles().stream()),
                 (classes == null ? main.getOutput().getClassesDirs().getFiles() : classes.getFiles()).stream())
                 .distinct()
                 .map(file -> getName() + "%%" + file.getAbsolutePath());

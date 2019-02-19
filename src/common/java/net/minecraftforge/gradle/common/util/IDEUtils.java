@@ -61,11 +61,12 @@ public final class IDEUtils {
     @SuppressWarnings("UnstableApiUsage")
     public static void createIDEGenRunsTasks(@Nonnull final MinecraftExtension minecraft, @Nonnull final TaskProvider<Task> prepareRuns) {
         final Project project = minecraft.getProject();
+
         final Map<String, Triple<List<Object>, File, RunConfigurationGenerator>> ideConfigurationGenerators = ImmutableMap.<String, Triple<List<Object>, File, RunConfigurationGenerator>>builder()
                 .put("genIntellijRuns", ImmutableTriple.of(Collections.singletonList(prepareRuns.get()),
                         new File(project.getRootProject().getRootDir(), ".idea/runConfigurations"), IDEUtils::createIntellijRunConfigurationXML))
                 .put("genEclipseRuns", ImmutableTriple.of(ImmutableList.of(prepareRuns.get(), EclipsePlugin.ECLIPSE_CP_TASK_NAME),
-                        project.getRootProject().getRootDir(), IDEUtils::createEclipseRunConfigurationXML))
+                        project.getProjectDir(), IDEUtils::createEclipseRunConfigurationXML))
                 .build();
 
         ideConfigurationGenerators.forEach((taskName, configurationGenerator) -> {
@@ -217,6 +218,14 @@ public final class IDEUtils {
                 elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.MAIN_TYPE", runConfig.getMain());
                 elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.VM_ARGUMENTS", props);
                 elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.PROGRAM_ARGUMENTS", String.join(" ", runConfig.getArgs()));
+
+                final File workingDirectory = new File(runConfig.getWorkingDirectory());
+
+                // Eclipse requires working directory to exist
+                if (!workingDirectory.exists()) {
+                    workingDirectory.mkdirs();
+                }
+
                 elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.WORKING_DIRECTORY", runConfig.getWorkingDirectory());
 
                 final Element envs = javaDocument.createElement("mapAttribute");
@@ -224,6 +233,11 @@ public final class IDEUtils {
                     envs.setAttribute("key", "org.eclipse.debug.core.environmentVariables");
 
                     runConfig.getEnvironment().compute("MOD_CLASSES", (key, value) -> {
+                        // Only replace environment variable if it is already set
+                        if (value == null || value.isEmpty()) {
+                            return value;
+                        }
+
                         final EclipseModel eclipse = project.getExtensions().findByType(EclipseModel.class);
 
                         if (eclipse != null) {
@@ -235,7 +249,12 @@ public final class IDEUtils {
                                     .collect(Collectors.toMap(output -> output.split("/")[output.split("/").length - 1], output -> project.file(output).getAbsolutePath()));
 
                             if (runConfig.getMods().isEmpty()) {
-                                return String.join(File.pathSeparator, outputs.size() == 1 ? Stream.of(outputs.values(), outputs.values()).flatMap(Collection::stream).collect(Collectors.toList()) : outputs.values());
+                                return runConfig.getAllSources().stream()
+                                        .map(SourceSet::getName)
+                                        .filter(outputs::containsKey)
+                                        .map(outputs::get)
+                                        .map(s -> String.join(File.pathSeparator, s, s)) // <resources>:<classes>
+                                        .collect(Collectors.joining(File.pathSeparator));
                             } else {
                                 final SourceSet main = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
@@ -245,7 +264,9 @@ public final class IDEUtils {
                                                     .map(SourceSet::getName)
                                                     .filter(outputs::containsKey)
                                                     .map(outputs::get)
-                                                    .map(output -> modConfig.getName() + "%%" + output).collect(Collectors.toList());
+                                                    .map(output -> modConfig.getName() + "%%" + output)
+                                                    .map(s -> String.join(File.pathSeparator, s, s)) // <resources>:<classes>
+                                                    .collect(Collectors.toList());
 
                                             return dirs.size() == 1 ? Stream.of(dirs, dirs).flatMap(Collection::stream) : dirs.stream();
                                         })
@@ -270,7 +291,7 @@ public final class IDEUtils {
             }
             javaDocument.appendChild(rootElement);
         }
-        documents.put(runConfig.getUniqueFileName() + ".launch", javaDocument);
+        documents.put(runConfig.getTaskName() + ".launch", javaDocument);
 
         return documents;
     }
