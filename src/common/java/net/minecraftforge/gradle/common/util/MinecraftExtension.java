@@ -28,6 +28,7 @@ import net.minecraftforge.gradle.common.task.ExtractNatives;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.TaskProvider;
 
 import javax.annotation.Nonnull;
@@ -136,9 +137,18 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
 
     @SuppressWarnings("UnstableApiUsage")
     public void createRunConfigTasks(final ExtractNatives extractNatives, final DownloadAssets downloadAssets) {
-        TaskProvider<Task> prepareRuns = project.getTasks().register("prepareRuns", Task.class, task -> {
+        final TaskProvider<Task> prepareRuns = project.getTasks().register("prepareRuns", Task.class, task -> {
             task.setGroup(RunConfig.RUNS_GROUP);
             task.dependsOn(extractNatives, downloadAssets);
+        });
+
+        final TaskProvider<Task> makeSrcDirs = project.getTasks().register("makeSrcDirs", Task.class, task -> {
+            task.doFirst(t -> {
+                final JavaPluginConvention java = task.getProject().getConvention().getPlugin(JavaPluginConvention.class);
+
+                java.getSourceSets().forEach(s -> s.getAllSource()
+                        .getSrcDirs().stream().filter(f -> !f.exists()).forEach(File::mkdirs));
+            });
         });
 
         getRuns().forEach(RunConfig::mergeParents);
@@ -157,9 +167,9 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
             getRuns().forEach(RunConfig::mergeChildren);
             getRuns().forEach(run -> run.createRunTask(prepareRuns, additionalClientArgs));
 
-            EclipseHacks.doEclipseFixes(this, extractNatives, downloadAssets);
+            EclipseHacks.doEclipseFixes(this, extractNatives, downloadAssets, makeSrcDirs);
 
-            IDEUtils.createIDEGenRunsTasks(this, prepareRuns);
+            IDEUtils.createIDEGenRunsTasks(this, prepareRuns, makeSrcDirs);
         });
     }
 
