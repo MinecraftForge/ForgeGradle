@@ -29,7 +29,6 @@ import org.gradle.api.Task;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
-import org.gradle.plugins.ide.eclipse.EclipsePlugin;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.eclipse.model.SourceFolder;
 import org.w3c.dom.Document;
@@ -59,13 +58,13 @@ import java.util.stream.Stream;
 public final class IDEUtils {
 
     @SuppressWarnings("UnstableApiUsage")
-    public static void createIDEGenRunsTasks(@Nonnull final MinecraftExtension minecraft, @Nonnull final TaskProvider<Task> prepareRuns) {
+    public static void createIDEGenRunsTasks(@Nonnull final MinecraftExtension minecraft, @Nonnull final TaskProvider<Task> prepareRuns, @Nonnull final TaskProvider<Task> makeSourceDirs) {
         final Project project = minecraft.getProject();
 
         final Map<String, Triple<List<Object>, File, RunConfigurationGenerator>> ideConfigurationGenerators = ImmutableMap.<String, Triple<List<Object>, File, RunConfigurationGenerator>>builder()
                 .put("genIntellijRuns", ImmutableTriple.of(Collections.singletonList(prepareRuns.get()),
                         new File(project.getRootProject().getRootDir(), ".idea/runConfigurations"), IDEUtils::createIntellijRunConfigurationXML))
-                .put("genEclipseRuns", ImmutableTriple.of(ImmutableList.of(prepareRuns.get(), EclipsePlugin.ECLIPSE_CP_TASK_NAME),
+                .put("genEclipseRuns", ImmutableTriple.of(ImmutableList.of(prepareRuns.get(), makeSourceDirs.get()),
                         project.getProjectDir(), IDEUtils::createEclipseRunConfigurationXML))
                 .build();
 
@@ -123,6 +122,7 @@ public final class IDEUtils {
         parent.appendChild(option);
     }
 
+    @Nonnull
     private static Map<String, Document> createIntellijRunConfigurationXML(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final String props, @Nonnull final DocumentBuilder documentBuilder) {
         final Map<String, Document> documents = new LinkedHashMap<>();
 
@@ -260,15 +260,12 @@ public final class IDEUtils {
 
                                 return runConfig.getMods().stream()
                                         .map(modConfig -> {
-                                            final List<String> dirs = (modConfig.getSources().isEmpty() ? Stream.of(main) : modConfig.getSources().stream())
+                                            return (modConfig.getSources().isEmpty() ? Stream.of(main) : modConfig.getSources().stream())
                                                     .map(SourceSet::getName)
                                                     .filter(outputs::containsKey)
                                                     .map(outputs::get)
                                                     .map(output -> modConfig.getName() + "%%" + output)
-                                                    .map(s -> String.join(File.pathSeparator, s, s)) // <resources>:<classes>
-                                                    .collect(Collectors.toList());
-
-                                            return dirs.size() == 1 ? Stream.of(dirs, dirs).flatMap(Collection::stream) : dirs.stream();
+                                                    .map(s -> String.join(File.pathSeparator, s, s)); // <resources>:<classes>
                                         })
                                         .flatMap(Function.identity())
                                         .collect(Collectors.joining(File.pathSeparator));

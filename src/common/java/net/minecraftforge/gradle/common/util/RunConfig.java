@@ -491,7 +491,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     }
 
     public void setTokens(Map<String, String> tokens) {
-        this.tokens = tokens;
+        this.tokens = new HashMap<>(tokens);
     }
 
     public void token(String key, String value) {

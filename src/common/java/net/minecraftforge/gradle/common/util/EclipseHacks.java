@@ -27,6 +27,8 @@ import net.minecraftforge.gradle.common.task.DownloadAssets;
 import net.minecraftforge.gradle.common.task.ExtractNatives;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.tasks.TaskProvider;
 import org.gradle.plugins.ide.eclipse.GenerateEclipseClasspath;
 import org.xml.sax.SAXException;
 
@@ -46,8 +48,8 @@ import java.util.Set;
 
 public class EclipseHacks {
 
-    @SuppressWarnings("unchecked")
-    public static void doEclipseFixes(@Nonnull final MinecraftExtension minecraft, @Nonnull final ExtractNatives nativesTask, @Nonnull final DownloadAssets assetsTask) {
+    @SuppressWarnings({"unchecked", "UnstableApiUsage"})
+    public static void doEclipseFixes(@Nonnull final MinecraftExtension minecraft, @Nonnull final ExtractNatives nativesTask, @Nonnull final DownloadAssets assetsTask, @Nonnull final TaskProvider<Task> makeSrcDirs) {
         final Project project = minecraft.getProject();
         final File natives = nativesTask.getOutput();
         final File assets = assetsTask.getOutput();
@@ -55,11 +57,7 @@ public class EclipseHacks {
         final String LIB_ATTR = "org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY";
 
         project.getTasks().withType(GenerateEclipseClasspath.class, task -> {
-            task.dependsOn(nativesTask, assetsTask);
-
-            // Make all source dirs
-            task.doFirst(t -> task.getClasspath().getSourceSets()
-                    .forEach(s -> s.getAllSource().getSrcDirs().stream().filter(f -> !f.exists()).forEach(File::mkdirs)));
+            task.dependsOn(nativesTask, assetsTask, makeSrcDirs.get());
 
             task.doLast(t -> {
                 try {
