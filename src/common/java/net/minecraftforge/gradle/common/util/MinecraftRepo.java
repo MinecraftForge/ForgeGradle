@@ -60,6 +60,7 @@ public class MinecraftRepo extends BaseRepo {
     private static final String GROUP = "net.minecraft";
     public static final String MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
     public static final String CURRENT_OS = OS.getCurrent().getName();
+    private static int CACHE_BUSTER = 1;
 
     private final Repository repo;
     private MinecraftRepo(File cache, Logger log) {
@@ -91,6 +92,12 @@ public class MinecraftRepo extends BaseRepo {
             return null;
         }
         return version.split("_mapped_")[0];
+    }
+
+    private HashStore commonCache(File file) throws IOException {
+        HashStore ret = new HashStore(this.getCacheRoot()).load(new File(file.getAbsolutePath() + ".input"));
+        ret.bust(CACHE_BUSTER);
+        return ret;
     }
 
     @Override
@@ -169,7 +176,7 @@ public class MinecraftRepo extends BaseRepo {
 
     protected File findPom(String side, String version, File json) throws IOException {
         File pom = cache("versions", version, side + ".pom");
-        HashStore cache = new HashStore(this.getCacheRoot()).load(cache("versions", version, side + ".pom.input"));
+        HashStore cache = commonCache(cache("versions", version, side + ".pom.input"));
 
         if ("client".equals(side)) {
             cache.add(json);
@@ -192,10 +199,8 @@ public class MinecraftRepo extends BaseRepo {
                         }
                     }
                 }
-            } else {
-                builder.dependencies().add(GROUP + ":" + side + ":" + version, "compile").withClassifier("extra"); //Compile right?
             }
-            builder.dependencies().add(GROUP + ":" + side + ":" + version, "compile").withClassifier("data");
+            builder.dependencies().add(GROUP + ":" + side + ":" + version, "compile").withClassifier("extra");
             builder.dependencies().add("com.google.code.findbugs:jsr305:3.0.1", "compile"); //TODO: Pull this from MCPConfig.
 
             String ret = builder.tryBuild();
@@ -228,7 +233,7 @@ public class MinecraftRepo extends BaseRepo {
         File raw = findRaw(side, version, json);
         File mappings = findMappings(version);
         File extra = cache("versions", version, side + "-extra.jar");
-        HashStore cache = new HashStore(this.getCacheRoot()).load(cache("versions", version, side + "-extra.input"))
+        HashStore cache = commonCache(cache("versions", version, side + "-extra.input"))
                 .add("raw", raw)
                 .add("mappings", mappings);
 
@@ -239,11 +244,12 @@ public class MinecraftRepo extends BaseRepo {
 
         return extra;
     }
+
     private File findSlim(String side, String version, File json) throws IOException {
         File raw = findRaw(side, version, json);
         File mappings = findMappings(version);
         File extra = cache("versions", version, side + "-slim.jar");
-        HashStore cache = new HashStore(this.getCacheRoot()).load(cache("versions", version, side + "-slim.input"))
+        HashStore cache = commonCache(cache("versions", version, side + "-slim.input"))
                 .add("raw", raw)
                 .add("mappings", mappings);
 
@@ -256,7 +262,7 @@ public class MinecraftRepo extends BaseRepo {
         return extra;
     }
 
-    private void splitJar(File raw, File mappings, File output, boolean notch) throws IOException {
+    private void splitJar(File raw, File mappings, File output, boolean slim) throws IOException {
         try (ZipFile zin = new ZipFile(raw);
              FileOutputStream fos = new FileOutputStream(output);
              ZipOutputStream out = new ZipOutputStream(fos)) {
@@ -274,7 +280,17 @@ public class MinecraftRepo extends BaseRepo {
                 String name = entry.getName();
                 if (name.endsWith(".class")) {
                     boolean isNotch = whitelist.contains(name.substring(0, name.length() - 6 /*.class*/));
-                    if (notch == isNotch) {
+                    if (slim == isNotch) {
+                        ZipEntry _new = new ZipEntry(name);
+                        _new.setTime(0);
+                        out.putNextEntry(_new);
+                        try (InputStream ein = zin.getInputStream(entry)) {
+                            IOUtils.copy(ein, out);
+                        }
+                        out.closeEntry();
+                    }
+                } else {
+                    if (!slim) {
                         ZipEntry _new = new ZipEntry(name);
                         _new.setTime(0);
                         out.putNextEntry(_new);
@@ -292,7 +308,7 @@ public class MinecraftRepo extends BaseRepo {
     private File findData(String side, String version, File json) throws IOException {
         File raw = findRaw(side, version, json);
         File extra = cache("versions", version, side + "-data.jar");
-        HashStore cache = new HashStore(this.getCacheRoot()).load(cache("versions", version, side + "-extra.input"))
+        HashStore cache = commonCache(cache("versions", version, side + "-data.input"))
                 .add("raw", raw);
 
         if (!cache.isSame() || !extra.exists()) {

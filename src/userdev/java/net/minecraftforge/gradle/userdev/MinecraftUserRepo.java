@@ -46,7 +46,6 @@ import net.minecraftforge.gradle.common.util.McpNames;
 import net.minecraftforge.gradle.common.util.POMBuilder;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
-import net.minecraftforge.gradle.common.util.VersionJson;
 import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
@@ -259,7 +258,6 @@ public class MinecraftUserRepo extends BaseRepo {
         Configuration cfg = project.getConfigurations().create(getNextCompileName());
         List<String> deps = new ArrayList<>();
         deps.add("net.minecraft:client:" + mcp.getMCVersion() + ":extra");
-        deps.add("net.minecraft:client:" + mcp.getMCVersion() + ":data");
         deps.addAll(mcp.getLibraries());
         Patcher patcher = parent;
         while (patcher != null) {
@@ -420,7 +418,14 @@ public class MinecraftUserRepo extends BaseRepo {
         String version = mapping.substring(idx + 1);
         String desc = "de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
         debug("    Mapping: " + desc);
-        return MavenArtifactDownloader.manual(project, desc, CHANGING_USERDEV);
+
+        File ret = MavenArtifactDownloader.manual(project, desc, CHANGING_USERDEV);
+        if (ret == null) {
+            String message = "Could not download MCP Mappings: de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
+            project.getLogger().error(message);
+            throw new IllegalStateException(message);
+        }
+        return ret;
     }
 
     private File findPom(String mapping, String rand) throws IOException {
@@ -442,7 +447,6 @@ public class MinecraftUserRepo extends BaseRepo {
 
             //builder.dependencies().add(rand + GROUP + ':' + NAME + ':' + getVersionWithAT(mapping), "compile"); //Normal poms dont reference themselves...
             builder.dependencies().add("net.minecraft:client:" + mcp.getMCVersion() + ":extra", "compile"); //Client as that has all deps as external list
-            builder.dependencies().add("net.minecraft:client:" + mcp.getMCVersion() + ":data", "compile");
             mcp.getLibraries().forEach(e -> builder.dependencies().add(e, "compile"));
 
             if (mapping != null) {
