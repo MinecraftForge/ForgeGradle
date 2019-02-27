@@ -512,7 +512,7 @@ public class MinecraftUserRepo extends BaseRepo {
         File names = findMapping(mapping);
         HashStore cache = commonHash(names);
 
-        if (mapping != null && names != null) {
+        if (mapping != null && names == null) {
             debug("  Finding Raw: Could not find names, exiting");
             return null;
         }
@@ -998,7 +998,7 @@ public class MinecraftUserRepo extends BaseRepo {
         }
 
         File names = findMapping(mapping);
-        if (names == null) {
+        if (mapping != null && names == null) {
             debug("  Finding Sources: Mapping not found");
             return null;
         }
