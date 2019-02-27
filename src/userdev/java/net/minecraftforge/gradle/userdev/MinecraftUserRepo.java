@@ -410,8 +410,10 @@ public class MinecraftUserRepo extends BaseRepo {
     }
 
     private File findMapping(String mapping) {
-        if (mapping == null)
+        if (mapping == null) {
+            debug("  FindMappings: Null mappings");
             return null;
+        }
 
         int idx = mapping.lastIndexOf('_');
         String channel = mapping.substring(0, idx);
@@ -422,6 +424,7 @@ public class MinecraftUserRepo extends BaseRepo {
         File ret = MavenArtifactDownloader.manual(project, desc, CHANGING_USERDEV);
         if (ret == null) {
             String message = "Could not download MCP Mappings: de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
+            debug ("    " + message);
             project.getLogger().error(message);
             throw new IllegalStateException(message);
         }
@@ -430,8 +433,10 @@ public class MinecraftUserRepo extends BaseRepo {
 
     private File findPom(String mapping, String rand) throws IOException {
         getParents(); //Download parents
-        if (mcp == null || mapping == null)
+        if (mcp == null || mapping == null) {
+            debug("  Finding Pom: MCP or Mappings were null");
             return null;
+        }
 
         File pom = cacheMapped(mapping, "pom");
         if (!rand.isEmpty()) {
@@ -439,10 +444,12 @@ public class MinecraftUserRepo extends BaseRepo {
             pom = cacheMapped(mapping, rand + "pom");
         }
 
-        debug("  Finding pom: " + pom);
         HashStore cache = commonHash(null).load(new File(pom.getAbsolutePath() + ".input"));
 
-        if (!cache.isSame() || !pom.exists()) {
+        if (cache.isSame() && pom.exists()) {
+            debug("  Finding Pom: Cache Hit");
+        } else {
+            debug("  Finding Pom: " + pom);
             POMBuilder builder = new POMBuilder(rand + GROUP, NAME, getVersionWithAT(mapping) );
 
             //builder.dependencies().add(rand + GROUP + ':' + NAME + ':' + getVersionWithAT(mapping), "compile"); //Normal poms dont reference themselves...
@@ -488,7 +495,10 @@ public class MinecraftUserRepo extends BaseRepo {
         HashStore cache = new HashStore().load(cacheRaw("binpatches", "lzma.input"))
                 .add("parent", parent.getZip());
 
-        if (!cache.isSame() || !ret.exists()) {
+        if (cache.isSame() && ret.exists()) {
+            debug("  FindBinPatches: Cache Hit");
+        } else {
+            debug("  FindBinPatches: Extracting to " + ret);
             try (ZipFile zip = new ZipFile(parent.getZip())) {
                 Utils.extractFile(zip, parent.getConfig().binpatches, ret);
                 cache.save();
@@ -502,13 +512,28 @@ public class MinecraftUserRepo extends BaseRepo {
         File names = findMapping(mapping);
         HashStore cache = commonHash(names);
 
+        if (mapping != null && names != null) {
+            debug("  Finding Raw: Could not find names, exiting");
+            return null;
+        }
+
         File recomp = findRecomp(mapping, false);
-        if (recomp != null)
+        if (recomp != null) {
+            debug("  Finding Raw: Returning Recomp: " + recomp);
             return recomp;
+        }
+
+        if (mapping == null && parent == null) {
+            debug("  Finding Raw: Userdev does not provide SRG Minecraft");
+            return null;
+        }
 
         File bin = cacheMapped(mapping, "jar");
         cache.load(cacheMapped(mapping, "jar.input"));
-        if (!cache.isSame() || !bin.exists()) {
+        if (cache.isSame() && bin.exists()) {
+            debug("  Finding Raw: Cache Hit: " + bin);
+        } else {
+            debug("  Finding Raw: Cache Miss");
             StringBuilder baseAT = new StringBuilder();
 
             for (Patcher patcher = parent; patcher != null; patcher = patcher.parent) {
@@ -519,13 +544,17 @@ public class MinecraftUserRepo extends BaseRepo {
                 }
             }
             boolean hasAts = baseAT.length() != 0 || !ATS.isEmpty();
+            debug("    HasAts: " + hasAts);
 
             File srged = null;
-            File joined = MavenArtifactDownloader.generate(project, "net.minecraft:" + (isPatcher? "joined" : NAME) + ":" + mcp.getVersion() + ":srg", true); //Download vanilla in srg name
+            String joined_name = "net.minecraft:" + (isPatcher? "joined" : NAME) + ":" + mcp.getVersion() + ":srg";
+            File joined = MavenArtifactDownloader.generate(project, joined_name, true); //Download vanilla in srg name
             if (joined == null || !joined.exists()) {
+                debug("  Failed to find joined: " + joined_name);
                 project.getLogger().error("MinecraftUserRepo: Failed to get Minecraft Joined SRG. Should not be possible.");
                 return null;
             }
+            debug("    Joined: " + joined);
 
             //Gather vanilla packages, so we can only inject the proper package-info classes.
             Set<String> packages = new HashSet<>();
@@ -542,6 +571,7 @@ public class MinecraftUserRepo extends BaseRepo {
             } else { // Needs binpatches
                 File binpatched = cacheRaw("binpatched", "jar");
 
+                debug("    Creating Binpatches");
                 //Apply bin patches to vanilla
                 ApplyBinPatches apply = project.getTasks().create("_" + new Random().nextInt() + "_applyBinPatches", ApplyBinPatches.class);
                 apply.setHasLog(false);
@@ -552,6 +582,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 apply.setOutput(binpatched);
                 apply.apply();
 
+                debug("    Injecting binpatch extras");
                 srged = cacheRaw("srg", "jar");
                 //Combine all universals and vanilla together.
                 Set<String> added = new HashSet<>();
@@ -579,6 +610,7 @@ public class MinecraftUserRepo extends BaseRepo {
 
             File mcinject = cacheRaw("mci", "jar");
 
+            debug("    Applying MCInjector");
             //Apply MCInjector so we can compile against this jar
             ApplyMCPFunction mci = project.getTasks().create("_mciJar_" + new Random().nextInt() + "_", ApplyMCPFunction.class);
             mci.setFunctionName("mcinject");
@@ -588,6 +620,7 @@ public class MinecraftUserRepo extends BaseRepo {
             mci.setOutput(mcinject);
             mci.apply();
 
+            debug("    Creating MCP Inject Sources");
             //Build and inject MCP injected sources
             File inject_src = cacheRaw("inject_src", "jar");
             try (ZipInputStream zin = new ZipInputStream(new FileInputStream(mcp.getZip()));
@@ -633,10 +666,12 @@ public class MinecraftUserRepo extends BaseRepo {
                 }
             }
 
+            debug("    Compiling MCP Inject sources");
             File compiled = compileJava(inject_src, mcinject);
             if (compiled == null)
                 return null;
 
+            debug("    Injecting MCP Inject binairies");
             File injected = cacheRaw("injected", "jar");
             //Combine mci, and our recompiled MCP injected classes.
             try (ZipInputStream zmci = new ZipInputStream(new FileInputStream(mcinject));
@@ -667,6 +702,7 @@ public class MinecraftUserRepo extends BaseRepo {
             if (hasAts) {
                 if (bin.exists()) bin.delete(); // AT lib throws an exception if output file already exists
 
+                debug("    Applying Access Transformer");
                 AccessTransformJar at = project.getTasks().create("_atJar_"+ new Random().nextInt() + "_", AccessTransformJar.class);
                 at.setInput(injected);
                 at.setOutput(bin);
@@ -686,6 +722,7 @@ public class MinecraftUserRepo extends BaseRepo {
             if (mapping == null) { //They didn't ask for MCP names, so serve them SRG!
                 FileUtils.copyFile(injected, bin);
             } else if (hasAts) {
+                debug("    Renaming ATed Jar in place");
                 //Remap library to MCP names, in place, sorta hacky with ATs but it should work.
                 RenameJarInPlace rename = project.getTasks().create("_rename_" + new Random().nextInt() + "_", RenameJarInPlace.class);
                 rename.setHasLog(false);
@@ -693,6 +730,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 rename.setMappings(findSrgToMcp(mapping, names));
                 rename.apply();
             } else {
+                debug("    Renaming injected jar");
                 //Remap library to MCP names
                 RenameJar rename = project.getTasks().create("_rename_" + new Random().nextInt() + "_", RenameJar.class);
                 rename.setHasLog(false);
@@ -702,6 +740,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 rename.apply();
             }
 
+            debug("    Finished: " + bin);
             Utils.updateHash(bin, HashFunction.SHA1);
             cache.save();
         }
@@ -788,6 +827,10 @@ public class MinecraftUserRepo extends BaseRepo {
     }
 
     private File findSrgToMcp(String mapping, File names) throws IOException {
+        if (names == null) {
+            debug("Attempted to create SRG to MCP with null MCP mappings: " + mapping);
+            throw new IllegalArgumentException("Attempted to create SRG to MCP with null MCP mappings: " + mapping);
+        }
         File root = cache(mcp.getArtifact().getGroup().replace('.', '/'), mcp.getArtifact().getName(), mcp.getArtifact().getVersion());
         String srg_name = "srg_to_" + mapping + ".tsrg";
         File srg = new File(root, srg_name);
@@ -823,10 +866,13 @@ public class MinecraftUserRepo extends BaseRepo {
         HashStore cache = commonHash(null);
 
         File decomp = cacheAT("decomp", "jar");
-        debug("    Finding Decomp: " + decomp);
+        debug("  Finding Decomp: " + decomp);
         cache.load(cacheAT("decomp", "jar.input"));
 
-        if ((!cache.isSame() && (cache.exists() || generate)) || (!decomp.exists() && generate)) {
+        if (cache.isSame() && decomp.exists()) {
+            debug("  Cache Hit");
+        } else if (decomp.exists() || generate) {
+            debug("  Decompiling");
             File output = mcp.getStepOutput(isPatcher ? "joined" : NAME, null);
             FileUtils.copyFile(output, decomp);
             cache.save();
@@ -837,16 +883,25 @@ public class MinecraftUserRepo extends BaseRepo {
 
     private File findPatched(boolean generate) throws IOException {
         File decomp = findDecomp(generate);
-        if (decomp == null) return null;
-        if (parent == null) return decomp;
+        if (decomp == null || !decomp.exists()) {
+            debug("  Finding Patched: Decomp not found");
+            return null;
+        }
+        if (parent == null) {
+            debug("  Finding Patched: No parent");
+            return decomp;
+        }
 
         HashStore cache = commonHash(null).add("decomp", decomp);
 
         File patched = cacheAT("patched", "jar");
-        debug("    Finding patched: " + decomp);
+        debug("  Finding patched: " + decomp);
         cache.load(cacheAT("patched", "jar.input"));
 
-        if ((!cache.isSame() && (cache.exists() || generate)) || (!patched.exists() && generate)) {
+        if (cache.isSame() && patched.exists()) {
+            debug("    Cache Hit");
+        } else if (patched.exists() || generate) {
+            debug("    Generating");
             LinkedList<Patcher> parents = new LinkedList<>();
             Patcher patcher = parent;
             while (patcher != null) {
@@ -898,6 +953,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 if (failed)
                     throw new RuntimeException("Failed to apply patches to source file, see log for details: " + decomp);
 
+                debug("    Injecting patcher extras");
                 Set<String> added = new HashSet<>();
                 try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(patched))) {
                     added.addAll(context.save(zout));
@@ -932,23 +988,35 @@ public class MinecraftUserRepo extends BaseRepo {
 
     private File findSource(String mapping, boolean generate) throws IOException {
         File patched = findPatched(generate);
-        if (patched == null) return null;
-        if (mapping == null) return patched;
+        if (patched == null || !patched.exists()) {
+            debug("  Finding Source: Patched not found");
+            return null;
+        }
+        if (mapping == null) {
+            debug("  Finding Source: No Renames");
+            return patched;
+        }
 
         File names = findMapping(mapping);
-        if (names == null) return null;
+        if (names == null) {
+            debug("  Finding Sources: Mapping not found");
+            return null;
+        }
 
         HashStore cache = commonHash(names);
 
         File sources = cacheMapped(mapping, "sources", "jar");
-        debug("    Finding Source: " + sources);
+        debug("  Finding Source: " + sources);
         cache.load(cacheMapped(mapping, "sources", "jar.input"));
-        if ((!cache.isSame() && (cache.exists() || generate)) || (!sources.exists() && generate)) {
+        if (cache.isSame() && sources.exists()) {
+            debug("    Cache hit");
+        } else if (sources.exists() || generate) {
             McpNames map = McpNames.load(names);
 
             if (!sources.getParentFile().exists())
                 sources.getParentFile().mkdirs();
 
+            debug("    Renaming Sources");
             try(ZipInputStream zin = new ZipInputStream(new FileInputStream(patched));
                 ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(sources))) {
                 ZipEntry _old;
@@ -974,9 +1042,15 @@ public class MinecraftUserRepo extends BaseRepo {
 
     private File findRecomp(String mapping, boolean generate) throws IOException {
         File source = findSource(mapping, generate);
-        File names = findMapping(mapping);
-        if (source == null || names == null)
+        if (source == null || !source.exists()) {
+            debug("  Finding Recomp: Sources not found");
             return null;
+        }
+        File names = findMapping(mapping);
+        if (names == null && mapping != null) {
+            debug("  Finding Recomp: Could not find names");
+            return null;
+        }
 
         HashStore cache = commonHash(names);
         cache.add("source", source);
@@ -984,13 +1058,19 @@ public class MinecraftUserRepo extends BaseRepo {
 
         File recomp = cacheMapped(mapping, "recomp", "jar");
 
-        if (!cache.isSame() || !recomp.exists()) {
+        if (cache.isSame() && recomp.exists()) {
+            debug("  Finding Recomp: Cache Hit");
+        } else {
             debug("  Finding recomp: " + cache.isSame() + " " + recomp);
 
+            debug("    Compiling");
             File compiled = compileJava(source);
-            if (compiled == null)
-                return null;
+            if (compiled == null) {
+                debug("    Compiling failed");
+                throw new IllegalStateException("Compile failed in findRecomp. See log for more details");
+            }
 
+            debug("    Injecting resources");
             Set<String> added = new HashSet<>();
             try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(recomp))) {
                 //Add all compiled code
@@ -1022,7 +1102,7 @@ public class MinecraftUserRepo extends BaseRepo {
         // but different version. For good reason. So we change their version to ours. And provide them as is.
 
         File target = cacheMapped(mapping, classifier, extension);
-        debug("    Finding Classified: " + target);
+        debug("  Finding Classified: " + target);
 
         File original = MavenArtifactDownloader.manual(project, Artifact.from(GROUP, NAME, VERSION, classifier, extension).getDescriptor(), CHANGING_USERDEV);
         HashStore cache = commonHash(null); //TODO: Remap from SRG?
@@ -1030,11 +1110,14 @@ public class MinecraftUserRepo extends BaseRepo {
             cache.add("original", original);
 
         cache.load(cacheMapped(mapping, classifier, extension + ".input"));
-        if (!cache.isSame() || !target.exists()) {
+        if (cache.isSame() && target.exists()) {
+            debug ("    Cache hit");
+        } else {
             if (original == null) {
-                debug("      Failed to download original artifact.");
+                debug("    Failed to download original artifact.");
                 return null;
             }
+            debug("    Copying file");
             try {
                 FileUtils.copyFile(original, target);
             } catch (IOException e) { //Something screwed up, nuke the file incase its invalid and return nothing.
