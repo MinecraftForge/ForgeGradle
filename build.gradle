@@ -64,6 +64,7 @@ license {
     }
     exclude '**/*.properties'
     exclude 'net/minecraftforge/gradle/common/diff/'
+    exclude 'net/minecraftforge/gradle/common/util/JavaVersionParser.java'
 }
 
 wrapper {
