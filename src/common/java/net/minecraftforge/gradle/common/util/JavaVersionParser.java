@@ -1,4 +1,7 @@
+package net.minecraftforge.gradle.common.util;
 /*
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
+ *
  * Copyright 2015-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -12,14 +15,22 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package com.amazonaws.util;
 
+import com.google.common.base.Strings;
+import com.google.common.primitives.Ints;
+
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * @see http://www.oracle.com/technetwork/java/javase/versioning-naming-139433.html
+ * Copied from: https://github.com/aws/aws-sdk-java/blob/ea9b5e3c1267176554b276f4ed640e5d19bed282/aws-java-sdk-core/src/main/java/com/amazonaws/util/JavaVersionParser.java
+ * Forge edits:
+ *  - Changed NumberUtils, StringUtils and ComparableUtils usages to alternatives
+ *  - Added toString to JavaVersion.
+ *
+ * @see <a href="http://www.oracle.com/technetwork/java/javase/versioning-naming-139433.html"></a>
  */
 public class JavaVersionParser {
 
@@ -35,6 +46,29 @@ public class JavaVersionParser {
 
     private static final JavaVersion currentJavaVersion = parseJavaVersion(System.getProperty(JAVA_VERSION_PROPERTY));
 
+    /**
+     * Forge: added this as a replacement for the stock safeCompare
+     * Compares two objects accounting for nulls.
+     */
+    private static <T> int safeCompare(@Nullable Comparable<T> a, @Nullable T b)
+    {
+        if (a == null) return b == null ? 0 : -1;
+        if (b == null) return 1;
+        return a.compareTo(b);
+    }
+
+    /**
+     * Forge: added this as a replacement for the stock tryParseInt
+     * Tries to parse an input string, which might be null or invalid.
+     */
+    @Nullable
+    private static Integer tryParseInt(@Nullable String input)
+    {
+        if (input == null)
+            return null;
+        return Ints.tryParse(input);
+    }
+
     private JavaVersionParser() {
     }
 
@@ -46,13 +80,15 @@ public class JavaVersionParser {
     }
 
     public static JavaVersion parseJavaVersion(final String fullVersionString) {
-        if (!StringUtils.isNullOrEmpty(fullVersionString)) {
+        // Forge: Use Strings instead of StringUtils
+        if (!Strings.isNullOrEmpty(fullVersionString)) {
             final Matcher matcher = VERSION_REGEX.matcher(fullVersionString);
             if (matcher.matches()) {
-                final Integer majorVersionFamily = NumberUtils.tryParseInt(matcher.group(1));
-                final Integer majorVersion = NumberUtils.tryParseInt(matcher.group(2));
-                final Integer maintenanceNumber = NumberUtils.tryParseInt(matcher.group(3));
-                final Integer updateNumber = NumberUtils.tryParseInt(matcher.group(4));
+                // Forge: use custom tryParseInt instead of NumberUtils
+                final Integer majorVersionFamily = tryParseInt(matcher.group(1));
+                final Integer majorVersion = tryParseInt(matcher.group(2));
+                final Integer maintenanceNumber = tryParseInt(matcher.group(3));
+                final Integer updateNumber = tryParseInt(matcher.group(4));
                 return new JavaVersion(majorVersionFamily, majorVersion, maintenanceNumber, updateNumber);
             }
         }
@@ -140,7 +176,8 @@ public class JavaVersionParser {
         @Override
         public int compareTo(final JavaVersion other) {
             for (int i = 0; i < this.tokenizedVersion.length; i++) {
-                final int tokenComparison = ComparableUtils.safeCompare(this.tokenizedVersion[i],
+                // Forge: use custom safeCompare instead of ComparableUtils
+                final int tokenComparison = safeCompare(this.tokenizedVersion[i],
                         other.tokenizedVersion[i]);
                 // If one token is larger return the comparison otherwise proceed to next token
                 if (tokenComparison != 0) {
@@ -212,6 +249,28 @@ public class JavaVersionParser {
             return true;
         }
 
+        /**
+         * Forge: Added this to simplify the error reporting
+         */
+        @Override
+        public String toString()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.append(majorVersionFamily);
+            if (majorVersion != null) {
+                builder.append(".");
+                builder.append(majorVersion);
+            }
+            if (maintenanceNumber != null) {
+                builder.append(".");
+                builder.append(maintenanceNumber);
+            }
+            if (updateNumber != null) {
+                builder.append("_");
+                builder.append(updateNumber);
+            }
+            return builder.toString();
+        }
     }
 
     /**
