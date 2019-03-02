@@ -469,4 +469,19 @@ public class Utils {
         return toCapitalize.length() > 1 ? toCapitalize.substring(0, 1).toUpperCase() + toCapitalize.substring(1) : toCapitalize;
     }
 
+    public static void checkJavaRange(JavaVersionParser.JavaVersion minVersionInclusive, JavaVersionParser.JavaVersion maxVersionExclusive)
+    {
+        JavaVersionParser.JavaVersion currentJavaVersion = JavaVersionParser.getCurrentJavaVersion();
+        if (currentJavaVersion.compareTo(minVersionInclusive) < 0 || currentJavaVersion.compareTo(maxVersionExclusive) >= 0)
+            throw new RuntimeException(String.format("Found java version %s. Minimum required is %s. Versions %s and newer are not supported yet.",
+                            currentJavaVersion, minVersionInclusive, maxVersionExclusive));
+    }
+
+    public static void checkJavaVersion()
+    {
+        checkJavaRange(
+                JavaVersionParser.parseJavaVersion("1.8.0_52"),
+                JavaVersionParser.parseJavaVersion("11.0.0")
+        );
+    }
 }

@@ -58,6 +58,8 @@ public class UserDevPlugin implements Plugin<Project> {
 
     @Override
     public void apply(@Nonnull Project project) {
+        Utils.checkJavaVersion();
+
         @SuppressWarnings("unused")
         final Logger logger = project.getLogger();
         final UserDevExtension extension = project.getExtensions().create(UserDevExtension.class, UserDevExtension.EXTENSION_NAME, UserDevExtension.class, project);

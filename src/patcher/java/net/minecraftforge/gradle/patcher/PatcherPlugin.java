@@ -73,6 +73,8 @@ public class PatcherPlugin implements Plugin<Project> {
 
     @Override
     public void apply(@Nonnull Project project) {
+        Utils.checkJavaVersion();
+
         final PatcherExtension extension = project.getExtensions().create(PatcherExtension.class, PatcherExtension.EXTENSION_NAME, PatcherExtension.class, project);
         if (project.getPluginManager().findPlugin("java") == null) {
             project.getPluginManager().apply("java");
