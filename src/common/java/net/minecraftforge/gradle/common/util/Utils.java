@@ -480,7 +480,8 @@ public class Utils {
     public static void checkJavaVersion()
     {
         checkJavaRange(
-                JavaVersionParser.parseJavaVersion("1.8.0_52"),
+                // Mininum must be update 101 as it's the first one to include Let's Encrypt certificates.
+                JavaVersionParser.parseJavaVersion("1.8.0_101"),
                 JavaVersionParser.parseJavaVersion("11.0.0")
         );
     }
