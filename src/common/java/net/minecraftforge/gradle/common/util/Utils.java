@@ -33,6 +33,7 @@ import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
+import org.gradle.util.GradleVersion;
 
 import javax.annotation.Nonnull;
 import java.io.ByteArrayInputStream;
@@ -477,12 +478,25 @@ public class Utils {
                             currentJavaVersion, minVersionInclusive, maxVersionExclusive));
     }
 
-    public static void checkJavaVersion()
+    public static void checkGradleRange(GradleVersion minVersionInclusive, GradleVersion maxVersionExclusive)
+    {
+        GradleVersion currentGradleVersion = GradleVersion.current();
+        if (currentGradleVersion.compareTo(minVersionInclusive) < 0 || currentGradleVersion.compareTo(maxVersionExclusive) >= 0)
+            throw new RuntimeException(String.format("Found Gradle version %s. Minimum required is %s. Versions %s and newer are not supported yet.",
+                    currentGradleVersion.getVersion(), minVersionInclusive.getVersion(), maxVersionExclusive.getVersion()));
+    }
+
+    public static void checkEnvironmentCompatibility()
     {
         checkJavaRange(
                 // Mininum must be update 101 as it's the first one to include Let's Encrypt certificates.
                 JavaVersionParser.parseJavaVersion("1.8.0_101"),
                 JavaVersionParser.parseJavaVersion("11.0.0")
+        );
+
+        checkGradleRange(
+                GradleVersion.version("4.9"),
+                GradleVersion.version("4.10")
         );
     }
 }
