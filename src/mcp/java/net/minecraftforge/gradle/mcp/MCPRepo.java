@@ -191,7 +191,7 @@ public class MCPRepo extends BaseRepo {
 
     private File findVersion(String version) throws IOException {
         File manifest = cache("versions", "manifest.json");
-        if (!Utils.downloadEtag(new URL(MinecraftRepo.MANIFEST_URL), manifest))
+        if (!Utils.downloadEtag(new URL(MinecraftRepo.MANIFEST_URL), manifest, project.getGradle().getStartParameter().isOffline()))
             return null;
         Utils.updateHash(manifest);
         File json = cache("versions", version, "version.json");
@@ -200,14 +200,13 @@ public class MCPRepo extends BaseRepo {
         if (url == null)
             throw new RuntimeException("Missing version from manifest: " + version);
 
-        if (!Utils.downloadEtag(url, json))
+        if (!Utils.downloadEtag(url, json, project.getGradle().getStartParameter().isOffline()))
             return null;
         Utils.updateHash(json);
         return json;
     }
 
     private File findPom(String side, String version) throws IOException {
-        File json = findVersion(getMCVersion(version));
         File mcp = getMCP(version);
         if (mcp == null)
             return null;
@@ -215,8 +214,15 @@ public class MCPRepo extends BaseRepo {
         File pom = cacheMC(side, version, null, "pom");
         debug("    Finding pom: " + pom);
         HashStore cache = commonHash(mcp).load(cacheMC(side, version, null, "pom.input"));
-        if (!"server".equals(side))
+        File json = null;
+        if (!"server".equals(side)) {
+            json = findVersion(getMCVersion(version));
+            if (json == null) {
+                project.getLogger().lifecycle("Could not make Minecraft POM. Missing version json");
+                return null;
+            }
             cache.add("json", json);
+        }
 
         if (!cache.isSame() || !pom.exists()) {
             POMBuilder builder = new POMBuilder(GROUP_MINECRAFT, side, version);
@@ -235,10 +241,10 @@ public class MCPRepo extends BaseRepo {
                     }
                 }
                 builder.dependencies().add("net.minecraft:client:" + getMCVersion(version), "compile").withClassifier("extra");
-                builder.dependencies().add("net.minecraft:client:" + getMCVersion(version), "compile").withClassifier("data");
+                //builder.dependencies().add("net.minecraft:client:" + getMCVersion(version), "compile").withClassifier("data");
             } else {
                 builder.dependencies().add("net.minecraft:server:" + getMCVersion(version), "compile").withClassifier("extra");
-                builder.dependencies().add("net.minecraft:server:" + getMCVersion(version), "compile").withClassifier("data");
+                //builder.dependencies().add("net.minecraft:server:" + getMCVersion(version), "compile").withClassifier("data");
             }
 
             MCPWrapper wrapper = getWrapper(version, mcp);

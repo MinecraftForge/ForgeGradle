@@ -63,18 +63,20 @@ public class MinecraftRepo extends BaseRepo {
     private static int CACHE_BUSTER = 1;
 
     private final Repository repo;
-    private MinecraftRepo(File cache, Logger log) {
+    private final boolean offline;
+    private MinecraftRepo(File cache, Logger log, boolean offline) {
         super(cache, log);
         this.repo = SimpleRepository.of(ArtifactProviderBuilder.begin(ArtifactIdentifier.class)
             .filter(ArtifactIdentifier.groupEquals(GROUP))
             .filter(ArtifactIdentifier.nameMatches("^(client|server)$"))
             .provide(this)
         );
+        this.offline = offline;
     }
 
     private static MinecraftRepo getInstance(Project project) {
         if (INSTANCE == null)
-            INSTANCE = new MinecraftRepo(Utils.getCache(project, "minecraft_repo"), project.getLogger());
+            INSTANCE = new MinecraftRepo(Utils.getCache(project, "minecraft_repo"), project.getLogger(), project.getGradle().getStartParameter().isOffline());
         return INSTANCE;
     }
 
@@ -159,7 +161,7 @@ public class MinecraftRepo extends BaseRepo {
 
     private File findVersion(String version) throws IOException {
         File manifest = cache("versions/manifest.json");
-        if (!Utils.downloadEtag(new URL(MANIFEST_URL), manifest))
+        if (!Utils.downloadEtag(new URL(MANIFEST_URL), manifest, offline))
             return null;
         Utils.updateHash(manifest);
 
@@ -168,7 +170,7 @@ public class MinecraftRepo extends BaseRepo {
         if (url == null)
             throw new RuntimeException("Missing version from manifest: " + version);
 
-        if (!Utils.downloadEtag(url, json))
+        if (!Utils.downloadEtag(url, json, offline))
             return null;
         Utils.updateHash(json);
         return json;

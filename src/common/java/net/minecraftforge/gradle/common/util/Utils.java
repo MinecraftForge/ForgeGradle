@@ -295,9 +295,12 @@ public class Utils {
         return GSON.fromJson(new InputStreamReader(new ByteArrayInputStream(data)), classOfT);
     }
 
-    public static boolean downloadEtag(URL url, File output) throws IOException {
+    public static boolean downloadEtag(URL url, File output, boolean offline) throws IOException {
         if (output.exists() && output.lastModified() > System.currentTimeMillis() - CACHE_TIMEOUT) {
             return true;
+        }
+        if (output.exists() && offline) {
+            return true; //Use offline
         }
         File efile = new File(output.getAbsolutePath() + ".etag");
         String etag = "";
