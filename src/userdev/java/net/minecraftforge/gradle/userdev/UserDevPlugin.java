@@ -133,8 +133,6 @@ public class UserDevPlugin implements Plugin<Project> {
             MinecraftUserRepo mcrepo = null;
             ModRemapingRepo deobfrepo = null;
 
-            //TODO: UserDevRepo deobf = new UserDevRepo(project);
-
             DependencySet deps = minecraft.getDependencies();
             for (Dependency dep : deps.stream().collect(Collectors.toList())) {
                 if (!(dep instanceof ExternalModuleDependency))

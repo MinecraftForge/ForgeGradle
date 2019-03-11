@@ -89,7 +89,7 @@ public class ModRemapingRepo extends BaseRepo {
 
     public String addDep(String group, String name, String version) {
         String str = group + ':' + name + ':' + version;
-        String map = str += "_mapped_" + MAPPING;
+        String map = str + "_mapped_" + MAPPING;
         external.put(map, Artifact.from(str));
         return map;
     }
@@ -124,11 +124,13 @@ public class ModRemapingRepo extends BaseRepo {
 
         if ("pom".equals(ext)) {
             //return findPom(orig, mappings); //TODO: Unsupported for now, transitive deobfed deps? Need full xml reader?
-        } else {
+        } else if ("jar".equals(ext)){
             switch (classifier) {
                 case "":        return findRaw(orig, mappings);
                 case "sources": return findSource(orig, mappings);
             }
+        } else {
+            throw new RuntimeException("Invalid deobf dependency: " + artifact.toString());
         }
         return null;
     }
