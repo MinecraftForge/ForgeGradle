@@ -357,7 +357,7 @@ public class MappingFile {
                 if (reversed) {
                     String mapedDesc = getMappedDescriptor();
                     switch (format) {
-                        case SRG:  return "MD: " + Cls.this.getMapped() + '/' + getMapped() + ' ' + mapedDesc + Cls.this.getOriginal() + '/' + getOriginal() + ' ' + desc;
+                        case SRG:  return "MD: " + Cls.this.getMapped() + '/' + getMapped() + ' ' + mapedDesc + ' ' + Cls.this.getOriginal() + '/' + getOriginal() + ' ' + desc;
                         case CSRG: return Cls.this.getMapped() + ' ' + getMapped() + ' ' + mapedDesc + ' ' + getOriginal();
                         case TSRG: return '\t' + getMapped() + ' ' + mapedDesc + ' ' + getOriginal();
                         default: throw new UnsupportedOperationException("Unknown format: " + format);
