@@ -22,6 +22,7 @@ package net.minecraftforge.gradle.common.util;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.gradle.api.Project;
@@ -41,6 +42,8 @@ import groovy.util.XmlParser;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -119,7 +122,7 @@ public class MavenArtifactDownloader {
 
             if (ret != null)
                 CACHE.put(artifact, ret);
-        } catch (RuntimeException | IOException e) {
+        } catch (RuntimeException | IOException | URISyntaxException e) {
             e.printStackTrace();
         }
         return ret;
@@ -134,10 +137,10 @@ public class MavenArtifactDownloader {
         return null;
     }
 
-    private static File _manual(Project project, List<MavenArtifactRepository> repos, Artifact artifact, boolean changing) throws IOException {
+    private static File _manual(Project project, List<MavenArtifactRepository> repos, Artifact artifact, boolean changing) throws IOException, URISyntaxException {
         if (!artifact.getVersion().endsWith("+") && !artifact.isSnapshot()) {
             for (MavenArtifactRepository repo : repos) {
-                Pair<Artifact, File> pair = _manualMaven(project, repo.getUrl().toURL(), artifact, changing);
+                Pair<Artifact, File> pair = _manualMaven(project, repo.getUrl(), artifact, changing);
                 if (pair != null && pair.getValue().exists())
                     return pair.getValue();
             }
@@ -148,7 +151,7 @@ public class MavenArtifactDownloader {
 
         // Gather list of all versions from all repos.
         for (MavenArtifactRepository repo : repos) {
-            Pair<Artifact, File> pair = _manualMaven(project, repo.getUrl().toURL(), artifact, changing);
+            Pair<Artifact, File> pair = _manualMaven(project, repo.getUrl(), artifact, changing);
             if (pair != null && pair.getValue().exists())
                 versions.add(pair);
         }
@@ -167,7 +170,7 @@ public class MavenArtifactDownloader {
     }
 
     @SuppressWarnings("unchecked")
-    private static Pair<Artifact, File> _manualMaven(Project project, URL maven, Artifact artifact, boolean changing) throws IOException {
+    private static Pair<Artifact, File> _manualMaven(Project project, URI maven, Artifact artifact, boolean changing) throws IOException, URISyntaxException {
         if (artifact.getVersion().endsWith("+")) {
             //I THINK +'s are only valid in the end version, So 1.+ and not 1.+.4 as that'd make no sense.
             //It also appears you can't do something like 1.5+ to NOT get 1.4/1.3. So.. mimic that.
@@ -207,10 +210,6 @@ public class MavenArtifactDownloader {
             return null; //TODO
             //throw new IllegalArgumentException("Snapshot versions are not supported, yet... " + artifact.getDescriptor());
         }
-
-        String base = maven.toString();
-        if (!base.endsWith("/") && !base.endsWith("\\"))
-            base += "/";
 
         File ret = _downloadWithCache(project, maven, artifact.getPath(), changing, false);
         return ret == null ? null : ImmutablePair.of(artifact, ret);
@@ -275,9 +274,13 @@ public class MavenArtifactDownloader {
         return ret;
     }
 
-
-    private static File _downloadWithCache(Project project, URL maven, String path, boolean changing, boolean bypassLocal) throws IOException {
-        File target = new File(Utils.getCache(project, "maven_downloader"), path);
-        return Utils.downloadWithCache(new URL(maven + path), target, changing, bypassLocal);
+    private static File _downloadWithCache(Project project, URI maven, String path, boolean changing, boolean bypassLocal) throws IOException, URISyntaxException {
+        URL url = new URIBuilder(maven)
+            .setPath(maven.getPath() + '/' + path)
+            .build()
+            .normalize()
+            .toURL();
+        File target = Utils.getCache(project, "maven_downloader", path);
+        return Utils.downloadWithCache(url, target, changing, bypassLocal);
     }
 }

@@ -47,7 +47,7 @@ public class DownloadAssets extends DefaultTask {
         Collections.sort(keys);
         for (String key : keys) {
             Asset asset = index.objects.get(key);
-            File target = Utils.getCache(getProject(), "assets/objects/", asset.getPath());
+            File target = Utils.getCache(getProject(), "assets", "objects", asset.getPath());
             if (!target.exists()) {
                 URL url = new URL(RESOURCE_REPO + asset.getPath());
                 getProject().getLogger().lifecycle("Downloading: " + url + " Asset: " + key);
@@ -58,7 +58,7 @@ public class DownloadAssets extends DefaultTask {
 
     private File getIndex() throws IOException {
         VersionJson json = Utils.loadJson(getMeta(), VersionJson.class);
-        File target = Utils.getCache(getProject(), "assets/indexes/" + json.assetIndex.id + ".json");
+        File target = Utils.getCache(getProject(), "assets" , "indexes", json.assetIndex.id + ".json");
         return Utils.updateDownload(getProject(), target, json.assetIndex);
     }
 
@@ -71,7 +71,7 @@ public class DownloadAssets extends DefaultTask {
     }
 
     public File getOutput() {
-        return Utils.getCache(getProject(), "assets/");
+        return Utils.getCache(getProject(), "assets");
     }
 
     private static class AssetIndex {

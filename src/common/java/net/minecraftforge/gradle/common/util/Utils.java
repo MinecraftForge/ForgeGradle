@@ -50,6 +50,7 @@ import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Base64;
@@ -60,6 +61,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
@@ -72,7 +74,7 @@ public class Utils {
         .registerTypeAdapter(MCPConfigV1.Step.class, new MCPConfigV1.Step.Deserializer())
         .registerTypeAdapter(VersionJson.Argument.class, new VersionJson.Argument.Deserializer())
         .setPrettyPrinting().create();
-    private static int CACHE_TIMEOUT = 1000 * 60 * 60 * 1; //1 hour, Timeout used for version_manifest.json so we dont ping their server every request.
+    private static final int CACHE_TIMEOUT = 1000 * 60 * 60 * 1; //1 hour, Timeout used for version_manifest.json so we dont ping their server every request.
                                                           //manifest doesn't include sha1's so we use this for the per-version json as well.
     public static final String FORGE_MAVEN = "https://files.minecraftforge.net/maven/";
     public static final String BINPATCHER =  "net.minecraftforge:binarypatcher:1.+:fatjar";
@@ -123,11 +125,13 @@ public class Utils {
         return file;
     }
 
-    public static File getCacheBase(Project project) {
-        return new File(project.getGradle().getGradleUserHomeDir(), "caches/forge_gradle");
+    public static Path getCacheBase(Project project) {
+        File gradleUserHomeDir = project.getGradle().getGradleUserHomeDir();
+        return Paths.get(gradleUserHomeDir.getPath(), "caches", "forge_gradle");
     }
+
     public static File getCache(Project project, String... tail) {
-        return new File(getCacheBase(project), String.join(File.separator, tail));
+        return Paths.get(getCacheBase(project).toString(), tail).toFile();
     }
 
     public static void extractZip(File source, File target, boolean overwrite) throws IOException {
@@ -307,18 +311,18 @@ public class Utils {
         if (efile.exists())
             etag = new String(Files.readAllBytes(efile.toPath()), StandardCharsets.UTF_8);
 
-        HttpURLConnection con = (HttpURLConnection)url.openConnection();
-        con.setInstanceFollowRedirects(true);
-        if (output.exists())
-            con.setIfModifiedSince(output.lastModified());
-        if (etag != null && !etag.isEmpty())
-            con.setRequestProperty("If-None-Match", etag);
-        con.connect();
+        final String initialEtagValue = etag;
+        HttpURLConnection con = connectHttpWithRedirects(url, (setupCon) -> {
+            if (output.exists())
+                setupCon.setIfModifiedSince(output.lastModified());
+            if (!initialEtagValue.isEmpty())
+                setupCon.setRequestProperty("If-None-Match", initialEtagValue);
+        });
 
-        if (con.getResponseCode() == 304) {
+        if (con.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED) {
             output.setLastModified(new Date().getTime());
             return true;
-        } else if (con.getResponseCode() == 200) {
+        } else if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
             try {
                 InputStream stream = con.getInputStream();
                 int len = con.getContentLength();
@@ -352,15 +356,12 @@ public class Utils {
 
         try {
             if ("http".equals(proto) || "https".equals(proto)) {
-                HttpURLConnection con = (HttpURLConnection)url.openConnection();
-                con.setInstanceFollowRedirects(true);
-                con.connect();
-
-                if (con.getResponseCode() == 200) {
+                HttpURLConnection con = connectHttpWithRedirects(url);
+                int responseCode = con.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
                     return downloadFile(con, output);
-                } if (con.getResponseCode() == 404) {
-                    if (deleteOn404 && output.exists())
-                        output.delete();
+                } else if (responseCode == HttpURLConnection.HTTP_NOT_FOUND && deleteOn404 && output.exists()) {
+                    output.delete();
                 }
             } else {
                 URLConnection con = url.openConnection();
@@ -409,11 +410,8 @@ public class Utils {
         String proto = url.getProtocol().toLowerCase();
 
         if ("http".equals(proto) || "https".equals(proto)) {
-            HttpURLConnection con = (HttpURLConnection)url.openConnection();
-            con.setInstanceFollowRedirects(true);
-            con.connect();
-
-            if (con.getResponseCode() == 200) {
+            HttpURLConnection con = connectHttpWithRedirects(url);
+            if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
                 return downloadString(con);
             }
         } else {
@@ -487,5 +485,34 @@ public class Utils {
                 JavaVersionParser.parseJavaVersion("1.8.0_101"),
                 JavaVersionParser.parseJavaVersion("11.0.0")
         );
+    }
+
+    public static HttpURLConnection connectHttpWithRedirects(URL url) throws IOException {
+        return connectHttpWithRedirects(url, (setupCon) -> {});
+    }
+
+    public static HttpURLConnection connectHttpWithRedirects(URL url, Consumer<HttpURLConnection> setup) throws IOException {
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setInstanceFollowRedirects(true);
+        setup.accept(con);
+        con.connect();
+        if ("http".equalsIgnoreCase(url.getProtocol())) {
+            int responseCode = con.getResponseCode();
+            switch (responseCode) {
+                case HttpURLConnection.HTTP_MOVED_TEMP:
+                case HttpURLConnection.HTTP_MOVED_PERM:
+                case HttpURLConnection.HTTP_SEE_OTHER:
+                    String newLocation = con.getHeaderField("Location");
+                    URL newUrl = new URL(newLocation);
+                    if ("https".equalsIgnoreCase(newUrl.getProtocol())) {
+                        // Escalate from http to https.
+                        // This is not done automatically by HttpURLConnection.setInstanceFollowRedirects
+                        // See https://bugs.java.com/bugdatabase/view_bug.do?bug_id=4959149
+                        return connectHttpWithRedirects(newUrl, setup);
+                    }
+                    break;
+            }
+        }
+        return con;
     }
 }
