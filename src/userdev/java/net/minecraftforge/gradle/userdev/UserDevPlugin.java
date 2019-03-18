@@ -32,6 +32,9 @@ import net.minecraftforge.gradle.common.util.VersionJson;
 import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.userdev.tasks.GenerateSRG;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
+import net.minecraftforge.gradle.userdev.util.DeobfuscatingRepo;
+import net.minecraftforge.gradle.userdev.util.Deobfuscator;
+import net.minecraftforge.gradle.userdev.util.DependencyRemapper;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NamedDomainObjectFactory;
 import org.gradle.api.Plugin;
@@ -49,12 +52,16 @@ import org.gradle.api.tasks.bundling.Jar;
 import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 public class UserDevPlugin implements Plugin<Project> {
     private static String MINECRAFT = "minecraft";
     private static String DEOBF = "deobf";
+    public static String OBF = "__obfuscated"; //
 
     @Override
     public void apply(@Nonnull Project project) {
@@ -62,12 +69,12 @@ public class UserDevPlugin implements Plugin<Project> {
 
         @SuppressWarnings("unused")
         final Logger logger = project.getLogger();
-        final UserDevExtension extension = project.getExtensions().create(UserDevExtension.class, UserDevExtension.EXTENSION_NAME, UserDevExtension.class, project);
+        final UserDevExtension extension = project.getExtensions().create(UserDevExtension.EXTENSION_NAME, UserDevExtension.class, project);
 
         if (project.getPluginManager().findPlugin("java") == null) {
             project.getPluginManager().apply("java");
         }
-        final File natives_folder = project.file("build/natives/");
+        final File nativesFolder = project.file("build/natives/");
 
         NamedDomainObjectContainer<RenameJarInPlace> reobf = project.container(RenameJarInPlace.class, new NamedDomainObjectFactory<RenameJarInPlace>() {
             @Override
@@ -96,9 +103,20 @@ public class UserDevPlugin implements Plugin<Project> {
 
         Configuration minecraft = project.getConfigurations().maybeCreate(MINECRAFT);
         Configuration compile = project.getConfigurations().maybeCreate("compile");
-        Configuration deobf = project.getConfigurations().maybeCreate(DEOBF);
+        Configuration deobfConfiguration = project.getConfigurations().maybeCreate(DEOBF);
+
+        //Let gradle handle the downloading by giving it a configuration to dl. We'll focus on applying mappings to it.
+        Configuration internalObfConfiguration = project.getConfigurations().maybeCreate(OBF);
+        internalObfConfiguration.setDescription("Generated scope for obfuscated dependencies");
+
+        //create extension for dependency remapping
+        //can't create at top-level or put in `minecraft` ext due to configuration name conflict
+        Deobfuscator deobfuscator = new Deobfuscator(project, Utils.getCache(project, "deobf_dependencies"));
+        DependencyRemapper remapper = new DependencyRemapper(project, deobfuscator, extension::getMappings);
+        project.getExtensions().create(DependencyManagementExtension.EXTENSION_NAME, DependencyManagementExtension.class, project, remapper);
+
         compile.extendsFrom(minecraft);
-        compile.extendsFrom(deobf);
+        compile.extendsFrom(deobfConfiguration);
 
         TaskProvider<DownloadMavenArtifact> downloadMcpConfig = project.getTasks().register("downloadMcpConfig", DownloadMavenArtifact.class);
         TaskProvider<ExtractMCPData> extractSrg = project.getTasks().register("extractSrg", ExtractMCPData.class);
@@ -122,7 +140,7 @@ public class UserDevPlugin implements Plugin<Project> {
         extractNatives.configure(task -> {
             task.dependsOn(downloadMCMeta.get());
             task.setMeta(downloadMCMeta.get().getOutput());
-            task.setOutput(natives_folder);
+            task.setOutput(nativesFolder);
         });
         downloadAssets.configure(task -> {
             task.dependsOn(downloadMCMeta.get());
@@ -131,14 +149,14 @@ public class UserDevPlugin implements Plugin<Project> {
 
         project.afterEvaluate(p -> {
             MinecraftUserRepo mcrepo = null;
-            ModRemapingRepo deobfrepo = null;
+            DeobfuscatingRepo deobfrepo = null;
 
             DependencySet deps = minecraft.getDependencies();
-            for (Dependency dep : deps.stream().collect(Collectors.toList())) {
+            for (Dependency dep : new ArrayList<>(deps)) {
                 if (!(dep instanceof ExternalModuleDependency))
                     throw new IllegalArgumentException("minecraft dependency must be a maven dependency.");
                 if (mcrepo != null)
-                    throw new IllegalArgumentException("Only allows one minecraft dependancy.");
+                    throw new IllegalArgumentException("Only allows one minecraft dependency.");
                 deps.remove(dep);
 
                 mcrepo = new MinecraftUserRepo(p, dep.getGroup(), dep.getName(), dep.getVersion(), extension.getAccessTransformers(), extension.getMappings());
@@ -154,17 +172,20 @@ public class UserDevPlugin implements Plugin<Project> {
                 minecraft.getDependencies().add(ext);
             }
 
-            deps = deobf.getDependencies();
-            for (Dependency dep : deps.stream().collect(Collectors.toList())) {
-                if (!(dep instanceof ExternalModuleDependency)) //TODO: File deps as well.
-                    throw new IllegalArgumentException("deobf dependency must be a maven dependency. File deps are on the TODO");
-                deps.remove(dep);
+            DependencySet legacyDeps = deobfConfiguration.getDependencies();
+            deps = internalObfConfiguration.getDependencies();
+            deps.addAll(legacyDeps);
 
-                if (deobfrepo == null)
-                    deobfrepo = new ModRemapingRepo(p, extension.getMappings());
-                String newDep = deobfrepo.addDep(dep.getGroup(), dep.getName(), dep.getVersion()); // Classifier?
-                deobf.getDependencies().add(p.getDependencies().create(newDep));
+            if (!deps.isEmpty()) {
+                deobfrepo = new DeobfuscatingRepo(p, internalObfConfiguration, deobfuscator);
+
+                List<Dependency> remappedLegacyDeps = legacyDeps.stream().map(remapper::remap).collect(toList());
+                deobfConfiguration.getDependencies().clear();
+                deobfConfiguration.getDependencies().addAll(remappedLegacyDeps);
             }
+
+            //project is eval'd, deobf scope processed. we can add mappings now
+            remapper.mappingsReady();
 
             // We have to add these AFTER our repo so that we get called first, this is annoying...
             new BaseRepo.Builder()
