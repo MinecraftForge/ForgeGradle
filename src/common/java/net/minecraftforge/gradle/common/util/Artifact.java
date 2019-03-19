@@ -73,7 +73,7 @@ public class Artifact implements ArtifactIdentifier, Comparable<Artifact> {
         if (ret.classifier != null) ret.file += '-' + ret.classifier;
         ret.file += '.' + ret.ext;
 
-        ret.path = String.join(File.separator, ret.group.replace('.', File.separatorChar), ret.name, ret.version, ret.file);
+        ret.path = String.join("/", ret.group.replace('.', '/'), ret.name, ret.version, ret.file);
 
         return ret;
     }
@@ -106,8 +106,12 @@ public class Artifact implements ArtifactIdentifier, Comparable<Artifact> {
         return from(buf.toString());
     }
 
-    public File getLocalPath(File base) {
-        return new File(base, path.replace('/', File.separatorChar));
+    public File getLocalFile(File base) {
+        return new File(base, getLocalPath());
+    }
+
+    public String getLocalPath() {
+        return path.replace('/', File.separatorChar);
     }
 
     public String getDescriptor(){ return descriptor; }

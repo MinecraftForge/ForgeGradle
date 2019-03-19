@@ -142,6 +142,6 @@ public class DeobfuscatingRepo extends BaseRepo {
     private String getArtifactPath(Artifact artifact, String mappings) {
         String newVersion = artifact.getVersion() + "_mapped_" + mappings;
 
-        return artifact.withVersion(newVersion).getPath();
+        return artifact.withVersion(newVersion).getLocalPath();
     }
 }

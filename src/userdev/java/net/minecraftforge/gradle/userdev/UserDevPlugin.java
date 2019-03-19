@@ -20,11 +20,7 @@
 
 package net.minecraftforge.gradle.userdev;
 
-import net.minecraftforge.gradle.common.task.DownloadAssets;
-import net.minecraftforge.gradle.common.task.DownloadMCMeta;
-import net.minecraftforge.gradle.common.task.DownloadMavenArtifact;
-import net.minecraftforge.gradle.common.task.ExtractMCPData;
-import net.minecraftforge.gradle.common.task.ExtractNatives;
+import net.minecraftforge.gradle.common.task.*;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.common.util.Utils;
@@ -35,11 +31,7 @@ import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 import net.minecraftforge.gradle.userdev.util.DeobfuscatingRepo;
 import net.minecraftforge.gradle.userdev.util.Deobfuscator;
 import net.minecraftforge.gradle.userdev.util.DependencyRemapper;
-import org.gradle.api.NamedDomainObjectContainer;
-import org.gradle.api.NamedDomainObjectFactory;
-import org.gradle.api.Plugin;
-import org.gradle.api.Project;
-import org.gradle.api.Task;
+import org.gradle.api.*;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
@@ -53,10 +45,7 @@ import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import static java.util.stream.Collectors.toList;
 
 public class UserDevPlugin implements Plugin<Project> {
     private static String MINECRAFT = "minecraft";
@@ -103,9 +92,8 @@ public class UserDevPlugin implements Plugin<Project> {
 
         Configuration minecraft = project.getConfigurations().maybeCreate(MINECRAFT);
         Configuration compile = project.getConfigurations().maybeCreate("compile");
+        compile.extendsFrom(minecraft);
 
-        //TODO remove in FG 3.1
-        Configuration deobfConfiguration = project.getConfigurations().maybeCreate(DEOBF);
 
         //Let gradle handle the downloading by giving it a configuration to dl. We'll focus on applying mappings to it.
         Configuration internalObfConfiguration = project.getConfigurations().maybeCreate(OBF);
@@ -117,8 +105,20 @@ public class UserDevPlugin implements Plugin<Project> {
         DependencyRemapper remapper = new DependencyRemapper(project, deobfuscator);
         project.getExtensions().create(DependencyManagementExtension.EXTENSION_NAME, DependencyManagementExtension.class, project, remapper);
 
-        compile.extendsFrom(minecraft);
-        compile.extendsFrom(deobfConfiguration);
+        //TODO remove this block in FG 3.1
+        {
+            Configuration deobfConfiguration = project.getConfigurations().maybeCreate(DEOBF);
+
+            project.afterEvaluate(p -> {
+                DependencySet legacyDeps = deobfConfiguration.getDependencies();
+                if (!legacyDeps.isEmpty()) {
+                    logger.warn("deobf dependency configuration is deprecated. Please use deobfuscated dependencies in standard configurations");
+                    logger.warn("For example, `api fg.deobf(\"your:dependency\")`. More about available configurations: https://docs.gradle.org/current/userguide/java_library_plugin.html#sec:java_library_configurations_graph");
+                }
+
+                legacyDeps.forEach(d -> p.getDependencies().add("compile", remapper.remap(d)));
+            });
+        }
 
         TaskProvider<DownloadMavenArtifact> downloadMcpConfig = project.getTasks().register("downloadMcpConfig", DownloadMavenArtifact.class);
         TaskProvider<ExtractMCPData> extractSrg = project.getTasks().register("extractSrg", ExtractMCPData.class);
@@ -174,24 +174,9 @@ public class UserDevPlugin implements Plugin<Project> {
                 minecraft.getDependencies().add(ext);
             }
 
-            DependencySet legacyDeps = deobfConfiguration.getDependencies();
-            if (!legacyDeps.isEmpty()) {
-                logger.warn("deobf dependency configuration is deprecated. Please use deobfuscated dependencies in standard configurations");
-                logger.warn("For example, `api fg.deobf(\"your:dependency\")`. More about available configurations: https://docs.gradle.org/current/userguide/java_library_plugin.html#sec:java_library_configurations_graph");
+            if (!internalObfConfiguration.getDependencies().isEmpty()) {
+                deobfrepo = new DeobfuscatingRepo(project, internalObfConfiguration, deobfuscator);
             }
-
-            deps = internalObfConfiguration.getDependencies();
-            deps.addAll(legacyDeps);
-
-            if (!deps.isEmpty()) {
-                deobfrepo = new DeobfuscatingRepo(p, internalObfConfiguration, deobfuscator);
-
-                List<Dependency> remappedLegacyDeps = legacyDeps.stream().map(remapper::remap).collect(toList());
-                deobfConfiguration.getDependencies().clear();
-                deobfConfiguration.getDependencies().addAll(remappedLegacyDeps);
-            }
-
-            //project is eval'd, deobf scope processed. we can add mappings now
             remapper.attachMappings(extension.getMappings());
 
             // We have to add these AFTER our repo so that we get called first, this is annoying...
