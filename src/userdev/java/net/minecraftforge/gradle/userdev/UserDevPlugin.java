@@ -103,6 +103,8 @@ public class UserDevPlugin implements Plugin<Project> {
 
         Configuration minecraft = project.getConfigurations().maybeCreate(MINECRAFT);
         Configuration compile = project.getConfigurations().maybeCreate("compile");
+
+        //TODO remove in FG 3.1
         Configuration deobfConfiguration = project.getConfigurations().maybeCreate(DEOBF);
 
         //Let gradle handle the downloading by giving it a configuration to dl. We'll focus on applying mappings to it.
@@ -173,6 +175,11 @@ public class UserDevPlugin implements Plugin<Project> {
             }
 
             DependencySet legacyDeps = deobfConfiguration.getDependencies();
+            if (!legacyDeps.isEmpty()) {
+                logger.warn("deobf dependency configuration is deprecated. Please use deobfuscated dependencies in standard configurations");
+                logger.warn("For example, `api fg.deobf(\"your:dependency\")`. More about available configurations: https://docs.gradle.org/current/userguide/java_library_plugin.html#sec:java_library_configurations_graph");
+            }
+
             deps = internalObfConfiguration.getDependencies();
             deps.addAll(legacyDeps);
 

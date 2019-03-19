@@ -20,9 +20,10 @@
 
 package net.minecraftforge.gradle.userdev.util;
 
-import net.minecraftforge.gradle.common.util.HashFunction;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.*;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.artifacts.FileCollectionDependency;
 import org.gradle.api.internal.artifacts.dependencies.DefaultSelfResolvingDependency;
 import org.gradle.api.internal.file.IdentityFileResolver;
 import org.gradle.api.internal.file.collections.DefaultConfigurableFileCollection;
@@ -32,7 +33,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 public class DependencyRemapper {
     private final Project project;
