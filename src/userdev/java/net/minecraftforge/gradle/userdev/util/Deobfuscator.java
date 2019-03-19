@@ -51,7 +51,7 @@ public class Deobfuscator {
 
         File cacheDir = getOrCreateCacheDir(cachePath);
 
-        String mappedName = addMappingsToName(original.getName(), mappings);
+        String mappedName = getUniqueMappedName(original, mappings);
 
         File input = new File(cacheDir, mappedName + ".input");
         File output = new File(cacheDir, mappedName);
@@ -81,7 +81,7 @@ public class Deobfuscator {
 
         File cacheDir = getOrCreateCacheDir(cachePath);
 
-        String mappedName = addMappingsToName(original.getName(), mappings);
+        String mappedName = getUniqueMappedName(original, mappings);
 
         File input = new File(cacheDir, mappedName + ".input");
         File output = new File(cacheDir, mappedName);
@@ -119,7 +119,8 @@ public class Deobfuscator {
     }
 
     private File getOrCreateCacheDir(String... cachePath) {
-        File cacheDir = new File(cacheRoot, String.join(File.separator, cachePath));;
+        File cacheDir = new File(cacheRoot, String.join(File.separator, cachePath));
+        ;
 
         if (!cacheDir.exists()) {
             cacheDir.mkdirs();
@@ -139,10 +140,11 @@ public class Deobfuscator {
         return MavenArtifactDownloader.manual(project, desc, false);
     }
 
-    private static String addMappingsToName(String name, String mappings) {
-        String originalBaseName = name.substring(0, name.lastIndexOf('.'));
-        String originalExtension = name.substring(originalBaseName.length());
+    private static String getUniqueMappedName(File file, String mappings) throws IOException {
+        String originalBaseName = file.getName().substring(0, file.getName().lastIndexOf('.'));
+        String originalExtension = file.getName().substring(originalBaseName.length());
+        String hash = HashFunction.SHA1.hash(file);
 
-        return originalBaseName + "_mapped_" + mappings + originalExtension;
+        return originalBaseName + "_mapped_" + mappings + "_hash_" + hash.substring(0, 10) + originalExtension;
     }
 }

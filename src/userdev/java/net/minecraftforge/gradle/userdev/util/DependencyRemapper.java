@@ -70,11 +70,10 @@ public class DependencyRemapper {
                 dependency.getFiles().getFiles().forEach(f ->
                         {
                             try {
-                                //use hash of the directory path to prevent name collisions, eg. lib1/output.jar and lib2/output.jar
                                 if (f.getName().endsWith("sources.jar")) {
-                                    files.from(deobfuscator.deobfSources(f, m,  "local_file", HashFunction.SHA1.hash(f.getParentFile().getAbsolutePath()), f.getName()));
+                                    files.from(deobfuscator.deobfSources(f, m,  "local_file", f.getName()));
                                 } else {
-                                    files.from(deobfuscator.deobfBinary(f, m, "local_file", HashFunction.SHA1.hash(f.getParentFile().getAbsolutePath()), f.getName()));
+                                    files.from(deobfuscator.deobfBinary(f, m, "local_file", f.getName()));
                                 }
                             } catch (IOException e) {
                                 throw new RuntimeException(e);
