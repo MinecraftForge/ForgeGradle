@@ -44,6 +44,13 @@ public class DependencyRemapper {
         this.deobfuscator = deobfuscator;
     }
 
+    /*
+     * Impl note: Gradle uses a lot of internal instanceof checking,
+     * so it's more reliable to use the same classes gradle uses.
+     *
+     * That means either calling Dependency#copy and then changing parameters in the copy
+     * or using gradle classes starting with Default, e.g. DefaultSelfResolvingDependency
+     */
     public Dependency remap(Dependency dependency) {
         if (dependency instanceof ExternalModuleDependency) {
             return remapExternalModule((ExternalModuleDependency) dependency);
@@ -53,7 +60,7 @@ public class DependencyRemapper {
             return remapFiles((FileCollectionDependency) dependency);
         }
 
-        project.getLogger().warn("Cannot deobfuscate dependency of type {}", dependency.getClass().getSimpleName());
+        project.getLogger().warn("Cannot deobfuscate dependency of type {}, using obfuscated version!", dependency.getClass().getSimpleName());
         return dependency;
     }
 
