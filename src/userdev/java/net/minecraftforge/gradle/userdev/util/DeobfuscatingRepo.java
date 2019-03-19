@@ -87,27 +87,15 @@ public class DeobfuscatingRepo extends BaseRepo {
     }
 
     private File findPom(Artifact artifact, String mapping) throws IOException {
-        if (mapping == null)
+        Optional<File> orig = findArtifactFile(artifact);
+
+        if (!orig.isPresent()) {
             return null;
-
-        File clean = MavenArtifactDownloader.manual(project, artifact.getGroup() + ':' + artifact.getName() + ':' + artifact.getVersion() + "@pom", false);
-        if (clean == null || !clean.exists())
-            return null;
-
-        File pom = null;  //cache(artifact, mapping, null, "pom");
-        debug("  Finding pom: " + pom);
-        HashStore cache = new HashStore()
-                .load(new File(pom.getAbsolutePath() + ".input"))
-                .add("pom", pom);
-
-        if (!cache.isSame() || !pom.exists()) {
-            //TODO: Read the pom and replace the version number? XML reader?
-            //FileUtils.writeByteArrayToFile(pom, ret.getBytes());
-            cache.save();
-            Utils.updateHash(pom, HashFunction.SHA1);
         }
 
-        return pom;
+        File origFile = orig.get();
+
+        return null; //TODO handle pom?
     }
 
     private ResolvedConfiguration getResolvedOrigin() {
@@ -137,7 +125,7 @@ public class DeobfuscatingRepo extends BaseRepo {
 
         File origFile = orig.get();
 
-        return deobfuscator.deobfBinary(origFile, mapping, getArtifactPathComponents(artifact));
+        return deobfuscator.deobfBinary(origFile, mapping, getArtifactPath(artifact, mapping));
     }
 
     private File findSource(Artifact artifact, String mapping) throws IOException {
@@ -148,10 +136,12 @@ public class DeobfuscatingRepo extends BaseRepo {
 
         File origFile = orig.get();
 
-        return deobfuscator.deobfSources(origFile, mapping, getArtifactPathComponents(artifact));
+        return deobfuscator.deobfSources(origFile, mapping, getArtifactPath(artifact, mapping));
     }
 
-    private String[] getArtifactPathComponents(Artifact artifact) {
-        return new String[]{artifact.getGroup(), artifact.getName(), artifact.getVersion()};
+    private String getArtifactPath(Artifact artifact, String mappings) {
+        String newVersion = artifact.getVersion() + "_mapped_" + mappings;
+
+        return artifact.withVersion(newVersion).getPath();
     }
 }

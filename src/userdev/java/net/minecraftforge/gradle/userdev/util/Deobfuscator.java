@@ -49,12 +49,8 @@ public class Deobfuscator {
             return null;
         }
 
-        File cacheDir = getOrCreateCacheDir(cachePath);
-
-        String mappedName = getUniqueMappedName(original, mappings);
-
-        File input = new File(cacheDir, mappedName + ".input");
-        File output = new File(cacheDir, mappedName);
+        File output = getCacheFile(cachePath);
+        File input = new File(output.getParent(), output.getName() + ".input");
 
         HashStore cache = new HashStore()
                 .load(input)
@@ -79,12 +75,9 @@ public class Deobfuscator {
             return null;
         }
 
-        File cacheDir = getOrCreateCacheDir(cachePath);
+        File output = getCacheFile(cachePath);
 
-        String mappedName = getUniqueMappedName(original, mappings);
-
-        File input = new File(cacheDir, mappedName + ".input");
-        File output = new File(cacheDir, mappedName);
+        File input = new File(output.getParent(), output.getName() + ".input");
 
         HashStore cache = new HashStore()
                 .load(input)
@@ -118,15 +111,10 @@ public class Deobfuscator {
         return output;
     }
 
-    private File getOrCreateCacheDir(String... cachePath) {
-        File cacheDir = new File(cacheRoot, String.join(File.separator, cachePath));
-        ;
-
-        if (!cacheDir.exists()) {
-            cacheDir.mkdirs();
-        }
-
-        return cacheDir;
+    private File getCacheFile(String... cachePath) {
+        File cacheFile = new File(cacheRoot, String.join(File.separator, cachePath));
+        cacheFile.getParentFile().mkdirs();
+        return cacheFile;
     }
 
     private File findMapping(String mapping) {
@@ -138,13 +126,5 @@ public class Deobfuscator {
         String version = mapping.substring(idx + 1);
         String desc = "de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
         return MavenArtifactDownloader.manual(project, desc, false);
-    }
-
-    private static String getUniqueMappedName(File file, String mappings) throws IOException {
-        String originalBaseName = file.getName().substring(0, file.getName().lastIndexOf('.'));
-        String originalExtension = file.getName().substring(originalBaseName.length());
-        String hash = HashFunction.SHA1.hash(file);
-
-        return originalBaseName + "_mapped_" + mappings + "_hash_" + hash.substring(0, 10) + originalExtension;
     }
 }

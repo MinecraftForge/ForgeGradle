@@ -73,7 +73,7 @@ public class Artifact implements ArtifactIdentifier, Comparable<Artifact> {
         if (ret.classifier != null) ret.file += '-' + ret.classifier;
         ret.file += '.' + ret.ext;
 
-        ret.path = ret.group.replace('.', '/') + '/' + ret.name + '/' + ret.version + '/' + ret.file;
+        ret.path = String.join(File.separator, ret.group.replace('.', File.separatorChar), ret.name, ret.version, ret.file);
 
         return ret;
     }
