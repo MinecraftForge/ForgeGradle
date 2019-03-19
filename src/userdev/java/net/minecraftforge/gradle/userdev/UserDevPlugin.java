@@ -112,7 +112,7 @@ public class UserDevPlugin implements Plugin<Project> {
         //create extension for dependency remapping
         //can't create at top-level or put in `minecraft` ext due to configuration name conflict
         Deobfuscator deobfuscator = new Deobfuscator(project, Utils.getCache(project, "deobf_dependencies"));
-        DependencyRemapper remapper = new DependencyRemapper(project, deobfuscator, extension::getMappings);
+        DependencyRemapper remapper = new DependencyRemapper(project, deobfuscator);
         project.getExtensions().create(DependencyManagementExtension.EXTENSION_NAME, DependencyManagementExtension.class, project, remapper);
 
         compile.extendsFrom(minecraft);
@@ -185,7 +185,7 @@ public class UserDevPlugin implements Plugin<Project> {
             }
 
             //project is eval'd, deobf scope processed. we can add mappings now
-            remapper.mappingsReady();
+            remapper.attachMappings(extension.getMappings());
 
             // We have to add these AFTER our repo so that we get called first, this is annoying...
             new BaseRepo.Builder()

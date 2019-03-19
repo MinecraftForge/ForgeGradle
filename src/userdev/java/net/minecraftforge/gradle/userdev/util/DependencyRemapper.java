@@ -37,13 +37,11 @@ import java.util.function.Supplier;
 public class DependencyRemapper {
     private final Project project;
     private Deobfuscator deobfuscator;
-    private Supplier<String> mappingsSupplier;
     private List<Consumer<String>> mappingListeners = new ArrayList<>();
 
-    public DependencyRemapper(Project project, Deobfuscator deobfuscator, Supplier<String> mappingsSupplier) {
+    public DependencyRemapper(Project project, Deobfuscator deobfuscator) {
         this.project = project;
         this.deobfuscator = deobfuscator;
-        this.mappingsSupplier = mappingsSupplier;
     }
 
     public Dependency remap(Dependency dependency) {
@@ -87,8 +85,8 @@ public class DependencyRemapper {
         return newDep;
     }
 
-    public void mappingsReady() {
-        mappingListeners.forEach(l -> l.accept(mappingsSupplier.get()));
+    public void attachMappings(String mappings) {
+        mappingListeners.forEach(l -> l.accept(mappings));
     }
 
 }
