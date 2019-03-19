@@ -89,8 +89,11 @@ public class Artifact implements ArtifactIdentifier, Comparable<Artifact> {
             builder.append(':').append(identifier.getClassifier());
         }
 
-        if (identifier.getClassifier() != null && !identifier.getClassifier().isEmpty()) {
-            builder.append('@').append("jar");
+        builder.append('@');
+        if (identifier.getExtension() == null || identifier.getExtension().isEmpty()) {
+            builder.append("jar");
+        } else {
+            builder.append(identifier);
         }
 
         return from(builder.toString());
