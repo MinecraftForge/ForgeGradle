@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit;
 public class UserDevPlugin implements Plugin<Project> {
     private static String MINECRAFT = "minecraft";
     private static String DEOBF = "deobf";
-    public static String OBF = "__obfuscated"; //
+    public static String OBF = "__obfuscated";
 
     @Override
     public void apply(@Nonnull Project project) {
@@ -69,7 +69,7 @@ public class UserDevPlugin implements Plugin<Project> {
             @Override
             public RenameJarInPlace create(String jarName) {
                 String name = Character.toUpperCase(jarName.charAt(0)) + jarName.substring(1);
-                JavaPluginConvention java = (JavaPluginConvention)project.getConvention().getPlugins().get("java");
+                JavaPluginConvention java = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
 
                 final RenameJarInPlace task = project.getTasks().maybeCreate("reobf" + name, RenameJarInPlace.class);
                 task.setClasspath(java.getSourceSets().getByName("main").getCompileClasspath());
@@ -81,7 +81,7 @@ public class UserDevPlugin implements Plugin<Project> {
                     Task jar = project.getTasks().getByName(jarName);
                     if (!(jar instanceof Jar))
                         throw new IllegalStateException(jarName + "  is not a jar task. Can only reobf jars!");
-                    task.setInput(((Jar)jar).getArchivePath());
+                    task.setInput(((Jar) jar).getArchivePath());
                     task.dependsOn(jar);
                 });
 
@@ -101,6 +101,7 @@ public class UserDevPlugin implements Plugin<Project> {
 
         //create extension for dependency remapping
         //can't create at top-level or put in `minecraft` ext due to configuration name conflict
+        //TODO move in FG 3.1 when configurations are removed
         Deobfuscator deobfuscator = new Deobfuscator(project, Utils.getCache(project, "deobf_dependencies"));
         DependencyRemapper remapper = new DependencyRemapper(project, deobfuscator);
         project.getExtensions().create(DependencyManagementExtension.EXTENSION_NAME, DependencyManagementExtension.class, project, remapper);
@@ -164,7 +165,7 @@ public class UserDevPlugin implements Plugin<Project> {
                 mcrepo = new MinecraftUserRepo(p, dep.getGroup(), dep.getName(), dep.getVersion(), extension.getAccessTransformers(), extension.getMappings());
                 String newDep = mcrepo.getDependencyString();
                 p.getLogger().lifecycle("New Dep: " + newDep);
-                ExternalModuleDependency ext = (ExternalModuleDependency)p.getDependencies().create(newDep);
+                ExternalModuleDependency ext = (ExternalModuleDependency) p.getDependencies().create(newDep);
                 {
                     ext.setChanging(true); //TODO: Remove when not in dev
                     minecraft.resolutionStrategy(strat -> {
@@ -181,11 +182,11 @@ public class UserDevPlugin implements Plugin<Project> {
 
             // We have to add these AFTER our repo so that we get called first, this is annoying...
             new BaseRepo.Builder()
-                .add(mcrepo)
-                .add(deobfrepo)
-                .add(MCPRepo.create(project))
-                .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
-                .attach(project);
+                    .add(mcrepo)
+                    .add(deobfrepo)
+                    .add(MCPRepo.create(project))
+                    .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
+                    .attach(project);
             project.getRepositories().maven(e -> {
                 e.setUrl(Utils.FORGE_MAVEN);
             });
@@ -198,12 +199,12 @@ public class UserDevPlugin implements Plugin<Project> {
                 throw new IllegalStateException("Missing 'minecraft' dependency entry.");
             mcrepo.validate(minecraft, extension.getRuns().getAsMap(), extractNatives.get(), downloadAssets.get()); //This will set the MC_VERSION property.
 
-            String mcVer = (String)project.getExtensions().getExtraProperties().get("MC_VERSION");
-            String mcpVer = (String)project.getExtensions().getExtraProperties().get("MCP_VERSION");
+            String mcVer = (String) project.getExtensions().getExtraProperties().get("MC_VERSION");
+            String mcpVer = (String) project.getExtensions().getExtraProperties().get("MCP_VERSION");
             downloadMcpConfig.get().setArtifact("de.oceanlabs.mcp:mcp_config:" + mcpVer + "@zip");
             downloadMCMeta.get().setMCVersion(mcVer);
 
-            RenameJarInPlace reobfJar  = reobf.create("jar");
+            RenameJarInPlace reobfJar = reobf.create("jar");
             reobfJar.dependsOn(createMcpToSrg);
             reobfJar.setMappings(createMcpToSrg.get().getOutput());
 

@@ -23,7 +23,23 @@ package net.minecraftforge.gradle.userdev.util;
 import net.minecraftforge.gradle.common.util.*;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -36,9 +52,53 @@ public class Deobfuscator {
     private final Project project;
     private File cacheRoot;
 
+    private DocumentBuilder xmlParser;
+    private XPath xPath;
+    private Transformer xmlTransformer;
+
     public Deobfuscator(Project project, File cacheRoot) {
         this.project = project;
         this.cacheRoot = cacheRoot;
+
+        try {
+            xPath = XPathFactory.newInstance().newXPath();
+            xmlParser = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            xmlTransformer = TransformerFactory.newInstance().newTransformer();
+        } catch (ParserConfigurationException | TransformerConfigurationException e) {
+            throw new RuntimeException("Error configuring XML parsers", e);
+        }
+    }
+
+    public File deobfPom(File original, String mappings, String... cachePath) throws IOException {
+        project.getLogger().debug("Updating POM file {} with mappings {}", original.getName(), mappings);
+
+        File output = getCacheFile(cachePath);
+        File input = new File(output.getParent(), output.getName() + ".input");
+
+        HashStore cache = new HashStore()
+                .load(input)
+                .add("mappings", mappings)
+                .add("orig", original);
+
+        if (!cache.isSame() || !output.exists()) {
+            try {
+                Document pom = xmlParser.parse(original);
+                NodeList versionNodes = (NodeList) xPath.compile("/*[local-name()=\"project\"]/*[local-name()=\"version\"]").evaluate(pom, XPathConstants.NODESET);
+                if (versionNodes.getLength() > 0) {
+                    versionNodes.item(0).setTextContent(versionNodes.item(0).getTextContent() + "_mapped_" + mappings);
+                }
+
+                xmlTransformer.transform(new DOMSource(pom), new StreamResult(output));
+            } catch (IOException | SAXException | XPathExpressionException | TransformerException e) {
+                project.getLogger().error("Error attempting to modify pom file " + original.getName(), e);
+                return original;
+            }
+
+            Utils.updateHash(output, HashFunction.SHA1);
+            cache.save();
+        }
+
+        return output;
     }
 
     public File deobfBinary(File original, String mappings, String... cachePath) throws IOException {

@@ -62,7 +62,7 @@ public class DeobfuscatingRepo extends BaseRepo {
         String mappings = getMappings(version);
 
         if (mappings == null)
-            return null; //We only care about the remaped files, not orig
+            return null; //We only care about the remapped files, not orig
 
         version = version.substring(0, version.length() - (mappings.length() + "_mapped_".length()));
         String classifier = artifact.getClassifier() == null ? "" : artifact.getClassifier();
@@ -73,7 +73,7 @@ public class DeobfuscatingRepo extends BaseRepo {
         debug("  " + REPO_NAME + " Request: " + clean(artifact) + " Mapping: " + mappings);
 
         if ("pom".equals(ext)) {
-            //return findPom(orig, mappings); //TODO: Unsupported for now, transitive deobfed deps? Need full xml reader?
+            return findPom(unmappedArtifact, mappings);
         } else if ("jar".equals(ext)) {
             if ("sources".equals(classifier)) {
                 return findSource(unmappedArtifact, mappings);
@@ -83,7 +83,6 @@ public class DeobfuscatingRepo extends BaseRepo {
         } else {
             throw new RuntimeException("Invalid deobf dependency: " + artifact.toString());
         }
-        return null;
     }
 
     private File findPom(Artifact artifact, String mapping) throws IOException {
@@ -95,7 +94,7 @@ public class DeobfuscatingRepo extends BaseRepo {
 
         File origFile = orig.get();
 
-        return null; //TODO handle pom?
+        return deobfuscator.deobfPom(origFile, mapping, getArtifactPath(artifact, mapping));
     }
 
     private ResolvedConfiguration getResolvedOrigin() {

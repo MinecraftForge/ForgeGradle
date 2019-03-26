@@ -38,7 +38,7 @@ public class Artifact implements ArtifactIdentifier, Comparable<Artifact> {
     private String name;
     private String version;
     private String classifier = null;
-    private String ext = "jar";
+    private String ext;
 
     //Caches so we don't rebuild every time we're asked.
     private String path;
@@ -69,6 +69,10 @@ public class Artifact implements ArtifactIdentifier, Comparable<Artifact> {
         if (pts.length > 3)
             ret.classifier = pts[3];
 
+        if (ret.ext == null || ret.ext.isEmpty()) {
+            ret.ext = "pom".equals(ret.classifier) ? "xml" : "jar";
+        }
+
         ret.file = ret.name + '-' + ret.version;
         if (ret.classifier != null) ret.file += '-' + ret.classifier;
         ret.file += '.' + ret.ext;
@@ -85,13 +89,16 @@ public class Artifact implements ArtifactIdentifier, Comparable<Artifact> {
 
         StringBuilder builder = new StringBuilder();
         builder.append(identifier.getGroup()).append(':').append(identifier.getName()).append(':').append(identifier.getVersion());
+
+        String classifier = null;
         if (identifier.getClassifier() != null && !identifier.getClassifier().isEmpty()) {
-            builder.append(':').append(identifier.getClassifier());
+            classifier = identifier.getClassifier();
+            builder.append(':').append(classifier);
         }
 
         builder.append('@');
         if (identifier.getExtension() == null || identifier.getExtension().isEmpty()) {
-            builder.append("jar");
+            builder.append("pom".equals(classifier) ? "xml" : "jar");
         } else {
             builder.append(identifier.getExtension());
         }
