@@ -23,14 +23,12 @@ package net.minecraftforge.gradle.userdev.util;
 import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
 import net.minecraftforge.gradle.common.util.*;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.ResolvedArtifact;
-import org.gradle.api.artifacts.ResolvedConfiguration;
-import org.gradle.api.artifacts.ResolvedDependency;
+import org.gradle.api.artifacts.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /*
  * Takes in SRG names jars/sources and remaps them using MCPNames.
@@ -66,9 +64,9 @@ public class DeobfuscatingRepo extends BaseRepo {
 
         version = version.substring(0, version.length() - (mappings.length() + "_mapped_".length()));
         String classifier = artifact.getClassifier() == null ? "" : artifact.getClassifier();
-        String ext = artifact.getExtension();
 
         Artifact unmappedArtifact = Artifact.from(artifact).withVersion(version);
+        String ext = unmappedArtifact.getExtension();
 
         debug("  " + REPO_NAME + " Request: " + clean(artifact) + " Mapping: " + mappings);
 
@@ -106,14 +104,11 @@ public class DeobfuscatingRepo extends BaseRepo {
     }
 
     private Optional<File> findArtifactFile(Artifact artifact) {
-        Optional<ResolvedDependency> dep = getResolvedOrigin().getFirstLevelModuleDependencies(artifact.asDependencySpec()).stream().findFirst();
-        Optional<File> orig = dep.flatMap(
+        Stream<ResolvedDependency> deps = getResolvedOrigin().getFirstLevelModuleDependencies(artifact.asDependencySpec()).stream();
+        return deps.flatMap(
                 d -> d.getModuleArtifacts().stream()
                         .filter(artifact.asArtifactMatcher())
-                        .findFirst()
-        ).map(ResolvedArtifact::getFile);
-
-        return orig.filter(File::exists);
+        ).map(ResolvedArtifact::getFile).filter(File::exists).findAny();
     }
 
     private File findRaw(Artifact artifact, String mapping) throws IOException {
