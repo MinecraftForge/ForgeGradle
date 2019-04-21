@@ -20,13 +20,17 @@
 
 package net.minecraftforge.gradle.common.util;
 
-import java.io.File;
-import java.util.Locale;
-import org.apache.maven.artifact.versioning.ComparableVersion;
-
 import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
+import org.apache.maven.artifact.versioning.ComparableVersion;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.specs.Spec;
+
+import java.io.File;
+import java.util.Locale;
+import java.util.function.Predicate;
 
 public class Artifact implements ArtifactIdentifier, Comparable<Artifact> {
     //Descriptor parts: group:name:version[:classifier][@extension]
@@ -69,9 +73,30 @@ public class Artifact implements ArtifactIdentifier, Comparable<Artifact> {
         if (ret.classifier != null) ret.file += '-' + ret.classifier;
         ret.file += '.' + ret.ext;
 
-        ret.path = ret.group.replace('.', '/') + '/' + ret.name + '/' + ret.version + '/' + ret.file;
+        ret.path = String.join("/", ret.group.replace('.', '/'), ret.name, ret.version, ret.file);
 
         return ret;
+    }
+
+    public static Artifact from(ArtifactIdentifier identifier) {
+        if (identifier instanceof Artifact) {
+            return (Artifact) identifier;
+        }
+
+        StringBuilder builder = new StringBuilder();
+        builder.append(identifier.getGroup()).append(':').append(identifier.getName()).append(':').append(identifier.getVersion());
+        if (identifier.getClassifier() != null && !identifier.getClassifier().isEmpty()) {
+            builder.append(':').append(identifier.getClassifier());
+        }
+
+        builder.append('@');
+        if (identifier.getExtension() == null || identifier.getExtension().isEmpty()) {
+            builder.append("jar");
+        } else {
+            builder.append(identifier.getExtension());
+        }
+
+        return from(builder.toString());
     }
 
     public static Artifact from(String group, String name, String version, String classifier, String ext) {
@@ -84,8 +109,12 @@ public class Artifact implements ArtifactIdentifier, Comparable<Artifact> {
         return from(buf.toString());
     }
 
-    public File getLocalPath(File base) {
-        return new File(base, path.replace('/', File.separatorChar));
+    public File getLocalFile(File base) {
+        return new File(base, getLocalPath());
+    }
+
+    public String getLocalPath() {
+        return path.replace('/', File.separatorChar);
     }
 
     public String getDescriptor(){ return descriptor; }
@@ -101,10 +130,40 @@ public class Artifact implements ArtifactIdentifier, Comparable<Artifact> {
     @Override
     public String getExtension() { return ext;        }
     public String getFilename()  { return file;       }
+
     public boolean isSnapshot()  { return isSnapshot; }
+
+    public Artifact withVersion(String version) {
+        return Artifact.from(group, name, version, classifier, ext);
+    }
+
     @Override
     public String toString() {
         return getDescriptor();
+    }
+
+    public Spec<Dependency> asDependencySpec() {
+        return (dep) -> group.equals(dep.getGroup()) && name.equals(dep.getName()) && version.equals(dep.getVersion());
+    }
+
+    public Predicate<ResolvedArtifact> asArtifactMatcher() {
+        return (art) -> {
+            String theirClassifier;
+            if (art.getClassifier() == null) {
+                theirClassifier = "";
+            } else {
+                theirClassifier = art.getClassifier();
+            }
+
+            String theirExt;
+            if (art.getExtension().isEmpty()) {
+                theirExt = "jar";
+            } else {
+                theirExt = art.getExtension();
+            }
+
+            return (classifier == null || classifier.equals(theirClassifier)) && (ext == null || ext.equals(theirExt));
+        };
     }
 
     @Override

@@ -20,11 +20,7 @@
 
 package net.minecraftforge.gradle.userdev;
 
-import net.minecraftforge.gradle.common.task.DownloadAssets;
-import net.minecraftforge.gradle.common.task.DownloadMCMeta;
-import net.minecraftforge.gradle.common.task.DownloadMavenArtifact;
-import net.minecraftforge.gradle.common.task.ExtractMCPData;
-import net.minecraftforge.gradle.common.task.ExtractNatives;
+import net.minecraftforge.gradle.common.task.*;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.common.util.Utils;
@@ -32,11 +28,10 @@ import net.minecraftforge.gradle.common.util.VersionJson;
 import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.userdev.tasks.GenerateSRG;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
-import org.gradle.api.NamedDomainObjectContainer;
-import org.gradle.api.NamedDomainObjectFactory;
-import org.gradle.api.Plugin;
-import org.gradle.api.Project;
-import org.gradle.api.Task;
+import net.minecraftforge.gradle.userdev.util.DeobfuscatingRepo;
+import net.minecraftforge.gradle.userdev.util.Deobfuscator;
+import net.minecraftforge.gradle.userdev.util.DependencyRemapper;
+import org.gradle.api.*;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
@@ -49,12 +44,13 @@ import org.gradle.api.tasks.bundling.Jar;
 import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class UserDevPlugin implements Plugin<Project> {
     private static String MINECRAFT = "minecraft";
     private static String DEOBF = "deobf";
+    public static String OBF = "__obfuscated";
 
     @Override
     public void apply(@Nonnull Project project) {
@@ -62,18 +58,18 @@ public class UserDevPlugin implements Plugin<Project> {
 
         @SuppressWarnings("unused")
         final Logger logger = project.getLogger();
-        final UserDevExtension extension = project.getExtensions().create(UserDevExtension.class, UserDevExtension.EXTENSION_NAME, UserDevExtension.class, project);
+        final UserDevExtension extension = project.getExtensions().create(UserDevExtension.EXTENSION_NAME, UserDevExtension.class, project);
 
         if (project.getPluginManager().findPlugin("java") == null) {
             project.getPluginManager().apply("java");
         }
-        final File natives_folder = project.file("build/natives/");
+        final File nativesFolder = project.file("build/natives/");
 
         NamedDomainObjectContainer<RenameJarInPlace> reobf = project.container(RenameJarInPlace.class, new NamedDomainObjectFactory<RenameJarInPlace>() {
             @Override
             public RenameJarInPlace create(String jarName) {
                 String name = Character.toUpperCase(jarName.charAt(0)) + jarName.substring(1);
-                JavaPluginConvention java = (JavaPluginConvention)project.getConvention().getPlugins().get("java");
+                JavaPluginConvention java = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
 
                 final RenameJarInPlace task = project.getTasks().maybeCreate("reobf" + name, RenameJarInPlace.class);
                 task.setClasspath(java.getSourceSets().getByName("main").getCompileClasspath());
@@ -85,7 +81,7 @@ public class UserDevPlugin implements Plugin<Project> {
                     Task jar = project.getTasks().getByName(jarName);
                     if (!(jar instanceof Jar))
                         throw new IllegalStateException(jarName + "  is not a jar task. Can only reobf jars!");
-                    task.setInput(((Jar)jar).getArchivePath());
+                    task.setInput(((Jar) jar).getArchivePath());
                     task.dependsOn(jar);
                 });
 
@@ -96,9 +92,34 @@ public class UserDevPlugin implements Plugin<Project> {
 
         Configuration minecraft = project.getConfigurations().maybeCreate(MINECRAFT);
         Configuration compile = project.getConfigurations().maybeCreate("compile");
-        Configuration deobf = project.getConfigurations().maybeCreate(DEOBF);
         compile.extendsFrom(minecraft);
-        compile.extendsFrom(deobf);
+
+
+        //Let gradle handle the downloading by giving it a configuration to dl. We'll focus on applying mappings to it.
+        Configuration internalObfConfiguration = project.getConfigurations().maybeCreate(OBF);
+        internalObfConfiguration.setDescription("Generated scope for obfuscated dependencies");
+
+        //create extension for dependency remapping
+        //can't create at top-level or put in `minecraft` ext due to configuration name conflict
+        //TODO move in FG 3.1 when configurations are removed
+        Deobfuscator deobfuscator = new Deobfuscator(project, Utils.getCache(project, "deobf_dependencies"));
+        DependencyRemapper remapper = new DependencyRemapper(project, deobfuscator);
+        project.getExtensions().create(DependencyManagementExtension.EXTENSION_NAME, DependencyManagementExtension.class, project, remapper);
+
+        //TODO remove this block in FG 3.1
+        {
+            Configuration deobfConfiguration = project.getConfigurations().maybeCreate(DEOBF);
+
+            project.afterEvaluate(p -> {
+                DependencySet legacyDeps = deobfConfiguration.getDependencies();
+                if (!legacyDeps.isEmpty()) {
+                    logger.warn("deobf dependency configuration is deprecated. Please use deobfuscated dependencies in standard configurations");
+                    logger.warn("For example, `api fg.deobf(\"your:dependency\")`. More about available configurations: https://docs.gradle.org/current/userguide/java_library_plugin.html#sec:java_library_configurations_graph");
+                }
+
+                legacyDeps.forEach(d -> p.getDependencies().add("compile", remapper.remap(d)));
+            });
+        }
 
         TaskProvider<DownloadMavenArtifact> downloadMcpConfig = project.getTasks().register("downloadMcpConfig", DownloadMavenArtifact.class);
         TaskProvider<ExtractMCPData> extractSrg = project.getTasks().register("extractSrg", ExtractMCPData.class);
@@ -122,7 +143,7 @@ public class UserDevPlugin implements Plugin<Project> {
         extractNatives.configure(task -> {
             task.dependsOn(downloadMCMeta.get());
             task.setMeta(downloadMCMeta.get().getOutput());
-            task.setOutput(natives_folder);
+            task.setOutput(nativesFolder);
         });
         downloadAssets.configure(task -> {
             task.dependsOn(downloadMCMeta.get());
@@ -131,20 +152,20 @@ public class UserDevPlugin implements Plugin<Project> {
 
         project.afterEvaluate(p -> {
             MinecraftUserRepo mcrepo = null;
-            ModRemapingRepo deobfrepo = null;
+            DeobfuscatingRepo deobfrepo = null;
 
             DependencySet deps = minecraft.getDependencies();
-            for (Dependency dep : deps.stream().collect(Collectors.toList())) {
+            for (Dependency dep : new ArrayList<>(deps)) {
                 if (!(dep instanceof ExternalModuleDependency))
                     throw new IllegalArgumentException("minecraft dependency must be a maven dependency.");
                 if (mcrepo != null)
-                    throw new IllegalArgumentException("Only allows one minecraft dependancy.");
+                    throw new IllegalArgumentException("Only allows one minecraft dependency.");
                 deps.remove(dep);
 
                 mcrepo = new MinecraftUserRepo(p, dep.getGroup(), dep.getName(), dep.getVersion(), extension.getAccessTransformers(), extension.getMappings());
                 String newDep = mcrepo.getDependencyString();
                 p.getLogger().lifecycle("New Dep: " + newDep);
-                ExternalModuleDependency ext = (ExternalModuleDependency)p.getDependencies().create(newDep);
+                ExternalModuleDependency ext = (ExternalModuleDependency) p.getDependencies().create(newDep);
                 {
                     ext.setChanging(true); //TODO: Remove when not in dev
                     minecraft.resolutionStrategy(strat -> {
@@ -154,25 +175,18 @@ public class UserDevPlugin implements Plugin<Project> {
                 minecraft.getDependencies().add(ext);
             }
 
-            deps = deobf.getDependencies();
-            for (Dependency dep : deps.stream().collect(Collectors.toList())) {
-                if (!(dep instanceof ExternalModuleDependency)) //TODO: File deps as well.
-                    throw new IllegalArgumentException("deobf dependency must be a maven dependency. File deps are on the TODO");
-                deps.remove(dep);
-
-                if (deobfrepo == null)
-                    deobfrepo = new ModRemapingRepo(p, extension.getMappings());
-                String newDep = deobfrepo.addDep(dep.getGroup(), dep.getName(), dep.getVersion()); // Classifier?
-                deobf.getDependencies().add(p.getDependencies().create(newDep));
+            if (!internalObfConfiguration.getDependencies().isEmpty()) {
+                deobfrepo = new DeobfuscatingRepo(project, internalObfConfiguration, deobfuscator);
             }
+            remapper.attachMappings(extension.getMappings());
 
             // We have to add these AFTER our repo so that we get called first, this is annoying...
             new BaseRepo.Builder()
-                .add(mcrepo)
-                .add(deobfrepo)
-                .add(MCPRepo.create(project))
-                .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
-                .attach(project);
+                    .add(mcrepo)
+                    .add(deobfrepo)
+                    .add(MCPRepo.create(project))
+                    .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
+                    .attach(project);
             project.getRepositories().maven(e -> {
                 e.setUrl(Utils.FORGE_MAVEN);
             });
@@ -185,12 +199,12 @@ public class UserDevPlugin implements Plugin<Project> {
                 throw new IllegalStateException("Missing 'minecraft' dependency entry.");
             mcrepo.validate(minecraft, extension.getRuns().getAsMap(), extractNatives.get(), downloadAssets.get()); //This will set the MC_VERSION property.
 
-            String mcVer = (String)project.getExtensions().getExtraProperties().get("MC_VERSION");
-            String mcpVer = (String)project.getExtensions().getExtraProperties().get("MCP_VERSION");
+            String mcVer = (String) project.getExtensions().getExtraProperties().get("MC_VERSION");
+            String mcpVer = (String) project.getExtensions().getExtraProperties().get("MCP_VERSION");
             downloadMcpConfig.get().setArtifact("de.oceanlabs.mcp:mcp_config:" + mcpVer + "@zip");
             downloadMCMeta.get().setMCVersion(mcVer);
 
-            RenameJarInPlace reobfJar  = reobf.create("jar");
+            RenameJarInPlace reobfJar = reobf.create("jar");
             reobfJar.dependsOn(createMcpToSrg);
             reobfJar.setMappings(createMcpToSrg.get().getOutput());
 
