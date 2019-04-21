@@ -87,15 +87,15 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
 
     public abstract void mappings(String channel, String version);
 
-    public void mappings(Map<String, String> mappings) {
-        String channel = mappings.get("channel");
-        String version = mappings.get("version");
+    public void mappings(Map<String, CharSequence> mappings) {
+        CharSequence channel = mappings.get("channel");
+        CharSequence version = mappings.get("version");
 
         if (channel == null || version == null) {
             throw new IllegalArgumentException("Must specify both mappings channel and version");
         }
 
-        mappings(channel, version);
+        mappings(channel.toString(), version.toString());
     }
 
     public String getMappings() {
