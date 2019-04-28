@@ -130,7 +130,7 @@ public class UserDevPlugin implements Plugin<Project> {
 
         extractSrg.configure(task -> {
             task.dependsOn(downloadMcpConfig);
-            task.setConfig(downloadMcpConfig.get().getOutput());
+            task.setConfig(() -> downloadMcpConfig.get().getOutput());
         });
 
         createMcpToSrg.configure(task -> {
