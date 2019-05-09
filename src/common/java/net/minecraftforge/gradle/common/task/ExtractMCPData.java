@@ -25,6 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.function.Supplier;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -45,6 +46,7 @@ public class ExtractMCPData extends DefaultTask {
     private static final Gson GSON = new GsonBuilder().create();
 
     private String key = "mappings";
+    private Supplier<File> configSupplier;
     private File config;
     private File output = getProject().file("build/" + getName() + "/output.srg");
 
@@ -81,10 +83,19 @@ public class ExtractMCPData extends DefaultTask {
 
     @InputFile
     public File getConfig() {
+        if (config == null && configSupplier != null)
+            config = configSupplier.get();
+
         return config;
     }
     public void setConfig(File value) {
         this.config = value;
+        this.configSupplier = null;
+    }
+    public void setConfig(Supplier<File> valueSupplier)
+    {
+        this.configSupplier = valueSupplier;
+        this.config = null;
     }
 
     @Input
