@@ -20,16 +20,11 @@
 
 package net.minecraftforge.gradle.userdev.tasks;
 
-import com.google.common.collect.Sets;
-import org.gradle.api.internal.OverlappingOutputs;
-import org.gradle.api.internal.TaskExecutionHistory;
-import org.gradle.api.internal.tasks.OriginTaskExecutionMetadata;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.util.GradleVersion;
 
-import java.io.File;
-import java.util.Set;
-
-import javax.annotation.Nullable;
+import java.lang.reflect.Method;
 
 // A terrible hack to use JavaCompile while bypassing
 // Gradle's normal task infrastructure.
@@ -48,27 +43,27 @@ public class HackyJavaCompile extends JavaCompile {
 
         // Normally, the output history is set by Gradle. Since we're bypassing
         // the normal gradle task infrastructure, we need to do it ourselves.
-        this.getOutputs().setHistory(new TaskExecutionHistory() {
 
-            @Override
-            public Set<File> getOutputFiles() {
-                // We explicitly clear the output directory
-                // ourselves, so it's okay that this is totally wrong.
-                return Sets.newHashSet();
-            }
+        // TaskExecutionHistory is removed in 5.1.0, so we only try to set it
+        // on versions below 5.1.0
 
-            @Nullable
-            @Override
-            public OverlappingOutputs getOverlappingOutputs() {
-                return null;
+        if (GradleVersion.current().compareTo(GradleVersion.version("5.1.0")) < 0) {
+            try {
+                Class<?> taskExectionHistory = Class.forName("org.gradle.api.internal.TaskExecutionHistory");
+                Method setHistory = this.getOutputs().getClass().getMethod("setHistory", taskExectionHistory);
+                Object dummyHistory = Class.forName("net.minecraftforge.gradle.userdev.util.DummyTaskExecutionHistory").newInstance();
+                setHistory.invoke(this.getOutputs(), dummyHistory);
+            } catch (Exception e) {
+                throw new RuntimeException("Exception calling setHistory", e);
             }
-
-            @Nullable
-            @Override
-            public OriginTaskExecutionMetadata getOriginExecutionMetadata() {
-                return null;
+        } else {
+            try {
+                Method setPreviousOutputFiles = this.getOutputs().getClass().getMethod("setPreviousOutputFiles", FileCollection.class);
+                setPreviousOutputFiles.invoke(this.getOutputs(), this.getProject().files());
+            } catch (Exception e) {
+                throw new RuntimeException("Exception calling setPreviousOutputFiles ", e);
             }
-        });
+        }
 
         // Do the actual compilation,
         // bypassing a bunch of Gradle's other stuff (e.g. internal event listener mechanism)
