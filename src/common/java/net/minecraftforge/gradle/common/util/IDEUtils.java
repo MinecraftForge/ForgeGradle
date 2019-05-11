@@ -234,7 +234,7 @@ public final class IDEUtils {
 
                     runConfig.getEnvironment().compute("MOD_CLASSES", (key, value) -> {
                         // Only replace environment variable if it is already set
-                        if (value == null) {
+                        if (value == null || value.isEmpty()) {
                             return value;
                         }
 
