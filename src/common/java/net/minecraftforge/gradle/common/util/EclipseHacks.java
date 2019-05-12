@@ -44,7 +44,11 @@ public class EclipseHacks {
         final Project project = minecraft.getProject();
         final File natives = nativesTask.getOutput();
 
-        final EclipseModel eclipseConv = (EclipseModel)project.getExtensions().getByName("eclipse");
+        final EclipseModel eclipseConv = (EclipseModel)project.getExtensions().findByName("eclipse");
+        if (eclipseConv == null) {
+            // The eclipse plugin hasn't been applied; we don't need to do any eclipse things
+            return;
+        }
         final XmlFileContentMerger classpathMerger = eclipseConv.getClasspath().getFile();
 
         final String LIB_ATTR = "org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY";
