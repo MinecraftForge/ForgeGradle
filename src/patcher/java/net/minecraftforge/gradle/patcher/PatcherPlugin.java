@@ -275,9 +275,11 @@ public class PatcherPlugin implements Plugin<Project> {
             mainSource.java(v -> {
                 v.srcDir(extension.patchedSrc);
             });
-            mainSource.resources(v -> {
-            }); //TODO: Asset downloading, needs asset index from json.
-            javaConv.getSourceSets().stream().forEach(s -> extractRangeConfig.get().addSources(s.getJava().getSrcDirs()));
+            //mainSource.resources(v -> {
+            //}); //TODO: Asset downloading, needs asset index from json.
+            //javaConv.getSourceSets().stream().forEach(s -> extractRangeConfig.get().addSources(s.getJava().getSrcDirs()));
+            // Only add main source, as we inject the patchedSrc into it as a sourceset.
+            extractRangeConfig.get().addSources(mainSource.getJava().getSrcDirs());
             extractRangeConfig.get().addDependencies(javaCompile.getClasspath());
 
             if (extension.patches != null && !extension.patches.exists()) { //Auto-make folders so that gradle doesnt explode some tasks.
