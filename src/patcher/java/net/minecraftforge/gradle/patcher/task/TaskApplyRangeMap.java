@@ -52,7 +52,7 @@ public class TaskApplyRangeMap extends JarExec {
 
     public TaskApplyRangeMap() {
         tool = Utils.SRG2SOURCE;
-        args = new String[] { "--apply", "--input", "{input}", "--range", "{range}", "--srg", "{srg}", "--exc", "{exc}", "--output", "{output}", "--keepImports", "true"};
+        args = new String[] { "--apply", "--input", "{input}", "--range", "{range}", "--srg", "{srg}", "--exc", "{exc}", "--output", "{output}", "--keepImports", "{keepImports}"};
     }
 
     @Override
