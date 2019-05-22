@@ -66,7 +66,7 @@ public class TaskCreateExc extends DefaultTask {
         List<String> out = new ArrayList<>();
 
         List<String> lines = Files.readLines(getSrg(), StandardCharsets.UTF_8);
-        lines = lines.stream().map(line -> line.split("#")[0]).filter(l -> !Strings.isNullOrEmpty(l.trim())).collect(Collectors.toList()); //Strip enpty/comments
+        lines = lines.stream().map(line -> line.split("#")[0]).filter(l -> !Strings.isNullOrEmpty(l.trim())).collect(Collectors.toList()); //Strip empty/comments
 
         Map<String, String> classes = new HashMap<>();
         lines.stream()

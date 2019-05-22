@@ -20,30 +20,23 @@
 
 package net.minecraftforge.gradle.patcher.task;
 
-import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
-import org.gradle.api.tasks.TaskAction;
-
-import net.minecraftforge.gradle.common.util.ChainedInputSupplier;
-import net.minecraftforge.srg2source.rangeapplier.RangeApplier;
-import net.minecraftforge.srg2source.util.io.FolderSupplier;
-import net.minecraftforge.srg2source.util.io.InputSupplier;
-import net.minecraftforge.srg2source.util.io.OutputSupplier;
-import net.minecraftforge.srg2source.util.io.ZipInputSupplier;
-import net.minecraftforge.srg2source.util.io.ZipOutputSupplier;
+import net.minecraftforge.gradle.common.task.JarExec;
+import net.minecraftforge.gradle.common.util.Utils;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-public class TaskApplyRangeMap extends DefaultTask {
+public class TaskApplyRangeMap extends JarExec {
 
     //private Set<String> srgExtra = new HashSet<>(); //TODO: Make S2S read strings easier
     //private Set<String> excExtra = new HashSet<>(); //TODO: Make S2S read strings easier
@@ -56,32 +49,42 @@ public class TaskApplyRangeMap extends DefaultTask {
     public boolean keepImports = true;
 
     private File output = getProject().file("build/" + getName() + "/output.zip");
-    private File log = getProject().file("build/" + getName() + "/log.txt");
 
-    @TaskAction
-    public void applyRangeMap() throws IOException {
-        RangeApplier apply = new RangeApplier();
-
-        apply.readSrg(getSrgFiles());
-        apply.readParamMap(getExcFiles());
-        apply.setKeepImports(getKeepImports());
-
-        try (FileOutputStream fos = new FileOutputStream(log);
-            OutputSupplier out = new ZipOutputSupplier(getOutput())) {
-            apply.setOutLogger(new PrintStream(fos));
-            apply.remapSources(getInputSupplier(), out, getRangeMap(), getAnnotate());
-        }
+    public TaskApplyRangeMap() {
+        tool = Utils.SRG2SOURCE;
+        args = new String[] { "--apply", "--input", "{input}", "--range", "{range}", "--srg", "{srg}", "--exc", "{exc}", "--output", "{output}"};
     }
 
-    @SuppressWarnings("resource")
-    private InputSupplier getInputSupplier() throws IOException {
-        ChainedInputSupplier inputs = new ChainedInputSupplier();
-        for (File src : getSources()) {
-            if (src.exists()) {
-                inputs.add(src.isDirectory() ? new FolderSupplier(src) : new ZipInputSupplier(src));
-            }
+    @Override
+    protected List<String> filterArgs() {
+        Map<String, String> replace = new HashMap<>();
+        replace.put("{range}", getRangeMap().getAbsolutePath());
+        replace.put("{output}", getOutput().getAbsolutePath());
+        replace.put("{annotate}", getAnnotate() ? "true" : "false");
+        replace.put("{keep_imports}", getKeepImports() ? "true" : "false");
+
+        List<String> _args = new ArrayList<>();
+        for (String arg : getArgs()) {
+            if ("{input}".equals(arg))
+                expand(_args, getSources());
+            else if ("{srg}".equals(arg))
+                expand(_args, getSrgFiles());
+            else if ("{exc}".equals(arg))
+                expand(_args, getExcFiles());
+            else
+                _args.add(replace.getOrDefault(arg, arg));
         }
-        return inputs.shrink();
+        return _args;
+    }
+
+    private void expand(List<String> _args, Collection<File> files)
+    {
+        String prefix = _args.get(_args.size() - 1);
+        _args.remove(_args.size() - 1);
+        files.forEach(f -> {
+            _args.add(prefix);
+            _args.add(f.getAbsolutePath());
+        });
     }
 
     @InputFiles

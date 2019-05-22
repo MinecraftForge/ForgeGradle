@@ -310,6 +310,7 @@ public class MCPRepo extends BaseRepo {
         return ret;
     }
 
+    @SuppressWarnings("unused")
     private File findRenames(String classifier, MappingFile.Format format, String version, boolean toObf) throws IOException {
         String ext = format.name().toLowerCase();
         //File names = findNames(version));
@@ -353,6 +354,7 @@ public class MCPRepo extends BaseRepo {
         return map;
     }
 
+    @SuppressWarnings("unused")
     private File findRenames(String classifier, MappingFile.Format format, String version, String mapping, boolean obf, boolean reverse) throws IOException {
         String ext = format.name().toLowerCase();
         File names = findNames(version);

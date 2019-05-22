@@ -28,7 +28,6 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.io.Files;
-import joptsimple.internal.Strings;
 import net.minecraftforge.gradle.common.util.Utils;
 
 import java.io.File;
@@ -60,7 +59,7 @@ public class TaskFilterNewJar extends DefaultTask { //TODO: Copy task?
         }
 
         Set<String> classes = new HashSet<>();
-        List<String> lines = Files.readLines(getSrg(), StandardCharsets.UTF_8).stream().map(line -> line.split("#")[0]).filter(l -> !Strings.isNullOrEmpty(l.trim())).collect(Collectors.toList());
+        List<String> lines = Files.readLines(getSrg(), StandardCharsets.UTF_8).stream().map(line -> line.split("#")[0]).filter(l -> l != null & !l.trim().isEmpty()).collect(Collectors.toList());
         lines.stream()
         .filter(line -> !line.startsWith("\t") || (line.indexOf(':') != -1 && line.startsWith("CL:")))
         .map(line -> line.indexOf(':') != -1 ? line.substring(4).split(" ") : line.split(" "))

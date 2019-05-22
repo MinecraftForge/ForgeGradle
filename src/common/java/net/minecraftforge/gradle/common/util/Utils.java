@@ -80,6 +80,7 @@ public class Utils {
     public static final String BINPATCHER =  "net.minecraftforge:binarypatcher:1.+:fatjar";
     public static final String ACCESSTRANSFORMER = "net.minecraftforge:accesstransformers:0.14.+:fatjar";
     public static final String SPECIALSOURCE = "net.md-5:SpecialSource:1.8.3:shaded";
+    public static final String SRG2SOURCE =  "net.minecraftforge:Srg2Source:5.+:fatjar";
 
     public static void extractFile(ZipFile zip, String name, File output) throws IOException {
         extractFile(zip, zip.getEntry(name), output);

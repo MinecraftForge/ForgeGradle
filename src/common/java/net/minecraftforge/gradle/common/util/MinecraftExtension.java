@@ -31,7 +31,6 @@ import org.gradle.api.Task;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.TaskProvider;
 
-import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
@@ -60,7 +59,7 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         return project;
     }
 
-    public NamedDomainObjectContainer<RunConfig> runs(Closure closure) {
+    public NamedDomainObjectContainer<RunConfig> runs(@SuppressWarnings("rawtypes") Closure closure) {
         return runs.configure(closure);
     }
 
@@ -73,6 +72,7 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
             throw new MissingPropertyException(name);
         }
 
+        @SuppressWarnings("rawtypes")
         final Closure closure = (Closure) value;
         final RunConfig runConfig = getRuns().maybeCreate(name);
 

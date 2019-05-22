@@ -110,6 +110,7 @@ public class VersionJson {
 
                 JsonElement val = obj.get("value");
                 Rule[] rules = Utils.GSON.fromJson(obj.get("rules"), Rule[].class);
+                @SuppressWarnings("unchecked")
                 List<String> value = val.isJsonPrimitive() ? Collections.singletonList(val.getAsString()) : Utils.GSON.fromJson(val, List.class);
 
                 return new Argument(rules, value);

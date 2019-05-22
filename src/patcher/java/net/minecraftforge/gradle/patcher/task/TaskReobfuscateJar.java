@@ -33,7 +33,6 @@ import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.io.Files;
 
-import joptsimple.internal.Strings;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 
 import java.io.BufferedOutputStream;
@@ -119,7 +118,7 @@ public class TaskReobfuscateJar extends DefaultTask {
             java.exec();
 
             List<String> lines = Files.readLines(getSrg(), StandardCharsets.UTF_8);
-            lines = lines.stream().map(line -> line.split("#")[0]).filter(l -> !Strings.isNullOrEmpty(l.trim())).collect(Collectors.toList()); //Strip empty/comments
+            lines = lines.stream().map(line -> line.split("#")[0]).filter(l -> l != null & !l.trim().isEmpty()).collect(Collectors.toList()); //Strip empty/comments
 
             Set<String> packages = new HashSet<>();
             lines.stream()
@@ -137,7 +136,7 @@ public class TaskReobfuscateJar extends DefaultTask {
                  ZipOutputStream out = new ZipOutputStream(new FileOutputStream(getOutput()))) {
                 for (Enumeration<? extends ZipEntry> enu = zin.entries(); enu.hasMoreElements(); ) {
                     ZipEntry entry = enu.nextElement();
-                    boolean filter = entry.isDirectory() || entry.getName().startsWith("mcp/"); //Diretories and MCP's annotations
+                    boolean filter = entry.isDirectory() || entry.getName().startsWith("mcp/"); //Directories and MCP's annotations
                     if (!keepPackages) filter |= packages.contains(entry.getName());
                     if (!keepData) filter |= !entry.getName().endsWith(".class");
 

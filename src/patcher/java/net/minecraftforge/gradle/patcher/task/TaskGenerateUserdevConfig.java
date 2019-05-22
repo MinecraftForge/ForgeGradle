@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -201,7 +200,7 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
     }
 
     @Nonnull
-    public NamedDomainObjectContainer<RunConfig> runs(Closure closure) {
+    public NamedDomainObjectContainer<RunConfig> runs(@SuppressWarnings("rawtypes") Closure closure) {
         return runs.configure(closure);
     }
 
@@ -216,6 +215,7 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
             throw new MissingPropertyException(name);
         }
 
+        @SuppressWarnings("rawtypes")
         final Closure closure = (Closure) value;
         final RunConfig runConfig = getRuns().maybeCreate(name);
 

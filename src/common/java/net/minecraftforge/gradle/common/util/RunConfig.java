@@ -31,7 +31,6 @@ import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.Serializable;
@@ -42,7 +41,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -265,7 +263,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         return workDir;
     }
 
-    public NamedDomainObjectContainer<ModConfig> mods(Closure closure) {
+    public NamedDomainObjectContainer<ModConfig> mods(@SuppressWarnings("rawtypes") Closure closure) {
         return mods.configure(closure);
     }
 

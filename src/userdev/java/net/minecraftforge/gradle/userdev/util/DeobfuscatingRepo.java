@@ -34,6 +34,7 @@ import java.util.stream.Stream;
  * Takes in SRG names jars/sources and remaps them using MCPNames.
  */
 public class DeobfuscatingRepo extends BaseRepo {
+    @SuppressWarnings("unused")
     private final Project project;
 
     //once resolved by gradle, will contain SRG-named artifacts for us to deobf

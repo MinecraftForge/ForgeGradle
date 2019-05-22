@@ -165,6 +165,10 @@ public class MavenArtifactDownloader {
                 ret = ver.getValue();
             }
         }
+
+        if (ret == null)
+            return null;
+
         VERSIONS.put(artifact.getDescriptor(), version.getVersion());
         return ret;
     }
