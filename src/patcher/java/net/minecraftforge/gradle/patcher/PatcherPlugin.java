@@ -432,7 +432,7 @@ public class PatcherPlugin implements Plugin<Project> {
                     throw new IllegalStateException("Parent must either be a Patcher or MCP project");
                 }
             }
-            project.getDependencies().add(MC_DEP_CONFIG, "net.minecraft:client:" + extension.mcVersion + ":extra");
+            project.getDependencies().add(MC_DEP_CONFIG, "net.minecraft:joined:" + extension.mcVersion + ":extra");
             project.getDependencies().add(MC_DEP_CONFIG, extension.getMappings());
 
             if (dlMCMetaConfig.get().getMCVersion() == null) {

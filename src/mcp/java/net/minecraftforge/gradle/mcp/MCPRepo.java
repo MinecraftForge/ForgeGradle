@@ -152,6 +152,7 @@ public class MCPRepo extends BaseRepo {
                 switch (classifier) {
                     case "":              return findRaw(name, version);
                     case "srg":           return findSrg(name, version);
+                    case "extra":         return findExtra(name, version);
                 }
             }
         } else if (group.equals(GROUP_MCP)) {
@@ -396,5 +397,26 @@ public class MCPRepo extends BaseRepo {
         }
 
         return file;
+    }
+
+    private File findExtra(String side, String version) throws IOException {
+        File raw = findRaw(side, version);
+        File mcp = getMCP(version);
+        if (raw == null || mcp == null)
+            return null;
+
+        File extra = cacheMC(side, version, "extra", "jar");
+        HashStore cache = commonHash(mcp).load(cacheMC(side, version, "extra", "jar.input"))
+                .add("raw", raw)
+                .add("mcp", mcp);
+
+        if (!cache.isSame() || !extra.exists()) {
+            MCPWrapper wrapper = getWrapper(version, mcp);
+            byte[] data = wrapper.getData("mappings");
+            MinecraftRepo.splitJar(raw, new ByteArrayInputStream(data), extra, false);
+            cache.save();
+        }
+
+        return extra;
     }
 }

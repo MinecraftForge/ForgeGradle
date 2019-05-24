@@ -30,23 +30,20 @@ sourceSets {
     common
     mcp
     patcher
-    forgedev
     userdev
 }
 
 configurations {
     mcpImplementation.extendsFrom commonImplementation
     patcherImplementation.extendsFrom commonImplementation
-    forgedevImplementation.extendsFrom patcherImplementation
     userdevImplementation.extendsFrom mcpImplementation
-    implementation.extendsFrom mcpImplementation, patcherImplementation, forgedevImplementation, userdevImplementation
+    implementation.extendsFrom mcpImplementation, patcherImplementation, userdevImplementation
 }
 
 jar {
     from sourceSets.common.output
     from sourceSets.mcp.output
     from sourceSets.patcher.output
-    from sourceSets.forgedev.output
     from sourceSets.userdev.output
 }
 
@@ -89,9 +86,6 @@ dependencies {
     mcpImplementation sourceSets.common.output
     patcherImplementation sourceSets.mcp.output
     patcherImplementation sourceSets.common.output
-    forgedevImplementation sourceSets.mcp.output
-    forgedevImplementation sourceSets.common.output
-    forgedevImplementation sourceSets.patcher.output
     userdevImplementation sourceSets.mcp.output
     userdevImplementation sourceSets.common.output
 }

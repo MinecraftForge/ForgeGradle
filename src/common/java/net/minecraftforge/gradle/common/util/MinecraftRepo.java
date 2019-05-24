@@ -21,6 +21,7 @@
 package net.minecraftforge.gradle.common.util;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -178,7 +179,7 @@ public class MinecraftRepo extends BaseRepo {
 
     protected File findPom(String side, String version, File json) throws IOException {
         File pom = cache("versions", version, side + ".pom");
-        HashStore cache = commonCache(cache("versions", version, side + ".pom.input"));
+        HashStore cache = commonCache(cache("versions", version, side + ".pom"));
 
         if ("client".equals(side)) {
             cache.add(json);
@@ -235,7 +236,7 @@ public class MinecraftRepo extends BaseRepo {
         File raw = findRaw(side, version, json);
         File mappings = findMappings(version);
         File extra = cache("versions", version, side + "-extra.jar");
-        HashStore cache = commonCache(cache("versions", version, side + "-extra.input"))
+        HashStore cache = commonCache(cache("versions", version, side + "-extra.jar"))
                 .add("raw", raw)
                 .add("mappings", mappings);
 
@@ -251,7 +252,7 @@ public class MinecraftRepo extends BaseRepo {
         File raw = findRaw(side, version, json);
         File mappings = findMappings(version);
         File extra = cache("versions", version, side + "-slim.jar");
-        HashStore cache = commonCache(cache("versions", version, side + "-slim.input"))
+        HashStore cache = commonCache(cache("versions", version, side + "-slim.jar"))
                 .add("raw", raw)
                 .add("mappings", mappings);
 
@@ -264,13 +265,19 @@ public class MinecraftRepo extends BaseRepo {
         return extra;
     }
 
-    private void splitJar(File raw, File mappings, File output, boolean slim) throws IOException {
+    private static void splitJar(File raw, File mappings, File output, boolean slim) throws IOException {
+        try (FileInputStream input = new FileInputStream(mappings)) {
+            splitJar(raw, input, output, slim);
+        }
+    }
+
+    public static void splitJar(File raw, InputStream mappings, File output, boolean slim) throws IOException {
         try (ZipFile zin = new ZipFile(raw);
              FileOutputStream fos = new FileOutputStream(output);
              ZipOutputStream out = new ZipOutputStream(fos)) {
 
             Set<String> whitelist = new HashSet<>();
-            List<String> lines = Files.lines(Paths.get(mappings.getAbsolutePath())).map(line -> line.split("#")[0]).filter(l -> !Strings.isNullOrEmpty(l.trim())).collect(Collectors.toList()); //Strip comments and empty lines
+            List<String> lines = Utils.lines(mappings).map(line -> line.split("#")[0]).filter(l -> !Strings.isNullOrEmpty(l.trim())).collect(Collectors.toList()); //Strip comments and empty lines
             lines.stream()
             .filter(line -> !line.startsWith("\t") || (line.indexOf(':') != -1 && line.startsWith("CL:"))) // Class lines only
             .map(line -> line.indexOf(':') != -1 ? line.substring(4).split(" ") : line.split(" ")) //Convert to: OBF SRG
@@ -310,7 +317,7 @@ public class MinecraftRepo extends BaseRepo {
     private File findData(String side, String version, File json) throws IOException {
         File raw = findRaw(side, version, json);
         File extra = cache("versions", version, side + "-data.jar");
-        HashStore cache = commonCache(cache("versions", version, side + "-data.input"))
+        HashStore cache = commonCache(cache("versions", version, side + "-data.jar"))
                 .add("raw", raw);
 
         if (!cache.isSame() || !extra.exists()) {
