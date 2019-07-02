@@ -167,7 +167,8 @@ public class UserDevPlugin implements Plugin<Project> {
                 p.getLogger().lifecycle("New Dep: " + newDep);
                 ExternalModuleDependency ext = (ExternalModuleDependency) p.getDependencies().create(newDep);
                 {
-                    ext.setChanging(true); //TODO: Remove when not in dev
+                    if (MinecraftUserRepo.CHANGING_USERDEV)
+                        ext.setChanging(true);
                     minecraft.resolutionStrategy(strat -> {
                         strat.cacheChangingModulesFor(10, TimeUnit.SECONDS);
                     });

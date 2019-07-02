@@ -34,6 +34,7 @@ import org.gradle.api.tasks.TaskAction;
 import com.google.common.io.Files;
 
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
+import net.minecraftforge.gradle.common.util.Utils;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -57,7 +58,7 @@ import java.util.zip.ZipOutputStream;
 
 public class TaskReobfuscateJar extends DefaultTask {
 
-    private String tool = "net.md-5:SpecialSource:1.8.3:shaded";
+    private String tool = Utils.SPECIALSOURCE;
     private String[] args = new String[] {"--in-jar", "{input}", "--out-jar", "{output}", "--srg-in", "{srg}", "--live"};
     private FileCollection classpath = null;
     private File input;

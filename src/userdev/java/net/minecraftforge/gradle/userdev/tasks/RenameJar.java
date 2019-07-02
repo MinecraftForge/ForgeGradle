@@ -31,12 +31,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class RenameJar extends JarExec {
-    private File input;
+    private Supplier<File> input;
     private File output;
-    private File mappings;
+    private Supplier<File> mappings;
 
     public RenameJar() {
         tool = Utils.SPECIALSOURCE;
@@ -55,17 +56,23 @@ public class RenameJar extends JarExec {
 
     @InputFile
     public File getMappings() {
-        return mappings;
+        return mappings.get();
     }
     public void setMappings(File value) {
+        this.mappings = () -> value;
+    }
+    public void setMappings(Supplier<File> value) {
         this.mappings = value;
     }
 
     @InputFile
     public File getInput() {
-        return input;
+        return input.get();
     }
     public void setInput(File value) {
+        this.input = () -> value;
+    }
+    public void setInput(Supplier<File> value) {
         this.input = value;
     }
 

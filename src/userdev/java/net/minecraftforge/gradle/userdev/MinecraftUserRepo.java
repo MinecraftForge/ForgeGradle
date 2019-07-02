@@ -94,7 +94,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 public class MinecraftUserRepo extends BaseRepo {
-    private static final boolean CHANGING_USERDEV = true; //Used when testing to update the userdev cache every 30 seconds.
+    public static final boolean CHANGING_USERDEV = false; //Used when testing to update the userdev cache every 30 seconds.
     private final Project project;
     private final String GROUP;
     private final String NAME;
@@ -177,7 +177,11 @@ public class MinecraftUserRepo extends BaseRepo {
             .forEach(e -> {
                 String dep = getDependencyString();
                 if (e.getClassifier() != null)
+                {
                     dep += ":" + e.getClassifier();
+                    if (e.getClassifier().indexOf('.') != -1)
+                        throw new IllegalArgumentException("Can not set Minecraft dependency with classifier containing '.'");
+                }
                 if (e.getExtension() != null && !"jar".equals(e.getExtension()))
                     dep += "@" + e.getExtension();
 
