@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.userdev;
 
+import groovy.lang.Closure;
 import groovy.lang.GroovyObjectSupport;
 import net.minecraftforge.gradle.userdev.util.DependencyRemapper;
 import org.gradle.api.Project;
@@ -37,7 +38,11 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
 
     @SuppressWarnings("unused")
     public Dependency deobf(Object dependency) {
-        Dependency baseDependency = project.getDependencies().create(dependency);
+        return deobf(dependency, null);
+    }
+
+    public Dependency deobf(Object dependency, Closure configure){
+        Dependency baseDependency = project.getDependencies().create(dependency, configure);
         project.getConfigurations().getByName(UserDevPlugin.OBF).getDependencies().add(baseDependency);
 
         return remapper.remap(baseDependency);
