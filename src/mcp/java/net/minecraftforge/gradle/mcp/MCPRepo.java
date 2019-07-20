@@ -230,14 +230,15 @@ public class MCPRepo extends BaseRepo {
             if (!"server".equals(side)) {
                 VersionJson meta = Utils.loadJson(json, VersionJson.class);
                 for (VersionJson.Library lib : meta.libraries) {
-                    //TODO: Filter?
-                    builder.dependencies().add(lib.name, "compile");
-                    if (lib.downloads.classifiers != null) {
-                        if (lib.downloads.classifiers.containsKey("test")) {
-                            builder.dependencies().add(lib.name, "test").withClassifier("test");
-                        }
-                        if (lib.natives != null && lib.natives.containsKey(MinecraftRepo.CURRENT_OS) && !lib.getArtifact().getName().contains("java-objc-bridge")) {
-                            builder.dependencies().add(lib.name, "runtime").withClassifier(lib.natives.get(MinecraftRepo.CURRENT_OS));
+                    if (lib.isAllowed()) {
+                        builder.dependencies().add(lib.name, "compile");
+                        if (lib.downloads.classifiers != null) {
+                            if (lib.downloads.classifiers.containsKey("test")) {
+                                builder.dependencies().add(lib.name, "test").withClassifier("test");
+                            }
+                            if (lib.natives != null && lib.natives.containsKey(MinecraftRepo.CURRENT_OS) && !lib.getArtifact().getName().contains("java-objc-bridge")) {
+                                builder.dependencies().add(lib.name, "runtime").withClassifier(lib.natives.get(MinecraftRepo.CURRENT_OS));
+                            }
                         }
                     }
                 }
