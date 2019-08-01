@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.HashSet;
 import java.util.ArrayDeque;
 import java.util.Map.Entry;
@@ -62,20 +64,29 @@ import static org.objectweb.asm.Opcodes.*;
 public class ExtractInheritance extends DefaultTask {
     private static final Gson GSON = new GsonBuilder().excludeFieldsWithModifiers(Modifier.PRIVATE).setPrettyPrinting().create();
 
-    private File input;
+    private Supplier<File> input;
     @InputFile
-    public File getInput(){ return input; }
-    public void setInput(File v){ input = v; }
+    public File getInput(){ return input == null ? null : input.get(); }
+    public void setInput(Supplier<File> v) { input = v; }
+    public void input(Supplier<File> v) { setInput(v); }
+    public void setInput(File v){ setInput(() -> v); }
+    public void input(File v) { setInput(v); }
 
-    private List<File> libraries = new ArrayList<>();
+    private List<Supplier<File>> libraries = new ArrayList<>();
     @InputFiles
-    public List<File> getLibraries() { return libraries; }
-    public void addLibrary(File lib){ libraries.add(lib); }
+    public List<File> getLibraries() { return libraries.stream().map(Supplier::get).collect(Collectors.toList()); }
+    public void addLibrary(Supplier<File> v){ libraries.add(v); }
+    public void library(Supplier<File> v) { addLibrary(v); }
+    public void addLibrary(File lib){ addLibrary(() -> lib); }
+    public void library(File v) { addLibrary(v); }
 
-    private File output;
+    private Supplier<File> output = () -> getProject().file("build/" + getName() + "/output.json");
     @OutputFile
-    public File getOutput(){ return output; }
-    public void setOutput(File v){ output = v; }
+    public File getOutput(){ return output.get(); }
+    public void setOutput(Supplier<File> v){ output = v; }
+    public void output(Supplier<File> v){ setOutput(v); }
+    public void setOutput(File v){ setInput(() -> v); }
+    public void output(File v){ setOutput(v); }
 
     private Map<String, ClassInfo> inClasses = new HashMap<>();
     private Map<String, ClassInfo> libClasses = new HashMap<>();
