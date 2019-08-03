@@ -74,7 +74,7 @@ public class UserdevConfigV1 extends Config {
         this.sass.add(value);
     }
     public List<String> getSASs() {
-        return this.sass == null ? Collections.emptyList() : this.ats;
+        return this.sass == null ? Collections.emptyList() : this.sass;
     }
     public void addSRG(String value) {
         if (this.srgs == null) {
