@@ -48,6 +48,7 @@ import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
+import net.minecraftforge.gradle.mcp.function.SideAnnotationStripperFunction;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import net.minecraftforge.gradle.mcp.util.MCPWrapper;
 import net.minecraftforge.gradle.userdev.tasks.AccessTransformJar;
@@ -1186,6 +1187,7 @@ public class MinecraftUserRepo extends BaseRepo {
         private final UserdevConfigV1 config;
         private Patcher parent;
         private String ATs = null;
+        private String SASs = null;
         private Map<String, PatchFile> patches;
 
         private Patcher(Project project, File data, String artifact) {
@@ -1267,6 +1269,29 @@ public class MinecraftUserRepo extends BaseRepo {
             return ATs;
         }
 
+        public String getSASData() {
+            if (config.getSASs().isEmpty())
+                return null;
+
+            if (SASs == null) {
+                StringBuilder buf = new StringBuilder();
+                try (ZipFile zip = new ZipFile(data)) {
+                    for (String sas : config.getSASs()) {
+                        ZipEntry entry = zip.getEntry(sas);
+                        if (entry == null)
+                            throw new IllegalStateException("Invalid Patcher config, Missing Side Annotation Stripper: " + sas + " Zip: " + data);
+                        buf.append("# ").append(artifact).append(" - ").append(sas).append('\n');
+                        buf.append(IOUtils.toString(zip.getInputStream(entry), Charsets.UTF_8));
+                        buf.append('\n');
+                    }
+                    SASs = buf.toString();
+                } catch (IOException e) {
+                    throw new RuntimeException("Invalid patcher config: " + artifact, e);
+                }
+            }
+            return SASs;
+        }
+
         public File getZip() {
             return data;
         }
@@ -1319,25 +1344,35 @@ public class MinecraftUserRepo extends BaseRepo {
                             List<File> ATS = MinecraftUserRepo.this.ATS;
 
                             AccessTransformerFunction function = new AccessTransformerFunction(project, ATS);
-                            boolean empty = true;
+                            boolean emptyAT = true;
                             if (AT_HASH != null) {
                                 dir = new File(dir, AT_HASH);
-                                empty = false;
+                                emptyAT = false;
                             }
+
+                            SideAnnotationStripperFunction stripper = new SideAnnotationStripperFunction(project, Collections.emptyList());
+                            boolean emptyStripper = true;
 
                             Patcher patcher = MinecraftUserRepo.this.parent;
                             while (patcher != null) {
                                 String at = patcher.getATData();
                                 if (at != null && !at.isEmpty()) {
                                     function.addTransformer(at);
-                                    empty = false;
+                                    emptyAT = false;
+                                }
+                                String sas = patcher.getSASData();
+                                if (sas != null) {
+                                    stripper.addData(sas);
+                                    emptyStripper = false;
                                 }
                                 patcher = patcher.getParent();
                             }
 
-                            Map<String, MCPFunction> preDecomps = Maps.newHashMap();
-                            if (!empty)
+                            Map<String, MCPFunction> preDecomps = Maps.newLinkedHashMap();
+                            if (!emptyAT)
                                 preDecomps.put("AccessTransformer", function);
+                            if (!emptyStripper)
+                                preDecomps.put("SideStripper", stripper);
 
                             ret = new MCPRuntime(project, data, getConfig(), side, dir, preDecomps);
                             runtimes.put(side, ret);

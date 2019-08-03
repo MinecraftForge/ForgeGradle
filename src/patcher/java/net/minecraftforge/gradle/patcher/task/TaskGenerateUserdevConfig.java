@@ -57,6 +57,7 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
     private final NamedDomainObjectContainer<RunConfig> runs;
 
     private Set<File> ats = new TreeSet<>();
+    private Set<File> sass = new TreeSet<>();
     private Set<File> srgs = new TreeSet<>();
     private List<String> srgLines = new ArrayList<>();
     private File output = getProject().file("build/" + getName() + "/output.json");
@@ -84,6 +85,7 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
         if (libraries != null && !libraries.isEmpty())
             libraries.forEach(json::addLibrary);
         getATs().forEach(at -> json.addAT("ats/" + at.getName()));
+        getSASs().forEach(at -> json.addSAS("sas/" + at.getName()));
         getSRGs().forEach(srg -> json.addSRG("srgs/" + srg.getName()));
         getSRGLines().forEach(json::addSRG);
         addParent(json, getProject());
@@ -181,6 +183,14 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
     }
     public void addAT(File value) {
         this.ats.add(value);
+    }
+
+    @Input
+    public Set<File> getSASs() {
+        return this.sass;
+    }
+    public void addSAS(File value) {
+        this.sass.add(value);
     }
 
     @Input

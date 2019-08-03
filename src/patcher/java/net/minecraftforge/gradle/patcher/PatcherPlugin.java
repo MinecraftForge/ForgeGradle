@@ -35,8 +35,10 @@ import net.minecraftforge.gradle.mcp.MCPExtension;
 import net.minecraftforge.gradle.mcp.MCPPlugin;
 import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
+import net.minecraftforge.gradle.mcp.function.SideAnnotationStripperFunction;
 import net.minecraftforge.gradle.mcp.task.DownloadMCPConfigTask;
 import net.minecraftforge.gradle.mcp.task.SetupMCPTask;
+import net.minecraftforge.gradle.patcher.task.CreateFakeSASPatches;
 import net.minecraftforge.gradle.patcher.task.DownloadMCPMappingsTask;
 import net.minecraftforge.gradle.patcher.task.GenerateBinPatches;
 import net.minecraftforge.gradle.patcher.task.TaskApplyMappings;
@@ -450,6 +452,38 @@ public class PatcherPlugin implements Plugin<Project> {
                     userdevJar.get().from(f, e -> e.into("ats/"));
                     userdevConfig.get().addAT(f);
                 });
+            }
+
+            if (!extension.getSideAnnotationStrippers().isEmpty()) {
+                Project mcp = getMcpParent(project);
+                if (mcp == null) {
+                    throw new IllegalStateException("SideAnnotationStrippers specified, with no MCP Parent");
+                }
+                SetupMCPTask setupMCP = (SetupMCPTask) mcp.getTasks().getByName("setupMCP");
+                setupMCP.addPreDecompile(project.getName() + "SideStripper", new SideAnnotationStripperFunction(mcp, extension.getSideAnnotationStrippers()));
+                extension.getSideAnnotationStrippers().forEach(f -> {
+                    userdevJar.get().from(f, e -> e.into("sas/"));
+                    userdevConfig.get().addSAS(f);
+                });
+            }
+
+            CreateFakeSASPatches fakePatches = null;
+            PatcherExtension ext = extension;
+            while (ext != null) {
+                if (!ext.getSideAnnotationStrippers().isEmpty()) {
+                    if (fakePatches == null)
+                        fakePatches = project.getTasks().register("createFakeSASPatches", CreateFakeSASPatches.class).get();
+                    ext.getSideAnnotationStrippers().forEach(fakePatches::addFile);
+                }
+                if (ext.parent != null)
+                    ext = ext.parent.getExtensions().findByType(PatcherExtension.class);
+            }
+
+            if (fakePatches != null) {
+                for (TaskProvider<GenerateBinPatches> task : Lists.newArrayList(genJoinedBinPatches, genClientBinPatches, genServerBinPatches)) {
+                    task.get().dependsOn(fakePatches);
+                    task.get().addPatchSet(fakePatches.getOutput());
+                }
             }
 
             applyRangeConfig.get().setExcFiles(extension.getExcs());

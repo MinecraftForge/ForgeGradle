@@ -43,6 +43,7 @@ public class UserdevConfigV1 extends Config {
     public String mcp;    // Do not specify this unless there is no parent.
     public String parent; // To fully resolve, we must walk the parents until we hit null, and that one must specify a MCP value.
     public List<String> ats;
+    public List<String> sass;
     public List<String> srgs;
     public List<String> srg_lines;
     public String binpatches; //To be applied to joined.jar, remapped, and added to the classpath
@@ -65,6 +66,15 @@ public class UserdevConfigV1 extends Config {
     }
     public List<String> getATs() {
         return this.ats == null ? Collections.emptyList() : this.ats;
+    }
+    public void addSAS(String value) {
+        if (this.sass == null) {
+            this.sass = new ArrayList<>();
+        }
+        this.sass.add(value);
+    }
+    public List<String> getSASs() {
+        return this.sass == null ? Collections.emptyList() : this.ats;
     }
     public void addSRG(String value) {
         if (this.srgs == null) {

@@ -47,6 +47,7 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
 
     protected String mappings;
     protected List<File> accessTransformers;
+    protected List<File> sideAnnotationStrippers;
 
     @Inject
     public MinecraftExtension(final Project project) {
@@ -128,6 +129,32 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         }
 
         return accessTransformers;
+    }
+
+    public void setSideAnnotationStrippers(List<File> value) {
+        this.sideAnnotationStrippers = new ArrayList<>(value);
+    }
+    public void setSideAnnotationStrippers(File... value) {
+        setSideAnnotationStrippers(Arrays.asList(value));
+    }
+    public void setSideAnnotationStripper(File value) {
+        getSideAnnotationStrippers().add(value);
+    }
+    public void setSideAnnotationStripper(File... values) {
+        for (File value : values)
+            setSideAnnotationStripper(value);
+    }
+    public void sideAnnotationStripper(File... values) {
+        setSideAnnotationStripper(values);
+    }
+    public void sideAnnotationStrippers(File... values) {
+        sideAnnotationStripper(values);
+    }
+    public List<File> getSideAnnotationStrippers() {
+        if (sideAnnotationStrippers == null) {
+            sideAnnotationStrippers = new ArrayList<>();
+        }
+        return sideAnnotationStrippers;
     }
 
     @SuppressWarnings("UnstableApiUsage")
