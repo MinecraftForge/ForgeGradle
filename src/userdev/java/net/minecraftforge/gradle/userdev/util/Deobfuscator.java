@@ -21,6 +21,8 @@
 package net.minecraftforge.gradle.userdev.util;
 
 import net.minecraftforge.gradle.common.util.*;
+import net.minecraftforge.gradle.userdev.tasks.RenameJarSrg2Mcp;
+
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.w3c.dom.Document;
@@ -44,6 +46,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Random;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -118,7 +121,12 @@ public class Deobfuscator {
                 .add("orig", original);
 
         if (!cache.isSame() || !output.exists()) {
-            SrgJarRenamer.rename(original, output, names);
+            RenameJarSrg2Mcp rename = project.getTasks().create("_RenameSrg2Mcp_" + new Random().nextInt(), RenameJarSrg2Mcp.class);
+            rename.setInput(original);
+            rename.setOutput(output);
+            rename.setMappings(names);
+            rename.apply();
+            project.getTasks().remove(rename);
 
             Utils.updateHash(output, HashFunction.SHA1);
             cache.save();

@@ -41,7 +41,6 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
-import org.objectweb.asm.Type;
 
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
@@ -117,9 +116,23 @@ public class TaskCreateExc extends DefaultTask {
         }
         List<String> ret = new ArrayList<String>();
         int idx = isStatic ? 0 : 1;
-        for (Type arg : Type.getArgumentTypes(desc)) {
+        int x = 1;
+        while (desc.charAt(x) != ')') {
+            int array = 0;
+            while (desc.charAt(x) == '[') {
+                x++;
+                array++;
+            }
+            int size = 1;
+            char type = desc.charAt(x);
+            if (array == 0 && (type == 'D' || type == 'J')) //Long/Double's are 2 wide.
+                size = 2;
+            if (type == 'L')
+                x = desc.indexOf(';', x);
+            x++;
+
             ret.add(prefix + idx + '_');
-            idx += arg.getSize();
+            idx += size;
         }
 
         return ret;
