@@ -66,7 +66,9 @@ public class SideAnnotationStripperFunction extends ExecuteFunction {
     @Override
     public File execute(MCPEnvironment env) throws IOException, InterruptedException, ExecutionException {
         if (data != null) {
-            File tmp = env.getFile("string_data.sas");
+            File tmp = env.getFile("string_data.sas").getAbsoluteFile();
+            if (!tmp.getParentFile().exists())
+                tmp.getParentFile().mkdirs();
             Files.write(tmp.toPath(), data.getBytes());
             List<String> args = new ArrayList<>(Arrays.asList(runArgs));
             args.add("--data");
