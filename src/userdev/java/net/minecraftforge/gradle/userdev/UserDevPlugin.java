@@ -74,6 +74,11 @@ public class UserDevPlugin implements Plugin<Project> {
                 final RenameJarInPlace task = project.getTasks().maybeCreate("reobf" + name, RenameJarInPlace.class);
                 task.setClasspath(java.getSourceSets().getByName("main").getCompileClasspath());
 
+                final Task createMcpToSrg = project.getTasks().findByName("createMcpToSrg");
+                if (createMcpToSrg != null) {
+                    task.setMappings(() -> createMcpToSrg.getOutputs().getFiles().getSingleFile());
+                }
+
                 project.getTasks().getByName("assemble").dependsOn(task);
 
                 // do after-Evaluate resolution, for the same of good error reporting
@@ -83,6 +88,10 @@ public class UserDevPlugin implements Plugin<Project> {
                         throw new IllegalStateException(jarName + "  is not a jar task. Can only reobf jars!");
                     task.setInput(((Jar) jar).getArchivePath());
                     task.dependsOn(jar);
+
+                    if (createMcpToSrg != null && task.getMappings().equals(createMcpToSrg.getOutputs().getFiles().getSingleFile())) {
+                        task.dependsOn(createMcpToSrg); // Add needed dependency if uses default mappings
+                    }
                 });
 
                 return task;
