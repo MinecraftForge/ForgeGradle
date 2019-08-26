@@ -25,7 +25,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -41,12 +43,16 @@ import com.google.common.io.CharStreams;
 import de.siegmar.fastcsv.reader.CsvContainer;
 import de.siegmar.fastcsv.reader.CsvReader;
 import de.siegmar.fastcsv.reader.CsvRow;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class McpNames {
     private static final String NEWLINE = System.getProperty("line.separator");
     private static final Pattern SRG_FINDER             = Pattern.compile("func_[0-9]+_[a-zA-Z_]+|field_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_\\b");
     private static final Pattern METHOD_JAVADOC_PATTERN = Pattern.compile("^(?<indent>(?: {3})+|\\t+)(?!return)(?:\\w+\\s+)*(?<generic><[\\w\\W]*>\\s+)?(?<return>\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>func_[0-9]+_[a-zA-Z_]+)\\(");
     private static final Pattern FIELD_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: {3})+|\\t+)(?!return)(?:\\w+\\s+)*(?:\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
+    private static final Pattern CLASS_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: )*|\\t*)([\\w|@]*\\s)*(class|interface|@interface|enum) (?<name>[\\w]+)");
+    private static final Pattern CLOSING_CURLY_BRACE    = Pattern.compile("^(?<indent>(?: )*|\\t*)}");
+    private static final Pattern PACKAGE_DECL           = Pattern.compile("^[\\s]*package(\\s)*(?<name>[\\w|.]+);$");
 
     public static McpNames load(File data) throws IOException {
         Map<String, String> names = new HashMap<>();
@@ -84,9 +90,15 @@ public class McpNames {
 
     public String rename(InputStream stream, boolean javadocs) throws IOException {
         List<String> lines = new ArrayList<>();
+        Deque<Pair<String, Integer>> innerClasses = new LinkedList<>(); //pair of inner class name & indentation
+        String _package = ""; //default package
         for (String line : CharStreams.readLines(new InputStreamReader(stream))) {
+            Matcher m = PACKAGE_DECL.matcher(line);
+            if(m.find())
+                _package = m.group("name") + ".";
+
             if (javadocs)
-                injectJavadoc(lines, line);
+                injectJavadoc(lines, line, _package, innerClasses);
             lines.add(replaceInLine(line));
         }
         return Joiner.on(NEWLINE).join(lines);
@@ -99,13 +111,12 @@ public class McpNames {
     /**
      * Injects a javadoc into the given list of lines, if the given line is a
      * method or field declaration.
-     *
      * @param lines The current file content (to be modified by this method)
      * @param line The line that was just read (will not be in the list)
-     * @param methodFunc A function that takes a method SRG id and returns its javadoc
-     * @param fieldFunc A function that takes a field SRG id and returns its javadoc
+     * @param _package the name of the package this file is declared to be in, in com.example format;
+     * @param innerClasses current position in inner class
      */
-    private void injectJavadoc(List<String> lines, String line) {
+    private void injectJavadoc(List<String> lines, String line, String _package, Deque<Pair<String, Integer>> innerClasses) {
         // methods
         Matcher matcher = METHOD_JAVADOC_PATTERN.matcher(line);
         if (matcher.find()) {
@@ -123,6 +134,36 @@ public class McpNames {
             String javadoc = docs.get(matcher.group("name"));
             if (!Strings.isNullOrEmpty(javadoc))
                 insertAboveAnnotations(lines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, false));
+
+            return;
+        }
+
+        //classes
+        matcher = CLASS_JAVADOC_PATTERN.matcher(line);
+        if(matcher.find()) {
+            //we maintain a stack of the current (inner) class in com.example.ClassName$Inner format (along with indentation)
+            //if the stack is not empty we are entering a new inner class
+            String currentClass = (innerClasses.isEmpty() ? _package : innerClasses.peek().getLeft() + "$") + matcher.group("name");
+            innerClasses.push(Pair.of(currentClass, matcher.group("indent").length()));
+            String javadoc = docs.get(currentClass);
+            if (!Strings.isNullOrEmpty(javadoc)) {
+                insertAboveAnnotations(lines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, true));
+            }
+
+            return;
+        }
+
+        //detect curly braces for inner class stacking/end identification
+        matcher = CLOSING_CURLY_BRACE.matcher(line);
+        if(matcher.find()){
+            if(!innerClasses.isEmpty()) {
+                int len = matcher.group("indent").length();
+                if (len == innerClasses.peek().getRight()) {
+                    innerClasses.pop();
+                } else if (len < innerClasses.peek().getRight()) {
+                    throw new IllegalArgumentException("Failed to properly track class blocks around class " + innerClasses.peek().getLeft() + ":" + (lines.size() + 1));
+                }
+            }
         }
     }
 
