@@ -25,6 +25,7 @@ import com.amadornes.artifactural.api.repository.Repository;
 import com.amadornes.artifactural.base.repository.ArtifactProviderBuilder;
 import com.amadornes.artifactural.base.repository.SimpleRepository;
 import com.cloudbees.diff.PatchException;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import net.minecraftforge.gradle.common.config.Config;
@@ -61,6 +62,7 @@ import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
@@ -76,8 +78,10 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -88,8 +92,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -880,25 +886,27 @@ public class MinecraftUserRepo extends BaseRepo {
         return decomp.exists() ? decomp : null;
     }
 
-    private File findPatched(boolean generate) throws IOException {
+    private Pair<File, Set<String>> findPatched(boolean generate) throws IOException {
         File decomp = findDecomp(generate);
         if (decomp == null || !decomp.exists()) {
             debug("  Finding Patched: Decomp not found");
-            return null;
+            return Pair.of(null, null);
         }
         if (parent == null) {
-            debug("  Finding Patched: No parent");
-            return decomp;
+            debug("  Finding PatchedNM: No parent");
+            return Pair.of(decomp, new ZipFile(decomp).stream().map(ZipEntry::getName).collect(Collectors.toSet()));
         }
 
         HashStore cache = commonHash(null).add("decomp", decomp);
 
         File patched = cacheAT("patched", "jar");
+        File originalClasses = cacheAT("originalclasses", "txt");
         debug("  Finding patched: " + decomp);
         cache.load(cacheAT("patched", "jar.input"));
-
-        if (cache.isSame() && patched.exists()) {
+        Set<String> classesFromDecomp;
+        if (cache.isSame() && patched.exists() && originalClasses.exists()) {
             debug("    Cache Hit");
+            classesFromDecomp = Files.lines(originalClasses.toPath()).collect(Collectors.toSet());
         } else if (patched.exists() || generate) {
             debug("    Generating");
             LinkedList<Patcher> parents = new LinkedList<>();
@@ -907,10 +915,9 @@ public class MinecraftUserRepo extends BaseRepo {
                 parents.addFirst(patcher);
                 patcher = patcher.getParent();
             }
-
             try (ZipFile zip = new ZipFile(decomp)) {
                 ZipContext context = new ZipContext(zip);
-
+                classesFromDecomp = zip.stream().map(ZipEntry::getName).collect(Collectors.toCollection(() -> new TreeSet<>(String::compareTo)));
                 boolean failed = false;
                 for (Patcher p : parents) {
                     Map<String, PatchFile> patches = p.getPatches();
@@ -977,16 +984,21 @@ public class MinecraftUserRepo extends BaseRepo {
                         patcher = patcher.getParent();
                     }
                 }
+                Files.write(originalClasses.toPath(), classesFromDecomp, StandardOpenOption.CREATE);
 
                 cache.save();
                 Utils.updateHash(patched, HashFunction.SHA1);
             }
+        } else {
+            classesFromDecomp = null;
         }
-        return patched.exists() ? patched : null;
+        return patched.exists() ? Pair.of(patched, classesFromDecomp) : Pair.of(null, null);
     }
 
     private File findSource(String mapping, boolean generate) throws IOException {
-        File patched = findPatched(generate);
+        Pair<File, Set<String>> patchedData = findPatched(generate);
+        File patched = patchedData.getLeft();
+        Set<String> originalClasses = patchedData.getRight();
         if (patched == null || !patched.exists()) {
             debug("  Finding Source: Patched not found");
             return null;
@@ -1021,9 +1033,8 @@ public class MinecraftUserRepo extends BaseRepo {
                 ZipEntry _old;
                 while ((_old = zin.getNextEntry()) != null) {
                     zout.putNextEntry(Utils.getStableEntry(_old.getName()));
-
                     if (_old.getName().endsWith(".java")) {
-                        String mapped = map.rename(zin, true);
+                        String mapped = map.rename(zin, originalClasses.contains(_old.getName()));
                         IOUtils.write(mapped, zout);
                     } else {
                         IOUtils.copy(zin, zout);

@@ -138,7 +138,6 @@ public class Deobfuscator {
 
     public File deobfSources(File original, String mappings, String... cachePath) throws IOException {
         project.getLogger().debug("Deobfuscating sources file {} with mappings {}", original.getName(), mappings);
-
         File names = findMapping(mappings);
         if (names == null || !names.exists()) {
             return null;
@@ -163,7 +162,7 @@ public class Deobfuscator {
                     zout.putNextEntry(Utils.getStableEntry(_old.getName()));
 
                     if (_old.getName().endsWith(".java")) {
-                        String mapped = map.rename(zin, true);
+                        String mapped = map.rename(zin, false);
                         IOUtils.write(mapped, zout);
                     } else {
                         IOUtils.copy(zin, zout);
