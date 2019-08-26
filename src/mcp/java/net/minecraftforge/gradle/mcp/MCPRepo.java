@@ -381,7 +381,7 @@ public class MCPRepo extends BaseRepo {
         McpNames map = mapCache.get(name);
         String hash = HashFunction.SHA1.hash(data);
         if (map == null || !hash.equals(map.hash)) {
-            map = McpNames.load(data);
+            map = McpNames.load(data, project.getLogger());
             mapCache.put(name, map);
         }
         return map;

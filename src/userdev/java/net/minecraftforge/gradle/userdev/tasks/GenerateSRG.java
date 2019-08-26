@@ -48,7 +48,7 @@ public class GenerateSRG extends DefaultTask {
 
         MappingFile obf_to_srg = MappingFile.load(srg);
         MappingFile ret = new MappingFile();
-        McpNames map = McpNames.load(names);
+        McpNames map = McpNames.load(names, getLogger());
         obf_to_srg.getPackages().forEach(e -> ret.addPackage(e.getMapped(), e.getMapped()));
         obf_to_srg.getClasses().forEach(cls -> {
            ret.addClass(cls.getMapped(), cls.getMapped());

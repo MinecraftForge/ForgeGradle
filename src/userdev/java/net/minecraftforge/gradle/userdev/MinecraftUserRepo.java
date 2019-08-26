@@ -819,7 +819,7 @@ public class MinecraftUserRepo extends BaseRepo {
         McpNames map = mapCache.get(name);
         String hash = HashFunction.SHA1.hash(data);
         if (map == null || !hash.equals(map.hash)) {
-            map = McpNames.load(data);
+            map = McpNames.load(data, project.getLogger());
             mapCache.put(name, map);
         }
         return map;
@@ -1010,7 +1010,7 @@ public class MinecraftUserRepo extends BaseRepo {
         if (cache.isSame() && sources.exists()) {
             debug("    Cache hit");
         } else if (sources.exists() || generate) {
-            McpNames map = McpNames.load(names);
+            McpNames map = McpNames.load(names, project.getLogger());
 
             if (!sources.getParentFile().exists())
                 sources.getParentFile().mkdirs();

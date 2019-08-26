@@ -44,6 +44,7 @@ import de.siegmar.fastcsv.reader.CsvContainer;
 import de.siegmar.fastcsv.reader.CsvReader;
 import de.siegmar.fastcsv.reader.CsvRow;
 import org.apache.commons.lang3.tuple.Pair;
+import org.gradle.api.logging.Logger;
 
 public class McpNames {
     private static final String NEWLINE = System.getProperty("line.separator");
@@ -53,8 +54,9 @@ public class McpNames {
     private static final Pattern CLASS_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: )*|\\t*)([\\w|@]*\\s)*(class|interface|@interface|enum) (?<name>[\\w]+)");
     private static final Pattern CLOSING_CURLY_BRACE    = Pattern.compile("^(?<indent>(?: )*|\\t*)}");
     private static final Pattern PACKAGE_DECL           = Pattern.compile("^[\\s]*package(\\s)*(?<name>[\\w|.]+);$");
+    private int currentMethodIndent = -1;
 
-    public static McpNames load(File data) throws IOException {
+    public static McpNames load(File data, Logger logger) throws IOException {
         Map<String, String> names = new HashMap<>();
         Map<String, String> docs = new HashMap<>();
         try (ZipFile zip = new ZipFile(data)) {
@@ -75,17 +77,19 @@ public class McpNames {
             }
         }
 
-        return new McpNames(HashFunction.SHA1.hash(data), names, docs);
+        return new McpNames(HashFunction.SHA1.hash(data), names, docs, logger);
     }
 
     private Map<String, String> names;
     private Map<String, String> docs;
     public final String hash;
+    private final Logger logger;
 
-    private McpNames(String hash, Map<String, String> names, Map<String, String> docs) {
+    private McpNames(String hash, Map<String, String> names, Map<String, String> docs, Logger logger) {
         this.hash = hash;
         this.names = names;
         this.docs = docs;
+        this.logger = logger;
     }
 
     public String rename(InputStream stream, boolean javadocs) throws IOException {
@@ -123,7 +127,7 @@ public class McpNames {
             String javadoc = docs.get(matcher.group("name"));
             if (!Strings.isNullOrEmpty(javadoc))
                 insertAboveAnnotations(lines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, true));
-
+            currentMethodIndent = matcher.group("indent").length();
             // worked, so return and don't try the fields.
             return;
         }
@@ -143,9 +147,23 @@ public class McpNames {
         if(matcher.find()) {
             //we maintain a stack of the current (inner) class in com.example.ClassName$Inner format (along with indentation)
             //if the stack is not empty we are entering a new inner class
+            int parentBlockIndentation = innerClasses.isEmpty() ? 0 : innerClasses.peek().getRight();
+            int currentIndentation = matcher.group("indent").length();
+            if (parentBlockIndentation >= currentIndentation) {
+                //We haven't closed a previous class correctly, so we backtrack now.
+                innerClasses.removeIf(p -> p.getRight() >= currentIndentation);
+            }
             String currentClass = (innerClasses.isEmpty() ? _package : innerClasses.peek().getLeft() + "$") + matcher.group("name");
-            innerClasses.push(Pair.of(currentClass, matcher.group("indent").length()));
+            if (parentBlockIndentation >= currentIndentation) {
+                logger.warn("Trying to recover inner class tracking, assuming " + currentClass + " is defined in line " + (lines.size() + 1));
+            }
+
+            innerClasses.push(Pair.of(currentClass, currentIndentation));
             String javadoc = docs.get(currentClass);
+            if (currentMethodIndent != 0) {
+                logger.warn("In " + currentClass + ":" + (lines.size() + 1) + " there likely is a method inner class, which we can't handle properly");
+            }
+            currentMethodIndent = -1;
             if (!Strings.isNullOrEmpty(javadoc)) {
                 insertAboveAnnotations(lines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, true));
             }
@@ -156,12 +174,15 @@ public class McpNames {
         //detect curly braces for inner class stacking/end identification
         matcher = CLOSING_CURLY_BRACE.matcher(line);
         if(matcher.find()){
+            if (matcher.group("indent").length() == currentMethodIndent) {
+                currentMethodIndent = -1;
+            }
             if(!innerClasses.isEmpty()) {
                 int len = matcher.group("indent").length();
                 if (len == innerClasses.peek().getRight()) {
                     innerClasses.pop();
                 } else if (len < innerClasses.peek().getRight()) {
-                    throw new IllegalArgumentException("Failed to properly track class blocks around class " + innerClasses.peek().getLeft() + ":" + (lines.size() + 1));
+                    logger.warn("Tracking inner classes failed around " + innerClasses.peek().getLeft() + ":" + (lines.size() + 1) +", classes may be annotated incorrectly. Is your indentation off?g");
                 }
             }
         }

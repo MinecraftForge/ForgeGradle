@@ -154,7 +154,7 @@ public class Deobfuscator {
                 .add("orig", original);
 
         if (!cache.isSame() || !output.exists()) {
-            McpNames map = McpNames.load(names);
+            McpNames map = McpNames.load(names, project.getLogger());
 
             try (ZipInputStream zin = new ZipInputStream(new FileInputStream(input));
                  ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(output))) {
