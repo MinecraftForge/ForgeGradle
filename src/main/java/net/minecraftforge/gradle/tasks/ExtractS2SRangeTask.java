@@ -20,15 +20,14 @@
 package net.minecraftforge.gradle.tasks;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.List;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.SequencedInputSupplier;
 import net.minecraftforge.gradle.util.SourceDirSetSupplier;
-import net.minecraftforge.srg2source.ast.RangeExtractor;
+import net.minecraftforge.srg2source.api.RangeExtractorBuilder;
+import net.minecraftforge.srg2source.api.SourceVersion;
 import net.minecraftforge.srg2source.util.io.FolderSupplier;
 import net.minecraftforge.srg2source.util.io.InputSupplier;
 import net.minecraftforge.srg2source.util.io.ZipInputSupplier;
@@ -82,31 +81,20 @@ public class ExtractS2SRangeTask extends DefaultTask
 
     private void generateRangeMap(InputSupplier inSup, File rangeMap) throws IOException
     {
-        RangeExtractor extractor = new RangeExtractor(RangeExtractor.JAVA_1_8);
+        RangeExtractorBuilder builder = new RangeExtractorBuilder()
+                                .sourceCompatibility(SourceVersion.JAVA_1_8)
+                                .input(inSup)
+                                .output(rangeMap)
+                                .logger(Constants.getTaskLogStream(getProject(), this.getName() + ".log"));
 
-        for (File f : getLibs())
-        {
-            //System.out.println("lib: "+f);
-            extractor.addLibs(f);
-        }
+        getLibs().forEach(builder::library);
 
         if (rangeMap.exists())
         {
-            extractor.loadCache(new FileInputStream(rangeMap));
+            builder.cache(rangeMap);
         }
 
-        extractor.setSrc(inSup);
-
-        //extractor.addLibs(getLibs().getAsPath()).setSrc(inSup);
-
-        PrintStream stream = new PrintStream(Constants.getTaskLogStream(getProject(), this.getName() + ".log"));
-        extractor.setOutLogger(stream);
-
-        boolean worked = extractor.generateRangeMap(rangeMap);
-
-        stream.close();
-
-        if (!worked)
+        if (!builder.build().run())
             throw new RuntimeException("RangeMap generation Failed!!!");
     }
 

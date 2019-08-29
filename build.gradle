@@ -7,6 +7,8 @@ buildscript {
     dependencies {
         classpath "com.gradle.publish:plugin-publish-plugin:0.9.1"
         classpath 'nl.javadude.gradle.plugins:license-gradle-plugin:0.11.0'
+        classpath 'org.ow2.asm:asm:6.2.1'
+        classpath 'org.ow2.asm:asm-tree:6.2.1'
     }
 }
 
@@ -87,9 +89,10 @@ dependencies {
     shade('de.oceanlabs.mcp:mcinjector:3.4-SNAPSHOT'){
      exclude group: 'org.ow2.asm', module: 'asm-debug-all'
     }
-    shade('net.minecraftforge.srg2source:Srg2Source:4.0-SNAPSHOT'){
+    shade('net.minecraftforge:Srg2Source:5.0.+'){
         exclude group: 'org.ow2.asm',         module: 'asm-debug-all'
         exclude group: 'org.eclipse.equinox', module: 'org.eclipse.equinox.common'
+        exclude group: 'cpw.mods',            module: 'modlauncher'
     }
 
     //Stuff used in the GradleStart classes
@@ -129,7 +132,118 @@ processResources {
     }
 }
 
+import java.util.zip.*
+import org.objectweb.asm.*
+import org.objectweb.asm.tree.*
+
+//TODO: Eclipse complains about unused messages. Find a way to make it shut up.
+class PatchJDTClasses extends DefaultTask {
+    static def COMPILATION_UNIT_RESOLVER = 'org/eclipse/jdt/core/dom/CompilationUnitResolver'
+    static def RANGE_EXTRACTOR = 'net/minecraftforge/srg2source/ast/RangeExtractor'
+    def RESOLVE_METHOD = 'resolve([Ljava/lang/String;[Ljava/lang/String;[Ljava/lang/String;Lorg/eclipse/jdt/core/dom/FileASTRequestor;ILjava/util/Map;I)V'
+    def GET_CONTENTS = 'org/eclipse/jdt/internal/compiler/util/Util.getFileCharContent(Ljava/io/File;Ljava/lang/String;)[C'
+    def HOOK_DESC_RESOLVE = '(Ljava/lang/String;Ljava/lang/String;)[C'
+
+    @Input def targets = [] as Set
+    @Input def libraries = [] as Set
+    @OutputFile File output
+
+    void target(String value) {
+        targets.add(value)
+    }
+
+    void library(File value) {
+        libraries.add(value)
+    }
+
+    @TaskAction
+    void patchClass() {
+        def toProcess = targets.collect()
+        new ZipOutputStream(new FileOutputStream(output)).withCloseable{ zout ->
+            libraries.stream().filter{ !it.isDirectory() }.each { lib ->
+                new ZipFile(lib).withCloseable { zin ->
+                    def remove = []
+                    toProcess.each{ target ->
+                        def entry = zin.getEntry(target+'.class')
+                        if (entry == null)
+                            return
+
+                        def node = new ClassNode()
+                        def reader = new ClassReader(zin.getInputStream(entry))
+                        reader.accept(node, 0)
+
+                        //CompilationUnitResolver allows batch compiling, the problem is it is hardcoded to read the contents from a File.
+                        //So we patch this call to redirect to us, so we can get the contents from our InputSupplier
+                        if (COMPILATION_UNIT_RESOLVER.equals(target)) {
+                            logger.lifecycle('Transforming: ' + target + ' From: ' + lib)
+                            def resolve = node.methods.find{ RESOLVE_METHOD.equals(it.name + it.desc) }
+                            if (resolve == null)
+                                throw new RuntimeException('Failed to patch ' + target + ': Could not find method ' + RESOLVE_METHOD)
+                            for (int x = 0; x < resolve.instructions.size(); x++) {
+                                def insn = resolve.instructions.get(x)
+                                if (insn.type == AbstractInsnNode.METHOD_INSN) {
+                                    if (GET_CONTENTS.equals(insn.owner + '.' + insn.name + insn.desc)) {
+                                        if (
+                                        resolve.instructions.get(x - 5).opcode == Opcodes.NEW &&
+                                                resolve.instructions.get(x - 4).opcode == Opcodes.DUP &&
+                                                resolve.instructions.get(x - 3).opcode == Opcodes.ALOAD &&
+                                                resolve.instructions.get(x - 2).opcode == Opcodes.INVOKESPECIAL &&
+                                                resolve.instructions.get(x - 1).opcode == Opcodes.ALOAD
+                                        ) {
+                                            resolve.instructions.set(resolve.instructions.get(x - 5), new InsnNode(Opcodes.NOP)); // NEW File
+                                            resolve.instructions.set(resolve.instructions.get(x - 4), new InsnNode(Opcodes.NOP)); // DUP
+                                            resolve.instructions.set(resolve.instructions.get(x - 2), new InsnNode(Opcodes.NOP)); // INVOKESTATIC <init>
+                                            insn.owner = RANGE_EXTRACTOR
+                                            insn.desc = HOOK_DESC_RESOLVE
+                                            logger.lifecycle('Patched ' + node.name)
+                                        } else {
+                                            throw new IllegalStateException('Found Util.getFileCharContents call, with unexpected context')
+                                        }
+                                    }
+                                }
+                            }
+                        } else if (RANGE_EXTRACTOR.equals(target)) {
+                            logger.lifecycle('Tansforming: ' + target + ' From: ' + lib)
+                            def marker = node.methods.find{ 'hasBeenASMPatched()Z'.equals(it.name + it.desc) }
+                            if (marker == null)
+                                throw new RuntimeException('Failed to patch ' + target + ': Could not find method hasBeenASMPatched()Z')
+                            marker.instructions.clear()
+                            marker.instructions.add(new InsnNode(Opcodes.ICONST_1))
+                            marker.instructions.add(new InsnNode(Opcodes.IRETURN))
+                            logger.lifecycle('Patched: ' + node.name)
+                        }
+
+                        def writer = new ClassWriter(0)
+                        node.accept(writer)
+
+                        remove.add(target)
+                        def nentry = new ZipEntry(entry.name)
+                        nentry.time = 0
+                        zout.putNextEntry(nentry)
+                        zout.write(writer.toByteArray())
+                        zout.closeEntry()
+                    }
+                    toProcess.removeAll(remove)
+                }
+            }
+            if (!toProcess.isEmpty())
+                throw new IllegalStateException('Patching class failed: ' + toProcess)
+        }
+    }
+}
+
+task patchJDT(type: PatchJDTClasses) {
+    target PatchJDTClasses.COMPILATION_UNIT_RESOLVER
+    target PatchJDTClasses.RANGE_EXTRACTOR
+    configurations.shade.resolvedConfiguration.resolvedArtifacts.stream().filter { dep ->
+        dep.name.equals('org.eclipse.jdt.core') || dep.name.equals('Srg2Source')
+    }
+    .forEach { dep -> library dep.file }
+    output file('build/patchJDT/patch_jdt.jar')
+}
+
 jar {
+    dependsOn('patchJDT')
 
     configurations.shade.each { dep ->
         /* I can use this again to find where dupes come from, so.. gunna just keep it here.
@@ -146,6 +260,10 @@ jar {
             exclude 'META-INF', 'META-INF/**', '.api_description', '.options', 'about.html', 'module-info.class', 'plugin.properties', 'plugin.xml', 'about_files/**'
             duplicatesStrategy 'warn'
         }
+    }
+
+    from(zipTree(patchJDT.output)){
+        duplicatesStrategy 'include'
     }
 
     manifest {
