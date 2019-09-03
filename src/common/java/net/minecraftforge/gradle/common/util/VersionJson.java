@@ -77,24 +77,12 @@ public class VersionJson {
         public Argument[] jvm;
     }
 
-    public static class Argument {
-        public Rule[] rules;
+    public static class Argument extends RuledObject {
         public List<String> value;
 
         public Argument(Rule[] rules, List<String> value) {
             this.rules = rules;
             this.value = value;
-        }
-
-        public boolean isAllowed() {
-            if (rules != null) {
-                for (Rule rule : rules) {
-                    if (!rule.allowsAction()) {
-                        return false;
-                    }
-                }
-            }
-            return true;
         }
 
         public static class Deserializer implements JsonDeserializer<VersionJson.Argument> {
@@ -118,12 +106,27 @@ public class VersionJson {
         }
     }
 
+    public static class RuledObject {
+        public Rule[] rules;
+
+        public boolean isAllowed() {
+            if (rules != null) {
+                for (Rule rule : rules) {
+                    if (!rule.allowsAction()) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+    }
+
     public static class Rule {
         public String action;
         public OsCondition os;
 
         public boolean allowsAction() {
-            return os != null && os.platformMatches() == action.equals("allow");
+            return (os == null || os.platformMatches()) == action.equals("allow");
         }
     }
 
@@ -169,7 +172,7 @@ public class VersionJson {
         public LibraryDownload artifact;
     }
 
-    public static class Library {
+    public static class Library extends RuledObject {
         //Extract? rules?
         public String name;
         public Map<String, String> natives;
