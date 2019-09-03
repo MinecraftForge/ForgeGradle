@@ -38,7 +38,7 @@ pipeline {
         }
         stage('buildandtest') {
             steps {
-                sh './gradlew ${GRADLE_ARGS} --refresh-dependencies --continue build' # test'
+                sh './gradlew ${GRADLE_ARGS} --refresh-dependencies --continue build' // test'
                 script {
                     env.MYVERSION = sh(returnStdout: true, script: './gradlew properties -q | grep "version:" | awk \'{print $2}\'').trim()
                 }
