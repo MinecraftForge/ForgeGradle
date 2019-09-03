@@ -86,7 +86,8 @@ public class McpCleanup
                     {
                         i++;
                     }
-                    i += 1; // skip the ending newline
+                    //i += 1; // skip the ending newline
+                    // Successive new lines will be fixed by our regex below.
                 }
                 else // state == CommentState.MULTI_LINE_COMMENT
                 {
