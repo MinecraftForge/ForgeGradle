@@ -44,11 +44,7 @@ import com.google.common.io.ByteStreams;
 
 public abstract class AbstractEditJarTask extends CachedTask
 {
-    @InputFile
     private Object inJar;
-
-    @Cached
-    @OutputFile
     private Object outJar;
 
     protected File resolvedInJar;
@@ -264,6 +260,7 @@ public abstract class AbstractEditJarTask extends CachedTask
         }
     }
 
+    @InputFile
     public File getInJar()
     {
         return getProject().file(inJar);
@@ -274,6 +271,8 @@ public abstract class AbstractEditJarTask extends CachedTask
         this.inJar = inJar;
     }
 
+    @OutputFile
+    @Cached
     public File getOutJar()
     {
         return getProject().file(outJar);

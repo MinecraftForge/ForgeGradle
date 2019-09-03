@@ -9,13 +9,13 @@ public class GradleStartServer extends GradleStartCommon
     {
         (new GradleStartServer()).launch(args);
     }
-    
+
     @Override
     protected String getTweakClass()
     {
         return "@@TWEAKERSERVER@@";
     }
-    
+
     @Override
     protected String getBounceClass()
     {

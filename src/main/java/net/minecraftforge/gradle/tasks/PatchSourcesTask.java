@@ -59,22 +59,11 @@ public class PatchSourcesTask extends AbstractEditJarTask
      * 4) ????
      * 5) profit from multithreaded oatching. Its CPU bound anyways.
      */
-
-    @Input
     private int                    maxFuzz       = 0;
-
-    @Input
     private int                    patchStrip    = 3;
-
-    @Input
     private boolean                makeRejects   = true;
-
-    @Input
     private boolean                failOnError   = false;
-
     private Object                 patches;
-
-    @InputFiles
     private List<Object>           injects       = Lists.newArrayList();
 
     // stateful pieces of this task
@@ -302,6 +291,7 @@ public class PatchSourcesTask extends AbstractEditJarTask
 
     // START GETTERS/SETTERS HERE
 
+    @Input
     public int getMaxFuzz()
     {
         return maxFuzz;
@@ -312,6 +302,7 @@ public class PatchSourcesTask extends AbstractEditJarTask
         this.maxFuzz = maxFuzz;
     }
 
+    @Input
     public int getPatchStrip()
     {
         return patchStrip;
@@ -322,6 +313,7 @@ public class PatchSourcesTask extends AbstractEditJarTask
         this.patchStrip = patchStrip;
     }
 
+    @Input
     public boolean isMakeRejects()
     {
         return makeRejects;
@@ -332,6 +324,7 @@ public class PatchSourcesTask extends AbstractEditJarTask
         this.makeRejects = makeRejects;
     }
 
+    @Input
     public boolean isFailOnError()
     {
         return failOnError;
@@ -364,6 +357,7 @@ public class PatchSourcesTask extends AbstractEditJarTask
             return getPatches();
     }
 
+    @InputFiles
     public File getPatches()
     {
         return getProject().file(patches);
@@ -374,6 +368,7 @@ public class PatchSourcesTask extends AbstractEditJarTask
         this.patches = patchDir;
     }
 
+    @InputFiles
     public FileCollection getInjects()
     {
         return getProject().files(injects);

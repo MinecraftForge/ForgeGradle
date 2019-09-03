@@ -355,10 +355,10 @@ uploadArchives {
 
         dependsOn 'build'
 
-        if (project.hasProperty('forgeMavenPass'))
+        if (project.hasProperty('forgeMavenPassword'))
         {
             repository(url: "https://files.minecraftforge.net/maven/manage/upload") {
-                authentication(userName: "forge", password: project.getProperty('forgeMavenPass'))
+                authentication(userName: project.getProperty('forgeMavenUser'), password: project.getProperty('forgeMavenPassword'))
             }
         }
         else

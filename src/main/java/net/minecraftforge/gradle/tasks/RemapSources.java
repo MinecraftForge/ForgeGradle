@@ -29,6 +29,7 @@ import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import net.minecraftforge.gradle.util.mcp.JavadocAdder;
 
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 
 import au.com.bytecode.opencsv.CSVReader;
@@ -41,15 +42,9 @@ import com.google.code.regexp.Pattern;
 
 public class RemapSources extends AbstractEditJarTask
 {
-    @InputFile
     private DelayedFile               methodsCsv;
-
-    @InputFile
     private DelayedFile               fieldsCsv;
-
-    @InputFile
     private DelayedFile               paramsCsv;
-
     private boolean                   addsJavadocs = true;
 
     private final Map<String, String> methods      = Maps.newHashMap();
@@ -187,6 +182,7 @@ public class RemapSources extends AbstractEditJarTask
         return buf.toString();
     }
 
+    @InputFile
     public File getMethodsCsv()
     {
         return methodsCsv.call();
@@ -197,6 +193,7 @@ public class RemapSources extends AbstractEditJarTask
         this.methodsCsv = methodsCsv;
     }
 
+    @InputFile
     public File getFieldsCsv()
     {
         return fieldsCsv.call();
@@ -207,6 +204,7 @@ public class RemapSources extends AbstractEditJarTask
         this.fieldsCsv = fieldsCsv;
     }
 
+    @InputFile
     public File getParamsCsv()
     {
         return paramsCsv.call();
@@ -217,6 +215,7 @@ public class RemapSources extends AbstractEditJarTask
         this.paramsCsv = paramsCsv;
     }
 
+    @Input
     public boolean addsJavadocs()
     {
         return addsJavadocs;

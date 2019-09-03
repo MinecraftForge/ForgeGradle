@@ -35,7 +35,6 @@ import java.util.zip.ZipEntry;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.util.ThrowableUtil;
-import net.minecraftforge.gradle.util.caching.Cached;
 import net.minecraftforge.gradle.util.delayed.DelayedFile;
 import net.minecraftforge.gradle.util.mcp.FFPatcher;
 import net.minecraftforge.gradle.util.mcp.GLConstantFixer;
@@ -50,7 +49,6 @@ import org.gradle.api.logging.LogLevel;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.OutputFile;
 
 import com.github.abrarsyed.jastyle.ASFormatter;
 import com.github.abrarsyed.jastyle.OptParser;
@@ -65,18 +63,9 @@ import com.google.common.io.Resources;
 
 public class PostDecompileTask extends AbstractEditJarTask
 {
-    @InputFile
-    private Object                       inJar;
-
     private Object                       patchDir;
     private Object                       injectDir;
-
-    @InputFile
     private Object                       astyleConfig;
-
-    @OutputFile
-    @Cached
-    private Object                       outJar;
 
     //private static final Pattern         BEFORE      = Pattern.compile("(?m)((case|default).+(?:\\r\\n|\\r|\\n))(?:\\r\\n|\\r|\\n)");
     //private static final Pattern         AFTER       = Pattern.compile("(?m)(?:\\r\\n|\\r|\\n)((?:\\r\\n|\\r|\\n)[ \\t]+(case|default))");
@@ -182,9 +171,10 @@ public class PostDecompileTask extends AbstractEditJarTask
         if (info.exists())
         {
             String template = Resources.toString(info.toURI().toURL(), Charsets.UTF_8);
-            getLogger().debug("Adding package-infos");
+            getLogger().info("Adding package-infos");
             for (String pkg : this.seenPackages)
             {
+                getLogger().info("  " + pkg + "/package-info.java");
                 jarOut.putNextEntry(new ZipEntry(pkg + "/package-info.java"));
                 jarOut.write(template.replaceAll("\\{PACKAGE\\}", pkg.replace('/', '.')).getBytes());
                 jarOut.closeEntry();
@@ -193,9 +183,15 @@ public class PostDecompileTask extends AbstractEditJarTask
         File common = new File(file, "common/");
         if (common.isDirectory())
         {
+            String root = common.getAbsolutePath().replace('\\', '/');
+            if (!root.endsWith("/")) root += '/';
+            getLogger().info("Inject Root: " + root);
+
             for (File f : this.getProject().fileTree(common))
             {
-                String name = f.getAbsolutePath().substring(common.getAbsolutePath().length() + 1).replace('\\', '/');
+                String full = f.getAbsolutePath().replace('\\', '/');
+                String name = full.substring(root.length());
+                getLogger().info("  Injecting: " + name);
                 jarOut.putNextEntry(new ZipEntry(name));
                 jarOut.write(Resources.toByteArray(f.toURI().toURL()));
                 jarOut.closeEntry();
@@ -285,6 +281,7 @@ public class PostDecompileTask extends AbstractEditJarTask
         return patch;
     }
 
+    @InputFile
     public File getAstyleConfig()
     {
         return getProject().file(astyleConfig);
