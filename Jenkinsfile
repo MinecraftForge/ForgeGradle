@@ -8,7 +8,7 @@ pipeline {
         }
     }
     environment {
-        GRADLE_ARGS = '-Dorg.gradle.daemon.idletimeout=5000'
+        GRADLE_ARGS = '-Dorg.gradle.daemon.idletimeout=5000 --stacktrace --info'
         DISCORD_WEBHOOK = credentials('forge-discord-jenkins-webhook')
         DISCORD_PREFIX = "Job: ForgeGradle Branch: ${BRANCH_NAME} Build: #${BUILD_NUMBER}"
         JENKINS_HEAD = 'https://wiki.jenkins-ci.org/download/attachments/2916393/headshot.png'
@@ -38,7 +38,7 @@ pipeline {
         }
         stage('buildandtest') {
             steps {
-                sh './gradlew ${GRADLE_ARGS} --refresh-dependencies --continue --stacktrace --info build' // test'
+                sh './gradlew ${GRADLE_ARGS} --refresh-dependencies --continue build' // test'
                 script {
                     env.MYVERSION = sh(returnStdout: true, script: './gradlew properties -q | grep "version:" | awk \'{print $2}\'').trim()
                 }
@@ -62,7 +62,7 @@ pipeline {
                 FORGE_MAVEN = credentials('forge-maven-forge-user')
             }
             steps {
-                sh './gradlew ${GRADLE_ARGS} --stacktrace --info uploadArchives -PforgeMavenUser=${FORGE_MAVEN_USR} -PforgeMavenPassword=${FORGE_MAVEN_PSW}'
+                sh './gradlew ${GRADLE_ARGS} uploadArchives -PforgeMavenUser=${FORGE_MAVEN_USR} -PforgeMavenPassword=${FORGE_MAVEN_PSW}'
             }
         }
     }

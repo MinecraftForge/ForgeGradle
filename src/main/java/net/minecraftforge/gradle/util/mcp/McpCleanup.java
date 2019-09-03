@@ -41,8 +41,6 @@ public class McpCleanup
 
     public static String stripComments(String text)
     {
-        System.out.println("Start:");
-        System.out.println(text);
         CommentState state = CommentState.CODE;
         int i = 0;
         try (StringWriter out = new StringWriter(text.length()))
@@ -133,12 +131,8 @@ public class McpCleanup
             throw new RuntimeException(e);
         }
 
-        System.out.println("Mid:");
-        System.out.println(text);
         text = COMMENTS_TRAILING.matcher(text).replaceAll("");
         text = COMMENTS_NEWLINES.matcher(text).replaceAll(Constants.NEWLINE);
-        System.out.println("End:");
-        System.out.println(text);
 
         return text;
     }
