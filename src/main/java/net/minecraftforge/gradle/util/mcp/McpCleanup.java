@@ -41,6 +41,8 @@ public class McpCleanup
 
     public static String stripComments(String text)
     {
+        System.out.println("Start:");
+        System.out.println(text);
         CommentState state = CommentState.CODE;
         int i = 0;
         try (StringWriter out = new StringWriter(text.length()))
@@ -130,8 +132,12 @@ public class McpCleanup
             throw new RuntimeException(e);
         }
 
+        System.out.println("Mid:");
+        System.out.println(text);
         text = COMMENTS_TRAILING.matcher(text).replaceAll("");
         text = COMMENTS_NEWLINES.matcher(text).replaceAll(Constants.NEWLINE);
+        System.out.println("End:");
+        System.out.println(text);
 
         return text;
     }
@@ -262,13 +268,13 @@ public class McpCleanup
         text = CLEANUP_blockends.matcher(text).replaceAll("");
         text = CLEANUP_gl.matcher(text).replaceAll("");
         text = CLEANUP_maxD.matcher(text).replaceAll("Double.MAX_VALUE");
-    
+
         // unicode chars
         {
             Matcher matcher = CLEANUP_unicode.matcher(text);
             int val;
             StringBuffer buffer = new StringBuffer(text.length());
-    
+
             while (matcher.find())
             {
                 val = Integer.parseInt(matcher.group(1), 16);
@@ -281,11 +287,11 @@ public class McpCleanup
             matcher.appendTail(buffer);
             text = buffer.toString();
         }
-    
+
         // charval.. its stupid.
         text = CLEANUP_charval.matcher(text).replaceAll("$1"); // TESTING NEEDED
-    
-        //		 pi?   true
+
+        //         pi?   true
         text = CLEANUP_piD.matcher(text).replaceAll("Math.PI");
         text = CLEANUP_piF.matcher(text).replaceAll("(float)Math.PI");
         text = CLEANUP_2piD.matcher(text).replaceAll("(Math.PI * 2D)");
@@ -310,7 +316,7 @@ public class McpCleanup
         text = CLEANUP_7pi100F.matcher(text).replaceAll("((float)Math.PI * 7F / 100F)");
         text = CLEANUP_185pi100D.matcher(text).replaceAll("(Math.PI * 185D / 100D)");
         text = CLEANUP_185pi100F.matcher(text).replaceAll("((float)Math.PI * 185F / 100F)");
-    
+
         return text;
     }
 

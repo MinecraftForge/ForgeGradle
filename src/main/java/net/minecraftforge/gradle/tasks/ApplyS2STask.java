@@ -130,6 +130,7 @@ public class ApplyS2STask extends DefaultTask
             throw new IllegalArgumentException("Can only make suppliers out of directories, zips, and SourceDirectorySets right now!");
     }
 
+    @SuppressWarnings("unused")
     private OutputSupplier getOutput(File f) throws IOException
     {
         if (f.isDirectory())

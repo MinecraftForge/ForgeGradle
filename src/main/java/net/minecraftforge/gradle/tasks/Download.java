@@ -37,8 +37,6 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import com.google.common.io.Closeables;
-
 public class Download extends CachedTask
 {
     @Input
