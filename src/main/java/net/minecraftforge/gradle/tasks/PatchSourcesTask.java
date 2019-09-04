@@ -357,7 +357,6 @@ public class PatchSourcesTask extends AbstractEditJarTask
             return getPatches();
     }
 
-    @InputFiles
     public File getPatches()
     {
         return getProject().file(patches);
