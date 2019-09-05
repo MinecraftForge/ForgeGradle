@@ -29,6 +29,7 @@ import net.minecraftforge.gradle.common.util.Utils;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -90,6 +91,17 @@ public class TaskExtractRangeMap extends JarExec {
         if (this.sources == null)
             this.sources = new HashSet<>();
         this.sources.addAll(values);
+    }
+    public void sources(Collection<File> values) {
+        if (this.sources == null)
+            this.sources = new HashSet<>();
+        this.sources.addAll(values);
+    }
+    public void sources(File... values) {
+        if (this.sources == null)
+            this.sources = new HashSet<>();
+        for (File value : values)
+            this.sources.add(value);
     }
 
     @InputFiles

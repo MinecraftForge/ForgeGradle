@@ -269,6 +269,31 @@ public class PatcherPlugin implements Plugin<Project> {
             task.setClassifier("userdev");
         });
 
+        final boolean doingUpdate = project.hasProperty("UPDATE_MAPPINGS");
+        if (doingUpdate) {
+            String version = (String) project.property("UPDATE_MAPPINGS");
+            String channel = project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String) project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot";
+
+            TaskProvider<DownloadMCPMappingsTask> dlMappingsNew = project.getTasks().register("downloadMappingsNew", DownloadMCPMappingsTask.class);
+            dlMappingsNew.get().setMappings(channel + '_' + version);
+
+            TaskProvider<TaskApplyMappings> toMCPNew = project.getTasks().register("srg2mcpNew", TaskApplyMappings.class);
+            toMCPNew.configure(task -> {
+                task.dependsOn(dlMappingsNew.get(), applyRangeConfig.get());
+                task.setInput(applyRangeConfig.get().getOutput());
+                task.setMappings(dlMappingsConfig.get().getOutput());
+            });
+
+            TaskProvider<TaskExtractExistingFiles> extractMappedNew = project.getTasks().register("extractMappedNew", TaskExtractExistingFiles.class);
+            extractMappedNew.configure(task -> {
+                task.dependsOn(toMCPNew.get());
+                task.setArchive(toMCPNew.get().getOutput());
+            });
+
+            TaskProvider<DefaultTask> updateMappings = project.getTasks().register("updateMappings", DefaultTask.class);
+            updateMappings.get().dependsOn(extractMappedNew.get());
+        }
+
         project.afterEvaluate(p -> {
             //Add PatchedSrc to a main sourceset and build range tasks
             SourceSet mainSource = javaConv.getSourceSets().getByName("main");
@@ -277,6 +302,16 @@ public class PatcherPlugin implements Plugin<Project> {
             mainSource.java(v -> {
                 v.srcDir(extension.patchedSrc);
             });
+
+            if (doingUpdate) {
+                TaskExtractExistingFiles extract = (TaskExtractExistingFiles)p.getTasks().getByName("extractMappedNew");
+                for (File dir : mainSource.getJava().getSrcDirs()) {
+                    if (dir.equals(extension.patchedSrc)) //Don't overwrite the patched code, re-setup the project.
+                        continue;
+                    extract.addTarget(dir);
+                }
+            }
+
             //mainSource.resources(v -> {
             //}); //TODO: Asset downloading, needs asset index from json.
             //javaConv.getSourceSets().stream().forEach(s -> extractRangeConfig.get().addSources(s.getJava().getSrcDirs()));
@@ -572,31 +607,6 @@ public class PatcherPlugin implements Plugin<Project> {
                 filterNew.get().dependsOn(createMcp2Srg);
                 filterNew.get().setSrg(createMcp2Srg.get().getOutput());
                 filterNew.get().addBlacklist(joined);
-            }
-
-            if (project.hasProperty("UPDATE_MAPPINGS")) {
-                String version = (String) project.property("UPDATE_MAPPINGS");
-                String channel = project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String) project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot";
-
-                TaskProvider<DownloadMCPMappingsTask> dlMappingsNew = project.getTasks().register("downloadMappingsNew", DownloadMCPMappingsTask.class);
-                dlMappingsNew.get().setMappings(channel + '_' + version);
-
-                TaskProvider<TaskApplyMappings> toMCPNew = project.getTasks().register("srg2mcpNew", TaskApplyMappings.class);
-                toMCPNew.get().dependsOn(dlMappingsNew.get(), applyRangeConfig.get());
-                toMCPNew.get().setInput(applyRangeConfig.get().getOutput());
-                toMCPNew.get().setMappings(dlMappingsConfig.get().getOutput());
-
-                TaskProvider<TaskExtractExistingFiles> extractMappedNew = project.getTasks().register("extractMappedNew", TaskExtractExistingFiles.class);
-                extractMappedNew.get().dependsOn(toMCPNew.get());
-                extractMappedNew.get().setArchive(toMCPNew.get().getOutput());
-                for (File dir : mainSource.getJava().getSrcDirs()) {
-                    if (dir.equals(extension.patchedSrc)) //Don't overwrite the patched code, re-setup the project.
-                        continue;
-                    extractMappedNew.get().addTarget(dir);
-                }
-
-                TaskProvider<DefaultTask> updateMappings = project.getTasks().register("updateMappings", DefaultTask.class);
-                updateMappings.get().dependsOn(extractMappedNew.get());
             }
 
             Map<String, String> tokens = new HashMap<>();

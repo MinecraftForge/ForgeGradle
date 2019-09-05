@@ -120,6 +120,12 @@ public class TaskApplyRangeMap extends JarExec {
             this.sources.add(value);
         }
     }
+    public void sources(File... values) {
+        setSources(values);
+    }
+    public void sources(Collection<File> values) {
+        setSources(values);
+    }
 
     @InputFile
     public File getRangeMap() {
