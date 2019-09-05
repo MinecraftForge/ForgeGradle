@@ -427,7 +427,7 @@ public class MinecraftUserRepo extends BaseRepo {
         String desc = MCPRepo.getMappingDep(channel, version);
         debug("    Mapping: " + desc);
 
-        File ret = MavenArtifactDownloader.manual(project, desc, CHANGING_USERDEV);
+        File ret = MavenArtifactDownloader.generate(project, desc, CHANGING_USERDEV);
         if (ret == null) {
             String message = "Could not download MCP Mappings: " + desc;
             debug ("    " + message);
