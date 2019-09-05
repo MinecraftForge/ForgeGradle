@@ -26,6 +26,11 @@ import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.common.util.VersionJson;
 import net.minecraftforge.gradle.mcp.MCPRepo;
+import net.minecraftforge.gradle.mcp.task.DownloadMCPMappingsTask;
+import net.minecraftforge.gradle.common.task.TaskApplyMappings;
+import net.minecraftforge.gradle.common.task.TaskApplyRangeMap;
+import net.minecraftforge.gradle.common.task.TaskExtractExistingFiles;
+import net.minecraftforge.gradle.common.task.TaskExtractRangeMap;
 import net.minecraftforge.gradle.userdev.tasks.GenerateSRG;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 import net.minecraftforge.gradle.userdev.util.DeobfuscatingRepo;
@@ -40,11 +45,13 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.Jar;
+import org.gradle.api.tasks.compile.JavaCompile;
 
 import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class UserDevPlugin implements Plugin<Project> {
@@ -159,7 +166,65 @@ public class UserDevPlugin implements Plugin<Project> {
             task.setMeta(downloadMCMeta.get().getOutput());
         });
 
+        if (project.hasProperty("UPDATE_MAPPINGS")) {
+            String version = (String)project.property("UPDATE_MAPPINGS");
+            String channel = project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String)project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot";
+
+            logger.lifecycle("This process uses Srg2Source for java source file renaming. Please forward relevant bug reports to https://github.com/MinecraftForge/Srg2Source/issues.");
+            if ("official".equals(channel)) {
+                String warning = "WARNING: This project will be updated to use the official obfuscation mappings provided by Mojang. " + Utils.OFFICIAL_MAPPING_USAGE;
+                logger.warn(warning);
+            }
+
+            JavaCompile javaCompile = (JavaCompile) project.getTasks().getByName("compileJava");
+            JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+            Set<File> srcDirs = javaConv.getSourceSets().getByName("main").getJava().getSrcDirs();
+
+            TaskProvider<DownloadMCPMappingsTask> dlMappingsNew = project.getTasks().register("downloadMappingsNew", DownloadMCPMappingsTask.class);
+            TaskProvider<TaskExtractRangeMap> extractRangeConfig = project.getTasks().register("extractRangeMap", TaskExtractRangeMap.class);
+            TaskProvider<TaskApplyRangeMap> applyRangeConfig = project.getTasks().register("applyRangeMap", TaskApplyRangeMap.class);
+            TaskProvider<TaskApplyMappings> toMCPNew = project.getTasks().register("srg2mcpNew", TaskApplyMappings.class);
+            TaskProvider<TaskExtractExistingFiles> extractMappedNew = project.getTasks().register("extractMappedNew", TaskExtractExistingFiles.class);
+
+            extractRangeConfig.configure(task -> {
+                task.addSources(srcDirs);
+                task.addDependencies(javaCompile.getClasspath());
+            });
+
+            applyRangeConfig.configure(task -> {
+                task.dependsOn(extractRangeConfig, createMcpToSrg);
+                task.setRangeMap(extractRangeConfig.get().getOutput());
+                task.setSrgFiles(createMcpToSrg.get().getOutput());
+                task.setSources(srcDirs);
+            });
+
+            dlMappingsNew.configure(task -> {
+                task.setMappings(channel + "_" + version);
+                task.setOutput(project.file("build/mappings_new.zip"));
+            });
+
+            toMCPNew.configure(task -> {
+                task.dependsOn(dlMappingsNew, applyRangeConfig);
+                task.setInput(applyRangeConfig.get().getOutput());
+                task.setMappings(dlMappingsNew.get().getOutput());
+            });
+
+            extractMappedNew.configure(task -> {
+                task.dependsOn(toMCPNew);
+                task.setArchive(toMCPNew.get().getOutput());
+                srcDirs.forEach(task::addTarget);
+            });
+
+            TaskProvider<DefaultTask> updateMappings = project.getTasks().register("updateMappings", DefaultTask.class);
+            updateMappings.get().dependsOn(extractMappedNew);
+        }
+
         project.afterEvaluate(p -> {
+            if ("official".equals(extension.getMappingChannel())) {
+                String warning = "WARNING: This project is configured to use the official obfuscation mappings provided by Mojang. " + Utils.OFFICIAL_MAPPING_USAGE;
+                logger.warn(warning);
+            }
+
             MinecraftUserRepo mcrepo = null;
             DeobfuscatingRepo deobfrepo = null;
 

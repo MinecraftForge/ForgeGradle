@@ -18,7 +18,7 @@
  * USA
  */
 
-package net.minecraftforge.gradle.patcher.task;
+package net.minecraftforge.gradle.common.task;
 
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Input;
