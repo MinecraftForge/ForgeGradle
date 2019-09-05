@@ -6,6 +6,8 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.internal.tasks.compile.JavaHomeBasedJavaCompilerFactory;
 import org.gradle.api.logging.Logger;
+import org.gradle.api.tasks.util.PatternFilterable;
+import org.gradle.api.tasks.util.PatternSet;
 
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticListener;
@@ -38,8 +40,10 @@ public class NonTaskJavaCompiler {
         @Override
         public void report(Diagnostic<? extends JavaFileObject> diagnostic) {
             String message = diagnostic.getMessage(null);
-            if (message.startsWith("bootstrap class path not set in conjunction with")) {
-                // use debug for this message, it's not relevant for MC compilation
+            if (message.startsWith("bootstrap class path not set in conjunction with")
+                || message.startsWith("Some input files use")
+                || message.startsWith("Recompile with -Xlint:")) {
+                // use debug for these messages, it's not relevant for MC compilation
                 logger.debug(message);
                 return;
             }
@@ -51,6 +55,12 @@ public class NonTaskJavaCompiler {
                 case OTHER: logger.lifecycle(message); break;
             }
         }
+    }
+
+    private static final PatternFilterable JAVA_FILES = new PatternSet();
+
+    static {
+        JAVA_FILES.include("**/*.java");
     }
 
     private final Logger logger;
@@ -71,7 +81,7 @@ public class NonTaskJavaCompiler {
         StandardJavaFileManager fileManager = compiler.getStandardFileManager(reporter, null, StandardCharsets.UTF_8);
 
         List<String> options = createOptions();
-        Set<File> sourceFiles = requireNonNull(source).getFiles();
+        Set<File> sourceFiles = requireNonNull(source).matching(JAVA_FILES).getFiles();
         Iterable<? extends JavaFileObject> units = createUnits(fileManager, sourceFiles);
 
         JavaCompiler.CompilationTask task = compiler.getTask(
