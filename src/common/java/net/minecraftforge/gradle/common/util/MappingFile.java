@@ -42,7 +42,7 @@ import com.google.common.base.Joiner;
 @SuppressWarnings("unused")
 public class MappingFile {
     public enum Format {
-        SRG, CSRG, TSRG;
+        SRG, CSRG, TSRG, PG;
         public static Format get(String value) {
             try {
                 return Format.valueOf(value.toUpperCase());
@@ -62,10 +62,12 @@ public class MappingFile {
     }
     public static MappingFile load(InputStream input) throws IOException {
         MappingFile ret = new MappingFile();
-        List<String[]> lines = IOUtils.readLines(input).stream().map(line -> (line + '#').split("#")[0].replaceFirst("\\s++$", "")).filter(l -> !l.isEmpty()).map(line -> line.split(" ")).collect(Collectors.toList());
-        String test = lines.get(0)[0];
+        List<String> lines = IOUtils.readLines(input).stream().map(line -> (line + '#').split("#")[0].replaceFirst("\\s++$", "")).filter(l -> !l.isEmpty()).collect(Collectors.toList());
+        String firstLine = lines.get(0);
+        String test = firstLine.split(" ")[0];
         if ("PK:".equals(test) || "CL:".equals(test) || "FD:".equals(test) || "MD:".equals(test)) { //SRG
-            for (String[] pts : lines) {
+            for (String line : lines) {
+                String[] pts = line.split(" ");
                 switch (pts[0]) {
                     case "PK:": ret.addPackage(pts[1], pts[2]); break;
                     case "CL:": ret.addClass(pts[1], pts[2]); break;
@@ -75,15 +77,67 @@ public class MappingFile {
                         throw new IOException("Invalid SRG file, Unknown type: " + SPACE.join(pts));
                 }
             }
-        } else {
-            lines.stream().filter(p -> p.length == 2 && p[0].charAt(0) != '\t').forEach(pts -> {
+        } else if(firstLine.contains(" -> ")) { // ProGuard
+            for (String line : lines) {
+                if (!line.startsWith("    ") && line.endsWith(":")) {
+                    String[] pts = line.replace('.', '/').split(" -> ");
+                    ret.addClass(pts[0], pts[1].substring(0, pts[1].length() - 1));
+                }
+            }
+
+            String cls = null;
+            for (String line : lines) {
+                line = line.replace('.', '/');
+                if (!line.startsWith("    ") && line.endsWith(":")) {
+                    //Classes we already did this in the first pass
+                    cls = line.split(" -> ")[0];
+                } else if (line.contains("(") && line.contains(")")) {
+                    if (cls == null)
+                        throw new IOException("Invalid PG line, missing class: " + line);
+
+                    line = line.trim();
+                    int start = -1;
+                    int end = -1;
+                    if (line.indexOf(':') != -1) {
+                        int i = line.indexOf(':');
+                        int j = line.indexOf(':', i + 1);
+                        start = Integer.parseInt(line.substring(0,     i));
+                        end   = Integer.parseInt(line.substring(i + 1, j));
+                        line = line.substring(j + 1);
+                    }
+
+                    String obf = line.split(" -> ")[1];
+                    String _ret = toDesc(line.split(" ")[0]);
+                    String name = line.substring(line.indexOf(' ') + 1, line.indexOf('('));
+                    String[] args = line.substring(line.indexOf('(') + 1, line.indexOf(')')).split(",");
+
+                    StringBuffer desc = new StringBuffer();
+                    desc.append('(');
+                    for (String arg : args) {
+                        if (arg.isEmpty()) break;
+                        desc.append(toDesc(arg));
+                    }
+                    desc.append(')').append(_ret);
+
+                    if (("<init>".equals(name) || "<clinit>".equals(name)) && name.equals(obf))
+                        ; // We don't care about initializers, they keep their name by virtue of the JVM spec.
+                    else
+                        ret.getClass(cls).addMethod(name, desc.toString(), obf, start, end);
+                } else {
+                    String[] pts = line.trim().split(" ");
+                    ret.getClass(cls).addField(pts[1], pts[3], toDesc(pts[0]));
+                }
+            }
+        } else { // TSRG/CSRG
+            List<String[]> split = lines.stream().map(l -> l.split(" ")).collect(Collectors.toList());
+            split.stream().filter(p -> p.length == 2 && p[0].charAt(0) != '\t').forEach(pts -> {
                 if (pts[0].endsWith("/"))
                     ret.addPackage(pts[0].substring(0, pts[0].length() - 1), pts[1].substring(0, pts[1].length() -1));
                 else
                     ret.addClass(pts[0], pts[1]);
             });
             String cls = null;
-            for (String[] pts : lines) {
+            for (String[] pts : split) {
                 if (pts[0].charAt(0) == '\t') {
                     if (cls == null)
                         throw new IOException("Invalid TSRG line, missing class: " + SPACE.join(pts));
@@ -224,6 +278,21 @@ public class MappingFile {
                 .map(m -> m.getOriginal() + m.getDescriptor()).collect(Collectors.toList());
     }
 
+    private static String toDesc(String type) {
+        if (type.endsWith("[]"))    return "[" + toDesc(type.substring(0, type.length() - 2));
+        if (type.equals("int"))     return "I";
+        if (type.equals("void"))    return "V";
+        if (type.equals("boolean")) return "Z";
+        if (type.equals("byte"))    return "B";
+        if (type.equals("char"))    return "C";
+        if (type.equals("short"))   return "S";
+        if (type.equals("double"))  return "D";
+        if (type.equals("float"))   return "F";
+        if (type.equals("long"))    return "J";
+        if (type.contains("/"))     return "L" + type + ";";
+        throw new RuntimeException("Invalid toDesc input: " + type);
+    }
+
     public abstract class Node {
         protected String original;
         protected String mapped;
@@ -283,8 +352,18 @@ public class MappingFile {
             //TODO: Validate not changed?
         }
 
+        public void addField(String original, String mapped, String desc) {
+            Field old = fields.put(original, new Field(original, mapped, desc));
+            //TODO: Validate not changed?
+        }
+
         public void addMethod(String original, String desc, String mapped) {
             Method old = methods.put(original + desc, new Method(original, desc, mapped));
+            //TODO: Validate not changed?
+        }
+
+        public void addMethod(String original, String desc, String mapped, int start, int end) {
+            Method old = methods.put(original + desc, new Method(original, desc, mapped, start, end));
             //TODO: Validate not changed?
         }
 
@@ -293,6 +372,16 @@ public class MappingFile {
         }
         public Collection<Method> getMethods() {
             return this.methods.values();
+        }
+
+        public String remap(String field) {
+            Field fld  = fields.get(field);
+            return fld == null ? field : fld.getMapped();
+        }
+
+        public String remap(String method, String desc) {
+            Method mtd = methods.get(method + desc);
+            return mtd == null ? method : mtd.getMapped();
         }
 
         @Override
@@ -315,8 +404,15 @@ public class MappingFile {
         }
 
         public class Field extends Node {
+            private String desc;
+
             private Field(String original, String mapped) {
+                this(original, mapped, null);
+            }
+
+            private Field(String original, String mapped, String desc) {
                 super(original, mapped);
+                this.desc = desc;
             }
 
             @Override
@@ -341,9 +437,16 @@ public class MappingFile {
 
         public class Method extends Node {
             private String desc;
+            private int start, end;
             private Method(String original, String desc, String mapped) {
                 super(original, mapped);
                 this.desc = desc;
+            }
+            private Method(String original, String desc, String mapped, int start, int end) {
+                super(original, mapped);
+                this.desc = desc;
+                this.start = start;
+                this.end = end;
             }
             public String getDescriptor() {
                 return this.desc;

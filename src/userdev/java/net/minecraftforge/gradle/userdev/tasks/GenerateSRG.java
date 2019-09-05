@@ -31,6 +31,7 @@ import org.gradle.api.tasks.TaskAction;
 import net.minecraftforge.gradle.common.util.MappingFile;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.McpNames;
+import net.minecraftforge.gradle.mcp.MCPRepo;
 
 public class GenerateSRG extends DefaultTask {
     private File srg;
@@ -44,7 +45,6 @@ public class GenerateSRG extends DefaultTask {
         File names = findNames(getMappings());
         if (names == null)
             throw new IllegalStateException("Invalid mappings: " + getMappings() + " Could not find archive");
-
 
         MappingFile obf_to_srg = MappingFile.load(srg);
         MappingFile ret = new MappingFile();
@@ -65,7 +65,7 @@ public class GenerateSRG extends DefaultTask {
         if (idx == -1) return null; //Invalid format
         String channel = mapping.substring(0, idx);
         String version = mapping.substring(idx + 1);
-        String desc = "de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
+        String desc = MCPRepo.getMappingDep(channel, version);
         return MavenArtifactDownloader.manual(getProject(), desc, false);
     }
 

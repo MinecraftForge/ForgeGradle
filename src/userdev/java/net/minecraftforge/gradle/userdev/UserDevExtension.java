@@ -32,10 +32,4 @@ public class UserDevExtension extends MinecraftExtension {
     public UserDevExtension(@Nonnull final Project project) {
         super(project);
     }
-
-    @Override
-    public void mappings(@Nonnull String channel, @Nonnull String version) {
-        setMappings(channel + "_" + version);
-    }
-
 }

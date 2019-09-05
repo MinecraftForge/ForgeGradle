@@ -21,6 +21,8 @@
 package net.minecraftforge.gradle.patcher.task;
 
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
+import net.minecraftforge.gradle.mcp.MCPRepo;
+
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
@@ -69,7 +71,16 @@ public class DownloadMCPMappingsTask extends DefaultTask {
     }
 
     private File getMappingFile() {
-        return MavenArtifactDownloader.manual(getProject(), getMappings(), false);
+        int idx = getMappings().lastIndexOf('_');
+        if (idx == -1)
+            throw new IllegalArgumentException("Invalid mapping string format, must be {channel}_{version}.");
+        String channel = getMappings().substring(0, idx);
+        String version = getMappings().substring(idx + 1);
+        String artifact = MCPRepo.getMappingDep(channel, version);
+        File ret = MavenArtifactDownloader.generate(getProject(), artifact, false);
+        if (ret == null)
+            throw new IllegalStateException("Failed to download mappings: " + artifact);
+        return ret;
     }
 
 }

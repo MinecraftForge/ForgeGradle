@@ -154,6 +154,13 @@ public class POMBuilder {
                     matcher.group("classifier"), matcher.group("extension"), scope);
         }
 
+        public Dependency addHard(String artifact, @Nullable String scope) {
+            Matcher matcher = PATTERN_ARTIFACT.matcher(artifact);
+            if (!matcher.matches()) throw new IllegalArgumentException("Invalid maven artifact specifier: " + artifact);
+            return add(matcher.group("group"), matcher.group("name"), '[' + matcher.group("version") + ']',
+                    matcher.group("classifier"), matcher.group("extension"), scope);
+        }
+
         public Dependency add(String group, String name, String version,
                               @Nullable String classifier, @Nullable String extension, @Nullable String scope) {
             Dependency dep = new Dependency(group, name, version, classifier, extension, scope);

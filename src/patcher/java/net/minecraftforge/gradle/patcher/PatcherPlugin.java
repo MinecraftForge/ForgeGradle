@@ -435,7 +435,7 @@ public class PatcherPlugin implements Plugin<Project> {
                 }
             }
             project.getDependencies().add(MC_DEP_CONFIG, "net.minecraft:client:" + extension.mcVersion + ":extra"); //Needs to be client extra, to get the data files.
-            project.getDependencies().add(MC_DEP_CONFIG, extension.getMappings());
+            project.getDependencies().add(MC_DEP_CONFIG, MCPRepo.getMappingDep(extension.getMappingChannel(), extension.getMappingVersion())); //Add mappings so that it can be used by reflection tools.
 
             if (dlMCMetaConfig.get().getMCVersion() == null) {
                 dlMCMetaConfig.get().setMCVersion(extension.mcVersion);
@@ -579,7 +579,7 @@ public class PatcherPlugin implements Plugin<Project> {
                 String channel = project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String) project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot";
 
                 TaskProvider<DownloadMCPMappingsTask> dlMappingsNew = project.getTasks().register("downloadMappingsNew", DownloadMCPMappingsTask.class);
-                dlMappingsNew.get().setMappings("de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip");
+                dlMappingsNew.get().setMappings(channel + '_' + version);
 
                 TaskProvider<TaskApplyMappings> toMCPNew = project.getTasks().register("srg2mcpNew", TaskApplyMappings.class);
                 toMCPNew.get().dependsOn(dlMappingsNew.get(), applyRangeConfig.get());

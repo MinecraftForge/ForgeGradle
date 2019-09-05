@@ -26,8 +26,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
@@ -130,10 +128,11 @@ public class MinecraftRepo extends BaseRepo {
                 return findVersion(version);
         } else {
             switch (classifier) {
-                case "":       return findRaw(side, version, json);
-                case "slim":   return findSlim(side, version, json);
-                case "data":   return findData(side, version, json);
-                case "extra":  return findExtra(side, version, json);
+                case "":         return findRaw(side, version, json);
+                case "slim":     return findSlim(side, version, json);
+                case "data":     return findData(side, version, json);
+                case "extra":    return findExtra(side, version, json);
+                case "mappings": return findMappings(side, version, json);
             }
         }
         return null;
@@ -149,14 +148,22 @@ public class MinecraftRepo extends BaseRepo {
         return zip;
     }
 
-    private File findMappings(String version) throws IOException {
-        File mappings = cache("versions", version, "mappings.txt");
-        if (!mappings.exists()) {
-            File mcp = findMcp(version);
+    private File findMcpMappings(String version) throws IOException {
+        File mcp = findMcp(version);
+        if (mcp == null)
+            return null;
+
+        File mappings = cache("versions", version, "mcp_mappings.tsrg");
+        HashStore cache = commonCache(cache("version", version, "mcp_mappings.tsrg"));
+        cache.add(mcp);
+
+        if (!cache.isSame() || !mappings.exists()) {
             MCPWrapperSlim wrapper = new MCPWrapperSlim(mcp);
             wrapper.extractData(mappings, "mappings");
+            cache.save();
             Utils.updateHash(mappings);
         }
+
         return mappings;
     }
 
@@ -164,7 +171,7 @@ public class MinecraftRepo extends BaseRepo {
         File manifest = cache("versions/manifest.json");
         if (!Utils.downloadEtag(new URL(MANIFEST_URL), manifest, offline))
             return null;
-        Utils.updateHash(manifest);
+        Utils.updateHash(manifest, HashFunction.SHA1);
 
         File json = cache("versions", version, "version.json");
         URL url =  Utils.loadJson(manifest, ManifestJson.class).getUrl(version);
@@ -173,7 +180,7 @@ public class MinecraftRepo extends BaseRepo {
 
         if (!Utils.downloadEtag(url, json, offline))
             return null;
-        Utils.updateHash(json);
+        Utils.updateHash(json, HashFunction.SHA1);
         return json;
     }
 
@@ -219,23 +226,30 @@ public class MinecraftRepo extends BaseRepo {
         return pom;
     }
 
+    private File findMappings(String side, String version, File json_file) throws IOException {
+        return findDownloadEntry(side + "_mappings", cache("versions", version, side + "_mappings.txt"), version, json_file);
+    }
+
     private File findRaw(String side, String version, File json_file) throws IOException {
+        return findDownloadEntry(side, cache("versions", version, side + ".jar"), version, json_file);
+    }
+
+    private File findDownloadEntry(String key, File target, String version, File json_file) throws IOException {
         VersionJson json = Utils.loadJson(json_file, VersionJson.class);
-        if (json.downloads == null || !json.downloads.containsKey(side)) {
-            throw new IllegalStateException(version +".json missing download for " + side);
+        if (json.downloads == null || !json.downloads.containsKey(key))
+            throw new IllegalStateException(version + ".json missing download for " + key);
+
+        Download dl = json.downloads.get(key);
+        if (!target.exists() || !HashFunction.SHA1.hash(target).equals(dl.sha1)) {
+            FileUtils.copyURLToFile(dl.url, target);
+            Utils.updateHash(target, HashFunction.SHA1);
         }
-        Download dl = json.downloads.get(side);
-        File raw = cache("versions", version, side + ".jar");
-        if (!raw.exists() || !HashFunction.SHA1.hash(raw).equals(dl.sha1)) {
-            FileUtils.copyURLToFile(dl.url, raw);
-            Utils.updateHash(raw);
-        }
-        return raw;
+        return target;
     }
 
     private File findExtra(String side, String version, File json) throws IOException {
         File raw = findRaw(side, version, json);
-        File mappings = findMappings(version);
+        File mappings = findMcpMappings(version);
         File extra = cache("versions", version, side + "-extra.jar");
         HashStore cache = commonCache(cache("versions", version, side + "-extra.jar"))
                 .add("raw", raw)
@@ -251,7 +265,7 @@ public class MinecraftRepo extends BaseRepo {
 
     private File findSlim(String side, String version, File json) throws IOException {
         File raw = findRaw(side, version, json);
-        File mappings = findMappings(version);
+        File mappings = findMcpMappings(version);
         File extra = cache("versions", version, side + "-slim.jar");
         HashStore cache = commonCache(cache("versions", version, side + "-slim.jar"))
                 .add("raw", raw)

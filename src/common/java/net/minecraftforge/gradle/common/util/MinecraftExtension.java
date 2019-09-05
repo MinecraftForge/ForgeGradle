@@ -45,7 +45,8 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
     protected final Project project;
     protected final NamedDomainObjectContainer<RunConfig> runs;
 
-    protected String mappings;
+    protected String mapping_channel;
+    protected String mapping_version;
     protected List<File> accessTransformers;
     protected List<File> sideAnnotationStrippers;
 
@@ -82,11 +83,20 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         closure.call();
     }
 
+    @Deprecated  //Remove when we can break things.
     public void setMappings(String mappings) {
-        this.mappings = mappings;
+        int idx = mappings.lastIndexOf('_');
+        if (idx == -1)
+            throw new RuntimeException("Invalid mapping string format, must be {channel}_{version}. Consider using mappings(channel, version) directly.");
+        String channel = mappings.substring(0, idx);
+        String version = mappings.substring(idx + 1);
+        mappings(channel, version);
     }
 
-    public abstract void mappings(String channel, String version);
+    public void mappings(String channel, String version) {
+        this.mapping_channel = channel;
+        this.mapping_version = version;
+    }
 
     public void mappings(Map<String, CharSequence> mappings) {
         CharSequence channel = mappings.get("channel");
@@ -100,7 +110,19 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
     }
 
     public String getMappings() {
-        return mappings;
+        return mapping_channel == null || mapping_version == null ? null : mapping_channel + '_' + mapping_version;
+    }
+    public String getMappingChannel() {
+        return mapping_channel;
+    }
+    public void setMappingChannel(String value) {
+        this.mapping_channel = value;
+    }
+    public String getMappingVersion() {
+        return mapping_version;
+    }
+    public void setMappingVersion(String value) {
+        this.mapping_version = value;
     }
 
     public void setAccessTransformers(List<File> accessTransformers) {

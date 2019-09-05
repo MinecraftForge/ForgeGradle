@@ -68,15 +68,6 @@ public class PatcherExtension extends MinecraftExtension {
         });
     }
 
-    @Override
-    public void mappings(@Nonnull String channel, @Nonnull String version) {
-        if (!version.contains("-")) {
-            version += "-+";
-        }
-
-        setMappings("de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip");
-    }
-
     public void setParent(Project parent) {
         this.parent = parent;
     }
@@ -225,8 +216,11 @@ public class PatcherExtension extends MinecraftExtension {
     }
 
     void copyFrom(PatcherExtension other) {
-        if (mappings == null) {
-            setMappings(other.getMappings());
+        if (mapping_channel == null) {
+            setMappingChannel(other.getMappingChannel());
+        }
+        if (mapping_version == null) {
+            setMappingVersion(other.getMappingVersion());
         }
 
         if (mcVersion == null) {

@@ -46,6 +46,7 @@ import net.minecraftforge.gradle.common.util.McpNames;
 import net.minecraftforge.gradle.common.util.POMBuilder;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
+import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
 import net.minecraftforge.gradle.mcp.function.SideAnnotationStripperFunction;
@@ -423,12 +424,12 @@ public class MinecraftUserRepo extends BaseRepo {
         int idx = mapping.lastIndexOf('_');
         String channel = mapping.substring(0, idx);
         String version = mapping.substring(idx + 1);
-        String desc = "de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
+        String desc = MCPRepo.getMappingDep(channel, version);
         debug("    Mapping: " + desc);
 
         File ret = MavenArtifactDownloader.manual(project, desc, CHANGING_USERDEV);
         if (ret == null) {
-            String message = "Could not download MCP Mappings: de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
+            String message = "Could not download MCP Mappings: " + desc;
             debug ("    " + message);
             project.getLogger().error(message);
             throw new IllegalStateException(message);
@@ -465,7 +466,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 int idx = mapping.lastIndexOf('_');
                 String channel = mapping.substring(0, idx);
                 String version = mapping.substring(idx + 1);
-                builder.dependencies().add("de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip", "compile"); //Runtime?
+                builder.dependencies().add(MCPRepo.getMappingDep(channel, version), "compile"); //Runtime?
             }
 
             Patcher patcher = parent;
