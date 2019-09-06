@@ -57,7 +57,8 @@ import net.minecraftforge.gradle.userdev.tasks.ApplyBinPatches;
 import net.minecraftforge.gradle.userdev.tasks.ApplyMCPFunction;
 import net.minecraftforge.gradle.userdev.tasks.RenameJar;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
-import net.minecraftforge.gradle.userdev.util.NonTaskJavaCompiler;
+import net.minecraftforge.gradle.userdev.util.CompatJavaCompiler;
+import net.minecraftforge.gradle.userdev.util.CompatJavaCompilerLoader;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -1144,7 +1145,7 @@ public class MinecraftUserRepo extends BaseRepo {
     private int compileTaskCount = 1;
     private File compileJava(File source, File... extraDeps) {
         String name = getNextCompileName();
-        NonTaskJavaCompiler compile = new NonTaskJavaCompiler(this.log);
+        CompatJavaCompiler compile = CompatJavaCompilerLoader.getCompiler(this.log);
         try {
             File output = project.file("build/" + name + "/");
             if (output.exists()) {

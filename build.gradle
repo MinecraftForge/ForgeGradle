@@ -22,7 +22,7 @@ def gitVersion() {
     def hash = desc.remove(desc.size() - 1)
     def offset = desc.remove(desc.size() - 1)
     def tag = desc.join('-')
-    def branch = grgit.branch.current().name    
+    def branch = grgit.branch.current().name
     return "${tag}.${offset}" //${t -> if (branch != 'master') t << '-' + branch}"
 }
 
@@ -65,6 +65,7 @@ license {
     exclude '**/*.properties'
     exclude 'net/minecraftforge/gradle/common/diff/'
     exclude 'net/minecraftforge/gradle/common/util/JavaVersionParser.java'
+    exclude 'net/minecraftforge/gradle/userdev/util/Jvm.java'
 }
 
 wrapper {
