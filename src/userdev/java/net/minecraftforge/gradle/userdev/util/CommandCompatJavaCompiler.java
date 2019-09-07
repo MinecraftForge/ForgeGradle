@@ -59,7 +59,7 @@ class CommandCompatJavaCompiler extends AbstractCompatJavaCompiler {
                 .redirectErrorStream(true)
                 .directory(getDestinationDir())
                 .start();
-            process.getInputStream().close();
+            process.getOutputStream().close();
             int exitCode;
             try {
                 exitCode = process.waitFor();
