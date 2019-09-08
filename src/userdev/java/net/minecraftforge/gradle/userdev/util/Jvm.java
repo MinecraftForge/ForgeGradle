@@ -78,7 +78,7 @@ class Jvm {
     private static Path findJavaHome(Path givenJavaHome) {
         Path toolsJar = findToolsJar(givenJavaHome);
         if (toolsJar != null) {
-            return toolsJar.subpath(0, toolsJar.getNameCount() - 2);
+            return toolsJar.getParent().getParent();
         } else if (givenJavaHome.getFileName().toString().equalsIgnoreCase("jre")
             && Files.exists(givenJavaHome.resolveSibling("bin").resolve(getExecutableName("java")))) {
             return givenJavaHome.getParent();
