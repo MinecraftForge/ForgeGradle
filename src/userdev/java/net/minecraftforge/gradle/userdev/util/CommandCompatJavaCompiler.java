@@ -50,11 +50,14 @@ class CommandCompatJavaCompiler extends AbstractCompatJavaCompiler {
     @Override
     public void compile() {
         try {
-            List<String> command = buildCommand();
-            logger.info("Starting compilation, command={}",
-                String.join(" ", command));
-            Path log = Files.createTempFile("ForgeGradle", ".log");
-            Process process = new ProcessBuilder(command)
+            List<String> arguments = buildArguments();
+            logger.info("Starting compilation, command={} {}",
+                javacExecutable, String.join(" ", arguments));
+            Path argFile = writeArgFile(arguments);
+            Path log = Files.createTempFile("ForgeGradle-javac", ".log");
+            Process process = new ProcessBuilder(
+                javacExecutable, "@" + argFile.toAbsolutePath().toString()
+            )
                 .redirectOutput(log.toFile())
                 .redirectErrorStream(true)
                 .directory(getDestinationDir())
@@ -65,6 +68,7 @@ class CommandCompatJavaCompiler extends AbstractCompatJavaCompiler {
                 exitCode = process.waitFor();
             } finally {
                 copyLog(log);
+                Files.deleteIfExists(argFile);
             }
             if (exitCode != 0) {
                 throw new IllegalStateException("Compilation failed, see log for details");
@@ -75,6 +79,21 @@ class CommandCompatJavaCompiler extends AbstractCompatJavaCompiler {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
+    }
+
+    private Path writeArgFile(List<String> arguments) throws IOException {
+        Path argFile = Files.createTempFile("ForgeGradle-javac", ".argfile");
+        List<String> argumentLines = arguments.stream().skip(1)
+            .map(argument -> {
+                if (argument.contains(" ")) {
+                    // Quote spaces, escape backslashes
+                    return "\"" + argument.replace("\\", "\\\\") + "\"";
+                }
+                return argument;
+            })
+            .collect(Collectors.toList());
+        Files.write(argFile, argumentLines);
+        return argFile;
     }
 
     private void copyLog(Path log) throws IOException {
@@ -92,9 +111,8 @@ class CommandCompatJavaCompiler extends AbstractCompatJavaCompiler {
         }
     }
 
-    private List<String> buildCommand() {
+    private List<String> buildArguments() {
         return new ImmutableList.Builder<String>()
-            .add(javacExecutable)
             .addAll(createOptions())
             .addAll(getSource().getFiles().stream()
                 .map(File::getAbsolutePath)

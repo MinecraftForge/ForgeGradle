@@ -24,6 +24,8 @@ import com.google.common.collect.Iterables;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 
+import net.minecraftforge.gradle.common.util.Jvm;
+
 import javax.tools.JavaCompiler;
 import java.nio.file.Path;
 import java.util.ServiceLoader;

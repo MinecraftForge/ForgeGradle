@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.minecraftforge.gradle.userdev.util;
+package net.minecraftforge.gradle.common.util;
 
 import com.google.common.base.Splitter;
 
@@ -22,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -34,9 +33,9 @@ import java.util.stream.Stream;
  * - Use no internal Gradle API
  * - Use new Path API
  */
-class Jvm {
+public class Jvm {
 
-    static Path findJavacExecutable() {
+    public static Path findJavacExecutable() {
         Path javaHome = findJavaHome();
         String javacExecutableName = getExecutableName("javac");
         Path javac = javaHome.resolve("bin").resolve(javacExecutableName);
@@ -53,7 +52,7 @@ class Jvm {
     }
 
     private static String getExecutableName(String name) {
-        return isWindows() && !name.endsWith(".exe") ? name + ".exe" : name;
+        return Utils.isWindows() && !name.endsWith(".exe") ? name + ".exe" : name;
     }
 
     private static Path findJavaHome() {
@@ -99,7 +98,7 @@ class Jvm {
             }
         }
 
-        if (isWindows()) {
+        if (Utils.isWindows()) {
             String version = System.getProperty("java.version");
             if (dirName.matches("jre\\d+") || dirName.equals("jre" + version)) {
                 toolsJar = javaHome.resolveSibling("jdk" + version).resolve("lib/tools.jar");
@@ -110,10 +109,6 @@ class Jvm {
         }
 
         return null;
-    }
-
-    private static boolean isWindows() {
-        return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
     }
 
 }
