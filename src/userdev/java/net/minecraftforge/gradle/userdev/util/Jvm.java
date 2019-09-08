@@ -21,6 +21,11 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Minimized copy of Gradle's Jvm class.
@@ -33,12 +38,13 @@ class Jvm {
 
     static Path findJavacExecutable() {
         Path javaHome = findJavaHome();
-        Path javac = javaHome.resolve("bin").resolve(getJavacExecutableName());
+        String javacExecutableName = getExecutableName("javac");
+        Path javac = javaHome.resolve("bin").resolve(javacExecutableName);
         if (Files.exists(javac)) {
             return javac;
         }
         for (String path : Splitter.on(File.pathSeparatorChar).split(System.getenv("PATH"))) {
-            javac = Paths.get(path, getJavacExecutableName());
+            javac = Paths.get(path, javacExecutableName);
             if (Files.exists(javac)) {
                 return javac;
             }
@@ -46,21 +52,38 @@ class Jvm {
         return null;
     }
 
-    private static String getJavacExecutableName() {
-        return isWindows() ? "javac.exe" : "javac";
+    private static String getExecutableName(String name) {
+        return isWindows() && !name.endsWith(".exe") ? name + ".exe" : name;
     }
 
     private static Path findJavaHome() {
-        Path givenJavaHome = Paths.get(System.getProperty("java.home"));
+        List<Path> javaHomeCandidates = Stream.of(
+            System.getenv("JAVA_HOME"), System.getProperty("java.home")
+        )
+            .filter(Objects::nonNull)
+            .filter(it -> !it.isEmpty())
+            .map(Paths::get)
+            .collect(Collectors.toList());
+        if (javaHomeCandidates.isEmpty()) {
+            // This should never happen, as java.home is a guaranteed property
+            throw new IllegalStateException("No Java home candidates available");
+        }
+        return javaHomeCandidates.stream()
+            .map(Jvm::findJavaHome)
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElseGet(() -> javaHomeCandidates.get(0));
+    }
+
+    private static Path findJavaHome(Path givenJavaHome) {
         Path toolsJar = findToolsJar(givenJavaHome);
         if (toolsJar != null) {
             return toolsJar.subpath(0, toolsJar.getNameCount() - 2);
         } else if (givenJavaHome.getFileName().toString().equalsIgnoreCase("jre")
-            && Files.exists(givenJavaHome.resolveSibling("bin/java"))) {
+            && Files.exists(givenJavaHome.resolveSibling("bin").resolve(getExecutableName("java")))) {
             return givenJavaHome.getParent();
-        } else {
-            return givenJavaHome;
         }
+        return null;
     }
 
     private static Path findToolsJar(Path javaHome) {
@@ -90,7 +113,7 @@ class Jvm {
     }
 
     private static boolean isWindows() {
-        return System.getProperty("os.name").contains("windows");
+        return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
     }
 
 }
