@@ -83,7 +83,7 @@ class CommandCompatJavaCompiler extends AbstractCompatJavaCompiler {
 
     private Path writeArgFile(List<String> arguments) throws IOException {
         Path argFile = Files.createTempFile("ForgeGradle-javac", ".argfile");
-        List<String> argumentLines = arguments.stream().skip(1)
+        List<String> argumentLines = arguments.stream()
             .map(argument -> {
                 if (argument.contains(" ")) {
                     // Quote spaces, escape backslashes
