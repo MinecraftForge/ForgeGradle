@@ -58,6 +58,13 @@ configurations {
     deployerJars
     shade
     compileOnly.extendsFrom shade
+    all {
+        resolutionStrategy {
+            force 'org.ow2.asm:asm-commons:6.0'
+            force 'org.ow2.asm:asm-tree:6.0'
+            force 'org.ow2.asm:asm:6.0'
+        }
+    }
 }
 
 dependencies {
@@ -87,10 +94,10 @@ dependencies {
     // mcp stuff
     shade 'de.oceanlabs.mcp:RetroGuard:3.6.6'
     shade('de.oceanlabs.mcp:mcinjector:3.4-SNAPSHOT'){
-     exclude group: 'org.ow2.asm', module: 'asm-debug-all'
+        exclude group: 'org.ow2.asm'
     }
     shade('net.minecraftforge:Srg2Source:5.0.+'){
-        exclude group: 'org.ow2.asm',         module: 'asm-debug-all'
+        exclude group: 'org.ow2.asm'
         exclude group: 'org.eclipse.equinox', module: 'org.eclipse.equinox.common'
         exclude group: 'cpw.mods',            module: 'modlauncher'
     }
@@ -98,10 +105,10 @@ dependencies {
     //Stuff used in the GradleStart classes
     compileOnly 'com.mojang:authlib:1.5.16'
     compileOnly('net.minecraft:launchwrapper:1.11'){
-     exclude group: 'org.ow2.asm', module: 'asm-debug-all'
+       exclude group: 'org.ow2.asm'
     }
 
-    compileOnly "org.jetbrains.kotlin:kotlin-gradle-plugin:1.1.3-2"
+    compileOnly 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.1.3-2'
     testCompile 'junit:junit:4.12'
 }
 
