@@ -21,9 +21,18 @@
 package net.minecraftforge.gradle.userdev.tasks;
 
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.internal.tasks.compile.CleaningJavaCompiler;
+import org.gradle.api.internal.tasks.compile.DefaultJavaCompileSpec;
+import org.gradle.api.internal.tasks.compile.JavaCompileSpec;
+import org.gradle.api.tasks.WorkResult;
 import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.internal.operations.BuildOperationExecutor;
+import org.gradle.jvm.internal.toolchain.JavaToolChainInternal;
+import org.gradle.language.base.internal.compile.Compiler;
+import org.gradle.language.base.internal.compile.CompilerUtil;
 import org.gradle.util.GradleVersion;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 // A terrible hack to use JavaCompile while bypassing
@@ -56,6 +65,10 @@ public class HackyJavaCompile extends JavaCompile {
             } catch (Exception e) {
                 throw new RuntimeException("Exception calling setHistory", e);
             }
+
+            // Do the actual compilation,
+            // bypassing a bunch of Gradle's other stuff (e.g. internal event listener mechanism)
+            this.compile();
         } else {
             try {
                 Method setPreviousOutputFiles = this.getOutputs().getClass().getMethod("setPreviousOutputFiles", FileCollection.class);
@@ -63,11 +76,25 @@ public class HackyJavaCompile extends JavaCompile {
             } catch (Exception e) {
                 throw new RuntimeException("Exception calling setPreviousOutputFiles ", e);
             }
+            try {
+                final DefaultJavaCompileSpec spec;
+                try {
+                    Method createSpec = JavaCompile.class.getDeclaredMethod("createSpec");
+                    createSpec.setAccessible(true);
+                    spec = (DefaultJavaCompileSpec) createSpec.invoke(this);
+                } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                    throw new RuntimeException("Exception calling createSpec ", e);
+                }
+                spec.setSourceFiles(getSource());
+                Compiler<JavaCompileSpec> javaCompiler = CompilerUtil.castCompiler(((JavaToolChainInternal) getToolChain()).select(getPlatform()).newCompiler(spec.getClass()));
+                CleaningJavaCompiler compiler = new CleaningJavaCompiler(javaCompiler, getOutputs());
+                final WorkResult execute = compiler.execute(spec);
+                setDidWork(execute.getDidWork());
+            } catch (Exception e) {
+                throw new RuntimeException("Exception compiling ", e);
+            }
         }
 
-        // Do the actual compilation,
-        // bypassing a bunch of Gradle's other stuff (e.g. internal event listener mechanism)
-        this.compile();
     }
 
 }
