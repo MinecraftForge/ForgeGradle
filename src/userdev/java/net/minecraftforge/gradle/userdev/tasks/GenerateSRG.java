@@ -66,7 +66,7 @@ public class GenerateSRG extends DefaultTask {
         String channel = mapping.substring(0, idx);
         String version = mapping.substring(idx + 1);
         String desc = MCPRepo.getMappingDep(channel, version);
-        return MavenArtifactDownloader.manual(getProject(), desc, false);
+        return MavenArtifactDownloader.generate(getProject(), desc, false);
     }
 
     @InputFile
