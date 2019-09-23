@@ -63,6 +63,7 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -87,7 +88,8 @@ public class Utils {
     public static final String SRG2SOURCE =  "net.minecraftforge:Srg2Source:5.+:fatjar";
     public static final String SIDESTRIPPER = "net.minecraftforge:mergetool:1.0.7:fatjar";
     public static final String INSTALLERTOOLS = "net.minecraftforge:installertools:1.1.7:fatjar";
-    public static final long ZIPTIME = 0x92D6688800L;
+    public static final long ZIPTIME = 628041600000L;
+    public static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 
     public static void extractFile(ZipFile zip, String name, File output) throws IOException {
         extractFile(zip, zip.getEntry(name), output);
@@ -533,5 +535,18 @@ public class Utils {
                 throw new UncheckedIOException(e);
             }
         });
+    }
+
+    public static ZipEntry getStableEntry(String name) {
+        return getStableEntry(name, Utils.ZIPTIME);
+    }
+
+    public static ZipEntry getStableEntry(String name, long time) {
+        TimeZone _default = TimeZone.getDefault();
+        TimeZone.setDefault(GMT);
+        ZipEntry ret = new ZipEntry(name);
+        ret.setTime(time);
+        TimeZone.setDefault(_default);
+        return ret;
     }
 }

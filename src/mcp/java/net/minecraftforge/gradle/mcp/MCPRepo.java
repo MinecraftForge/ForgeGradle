@@ -440,7 +440,8 @@ public class MCPRepo extends BaseRepo {
         File extra = cacheMC(side, version, "extra", "jar");
         HashStore cache = commonHash(mcp).load(cacheMC(side, version, "extra", "jar.input"))
                 .add("raw", raw)
-                .add("mcp", mcp);
+                .add("mcp", mcp)
+                .add("codever", "1");
 
         if (!cache.isSame() || !extra.exists()) {
             MCPWrapper wrapper = getWrapper(version, mcp);
@@ -477,7 +478,8 @@ public class MCPRepo extends BaseRepo {
                 .load( cacheMC("mapping", mcpversion, "mapping", "zip.input"))
                 .add("pg_client", client)
                 .add("pg_server", server)
-                .add("tsrg", tsrg);
+                .add("tsrg", tsrg)
+                .add("codever", "1");
 
         if (!cache.isSame() || !mappings.exists()) {
             MappingFile pg_client = MappingFile.load(client);
@@ -557,15 +559,11 @@ public class MCPRepo extends BaseRepo {
             try (FileOutputStream fos = new FileOutputStream(mappings);
                  ZipOutputStream out = new ZipOutputStream(fos)) {
 
-                ZipEntry entry = new ZipEntry("fields.csv");
-                entry.setTime(Utils.ZIPTIME);
-                out.putNextEntry(entry);
+                out.putNextEntry(Utils.getStableEntry("fields.csv"));
                 csv.write(new OutputStreamWriter(out), fields);
                 out.closeEntry();
 
-                entry = new ZipEntry("methods.csv");
-                entry.setTime(Utils.ZIPTIME);
-                out.putNextEntry(entry);
+                out.putNextEntry(Utils.getStableEntry("methods.csv"));
                 csv.write(new OutputStreamWriter(out), methods);
                 out.closeEntry();
             }

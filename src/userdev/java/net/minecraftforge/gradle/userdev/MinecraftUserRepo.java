@@ -516,7 +516,8 @@ public class MinecraftUserRepo extends BaseRepo {
 
     private File findRaw(String mapping) throws IOException {
         File names = findMapping(mapping);
-        HashStore cache = commonHash(names);
+        HashStore cache = commonHash(names)
+            .add("codever", "1");
 
         if (mapping != null && names == null) {
             debug("  Finding Raw: Could not find names, exiting");
@@ -653,9 +654,7 @@ public class MinecraftUserRepo extends BaseRepo {
                     if ("package-info-template.java".equals(name)) {
                         template = new String(IOUtils.toByteArray(zin), StandardCharsets.UTF_8);
                     } else {
-                        ZipEntry _new = new ZipEntry(name);
-                        _new.setTime(Utils.ZIPTIME);
-                        zos.putNextEntry(_new);
+                        zos.putNextEntry(Utils.getStableEntry(name));
                         IOUtils.copy(zin, zos);
                         zos.closeEntry();
                     }
@@ -663,9 +662,7 @@ public class MinecraftUserRepo extends BaseRepo {
 
                 if (template != null) {
                     for (String pkg : packages) {
-                        ZipEntry _new = new ZipEntry(pkg + "/package-info.java");
-                        _new.setTime(Utils.ZIPTIME);
-                        zos.putNextEntry(_new);
+                        zos.putNextEntry(Utils.getStableEntry(pkg + "/package-info.java"));
                         zos.write(template.replace("{PACKAGE}", pkg.replace("/", ".")).getBytes(StandardCharsets.UTF_8));
                         zos.closeEntry();
                     }
@@ -684,9 +681,7 @@ public class MinecraftUserRepo extends BaseRepo {
                  ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(injected))) {
                 ZipEntry entry = null;
                 while ((entry = zmci.getNextEntry()) != null) {
-                    ZipEntry _new = new ZipEntry(entry.getName());
-                    _new.setTime(Utils.ZIPTIME);
-                    zout.putNextEntry(_new);
+                    zout.putNextEntry(Utils.getStableEntry(entry.getName()));
                     IOUtils.copy(zmci, zout);
                     zout.closeEntry();
                 }
@@ -694,9 +689,7 @@ public class MinecraftUserRepo extends BaseRepo {
                     @Override
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                         try (InputStream fin = Files.newInputStream(file)) {
-                            ZipEntry _new = new ZipEntry(compiled.toPath().relativize(file).toString().replace('\\', '/'));
-                            _new.setTime(0);
-                            zout.putNextEntry(_new);
+                            zout.putNextEntry(Utils.getStableEntry(compiled.toPath().relativize(file).toString().replace('\\', '/')));
                             IOUtils.copy(fin, zout);
                             zout.closeEntry();
                         }
@@ -1027,9 +1020,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(sources))) {
                 ZipEntry _old;
                 while ((_old = zin.getNextEntry()) != null) {
-                    ZipEntry _new = new ZipEntry(_old.getName());
-                    _new.setTime(Utils.ZIPTIME);
-                    zout.putNextEntry(_new);
+                    zout.putNextEntry(Utils.getStableEntry(_old.getName()));
 
                     if (_old.getName().endsWith(".java")) {
                         String mapped = map.rename(zin, true);
@@ -1085,9 +1076,7 @@ public class MinecraftUserRepo extends BaseRepo {
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                         try (InputStream fin = Files.newInputStream(file)) {
                             String name = compiled.toPath().relativize(file).toString().replace('\\', '/');
-                            ZipEntry _new = new ZipEntry(name);
-                            _new.setTime(Utils.ZIPTIME);
-                            zout.putNextEntry(_new);
+                            zout.putNextEntry(Utils.getStableEntry(name));
                             IOUtils.copy(fin, zout);
                             zout.closeEntry();
                             added.add(name);

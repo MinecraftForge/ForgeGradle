@@ -159,9 +159,7 @@ public class Deobfuscator {
                  ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(output))) {
                 ZipEntry _old;
                 while ((_old = zin.getNextEntry()) != null) {
-                    ZipEntry _new = new ZipEntry(_old.getName());
-                    _new.setTime(Utils.ZIPTIME);
-                    zout.putNextEntry(_new);
+                    zout.putNextEntry(Utils.getStableEntry(_old.getName()));
 
                     if (_old.getName().endsWith(".java")) {
                         String mapped = map.rename(zin, true);

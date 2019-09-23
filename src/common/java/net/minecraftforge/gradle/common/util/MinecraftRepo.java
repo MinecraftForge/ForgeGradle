@@ -257,7 +257,8 @@ public class MinecraftRepo extends BaseRepo {
         File extra = cache("versions", version, side + "-extra" + (forceStable && !stable ? "-stable" : "") + ".jar");
         HashStore cache = commonCache(cache("versions", version, side + "-extra" + (forceStable && !stable ? "-stable" : "") + ".jar"))
                 .add("raw", raw)
-                .add("mappings", mappings);
+                .add("mappings", mappings)
+                .add("codever", "1");
 
         if (!cache.isSame() || !extra.exists()) {
             splitJar(raw, mappings, extra, false, stable || forceStable);
@@ -274,7 +275,8 @@ public class MinecraftRepo extends BaseRepo {
         File extra = cache("versions", version, side + "-slim" + (forceStable && !stable ? "-stable" : "") + ".jar");
         HashStore cache = commonCache(cache("versions", version, side + "-slim" + (forceStable && !stable ? "-stable" : "") + ".jar"))
                 .add("raw", raw)
-                .add("mappings", mappings);
+                .add("mappings", mappings)
+                .add("codever", "1");
 
         if (!cache.isSame() || !extra.exists()) {
             splitJar(raw, mappings, extra, true, stable || forceStable);
@@ -310,8 +312,7 @@ public class MinecraftRepo extends BaseRepo {
                 if (name.endsWith(".class")) {
                     boolean isNotch = whitelist.contains(name.substring(0, name.length() - 6 /*.class*/));
                     if (slim == isNotch) {
-                        ZipEntry _new = new ZipEntry(name);
-                        _new.setTime(stable ? Utils.ZIPTIME : 0);
+                        ZipEntry _new = Utils.getStableEntry(name, stable ? Utils.ZIPTIME : 0);
                         out.putNextEntry(_new);
                         try (InputStream ein = zin.getInputStream(entry)) {
                             IOUtils.copy(ein, out);
@@ -320,8 +321,7 @@ public class MinecraftRepo extends BaseRepo {
                     }
                 } else {
                     if (!slim) {
-                        ZipEntry _new = new ZipEntry(name);
-                        _new.setTime(stable ? Utils.ZIPTIME : 0);
+                        ZipEntry _new = Utils.getStableEntry(name, stable ? Utils.ZIPTIME : 0);
                         out.putNextEntry(_new);
                         try (InputStream ein = zin.getInputStream(entry)) {
                             IOUtils.copy(ein, out);
@@ -339,7 +339,8 @@ public class MinecraftRepo extends BaseRepo {
         File raw = findRaw(side, version, json);
         File extra = cache("versions", version, side + "-data" + (forceStable && !stable ? "-stable" : "") + ".jar");
         HashStore cache = commonCache(cache("versions", version, side + "-data" + (forceStable && !stable ? "-stable" : "") + ".jar"))
-                .add("raw", raw);
+                .add("raw", raw)
+                .add("codever", "1");
 
         if (!cache.isSame() || !extra.exists()) {
             try (ZipFile zin = new ZipFile(raw);
@@ -350,8 +351,7 @@ public class MinecraftRepo extends BaseRepo {
                     ZipEntry entry = entries.nextElement();
                     String name = entry.getName();
                     if (!name.endsWith(".class")) {
-                        ZipEntry _new = new ZipEntry(name);
-                        _new.setTime(stable || forceStable ? Utils.ZIPTIME : 0);
+                        ZipEntry _new = Utils.getStableEntry(name, stable || forceStable ? Utils.ZIPTIME : 0);
                         out.putNextEntry(_new);
                         try (InputStream ein = zin.getInputStream(entry)) {
                             IOUtils.copy(ein, out);

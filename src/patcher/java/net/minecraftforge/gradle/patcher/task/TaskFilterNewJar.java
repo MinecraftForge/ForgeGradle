@@ -74,9 +74,7 @@ public class TaskFilterNewJar extends DefaultTask { //TODO: Copy task?
                     (entry.getName().endsWith(".class") && isVanilla(classes, entry.getName().substring(0, entry.getName().length() - 6)))) {
                     return;
                 }
-                ZipEntry nentry = new ZipEntry(entry.getName());
-                nentry.setTime(Utils.ZIPTIME);
-                out.putNextEntry(nentry);
+                out.putNextEntry(Utils.getStableEntry(entry.getName()));
                 IOUtils.copy(zin.getInputStream(entry), out);
                 out.closeEntry();
             });

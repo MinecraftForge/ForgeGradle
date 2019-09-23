@@ -95,9 +95,7 @@ public class InjectFunction implements MCPFunction {
                     if (visited.add(pkg)) {
                         if (!pkg.startsWith("net/minecraft/"))
                             continue;
-                        ZipEntry info = new ZipEntry(pkg + "/package-info.java");
-                        info.setTime(Utils.ZIPTIME);
-                        zos.putNextEntry(info);
+                        zos.putNextEntry(Utils.getStableEntry(pkg + "/package-info.java"));
                         zos.write(template.replace("{PACKAGE}", pkg.replaceAll("/", ".")).getBytes(StandardCharsets.UTF_8));
                         zos.closeEntry();
                     }

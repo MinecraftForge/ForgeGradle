@@ -80,9 +80,7 @@ public class TaskApplyMappings extends DefaultTask {
                  ZipOutputStream out = new ZipOutputStream(fos)) {
                 zin.stream().forEach(e -> {
                     try {
-                        ZipEntry entry = new ZipEntry(e.getName());
-                        entry.setTime(Utils.ZIPTIME);
-                        out.putNextEntry(entry);
+                        out.putNextEntry(Utils.getStableEntry(e.getName()));
                         if (!e.getName().endsWith(".java")) {
                             IOUtils.copy(zin.getInputStream(e), out);
                         } else {
