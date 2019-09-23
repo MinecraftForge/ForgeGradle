@@ -553,18 +553,18 @@ public class MinecraftUserRepo extends BaseRepo {
             debug("    HasAts: " + hasAts);
 
             File srged = null;
-            String joined_name = "net.minecraft:" + (isPatcher? "joined" : NAME) + ":" + mcp.getVersion() + ":srg";
-            File joined = MavenArtifactDownloader.generate(project, joined_name, true); //Download vanilla in srg name
-            if (joined == null || !joined.exists()) {
-                debug("  Failed to find joined: " + joined_name);
-                project.getLogger().error("MinecraftUserRepo: Failed to get Minecraft Joined SRG. Should not be possible.");
+            String mc_srg_desc = "net.minecraft:" + (isPatcher ? "joined" : NAME) + ":" + mcp.getVersion() + ":srg";
+            File mc_srg = MavenArtifactDownloader.generate(project, mc_srg_desc, true); //Download vanilla in srg name
+            if (mc_srg == null || !mc_srg.exists()) {
+                debug("  Failed to find MC Vanilla SRG: " + mc_srg_desc);
+                project.getLogger().error("MinecraftUserRepo: Failed to get Minecraft Vanilla SRG. Should not be possible. " + mc_srg_desc);
                 return null;
             }
-            debug("    Joined: " + joined);
+            debug("    Vanilla SRG: " + mc_srg);
 
             //Gather vanilla packages, so we can only inject the proper package-info classes.
             Set<String> packages = new HashSet<>();
-            try (ZipFile tmp = new ZipFile(joined)) {
+            try (ZipFile tmp = new ZipFile(mc_srg)) {
                 packages = tmp.stream()
                 .map(ZipEntry::getName)
                 .filter(e -> e.endsWith(".class"))
@@ -573,7 +573,7 @@ public class MinecraftUserRepo extends BaseRepo {
             }
 
             if (parent == null) { //Raw minecraft
-                srged = joined;
+                srged = mc_srg;
             } else { // Needs binpatches
                 File binpatched = cacheRaw("binpatched", "jar");
 
@@ -583,7 +583,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 apply.setHasLog(false);
                 apply.setTool(parent.getConfig().binpatcher.getVersion());
                 apply.setArgs(parent.getConfig().binpatcher.getArgs());
-                apply.setClean(joined);
+                apply.setClean(mc_srg);
                 apply.setPatch(findBinPatches());
                 apply.setOutput(binpatched);
                 apply.apply();
@@ -595,7 +595,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(srged))) {
 
                     //Add binpatched, then vanilla first, overrides any other entries added
-                    for (File file : new File[] {binpatched, joined}) {
+                    for (File file : new File[] {binpatched, mc_srg}) {
                         try (ZipInputStream zin = new ZipInputStream(new FileInputStream(file))) {
                             ZipEntry entry;
                             while ((entry = zin.getNextEntry()) != null) {
@@ -654,7 +654,7 @@ public class MinecraftUserRepo extends BaseRepo {
                         template = new String(IOUtils.toByteArray(zin), StandardCharsets.UTF_8);
                     } else {
                         ZipEntry _new = new ZipEntry(name);
-                        _new.setTime(0);
+                        _new.setTime(Utils.ZIPTIME);
                         zos.putNextEntry(_new);
                         IOUtils.copy(zin, zos);
                         zos.closeEntry();
@@ -664,7 +664,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 if (template != null) {
                     for (String pkg : packages) {
                         ZipEntry _new = new ZipEntry(pkg + "/package-info.java");
-                        _new.setTime(0);
+                        _new.setTime(Utils.ZIPTIME);
                         zos.putNextEntry(_new);
                         zos.write(template.replace("{PACKAGE}", pkg.replace("/", ".")).getBytes(StandardCharsets.UTF_8));
                         zos.closeEntry();
@@ -685,7 +685,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 ZipEntry entry = null;
                 while ((entry = zmci.getNextEntry()) != null) {
                     ZipEntry _new = new ZipEntry(entry.getName());
-                    _new.setTime(0);
+                    _new.setTime(Utils.ZIPTIME);
                     zout.putNextEntry(_new);
                     IOUtils.copy(zmci, zout);
                     zout.closeEntry();
@@ -1028,7 +1028,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 ZipEntry _old;
                 while ((_old = zin.getNextEntry()) != null) {
                     ZipEntry _new = new ZipEntry(_old.getName());
-                    _new.setTime(0);
+                    _new.setTime(Utils.ZIPTIME);
                     zout.putNextEntry(_new);
 
                     if (_old.getName().endsWith(".java")) {
@@ -1086,7 +1086,7 @@ public class MinecraftUserRepo extends BaseRepo {
                         try (InputStream fin = Files.newInputStream(file)) {
                             String name = compiled.toPath().relativize(file).toString().replace('\\', '/');
                             ZipEntry _new = new ZipEntry(name);
-                            _new.setTime(0);
+                            _new.setTime(Utils.ZIPTIME);
                             zout.putNextEntry(_new);
                             IOUtils.copy(fin, zout);
                             zout.closeEntry();

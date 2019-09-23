@@ -160,7 +160,7 @@ public class Deobfuscator {
                 ZipEntry _old;
                 while ((_old = zin.getNextEntry()) != null) {
                     ZipEntry _new = new ZipEntry(_old.getName());
-                    _new.setTime(0);
+                    _new.setTime(Utils.ZIPTIME);
                     zout.putNextEntry(_new);
 
                     if (_old.getName().endsWith(".java")) {

@@ -44,6 +44,7 @@ import org.gradle.api.tasks.TaskAction;
 import de.siegmar.fastcsv.reader.CsvContainer;
 import de.siegmar.fastcsv.reader.CsvReader;
 import de.siegmar.fastcsv.reader.CsvRow;
+import net.minecraftforge.gradle.common.util.Utils;
 
 public class TaskApplyMappings extends DefaultTask {
     private static final Pattern SRG = Pattern.compile("func_[0-9]+_[a-zA-Z_]+|field_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_\\b");
@@ -80,7 +81,7 @@ public class TaskApplyMappings extends DefaultTask {
                 zin.stream().forEach(e -> {
                     try {
                         ZipEntry entry = new ZipEntry(e.getName());
-                        entry.setTime(0);
+                        entry.setTime(Utils.ZIPTIME);
                         out.putNextEntry(entry);
                         if (!e.getName().endsWith(".java")) {
                             IOUtils.copy(zin.getInputStream(e), out);

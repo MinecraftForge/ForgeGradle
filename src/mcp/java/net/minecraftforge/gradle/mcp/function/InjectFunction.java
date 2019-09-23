@@ -21,6 +21,7 @@
 package net.minecraftforge.gradle.mcp.function;
 
 import net.minecraftforge.gradle.common.util.HashStore;
+import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import org.apache.commons.io.IOUtils;
 
@@ -95,7 +96,7 @@ public class InjectFunction implements MCPFunction {
                         if (!pkg.startsWith("net/minecraft/"))
                             continue;
                         ZipEntry info = new ZipEntry(pkg + "/package-info.java");
-                        info.setTime(0);
+                        info.setTime(Utils.ZIPTIME);
                         zos.putNextEntry(info);
                         zos.write(template.replace("{PACKAGE}", pkg.replaceAll("/", ".")).getBytes(StandardCharsets.UTF_8));
                         zos.closeEntry();

@@ -109,6 +109,9 @@ public class MinecraftRepo extends BaseRepo {
             return null;
 
         String version = artifact.getVersion();
+        boolean forceStable = version.endsWith("-stable");
+        if (forceStable)
+            version = version.substring(0, version.length() - 7);
         String mappings = getMappings(version);
         if (mappings != null)
             return null; //We do not support mappings
@@ -129,9 +132,9 @@ public class MinecraftRepo extends BaseRepo {
         } else {
             switch (classifier) {
                 case "":         return findRaw(side, version, json);
-                case "slim":     return findSlim(side, version, json);
-                case "data":     return findData(side, version, json);
-                case "extra":    return findExtra(side, version, json);
+                case "slim":     return findSlim(side, version, forceStable, json);
+                case "data":     return findData(side, version, forceStable, json);
+                case "extra":    return findExtra(side, version, forceStable, json);
                 case "mappings": return findMappings(side, version, json);
             }
         }
@@ -247,32 +250,34 @@ public class MinecraftRepo extends BaseRepo {
         return target;
     }
 
-    private File findExtra(String side, String version, File json) throws IOException {
+    private File findExtra(String side, String version, boolean forceStable, File json) throws IOException {
+        boolean stable = MinecraftVersion.v1_14_4.compareTo(MinecraftVersion.from(version)) < 0;
         File raw = findRaw(side, version, json);
         File mappings = findMcpMappings(version);
-        File extra = cache("versions", version, side + "-extra.jar");
-        HashStore cache = commonCache(cache("versions", version, side + "-extra.jar"))
+        File extra = cache("versions", version, side + "-extra" + (forceStable && !stable ? "-stable" : "") + ".jar");
+        HashStore cache = commonCache(cache("versions", version, side + "-extra" + (forceStable && !stable ? "-stable" : "") + ".jar"))
                 .add("raw", raw)
                 .add("mappings", mappings);
 
         if (!cache.isSame() || !extra.exists()) {
-            splitJar(raw, mappings, extra, false);
+            splitJar(raw, mappings, extra, false, stable || forceStable);
             cache.save();
         }
 
         return extra;
     }
 
-    private File findSlim(String side, String version, File json) throws IOException {
+    private File findSlim(String side, String version, boolean forceStable, File json) throws IOException {
+        boolean stable = MinecraftVersion.v1_14_4.compareTo(MinecraftVersion.from(version)) < 0;
         File raw = findRaw(side, version, json);
         File mappings = findMcpMappings(version);
-        File extra = cache("versions", version, side + "-slim.jar");
-        HashStore cache = commonCache(cache("versions", version, side + "-slim.jar"))
+        File extra = cache("versions", version, side + "-slim" + (forceStable && !stable ? "-stable" : "") + ".jar");
+        HashStore cache = commonCache(cache("versions", version, side + "-slim" + (forceStable && !stable ? "-stable" : "") + ".jar"))
                 .add("raw", raw)
                 .add("mappings", mappings);
 
         if (!cache.isSame() || !extra.exists()) {
-            splitJar(raw, mappings, extra, true);
+            splitJar(raw, mappings, extra, true, stable || forceStable);
             cache.save();
         }
 
@@ -280,13 +285,13 @@ public class MinecraftRepo extends BaseRepo {
         return extra;
     }
 
-    private static void splitJar(File raw, File mappings, File output, boolean slim) throws IOException {
+    private static void splitJar(File raw, File mappings, File output, boolean slim, boolean stable) throws IOException {
         try (FileInputStream input = new FileInputStream(mappings)) {
-            splitJar(raw, input, output, slim);
+            splitJar(raw, input, output, slim, stable);
         }
     }
 
-    public static void splitJar(File raw, InputStream mappings, File output, boolean slim) throws IOException {
+    public static void splitJar(File raw, InputStream mappings, File output, boolean slim, boolean stable) throws IOException {
         try (ZipFile zin = new ZipFile(raw);
              FileOutputStream fos = new FileOutputStream(output);
              ZipOutputStream out = new ZipOutputStream(fos)) {
@@ -306,7 +311,7 @@ public class MinecraftRepo extends BaseRepo {
                     boolean isNotch = whitelist.contains(name.substring(0, name.length() - 6 /*.class*/));
                     if (slim == isNotch) {
                         ZipEntry _new = new ZipEntry(name);
-                        _new.setTime(0);
+                        _new.setTime(stable ? Utils.ZIPTIME : 0);
                         out.putNextEntry(_new);
                         try (InputStream ein = zin.getInputStream(entry)) {
                             IOUtils.copy(ein, out);
@@ -316,7 +321,7 @@ public class MinecraftRepo extends BaseRepo {
                 } else {
                     if (!slim) {
                         ZipEntry _new = new ZipEntry(name);
-                        _new.setTime(0);
+                        _new.setTime(stable ? Utils.ZIPTIME : 0);
                         out.putNextEntry(_new);
                         try (InputStream ein = zin.getInputStream(entry)) {
                             IOUtils.copy(ein, out);
@@ -329,10 +334,11 @@ public class MinecraftRepo extends BaseRepo {
         Utils.updateHash(output);
     }
 
-    private File findData(String side, String version, File json) throws IOException {
+    private File findData(String side, String version, boolean forceStable, File json) throws IOException {
+        boolean stable = MinecraftVersion.v1_14_4.compareTo(MinecraftVersion.from(version)) < 0 || forceStable;
         File raw = findRaw(side, version, json);
-        File extra = cache("versions", version, side + "-data.jar");
-        HashStore cache = commonCache(cache("versions", version, side + "-data.jar"))
+        File extra = cache("versions", version, side + "-data" + (forceStable && !stable ? "-stable" : "") + ".jar");
+        HashStore cache = commonCache(cache("versions", version, side + "-data" + (forceStable && !stable ? "-stable" : "") + ".jar"))
                 .add("raw", raw);
 
         if (!cache.isSame() || !extra.exists()) {
@@ -345,7 +351,7 @@ public class MinecraftRepo extends BaseRepo {
                     String name = entry.getName();
                     if (!name.endsWith(".class")) {
                         ZipEntry _new = new ZipEntry(name);
-                        _new.setTime(0);
+                        _new.setTime(stable || forceStable ? Utils.ZIPTIME : 0);
                         out.putNextEntry(_new);
                         try (InputStream ein = zin.getInputStream(entry)) {
                             IOUtils.copy(ein, out);

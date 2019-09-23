@@ -445,7 +445,7 @@ public class MCPRepo extends BaseRepo {
         if (!cache.isSame() || !extra.exists()) {
             MCPWrapper wrapper = getWrapper(version, mcp);
             byte[] data = wrapper.getData("mappings");
-            MinecraftRepo.splitJar(raw, new ByteArrayInputStream(data), extra, false);
+            MinecraftRepo.splitJar(raw, new ByteArrayInputStream(data), extra, false, true);
             cache.save();
         }
 
