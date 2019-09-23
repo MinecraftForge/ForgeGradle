@@ -68,6 +68,9 @@ public class MavenArtifactDownloader {
     }
 
     public static String getVersion(Project project, String artifact) {
+        Artifact art = Artifact.from(artifact);
+        if (!art.getVersion().endsWith("+") && !art.isSnapshot())
+            return art.getVersion();
         _download(project, artifact, true, false, true, true);
         return VERSIONS.get(artifact);
     }
