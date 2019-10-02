@@ -21,13 +21,17 @@
 package net.minecraftforge.gradle.userdev.tasks;
 
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 
 import net.minecraftforge.gradle.common.task.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
 
 import java.io.File;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +42,7 @@ public class RenameJar extends JarExec {
     private Supplier<File> input;
     private File output;
     private Supplier<File> mappings;
+    private List<Supplier<File>> extraMappings;
 
     public RenameJar() {
         tool = Utils.SPECIALSOURCE;
@@ -51,29 +56,80 @@ public class RenameJar extends JarExec {
         replace.put("{output}", getOutput().getAbsolutePath());
         replace.put("{mappings}", getMappings().getAbsolutePath());
 
-        return Arrays.stream(getArgs()).map(arg -> replace.getOrDefault(arg, arg)).collect(Collectors.toList());
+        List<String> _args = new ArrayList<>();
+        for (String arg : getArgs()) {
+            if ("{mappings}".equals(arg)) {
+                String prefix = _args.get(_args.size() - 1);
+                _args.add(getMappings().getAbsolutePath());
+
+                getExtraMappings().forEach(f -> {
+                   _args.add(prefix);
+                   _args.add(f.getAbsolutePath());
+                });
+            } else {
+                _args.add(replace.getOrDefault(arg, arg));
+            }
+        }
+
+        return _args;
     }
 
     @InputFile
     public File getMappings() {
         return mappings.get();
     }
-    public void setMappings(File value) {
-        this.mappings = () -> value;
-    }
     public void setMappings(Supplier<File> value) {
         this.mappings = value;
+    }
+    public void setMappings(File value) {
+        this.mappings(value);
+    }
+    public void mappings(File value) {
+        this.mappings(() -> value);
+    }
+    public void mappings(Supplier<File> value) {
+        this.setMappings(value);
+    }
+
+    @Optional
+    @InputFiles
+    public List<File> getExtraMappings() {
+        return this.extraMappings == null ? Collections.emptyList() : this.extraMappings.stream().map(Supplier::get).collect(Collectors.toList());
+    }
+    public void setExtraMappingsDelayed(Collection<Supplier<File>> values) {
+        List<Supplier<File>> _new = new ArrayList<>();
+        values.forEach(_new::add);
+        this.extraMappings = _new;
+    }
+    public void setExtraMappings(Collection<File> values) {
+        List<Supplier<File>> _new = new ArrayList<>();
+        values.stream().forEach(f  -> _new.add(() -> f));
+        this.extraMappings = _new;
+    }
+    public void extraMapping(File value) {
+        this.extraMapping(() -> value);
+    }
+    public void extraMapping(Supplier<File> value) {
+        if (this.extraMappings == null)
+            this.extraMappings = new ArrayList<>();
+        this.extraMappings.add(value);
     }
 
     @InputFile
     public File getInput() {
         return input.get();
     }
-    public void setInput(File value) {
-        this.input = () -> value;
-    }
     public void setInput(Supplier<File> value) {
         this.input = value;
+    }
+    public void setInput(File value) {
+        this.setInput(() -> value);
+    }
+    public void input(File value) {
+        this.input(() -> value);
+    }
+    public void input(Supplier<File> value) {
+        this.setInput(value);
     }
 
     @OutputFile
@@ -82,5 +138,8 @@ public class RenameJar extends JarExec {
     }
     public void setOutput(File value) {
         this.output = value;
+    }
+    public void output(File value) {
+        this.setOutput(value);
     }
 }
