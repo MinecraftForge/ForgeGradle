@@ -95,6 +95,7 @@ public class SideAnnotationStripperFunction extends ExecuteFunction {
     public void addInputs(HashStore cache, String prefix) { //Called by setupMain before executed
         cache.add(prefix + "args", String.join(" ", runArgs));
         cache.add(prefix + "jvmargs", String.join(" ", runArgs));
+        cache.add(files);
         if (data != null)
             cache.add(prefix + "data", data);
         try {

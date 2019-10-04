@@ -96,6 +96,7 @@ public class AccessTransformerFunction extends ExecuteFunction {
     public void addInputs(HashStore cache, String prefix) { //Called by setupMain before executed
         cache.add(prefix + "args", String.join(" ", runArgs));
         cache.add(prefix + "jvmargs", String.join(" ", runArgs));
+        cache.add(files);
         if (transformers != null)
             cache.add(prefix + "transformers", transformers);
         try {
