@@ -178,6 +178,9 @@ public class UserDevPlugin implements Plugin<Project> {
 
             if (!internalObfConfiguration.getDependencies().isEmpty()) {
                 deobfrepo = new DeobfuscatingRepo(project, internalObfConfiguration, deobfuscator);
+                if (deobfrepo.getResolvedOrigin() == null) {
+                    project.getLogger().error("DeobfRepo attempted to resolve an origin repo early but failed, this may cause issues with some IDEs");
+                }
             }
             remapper.attachMappings(extension.getMappings());
 

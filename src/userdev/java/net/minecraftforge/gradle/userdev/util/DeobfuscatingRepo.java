@@ -38,7 +38,7 @@ public class DeobfuscatingRepo extends BaseRepo {
     private final Project project;
 
     //once resolved by gradle, will contain SRG-named artifacts for us to deobf
-    private Configuration origin;
+    private final Configuration origin;
     private ResolvedConfiguration resolvedOrigin;
     private Deobfuscator deobfuscator;
 
@@ -96,12 +96,14 @@ public class DeobfuscatingRepo extends BaseRepo {
         return deobfuscator.deobfPom(origFile, mapping, getArtifactPath(artifact, mapping));
     }
 
-    private ResolvedConfiguration getResolvedOrigin() {
-        if (resolvedOrigin == null) {
-            resolvedOrigin = origin.getResolvedConfiguration();
-        }
+    public ResolvedConfiguration getResolvedOrigin() {
+        synchronized (origin) {
+            if (resolvedOrigin == null) {
+                resolvedOrigin = origin.getResolvedConfiguration();
+            }
 
-        return resolvedOrigin;
+            return resolvedOrigin;
+        }
     }
 
     private Optional<File> findArtifactFile(Artifact artifact) {
