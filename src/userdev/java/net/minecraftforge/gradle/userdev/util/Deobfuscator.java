@@ -21,6 +21,7 @@
 package net.minecraftforge.gradle.userdev.util;
 
 import net.minecraftforge.gradle.common.util.*;
+import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarSrg2Mcp;
 
 import org.apache.commons.io.IOUtils;
@@ -190,7 +191,7 @@ public class Deobfuscator {
         int idx = mapping.lastIndexOf('_');
         String channel = mapping.substring(0, idx);
         String version = mapping.substring(idx + 1);
-        String desc = "de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
-        return MavenArtifactDownloader.manual(project, desc, false);
+        String desc = MCPRepo.getMappingDep(channel, version);
+        return MavenArtifactDownloader.generate(project, desc, false);
     }
 }

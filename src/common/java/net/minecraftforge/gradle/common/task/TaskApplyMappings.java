@@ -18,7 +18,7 @@
  * USA
  */
 
-package net.minecraftforge.gradle.patcher.task;
+package net.minecraftforge.gradle.common.task;
 
 import java.io.File;
 import java.io.FileOutputStream;

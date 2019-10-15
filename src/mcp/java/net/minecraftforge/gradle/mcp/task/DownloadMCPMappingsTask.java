@@ -18,7 +18,7 @@
  * USA
  */
 
-package net.minecraftforge.gradle.patcher.task;
+package net.minecraftforge.gradle.mcp.task;
 
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.mcp.MCPRepo;
