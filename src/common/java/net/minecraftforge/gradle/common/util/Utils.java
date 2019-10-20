@@ -33,6 +33,7 @@ import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
+import org.gradle.api.logging.LogLevel;
 
 import javax.annotation.Nonnull;
 
@@ -142,7 +143,16 @@ public class Utils {
 
     public static Path getCacheBase(Project project) {
         File gradleUserHomeDir = project.getGradle().getGradleUserHomeDir();
-        return Paths.get(gradleUserHomeDir.getPath(), "caches", "forge_gradle");
+        return Paths.get(gradleUserHomeDir.getPath(), "caches", "forge_gradle", getPathFromProject(project));
+    }
+
+    public static String getPathFromProject(Project project) {
+        if (project.getParent() == null)
+        {
+            return project.getName();
+        }
+
+        return Paths.get(getPathFromProject(project.getParent()), project.getName()).toString();
     }
 
     public static File getCache(Project project, String... tail) {

@@ -26,15 +26,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
+import com.google.common.collect.Maps;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
@@ -55,7 +53,7 @@ import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import net.minecraftforge.gradle.common.util.VersionJson.OS;
 
 public class MinecraftRepo extends BaseRepo {
-    private static MinecraftRepo INSTANCE;
+    private static final Map<Project, MinecraftRepo> PROJECT_INSTANCES = Maps.newConcurrentMap();
     private static final String GROUP = "net.minecraft";
     public static final String MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
     public static final String CURRENT_OS = OS.getCurrent().getName();
@@ -74,9 +72,15 @@ public class MinecraftRepo extends BaseRepo {
     }
 
     private static MinecraftRepo getInstance(Project project) {
-        if (INSTANCE == null)
-            INSTANCE = new MinecraftRepo(Utils.getCache(project, "minecraft_repo"), project.getLogger(), project.getGradle().getStartParameter().isOffline());
-        return INSTANCE;
+        if (!PROJECT_INSTANCES.containsKey(project))
+        {
+            PROJECT_INSTANCES.put(
+              project,
+              new MinecraftRepo(Utils.getCache(project, "minecraft_repo"), project.getLogger(), project.getGradle().getStartParameter().isOffline())
+            );
+        }
+
+        return PROJECT_INSTANCES.get(project);
     }
 
     public static void attach(Project project) {

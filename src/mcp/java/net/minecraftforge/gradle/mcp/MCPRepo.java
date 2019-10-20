@@ -90,7 +90,8 @@ import java.util.zip.ZipOutputStream;
  *   Note: It does NOT provide the Obfed named jars for server and client, as that is provided by MinecraftRepo.
  */
 public class MCPRepo extends BaseRepo {
-    private static MCPRepo INSTANCE = null;
+    private static final Map<Project, MCPRepo> PROJECT_INSTANCES = Maps.newConcurrentMap();
+
     private static final String GROUP_MINECRAFT = "net.minecraft";
     private static final String NAMES_MINECRAFT = "^(client|server|joined|mappings_[a-z_]+)$";
     private static final String GROUP_MCP = "de.oceanlabs.mcp";
@@ -118,10 +119,17 @@ public class MCPRepo extends BaseRepo {
     }
 
     private static MCPRepo getInstance(Project project) {
-        if (INSTANCE == null)
-            INSTANCE = new MCPRepo(project, Utils.getCache(project, "mcp_repo"), project.getLogger());
-        return INSTANCE;
+        if (!PROJECT_INSTANCES.containsKey(project))
+        {
+            PROJECT_INSTANCES.put(
+              project,
+              new MCPRepo(project, Utils.getCache(project, "mcp_repo"), project.getLogger())
+              );
+        }
+
+        return PROJECT_INSTANCES.get(project);
     }
+
     public static void attach(Project project) {
         MCPRepo instance = getInstance(project);
         GradleRepositoryAdapter.add(project.getRepositories(), "MCP_DYNAMIC", instance.getCacheRoot(), instance.repo);
