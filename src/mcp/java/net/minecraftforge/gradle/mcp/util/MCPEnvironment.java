@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.mcp.util;
 
+import net.minecraftforge.gradle.common.util.MinecraftVersion;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
@@ -31,15 +32,15 @@ public class MCPEnvironment {
 
     private final MCPRuntime runtime;
     public final Project project;
-    public final String mcVersion;
     public final String side;
     public Logger logger;
+    private final MinecraftVersion mcVersion;
 
     public MCPEnvironment(MCPRuntime runtime, String mcVersion, String side) {
         this.runtime = runtime;
         this.project = runtime.project;
-        this.mcVersion = mcVersion;
         this.side = side;
+        this.mcVersion = MinecraftVersion.from(mcVersion);
     }
 
     public Map<String, Object> getArguments() {
@@ -79,6 +80,10 @@ public class MCPEnvironment {
             }
         }
         throw new IllegalArgumentException("Could not find a step of type " + type.getName());
+    }
+
+    public MinecraftVersion getMinecraftVersion() {
+        return this.mcVersion;
     }
 
 }
