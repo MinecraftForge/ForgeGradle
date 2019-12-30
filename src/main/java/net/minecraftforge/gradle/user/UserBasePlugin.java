@@ -300,6 +300,13 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
     {
         madeDecompTasks = true; // to guard against stupid programmers
 
+        final Object deobfBinJar = chooseDeobfOutput(globalPattern, localPattern, "Bin", "");
+        final Object deobfDecompJar = chooseDeobfOutput(globalPattern, localPattern, "", "srgBin");
+        final Object decompJar = chooseDeobfOutput(globalPattern, localPattern, "", "decomp");
+        final Object postDecompJar = chooseDeobfOutput(globalPattern, localPattern, "", "decompFixed");
+        final Object remapped = chooseDeobfOutput(globalPattern, localPattern, "Src", "sources");
+        final Object recompiledJar = chooseDeobfOutput(globalPattern, localPattern, "Src", "");
+
         final DeobfuscateJar deobfBin = makeTask(TASK_DEOBF_BIN, DeobfuscateJar.class);
         {
             deobfBin.setSrg(delayedFile(SRG_NOTCH_TO_MCP));
@@ -309,15 +316,9 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
             deobfBin.setMethodCsv(delayedFile(CSV_METHOD));
             deobfBin.setApplyMarkers(false);
             deobfBin.setInJar(inputJar);
-            deobfBin.setOutJar(chooseDeobfOutput(globalPattern, localPattern, "Bin", ""));
+            deobfBin.setOutJar(deobfBinJar);
             deobfBin.dependsOn(inputTask, TASK_GENERATE_SRGS, TASK_EXTRACT_DEP_ATS, TASK_DD_COMPILE, TASK_DD_PROVIDED);
         }
-
-        final Object deobfDecompJar = chooseDeobfOutput(globalPattern, localPattern, "", "srgBin");
-        final Object decompJar = chooseDeobfOutput(globalPattern, localPattern, "", "decomp");
-        final Object postDecompJar = chooseDeobfOutput(globalPattern, localPattern, "", "decompFixed");
-        final Object remapped = chooseDeobfOutput(globalPattern, localPattern, "Src", "sources");
-        final Object recompiledJar = chooseDeobfOutput(globalPattern, localPattern, "Src", "");
 
         final DeobfuscateJar deobfDecomp = makeTask(TASK_DEOBF, DeobfuscateJar.class);
         {
@@ -425,10 +426,11 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
                     return;
 
                 // the recompiled jar exists, or the decomp task is part of the build
+                boolean isDeobf = project.file(deobfBinJar).exists() || project.getGradle().getStartParameter().getTaskNames().contains(TASK_SETUP_DECOMP);
                 boolean isDecomp = project.file(recompiledJar).exists() || project.getGradle().getStartParameter().getTaskNames().contains(TASK_SETUP_DECOMP);
 
                 // set task dependencies
-                if (!isDecomp)
+                if (!isDeobf)
                 {
                     project.getTasks().getByName("compileJava").dependsOn(UserConstants.TASK_DEOBF_BIN);
                     project.getTasks().getByName("compileApiJava").dependsOn(UserConstants.TASK_DEOBF_BIN);
