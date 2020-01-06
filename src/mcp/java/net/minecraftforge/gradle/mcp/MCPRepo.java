@@ -368,13 +368,14 @@ public class MCPRepo extends BaseRepo {
 
         if ("official".equals(channel)) {
             return findOfficialMapping(version);
-        } else if ("snapshot".equals(channel) || "snapshot_nodoc".equals(channel) || "stable".equals(channel) || "stable_nodoc".equals(channel)) { //MCP
+        } else { // MCP or unknown, assume MCP format
+            if (!("snapshot".equals(channel) || "snapshot_nodoc".equals(channel) || "stable".equals(channel) || "stable_nodoc".equals(channel))) {
+                log.warn("Unknown mapping provider, assuming third party mappings");
+            }
             String desc = "de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
             debug("    Mapping: " + desc);
             return MavenArtifactDownloader.manual(project, desc, false);
         }
-        //TODO? Yarn/Other crowdsourcing?
-        throw new IllegalArgumentException("Unknown mapping provider: " + mapping);
     }
 
     private McpNames loadMCPNames(String name, File data) throws IOException {
