@@ -95,6 +95,7 @@ public class UserDevPlugin implements Plugin<Project> {
                         throw new IllegalStateException(jarName + "  is not a jar task. Can only reobf jars!");
                     task.setInput(((Jar) jar).getArchivePath());
                     task.dependsOn(jar);
+                    jar.finalizedBy(task); //May cause issues for old things that expect jar to be in mapped names..
 
                     if (createMcpToSrg != null && task.getMappings().equals(createMcpToSrg.getOutputs().getFiles().getSingleFile())) {
                         task.dependsOn(createMcpToSrg); // Add needed dependency if uses default mappings
