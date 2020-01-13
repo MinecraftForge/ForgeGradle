@@ -497,6 +497,10 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         getTokens().put(key, value);
     }
 
+    public void tokens(Map<String, String> tokens) {
+        getTokens().putAll(tokens);
+    }
+
     public Map<String, String> getTokens() {
         if (tokens == null) {
             tokens = new HashMap<>();
