@@ -25,6 +25,7 @@ import groovy.lang.GroovyObjectSupport;
 import groovy.lang.MissingPropertyException;
 import net.minecraftforge.gradle.common.task.DownloadAssets;
 import net.minecraftforge.gradle.common.task.ExtractNatives;
+import net.minecraftforge.gradle.common.util.runs.RunConfigGenerator;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -214,11 +215,11 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
             List<String> additionalClientArgs = json != null ? json.getPlatformJvmArgs() : Collections.emptyList();
 
             getRuns().forEach(RunConfig::mergeChildren);
-            getRuns().forEach(run -> run.createRunTask(prepareRuns, additionalClientArgs));
+            getRuns().forEach(run -> RunConfigGenerator.createRunTask(run, project, prepareRuns, additionalClientArgs));
 
             EclipseHacks.doEclipseFixes(this, extractNatives, downloadAssets, makeSrcDirs);
 
-            IDEUtils.createIDEGenRunsTasks(this, prepareRuns, makeSrcDirs);
+            RunConfigGenerator.createIDEGenRunsTasks(this, prepareRuns, makeSrcDirs);
         });
     }
 

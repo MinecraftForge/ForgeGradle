@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import com.google.common.collect.Maps;
 import groovy.lang.Closure;
 import groovy.lang.GroovyObjectSupport;
 import groovy.util.MapEntry;
@@ -237,7 +238,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
 
     public final String getIdeaModule() {
         if (ideaModule == null) {
-            ideaModule = project.getName() + "_main";
+            ideaModule = project.getName() + ".main";
         }
 
         return ideaModule;
@@ -504,7 +505,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         return tokens;
     }
 
-    private void replaceTokens() {
+    public void replaceTokens() {
         getArgs().replaceAll(value -> replace(getTokens(), value));
         getProperties().replaceAll((key, value) -> replace(getTokens(), value));
         getEnvironment().replaceAll((key, value) -> replace(getTokens(), value));
@@ -541,69 +542,6 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         }
 
         return sources;
-    }
-
-    @SuppressWarnings("UnstableApiUsage")
-    public final TaskProvider<JavaExec> createRunTask(final TaskProvider<Task> prepareRuns, final List<String> additionalClientArgs) {
-        return createRunTask(prepareRuns.get(), additionalClientArgs);
-    }
-
-    @SuppressWarnings("UnstableApiUsage")
-    public final TaskProvider<JavaExec> createRunTask(final Task prepareRuns, final List<String> additionalClientArgs) {
-        if (getMods().isEmpty()) {
-            final List<SourceSet> sources = getAllSources();
-
-            getTokens().put("source_roots", Stream.concat(sources.stream().map(source -> source.getOutput().getResourcesDir()),
-                    sources.stream().map(source -> source.getOutput().getClassesDirs().getFiles())
-                            .flatMap(Collection::stream)
-            ).map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator)));
-        } else {
-            getMods().forEach(mod -> mod.configureTokens(getTokens()));
-        }
-
-        replaceTokens();
-
-        // Ensure MOD_CLASSES is set
-        getEnvironment().putIfAbsent("MOD_CLASSES", "");
-
-        if (isClient()) {
-            jvmArgs(additionalClientArgs);
-        }
-
-        TaskProvider<Task> prepareRun = project.getTasks().register("prepare" + Utils.capitalize(getTaskName()), Task.class, task -> {
-            task.setGroup(RUNS_GROUP);
-            task.dependsOn(prepareRuns, getAllSources().stream().map(SourceSet::getClassesTaskName).toArray());
-
-            File workDir = new File(getWorkingDirectory());
-
-            if (!workDir.exists()) {
-                workDir.mkdirs();
-            }
-        });
-
-        return project.getTasks().register(getTaskName(), JavaExec.class, task -> {
-            task.setGroup(RUNS_GROUP);
-            task.dependsOn(prepareRun.get());
-
-            File workDir = new File(getWorkingDirectory());
-
-            if (!workDir.exists()) {
-                workDir.mkdirs();
-            }
-
-            task.setWorkingDir(workDir);
-            task.setMain(getMain());
-
-            task.args(getArgs());
-            task.jvmArgs(getJvmArgs());
-            task.environment(getEnvironment());
-            task.systemProperties(getProperties());
-
-            getAllSources().stream().map(SourceSet::getRuntimeClasspath).forEach(task::classpath);
-
-            // Stop after this run task so it doesn't try to execute the run tasks, and their dependencies, of sub projects
-            task.doLast(t -> System.exit(0)); // TODO: Find better way to stop gracefully
-        });
     }
 
     @Override
