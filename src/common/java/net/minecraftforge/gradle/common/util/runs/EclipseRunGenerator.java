@@ -20,8 +20,8 @@
 
 package net.minecraftforge.gradle.common.util.runs;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Streams;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -34,9 +34,8 @@ import org.w3c.dom.Element;
 import javax.annotation.Nonnull;
 import javax.xml.parsers.DocumentBuilder;
 import java.io.File;
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -46,8 +45,17 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
 {
     @Override
     @Nonnull
-    protected Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final String props, @Nonnull final DocumentBuilder documentBuilder) {
+    protected Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder) {
         final Map<String, Document> documents = new LinkedHashMap<>();
+
+        Map<String, String> updatedTokens = configureTokens(runConfig, mapModClassesToEclipse(project, runConfig));
+
+        final File workingDirectory = new File(runConfig.getWorkingDirectory());
+
+        // Eclipse requires working directory to exist
+        if (!workingDirectory.exists()) {
+            workingDirectory.mkdirs();
+        }
 
         // Java run config
         final Document javaDocument = documentBuilder.newDocument();
@@ -56,31 +64,26 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
             {
                 rootElement.setAttribute("type", "org.eclipse.jdt.launching.localJavaApplication");
 
+                final Stream<String> propStream = runConfig.getProperties().entrySet().stream()
+                        .map(kv -> String.format("-D%s=%s", kv.getKey(), runConfig.replace(updatedTokens, kv.getValue())));
+                final String props = Stream.concat(propStream, runConfig.getJvmArgs().stream()).collect(Collectors.joining(" "));
+
                 elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.PROJECT_ATTR", project.getName());
                 elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.MAIN_TYPE", runConfig.getMain());
                 elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.VM_ARGUMENTS", props);
-                elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.PROGRAM_ARGUMENTS", String.join(" ", runConfig.getArgs()));
-
-                final File workingDirectory = new File(runConfig.getWorkingDirectory());
-
-                // Eclipse requires working directory to exist
-                if (!workingDirectory.exists()) {
-                    workingDirectory.mkdirs();
-                }
-
+                elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.PROGRAM_ARGUMENTS",
+                        runConfig.getArgs().stream().map((value)->runConfig.replace(updatedTokens, value)).collect(Collectors.joining(" ")));
                 elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.WORKING_DIRECTORY", runConfig.getWorkingDirectory());
 
                 final Element envs = javaDocument.createElement("mapAttribute");
                 {
                     envs.setAttribute("key", "org.eclipse.debug.core.environmentVariables");
 
-                    Map<String, String> environment = Maps.newHashMap(runConfig.getEnvironment());
-                    environment.computeIfAbsent("MOD_CLASSES", (key) -> mapModClassesToEclipse(project, runConfig));
-                    environment.forEach((name, value) -> {
+                    runConfig.getEnvironment().forEach((name, value) -> {
                         final Element envEntry = javaDocument.createElement("mapEntry");
                         {
                             envEntry.setAttribute("key", name);
-                            envEntry.setAttribute("value", value);
+                            envEntry.setAttribute("value", runConfig.replace(updatedTokens, value));
                         }
                         envs.appendChild(envEntry);
                     });
@@ -94,12 +97,8 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
         return documents;
     }
 
-    static String mapModClassesToEclipse(@Nonnull final Project project, @Nonnull final RunConfig runConfig) {
+    static Stream<String> mapModClassesToEclipse(@Nonnull final Project project, @Nonnull final RunConfig runConfig) {
         final EclipseModel eclipse = project.getExtensions().findByType(EclipseModel.class);
-
-        if (eclipse == null) {
-            return mapModClassesToGradle(project, runConfig);
-        }
 
         final Map<String, String> outputs = eclipse.getClasspath().resolveDependencies().stream()
                 .filter(SourceFolder.class::isInstance)
@@ -113,8 +112,7 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
                     .map(SourceSet::getName)
                     .filter(outputs::containsKey)
                     .map(outputs::get)
-                    .map(s -> String.join(File.pathSeparator, s, s)) // <resources>:<classes>
-                    .collect(Collectors.joining(File.pathSeparator));
+                    .map(s -> String.join(File.pathSeparator, s, s)); // <resources>:<classes>
         } else {
             final SourceSet main = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
@@ -126,9 +124,7 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
                                 .map(outputs::get)
                                 .map(output -> modConfig.getName() + "%%" + output)
                                 .map(s -> String.join(File.pathSeparator, s, s)); // <resources>:<classes>
-                    })
-                    .flatMap(Function.identity())
-                    .collect(Collectors.joining(File.pathSeparator));
+                    }).flatMap(Function.identity());
         }
     }
 }

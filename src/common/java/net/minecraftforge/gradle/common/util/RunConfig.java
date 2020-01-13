@@ -505,13 +505,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         return tokens;
     }
 
-    public void replaceTokens() {
-        getArgs().replaceAll(value -> replace(getTokens(), value));
-        getProperties().replaceAll((key, value) -> replace(getTokens(), value));
-        getEnvironment().replaceAll((key, value) -> replace(getTokens(), value));
-    }
-
-    private String replace(Map<String, String> vars, String value) {
+    public String replace(Map<String, String> vars, String value) {
         if (value.length() <= 2 || value.charAt(0) != '{' || value.charAt(value.length() - 1) != '}') {
             return value;
         }

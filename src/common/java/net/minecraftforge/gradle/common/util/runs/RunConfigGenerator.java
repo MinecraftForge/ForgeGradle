@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.common.util.runs;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -56,6 +57,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -121,14 +123,14 @@ public abstract class RunConfigGenerator
         return value.replace(project.getRootDir().toString(), replacement);
     }
 
-    protected static String mapModClassesToGradle(Project project, RunConfig runConfig)
+    protected static Stream<String> mapModClassesToGradle(Project project, RunConfig runConfig)
     {
         if (runConfig.getMods().isEmpty()) {
             List<SourceSet> sources = runConfig.getAllSources();
             return Stream.concat(
                     sources.stream().map(source -> source.getOutput().getResourcesDir()),
                     sources.stream().map(source -> source.getOutput().getClassesDirs().getFiles()).flatMap(Collection::stream)
-            ).map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator));
+            ).map(File::getAbsolutePath);
         } else {
             final SourceSet main = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
@@ -142,24 +144,21 @@ public abstract class RunConfigGenerator
                                 .distinct()
                                 .map(s -> modConfig.getName() + "%%" + s)
                                 .collect(Collectors.joining(File.pathSeparator)); // <resources>:<classes>
-                    })
-                    .collect(Collectors.joining(File.pathSeparator));
+                    });
         }
     }
 
-    public static String configureTokens(Project project, ModConfig modConfig, @Nonnull final Map<String, String> tokens) {
-        final SourceSet main = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-        Stream<String> modClasses =
-                Stream.concat((!modConfig.hasResources() ? Stream.of(main.getOutput().getResourcesDir()) : modConfig.getResources().getFiles().stream()),
-                (!modConfig.hasClasses() ? main.getOutput().getClassesDirs().getFiles() : modConfig.getClasses().getFiles()).stream())
-                .distinct()
-                .map(file -> modConfig.getName() + "%%" + file.getAbsolutePath());
+    protected static Map<String,String> configureTokens(@Nonnull RunConfig runConfig, Stream<String> modClasses) {
+        Map<String, String> tokens = new HashMap<>(runConfig.getTokens());
+        tokens.compute("source_roots", (key,sourceRoots) -> ((sourceRoots != null)
+                ? Stream.concat(Arrays.stream(sourceRoots.split(File.pathSeparator)), modClasses)
+                : modClasses).distinct().collect(Collectors.joining(File.pathSeparator)));
 
-        if (tokens.containsKey("source_roots")) {
-            modClasses = Stream.concat(Arrays.stream(tokens.get("source_roots").split(File.pathSeparator)), modClasses);
-        }
+        // *Grumbles about having to keep a workaround for a "dummy" hack that should have never existed*
+        runConfig.getEnvironment().compute("MOD_CLASSES", (key,value) ->
+                Strings.isNullOrEmpty(value) || "dummy".equals(value) ? "{source_roots}" : value);
 
-        return modClasses.distinct().collect(Collectors.joining(File.pathSeparator));
+        return tokens;
     }
 
     @SuppressWarnings("UnstableApiUsage")
@@ -170,7 +169,7 @@ public abstract class RunConfigGenerator
     @SuppressWarnings("UnstableApiUsage")
     public static TaskProvider<JavaExec> createRunTask(final RunConfig runConfig, final Project project, final Task prepareRuns, final List<String> additionalClientArgs) {
 
-        runConfig.replaceTokens();
+        Map<String, String> updatedTokens = configureTokens(runConfig, mapModClassesToGradle(project, runConfig));
 
         TaskProvider<Task> prepareRun = project.getTasks().register("prepare" + Utils.capitalize(runConfig.getTaskName()), Task.class, task -> {
             task.setGroup(RunConfig.RUNS_GROUP);
@@ -196,15 +195,13 @@ public abstract class RunConfigGenerator
             task.setWorkingDir(workDir);
             task.setMain(runConfig.getMain());
 
-            task.args(runConfig.getArgs());
+            task.args(runConfig.getArgs().stream().map((value) -> runConfig.replace(updatedTokens, value)));
             task.jvmArgs(runConfig.getJvmArgs());
             if (runConfig.isClient()) {
                 task.jvmArgs(additionalClientArgs);
             }
-            Map<String, String> environment = Maps.newHashMap(runConfig.getEnvironment());
-            environment.putIfAbsent("MOD_CLASSES", mapModClassesToGradle(project, runConfig));
-            task.environment(environment);
-            task.systemProperties(runConfig.getProperties());
+            runConfig.getEnvironment().forEach((key,value) -> task.environment(key, runConfig.replace(updatedTokens, value)));
+            runConfig.getProperties().forEach((key,value) -> task.systemProperty(key, runConfig.replace(updatedTokens, value)));
 
             runConfig.getAllSources().stream().map(SourceSet::getRuntimeClasspath).forEach(task::classpath);
 
@@ -216,7 +213,7 @@ public abstract class RunConfigGenerator
     static abstract class XMLConfigurationBuilder extends RunConfigGenerator {
 
         @Nonnull
-        protected abstract Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final String props, @Nonnull final DocumentBuilder documentBuilder);
+        protected abstract Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder);
 
         @Override
         public final void createRunConfiguration(@Nonnull final MinecraftExtension minecraft, @Nonnull final File runConfigurationsDir, @Nonnull final Project project) {
@@ -230,9 +227,7 @@ public abstract class RunConfigGenerator
                 transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 
                 minecraft.getRuns().forEach(runConfig -> {
-                    final Stream<String> propStream = runConfig.getProperties().entrySet().stream().map(kv -> String.format("-D%s=%s", kv.getKey(), kv.getValue()));
-                    final String props = Stream.concat(propStream, runConfig.getJvmArgs().stream()).collect(Collectors.joining(" "));
-                    final Map<String, Document> documents = createRunConfiguration(project, runConfig, props, docBuilder);
+                    final Map<String, Document> documents = createRunConfiguration(project, runConfig, docBuilder);
 
                     documents.forEach((fileName, document) -> {
                         final DOMSource source = new DOMSource(document);
@@ -254,7 +249,7 @@ public abstract class RunConfigGenerator
     static abstract class JsonConfigurationBuilder extends RunConfigGenerator {
 
         @Nonnull
-        protected abstract JsonObject createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final String props);
+        protected abstract JsonObject createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig);
 
         @Override
         public final void createRunConfiguration(@Nonnull final MinecraftExtension minecraft, @Nonnull final File runConfigurationsDir, @Nonnull final Project project) {
@@ -262,9 +257,7 @@ public abstract class RunConfigGenerator
             rootObject.addProperty("version", "0.2.0");
             JsonArray runConfigs = new JsonArray();
             minecraft.getRuns().forEach(runConfig -> {
-                final Stream<String> propStream = runConfig.getProperties().entrySet().stream().map(kv -> String.format("-D%s=%s", kv.getKey(), kv.getValue()));
-                final String props = Stream.concat(propStream, runConfig.getJvmArgs().stream()).collect(Collectors.joining(" "));
-                runConfigs.add(createRunConfiguration(project, runConfig, props));
+                runConfigs.add(createRunConfiguration(project, runConfig));
             });
             rootObject.add("configurations", runConfigs);
             Writer writer;

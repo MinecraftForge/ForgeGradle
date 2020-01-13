@@ -37,17 +37,21 @@ import javax.xml.parsers.DocumentBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBuilder
 {
     @Override
     @Nonnull
-    protected Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final String props, @Nonnull final DocumentBuilder documentBuilder) {
+    protected Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder) {
         final Map<String, Document> documents = new LinkedHashMap<>();
+
+        Map<String, String> updatedTokens = configureTokens(runConfig, mapModClassesToIdea(project, runConfig));
 
         // Java run config
         final Document javaDocument = documentBuilder.newDocument();
@@ -62,10 +66,16 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                     configuration.setAttribute("factoryName", "Application");
                     configuration.setAttribute("singleton", runConfig.isSingleInstance() ? "true" : "false");
 
+                    final Stream<String> propStream = runConfig.getProperties().entrySet().stream()
+                            .map(kv -> String.format("-D%s=%s", kv.getKey(), runConfig.replace(updatedTokens, kv.getValue())));
+                    final String props = Stream.concat(propStream, runConfig.getJvmArgs().stream()).collect(Collectors.joining(" "));
+
                     elementOption(javaDocument, configuration, "MAIN_CLASS_NAME", runConfig.getMain());
                     elementOption(javaDocument, configuration, "VM_PARAMETERS", props);
-                    elementOption(javaDocument, configuration, "PROGRAM_PARAMETERS", String.join(" ", runConfig.getArgs()));
-                    elementOption(javaDocument, configuration, "WORKING_DIRECTORY", replaceRootDirBy(project, runConfig.getWorkingDirectory(), "$PROJECT_DIR$"));
+                    elementOption(javaDocument, configuration, "PROGRAM_PARAMETERS",
+                            runConfig.getArgs().stream().map((value)->runConfig.replace(updatedTokens, value)).collect(Collectors.joining(" ")));
+                    elementOption(javaDocument, configuration, "WORKING_DIRECTORY",
+                            replaceRootDirBy(project, runConfig.getWorkingDirectory(), "$PROJECT_DIR$"));
 
                     final Element module = javaDocument.createElement("module");
                     {
@@ -75,13 +85,11 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
 
                     final Element envs = javaDocument.createElement("envs");
                     {
-                        Map<String, String> environment = Maps.newHashMap(runConfig.getEnvironment());
-                        environment.computeIfAbsent("MOD_CLASSES", (key) -> replaceRootDirBy(project, mapModClassesToIdea(project, runConfig), "$PROJECT_DIR$"));
-                        environment.forEach((name, value) -> {
+                        runConfig.getEnvironment().forEach((name, value) -> {
                             final Element envEntry = javaDocument.createElement("env");
                             {
                                 envEntry.setAttribute("name", name);
-                                envEntry.setAttribute("value", value);
+                                envEntry.setAttribute("value", replaceRootDirBy(project, runConfig.replace(updatedTokens, value), "$PROJECT_DIR$"));
                             }
                             envs.appendChild(envEntry);
                         });
@@ -119,7 +127,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
         return documents;
     }
 
-    private static String mapModClassesToIdea(@Nonnull final Project project, @Nonnull final RunConfig runConfig) {
+    private static Stream<String> mapModClassesToIdea(@Nonnull final Project project, @Nonnull final RunConfig runConfig) {
         final IdeaModel idea = project.getExtensions().findByType(IdeaModel.class);
 
         JavaPluginConvention javaPlugin = project.getConvention().getPlugin(JavaPluginConvention.class);
@@ -131,17 +139,16 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
 
             return runConfig.getMods().stream()
                     .map(modConfig -> {
-                        return modConfig.getSources().stream().map(source -> {
+                        return modConfig.getSources().stream().flatMap(source -> {
                             String outName = source == main ? "production" : source.getName();
                             return getIdeaPathsForSourceset(project, idea, outName, modConfig.getName());
                         });
                     })
-                    .flatMap(Function.identity())
-                    .collect(Collectors.joining(File.pathSeparator));
+                    .flatMap(Function.identity());
         }
     }
 
-    private static String getIdeaPathsForSourceset(@Nonnull Project project, @Nullable IdeaModel idea, String outName, @Nullable String modName)
+    private static Stream<String> getIdeaPathsForSourceset(@Nonnull Project project, @Nullable IdeaModel idea, String outName, @Nullable String modName)
     {
         String ideaResources, ideaClasses;
         try
@@ -164,6 +171,6 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
             ideaClasses = modName + "%%" + ideaClasses;
         }
 
-        return String.join(File.pathSeparator, ideaResources, ideaClasses);
+        return Stream.of(ideaResources, ideaClasses);
     }
 }

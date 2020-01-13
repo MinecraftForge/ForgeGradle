@@ -27,12 +27,20 @@ import org.gradle.api.Project;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class VSCodeRunGenerator extends RunConfigGenerator.JsonConfigurationBuilder
 {
     @Override
     @Nonnull
-    protected JsonObject createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final String props) {
+    protected JsonObject createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig) {
+        Map<String, String> updatedTokens = configureTokens(runConfig, mapModClassesToVSCode(project, runConfig));
+
+        final Stream<String> propStream = runConfig.getProperties().entrySet().stream()
+                .map(kv -> String.format("-D%s=%s", kv.getKey(), runConfig.replace(updatedTokens, kv.getValue())));
+        final String props = Stream.concat(propStream, runConfig.getJvmArgs().stream()).collect(Collectors.joining(" "));
+
         JsonObject config = new JsonObject();
         config.addProperty("type", "java");
         config.addProperty("name", runConfig.getTaskName());
@@ -41,15 +49,21 @@ public class VSCodeRunGenerator extends RunConfigGenerator.JsonConfigurationBuil
         config.addProperty("projectName", project.getName());
         config.addProperty("cwd", replaceRootDirBy(project, runConfig.getWorkingDirectory(), "${workspaceFolder}"));
         config.addProperty("vmArgs", props);
-        config.addProperty("args", String.join(" ", runConfig.getArgs()));
+        config.addProperty("args", runConfig.getArgs().stream().map((value)->runConfig.replace(updatedTokens, value)).collect(Collectors.joining(" ")));
         JsonObject env = new JsonObject();
-        Map<String, String> environment = Maps.newHashMap(runConfig.getEnvironment());
-        environment.computeIfAbsent("MOD_CLASSES", (key) ->
-                replaceRootDirBy(project, EclipseRunGenerator.mapModClassesToEclipse(project, runConfig), "${workspaceFolder}"));
-        environment.compute("nativesDirectory", (key, value) ->
-                replaceRootDirBy(project, value, "${workspaceFolder}"));
-        environment.forEach(env::addProperty);
+        runConfig.getEnvironment().forEach((key,value) -> {
+            value = runConfig.replace(updatedTokens, value);
+            if (key.equals("nativesDirectory"))
+                value = replaceRootDirBy(project, value, "${workspaceFolder}");
+            env.addProperty(key, value);
+        });
         config.add("env", env);
         return config;
+    }
+
+    private Stream<String> mapModClassesToVSCode(@Nonnull Project project, @Nonnull RunConfig runConfig)
+    {
+        return EclipseRunGenerator.mapModClassesToEclipse(project, runConfig)
+            .map((value) -> replaceRootDirBy(project, value, "${workspaceFolder}"));
     }
 }
