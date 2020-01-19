@@ -59,7 +59,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
 
     private final String name;
 
-    private boolean singleInstance = false;
+    private Boolean singleInstance = null;
 
     private String taskName, main, ideaModule, workDir;
 
@@ -201,7 +201,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     }
 
     public boolean isSingleInstance() {
-        return singleInstance;
+        return singleInstance != null && singleInstance;
     }
 
     public void properties(Map<String, Object> map) {
@@ -440,7 +440,6 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     }
 
     public void merge(final RunConfig other, boolean overwrite) {
-        singleInstance = other.singleInstance; // This always overwrite because there is no way to tell if it's set
 
         RunConfig first = overwrite ? other : this;
         RunConfig second = overwrite ? this : other;
@@ -451,6 +450,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         sources = first.sources == null ? second.sources : first.sources;
         workDir = first.workDir == null ? second.workDir : first.workDir;
         ideaModule = first.ideaModule == null ? second.ideaModule : first.ideaModule;
+        singleInstance = first.singleInstance == null ? second.singleInstance : first.singleInstance;
 
         if (other.env != null) {
             other.env.forEach(overwrite
