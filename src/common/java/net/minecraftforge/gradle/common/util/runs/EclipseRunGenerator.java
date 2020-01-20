@@ -20,8 +20,6 @@
 
 package net.minecraftforge.gradle.common.util.runs;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.Maps;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -34,8 +32,8 @@ import org.w3c.dom.Element;
 import javax.annotation.Nonnull;
 import javax.xml.parsers.DocumentBuilder;
 import java.io.File;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -45,7 +43,7 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
 {
     @Override
     @Nonnull
-    protected Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder) {
+    protected Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs) {
         final Map<String, Document> documents = new LinkedHashMap<>();
 
         Map<String, String> updatedTokens = configureTokens(runConfig, mapModClassesToEclipse(project, runConfig));
@@ -64,13 +62,10 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
             {
                 rootElement.setAttribute("type", "org.eclipse.jdt.launching.localJavaApplication");
 
-                final Stream<String> propStream = runConfig.getProperties().entrySet().stream()
-                        .map(kv -> String.format("-D%s=%s", kv.getKey(), runConfig.replace(updatedTokens, kv.getValue())));
-                final String props = Stream.concat(propStream, runConfig.getJvmArgs().stream()).collect(Collectors.joining(" "));
-
                 elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.PROJECT_ATTR", project.getName());
                 elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.MAIN_TYPE", runConfig.getMain());
-                elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.VM_ARGUMENTS", props);
+                elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.VM_ARGUMENTS",
+                        getJvmArgs(runConfig, additionalClientArgs, updatedTokens));
                 elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.PROGRAM_ARGUMENTS",
                         runConfig.getArgs().stream().map((value)->runConfig.replace(updatedTokens, value)).collect(Collectors.joining(" ")));
                 elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.WORKING_DIRECTORY", runConfig.getWorkingDirectory());

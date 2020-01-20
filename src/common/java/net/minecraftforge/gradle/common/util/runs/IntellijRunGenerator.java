@@ -20,7 +20,6 @@
 
 package net.minecraftforge.gradle.common.util.runs;
 
-import com.google.common.collect.Maps;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
 import org.gradle.api.Project;
@@ -34,11 +33,10 @@ import org.w3c.dom.Element;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -48,7 +46,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
 {
     @Override
     @Nonnull
-    protected Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder) {
+    protected Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs) {
         final Map<String, Document> documents = new LinkedHashMap<>();
 
         Map<String, String> updatedTokens = configureTokens(runConfig, mapModClassesToIdea(project, runConfig));
@@ -66,12 +64,9 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                     configuration.setAttribute("factoryName", "Application");
                     configuration.setAttribute("singleton", runConfig.isSingleInstance() ? "true" : "false");
 
-                    final Stream<String> propStream = runConfig.getProperties().entrySet().stream()
-                            .map(kv -> String.format("-D%s=%s", kv.getKey(), runConfig.replace(updatedTokens, kv.getValue())));
-                    final String props = Stream.concat(propStream, runConfig.getJvmArgs().stream()).collect(Collectors.joining(" "));
-
                     elementOption(javaDocument, configuration, "MAIN_CLASS_NAME", runConfig.getMain());
-                    elementOption(javaDocument, configuration, "VM_PARAMETERS", props);
+                    elementOption(javaDocument, configuration, "VM_PARAMETERS",
+                            getJvmArgs(runConfig, additionalClientArgs, updatedTokens));
                     elementOption(javaDocument, configuration, "PROGRAM_PARAMETERS",
                             runConfig.getArgs().stream().map((value)->runConfig.replace(updatedTokens, value)).collect(Collectors.joining(" ")));
                     elementOption(javaDocument, configuration, "WORKING_DIRECTORY",

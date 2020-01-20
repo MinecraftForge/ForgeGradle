@@ -219,7 +219,7 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
 
             EclipseHacks.doEclipseFixes(this, extractNatives, downloadAssets, makeSrcDirs);
 
-            RunConfigGenerator.createIDEGenRunsTasks(this, prepareRuns, makeSrcDirs);
+            RunConfigGenerator.createIDEGenRunsTasks(this, prepareRuns, makeSrcDirs, additionalClientArgs);
         });
     }
 

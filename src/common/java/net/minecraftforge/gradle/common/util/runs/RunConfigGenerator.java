@@ -23,14 +23,12 @@ package net.minecraftforge.gradle.common.util.runs;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.minecraftforge.gradle.common.util.MinecraftExtension;
-import net.minecraftforge.gradle.common.util.ModConfig;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
@@ -56,17 +54,15 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.*;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class RunConfigGenerator
 {
-    public abstract void createRunConfiguration(@Nonnull final MinecraftExtension minecraft, @Nonnull final File runConfigurationsDir, @Nonnull final Project project);
+    public abstract void createRunConfiguration(@Nonnull final MinecraftExtension minecraft, @Nonnull final File runConfigurationsDir, @Nonnull final Project project, List<String> additionalClientArgs);
 
     @SuppressWarnings("UnstableApiUsage")
-    public static void createIDEGenRunsTasks(@Nonnull final MinecraftExtension minecraft, @Nonnull final TaskProvider<Task> prepareRuns, @Nonnull final TaskProvider<Task> makeSourceDirs) {
+    public static void createIDEGenRunsTasks(@Nonnull final MinecraftExtension minecraft, @Nonnull final TaskProvider<Task> prepareRuns, @Nonnull final TaskProvider<Task> makeSourceDirs, List<String> additionalClientArgs) {
         final Project project = minecraft.getProject();
 
         final Map<String, Triple<List<Object>, File, RunConfigGenerator>> ideConfigurationGenerators = ImmutableMap.<String, Triple<List<Object>, File, RunConfigGenerator>>builder()
@@ -92,7 +88,7 @@ public abstract class RunConfigGenerator
                     if (!runConfigurationsDir.exists()) {
                         runConfigurationsDir.mkdirs();
                     }
-                    configurationGenerator.getRight().createRunConfiguration(minecraft, runConfigurationsDir, project);
+                    configurationGenerator.getRight().createRunConfiguration(minecraft, runConfigurationsDir, project, additionalClientArgs);
                 });
             });
         });
@@ -210,13 +206,31 @@ public abstract class RunConfigGenerator
         });
     }
 
+    protected static String getJvmArgs(@Nonnull RunConfig runConfig, List<String> additionalClientArgs, Map<String, String> updatedTokens)
+    {
+        return getJvmArgsStream(runConfig, additionalClientArgs, updatedTokens)
+                .collect(Collectors.joining(" "));
+    }
+
+    private static Stream<String> getJvmArgsStream(@Nonnull RunConfig runConfig, List<String> additionalClientArgs, Map<String, String> updatedTokens)
+    {
+        final Stream<String> propStream = Stream.concat(
+                runConfig.getProperties().entrySet().stream()
+                    .map(kv -> String.format("-D%s=%s", kv.getKey(), runConfig.replace(updatedTokens, kv.getValue()))),
+                runConfig.getJvmArgs().stream());
+        if (runConfig.isClient()) {
+            return Stream.concat(propStream, additionalClientArgs.stream());
+        }
+        return propStream;
+    }
+
     static abstract class XMLConfigurationBuilder extends RunConfigGenerator {
 
         @Nonnull
-        protected abstract Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder);
+        protected abstract Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs);
 
         @Override
-        public final void createRunConfiguration(@Nonnull final MinecraftExtension minecraft, @Nonnull final File runConfigurationsDir, @Nonnull final Project project) {
+        public final void createRunConfiguration(@Nonnull final MinecraftExtension minecraft, @Nonnull final File runConfigurationsDir, @Nonnull final Project project, List<String> additionalClientArgs) {
             try {
                 final DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
                 final DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
@@ -227,7 +241,7 @@ public abstract class RunConfigGenerator
                 transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 
                 minecraft.getRuns().forEach(runConfig -> {
-                    final Map<String, Document> documents = createRunConfiguration(project, runConfig, docBuilder);
+                    final Map<String, Document> documents = createRunConfiguration(project, runConfig, docBuilder, additionalClientArgs);
 
                     documents.forEach((fileName, document) -> {
                         final DOMSource source = new DOMSource(document);
@@ -249,15 +263,15 @@ public abstract class RunConfigGenerator
     static abstract class JsonConfigurationBuilder extends RunConfigGenerator {
 
         @Nonnull
-        protected abstract JsonObject createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig);
+        protected abstract JsonObject createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, List<String> additionalClientArgs);
 
         @Override
-        public final void createRunConfiguration(@Nonnull final MinecraftExtension minecraft, @Nonnull final File runConfigurationsDir, @Nonnull final Project project) {
+        public final void createRunConfiguration(@Nonnull final MinecraftExtension minecraft, @Nonnull final File runConfigurationsDir, @Nonnull final Project project, List<String> additionalClientArgs) {
             final JsonObject rootObject = new JsonObject();
             rootObject.addProperty("version", "0.2.0");
             JsonArray runConfigs = new JsonArray();
             minecraft.getRuns().forEach(runConfig -> {
-                runConfigs.add(createRunConfiguration(project, runConfig));
+                runConfigs.add(createRunConfiguration(project, runConfig, additionalClientArgs));
             });
             rootObject.add("configurations", runConfigs);
             Writer writer;

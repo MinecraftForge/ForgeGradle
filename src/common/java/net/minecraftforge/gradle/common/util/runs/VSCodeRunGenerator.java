@@ -20,26 +20,23 @@
 
 package net.minecraftforge.gradle.common.util.runs;
 
-import com.google.common.collect.Maps;
 import com.google.gson.JsonObject;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import org.gradle.api.Project;
 
 import javax.annotation.Nonnull;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class VSCodeRunGenerator extends RunConfigGenerator.JsonConfigurationBuilder
 {
-    @Override
     @Nonnull
-    protected JsonObject createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig) {
+    @Override
+    protected JsonObject createRunConfiguration(@Nonnull Project project, @Nonnull RunConfig runConfig, List<String> additionalClientArgs)
+    {
         Map<String, String> updatedTokens = configureTokens(runConfig, mapModClassesToVSCode(project, runConfig));
-
-        final Stream<String> propStream = runConfig.getProperties().entrySet().stream()
-                .map(kv -> String.format("-D%s=%s", kv.getKey(), runConfig.replace(updatedTokens, kv.getValue())));
-        final String props = Stream.concat(propStream, runConfig.getJvmArgs().stream()).collect(Collectors.joining(" "));
 
         JsonObject config = new JsonObject();
         config.addProperty("type", "java");
@@ -48,7 +45,7 @@ public class VSCodeRunGenerator extends RunConfigGenerator.JsonConfigurationBuil
         config.addProperty("mainClass", runConfig.getMain());
         config.addProperty("projectName", project.getName());
         config.addProperty("cwd", replaceRootDirBy(project, runConfig.getWorkingDirectory(), "${workspaceFolder}"));
-        config.addProperty("vmArgs", props);
+        config.addProperty("vmArgs", getJvmArgs(runConfig, additionalClientArgs, updatedTokens));
         config.addProperty("args", runConfig.getArgs().stream().map((value)->runConfig.replace(updatedTokens, value)).collect(Collectors.joining(" ")));
         JsonObject env = new JsonObject();
         runConfig.getEnvironment().forEach((key,value) -> {
