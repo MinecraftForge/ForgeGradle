@@ -1,0 +1,30 @@
+sudo: required
+dist: trusty
+
+language: java
+jdk: oraclejdk8
+
+#branches:
+#  only:
+#    - master
+
+before_install:
+  - java -version
+
+script:
+  - ./gradlew clean build
+
+git:
+  depth: false
+
+before_cache:
+  - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
+  - curl "${GRAVIS}.clean_gradle_cache.sh" --output ~/.clean_gradle_cache.sh
+  - bash ~/.clean_gradle_cache.sh
+
+cache:
+  directories:
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/
+
+
