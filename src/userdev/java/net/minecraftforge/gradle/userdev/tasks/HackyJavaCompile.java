@@ -56,20 +56,20 @@ public class HackyJavaCompile extends JavaCompile {
         // TaskExecutionHistory is removed in 5.1.0, so we only try to set it
         // on versions below 5.1.0
 
-        if (GradleVersion.current().compareTo(GradleVersion.version("5.1.0")) < 0) {
-            try {
-                Class<?> taskExectionHistory = Class.forName("org.gradle.api.internal.TaskExecutionHistory");
-                Method setHistory = this.getOutputs().getClass().getMethod("setHistory", taskExectionHistory);
-                Object dummyHistory = Class.forName("net.minecraftforge.gradle.userdev.util.DummyTaskExecutionHistory").newInstance();
-                setHistory.invoke(this.getOutputs(), dummyHistory);
-            } catch (Exception e) {
-                throw new RuntimeException("Exception calling setHistory", e);
-            }
-
-            // Do the actual compilation,
-            // bypassing a bunch of Gradle's other stuff (e.g. internal event listener mechanism)
-            this.compile();
-        } else {
+//        if (GradleVersion.current().compareTo(GradleVersion.version("5.1.0")) < 0) {
+//            try {
+//                Class<?> taskExectionHistory = Class.forName("org.gradle.api.internal.TaskExecutionHistory");
+//                Method setHistory = this.getOutputs().getClass().getMethod("setHistory", taskExectionHistory);
+//                Object dummyHistory = Class.forName("net.minecraftforge.gradle.userdev.util.DummyTaskExecutionHistory").newInstance();
+//                setHistory.invoke(this.getOutputs(), dummyHistory);
+//            } catch (Exception e) {
+//                throw new RuntimeException("Exception calling setHistory", e);
+//            }
+//
+//            // Do the actual compilation,
+//            // bypassing a bunch of Gradle's other stuff (e.g. internal event listener mechanism)
+//            this.compile();
+//        } else {
             try {
                 Method setPreviousOutputFiles = this.getOutputs().getClass().getMethod("setPreviousOutputFiles", FileCollection.class);
                 setPreviousOutputFiles.invoke(this.getOutputs(), this.getProject().files());
@@ -93,7 +93,7 @@ public class HackyJavaCompile extends JavaCompile {
             } catch (Exception e) {
                 throw new RuntimeException("Exception compiling ", e);
             }
-        }
+//        }
 
     }
 
