@@ -214,7 +214,7 @@ public class MinecraftUserRepo extends BaseRepo {
             });
         }
 
-        runs.forEach((name, run) -> run.setTokens(tokens));
+        runs.forEach((name, run) -> run.tokens(tokens));
 
         this.extraDataFiles = this.buildExtraDataFiles();
     }

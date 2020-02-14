@@ -628,7 +628,7 @@ public class PatcherPlugin implements Plugin<Project> {
                 tokens.put("asset_index", extension.getMcVersion());
             }
 
-            extension.getRuns().forEach(runConfig -> runConfig.setTokens(tokens));
+            extension.getRuns().forEach(runConfig -> runConfig.tokens(tokens));
             extension.createRunConfigTasks(extractNatives, downloadAssets);
         });
     }

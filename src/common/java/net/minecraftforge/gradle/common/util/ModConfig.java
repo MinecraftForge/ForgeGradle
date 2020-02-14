@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -70,6 +71,10 @@ public class ModConfig extends GroovyObjectSupport {
         return classes;
     }
 
+    public boolean hasClasses()
+    {
+        return classes != null;
+    }
     public void setResources(@Nonnull final FileCollection resources) {
         this.resources = resources;
     }
@@ -88,6 +93,11 @@ public class ModConfig extends GroovyObjectSupport {
         }
 
         return resources;
+    }
+
+    public boolean hasResources()
+    {
+        return resources != null;
     }
 
     public void setSources(List<SourceSet> sources) {
@@ -138,19 +148,4 @@ public class ModConfig extends GroovyObjectSupport {
             }
         }
     }
-
-    public void configureTokens(@Nonnull final Map<String, String> tokens) {
-        final SourceSet main = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-        Stream<String> modClasses = Stream.concat((resources == null ? Stream.of(main.getOutput().getResourcesDir()) : resources.getFiles().stream()),
-                (classes == null ? main.getOutput().getClassesDirs().getFiles() : classes.getFiles()).stream())
-                .distinct()
-                .map(file -> getName() + "%%" + file.getAbsolutePath());
-
-        if (tokens.containsKey("source_roots")) {
-            modClasses = Stream.concat(Arrays.stream(tokens.get("source_roots").split(File.pathSeparator)), modClasses);
-        }
-
-        tokens.put("source_roots", modClasses.distinct().collect(Collectors.joining(File.pathSeparator)));
-    }
-
 }
