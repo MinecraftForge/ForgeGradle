@@ -68,7 +68,7 @@ public abstract class RunConfigGenerator
         final Map<String, Triple<List<Object>, File, RunConfigGenerator>> ideConfigurationGenerators = ImmutableMap.<String, Triple<List<Object>, File, RunConfigGenerator>>builder()
                 .put("genIntellijRuns", ImmutableTriple.of(Collections.singletonList(prepareRuns.get()),
                         new File(project.getRootProject().getRootDir(), ".idea/runConfigurations"),
-                        new IntellijRunGenerator()))
+                        new IntellijRunGenerator(project.getRootProject())))
                 .put("genEclipseRuns", ImmutableTriple.of(ImmutableList.of(prepareRuns.get(), makeSourceDirs.get()),
                         project.getProjectDir(),
                         new EclipseRunGenerator()))
