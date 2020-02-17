@@ -191,7 +191,7 @@ public abstract class RunConfigGenerator
             task.setWorkingDir(workDir);
             task.setMain(runConfig.getMain());
 
-            task.args(runConfig.getArgs().stream().map((value) -> runConfig.replace(updatedTokens, value)));
+            task.args(getArgsStream(runConfig, updatedTokens, false).toArray());
             task.jvmArgs(runConfig.getJvmArgs());
             if (runConfig.isClient()) {
                 task.jvmArgs(additionalClientArgs);
@@ -206,6 +206,29 @@ public abstract class RunConfigGenerator
         });
     }
 
+    // Workaround for the issue where file paths with spaces are improperly split into multiple args.
+    protected static String fixupArg(String replace)
+    {
+        if (replace.startsWith("\""))
+            return replace;
+
+        if (!replace.contains(" "))
+            return replace;
+
+        return '"' + replace + '"';
+    }
+
+    protected static String getArgs(RunConfig runConfig, Map<String, String> updatedTokens)
+    {
+        return getArgsStream(runConfig, updatedTokens, true).collect(Collectors.joining(" "));
+    }
+
+    protected static Stream<String> getArgsStream(RunConfig runConfig, Map<String, String> updatedTokens, boolean wrapSpaces)
+    {
+        Stream<String> args = runConfig.getArgs().stream().map((value) -> runConfig.replace(updatedTokens, value));
+        return wrapSpaces ? args.map(RunConfigGenerator::fixupArg) : args;
+    }
+
     protected static String getJvmArgs(@Nonnull RunConfig runConfig, List<String> additionalClientArgs, Map<String, String> updatedTokens)
     {
         return getJvmArgsStream(runConfig, additionalClientArgs, updatedTokens)
@@ -217,7 +240,7 @@ public abstract class RunConfigGenerator
         final Stream<String> propStream = Stream.concat(
                 runConfig.getProperties().entrySet().stream()
                     .map(kv -> String.format("-D%s=%s", kv.getKey(), runConfig.replace(updatedTokens, kv.getValue()))),
-                runConfig.getJvmArgs().stream());
+                runConfig.getJvmArgs().stream()).map(RunConfigGenerator::fixupArg);
         if (runConfig.isClient()) {
             return Stream.concat(propStream, additionalClientArgs.stream());
         }

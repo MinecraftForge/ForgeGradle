@@ -47,7 +47,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBuilder
@@ -63,75 +62,70 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
     {
         XPath xpath = XPathFactory.newInstance().newXPath();
 
-        if (project.file(".idea").exists())
+        // This file contains the current gradle import settings.
+        File ideaGradleSettings = project.file(".idea/gradle.xml");
+        if (ideaGradleSettings.exists() && ideaGradleSettings.isFile())
         {
-            // This file contains the current gradle import settings.
-            File ideaGradleSettings = project.file(".idea/gradle.xml");
-            if (ideaGradleSettings.exists() && ideaGradleSettings.isFile())
+            try
             {
-                try
+                Node value = (Node) xpath.evaluate(
+                        "/project/component[@name='GradleSettings']/option[@name='linkedExternalProjectsSettings']/GradleProjectSettings/option[@name='delegatedBuild']/@value",
+                        new InputSource(new FileInputStream(ideaGradleSettings)),
+                        XPathConstants.NODE);
+                if (value != null)
                 {
-                    Node value = (Node) xpath.evaluate(
-                            "/project/component[@name='GradleSettings']/option[@name='linkedExternalProjectsSettings']/GradleProjectSettings/option[@name='delegatedBuild']/@value",
-                            new InputSource(new FileInputStream(ideaGradleSettings)),
-                            XPathConstants.NODE);
-                    if (value != null)
-                    {
-                        useGradlePaths = (Boolean) xpath.evaluate("/", value, XPathConstants.BOOLEAN);
-                        return;
-                    }
-                }
-                catch (IOException | XPathExpressionException e)
-                {
-                    e.printStackTrace();
+                    useGradlePaths = Boolean.parseBoolean(value.getTextContent());
+                    return;
                 }
             }
-
-            // This value is normally true, and won't be used unless the project's gradle.xml is missing.
-            File ideaWorkspace = project.file(".idea/workspace.xml");
-            if (ideaWorkspace.exists() && ideaWorkspace.isFile())
+            catch (IOException | XPathExpressionException e)
             {
-                try
-                {
-                    Node value = (Node) xpath.evaluate(
-                            "/project/component[@name='DefaultGradleProjectSettings']/option[@name='delegatedBuild']/@value",
-                            new InputSource(new FileInputStream(ideaWorkspace)),
-                            XPathConstants.NODE);
-                    if (value != null)
-                    {
-                        useGradlePaths = (Boolean) xpath.evaluate("/", value, XPathConstants.BOOLEAN);
-                        return;
-                    }
-                }
-                catch (IOException | XPathExpressionException e)
-                {
-                    e.printStackTrace();
-                }
+                e.printStackTrace();
             }
         }
-        else
+
+        // This value is normally true, and won't be used unless the project's gradle.xml is missing.
+        File ideaWorkspace = project.file(".idea/workspace.xml");
+        if (ideaWorkspace.exists() && ideaWorkspace.isFile())
         {
-            // Fallback, in case someone has a file-based project instead of a directory-based project.
-            final IdeaModel idea = project.getExtensions().findByType(IdeaModel.class);
-            File ideaFileWorkspace = project.file(idea != null ? idea.getProject().getOutputFile() : (project.getName() + ".ipr"));
-            if (ideaFileWorkspace.exists() && ideaFileWorkspace.isFile())
+            try
             {
-                try
+                Node value = (Node) xpath.evaluate(
+                        "/project/component[@name='DefaultGradleProjectSettings']/option[@name='delegatedBuild']/@value",
+                        new InputSource(new FileInputStream(ideaWorkspace)),
+                        XPathConstants.NODE);
+                if (value != null)
                 {
-                    Node value = (Node) xpath.evaluate(
-                            "/project/component[@name='GradleSettings']/option[@name='linkedExternalProjectsSettings']/GradleProjectSettings/option[@name='delegatedBuild']/@value",
-                            new InputSource(new FileInputStream(ideaFileWorkspace)),
-                            XPathConstants.NODE);
-                    if (value != null)
-                    {
-                        useGradlePaths = (Boolean) xpath.evaluate("/", value, XPathConstants.BOOLEAN);
-                        return;
-                    }
+                    useGradlePaths = Boolean.parseBoolean(value.getTextContent());
+                    return;
                 }
-                catch (IOException | XPathExpressionException e)
+            }
+            catch (IOException | XPathExpressionException e)
+            {
+                e.printStackTrace();
+            }
+        }
+
+        // Fallback, in case someone has a file-based project instead of a directory-based project.
+        final IdeaModel idea = project.getExtensions().findByType(IdeaModel.class);
+        File ideaFileProject = project.file(idea != null ? idea.getProject().getOutputFile() : (project.getName() + ".ipr"));
+        if (ideaFileProject.exists() && ideaFileProject.isFile())
+        {
+            try
+            {
+                Node value = (Node) xpath.evaluate(
+                        "/project/component[@name='GradleSettings']/option[@name='linkedExternalProjectsSettings']/GradleProjectSettings/option[@name='delegatedBuild']/@value",
+                        new InputSource(new FileInputStream(ideaFileProject)),
+                        XPathConstants.NODE);
+                if (value != null)
                 {
-                    e.printStackTrace();
+                    useGradlePaths = Boolean.parseBoolean(value.getTextContent());
+                    return;
                 }
+            }
+            catch (IOException | XPathExpressionException e)
+            {
+                e.printStackTrace();
             }
         }
     }
@@ -164,7 +158,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                     elementOption(javaDocument, configuration, "VM_PARAMETERS",
                             getJvmArgs(runConfig, additionalClientArgs, updatedTokens));
                     elementOption(javaDocument, configuration, "PROGRAM_PARAMETERS",
-                            runConfig.getArgs().stream().map((value)->runConfig.replace(updatedTokens, value)).collect(Collectors.joining(" ")));
+                            getArgs(runConfig, updatedTokens));
                     elementOption(javaDocument, configuration, "WORKING_DIRECTORY",
                             replaceRootDirBy(project, runConfig.getWorkingDirectory(), "$PROJECT_DIR$"));
 
