@@ -33,7 +33,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.OutputStreamWriter;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.nio.charset.StandardCharsets;
 
@@ -53,7 +55,25 @@ public class ListLibrariesFunction implements MCPFunction {
             Set<File> files = new HashSet<>();
             for (JsonElement libElement : json.getAsJsonArray("libraries")) {
                 JsonObject library = libElement.getAsJsonObject();
-                files.add(MavenArtifactDownloader.gradle(environment.project, library.get("name").getAsString(), false));
+                String name = library.get("name").getAsString();
+                List<String> lst = new ArrayList<>();
+
+                if (library.has("downloads")) {
+                    JsonObject downloads = library.get("downloads").getAsJsonObject();
+                    if (downloads.has("artifact"))
+                        lst.add(name);
+                    if (downloads.has("classifiers"))
+                        downloads.get("classifiers").getAsJsonObject().keySet().forEach(cls -> lst.add(name + ':' + cls));
+                }
+
+
+                for (String artifact : lst) {
+                    File lib = MavenArtifactDownloader.gradle(environment.project, artifact, false);
+                    if (lib == null)
+                        throw new RuntimeException("Could not resolve download: " + artifact);
+
+                    files.add(lib);
+                }
             }
 
             // Write the list
