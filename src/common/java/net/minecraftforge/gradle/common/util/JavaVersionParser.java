@@ -41,7 +41,8 @@ public class JavaVersionParser {
     private static String MAINTENANCE_NUMBER_PATTERN = "\\d+";
     private static String UPDATE_NUMBER_PATTERN = "\\d+";
 
-    private static Pattern VERSION_REGEX = Pattern.compile(String.format("(%s)\\.(%s)\\.(%s)(?:_(%s))?.*",
+    // Forge: Changed to make only one part required, OpenJDK publishes a version with just '9'
+    private static Pattern VERSION_REGEX = Pattern.compile(String.format("(%s)(?:\\.(%s)\\.(%s))?(?:_(%s))?.*",
             MAJOR_VERSION_FAMILY_PATTERN, MAJOR_VERSION_PATTERN, MAINTENANCE_NUMBER_PATTERN, UPDATE_NUMBER_PATTERN));
 
     private static final JavaVersion currentJavaVersion = parseJavaVersion(System.getProperty(JAVA_VERSION_PROPERTY));

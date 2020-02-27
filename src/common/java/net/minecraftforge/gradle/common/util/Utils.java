@@ -35,6 +35,8 @@ import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 
 import javax.annotation.Nonnull;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLException;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -75,6 +77,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class Utils {
+    private static final boolean ENABLE_TEST_CERTS = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_certs", "true"));
+    private static final boolean ENABLE_TEST_JAVA  = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_java", "true"));
+
     public static final Gson GSON = new GsonBuilder()
         .registerTypeAdapter(MCPConfigV1.Step.class, new MCPConfigV1.Step.Deserializer())
         .registerTypeAdapter(VersionJson.Argument.class, new VersionJson.Argument.Deserializer())
@@ -82,6 +87,7 @@ public class Utils {
     private static final int CACHE_TIMEOUT = 1000 * 60 * 60 * 1; //1 hour, Timeout used for version_manifest.json so we dont ping their server every request.
                                                           //manifest doesn't include sha1's so we use this for the per-version json as well.
     public static final String FORGE_MAVEN = "https://files.minecraftforge.net/maven/";
+    public static final String MOJANG_MAVEN = "https://libraries.minecraft.net/";
     public static final String BINPATCHER =  "net.minecraftforge:binarypatcher:1.+:fatjar";
     public static final String ACCESSTRANSFORMER = "net.minecraftforge:accesstransformers:1.0.+:fatjar";
     public static final String SPECIALSOURCE = "net.md-5:SpecialSource:1.8.3:shaded";
@@ -493,13 +499,33 @@ public class Utils {
                             currentJavaVersion, minVersionInclusive, maxVersionExclusive));
     }
 
-    public static void checkJavaVersion()
-    {
-        checkJavaRange(
+    public static void checkJavaVersion() {
+        if (ENABLE_TEST_JAVA) {
+            checkJavaRange(
                 // Mininum must be update 101 as it's the first one to include Let's Encrypt certificates.
                 JavaVersionParser.parseJavaVersion("1.8.0_101"),
                 JavaVersionParser.parseJavaVersion("11.0.0")
-        );
+            );
+        }
+
+        if (ENABLE_TEST_CERTS) {
+            testServerConnection(FORGE_MAVEN);
+            testServerConnection(MOJANG_MAVEN);
+        }
+    }
+
+    private static void testServerConnection(String url) {
+        try {
+            HttpsURLConnection conn = (HttpsURLConnection)new URL(url).openConnection();
+            conn.setRequestMethod("HEAD");
+            conn.connect();
+            conn.getResponseCode();
+        } catch (SSLException e) {
+            throw new RuntimeException(String.format("Failed to validate certificate for %s, Most likely cause is an outdated JDK. Try updating at https://adoptopenjdk.net/ " +
+                    "To disable this check re-run with -Dnet.minecraftforge.gradle.test_certs=false", url), e);
+        } catch (IOException e) {
+            //Normal connection failed, not the point of this test so ignore
+        }
     }
 
     public static HttpURLConnection connectHttpWithRedirects(URL url) throws IOException {

@@ -269,7 +269,7 @@ public class UserDevPlugin implements Plugin<Project> {
                 e.setUrl(Utils.FORGE_MAVEN);
             });
             project.getRepositories().maven(e -> {
-                e.setUrl("https://libraries.minecraft.net/");
+                e.setUrl(Utils.MOJANG_MAVEN);
                 e.metadataSources(src -> src.artifact());
             });
             project.getRepositories().mavenCentral(); //Needed for MCP Deps

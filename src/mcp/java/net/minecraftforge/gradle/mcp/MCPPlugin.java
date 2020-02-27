@@ -60,7 +60,7 @@ public class MCPPlugin implements Plugin<Project> {
         project.afterEvaluate(p -> {
             //Add Known repos
             project.getRepositories().maven(e -> {
-                e.setUrl("https://libraries.minecraft.net/");
+                e.setUrl(Utils.MOJANG_MAVEN);
                 e.metadataSources(src -> src.artifact());
             });
             project.getRepositories().maven(e -> {

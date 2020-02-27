@@ -122,7 +122,7 @@ public class PatcherPlugin implements Plugin<Project> {
             .add(MinecraftRepo.create(project))
             .attach(project);
         project.getRepositories().maven(e -> {
-            e.setUrl("https://libraries.minecraft.net/");
+            e.setUrl(Utils.MOJANG_MAVEN);
             e.metadataSources(src -> src.artifact());
         });
 
