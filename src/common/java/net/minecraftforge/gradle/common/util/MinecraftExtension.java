@@ -50,11 +50,12 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
     protected String mapping_version;
     protected List<File> accessTransformers;
     protected List<File> sideAnnotationStrippers;
+    protected Mirror mirror;
 
     @Inject
     public MinecraftExtension(final Project project) {
         this.project = project;
-
+        mirror = new Mirror();
         this.runs = project.container(RunConfig.class, name -> new RunConfig(project, name));
     }
 
@@ -108,6 +109,29 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         }
 
         mappings(channel.toString(), version.toString());
+    }
+
+    public void mirrors(Map<String,String> mirrors){
+        String minecraftAssetsURL = mirrors.get("assets");
+        String minecraftLibraryURL = mirrors.get("libraries");
+        String forgeMaven = mirrors.get("forgemaven");
+        String mavenCentral= mirrors.get("mavencentral");
+        this.mirror.setForgeMaven(addSlash(forgeMaven));
+        this.mirror.setMavenCentral(addSlash(mavenCentral));
+        this.mirror.setMinecraftAssetsURL(addSlash(minecraftAssetsURL));
+        this.mirror.setMinecraftLibraryURL(addSlash(minecraftLibraryURL));
+    }
+
+    public Mirror getMirror() {
+        return this.mirror;
+    }
+
+    private String addSlash(String url) {
+        if(url == null) return null;
+        if(url.substring(url.length()-1, url.length()).equals("/")) {
+            return url;
+        }
+        return url+"/";
     }
 
     public String getMappings() {
@@ -221,6 +245,52 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
 
             RunConfigGenerator.createIDEGenRunsTasks(this, prepareRuns, makeSrcDirs, additionalClientArgs);
         });
+    }
+    public class Mirror{
+        private String ForgeMaven=null;
+        private String MavenCentral=null;
+        private String MinecraftAssetsURL=null;
+        private String MinecraftLibraryURL=null;
+
+        public void setForgeMaven(String minecraftVersionURL) {
+            ForgeMaven = minecraftVersionURL;
+        }
+
+        public void setMinecraftAssetsURL(String minecraftAssetsURL) {
+            MinecraftAssetsURL = minecraftAssetsURL;
+        }
+
+        public void setMinecraftLibraryURL(String minecraftLibraryURL) { MinecraftLibraryURL = minecraftLibraryURL; }
+
+        public void setMavenCentral(String mavenCentral) {
+            MavenCentral = mavenCentral;
+        }
+
+        public String getMavenCentral() {
+            return MavenCentral;
+        }
+
+        public String getForgeMaven() {
+            return ForgeMaven;
+        }
+
+        public String getMinecraftAssetsURL() {
+            return MinecraftAssetsURL;
+        }
+
+        public String getMinecraftLibraryURL() {
+            return MinecraftLibraryURL;
+        }
+
+        public ArrayList<String> getArrayOfMirrors(){
+            ArrayList<String> mirrors = new ArrayList<>();
+            mirrors.add(this.ForgeMaven);
+            mirrors.add(this.MavenCentral);
+            mirrors.add(this.MinecraftAssetsURL);
+            mirrors.add(this.MinecraftLibraryURL);
+            return mirrors;
+        }
+
     }
 
 }

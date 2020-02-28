@@ -163,6 +163,7 @@ public class UserDevPlugin implements Plugin<Project> {
         });
         downloadAssets.configure(task -> {
             task.dependsOn(downloadMCMeta.get());
+            task.setResourceRepo(extension.getMirror().getMinecraftAssetsURL());
             task.setMeta(downloadMCMeta.get().getOutput());
         });
 
@@ -265,6 +266,13 @@ public class UserDevPlugin implements Plugin<Project> {
                     .add(MCPRepo.create(project))
                     .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
                     .attach(project);
+            for(String mirror : extension.getMirror().getArrayOfMirrors()){
+                if(mirror != null){
+                    project.getRepositories().maven(e -> {
+                        e.setUrl(mirror);
+                    });
+                }
+            }
             project.getRepositories().maven(e -> {
                 e.setUrl(Utils.FORGE_MAVEN);
             });

@@ -38,10 +38,14 @@ import net.minecraftforge.gradle.common.util.VersionJson;
 
 public class DownloadAssets extends DefaultTask {
     private static final String RESOURCE_REPO = "http://resources.download.minecraft.net/";
+    private String resourceRepo;
     private File meta;
 
     @TaskAction
     public void run() throws IOException {
+        if(resourceRepo == null){
+            resourceRepo = RESOURCE_REPO;
+        }
         AssetIndex index = Utils.loadJson(getIndex(), AssetIndex.class);
         List<String> keys = new ArrayList<>(index.objects.keySet());
         Collections.sort(keys);
@@ -49,7 +53,7 @@ public class DownloadAssets extends DefaultTask {
             Asset asset = index.objects.get(key);
             File target = Utils.getCache(getProject(), "assets", "objects", asset.getPath());
             if (!target.exists()) {
-                URL url = new URL(RESOURCE_REPO + asset.getPath());
+                URL url = new URL(resourceRepo + asset.getPath());
                 getProject().getLogger().lifecycle("Downloading: " + url + " Asset: " + key);
                 FileUtils.copyURLToFile(url, target);
             }
@@ -68,6 +72,10 @@ public class DownloadAssets extends DefaultTask {
     }
     public void setMeta(File value) {
         this.meta = value;
+    }
+
+    public void setResourceRepo(String resourceRepo) {
+        this.resourceRepo = resourceRepo;
     }
 
     public File getOutput() {
