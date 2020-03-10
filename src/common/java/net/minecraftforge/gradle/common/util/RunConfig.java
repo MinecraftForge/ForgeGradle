@@ -20,18 +20,13 @@
 
 package net.minecraftforge.gradle.common.util;
 
-import com.google.common.collect.Maps;
 import groovy.lang.Closure;
 import groovy.lang.GroovyObjectSupport;
 import groovy.util.MapEntry;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 import org.gradle.api.plugins.JavaPluginConvention;
-import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.TaskProvider;
-
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.Serializable;

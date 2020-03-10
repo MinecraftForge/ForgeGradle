@@ -29,12 +29,19 @@ import com.google.gson.JsonSyntaxException;
 
 import groovy.lang.Closure;
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
+import net.minecraftforge.gradle.common.task.ExtractNatives;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
+import net.minecraftforge.gradle.common.util.runs.RunConfigGenerator;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.TaskProvider;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLException;
 
@@ -57,8 +64,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Enumeration;
@@ -491,12 +500,12 @@ public class Utils {
         return toCapitalize.length() > 1 ? toCapitalize.substring(0, 1).toUpperCase() + toCapitalize.substring(1) : toCapitalize;
     }
 
-    public static void checkJavaRange(JavaVersionParser.JavaVersion minVersionInclusive, JavaVersionParser.JavaVersion maxVersionExclusive)
-    {
+    public static void checkJavaRange( @Nullable JavaVersionParser.JavaVersion minVersionInclusive, @Nullable JavaVersionParser.JavaVersion maxVersionExclusive) {
         JavaVersionParser.JavaVersion currentJavaVersion = JavaVersionParser.getCurrentJavaVersion();
-        if (currentJavaVersion.compareTo(minVersionInclusive) < 0 || currentJavaVersion.compareTo(maxVersionExclusive) >= 0)
-            throw new RuntimeException(String.format("Found java version %s. Minimum required is %s. Versions %s and newer are not supported yet.",
-                            currentJavaVersion, minVersionInclusive, maxVersionExclusive));
+        if (minVersionInclusive != null && currentJavaVersion.compareTo(minVersionInclusive) < 0)
+            throw new RuntimeException(String.format("Found java version %s. Minimum required is %s.", currentJavaVersion, minVersionInclusive));
+        if (maxVersionExclusive != null && currentJavaVersion.compareTo(maxVersionExclusive) >= 0)
+            throw new RuntimeException(String.format("Found java version %s. Versions %s and newer are not supported yet.", currentJavaVersion, maxVersionExclusive));
     }
 
     public static void checkJavaVersion() {
@@ -504,7 +513,7 @@ public class Utils {
             checkJavaRange(
                 // Mininum must be update 101 as it's the first one to include Let's Encrypt certificates.
                 JavaVersionParser.parseJavaVersion("1.8.0_101"),
-                JavaVersionParser.parseJavaVersion("11.0.0")
+                null //TODO: Add JDK range check to MCPConfig?
             );
         }
 
@@ -579,5 +588,48 @@ public class Utils {
         ret.setTime(time);
         TimeZone.setDefault(_default);
         return ret;
+    }
+
+    public static void createRunConfigTasks(final MinecraftExtension extension, final ExtractNatives extractNatives, final Task... setupTasks) {
+        List<Task> setupTasksLst = new ArrayList<>();
+        for (Task t : setupTasks)
+            setupTasksLst.add(t);
+
+        final TaskProvider<Task> prepareRuns = extension.getProject().getTasks().register("prepareRuns", Task.class, task -> {
+            task.setGroup(RunConfig.RUNS_GROUP);
+            task.dependsOn(extractNatives);
+            setupTasksLst.forEach(task::dependsOn);
+        });
+
+        final TaskProvider<Task> makeSrcDirs = extension.getProject().getTasks().register("makeSrcDirs", Task.class, task -> {
+            task.doFirst(t -> {
+                final JavaPluginConvention java = task.getProject().getConvention().getPlugin(JavaPluginConvention.class);
+
+                java.getSourceSets().forEach(s -> s.getAllSource()
+                        .getSrcDirs().stream().filter(f -> !f.exists()).forEach(File::mkdirs));
+            });
+        });
+        setupTasksLst.add(makeSrcDirs.get());
+
+        extension.getRuns().forEach(RunConfig::mergeParents);
+
+        // Create run configurations _AFTER_ all projects have evaluated so that _ALL_ run configs exist and have been configured
+        extension.getProject().getGradle().projectsEvaluated(gradle -> {
+            VersionJson json = null;
+
+            try {
+                json = Utils.loadJson(extractNatives.getMeta(), VersionJson.class);
+            } catch (IOException ignored) {
+            }
+
+            List<String> additionalClientArgs = json != null ? json.getPlatformJvmArgs() : Collections.emptyList();
+
+            extension.getRuns().forEach(RunConfig::mergeChildren);
+            extension.getRuns().forEach(run -> RunConfigGenerator.createRunTask(run, extension.getProject(), prepareRuns, additionalClientArgs));
+
+            EclipseHacks.doEclipseFixes(extension, extractNatives, setupTasksLst);
+
+            RunConfigGenerator.createIDEGenRunsTasks(extension, prepareRuns, makeSrcDirs, additionalClientArgs);
+        });
     }
 }

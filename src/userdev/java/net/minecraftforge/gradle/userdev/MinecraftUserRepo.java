@@ -29,12 +29,16 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import net.minecraftforge.gradle.common.config.Config;
 import net.minecraftforge.gradle.common.config.UserdevConfigV1;
+import net.minecraftforge.gradle.common.config.UserdevConfigV2;
+import net.minecraftforge.gradle.common.config.UserdevConfigV2.DataFunction;
 import net.minecraftforge.gradle.common.diff.ContextualPatch;
 import net.minecraftforge.gradle.common.diff.ContextualPatch.PatchReport;
 import net.minecraftforge.gradle.common.diff.HunkReport;
 import net.minecraftforge.gradle.common.diff.PatchFile;
 import net.minecraftforge.gradle.common.diff.ZipContext;
+import net.minecraftforge.gradle.common.task.ApplyBinPatches;
 import net.minecraftforge.gradle.common.task.DownloadAssets;
+import net.minecraftforge.gradle.common.task.DynamicJarExec;
 import net.minecraftforge.gradle.common.task.ExtractNatives;
 import net.minecraftforge.gradle.common.util.Artifact;
 import net.minecraftforge.gradle.common.util.BaseRepo;
@@ -43,6 +47,7 @@ import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.MappingFile;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.McpNames;
+import net.minecraftforge.gradle.common.util.MinecraftVersion;
 import net.minecraftforge.gradle.common.util.POMBuilder;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
@@ -50,10 +55,10 @@ import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
 import net.minecraftforge.gradle.mcp.function.SideAnnotationStripperFunction;
+import net.minecraftforge.gradle.mcp.task.GenerateSRG;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import net.minecraftforge.gradle.mcp.util.MCPWrapper;
 import net.minecraftforge.gradle.userdev.tasks.AccessTransformJar;
-import net.minecraftforge.gradle.userdev.tasks.ApplyBinPatches;
 import net.minecraftforge.gradle.userdev.tasks.ApplyMCPFunction;
 import net.minecraftforge.gradle.userdev.tasks.HackyJavaCompile;
 import net.minecraftforge.gradle.userdev.tasks.RenameJar;
@@ -62,6 +67,7 @@ import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
@@ -86,9 +92,10 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -163,7 +170,7 @@ public class MinecraftUserRepo extends BaseRepo {
         return project.file("build/fg_cache/");
     }
 
-    public void validate(Configuration cfg, Map<String, RunConfig> runs, ExtractNatives extractNatives, DownloadAssets downloadAssets) {
+    public void validate(Configuration cfg, Map<String, RunConfig> runs, ExtractNatives extractNatives, DownloadAssets downloadAssets, GenerateSRG createSrgToMcp) {
         getParents();
         if (mcp == null)
             throw new IllegalStateException("Invalid minecraft dependency: " + GROUP + ":" + NAME + ":" + VERSION);
@@ -203,14 +210,13 @@ public class MinecraftUserRepo extends BaseRepo {
         tokens.put("mc_version", mcp.getMCVersion());
         tokens.put("mcp_version", mcp.getArtifact().getVersion());
         tokens.put("mcp_mappings", MAPPING);
+        tokens.put("mcp_to_srg", createSrgToMcp.getOutput().getAbsolutePath());
 
         if (parent != null && parent.getConfig().runs != null) {
             parent.getConfig().runs.forEach((name, dev) -> {
                 final RunConfig run = runs.get(name);
-
-                if (run != null) {
+                if (run != null)
                     run.parent(0, dev);
-                }
             });
         }
 
@@ -261,7 +267,7 @@ public class MinecraftUserRepo extends BaseRepo {
      * @return
      */
     private Set<File> buildExtraDataFiles() {
-        Configuration cfg = project.getConfigurations().create(getNextCompileName());
+        Configuration cfg = project.getConfigurations().create(getNextTaskName("compileJava"));
         List<String> deps = new ArrayList<>();
         deps.add("net.minecraft:client:" + mcp.getMCVersion() + ":extra");
         deps.addAll(mcp.getLibraries());
@@ -327,7 +333,15 @@ public class MinecraftUserRepo extends BaseRepo {
 
     private Patcher getParents() {
         if (!loadedParents) {
-            String artifact = isPatcher ? (GROUP + ":" + NAME +":" + VERSION + ':' + "userdev") :
+
+            String classifier = "userdev";
+            if ("net.minecraftforge".equals(GROUP) && "forge".equals(NAME)) {
+                MinecraftVersion mcver = MinecraftVersion.from(VERSION.split("-")[0]);
+                if (mcver.compareTo(MinecraftVersion.v1_13) < 0)
+                    classifier = "userdev3";
+            }
+
+            String artifact = isPatcher ? (GROUP + ":" + NAME +":" + VERSION + ':' + classifier) :
                                         ("de.oceanlabs.mcp:mcp_config:" + VERSION + "@zip");
             boolean patcher = isPatcher;
             Patcher last = null;
@@ -517,7 +531,7 @@ public class MinecraftUserRepo extends BaseRepo {
     private File findRaw(String mapping) throws IOException {
         File names = findMapping(mapping);
         HashStore cache = commonHash(names)
-            .add("codever", "1");
+            .add("codever", "2");
 
         if (mapping != null && names == null) {
             debug("  Finding Raw: Could not find names, exiting");
@@ -553,73 +567,14 @@ public class MinecraftUserRepo extends BaseRepo {
             boolean hasAts = baseAT.length() != 0 || !ATS.isEmpty();
             debug("    HasAts: " + hasAts);
 
-            File srged = null;
-            String mc_srg_desc = "net.minecraft:" + (isPatcher ? "joined" : NAME) + ":" + mcp.getVersion() + ":srg";
-            File mc_srg = MavenArtifactDownloader.generate(project, mc_srg_desc, true); //Download vanilla in srg name
-            if (mc_srg == null || !mc_srg.exists()) {
-                debug("  Failed to find MC Vanilla SRG: " + mc_srg_desc);
-                project.getLogger().error("MinecraftUserRepo: Failed to get Minecraft Vanilla SRG. Should not be possible. " + mc_srg_desc);
-                return null;
-            }
-            debug("    Vanilla SRG: " + mc_srg);
-
-            //Gather vanilla packages, so we can only inject the proper package-info classes.
             Set<String> packages = new HashSet<>();
-            try (ZipFile tmp = new ZipFile(mc_srg)) {
-                packages = tmp.stream()
-                .map(ZipEntry::getName)
-                .filter(e -> e.endsWith(".class"))
-                .map(e -> e.indexOf('/') == -1 ? "" : e.substring(0, e.lastIndexOf('/')))
-                .collect(Collectors.toSet());
-            }
-
-            if (parent == null) { //Raw minecraft
-                srged = mc_srg;
-            } else { // Needs binpatches
-                File binpatched = cacheRaw("binpatched", "jar");
-
-                debug("    Creating Binpatches");
-                //Apply bin patches to vanilla
-                ApplyBinPatches apply = project.getTasks().create("_" + new Random().nextInt() + "_applyBinPatches", ApplyBinPatches.class);
-                apply.setHasLog(false);
-                apply.setTool(parent.getConfig().binpatcher.getVersion());
-                apply.setArgs(parent.getConfig().binpatcher.getArgs());
-                apply.setClean(mc_srg);
-                apply.setPatch(findBinPatches());
-                apply.setOutput(binpatched);
-                apply.apply();
-
-                debug("    Injecting binpatch extras");
-                srged = cacheRaw("srg", "jar");
-                //Combine all universals and vanilla together.
-                Set<String> added = new HashSet<>();
-                try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(srged))) {
-
-                    //Add binpatched, then vanilla first, overrides any other entries added
-                    for (File file : new File[] {binpatched, mc_srg}) {
-                        try (ZipInputStream zin = new ZipInputStream(new FileInputStream(file))) {
-                            ZipEntry entry;
-                            while ((entry = zin.getNextEntry()) != null) {
-                                if (added.contains(entry.getName()))
-                                    continue;
-                                ZipEntry _new = new ZipEntry(entry.getName());
-                                _new.setTime(entry.getTime()); //Should be stable, but keeping time.
-                                zip.putNextEntry(_new);
-                                IOUtils.copy(zin, zip);
-                                added.add(entry.getName());
-                            }
-                        }
-                    }
-
-                    copyResources(zip, added, true);
-                }
-            }
+            File srged = findBinpatched(packages);
 
             File mcinject = cacheRaw("mci", "jar");
 
             debug("    Applying MCInjector");
             //Apply MCInjector so we can compile against this jar
-            ApplyMCPFunction mci = project.getTasks().create("_mciJar_" + new Random().nextInt() + "_", ApplyMCPFunction.class);
+            ApplyMCPFunction mci = createTask("mciJar", ApplyMCPFunction.class);
             mci.setFunctionName("mcinject");
             mci.setHasLog(false);
             mci.setInput(srged);
@@ -702,7 +657,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 if (bin.exists()) bin.delete(); // AT lib throws an exception if output file already exists
 
                 debug("    Applying Access Transformer");
-                AccessTransformJar at = project.getTasks().create("_atJar_"+ new Random().nextInt() + "_", AccessTransformJar.class);
+                AccessTransformJar at = createTask("atJar", AccessTransformJar.class);
                 at.setInput(injected);
                 at.setOutput(bin);
                 at.setAts(ATS);
@@ -723,7 +678,7 @@ public class MinecraftUserRepo extends BaseRepo {
             } else if (hasAts) {
                 debug("    Renaming ATed Jar in place");
                 //Remap library to MCP names, in place, sorta hacky with ATs but it should work.
-                RenameJarInPlace rename = project.getTasks().create("_rename_" + new Random().nextInt() + "_", RenameJarInPlace.class);
+                RenameJarInPlace rename = createTask("renameJarInPlace", RenameJarInPlace.class);
                 rename.setHasLog(false);
                 rename.setInput(bin);
                 rename.setMappings(findSrgToMcp(mapping, names));
@@ -731,7 +686,7 @@ public class MinecraftUserRepo extends BaseRepo {
             } else {
                 debug("    Renaming injected jar");
                 //Remap library to MCP names
-                RenameJar rename = project.getTasks().create("_rename_" + new Random().nextInt() + "_", RenameJar.class);
+                RenameJar rename = createTask("renameJar", RenameJar.class);
                 rename.setHasLog(false);
                 rename.setInput(injected);
                 rename.setOutput(bin);
@@ -746,9 +701,119 @@ public class MinecraftUserRepo extends BaseRepo {
         return bin;
     }
 
+    private File findBinpatched(final Set<String> packages) throws IOException {
+        boolean notch = parent != null && parent.getConfigV2() != null && parent.getConfigV2().getNotchObf();
+
+        String desc = "net.minecraft:" + (isPatcher ? "joined" : NAME) + ":" + (notch ? mcp.getMCVersion() : mcp.getVersion() + ":srg");
+        File clean = MavenArtifactDownloader.generate(project, desc, true);
+
+        if (clean == null || !clean.exists()) {
+            debug("  Failed to find MC Vanilla Base: " + desc);
+            project.getLogger().error("MinecraftUserRepo: Failed to get Minecraft Vanilla Base. Should not be possible. " + desc);
+            return null;
+        }
+        debug("    Vanilla Base: " + clean);
+
+        File obf2Srg = null;
+        try (ZipFile tmp = new ZipFile(clean)) {
+            if (notch) {
+                obf2Srg = findObfToSrg(MappingFile.Format.TSRG);
+                if (obf2Srg == null) {
+                    debug("  Failed to find obf to mcp mapping file. " + mcp.getVersion());
+                    project.getLogger().error("MinecraftUserRepo: Failed to find obf to mcp mapping file. Should not be possible. " + mcp.getVersion());
+                    return null;
+                }
+
+                Set<String> vanillaClasses = tmp.stream()
+                .map(ZipEntry::getName)
+                .filter(e -> e.endsWith(".class"))
+                .map(e -> e.substring(0, e.length() - 6))
+                .collect(Collectors.toSet());
+
+                MappingFile o2s = MappingFile.load(obf2Srg);
+                o2s.getClasses().stream()
+                .filter(e -> vanillaClasses.contains(e.getOriginal()))
+                .map(MappingFile.Node::getMapped)
+                .map(e -> e.indexOf('/') == -1 ? "" : e.substring(0, e.lastIndexOf('/')))
+                .forEach(packages::add);
+
+            } else {
+                //Gather vanilla packages, so we can only inject the proper package-info classes.
+                tmp.stream()
+                .map(ZipEntry::getName)
+                .filter(e -> e.endsWith(".class"))
+                .map(e -> e.indexOf('/') == -1 ? "" : e.substring(0, e.lastIndexOf('/')))
+                .forEach(packages::add);
+            }
+        }
+
+        if (parent == null) { //Raw minecraft
+            return clean;
+        } else { // Needs binpatches
+            File binpatched = cacheRaw("binpatched", "jar");
+
+            debug("    Creating Binpatches");
+            //Apply bin patches to vanilla
+            ApplyBinPatches apply = createTask("applyBinpatches", ApplyBinPatches.class);
+            apply.setHasLog(true);
+            apply.setTool(parent.getConfig().binpatcher.getVersion());
+            apply.setArgs(parent.getConfig().binpatcher.getArgs());
+            apply.setClean(clean);
+            apply.setPatch(findBinPatches());
+            apply.setOutput(binpatched);
+            apply.apply();
+
+            debug("    Injecting binpatch extras");
+            File merged = cacheRaw(notch ? "obf" : "srg", "jar");
+
+            //Combine all universals and vanilla together.
+            Set<String> added = new HashSet<>();
+            try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(merged))) {
+
+                //Add binpatched, then vanilla. First seen overrides any other entries
+                for (File file : new File[] {binpatched, clean}) {
+                    try (ZipInputStream zin = new ZipInputStream(new FileInputStream(file))) {
+                        ZipEntry entry;
+                        while ((entry = zin.getNextEntry()) != null) {
+                            String name = entry.getName();
+                            if (added.contains(name))
+                                continue;
+                            ZipEntry _new = new ZipEntry(name);
+                            _new.setTime(entry.getTime()); //Should be stable, but keeping time.
+                            zip.putNextEntry(_new);
+                            IOUtils.copy(zin, zip);
+                            added.add(name);
+                        }
+                    }
+                }
+
+                copyResources(zip, added, true);
+            }
+
+            if (notch) {
+                File srged = cacheRaw("srg", "jar");
+                debug("    Renaming injected jar");
+                //Remap to SRG names
+                RenameJar rename = createTask("renameJar", RenameJar.class);
+                rename.setHasLog(false);
+                rename.setInput(merged);
+                rename.setOutput(srged);
+                rename.setMappings(obf2Srg);
+                rename.apply();
+                return srged;
+            } else {
+                return merged;
+            }
+        }
+    }
+
     private void copyResources(ZipOutputStream zip, Set<String> added, boolean includeClasses) throws IOException {
         Map<String, List<String>> servicesLists = new HashMap<>();
-        Predicate<String> filter = (name) -> added.contains(name) || (!includeClasses && name.endsWith(".class")) || (name.startsWith("META-INF") && (name.endsWith(".DSA") || name.endsWith(".SF")));
+        Predicate<String> filter = (name) ->
+            added.contains(name) ||
+            (!includeClasses && name.endsWith(".class")) ||
+            (name.startsWith("META-INF") && (name.endsWith(".DSA") || name.endsWith(".SF")));
+
         // Walk parents and combine from bottom up so we get any overridden files.
         Patcher patcher = parent;
         while (patcher != null) {
@@ -758,6 +823,8 @@ public class MinecraftUserRepo extends BaseRepo {
                     while ((entry = zin.getNextEntry()) != null) {
                         String name = entry.getName();
                         if (filter.test(name))
+                            continue;
+                        if (parent.getUniversalFilters().stream().anyMatch(f -> !f.matcher(name).matches()))
                             continue;
 
                         if (name.startsWith("META-INF/services/") && !entry.isDirectory()) {
@@ -825,6 +892,25 @@ public class MinecraftUserRepo extends BaseRepo {
         return map;
     }
 
+    private File findObfToSrg(MappingFile.Format format) throws IOException {
+        String ext = format.name().toLowerCase();
+        File root = cache(mcp.getArtifact().getGroup().replace('.', '/'), mcp.getArtifact().getName(), mcp.getArtifact().getVersion());
+        File file = new File(root, "obf_to_srg." + ext);
+
+        HashStore cache = new HashStore()
+            .add("mcp", mcp.getZip())
+            .load(new File(root, "obf_to_srg." + ext + ".input"));
+
+        if (!cache.isSame() || !file.exists()) {
+            byte[] data = mcp.getData("mappings");
+            MappingFile obf_to_srg = MappingFile.load(new ByteArrayInputStream(data));
+            obf_to_srg.write(format, file, false);
+            cache.save();
+        }
+
+        return file;
+    }
+
     private File findSrgToMcp(String mapping, File names) throws IOException {
         if (names == null) {
             debug("Attempted to create SRG to MCP with null MCP mappings: " + mapping);
@@ -873,7 +959,32 @@ public class MinecraftUserRepo extends BaseRepo {
         } else if (decomp.exists() || generate) {
             debug("  Decompiling");
             File output = mcp.getStepOutput(isPatcher ? "joined" : NAME, null);
-            FileUtils.copyFile(output, decomp);
+            if (parent != null && parent.getConfigV2() != null && parent.getConfigV2().processor != null) {
+                DataFunction data = parent.getConfigV2().processor;
+                DynamicJarExec proc = createTask("postProcess", DynamicJarExec.class);
+                proc.setInput(output);
+                proc.setOutput(decomp);
+                proc.setTool(data.getVersion());
+                proc.setArgs(data.getArgs());
+
+                if (data.getData() != null) {
+                    File root = project.file("build/" + proc.getName());
+                    if (!root.exists())
+                        root.mkdirs();
+
+                    try (final ZipFile zip = new ZipFile(parent.getZip())) {
+                        for (Entry<String, String> ent : data.getData().entrySet()) {
+                            File target = new File(root, ent.getValue());
+                            Utils.extractFile(zip, ent.getValue(), target);
+                            proc.setData(ent.getKey(), target);
+                        }
+                    }
+                }
+
+                proc.apply();
+            } else {
+                FileUtils.copyFile(output, decomp);
+            }
             cache.save();
             Utils.updateHash(decomp, HashFunction.SHA1);
         }
@@ -915,11 +1026,15 @@ public class MinecraftUserRepo extends BaseRepo {
                 for (Patcher p : parents) {
                     Map<String, PatchFile> patches = p.getPatches();
                     if (!patches.isEmpty()) {
-                        debug("      Apply Patches: " + p.artifact);
+                        String prefixO = parent.getConfigV2() == null ? null : parent.getConfigV2().patchesOriginalPrefix;
+                        String prefixM = parent.getConfigV2() == null ? null : parent.getConfigV2().patchesModifiedPrefix;
+                        debug("      Apply Patches:   " + p.artifact);
+                        debug("      Original Prefix: " + prefixO);
+                        debug("      Modified Prefix: " + prefixM);
                         List<String> keys = new ArrayList<>(patches.keySet());
                         Collections.sort(keys);
                         for (String key : keys) {
-                            ContextualPatch patch = ContextualPatch.create(patches.get(key), context);
+                            ContextualPatch patch = ContextualPatch.create(patches.get(key), context, prefixO, prefixM);
                             patch.setCanonialization(true, false);
                             patch.setMaxFuzz(0);
                             try {
@@ -1015,7 +1130,8 @@ public class MinecraftUserRepo extends BaseRepo {
             if (!sources.getParentFile().exists())
                 sources.getParentFile().mkdirs();
 
-            debug("    Renaming Sources");
+            boolean addJavadocs = parent == null || parent.getConfigV2() == null || parent.getConfigV2().processor == null;
+            debug("    Renaming Sources, Javadocs: " + addJavadocs);
             try(ZipInputStream zin = new ZipInputStream(new FileInputStream(patched));
                 ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(sources))) {
                 ZipEntry _old;
@@ -1023,7 +1139,7 @@ public class MinecraftUserRepo extends BaseRepo {
                     zout.putNextEntry(Utils.getStableEntry(_old.getName()));
 
                     if (_old.getName().endsWith(".java")) {
-                        String mapped = map.rename(zin, true);
+                        String mapped = map.rename(zin, addJavadocs);
                         IOUtils.write(mapped, zout);
                     } else {
                         IOUtils.copy(zin, zout);
@@ -1125,13 +1241,16 @@ public class MinecraftUserRepo extends BaseRepo {
         return target;
     }
 
-    private String getNextCompileName() {
-        return "_compileJava_" + compileTaskCount++;
+    private String getNextTaskName(String prefix) {
+        return '_' + prefix + "_" + compileTaskCount++;
+    }
+    private <T extends Task> T createTask(String prefix, Class<T> cls) {
+        return project.getTasks().create(getNextTaskName(prefix), cls);
     }
 
     private int compileTaskCount = 1;
     private File compileJava(File source, File... extraDeps) {
-        HackyJavaCompile compile = project.getTasks().create(getNextCompileName(), HackyJavaCompile.class);
+        HackyJavaCompile compile = createTask("compileJava", HackyJavaCompile.class);
         try {
             File output = project.file("build/" + compile.getName() + "/");
             if (output.exists()) {
@@ -1175,10 +1294,12 @@ public class MinecraftUserRepo extends BaseRepo {
         private final File sources;
         private final Artifact artifact;
         private final UserdevConfigV1 config;
+        private final UserdevConfigV2 configv2;
         private Patcher parent;
         private String ATs = null;
         private String SASs = null;
         private Map<String, PatchFile> patches;
+        private List<Pattern> universalFilters;
 
         private Patcher(Project project, File data, String artifact) {
             this.data = data;
@@ -1187,9 +1308,16 @@ public class MinecraftUserRepo extends BaseRepo {
             try {
                 byte[] cfg_data = Utils.getZipData(data, "config.json");
                 int spec = Config.getSpec(cfg_data);
-                if (spec != 1)
+
+                if (spec == 1) {
+                    this.config = UserdevConfigV1.get(cfg_data);
+                    this.configv2 = null;
+                } else if (spec == 2) {
+                    this.configv2 = UserdevConfigV2.get(cfg_data);
+                    this.config = this.configv2;
+                } else {
                     throw new IllegalStateException("Could not load Patcher config, Unknown Spec: " + spec + " Dep: " + artifact);
-                this.config = UserdevConfigV1.get(cfg_data);
+                }
 
                 if (getParentDesc() == null)
                     throw new IllegalStateException("Invalid patcher dependency, missing MCP or parent: " + artifact);
@@ -1216,6 +1344,9 @@ public class MinecraftUserRepo extends BaseRepo {
 
         public UserdevConfigV1 getConfig() {
             return config;
+        }
+        public UserdevConfigV2 getConfigV2() {
+            return this.configv2;
         }
         public boolean parentIsMcp() {
             return this.config.mcp != null;
@@ -1314,6 +1445,17 @@ public class MinecraftUserRepo extends BaseRepo {
                 }
             }
             return patches;
+        }
+
+        public List<Pattern> getUniversalFilters() {
+            if (this.universalFilters == null) {
+                this.universalFilters = new ArrayList<>();
+                if (getConfigV2() != null) {
+                    for (String filter : getConfigV2().getUniversalFilters())
+                        this.universalFilters.add(Pattern.compile(filter));
+                }
+            }
+            return this.universalFilters;
         }
     }
 

@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+@Deprecated  //Remove next major version, this is a duplicate of userdev ApplyBinPatches
 public class ApplyBinPatches extends JarExec {
     private Supplier<File> clean;
     private File input;

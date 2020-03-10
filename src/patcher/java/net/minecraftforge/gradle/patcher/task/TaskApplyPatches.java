@@ -50,6 +50,8 @@ public class TaskApplyPatches extends DefaultTask {
     private boolean canonicalizeAccess = true;
     private boolean canonicalizeWhitespace = true;
     private boolean failOnErrors = true;
+    private String originalPrefix;
+    private String modifiedPrefix;
 
     @TaskAction
     public void applyPatches() {
@@ -65,7 +67,7 @@ public class TaskApplyPatches extends DefaultTask {
             .filter(p -> Files.isRegularFile(p) && p.getFileName().toString().endsWith(".patch"))
             .map(p -> {
                 boolean success = true;
-                ContextualPatch patch = ContextualPatch.create(PatchFile.from(p.toFile()), context);
+                ContextualPatch patch = ContextualPatch.create(PatchFile.from(p.toFile()), context, getOriginalPrefix(), getModifiedPrefix());
                 patch.setCanonialization(getCanonicalizeAccess(), getCanonicalizeWhitespace());
                 patch.setMaxFuzz(getMaxFuzz());
                 String name = p.toFile().getAbsolutePath().substring(getPatches().getAbsolutePath().length() + 1);
@@ -136,6 +138,18 @@ public class TaskApplyPatches extends DefaultTask {
         return canonicalizeAccess;
     }
 
+    @Input
+    @Optional
+    public String getOriginalPrefix() {
+    	return this.originalPrefix;
+    }
+
+    @Input
+    @Optional
+    public String getModifiedPrefix() {
+    	return this.modifiedPrefix;
+    }
+
     public boolean getFailOnErrors() {
         return failOnErrors;
     }
@@ -166,6 +180,14 @@ public class TaskApplyPatches extends DefaultTask {
 
     public void setCanonicalizeAccess(boolean value) {
         canonicalizeAccess = value;
+    }
+
+    public void setOriginalPrefix(String value) {
+    	this.originalPrefix = value;
+    }
+
+    public void setModifiedPrefix(String value) {
+    	this.modifiedPrefix = value;
     }
 
     public void setOutput(File value) {

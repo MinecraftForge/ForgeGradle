@@ -23,6 +23,7 @@ package net.minecraftforge.gradle.patcher.task;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 
 import net.minecraftforge.gradle.common.task.JarExec;
@@ -30,6 +31,7 @@ import net.minecraftforge.gradle.common.util.Utils;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -43,6 +45,7 @@ public class GenerateBinPatches extends JarExec {
     private Set<File> patchSets = new HashSet<>();
     private String side;
     private File output = null;
+    private Map<String, File> extras = new HashMap<>();
 
     public GenerateBinPatches() {
         tool = Utils.BINPATCHER;
@@ -56,6 +59,7 @@ public class GenerateBinPatches extends JarExec {
         replace.put("{dirty}", getDirtyJar().getAbsolutePath());
         replace.put("{output}", getOutput().getAbsolutePath());
         replace.put("{srg}", getSrg().getAbsolutePath());
+        this.extras.forEach((k,v) -> replace.put('{' + k + '}', v.getAbsolutePath()));
 
         List<String> _args = new ArrayList<>();
         for (String arg : getArgs()) {
@@ -93,10 +97,22 @@ public class GenerateBinPatches extends JarExec {
     public Set<File> getPatchSets() {
         return this.patchSets;
     }
+    public void setPatchSets(Set<File> values) {
+        this.patchSets = values;
+    }
     public void addPatchSet(File value) {
         if (value != null) {
             this.patchSets.add(value);
         }
+    }
+
+    @InputFiles
+    @Optional
+    public Collection<File> getExtraFiles() {
+        return this.extras.values();
+    }
+    public void addExtra(String key, File value) {
+        this.extras.put(key, value);
     }
 
     @InputFile
@@ -108,6 +124,7 @@ public class GenerateBinPatches extends JarExec {
     }
 
     @Input
+    @Optional
     public String getSide() {
         return this.side;
     }

@@ -21,6 +21,8 @@
 package net.minecraftforge.gradle.patcher;
 
 import com.google.common.collect.ImmutableMap;
+
+import net.minecraftforge.gradle.common.config.UserdevConfigV2.DataFunction;
 import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import org.gradle.api.Project;
@@ -30,7 +32,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class PatcherExtension extends MinecraftExtension {
 
@@ -42,9 +47,13 @@ public class PatcherExtension extends MinecraftExtension {
     public String mcVersion;
 
     public boolean srgPatches = true;
+    private boolean notchObf = false;
 
     private List<File> excs;
     private List<Object> extraExcs, extraMappings;
+
+    private DataFunction processor;
+    private Map<String, File> processorData;
 
     public PatcherExtension(@Nonnull final Project project) {
         super(project);
@@ -144,6 +153,14 @@ public class PatcherExtension extends MinecraftExtension {
         return srgPatches;
     }
 
+    public void setNotchObf(boolean value) {
+        this.notchObf = value;
+    }
+
+    public boolean getNotchObf() {
+        return this.notchObf;
+    }
+
     public void setExcs(List<File> excs) {
         this.excs = new ArrayList<>(excs);
     }
@@ -215,6 +232,48 @@ public class PatcherExtension extends MinecraftExtension {
         return extraMappings;
     }
 
+    public DataFunction getProcessor() {
+        return this.processor;
+    }
+    public void setProcessor(Map<String, Object> map) {
+        processor(map);
+    }
+
+    public Map<String, File> getProcessorData() {
+        return this.processorData == null ? Collections.emptyMap() : this.processorData;
+    }
+
+    @SuppressWarnings("unchecked")
+    public void processor(Map<String, Object> map) {
+        this.processor = new DataFunction();
+        map.forEach((key, value) -> {
+            if ("tool".equals(key)) {
+                if (!(value instanceof String))
+                    throw new IllegalArgumentException("'tool' must be a string");
+                this.processor.setVersion((String)value);
+            } else if ("args".equals(key)) {
+                if (value instanceof String)
+                    this.processor.setArgs(Arrays.asList((String)value));
+                else if (value instanceof String[])
+                    this.processor.setArgs(Arrays.asList((String[])value));
+                else if (value instanceof Collection)
+                    this.processor.setArgs(new ArrayList<>((Collection<String>)value));
+                else
+                    throw new IllegalArgumentException("'args' must be a String, or array of Strings");
+            } else if ("repo".equals(key)) {
+                if (!(value instanceof String))
+                    throw new IllegalArgumentException("'repo' must be a string");
+                this.processor.setRepo((String)value);
+            } else if ("data".equals(key)) {
+                if (!(value instanceof Map))
+                    throw new IllegalArgumentException("'data' must be a map of string -> file");
+                this.processorData = (Map<String, File>)value;
+            } else {
+                throw new IllegalArgumentException("Invalid processor key " + key);
+            }
+        });
+    }
+
     void copyFrom(PatcherExtension other) {
         if (mapping_channel == null) {
             setMappingChannel(other.getMappingChannel());
@@ -227,5 +286,4 @@ public class PatcherExtension extends MinecraftExtension {
             setMcVersion(other.getMcVersion());
         }
     }
-
 }

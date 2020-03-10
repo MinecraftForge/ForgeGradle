@@ -68,7 +68,10 @@ public class PatchFunction implements MCPFunction {
 
         File hashFile = environment.getFile("lastinput.sha1");
         HashStore hashStore = new HashStore(environment.project).load(hashFile);
-        if (hashStore.isSame(input) && output.exists()) return output;
+        hashStore.add(input);
+        patches.forEach((path,data) -> hashStore.add(path, data));
+
+        if (hashStore.isSame() && output.exists()) return output;
 
         try (ZipFile zip = new ZipFile(input)) {
             ZipContext context = new ZipContext(zip);

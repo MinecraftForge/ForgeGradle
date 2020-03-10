@@ -18,12 +18,11 @@
  * USA
  */
 
-package net.minecraftforge.gradle.userdev.tasks;
+package net.minecraftforge.gradle.common.task;
 
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 
-import net.minecraftforge.gradle.common.task.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
 
 import java.io.File;
@@ -36,7 +35,7 @@ import java.util.stream.Collectors;
 
 public class ApplyBinPatches extends JarExec {
     private Supplier<File> clean;
-    private File input;
+    private File patch;
     private File output;
 
     public ApplyBinPatches() {
@@ -67,10 +66,10 @@ public class ApplyBinPatches extends JarExec {
 
     @InputFile
     public File getPatch() {
-        return input;
+        return patch;
     }
     public void setPatch(File value) {
-        this.input = value;
+        this.patch = value;
     }
 
     @OutputFile
