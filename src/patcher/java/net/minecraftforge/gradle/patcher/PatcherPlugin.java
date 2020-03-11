@@ -98,7 +98,7 @@ public class PatcherPlugin implements Plugin<Project> {
         TaskProvider<ExtractZip> extractMapped = project.getTasks().register("extractMapped", ExtractZip.class);
         TaskProvider<GenerateSRG> createMcp2Srg = project.getTasks().register("createMcp2Srg", GenerateSRG.class);
         TaskProvider<GenerateSRG> createMcp2Obf = project.getTasks().register("createMcp2Obf", GenerateSRG.class);
-        TaskProvider<GenerateSRG> createSrg2Mcp = project.getTasks().register("createSrg2Mcpf", GenerateSRG.class);
+        TaskProvider<GenerateSRG> createSrg2Mcp = project.getTasks().register("createSrg2Mcp", GenerateSRG.class);
         TaskProvider<TaskCreateExc> createExc = project.getTasks().register("createExc", TaskCreateExc.class);
         TaskProvider<TaskExtractRangeMap> extractRangeConfig = project.getTasks().register("extractRangeMap", TaskExtractRangeMap.class);
         TaskProvider<TaskApplyRangeMap> applyRangeConfig = project.getTasks().register("applyRangeMap", TaskApplyRangeMap.class);
@@ -377,10 +377,6 @@ public class PatcherPlugin implements Plugin<Project> {
                         createMcp2Srg.get().dependsOn(ext);
                     }
 
-                    if (createMcp2Obf.get().getSrg() == null) {
-                        createMcp2Obf.get().setSrg(createMcp2Srg.get().getSrg());
-                    }
-
                     if (createExc.get().getSrg() == null) {
                         createExc.get().setSrg(createMcp2Srg.get().getSrg());
                         createExc.get().dependsOn(createMcp2Srg);
@@ -406,17 +402,6 @@ public class PatcherPlugin implements Plugin<Project> {
                 } else if (patcher != null) {
                     PatcherExtension pExt = extension.parent.getExtensions().getByType(PatcherExtension.class);
                     extension.copyFrom(pExt);
-
-                    for (TaskProvider<GenerateSRG> genSrg : Arrays.asList(createMcp2Srg,createSrg2Mcp, createMcp2Obf)) {
-                        genSrg.get().dependsOn(dlMappingsConfig);
-                        if (genSrg.get().getMappings() == null) {
-                            genSrg.get().setMappings(extension.getMappings());
-                        }
-                    }
-
-                    if (dlMappingsConfig.get().getMappings() == null) {
-                        dlMappingsConfig.get().setMappings(extension.getMappings());
-                    }
 
                     TaskApplyPatches parentApply = (TaskApplyPatches) tasks.getByName(applyConfig.get().getName());
                     if (procConfig != null) {
@@ -455,11 +440,6 @@ public class PatcherPlugin implements Plugin<Project> {
                             createMcp2Srg.get().setSrg(task.getSrg());
                             createMcp2Srg.get().dependsOn(task);
                         }
-                    }
-
-                    if (createMcp2Obf.get().getSrg() == null) {
-                        createMcp2Obf.get().setSrg(createMcp2Srg.get().getSrg());
-                        createMcp2Obf.get().dependsOn(createMcp2Srg.get());
                     }
 
                     if (createExc.get().getSrg() == null) { //TODO: Make a macro for Srg/Static/Constructors
@@ -506,6 +486,27 @@ public class PatcherPlugin implements Plugin<Project> {
                     filterNew.get().addBlacklist(((Jar) tasks.getByName("jar")).getArchivePath());
                 } else {
                     throw new IllegalStateException("Parent must either be a Patcher or MCP project");
+                }
+
+                if (dlMappingsConfig.get().getMappings() == null) {
+                    dlMappingsConfig.get().setMappings(extension.getMappings());
+                }
+
+                for (TaskProvider<GenerateSRG> genSrg : Arrays.asList(createMcp2Srg, createSrg2Mcp, createMcp2Obf)) {
+                    genSrg.get().dependsOn(dlMappingsConfig);
+                    if (genSrg.get().getMappings() == null) {
+                        genSrg.get().setMappings(dlMappingsConfig.get().getMappings());
+                    }
+                }
+
+                if (createMcp2Obf.get().getSrg() == null) {
+                    createMcp2Obf.get().setSrg(createMcp2Srg.get().getSrg());
+                    createMcp2Obf.get().dependsOn(createMcp2Srg);
+                }
+
+                if (createSrg2Mcp.get().getSrg() == null) {
+                    createSrg2Mcp.get().setSrg(createMcp2Srg.get().getSrg());
+                    createSrg2Mcp.get().dependsOn(createMcp2Srg);
                 }
             }
             project.getDependencies().add(MC_DEP_CONFIG, "net.minecraft:client:" + extension.mcVersion + ":extra"); //Needs to be client extra, to get the data files.
