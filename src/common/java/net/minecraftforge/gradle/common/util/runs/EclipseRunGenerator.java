@@ -67,7 +67,7 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
                 elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.VM_ARGUMENTS",
                         getJvmArgs(runConfig, additionalClientArgs, updatedTokens));
                 elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.PROGRAM_ARGUMENTS",
-                        runConfig.getArgs().stream().map((value)->runConfig.replace(updatedTokens, value)).collect(Collectors.joining(" ")));
+                        getArgs(runConfig, updatedTokens));
                 elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.WORKING_DIRECTORY", runConfig.getWorkingDirectory());
 
                 final Element envs = javaDocument.createElement("mapAttribute");

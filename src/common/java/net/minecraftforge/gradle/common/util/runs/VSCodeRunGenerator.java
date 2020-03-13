@@ -27,7 +27,6 @@ import org.gradle.api.Project;
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class VSCodeRunGenerator extends RunConfigGenerator.JsonConfigurationBuilder
@@ -46,7 +45,7 @@ public class VSCodeRunGenerator extends RunConfigGenerator.JsonConfigurationBuil
         config.addProperty("projectName", project.getName());
         config.addProperty("cwd", replaceRootDirBy(project, runConfig.getWorkingDirectory(), "${workspaceFolder}"));
         config.addProperty("vmArgs", getJvmArgs(runConfig, additionalClientArgs, updatedTokens));
-        config.addProperty("args", runConfig.getArgs().stream().map((value)->runConfig.replace(updatedTokens, value)).collect(Collectors.joining(" ")));
+        config.addProperty("args", getArgs(runConfig, updatedTokens));
         JsonObject env = new JsonObject();
         runConfig.getEnvironment().forEach((key,value) -> {
             value = runConfig.replace(updatedTokens, value);
