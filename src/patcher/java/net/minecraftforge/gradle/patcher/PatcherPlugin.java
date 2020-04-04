@@ -368,11 +368,12 @@ public class PatcherPlugin implements Plugin<Project> {
                         genConfig.get().setClean(extension.cleanSrc);
                     }
 
-                    File mcpConfig = ((DownloadMCPConfigTask) tasks.getByName("downloadConfig")).getOutput();
+                    DownloadMCPConfigTask dlMCP = (DownloadMCPConfigTask)tasks.getByName("downloadConfig");
 
                     if (createMcp2Srg.get().getSrg() == null) { //TODO: Make extractMCPData macro
                         TaskProvider<ExtractMCPData> ext = project.getTasks().register("extractSrg", ExtractMCPData.class);
-                        ext.get().setConfig(mcpConfig);
+                        ext.get().dependsOn(dlMCP);
+                        ext.get().setConfig(dlMCP.getOutput());
                         createMcp2Srg.get().setSrg(ext.get().getOutput());
                         createMcp2Srg.get().dependsOn(ext);
                     }
@@ -384,7 +385,8 @@ public class PatcherPlugin implements Plugin<Project> {
 
                     if (createExc.get().getStatics() == null) {
                         TaskProvider<ExtractMCPData> ext = project.getTasks().register("extractStatic", ExtractMCPData.class);
-                        ext.get().setConfig(mcpConfig);
+                        ext.get().dependsOn(dlMCP);
+                        ext.get().setConfig(dlMCP.getOutput());
                         ext.get().setKey("statics");
                         ext.get().setOutput(project.file("build/" + ext.get().getName() + "/output.txt"));
                         createExc.get().setStatics(ext.get().getOutput());
@@ -393,7 +395,8 @@ public class PatcherPlugin implements Plugin<Project> {
 
                     if (createExc.get().getConstructors() == null) {
                         TaskProvider<ExtractMCPData> ext = project.getTasks().register("extractConstructors", ExtractMCPData.class);
-                        ext.get().setConfig(mcpConfig);
+                        ext.get().dependsOn(dlMCP);
+                        ext.get().setConfig(dlMCP.getOutput());
                         ext.get().setKey("constructors");
                         ext.get().setOutput(project.file("build/" + ext.get().getName() + "/output.txt"));
                         createExc.get().setConstructors(ext.get().getOutput());
