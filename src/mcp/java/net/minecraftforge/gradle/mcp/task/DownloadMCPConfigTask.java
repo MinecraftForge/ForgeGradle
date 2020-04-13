@@ -29,6 +29,7 @@ import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 
 public class DownloadMCPConfigTask extends DefaultTask {
 
@@ -37,7 +38,12 @@ public class DownloadMCPConfigTask extends DefaultTask {
 
     @TaskAction
     public void downloadMCPConfig() throws IOException {
-        File file = getConfigFile();
+        File file;
+        try {
+            file = getConfigFile();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Could not get MCP config", e);
+        }
 
         if (getOutput().exists()) {
             if (FileUtils.contentEquals(file, getOutput())) {
@@ -57,7 +63,7 @@ public class DownloadMCPConfigTask extends DefaultTask {
     }
 
     @InputFile
-    private File getConfigFile() {
+    private File getConfigFile() throws IOException, URISyntaxException {
         return downloadConfigFile(config);
     }
 
@@ -74,7 +80,7 @@ public class DownloadMCPConfigTask extends DefaultTask {
         this.output = value;
     }
 
-    private File downloadConfigFile(String config) {
+    private File downloadConfigFile(String config) throws IOException, URISyntaxException {
         return MavenArtifactDownloader.manual(getProject(), config, false);
     }
 

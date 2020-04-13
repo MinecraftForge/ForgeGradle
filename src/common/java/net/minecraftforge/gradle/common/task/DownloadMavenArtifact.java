@@ -30,6 +30,7 @@ import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 
 public class DownloadMavenArtifact extends DefaultTask {
 
@@ -44,7 +45,11 @@ public class DownloadMavenArtifact extends DefaultTask {
     }
 
     public String getResolvedVersion() {
-        return MavenArtifactDownloader.getVersion(getProject(), _artifact.getDescriptor());
+        try {
+            return MavenArtifactDownloader.getVersion(getProject(), _artifact.getDescriptor());
+        } catch (IOException | URISyntaxException e) {
+            throw new RuntimeException("Could not resolve version", e);
+        }
     }
 
     @Input
@@ -79,7 +84,12 @@ public class DownloadMavenArtifact extends DefaultTask {
 
     @TaskAction
     public void run() throws IOException {
-        File out = MavenArtifactDownloader.download(getProject(), _artifact.getDescriptor(), getChanging());
+        File out;
+        try {
+            out = MavenArtifactDownloader.download(getProject(), _artifact.getDescriptor(), getChanging());
+        } catch (URISyntaxException ex) {
+            throw new IOException(ex);
+        }
         this.setDidWork(out != null && out.exists());
 
         if (FileUtils.contentEquals(out, output)) return;

@@ -29,6 +29,7 @@ import org.gradle.api.Project;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,12 +41,12 @@ public class SideAnnotationStripperFunction extends ExecuteFunction {
     private List<File> files;
     private String data;
 
-    public SideAnnotationStripperFunction(Project mcp, List<File> files) {
+    public SideAnnotationStripperFunction(Project mcp, List<File> files) throws IOException, URISyntaxException {
         super(getJar(mcp), new String[0], getArguments(files), new HashMap<>());
         this.files = files;
     }
 
-    private static File getJar(Project mcp) { //TODO: configurable version?
+    private static File getJar(Project mcp) throws IOException, URISyntaxException { //TODO: configurable version?
         return MavenArtifactDownloader.gradle(mcp, Utils.SIDESTRIPPER, false);
     }
 

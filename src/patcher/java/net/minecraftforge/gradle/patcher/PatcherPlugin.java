@@ -67,7 +67,9 @@ import org.gradle.api.tasks.compile.JavaCompile;
 
 import javax.annotation.Nonnull;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -525,7 +527,11 @@ public class PatcherPlugin implements Plugin<Project> {
                     throw new IllegalStateException("AccessTransformers specified, with no MCP Parent");
                 }
                 SetupMCPTask setupMCP = (SetupMCPTask) mcp.getTasks().getByName("setupMCP");
-                setupMCP.addPreDecompile(project.getName() + "AccessTransformer", new AccessTransformerFunction(mcp, extension.getAccessTransformers()));
+                try {
+                    setupMCP.addPreDecompile(project.getName() + "AccessTransformer", new AccessTransformerFunction(mcp, extension.getAccessTransformers()));
+                } catch (IOException | URISyntaxException e) {
+                    throw new RuntimeException("Could not register MCP setup transformer", e);
+                }
                 extension.getAccessTransformers().forEach(f -> {
                     userdevJar.get().from(f, e -> e.into("ats/"));
                     userdevConfig.get().addAT(f);
@@ -538,7 +544,11 @@ public class PatcherPlugin implements Plugin<Project> {
                     throw new IllegalStateException("SideAnnotationStrippers specified, with no MCP Parent");
                 }
                 SetupMCPTask setupMCP = (SetupMCPTask) mcp.getTasks().getByName("setupMCP");
-                setupMCP.addPreDecompile(project.getName() + "SideStripper", new SideAnnotationStripperFunction(mcp, extension.getSideAnnotationStrippers()));
+                try {
+                    setupMCP.addPreDecompile(project.getName() + "SideStripper", new SideAnnotationStripperFunction(mcp, extension.getSideAnnotationStrippers()));
+                } catch (IOException | URISyntaxException e) {
+                    throw new RuntimeException("Could not register MCP side stripper", e);
+                }
                 extension.getSideAnnotationStrippers().forEach(f -> {
                     userdevJar.get().from(f, e -> e.into("sas/"));
                     userdevConfig.get().addSAS(f);
@@ -635,16 +645,33 @@ public class PatcherPlugin implements Plugin<Project> {
                 String mcp_version = mcp.getExtensions().findByType(MCPExtension.class).getConfig().getVersion();
 
                 String suffix = extension.getNotchObf() ? mcp_version.substring(0, mcp_version.lastIndexOf('-')) : mcp_version + ":srg";
-                File client = MavenArtifactDownloader.generate(project, "net.minecraft:client:" + suffix, true);
-                File server = MavenArtifactDownloader.generate(project, "net.minecraft:server:" + suffix, true);
-                File joined = MavenArtifactDownloader.generate(project, "net.minecraft:joined:" + mcp_version + (extension.getNotchObf() ? "" : ":srg"), true);
-
-                if (client == null || !client.exists())
-                    throw new RuntimeException("Something horrible happenend, client " + (extension.getNotchObf() ? "notch" : "SRG") + " jar not found");
-                if (server == null || !server.exists())
-                    throw new RuntimeException("Something horrible happenend, server " + (extension.getNotchObf() ? "notch" : "SRG") + " jar not found");
-                if (joined == null || !joined.exists())
-                    throw new RuntimeException("Something horrible happenend, joined " + (extension.getNotchObf() ? "notch" : "SRG") + " jar not found");
+                File client;
+                try {
+                    client = MavenArtifactDownloader.generate(project, "net.minecraft:client:" + suffix, true);
+                    if (!client.exists()) {
+                        throw new FileNotFoundException(client.toString());
+                    }
+                } catch (IOException | URISyntaxException e) {
+                    throw new RuntimeException("Something horrible happened, client " + (extension.getNotchObf() ? "notch" : "SRG") + " jar not found", e);
+                }
+                File server = null;
+                try {
+                    server = MavenArtifactDownloader.generate(project, "net.minecraft:server:" + suffix, true);
+                    if (!server.exists()) {
+                        throw new FileNotFoundException(server.toString());
+                    }
+                } catch (IOException | URISyntaxException e) {
+                    throw new RuntimeException("Something horrible happened, server " + (extension.getNotchObf() ? "notch" : "SRG") + " jar not found", e);
+                }
+                File joined = null;
+                try {
+                    joined = MavenArtifactDownloader.generate(project, "net.minecraft:joined:" + mcp_version + (extension.getNotchObf() ? "" : ":srg"), true);
+                    if (!joined.exists()) {
+                        throw new FileNotFoundException(joined.toString());
+                    }
+                } catch (IOException | URISyntaxException e) {
+                    throw new RuntimeException("Something horrible happened, joined " + (extension.getNotchObf() ? "notch" : "SRG") + " jar not found", e);
+                }
 
                 TaskProvider<GenerateSRG> srg = extension.getNotchObf() ? createMcp2Obf : createMcp2Srg;
                 reobfJar.get().dependsOn(srg);

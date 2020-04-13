@@ -29,6 +29,7 @@ import org.gradle.api.Project;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,13 +42,13 @@ public class AccessTransformerFunction extends ExecuteFunction {
     private List<File> files;
     private String transformers;
 
-    public AccessTransformerFunction(Project mcp, List<File> files) {
+    public AccessTransformerFunction(Project mcp, List<File> files) throws IOException, URISyntaxException {
         super(getJar(mcp), new String[0], getArguments(files), new HashMap<>());
         this.loadData(Collections.emptyMap());
         this.files = files;
     }
 
-    private static File getJar(Project mcp) { //TODO: configurable version?
+    private static File getJar(Project mcp) throws IOException, URISyntaxException { //TODO: configurable version?
         return MavenArtifactDownloader.gradle(mcp, Utils.ACCESSTRANSFORMER, false);
     }
 

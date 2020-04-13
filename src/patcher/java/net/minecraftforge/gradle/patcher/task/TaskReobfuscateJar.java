@@ -41,6 +41,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -71,7 +72,12 @@ public class TaskReobfuscateJar extends DefaultTask {
 
     @TaskAction
     public void apply() throws IOException {
-        File jar = MavenArtifactDownloader.gradle(getProject(), getTool(), false);
+        File jar = null;
+        try {
+            jar = MavenArtifactDownloader.gradle(getProject(), getTool(), false);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Failed to download tool jar", e);
+        }
 
         Map<String, String> replace = new HashMap<>();
         replace.put("{input}", getInput().getAbsolutePath());

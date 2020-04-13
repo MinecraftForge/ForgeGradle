@@ -62,12 +62,11 @@ public class MavenArtifactDownloader {
 
     private static final Map<String, String> VERSIONS = new HashMap<>();
 
-
-    public static File download(Project project, String artifact, boolean changing) {
+    public static File download(Project project, String artifact, boolean changing) throws IOException, URISyntaxException {
         return _download(project, artifact, changing, true, true, true);
     }
 
-    public static String getVersion(Project project, String artifact) {
+    public static String getVersion(Project project, String artifact) throws IOException, URISyntaxException {
         Artifact art = Artifact.from(artifact);
         if (!art.getVersion().endsWith("+") && !art.isSnapshot())
             return art.getVersion();
@@ -75,59 +74,54 @@ public class MavenArtifactDownloader {
         return VERSIONS.get(artifact);
     }
 
-    public static File gradle(Project project, String artifact, boolean changing) {
+    public static File gradle(Project project, String artifact, boolean changing) throws IOException, URISyntaxException {
         return _download(project, artifact, changing, false, true, true);
     }
 
-    public static File generate(Project project, String artifact, boolean changing) {
+    public static File generate(Project project, String artifact, boolean changing) throws IOException, URISyntaxException {
         return _download(project, artifact, changing, true, false, true);
     }
 
-    public static File manual(Project project, String artifact, boolean changing) {
+    public static File manual(Project project, String artifact, boolean changing) throws IOException, URISyntaxException {
         return _download(project, artifact, changing, false, false, true);
     }
 
-
-    private static File _download(Project project, String artifact, boolean changing, boolean generated, boolean gradle, boolean manual) {
+    private static File _download(Project project, String artifact, boolean changing, boolean generated, boolean gradle, boolean manual) throws IOException, URISyntaxException {
         Artifact art = Artifact.from(artifact);
-        File ret = null;
-        try {
-            ret = CACHE.getIfPresent(artifact);
-            if (ret != null && !ret.exists()) {
-                CACHE.invalidate(artifact);
-                ret = null;
-            }
-
-            List<MavenArtifactRepository> mavens = new ArrayList<>();
-            List<GradleRepositoryAdapter> fakes = new ArrayList<>();
-            List<ArtifactRepository> others = new ArrayList<>();
-
-            project.getRepositories().forEach( repo -> {
-                if (repo instanceof MavenArtifactRepository)
-                    mavens.add((MavenArtifactRepository)repo);
-                else if (repo instanceof GradleRepositoryAdapter)
-                    fakes.add((GradleRepositoryAdapter)repo);
-                else
-                    others.add(repo);
-            });
-
-            if (ret == null && generated) {
-                ret = _generate(fakes, art);
-            }
-
-            if (ret == null && manual) {
-                ret = _manual(project, mavens, art, changing);
-            }
-
-            if (ret == null && gradle) {
-                ret = _gradle(project, others, art, changing);
-            }
-
-            if (ret != null)
-                CACHE.put(artifact, ret);
-        } catch (RuntimeException | IOException | URISyntaxException e) {
-            e.printStackTrace();
+        File ret;
+        ret = CACHE.getIfPresent(artifact);
+        if (ret != null && !ret.exists()) {
+            CACHE.invalidate(artifact);
+            ret = null;
         }
+
+        List<MavenArtifactRepository> mavens = new ArrayList<>();
+        List<GradleRepositoryAdapter> fakes = new ArrayList<>();
+        List<ArtifactRepository> others = new ArrayList<>();
+
+        project.getRepositories().forEach( repo -> {
+            if (repo instanceof MavenArtifactRepository)
+                mavens.add((MavenArtifactRepository)repo);
+            else if (repo instanceof GradleRepositoryAdapter)
+                fakes.add((GradleRepositoryAdapter)repo);
+            else
+                others.add(repo);
+        });
+
+        if (ret == null && generated) {
+            ret = _generate(fakes, art);
+        }
+
+        if (ret == null && manual) {
+            ret = _manual(project, mavens, art, changing);
+        }
+
+        if (ret == null && gradle) {
+            ret = _gradle(project, others, art, changing);
+        }
+
+        if (ret != null)
+            CACHE.put(artifact, ret);
         return ret;
     }
 
@@ -259,10 +253,7 @@ public class MavenArtifactDownloader {
         try {
             files = cfg.resolve();
         } catch (NullPointerException npe) {
-            // This happens for unknown reasons deep in Gradle code... so we SHOULD find a way to fix it, but
-            //honestly i'd rather deprecate this whole system and replace it with downloading things ourselves.
-            project.getLogger().error("Failed to download " + mine.getDescriptor() + " gradle exploded");
-            return null;
+            throw new RuntimeException("Failed to download " + mine.getDescriptor() + " gradle exploded", npe);
         }
         File ret = files.iterator().next(); //We only want the first, not transitive
 

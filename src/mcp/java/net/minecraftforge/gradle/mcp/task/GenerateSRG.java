@@ -22,6 +22,8 @@ package net.minecraftforge.gradle.mcp.task;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
+
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
@@ -78,7 +80,11 @@ public class GenerateSRG extends DefaultTask {
         String channel = mapping.substring(0, idx);
         String version = mapping.substring(idx + 1);
         String desc = MCPRepo.getMappingDep(channel, version);
-        return MavenArtifactDownloader.generate(getProject(), desc, false);
+        try {
+            return MavenArtifactDownloader.generate(getProject(), desc, false);
+        } catch (IOException | URISyntaxException e) {
+            throw new RuntimeException("Could not find names " + channel + ':' + version + ':' + desc, e);
+        }
     }
 
     @InputFile

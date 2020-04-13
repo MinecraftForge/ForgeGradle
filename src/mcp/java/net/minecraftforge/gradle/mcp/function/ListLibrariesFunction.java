@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.OutputStreamWriter;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -68,9 +69,12 @@ public class ListLibrariesFunction implements MCPFunction {
 
 
                 for (String artifact : lst) {
-                    File lib = MavenArtifactDownloader.gradle(environment.project, artifact, false);
-                    if (lib == null)
-                        throw new RuntimeException("Could not resolve download: " + artifact);
+                    File lib;
+                    try {
+                        lib = MavenArtifactDownloader.gradle(environment.project, artifact, false);
+                    } catch (URISyntaxException e) {
+                        throw new RuntimeException("Could not resolve download: " + artifact, e);
+                    }
 
                     files.add(lib);
                 }

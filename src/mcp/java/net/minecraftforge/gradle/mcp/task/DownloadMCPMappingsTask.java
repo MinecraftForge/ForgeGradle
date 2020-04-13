@@ -31,6 +31,7 @@ import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 
 public class DownloadMCPMappingsTask extends DefaultTask {
 
@@ -77,9 +78,12 @@ public class DownloadMCPMappingsTask extends DefaultTask {
         String channel = getMappings().substring(0, idx);
         String version = getMappings().substring(idx + 1);
         String artifact = MCPRepo.getMappingDep(channel, version);
-        File ret = MavenArtifactDownloader.generate(getProject(), artifact, false);
-        if (ret == null)
-            throw new IllegalStateException("Failed to download mappings: " + artifact);
+        File ret;
+        try {
+            ret = MavenArtifactDownloader.generate(getProject(), artifact, false);
+        } catch (IOException | URISyntaxException e) {
+            throw new IllegalStateException("Failed to download mappings: " + artifact, e);
+        }
         return ret;
     }
 

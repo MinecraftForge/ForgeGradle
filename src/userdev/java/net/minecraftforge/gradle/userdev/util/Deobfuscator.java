@@ -47,6 +47,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Random;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -192,6 +193,10 @@ public class Deobfuscator {
         String channel = mapping.substring(0, idx);
         String version = mapping.substring(idx + 1);
         String desc = MCPRepo.getMappingDep(channel, version);
-        return MavenArtifactDownloader.generate(project, desc, false);
+        try {
+            return MavenArtifactDownloader.generate(project, desc, false);
+        } catch (IOException | URISyntaxException e) {
+            throw new RuntimeException("Could not find mappings: " + desc, e);
+        }
     }
 }

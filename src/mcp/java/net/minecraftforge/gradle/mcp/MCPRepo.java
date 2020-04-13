@@ -53,6 +53,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -203,7 +204,7 @@ public class MCPRepo extends BaseRepo {
             .add("mcp", mcp);
     }
 
-    private File getMCP(String version) throws IOException {
+    private File getMCP(String version) throws IOException, URISyntaxException {
         return MavenArtifactDownloader.manual(project, "de.oceanlabs.mcp:mcp_config:" + version + "@zip", false);
     }
 
@@ -232,9 +233,14 @@ public class MCPRepo extends BaseRepo {
     }
 
     private File findPom(String side, String version) throws IOException {
-        File mcp = getMCP(version);
-        if (mcp == null)
+        File mcp;
+        try {
+            mcp = getMCP(version);
+        } catch (URISyntaxException e) {
+            debug("    Could not find pom: " + version);
+            e.printStackTrace(System.err);
             return null;
+        }
 
         File pom = cacheMC(side, version, null, "pom");
         debug("    Finding pom: " + pom);
@@ -299,9 +305,14 @@ public class MCPRepo extends BaseRepo {
     }
 
     private File findStepOutput(String side, String version, String classifier, String ext, String step) throws IOException {
-        File mcp = getMCP(version);
-        if (mcp == null)
+        File mcp;
+        try {
+            mcp = getMCP(version);
+        } catch (URISyntaxException e) {
+            debug("    Could not find step output: " + version);
+            e.printStackTrace(System.err);
             return null;
+        }
         File raw = cacheMC(side, version, classifier, ext);
         debug("  Finding " + step + ": " + raw);
         HashStore cache = commonHash(mcp).load(cacheMC(side, version, classifier, ext + ".input"));
@@ -339,9 +350,14 @@ public class MCPRepo extends BaseRepo {
     private File findRenames(String classifier, MappingFile.Format format, String version, boolean toObf) throws IOException {
         String ext = format.name().toLowerCase();
         //File names = findNames(version));
-        File mcp = getMCP(version);
-        if (mcp == null)
+        File mcp;
+        try {
+            mcp = getMCP(version);
+        } catch (URISyntaxException e) {
+            debug("    Could not find renames: " + version);
+            e.printStackTrace(System.err);
             return null;
+        }
 
         File file = cacheMCP(version, classifier, ext);
         debug("    Finding Renames: " + file);
@@ -370,7 +386,11 @@ public class MCPRepo extends BaseRepo {
         } else if ("snapshot".equals(channel) || "snapshot_nodoc".equals(channel) || "stable".equals(channel) || "stable_nodoc".equals(channel)) { //MCP
             String desc = "de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
             debug("    Mapping: " + desc);
-            return MavenArtifactDownloader.manual(project, desc, false);
+            try {
+                return MavenArtifactDownloader.manual(project, desc, false);
+            } catch (URISyntaxException e) {
+                throw new RuntimeException("Could not find nmes", e);
+            }
         }
         //TODO? Yarn/Other crowdsourcing?
         throw new IllegalArgumentException("Unknown mapping provider: " + mapping);
@@ -390,9 +410,15 @@ public class MCPRepo extends BaseRepo {
     private File findRenames(String classifier, MappingFile.Format format, String version, String mapping, boolean obf, boolean reverse) throws IOException {
         String ext = format.name().toLowerCase();
         File names = findNames(version);
-        File mcp = getMCP(version);
-        if (mcp == null || names == null)
+        if (names == null) return null;
+        File mcp;
+        try {
+            mcp = getMCP(version);
+        } catch (URISyntaxException e) {
+            debug("    Could not find renames: " + version);
+            e.printStackTrace(System.err);
             return null;
+        }
 
         File file = cacheMCP(version, classifier, ext);
         debug("    Finding Renames: " + file);
@@ -432,9 +458,16 @@ public class MCPRepo extends BaseRepo {
 
     private File findExtra(String side, String version) throws IOException {
         File raw = findRaw(side, version);
-        File mcp = getMCP(version);
-        if (raw == null || mcp == null)
+        if (raw == null)
             return null;
+        File mcp;
+        try {
+            mcp = getMCP(version);
+        } catch (URISyntaxException e) {
+            debug("    Could not find extra: " + version);
+            e.printStackTrace(System.err);
+            return null;
+        }
 
         File extra = cacheMC(side, version, "extra", "jar");
         HashStore cache = commonHash(mcp).load(cacheMC(side, version, "extra", "jar.input"))
@@ -459,18 +492,31 @@ public class MCPRepo extends BaseRepo {
             //mcpversion = version.substring(idx);
             version = version.substring(0, idx);
         }
-        File client = MavenArtifactDownloader.generate(project, "net.minecraft:client:" + version + ":mappings@txt", true);
-        File server = MavenArtifactDownloader.generate(project, "net.minecraft:server:" + version + ":mappings@txt", true);
-        if (client == null || server == null)
-            throw new IllegalStateException("Could not create " + mcpversion + " official mappings due to missing ProGuard mappings.");
+        File client = null;
+        try {
+            client = MavenArtifactDownloader.generate(project, "net.minecraft:client:" + version + ":mappings@txt", true);
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException("Could not create " + mcpversion + " official mappings due to missing ProGuard mappings (client).", e);
+        }
+        File server = null;
+        try {
+            server = MavenArtifactDownloader.generate(project, "net.minecraft:server:" + version + ":mappings@txt", true);
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException("Could not create " + mcpversion + " official mappings due to missing ProGuard mappings (server).", e);
+        }
 
         File tsrg = findRenames("obf_to_srg", MappingFile.Format.TSRG, mcpversion, false);
         if (tsrg == null)
             throw new IllegalStateException("Could not create " + mcpversion + " official mappings due to missing MCP's tsrg");
 
-        File mcp = getMCP(mcpversion);
-        if (mcp == null)
+        File mcp;
+        try {
+            mcp = getMCP(version);
+        } catch (URISyntaxException e) {
+            debug("    Could not find mappings: " + version);
+            e.printStackTrace(System.err);
             return null;
+        }
 
         File mappings = cacheMC("mapping", mcpversion, "mapping", "zip");
         HashStore cache = commonHash(mcp)

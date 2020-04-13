@@ -29,6 +29,9 @@ import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -100,9 +103,15 @@ public class MCPRuntime {
                 if (custom == null)
                     throw new IllegalArgumentException("Invalid MCP Config, Unknown function step type: " + step.getType() + " File: " + mcp_config);
 
-                File jar = MavenArtifactDownloader.manual(project, custom.getVersion(), false);
-                if (jar == null || !jar.exists())
-                    throw new IllegalArgumentException("Could not download MCP Config dependency: " + custom.getVersion());
+                File jar;
+                try {
+                    jar = MavenArtifactDownloader.manual(project, custom.getVersion(), false);
+                    if (!jar.isFile()) {
+                        throw new FileNotFoundException(jar.toString());
+                    }
+                } catch (IOException | URISyntaxException e) {
+                    throw new IllegalArgumentException("Could not download MCP Config dependency: " + custom.getVersion(), e);
+                }
                 function = new ExecuteFunction(jar, custom.getJvmArgs().toArray(new String[custom.getJvmArgs().size()]),
                                                     custom.getArgs().toArray(new String[custom.getArgs().size()]), Collections.emptyMap());
             }

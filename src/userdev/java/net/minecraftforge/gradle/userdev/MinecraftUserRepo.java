@@ -79,6 +79,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -347,9 +348,12 @@ public class MinecraftUserRepo extends BaseRepo {
             Patcher last = null;
             while (artifact != null) {
                 debug("    Parent: " + artifact);
-                File dep = MavenArtifactDownloader.manual(project, artifact, CHANGING_USERDEV);
-                if (dep == null)
-                    throw new IllegalStateException("Could not resolve dependency: " + artifact);
+                File dep;
+                try {
+                    dep = MavenArtifactDownloader.manual(project, artifact, CHANGING_USERDEV);
+                } catch (IOException | URISyntaxException e) {
+                    throw new IllegalStateException("Could not resolve dependency: " + artifact, e);
+                }
                 if (patcher) {
                     Patcher _new = new Patcher(project, dep, artifact);
                     if (parent == null)
@@ -441,12 +445,11 @@ public class MinecraftUserRepo extends BaseRepo {
         String desc = MCPRepo.getMappingDep(channel, version);
         debug("    Mapping: " + desc);
 
-        File ret = MavenArtifactDownloader.generate(project, desc, CHANGING_USERDEV);
-        if (ret == null) {
-            String message = "Could not download MCP Mappings: " + desc;
-            debug ("    " + message);
-            project.getLogger().error(message);
-            throw new IllegalStateException(message);
+        File ret;
+        try {
+            ret = MavenArtifactDownloader.generate(project, desc, CHANGING_USERDEV);
+        } catch (IOException | URISyntaxException e) {
+            throw new IllegalStateException("Could not download MCP Mappings: " + desc, e);
         }
         return ret;
     }
@@ -705,7 +708,12 @@ public class MinecraftUserRepo extends BaseRepo {
         boolean notch = parent != null && parent.getConfigV2() != null && parent.getConfigV2().getNotchObf();
 
         String desc = "net.minecraft:" + (isPatcher ? "joined" : NAME) + ":" + (notch ? mcp.getMCVersion() : mcp.getVersion() + ":srg");
-        File clean = MavenArtifactDownloader.generate(project, desc, true);
+        File clean;
+        try {
+            clean = MavenArtifactDownloader.generate(project, desc, true);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Could not generate clean jar", e);
+        }
 
         if (clean == null || !clean.exists()) {
             debug("  Failed to find MC Vanilla Base: " + desc);
@@ -1215,7 +1223,12 @@ public class MinecraftUserRepo extends BaseRepo {
         File target = cacheMapped(mapping, classifier, extension);
         debug("  Finding Classified: " + target);
 
-        File original = MavenArtifactDownloader.manual(project, Artifact.from(GROUP, NAME, VERSION, classifier, extension).getDescriptor(), CHANGING_USERDEV);
+        File original;
+        try {
+            original = MavenArtifactDownloader.manual(project, Artifact.from(GROUP, NAME, VERSION, classifier, extension).getDescriptor(), CHANGING_USERDEV);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Could not get original file", e);
+        }
         HashStore cache = commonHash(null); //TODO: Remap from SRG?
         if (original != null)
             cache.add("original", original);
@@ -1323,17 +1336,21 @@ public class MinecraftUserRepo extends BaseRepo {
                     throw new IllegalStateException("Invalid patcher dependency, missing MCP or parent: " + artifact);
 
                 if (config.universal != null) {
-                    universal = MavenArtifactDownloader.manual(project, config.universal, CHANGING_USERDEV);
-                    if (universal == null)
-                        throw new IllegalStateException("Invalid patcher dependency, could not resolve universal: " + universal);
+                    try {
+                        universal = MavenArtifactDownloader.manual(project, config.universal, CHANGING_USERDEV);
+                    } catch (URISyntaxException e) {
+                        throw new IllegalStateException("Invalid patcher dependency, could not resolve universal: " + config.universal, e);
+                    }
                 } else {
                     universal = null;
                 }
 
                 if (config.sources != null) {
-                    sources = MavenArtifactDownloader.manual(project, config.sources, CHANGING_USERDEV);
-                    if (sources == null)
-                        throw new IllegalStateException("Invalid patcher dependency, could not resolve sources: " + sources);
+                    try {
+                        sources = MavenArtifactDownloader.manual(project, config.sources, CHANGING_USERDEV);
+                    } catch (URISyntaxException e) {
+                        throw new IllegalStateException("Invalid patcher dependency, could not resolve sources: " + config.sources, e);
+                    }
                 } else {
                     sources = null;
                 }
@@ -1475,14 +1492,24 @@ public class MinecraftUserRepo extends BaseRepo {
                             String AT_HASH = MinecraftUserRepo.this.AT_HASH;
                             List<File> ATS = MinecraftUserRepo.this.ATS;
 
-                            AccessTransformerFunction function = new AccessTransformerFunction(project, ATS);
+                            AccessTransformerFunction function = null;
+                            try {
+                                function = new AccessTransformerFunction(project, ATS);
+                            } catch (IOException | URISyntaxException e) {
+                                throw new RuntimeException("Could not create access transformer", e);
+                            }
                             boolean emptyAT = true;
                             if (AT_HASH != null) {
                                 dir = new File(dir, AT_HASH);
                                 emptyAT = false;
                             }
 
-                            SideAnnotationStripperFunction stripper = new SideAnnotationStripperFunction(project, Collections.emptyList());
+                            SideAnnotationStripperFunction stripper = null;
+                            try {
+                                stripper = new SideAnnotationStripperFunction(project, Collections.emptyList());
+                            } catch (IOException | URISyntaxException e) {
+                                throw new RuntimeException("Could not create side stripper", e);
+                            }
                             boolean emptyStripper = true;
 
                             Patcher patcher = MinecraftUserRepo.this.parent;

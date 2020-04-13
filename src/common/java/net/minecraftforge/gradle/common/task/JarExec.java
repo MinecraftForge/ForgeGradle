@@ -26,6 +26,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.jar.Attributes;
@@ -117,7 +118,11 @@ public class JarExec extends DefaultTask {
     }
 
     public String getResolvedVersion() {
-        return MavenArtifactDownloader.getVersion(getProject(), getTool());
+        try {
+            return MavenArtifactDownloader.getVersion(getProject(), getTool());
+        } catch (IOException | URISyntaxException e) {
+            throw new RuntimeException("Could not resolve version", e);
+        }
     }
 
     @Input
@@ -130,8 +135,13 @@ public class JarExec extends DefaultTask {
 
     @InputFile
     public File getToolJar() {
-        if (_tool == null)
-            _tool = MavenArtifactDownloader.gradle(getProject(), getTool(), false);
+        if (_tool == null) {
+            try {
+                _tool = MavenArtifactDownloader.gradle(getProject(), getTool(), false);
+            } catch (IOException | URISyntaxException e) {
+                throw new RuntimeException("Could not locate tool jar", e);
+            }
+        }
         return _tool;
     }
 
