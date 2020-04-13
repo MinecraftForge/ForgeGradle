@@ -389,7 +389,7 @@ public class MCPRepo extends BaseRepo {
             try {
                 return MavenArtifactDownloader.manual(project, desc, false);
             } catch (URISyntaxException e) {
-                throw new RuntimeException("Could not find nmes", e);
+                throw new RuntimeException("Could not find names", e);
             }
         }
         //TODO? Yarn/Other crowdsourcing?
