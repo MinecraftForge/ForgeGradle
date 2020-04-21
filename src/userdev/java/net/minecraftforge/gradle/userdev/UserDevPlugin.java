@@ -257,6 +257,10 @@ public class UserDevPlugin implements Plugin<Project> {
                 minecraft.getDependencies().add(ext);
             }
 
+            project.getRepositories().maven(e -> {
+                e.setUrl(Utils.FORGE_MAVEN);
+            });
+
             if (!internalObfConfiguration.getDependencies().isEmpty()) {
                 deobfrepo = new DeobfuscatingRepo(project, internalObfConfiguration, deobfuscator);
                 if (deobfrepo.getResolvedOrigin() == null) {
@@ -272,9 +276,6 @@ public class UserDevPlugin implements Plugin<Project> {
                     .add(MCPRepo.create(project))
                     .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
                     .attach(project);
-            project.getRepositories().maven(e -> {
-                e.setUrl(Utils.FORGE_MAVEN);
-            });
             project.getRepositories().maven(e -> {
                 e.setUrl(Utils.MOJANG_MAVEN);
                 e.metadataSources(src -> src.artifact());
