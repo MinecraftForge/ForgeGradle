@@ -20,11 +20,10 @@
 
 package net.minecraftforge.gradle.common.util;
 
-import net.minecraftforge.gradle.common.task.DownloadAssets;
 import net.minecraftforge.gradle.common.task.ExtractNatives;
+
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.tasks.TaskProvider;
 import org.gradle.plugins.ide.api.XmlFileContentMerger;
 import org.gradle.plugins.ide.eclipse.GenerateEclipseClasspath;
 import org.gradle.plugins.ide.eclipse.model.Classpath;
@@ -36,11 +35,12 @@ import javax.annotation.Nonnull;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 public class EclipseHacks {
 
-    public static void doEclipseFixes(@Nonnull final MinecraftExtension minecraft, @Nonnull final ExtractNatives nativesTask, @Nonnull final DownloadAssets assetsTask, @Nonnull final TaskProvider<Task> makeSrcDirs) {
+    public static void doEclipseFixes(@Nonnull final MinecraftExtension minecraft, @Nonnull final ExtractNatives nativesTask, @Nonnull final List<? extends Task> setupTasks) {
         final Project project = minecraft.getProject();
         final File natives = nativesTask.getOutput();
 
@@ -54,7 +54,8 @@ public class EclipseHacks {
         final String LIB_ATTR = "org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY";
 
         project.getTasks().withType(GenerateEclipseClasspath.class, task -> {
-            task.dependsOn(nativesTask, assetsTask, makeSrcDirs.get());
+            task.dependsOn(nativesTask);
+            setupTasks.forEach(task::dependsOn);
         });
 
         classpathMerger.whenMerged(obj -> {
@@ -64,7 +65,7 @@ public class EclipseHacks {
             while (itr.hasNext()) {
                 ClasspathEntry entry = itr.next();
                 if (entry instanceof SourceFolder) {
-                    SourceFolder sf = (SourceFolder)entry; 
+                    SourceFolder sf = (SourceFolder)entry;
                     if (!paths.add(sf.getPath())) {
                         //Eclipse likes to duplicate things... No idea why, let's kill them off
                         itr.remove();

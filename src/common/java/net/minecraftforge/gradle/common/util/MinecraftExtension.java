@@ -23,20 +23,12 @@ package net.minecraftforge.gradle.common.util;
 import groovy.lang.Closure;
 import groovy.lang.GroovyObjectSupport;
 import groovy.lang.MissingPropertyException;
-import net.minecraftforge.gradle.common.task.DownloadAssets;
-import net.minecraftforge.gradle.common.task.ExtractNatives;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
-import org.gradle.api.Task;
-import org.gradle.api.plugins.JavaPluginConvention;
-import org.gradle.api.tasks.TaskProvider;
-
 import javax.inject.Inject;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -85,6 +77,7 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
 
     @Deprecated  //Remove when we can break things.
     public void setMappings(String mappings) {
+        project.getLogger().warn("Deprecated MinecraftExtension.setMappings called. Use mappings(channel, version)");
         int idx = mappings.lastIndexOf('_');
         if (idx == -1)
             throw new RuntimeException("Invalid mapping string format, must be {channel}_{version}. Consider using mappings(channel, version) directly.");
@@ -178,48 +171,4 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         }
         return sideAnnotationStrippers;
     }
-
-    @SuppressWarnings("UnstableApiUsage")
-    public void createRunConfigTasks(final TaskProvider<ExtractNatives> extractNatives, final TaskProvider<DownloadAssets> downloadAssets) {
-        createRunConfigTasks(extractNatives.get(), downloadAssets.get());
-    }
-
-    @SuppressWarnings("UnstableApiUsage")
-    public void createRunConfigTasks(final ExtractNatives extractNatives, final DownloadAssets downloadAssets) {
-        final TaskProvider<Task> prepareRuns = project.getTasks().register("prepareRuns", Task.class, task -> {
-            task.setGroup(RunConfig.RUNS_GROUP);
-            task.dependsOn(extractNatives, downloadAssets);
-        });
-
-        final TaskProvider<Task> makeSrcDirs = project.getTasks().register("makeSrcDirs", Task.class, task -> {
-            task.doFirst(t -> {
-                final JavaPluginConvention java = task.getProject().getConvention().getPlugin(JavaPluginConvention.class);
-
-                java.getSourceSets().forEach(s -> s.getAllSource()
-                        .getSrcDirs().stream().filter(f -> !f.exists()).forEach(File::mkdirs));
-            });
-        });
-
-        getRuns().forEach(RunConfig::mergeParents);
-
-        // Create run configurations _AFTER_ all projects have evaluated so that _ALL_ run configs exist and have been configured
-        project.getGradle().projectsEvaluated(gradle -> {
-            VersionJson json = null;
-
-            try {
-                json = Utils.loadJson(extractNatives.getMeta(), VersionJson.class);
-            } catch (IOException ignored) {
-            }
-
-            List<String> additionalClientArgs = json != null ? json.getPlatformJvmArgs() : Collections.emptyList();
-
-            getRuns().forEach(RunConfig::mergeChildren);
-            getRuns().forEach(run -> run.createRunTask(prepareRuns, additionalClientArgs));
-
-            EclipseHacks.doEclipseFixes(this, extractNatives, downloadAssets, makeSrcDirs);
-
-            IDEUtils.createIDEGenRunsTasks(this, prepareRuns, makeSrcDirs);
-        });
-    }
-
 }

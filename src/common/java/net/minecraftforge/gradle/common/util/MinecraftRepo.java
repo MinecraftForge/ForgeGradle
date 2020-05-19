@@ -157,7 +157,7 @@ public class MinecraftRepo extends BaseRepo {
             return null;
 
         File mappings = cache("versions", version, "mcp_mappings.tsrg");
-        HashStore cache = commonCache(cache("version", version, "mcp_mappings.tsrg"));
+        HashStore cache = commonCache(cache("versions", version, "mcp_mappings.tsrg"));
         cache.add(mcp);
 
         if (!cache.isSame() || !mappings.exists()) {

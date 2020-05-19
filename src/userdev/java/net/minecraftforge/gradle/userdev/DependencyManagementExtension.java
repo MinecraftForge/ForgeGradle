@@ -41,7 +41,7 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
         return deobf(dependency, null);
     }
 
-    public Dependency deobf(Object dependency, Closure configure){
+    public Dependency deobf(Object dependency, Closure<?> configure){
         Dependency baseDependency = project.getDependencies().create(dependency, configure);
         project.getConfigurations().getByName(UserDevPlugin.OBF).getDependencies().add(baseDependency);
         Dependency sourceDependency = project.getDependencies().create(baseDependency.getGroup() + ":" + baseDependency.getName() + ":" + baseDependency.getVersion() + ":sources", configure);

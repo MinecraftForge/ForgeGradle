@@ -45,8 +45,6 @@ public class MCPConfigV1 extends Config {
         return get(new ByteArrayInputStream(data));
     }
 
-
-
     private String version; // Minecraft version
     private Map<String, Object> data;
     private Map<String, List<Step>> steps;
@@ -140,10 +138,10 @@ public class MCPConfigV1 extends Config {
     }
 
     public static class Function {
-        private String version; //Maven artifact for the jar to run
-        private String repo; //Maven repo to download the jar from
-        private List<String> args;
-        private List<String> jvmargs;
+        protected String version; //Maven artifact for the jar to run
+        protected String repo; //Maven repo to download the jar from
+        protected List<String> args;
+        protected List<String> jvmargs;
 
         public String getVersion() {
             return version;
@@ -153,7 +151,7 @@ public class MCPConfigV1 extends Config {
         }
 
         public String getRepo() {
-            return repo == null ? "https://libraries.minecraft.net/" : repo;
+            return repo == null ? Utils.MOJANG_MAVEN : repo;
         }
         public void setRepo(String value) {
             this.repo = value;

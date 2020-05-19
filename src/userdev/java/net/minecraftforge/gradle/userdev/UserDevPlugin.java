@@ -22,16 +22,13 @@ package net.minecraftforge.gradle.userdev;
 
 import net.minecraftforge.gradle.common.task.*;
 import net.minecraftforge.gradle.common.util.BaseRepo;
+import net.minecraftforge.gradle.common.util.MappingFile;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.common.util.VersionJson;
 import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.mcp.task.DownloadMCPMappingsTask;
-import net.minecraftforge.gradle.common.task.TaskApplyMappings;
-import net.minecraftforge.gradle.common.task.TaskApplyRangeMap;
-import net.minecraftforge.gradle.common.task.TaskExtractExistingFiles;
-import net.minecraftforge.gradle.common.task.TaskExtractRangeMap;
-import net.minecraftforge.gradle.userdev.tasks.GenerateSRG;
+import net.minecraftforge.gradle.mcp.task.GenerateSRG;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 import net.minecraftforge.gradle.userdev.util.DeobfuscatingRepo;
 import net.minecraftforge.gradle.userdev.util.Deobfuscator;
@@ -139,6 +136,7 @@ public class UserDevPlugin implements Plugin<Project> {
 
         TaskProvider<DownloadMavenArtifact> downloadMcpConfig = project.getTasks().register("downloadMcpConfig", DownloadMavenArtifact.class);
         TaskProvider<ExtractMCPData> extractSrg = project.getTasks().register("extractSrg", ExtractMCPData.class);
+        TaskProvider<GenerateSRG> createSrgToMcp = project.getTasks().register("createSrgToMcp", GenerateSRG.class);
         TaskProvider<GenerateSRG> createMcpToSrg = project.getTasks().register("createMcpToSrg", GenerateSRG.class);
         TaskProvider<DownloadMCMeta> downloadMCMeta = project.getTasks().register("downloadMCMeta", DownloadMCMeta.class);
         TaskProvider<ExtractNatives> extractNatives = project.getTasks().register("extractNatives", ExtractNatives.class);
@@ -147,6 +145,15 @@ public class UserDevPlugin implements Plugin<Project> {
         extractSrg.configure(task -> {
             task.dependsOn(downloadMcpConfig);
             task.setConfig(() -> downloadMcpConfig.get().getOutput());
+        });
+
+        createSrgToMcp.configure(task -> {
+            task.setReverse(false);
+            task.dependsOn(extractSrg);
+            task.setSrg(extractSrg.get().getOutput());
+            task.setMappings(extension.getMappings());
+            task.setFormat(MappingFile.Format.SRG);
+            task.setOutput(project.file("build/" + createSrgToMcp.getName() + "/output.srg"));
         });
 
         createMcpToSrg.configure(task -> {
@@ -250,6 +257,10 @@ public class UserDevPlugin implements Plugin<Project> {
                 minecraft.getDependencies().add(ext);
             }
 
+            project.getRepositories().maven(e -> {
+                e.setUrl(Utils.FORGE_MAVEN);
+            });
+
             if (!internalObfConfiguration.getDependencies().isEmpty()) {
                 deobfrepo = new DeobfuscatingRepo(project, internalObfConfiguration, deobfuscator);
                 if (deobfrepo.getResolvedOrigin() == null) {
@@ -266,16 +277,13 @@ public class UserDevPlugin implements Plugin<Project> {
                     .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
                     .attach(project);
             project.getRepositories().maven(e -> {
-                e.setUrl(Utils.FORGE_MAVEN);
-            });
-            project.getRepositories().maven(e -> {
-                e.setUrl("https://libraries.minecraft.net/");
+                e.setUrl(Utils.MOJANG_MAVEN);
                 e.metadataSources(src -> src.artifact());
             });
             project.getRepositories().mavenCentral(); //Needed for MCP Deps
             if (mcrepo == null)
                 throw new IllegalStateException("Missing 'minecraft' dependency entry.");
-            mcrepo.validate(minecraft, extension.getRuns().getAsMap(), extractNatives.get(), downloadAssets.get()); //This will set the MC_VERSION property.
+            mcrepo.validate(minecraft, extension.getRuns().getAsMap(), extractNatives.get(), downloadAssets.get(), createSrgToMcp.get()); //This will set the MC_VERSION property.
 
             String mcVer = (String) project.getExtensions().getExtraProperties().get("MC_VERSION");
             String mcpVer = (String) project.getExtensions().getExtraProperties().get("MCP_VERSION");
@@ -306,7 +314,7 @@ public class UserDevPlugin implements Plugin<Project> {
             final String finalAssetIndex = assetIndex;
 
             extension.getRuns().forEach(runConfig -> runConfig.token("asset_index", finalAssetIndex));
-            extension.createRunConfigTasks(extractNatives, downloadAssets);
+            Utils.createRunConfigTasks(extension, extractNatives.get(), downloadAssets.get(), createSrgToMcp.get());
         });
     }
 

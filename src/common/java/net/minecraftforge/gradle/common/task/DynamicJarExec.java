@@ -18,53 +18,52 @@
  * USA
  */
 
-package net.minecraftforge.gradle.patcher.task;
-
-import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.OutputFile;
-
-import net.minecraftforge.gradle.common.task.JarExec;
-import net.minecraftforge.gradle.common.util.Utils;
+package net.minecraftforge.gradle.common.task;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-@Deprecated  //Remove next major version, this is a duplicate of userdev ApplyBinPatches
-public class ApplyBinPatches extends JarExec {
-    private Supplier<File> clean;
-    private File input;
-    private File output;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.OutputFile;
 
-    public ApplyBinPatches() {
-        tool = Utils.BINPATCHER;
-        args = new String[] { "--clean", "{clean}", "--output", "{output}", "--apply", "{input}"};
-    }
+public class DynamicJarExec extends JarExec {
+	private File input;
+	private File output;
+	private Map<String, File> data;
 
     @Override
     protected List<String> filterArgs() {
         Map<String, String> replace = new HashMap<>();
-        replace.put("{clean}", getClean().getAbsolutePath());
-        replace.put("{output}", getOutput().getAbsolutePath());
         replace.put("{input}", getInput().getAbsolutePath());
+        replace.put("{output}", getOutput().getAbsolutePath());
+        if (this.data != null)
+        	this.data.forEach((key,value) -> replace.put('{' + key + '}', value.getAbsolutePath()));
 
         return Arrays.stream(getArgs()).map(arg -> replace.getOrDefault(arg, arg)).collect(Collectors.toList());
     }
 
-    @InputFile
-    public File getClean() {
-        return clean.get();
-    }
-    public void setClean(File value) {
-        this.clean = () -> value;
-    }
-    public void setClean(Supplier<File> value) {
-        this.clean = value;
-    }
+	@InputFiles
+	@Optional
+	public Collection<File> getData() {
+		return this.data == null ? Collections.emptyList() : this.data.values();
+	}
+
+	public void data(String key, File file) {
+		this.setData(key, file);
+	}
+	public void setData(String key, File file) {
+		if (this.data == null)
+			this.data = new HashMap<>();
+		this.data.put(key, file);
+	}
 
     @InputFile
     public File getInput() {

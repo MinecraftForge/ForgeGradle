@@ -22,6 +22,7 @@ package net.minecraftforge.gradle.patcher.task;
 
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
@@ -125,6 +126,16 @@ public class TaskGeneratePatches extends DefaultTask {
         return modified;
     }
 
+    @Input
+    public String getOriginalPrefix() {
+    	return this.originalPrefix;
+    }
+
+    @Input
+    public String getModifiedPrefix() {
+    	return this.modifiedPrefix;
+    }
+
     @OutputDirectory
     public File getPatches() {
         return patches;
@@ -136,6 +147,14 @@ public class TaskGeneratePatches extends DefaultTask {
 
     public void setModified(File modified) {
         this.modified = modified;
+    }
+
+    public void setOriginalPrefix(String value) {
+    	this.originalPrefix = value;
+    }
+
+    public void setModifiedPrefix(String value) {
+    	this.modifiedPrefix = value;
     }
 
     public void setPatches(File patches) {

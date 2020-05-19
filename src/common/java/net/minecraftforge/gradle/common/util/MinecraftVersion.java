@@ -22,7 +22,9 @@ package net.minecraftforge.gradle.common.util;
 
 public class MinecraftVersion implements Comparable<MinecraftVersion> {
     public static final MinecraftVersion NEGATIVE = from("-1");
+    public static final MinecraftVersion v1_13 = from("1.13");
     public static final MinecraftVersion v1_14_4 = from("1.14.4");
+    public static final MinecraftVersion v1_16 = from("1.16");
     public static MinecraftVersion from(String version) {
         return new MinecraftVersion(version);
     }

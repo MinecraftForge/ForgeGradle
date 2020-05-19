@@ -29,12 +29,21 @@ import com.google.gson.JsonSyntaxException;
 
 import groovy.lang.Closure;
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
+import net.minecraftforge.gradle.common.task.ExtractNatives;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
+import net.minecraftforge.gradle.common.util.runs.RunConfigGenerator;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.TaskProvider;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLException;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -55,8 +64,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Enumeration;
@@ -75,6 +86,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class Utils {
+    private static final boolean ENABLE_TEST_CERTS = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_certs", "true"));
+    private static final boolean ENABLE_TEST_JAVA  = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_java", "true"));
+
     public static final Gson GSON = new GsonBuilder()
         .registerTypeAdapter(MCPConfigV1.Step.class, new MCPConfigV1.Step.Deserializer())
         .registerTypeAdapter(VersionJson.Argument.class, new VersionJson.Argument.Deserializer())
@@ -82,8 +96,9 @@ public class Utils {
     private static final int CACHE_TIMEOUT = 1000 * 60 * 60 * 1; //1 hour, Timeout used for version_manifest.json so we dont ping their server every request.
                                                           //manifest doesn't include sha1's so we use this for the per-version json as well.
     public static final String FORGE_MAVEN = "https://files.minecraftforge.net/maven/";
+    public static final String MOJANG_MAVEN = "https://libraries.minecraft.net/";
     public static final String BINPATCHER =  "net.minecraftforge:binarypatcher:1.+:fatjar";
-    public static final String ACCESSTRANSFORMER = "net.minecraftforge:accesstransformers:0.14.+:fatjar";
+    public static final String ACCESSTRANSFORMER = "net.minecraftforge:accesstransformers:1.0.+:fatjar";
     public static final String SPECIALSOURCE = "net.md-5:SpecialSource:1.8.3:shaded";
     public static final String SRG2SOURCE =  "net.minecraftforge:Srg2Source:5.+:fatjar";
     public static final String SIDESTRIPPER = "net.minecraftforge:mergetool:1.0.7:fatjar";
@@ -485,21 +500,41 @@ public class Utils {
         return toCapitalize.length() > 1 ? toCapitalize.substring(0, 1).toUpperCase() + toCapitalize.substring(1) : toCapitalize;
     }
 
-    public static void checkJavaRange(JavaVersionParser.JavaVersion minVersionInclusive, JavaVersionParser.JavaVersion maxVersionExclusive)
-    {
+    public static void checkJavaRange( @Nullable JavaVersionParser.JavaVersion minVersionInclusive, @Nullable JavaVersionParser.JavaVersion maxVersionExclusive) {
         JavaVersionParser.JavaVersion currentJavaVersion = JavaVersionParser.getCurrentJavaVersion();
-        if (currentJavaVersion.compareTo(minVersionInclusive) < 0 || currentJavaVersion.compareTo(maxVersionExclusive) >= 0)
-            throw new RuntimeException(String.format("Found java version %s. Minimum required is %s. Versions %s and newer are not supported yet.",
-                            currentJavaVersion, minVersionInclusive, maxVersionExclusive));
+        if (minVersionInclusive != null && currentJavaVersion.compareTo(minVersionInclusive) < 0)
+            throw new RuntimeException(String.format("Found java version %s. Minimum required is %s.", currentJavaVersion, minVersionInclusive));
+        if (maxVersionExclusive != null && currentJavaVersion.compareTo(maxVersionExclusive) >= 0)
+            throw new RuntimeException(String.format("Found java version %s. Versions %s and newer are not supported yet.", currentJavaVersion, maxVersionExclusive));
     }
 
-    public static void checkJavaVersion()
-    {
-        checkJavaRange(
+    public static void checkJavaVersion() {
+        if (ENABLE_TEST_JAVA) {
+            checkJavaRange(
                 // Mininum must be update 101 as it's the first one to include Let's Encrypt certificates.
                 JavaVersionParser.parseJavaVersion("1.8.0_101"),
-                JavaVersionParser.parseJavaVersion("11.0.0")
-        );
+                null //TODO: Add JDK range check to MCPConfig?
+            );
+        }
+
+        if (ENABLE_TEST_CERTS) {
+            testServerConnection(FORGE_MAVEN);
+            testServerConnection(MOJANG_MAVEN);
+        }
+    }
+
+    private static void testServerConnection(String url) {
+        try {
+            HttpsURLConnection conn = (HttpsURLConnection)new URL(url).openConnection();
+            conn.setRequestMethod("HEAD");
+            conn.connect();
+            conn.getResponseCode();
+        } catch (SSLException e) {
+            throw new RuntimeException(String.format("Failed to validate certificate for %s, Most likely cause is an outdated JDK. Try updating at https://adoptopenjdk.net/ " +
+                    "To disable this check re-run with -Dnet.minecraftforge.gradle.test_certs=false", url), e);
+        } catch (IOException e) {
+            //Normal connection failed, not the point of this test so ignore
+        }
     }
 
     public static HttpURLConnection connectHttpWithRedirects(URL url) throws IOException {
@@ -553,5 +588,48 @@ public class Utils {
         ret.setTime(time);
         TimeZone.setDefault(_default);
         return ret;
+    }
+
+    public static void createRunConfigTasks(final MinecraftExtension extension, final ExtractNatives extractNatives, final Task... setupTasks) {
+        List<Task> setupTasksLst = new ArrayList<>();
+        for (Task t : setupTasks)
+            setupTasksLst.add(t);
+
+        final TaskProvider<Task> prepareRuns = extension.getProject().getTasks().register("prepareRuns", Task.class, task -> {
+            task.setGroup(RunConfig.RUNS_GROUP);
+            task.dependsOn(extractNatives);
+            setupTasksLst.forEach(task::dependsOn);
+        });
+
+        final TaskProvider<Task> makeSrcDirs = extension.getProject().getTasks().register("makeSrcDirs", Task.class, task -> {
+            task.doFirst(t -> {
+                final JavaPluginConvention java = task.getProject().getConvention().getPlugin(JavaPluginConvention.class);
+
+                java.getSourceSets().forEach(s -> s.getAllSource()
+                        .getSrcDirs().stream().filter(f -> !f.exists()).forEach(File::mkdirs));
+            });
+        });
+        setupTasksLst.add(makeSrcDirs.get());
+
+        extension.getRuns().forEach(RunConfig::mergeParents);
+
+        // Create run configurations _AFTER_ all projects have evaluated so that _ALL_ run configs exist and have been configured
+        extension.getProject().getGradle().projectsEvaluated(gradle -> {
+            VersionJson json = null;
+
+            try {
+                json = Utils.loadJson(extractNatives.getMeta(), VersionJson.class);
+            } catch (IOException ignored) {
+            }
+
+            List<String> additionalClientArgs = json != null ? json.getPlatformJvmArgs() : Collections.emptyList();
+
+            extension.getRuns().forEach(RunConfig::mergeChildren);
+            extension.getRuns().forEach(run -> RunConfigGenerator.createRunTask(run, extension.getProject(), prepareRuns, additionalClientArgs));
+
+            EclipseHacks.doEclipseFixes(extension, extractNatives, setupTasksLst);
+
+            RunConfigGenerator.createIDEGenRunsTasks(extension, prepareRuns, makeSrcDirs, additionalClientArgs);
+        });
     }
 }

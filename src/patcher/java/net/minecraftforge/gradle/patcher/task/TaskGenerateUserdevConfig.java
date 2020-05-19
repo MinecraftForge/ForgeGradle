@@ -25,8 +25,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -35,6 +38,7 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -44,6 +48,8 @@ import com.google.common.io.Files;
 import groovy.lang.Closure;
 import net.minecraftforge.gradle.common.config.MCPConfigV1.Function;
 import net.minecraftforge.gradle.common.config.UserdevConfigV1;
+import net.minecraftforge.gradle.common.config.UserdevConfigV2;
+import net.minecraftforge.gradle.common.config.UserdevConfigV2.DataFunction;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPExtension;
@@ -67,6 +73,12 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
     private String[] args;
     private List<String> libraries;
     private String inject;
+    private DataFunction processor;
+    private Map<String, File> processorData = new HashMap<>();
+    private String patchesOriginalPrefix;
+    private String patchesModifiedPrefix;
+    private boolean notchObf = false;
+    private List<String> universalFilters;
 
     @Inject
     public TaskGenerateUserdevConfig(@Nonnull final Project project) {
@@ -75,8 +87,8 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
 
     @TaskAction
     public void apply() throws IOException {
-        UserdevConfigV1 json = new UserdevConfigV1(); //TODO: Move this to plugin so we can re-use the names in both tasks?
-        json.spec = 1;
+        UserdevConfigV2 json = new UserdevConfigV2(); //TODO: Move this to plugin so we can re-use the names in both tasks?
+        json.spec = isV2() ? 2 : 1;
         json.binpatches = "joined.lzma";
         json.sources = source;
         json.universal = universal;
@@ -95,6 +107,15 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
         json.binpatcher = new Function();
         json.binpatcher.setVersion(getTool());
         json.binpatcher.setArgs(Arrays.asList(args));
+
+        if (isV2()) {
+            json.processor = this.processor;
+            json.patchesOriginalPrefix = this.patchesOriginalPrefix;
+            json.patchesModifiedPrefix = this.patchesModifiedPrefix;
+            json.setNotchObf(this.notchObf);
+            if (this.universalFilters != null)
+                this.universalFilters.forEach(json::addUniversalFilter);
+        }
 
         Files.write(Utils.GSON.toJson(json).getBytes(StandardCharsets.UTF_8), getOutput());
     }
@@ -121,6 +142,14 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
                 json.mcp = mcp.getConfig().toString();;
             }
         }
+    }
+
+    private boolean isV2() {
+        return this.notchObf ||
+            this.processor != null ||
+            (this.universalFilters != null && !this.universalFilters.isEmpty()) ||
+            !"a/".equals(patchesOriginalPrefix) ||
+            !"b/".equals(patchesModifiedPrefix);
     }
 
     @Input
@@ -177,7 +206,7 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
         this.args = value;
     }
 
-    @Input
+    @InputFiles
     public Set<File> getATs() {
         return this.ats;
     }
@@ -185,7 +214,7 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
         this.ats.add(value);
     }
 
-    @Input
+    @InputFiles
     public Set<File> getSASs() {
         return this.sass;
     }
@@ -193,7 +222,7 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
         this.sass.add(value);
     }
 
-    @Input
+    @InputFiles
     public Set<File> getSRGs() {
         return this.srgs;
     }
@@ -232,6 +261,96 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
         closure.setResolveStrategy(Closure.DELEGATE_FIRST);
         closure.setDelegate(runConfig);
         closure.call();
+    }
+
+    private DataFunction ensureProcessor() {
+        if (this.processor == null)
+            this.processor = new DataFunction();
+        return this.processor;
+    }
+    public void setProcessor(DataFunction value) {
+        ensureProcessor();
+        this.processor.setVersion(value.getVersion());
+        this.processor.setRepo(value.getRepo());
+        this.processor.setArgs(value.getArgs());
+        this.processor.setJvmArgs(value.getJvmArgs());
+    }
+
+    @Input
+    @Optional
+    public String getProcessorTool() {
+        return this.processor == null ? null : this.processor.getVersion();
+    }
+    public void setProcessorTool(String value) {
+        ensureProcessor().setVersion(value);
+    }
+
+    @Input
+    @Optional
+    public String getProcessorRepo() {
+        return this.processor == null ? null : this.processor.getRepo();
+    }
+    public void setProcessorRepo(String value) {
+        ensureProcessor().setRepo(value);
+    }
+
+    @Input
+    @Optional
+    public List<String> getProcessorArgs() {
+        return this.processor == null ? null : this.processor.getArgs();
+    }
+    public void setProcessorTool(String... values) {
+        ensureProcessor().setArgs(Arrays.asList(values));
+    }
+
+    @InputFiles
+    @Optional
+    public Collection<File> getProcessorFiles() {
+        return this.processorData.values();
+    }
+    public void addProcessorData(String key, File file) {
+        this.processorData.put(key, file);
+        ensureProcessor().setData(key,  "processor/" + file.getName());
+    }
+
+    @Input
+    @Optional
+    public String getPatchesOriginalPrefix() {
+        return this.patchesOriginalPrefix;
+    }
+    public void setPatchesOriginalPrefix(String value) {
+        this.patchesOriginalPrefix = value;
+    }
+
+    @Input
+    @Optional
+    public String getPatchesModifiedPrefix() {
+        return this.patchesModifiedPrefix;
+    }
+    public void setPatchesModifiedPrefix(String value) {
+        this.patchesModifiedPrefix = value;
+    }
+
+    @Input
+    public boolean getNotchObf() {
+        return this.notchObf;
+    }
+    public void setNotchObf(boolean value) {
+        this.notchObf = value;
+    }
+
+    @Input
+    @Optional
+    public List<String> getUniversalFilters() {
+        return this.universalFilters;
+    }
+    public void universalFilter(String value) {
+        this.addUniversalFilter(value);
+    }
+    public void addUniversalFilter(String value) {
+        if (universalFilters == null)
+            universalFilters = new ArrayList<>();
+        this.universalFilters.add(value);
     }
 
     @OutputFile

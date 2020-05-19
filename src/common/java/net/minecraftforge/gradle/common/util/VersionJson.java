@@ -62,6 +62,9 @@ public class VersionJson {
     }
 
     public List<String> getPlatformJvmArgs() {
+        if (arguments == null || arguments.jvm == null)
+            return Collections.emptyList();
+
         return Stream.of(arguments.jvm).filter(arg -> arg.rules != null && arg.isAllowed()).
                 flatMap(arg -> arg.value.stream()).
                 map(s -> {
