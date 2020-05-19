@@ -24,7 +24,6 @@ import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
 import net.minecraftforge.gradle.common.util.*;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.*;
-import org.gradle.internal.resolve.ArtifactNotFoundException;
 
 import java.io.File;
 import java.io.IOException;
@@ -127,13 +126,7 @@ public class DeobfuscatingRepo extends BaseRepo {
     }
 
     private File findSource(Artifact artifact, String mapping) throws IOException {
-        Optional<File> orig;
-        try {
-            orig = findArtifactFile(artifact);
-        } catch (ArtifactNotFoundException e) {
-            // Missing sources aren't important, ignore
-            return null;
-        }
+        Optional<File> orig = findArtifactFile(artifact);
         if (!orig.isPresent()) {
             return null;
         }
