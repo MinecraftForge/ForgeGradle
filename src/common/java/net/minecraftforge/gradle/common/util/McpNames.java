@@ -99,7 +99,7 @@ public class McpNames {
 
             if (javadocs) {
                 if (!injectJavadoc(lines, line, _package, innerClasses))
-                    break;
+                    javadocs = false;
             }
             lines.add(replaceInLine(line));
         }
