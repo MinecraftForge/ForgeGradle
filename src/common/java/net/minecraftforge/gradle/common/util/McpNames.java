@@ -97,8 +97,10 @@ public class McpNames {
             if(m.find())
                 _package = m.group("name") + ".";
 
-            if (javadocs)
-                injectJavadoc(lines, line, _package, innerClasses);
+            if (javadocs) {
+                if (!injectJavadoc(lines, line, _package, innerClasses))
+                    break;
+            }
             lines.add(replaceInLine(line));
         }
         return Joiner.on(NEWLINE).join(lines);
@@ -116,7 +118,7 @@ public class McpNames {
      * @param _package the name of the package this file is declared to be in, in com.example format;
      * @param innerClasses current position in inner class
      */
-    private void injectJavadoc(List<String> lines, String line, String _package, Deque<Pair<String, Integer>> innerClasses) {
+    private boolean injectJavadoc(List<String> lines, String line, String _package, Deque<Pair<String, Integer>> innerClasses) {
         // methods
         Matcher matcher = METHOD_JAVADOC_PATTERN.matcher(line);
         if (matcher.find()) {
@@ -125,7 +127,7 @@ public class McpNames {
                 insertAboveAnnotations(lines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, true));
 
             // worked, so return and don't try the fields.
-            return;
+            return true;
         }
 
         // fields
@@ -135,7 +137,7 @@ public class McpNames {
             if (!Strings.isNullOrEmpty(javadoc))
                 insertAboveAnnotations(lines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, false));
 
-            return;
+            return true;
         }
 
         //classes
@@ -150,7 +152,7 @@ public class McpNames {
                 insertAboveAnnotations(lines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, true));
             }
 
-            return;
+            return true;
         }
 
         //detect curly braces for inner class stacking/end identification
@@ -161,10 +163,13 @@ public class McpNames {
                 if (len == innerClasses.peek().getRight()) {
                     innerClasses.pop();
                 } else if (len < innerClasses.peek().getRight()) {
-                    throw new IllegalArgumentException("Failed to properly track class blocks around class " + innerClasses.peek().getLeft() + ":" + (lines.size() + 1));
+                    System.err.println("Failed to properly track class blocks around class " + innerClasses.peek().getLeft() + ":" + (lines.size() + 1));
+                    return false;
                 }
             }
         }
+
+        return true;
     }
 
     /** Inserts the given javadoc line into the list of lines before any annotations */

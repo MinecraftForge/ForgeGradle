@@ -1106,6 +1106,7 @@ public class MinecraftUserRepo extends BaseRepo {
             debug("  Finding Source: Patched not found");
             return null;
         }
+
         if (mapping == null) {
             debug("  Finding Source: No Renames");
             return patched;
@@ -1117,6 +1118,12 @@ public class MinecraftUserRepo extends BaseRepo {
             return null;
         }
 
+        File obf2srg = findObfToSrg(MappingFile.Format.TSRG);
+        if (obf2srg == null) {
+            debug("  Finding Source: No obf2srg");
+            return patched;
+        }
+
         HashStore cache = commonHash(names);
 
         File sources = cacheMapped(mapping, "sources", "jar");
@@ -1125,6 +1132,9 @@ public class MinecraftUserRepo extends BaseRepo {
         if (cache.isSame() && sources.exists()) {
             debug("    Cache hit");
         } else if (sources.exists() || generate) {
+            MappingFile obf_to_srg = MappingFile.load(obf2srg);
+            Set<String> vanilla = obf_to_srg.getClasses().stream().map(e -> e.getMapped()).collect(Collectors.toSet());
+
             McpNames map = McpNames.load(names);
 
             if (!sources.getParentFile().exists())
@@ -1136,10 +1146,11 @@ public class MinecraftUserRepo extends BaseRepo {
                 ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(sources))) {
                 ZipEntry _old;
                 while ((_old = zin.getNextEntry()) != null) {
-                    zout.putNextEntry(Utils.getStableEntry(_old.getName()));
+                    String name = _old.getName();
+                    zout.putNextEntry(Utils.getStableEntry(name));
 
-                    if (_old.getName().endsWith(".java")) {
-                        String mapped = map.rename(zin, addJavadocs);
+                    if (name.endsWith(".java")) {
+                        String mapped = map.rename(zin, addJavadocs && vanilla.contains(name.substring(0, name.length() - 5)));
                         IOUtils.write(mapped, zout);
                     } else {
                         IOUtils.copy(zin, zout);
