@@ -5,4 +5,4 @@ ForgeGradle
 
 Minecraft mod development framework used by Forge and FML for the gradle build system
 
-Requires Gradle 5.0 - 5.6.4
+Requires Gradle 4.0 - 5.6.4
