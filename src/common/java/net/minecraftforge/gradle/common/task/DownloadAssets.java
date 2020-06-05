@@ -37,7 +37,7 @@ import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.common.util.VersionJson;
 
 public class DownloadAssets extends DefaultTask {
-    private static final String RESOURCE_REPO = "http://resources.download.minecraft.net/";
+    private static final String RESOURCE_REPO = "https://resources.download.minecraft.net/";
     private File meta;
 
     @TaskAction
@@ -45,10 +45,28 @@ public class DownloadAssets extends DefaultTask {
         AssetIndex index = Utils.loadJson(getIndex(), AssetIndex.class);
         List<String> keys = new ArrayList<>(index.objects.keySet());
         Collections.sort(keys);
+        // TODO: Test and implement path for other OSs
+        String assetsPath;
+        switch(VersionJson.OS.getCurrent()) {
+            case WINDOWS: assetsPath = FileUtils.getUserDirectoryPath() + "\\AppData\\Roaming\\.minecraft\\assets\\objects";
+                break;
+            case OSX:
+            case LINUX:
+            case UNKNOWN:
+            default: assetsPath = null;
+        }
         for (String key : keys) {
             Asset asset = index.objects.get(key);
             File target = Utils.getCache(getProject(), "assets", "objects", asset.getPath());
             if (!target.exists()) {
+                if (assetsPath != null) {
+                    File localFile = FileUtils.getFile(assetsPath + "\\" + asset.getPath());
+                    if (localFile.exists()) {
+                        getProject().getLogger().lifecycle("Copying local object: " + asset.getPath() + " Asset: " + key);
+                        FileUtils.copyFile(localFile, target);
+                        continue;
+                    }
+                }
                 URL url = new URL(RESOURCE_REPO + asset.getPath());
                 getProject().getLogger().lifecycle("Downloading: " + url + " Asset: " + key);
                 FileUtils.copyURLToFile(url, target);
