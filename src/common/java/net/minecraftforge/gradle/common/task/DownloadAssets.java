@@ -45,12 +45,12 @@ public class DownloadAssets extends DefaultTask {
         AssetIndex index = Utils.loadJson(getIndex(), AssetIndex.class);
         List<String> keys = new ArrayList<>(index.objects.keySet());
         Collections.sort(keys);
-        File assetsPath = new File(Utils.getMCDir(), "\\assets\\objects");
+        File assetsPath = new File(Utils.getMCDir(), "/assets/objects");
         for (String key : keys) {
             Asset asset = index.objects.get(key);
             File target = Utils.getCache(getProject(), "assets", "objects", asset.getPath());
             if (!target.exists()) {
-                File localFile = FileUtils.getFile(assetsPath + "\\" + asset.getPath());
+                File localFile = FileUtils.getFile(assetsPath + "/" + asset.getPath());
                 if (localFile.exists()) {
                     getProject().getLogger().lifecycle("Copying local object: " + asset.getPath() + " Asset: " + key);
                     FileUtils.copyFile(localFile, target);
