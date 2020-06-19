@@ -21,9 +21,10 @@
 package net.minecraftforge.gradle.mcp.function;
 
 import net.minecraftforge.gradle.common.util.HashStore;
-import net.minecraftforge.gradle.common.util.MinecraftVersion;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
+import net.minecraftforge.srgutils.MinecraftVersion;
+
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
@@ -42,6 +43,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 public class InjectFunction implements MCPFunction {
+    private static final MinecraftVersion v1_14_4 = MinecraftVersion.from("1.14.4");
 
     private String inject;
     private String template;
@@ -95,7 +97,7 @@ public class InjectFunction implements MCPFunction {
                     String pkg = entry.isDirectory() && !entry.getName().endsWith("/") ? entry.getName() : entry.getName().indexOf('/') == -1 ? "" : entry.getName().substring(0, entry.getName().lastIndexOf('/'));
                     if (visited.add(pkg)) {
                         if (!pkg.startsWith("net/minecraft/") &&
-                            (!pkg.startsWith("com/mojang/") || environment.getMinecraftVersion().compareTo(MinecraftVersion.v1_14_4) <= 0)) //Add com/mojang package-infos in 1.15+, could probably get away without the version check
+                            (!pkg.startsWith("com/mojang/") || environment.getMinecraftVersion().compareTo(v1_14_4) <= 0)) //Add com/mojang package-infos in 1.15+, could probably get away without the version check
                             continue;
                         zos.putNextEntry(Utils.getStableEntry(pkg + "/package-info.java"));
                         zos.write(template.replace("{PACKAGE}", pkg.replaceAll("/", ".")).getBytes(StandardCharsets.UTF_8));

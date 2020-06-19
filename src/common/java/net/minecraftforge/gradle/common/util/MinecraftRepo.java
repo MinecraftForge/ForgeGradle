@@ -53,6 +53,7 @@ import net.minecraftforge.gradle.common.config.Config;
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import net.minecraftforge.gradle.common.util.VersionJson.OS;
+import net.minecraftforge.srgutils.MinecraftVersion;
 
 public class MinecraftRepo extends BaseRepo {
     private static MinecraftRepo INSTANCE;
@@ -60,6 +61,7 @@ public class MinecraftRepo extends BaseRepo {
     public static final String MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
     public static final String CURRENT_OS = OS.getCurrent().getName();
     private static int CACHE_BUSTER = 1;
+    private static final MinecraftVersion v1_14_4 = MinecraftVersion.from("1.14.4");
 
     private final Repository repo;
     private final boolean offline;
@@ -251,7 +253,7 @@ public class MinecraftRepo extends BaseRepo {
     }
 
     private File findExtra(String side, String version, boolean forceStable, File json) throws IOException {
-        boolean stable = MinecraftVersion.v1_14_4.compareTo(MinecraftVersion.from(version)) < 0;
+        boolean stable = v1_14_4.compareTo(MinecraftVersion.from(version)) < 0;
         File raw = findRaw(side, version, json);
         File mappings = findMcpMappings(version);
         File extra = cache("versions", version, side + "-extra" + (forceStable && !stable ? "-stable" : "") + ".jar");
@@ -269,7 +271,7 @@ public class MinecraftRepo extends BaseRepo {
     }
 
     private File findSlim(String side, String version, boolean forceStable, File json) throws IOException {
-        boolean stable = MinecraftVersion.v1_14_4.compareTo(MinecraftVersion.from(version)) < 0;
+        boolean stable = v1_14_4.compareTo(MinecraftVersion.from(version)) < 0;
         File raw = findRaw(side, version, json);
         File mappings = findMcpMappings(version);
         File extra = cache("versions", version, side + "-slim" + (forceStable && !stable ? "-stable" : "") + ".jar");
@@ -335,7 +337,7 @@ public class MinecraftRepo extends BaseRepo {
     }
 
     private File findData(String side, String version, boolean forceStable, File json) throws IOException {
-        boolean stable = MinecraftVersion.v1_14_4.compareTo(MinecraftVersion.from(version)) < 0 || forceStable;
+        boolean stable = v1_14_4.compareTo(MinecraftVersion.from(version)) < 0 || forceStable;
         File raw = findRaw(side, version, json);
         File extra = cache("versions", version, side + "-data" + (forceStable && !stable ? "-stable" : "") + ".jar");
         HashStore cache = commonCache(cache("versions", version, side + "-data" + (forceStable && !stable ? "-stable" : "") + ".jar"))

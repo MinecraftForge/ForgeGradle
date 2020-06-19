@@ -84,6 +84,7 @@ dependencies {
     commonImplementation 'net.minecraftforge:artifactural:1.0.+'
     commonImplementation 'org.apache.maven:maven-artifact:3.6.0'
     commonImplementation 'org.apache.httpcomponents:httpclient:4.3.3'
+    commonImplementation 'net.minecraftforge:srgutils:0.2.12'
 
     mcpImplementation sourceSets.common.output
     patcherImplementation sourceSets.mcp.output

@@ -47,7 +47,6 @@ import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.MappingFile;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.McpNames;
-import net.minecraftforge.gradle.common.util.MinecraftVersion;
 import net.minecraftforge.gradle.common.util.POMBuilder;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
@@ -63,6 +62,7 @@ import net.minecraftforge.gradle.userdev.tasks.ApplyMCPFunction;
 import net.minecraftforge.gradle.userdev.tasks.HackyJavaCompile;
 import net.minecraftforge.gradle.userdev.tasks.RenameJar;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
+import net.minecraftforge.srgutils.MinecraftVersion;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -104,6 +104,7 @@ import java.util.zip.ZipOutputStream;
 
 public class MinecraftUserRepo extends BaseRepo {
     public static final boolean CHANGING_USERDEV = false; //Used when testing to update the userdev cache every 30 seconds.
+    private static final MinecraftVersion v1_13 = MinecraftVersion.from("1.13");
     private final Project project;
     private final String GROUP;
     private final String NAME;
@@ -337,7 +338,7 @@ public class MinecraftUserRepo extends BaseRepo {
             String classifier = "userdev";
             if ("net.minecraftforge".equals(GROUP) && "forge".equals(NAME)) {
                 MinecraftVersion mcver = MinecraftVersion.from(VERSION.split("-")[0]);
-                if (mcver.compareTo(MinecraftVersion.v1_13) < 0)
+                if (mcver.compareTo(v1_13) < 0)
                     classifier = "userdev3";
             }
 
