@@ -61,6 +61,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     private List<SourceSet> sources;
     private List<RunConfig> parents, children;
     private List<String> args, jvmArgs;
+    private boolean forceExit = true;
 
     private Map<String, String> env, props, tokens;
 
@@ -257,6 +258,18 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         }
 
         return workDir;
+    }
+
+    public void forceExit(boolean forceExit) {
+        this.setForceExit(forceExit);
+    }
+
+    public void setForceExit(boolean forceExit) {
+        this.forceExit = forceExit;
+    }
+
+    public boolean getForceExit() {
+        return this.forceExit;
     }
 
     public NamedDomainObjectContainer<ModConfig> mods(@SuppressWarnings("rawtypes") Closure closure) {
