@@ -46,6 +46,7 @@ public class TaskApplyPatches extends DefaultTask {
     private File clean;
     private File patches;
     private File output = getProject().file("build/" + getName() + "/output.zip");
+    private File rejects = getProject().file("build/" + getName() + "/rejects.zip");
     private int maxFuzz = 0;
     private boolean canonicalizeAccess = true;
     private boolean canonicalizeWhitespace = true;
@@ -67,10 +68,10 @@ public class TaskApplyPatches extends DefaultTask {
             .filter(p -> Files.isRegularFile(p) && p.getFileName().toString().endsWith(".patch"))
             .map(p -> {
                 boolean success = true;
-                ContextualPatch patch = ContextualPatch.create(PatchFile.from(p.toFile()), context, getOriginalPrefix(), getModifiedPrefix());
+                String name = p.toFile().getAbsolutePath().substring(getPatches().getAbsolutePath().length() + 1);
+                ContextualPatch patch = ContextualPatch.create(PatchFile.from(name, p.toFile()), context, getOriginalPrefix(), getModifiedPrefix());
                 patch.setCanonialization(getCanonicalizeAccess(), getCanonicalizeWhitespace());
                 patch.setMaxFuzz(getMaxFuzz());
-                String name = p.toFile().getAbsolutePath().substring(getPatches().getAbsolutePath().length() + 1);
 
                 try {
                     getLogger().info("Apply Patch: " + name);
@@ -104,11 +105,27 @@ public class TaskApplyPatches extends DefaultTask {
 
             if (all_success || !failOnErrors) {
                 context.save(getOutput());
+                saveRejects(context);
             } else {
+                saveRejects(context);
                 throw new RuntimeException("Failed to apply patches. See log for details.");
             }
         } catch (IOException e1) {
             throw new RuntimeException(e1);
+        }
+    }
+
+    private void saveRejects(ZipContext context) throws IOException {
+        File rejectsFile = getRejects();
+        if (!rejectsFile.getName().endsWith(".zip") && !rejectsFile.getName().endsWith(".jar") && !rejectsFile.isFile()) {
+            File tmp = new File(getTemporaryDir(), "rejects_tmp.zip");
+            context.saveRejects(tmp);
+            getProject().copy(spec -> {
+                spec.from(getProject().zipTree(tmp));
+                spec.into(rejectsFile);
+            });
+        } else {
+            context.saveRejects(rejectsFile);
         }
     }
 
@@ -162,6 +179,11 @@ public class TaskApplyPatches extends DefaultTask {
         return output;
     }
 
+    @OutputFile
+    public File getRejects() {
+        return rejects;
+    }
+
     public void setClean(File clean) {
         this.clean = clean;
     }
@@ -194,4 +216,7 @@ public class TaskApplyPatches extends DefaultTask {
         output = value;
     }
 
+    public void setRejects(File rejects) {
+        this.rejects = rejects;
+    }
 }

@@ -210,6 +210,9 @@ public final class ContextualPatch {
         }
         for (HunkReport hunk : hunkReports) {
             if (hunk.status == PatchStatus.Failure) {
+                if (!dryRun) {
+                    contextProvider.setFailed(patch, patchFile.getName() + ".rej", makeReject(hunkReports));
+                }
                 return new PatchReport(patch.targetPath, patch.binary, PatchStatus.Failure, hunk.failure, hunkReports);
             }
         }
@@ -272,6 +275,18 @@ public final class ContextualPatch {
                 }
             }
         }
+    }
+
+    private List<String> makeReject(List<HunkReport> hunkReports) {
+        List<String> lines = new ArrayList<>();
+        for (HunkReport report : hunkReports) {
+            if (report.hasFailed()) {
+                lines.add("++++ REJECTED HUNK: " + report.index);
+                lines.addAll(report.hunk.lines);
+                lines.add("++++ END HUNK");
+            }
+        }
+        return lines;
     }
 
     private HunkReport applyHunk(List<String> target, Hunk hunk, int hunkID) throws PatchException {

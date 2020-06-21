@@ -147,7 +147,10 @@ public class PatcherPlugin implements Plugin<Project> {
         });
         applyConfig.configure(task -> {
             task.setPatches(extension.patches);
-            task.setFailOnErrors(!project.hasProperty("UPDATING"));
+            if (project.hasProperty("UPDATING")) {
+                task.setFailOnErrors(false);
+                task.setRejects(project.file("rejects/"));
+            }
         });
         toMCPConfig.configure(task -> {
             task.dependsOn(dlMappingsConfig, applyConfig);
