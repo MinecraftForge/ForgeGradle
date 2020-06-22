@@ -202,7 +202,9 @@ public abstract class RunConfigGenerator
             runConfig.getAllSources().stream().map(SourceSet::getRuntimeClasspath).forEach(task::classpath);
 
             // Stop after this run task so it doesn't try to execute the run tasks, and their dependencies, of sub projects
-            task.doLast(t -> System.exit(0)); // TODO: Find better way to stop gracefully
+            if (runConfig.getForceExit()) {
+                task.doLast(t -> System.exit(0)); // TODO: Find better way to stop gracefully
+            }
         });
     }
 
