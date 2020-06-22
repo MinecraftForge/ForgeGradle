@@ -59,6 +59,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 import java.util.zip.ZipOutputStream;
 
 /**
@@ -96,6 +97,7 @@ public class MCPRepo extends BaseRepo {
     private static final String NAMES_MCP = "^(mcp_config)$";
     private static final String STEP_MERGE = "merge"; //TODO: Design better way to get steps output, for now hardcode
     private static final String STEP_RENAME = "rename";
+    private static final Pattern MCP_CONFIG_VERSION = Pattern.compile("\\d{8}\\.\\d{6}"); //Timestamp: YYYYMMDD.HHMMSS
 
     //This is the artifact we expose that is a zip containing SRG->Official fields and methods.
     public static final String MAPPING_DEP = "net.minecraft:mappings_{CHANNEL}:{VERSION}@zip";
@@ -208,9 +210,10 @@ public class MCPRepo extends BaseRepo {
     }
 
     private String getMCVersion(String version) {
-        int idx = version.indexOf('-');
-        if (idx != -1)
+        int idx = version.lastIndexOf('-');
+        if (idx != -1 && MCP_CONFIG_VERSION.matcher(version.substring(idx)).matches()) {
             return version.substring(0, idx);
+        }
         return version;
     }
 
