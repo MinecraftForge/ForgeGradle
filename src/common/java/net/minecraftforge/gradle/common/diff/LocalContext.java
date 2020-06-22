@@ -27,7 +27,7 @@ class LocalContext implements PatchContextProvider {
     }
 
     @Override
-    public void setFailed(ContextualPatch.SinglePatch patch, String patchFileName, List<String> lines) throws IOException {
+    public void setFailed(ContextualPatch.SinglePatch patch, List<String> lines) throws IOException {
         if (lines.isEmpty()) return;
         try (PrintWriter p = new PrintWriter(new FileOutputStream(patch.targetFile + ".rej"))) {
             for (String line : lines) {

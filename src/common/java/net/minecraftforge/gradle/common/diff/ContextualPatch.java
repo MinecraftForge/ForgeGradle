@@ -211,7 +211,7 @@ public final class ContextualPatch {
         for (HunkReport hunk : hunkReports) {
             if (hunk.status == PatchStatus.Failure) {
                 if (!dryRun) {
-                    contextProvider.setFailed(patch, patchFile.getName() + ".rej", makeReject(hunkReports));
+                    contextProvider.setFailed(patch, makeReject(hunkReports));
                 }
                 return new PatchReport(patch.targetPath, patch.binary, PatchStatus.Failure, hunk.failure, hunkReports);
             }

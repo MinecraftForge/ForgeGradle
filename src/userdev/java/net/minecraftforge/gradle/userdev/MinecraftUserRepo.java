@@ -1452,7 +1452,7 @@ public class MinecraftUserRepo extends BaseRepo {
                         if (!entry.getName().startsWith(config.patches) || !entry.getName().endsWith(".patch"))
                             continue;
                         byte[] data = IOUtils.toByteArray(zin);
-                        patches.put(entry.getName().substring(0, entry.getName().length() - 6), PatchFile.from(entry.getName(), data));
+                        patches.put(entry.getName().substring(0, entry.getName().length() - 6), PatchFile.from(data));
                     }
                 }
             }

@@ -73,8 +73,8 @@ public class ZipContext implements PatchContextProvider {
     }
 
     @Override
-    public void setFailed(ContextualPatch.SinglePatch patch, String patchFileName, List<String> lines) throws IOException {
-        rejects.put(patchFileName, lines);
+    public void setFailed(ContextualPatch.SinglePatch patch, List<String> lines) throws IOException {
+        rejects.put(patch.targetPath + ".rej", lines);
     }
 
     public void save(File file) throws IOException {

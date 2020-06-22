@@ -68,10 +68,10 @@ public class TaskApplyPatches extends DefaultTask {
             .filter(p -> Files.isRegularFile(p) && p.getFileName().toString().endsWith(".patch"))
             .map(p -> {
                 boolean success = true;
-                String name = p.toFile().getAbsolutePath().substring(getPatches().getAbsolutePath().length() + 1);
-                ContextualPatch patch = ContextualPatch.create(PatchFile.from(name, p.toFile()), context, getOriginalPrefix(), getModifiedPrefix());
+                ContextualPatch patch = ContextualPatch.create(PatchFile.from(p.toFile()), context, getOriginalPrefix(), getModifiedPrefix());
                 patch.setCanonialization(getCanonicalizeAccess(), getCanonicalizeWhitespace());
                 patch.setMaxFuzz(getMaxFuzz());
+                String name = p.toFile().getAbsolutePath().substring(getPatches().getAbsolutePath().length() + 1);
 
                 try {
                     getLogger().info("Apply Patch: " + name);

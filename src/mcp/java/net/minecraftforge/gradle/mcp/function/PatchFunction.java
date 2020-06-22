@@ -78,7 +78,7 @@ public class PatchFunction implements MCPFunction {
 
             boolean success = true;
             for (Entry<String, String> entry : patches.entrySet()) {
-                ContextualPatch patch = ContextualPatch.create(PatchFile.from(entry.getKey(), entry.getValue()), context);
+                ContextualPatch patch = ContextualPatch.create(PatchFile.from(entry.getValue()), context);
                 patch.setCanonialization(true, false); //We are applying MCP patches, Which can have access transformers, but not refactors.
                 patch.setMaxFuzz(0); //They should also never fuzz.
 
