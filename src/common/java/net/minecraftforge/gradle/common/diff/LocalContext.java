@@ -1,6 +1,8 @@
 package net.minecraftforge.gradle.common.diff;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.List;
 
 class LocalContext implements PatchContextProvider {
@@ -24,4 +26,13 @@ class LocalContext implements PatchContextProvider {
         contextualPatch.writeFile(patch, data);
     }
 
+    @Override
+    public void setFailed(ContextualPatch.SinglePatch patch, List<String> lines) throws IOException {
+        if (lines.isEmpty()) return;
+        try (PrintWriter p = new PrintWriter(new FileOutputStream(patch.targetFile + ".rej"))) {
+            for (String line : lines) {
+                p.println(line);
+            }
+        }
+    }
 }

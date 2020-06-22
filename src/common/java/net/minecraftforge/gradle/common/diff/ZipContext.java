@@ -29,6 +29,7 @@ public class ZipContext implements PatchContextProvider {
 
     private final ZipFile zip;
     private final Map<String, List<String>> modified = new HashMap<>();
+    private final Map<String, List<String>> rejects = new HashMap<>();
     private final Set<String> delete = new HashSet<>();
     private final Map<String, byte[]> binary = new HashMap<>();
 
@@ -71,6 +72,11 @@ public class ZipContext implements PatchContextProvider {
         }
     }
 
+    @Override
+    public void setFailed(ContextualPatch.SinglePatch patch, List<String> lines) throws IOException {
+        rejects.put(patch.targetPath + ".rej", lines);
+    }
+
     public void save(File file) throws IOException {
         File parent = file.getParentFile();
         if (!parent.exists())
@@ -106,6 +112,24 @@ public class ZipContext implements PatchContextProvider {
             out.closeEntry();
         }
         return files;
+    }
+
+    public void saveRejects(File file) throws IOException{
+        File parent = file.getParentFile();
+        if (!parent.exists())
+            parent.mkdirs();
+
+        try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(file))) {
+            saveRejects(out);
+        }
+    }
+
+    public void saveRejects(ZipOutputStream out) throws IOException {
+        for (Map.Entry<String, List<String>> entry : rejects.entrySet()) {
+            putNextEntry(out, entry.getKey());
+            out.write(String.join("\n", entry.getValue()).getBytes(StandardCharsets.UTF_8));
+            out.closeEntry();
+        }
     }
 
     private void putNextEntry(ZipOutputStream zip, String name) throws IOException {

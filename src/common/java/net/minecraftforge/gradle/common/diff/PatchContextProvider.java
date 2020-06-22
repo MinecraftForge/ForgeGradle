@@ -9,4 +9,5 @@ public interface PatchContextProvider {
 
     void setData(ContextualPatch.SinglePatch patch, List<String> data) throws IOException;
 
+    void setFailed(ContextualPatch.SinglePatch patch, List<String> lines) throws IOException;
 }
