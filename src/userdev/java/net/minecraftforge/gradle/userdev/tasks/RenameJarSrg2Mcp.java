@@ -42,7 +42,7 @@ public class RenameJarSrg2Mcp extends JarExec {
 
     public RenameJarSrg2Mcp() {
         tool = Utils.INSTALLERTOOLS;
-        args = new String[] { "--task", "SRG_TO_MCP", "--input", "{input}", "--output", "{output}", "--mcp", "{mappings}", "--strip-signatures", "{strip}"};
+        args = new String[] { "--task", "SRG_TO_MCP", "--input", "{input}", "--output", "{output}", "--mcp", "{mappings}", "{strip}"};
     }
 
     @Override
@@ -51,9 +51,9 @@ public class RenameJarSrg2Mcp extends JarExec {
         replace.put("{input}", getInput().getAbsolutePath());
         replace.put("{output}", getOutput().getAbsolutePath());
         replace.put("{mappings}", getMappings().getAbsolutePath());
-        replace.put("{strip}", Boolean.toString(getSignatureRemoval()));
+        replace.put("{strip}", getSignatureRemoval()? "--strip-signatures" : "");
 
-        return Arrays.stream(getArgs()).map(arg -> replace.getOrDefault(arg, arg)).collect(Collectors.toList());
+        return Arrays.stream(getArgs()).map(arg -> replace.getOrDefault(arg, arg)).filter(it -> !it.isEmpty()).collect(Collectors.toList());
     }
 
     public boolean getSignatureRemoval() {
