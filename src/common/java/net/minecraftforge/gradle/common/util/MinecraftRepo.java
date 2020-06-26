@@ -30,6 +30,7 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -62,6 +63,7 @@ public class MinecraftRepo extends BaseRepo {
     public static final String CURRENT_OS = OS.getCurrent().getName();
     private static int CACHE_BUSTER = 1;
     private static final MinecraftVersion v1_14_4 = MinecraftVersion.from("1.14.4");
+    private static final Pattern MCP_CONFIG_VERSION = Pattern.compile("\\d{8}\\.\\d{6}"); //Timestamp: YYYYMMDD.HHMMSS
 
     private final Repository repo;
     private final boolean offline;
@@ -120,23 +122,26 @@ public class MinecraftRepo extends BaseRepo {
         String classifier = artifact.getClassifier() == null ? "" : artifact.getClassifier();
         String ext = artifact.getExtension();
 
-        File json = findVersion(version);
+        File json = findVersion(getMCVersion(version));
         if (json == null)
             return null; //Not a vanilla version, MCP?
 
         debug("  " + REPO_NAME + " Request: " + artifact.getGroup() + ":" + side + ":" + version + ":" + classifier + "@" + ext);
 
+        /* MCP Repo will take care and add the extra libraries.
         if ("pom".equals(ext)) {
             return findPom(side, version, json);
-        } else if ("json".equals(ext)) {
+        } else
+         */
+        if ("json".equals(ext)) {
             if ("".equals(classifier))
-                return findVersion(version);
+                return findVersion(getMCVersion(version));
         } else {
             switch (classifier) {
                 case "":         return findRaw(side, version, json);
-                case "slim":     return findSlim(side, version, forceStable, json);
-                case "data":     return findData(side, version, forceStable, json);
-                case "extra":    return findExtra(side, version, forceStable, json);
+                case "slim":     return findSlim(side, version, forceStable, json); //Deprecated - Use MCP Specific version
+                case "data":     return findData(side, version, forceStable, json); //Deprecated - Use extra
+                case "extra":    return findExtra(side, version, forceStable, json); //Deprecated - Use MCP Specific version
                 case "mappings": return findMappings(side, version, json);
             }
         }
@@ -170,6 +175,14 @@ public class MinecraftRepo extends BaseRepo {
         }
 
         return mappings;
+    }
+
+    public static String getMCVersion(String version) {
+        int idx = version.lastIndexOf('-');
+        if (idx != -1 && MCP_CONFIG_VERSION.matcher(version.substring(idx + 1)).matches()) {
+            return version.substring(0, idx);
+        }
+        return version;
     }
 
     private File findVersion(String version) throws IOException {
@@ -232,11 +245,11 @@ public class MinecraftRepo extends BaseRepo {
     }
 
     private File findMappings(String side, String version, File json_file) throws IOException {
-        return findDownloadEntry(side + "_mappings", cache("versions", version, side + "_mappings.txt"), version, json_file);
+        return findDownloadEntry(side + "_mappings", cache("versions", getMCVersion(version), side + "_mappings.txt"), getMCVersion(version), json_file);
     }
 
     private File findRaw(String side, String version, File json_file) throws IOException {
-        return findDownloadEntry(side, cache("versions", version, side + ".jar"), version, json_file);
+        return findDownloadEntry(side, cache("versions", getMCVersion(version), side + ".jar"), getMCVersion(version), json_file);
     }
 
     private File findDownloadEntry(String key, File target, String version, File json_file) throws IOException {
@@ -253,7 +266,7 @@ public class MinecraftRepo extends BaseRepo {
     }
 
     private File findExtra(String side, String version, boolean forceStable, File json) throws IOException {
-        boolean stable = v1_14_4.compareTo(MinecraftVersion.from(version)) < 0;
+        boolean stable = v1_14_4.compareTo(MinecraftVersion.from(getMCVersion(version))) < 0;
         File raw = findRaw(side, version, json);
         File mappings = findMcpMappings(version);
         File extra = cache("versions", version, side + "-extra" + (forceStable && !stable ? "-stable" : "") + ".jar");
@@ -271,7 +284,7 @@ public class MinecraftRepo extends BaseRepo {
     }
 
     private File findSlim(String side, String version, boolean forceStable, File json) throws IOException {
-        boolean stable = v1_14_4.compareTo(MinecraftVersion.from(version)) < 0;
+        boolean stable = v1_14_4.compareTo(MinecraftVersion.from(getMCVersion(version))) < 0;
         File raw = findRaw(side, version, json);
         File mappings = findMcpMappings(version);
         File extra = cache("versions", version, side + "-slim" + (forceStable && !stable ? "-stable" : "") + ".jar");
@@ -337,7 +350,7 @@ public class MinecraftRepo extends BaseRepo {
     }
 
     private File findData(String side, String version, boolean forceStable, File json) throws IOException {
-        boolean stable = v1_14_4.compareTo(MinecraftVersion.from(version)) < 0 || forceStable;
+        boolean stable = v1_14_4.compareTo(MinecraftVersion.from(getMCVersion(version))) < 0 || forceStable;
         File raw = findRaw(side, version, json);
         File extra = cache("versions", version, side + "-data" + (forceStable && !stable ? "-stable" : "") + ".jar");
         HashStore cache = commonCache(cache("versions", version, side + "-data" + (forceStable && !stable ? "-stable" : "") + ".jar"))

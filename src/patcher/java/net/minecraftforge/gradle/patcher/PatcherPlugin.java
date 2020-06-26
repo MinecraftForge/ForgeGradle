@@ -515,7 +515,12 @@ public class PatcherPlugin implements Plugin<Project> {
                     createSrg2Mcp.get().dependsOn(createMcp2Srg);
                 }
             }
-            project.getDependencies().add(MC_DEP_CONFIG, "net.minecraft:client:" + extension.mcVersion + ":extra"); //Needs to be client extra, to get the data files.
+            Project mcp = getMcpParent(project);
+            if (mcp == null) {
+                throw new IllegalStateException("Could not find MCP parent project, you must specify a parent chain to MCP.");
+            }
+            String mcp_version = mcp.getExtensions().findByType(MCPExtension.class).getConfig().getVersion();
+            project.getDependencies().add(MC_DEP_CONFIG, "net.minecraft:client:" + mcp_version + ":extra"); //Needs to be client extra, to get the data files.
             project.getDependencies().add(MC_DEP_CONFIG, MCPRepo.getMappingDep(extension.getMappingChannel(), extension.getMappingVersion())); //Add mappings so that it can be used by reflection tools.
 
             if (dlMCMetaConfig.get().getMCVersion() == null) {
@@ -523,10 +528,6 @@ public class PatcherPlugin implements Plugin<Project> {
             }
 
             if (!extension.getAccessTransformers().isEmpty()) {
-                Project mcp = getMcpParent(project);
-                if (mcp == null) {
-                    throw new IllegalStateException("AccessTransformers specified, with no MCP Parent");
-                }
                 SetupMCPTask setupMCP = (SetupMCPTask) mcp.getTasks().getByName("setupMCP");
                 setupMCP.addPreDecompile(project.getName() + "AccessTransformer", new AccessTransformerFunction(mcp, extension.getAccessTransformers()));
                 extension.getAccessTransformers().forEach(f -> {
@@ -536,10 +537,6 @@ public class PatcherPlugin implements Plugin<Project> {
             }
 
             if (!extension.getSideAnnotationStrippers().isEmpty()) {
-                Project mcp = getMcpParent(project);
-                if (mcp == null) {
-                    throw new IllegalStateException("SideAnnotationStrippers specified, with no MCP Parent");
-                }
                 SetupMCPTask setupMCP = (SetupMCPTask) mcp.getTasks().getByName("setupMCP");
                 setupMCP.addPreDecompile(project.getName() + "SideStripper", new SideAnnotationStripperFunction(mcp, extension.getSideAnnotationStrippers()));
                 extension.getSideAnnotationStrippers().forEach(f -> {
@@ -631,12 +628,6 @@ public class PatcherPlugin implements Plugin<Project> {
             }
 
             {
-                Project mcp = getMcpParent(project);
-                if (mcp == null) {
-                    throw new IllegalStateException("Could not find MCP parent project, you must specify a parent chain to MCP.");
-                }
-                String mcp_version = mcp.getExtensions().findByType(MCPExtension.class).getConfig().getVersion();
-
                 String suffix = extension.getNotchObf() ? mcp_version.substring(0, mcp_version.lastIndexOf('-')) : mcp_version + ":srg";
                 File client = MavenArtifactDownloader.generate(project, "net.minecraft:client:" + suffix, true);
                 File server = MavenArtifactDownloader.generate(project, "net.minecraft:server:" + suffix, true);

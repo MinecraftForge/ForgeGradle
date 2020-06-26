@@ -59,7 +59,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.regex.Pattern;
 import java.util.zip.ZipOutputStream;
 
 /**
@@ -97,7 +96,6 @@ public class MCPRepo extends BaseRepo {
     private static final String NAMES_MCP = "^(mcp_config)$";
     private static final String STEP_MERGE = "merge"; //TODO: Design better way to get steps output, for now hardcode
     private static final String STEP_RENAME = "rename";
-    private static final Pattern MCP_CONFIG_VERSION = Pattern.compile("\\d{8}\\.\\d{6}"); //Timestamp: YYYYMMDD.HHMMSS
 
     //This is the artifact we expose that is a zip containing SRG->Official fields and methods.
     public static final String MAPPING_DEP = "net.minecraft:mappings_{CHANNEL}:{VERSION}@zip";
@@ -209,14 +207,6 @@ public class MCPRepo extends BaseRepo {
         return MavenArtifactDownloader.manual(project, "de.oceanlabs.mcp:mcp_config:" + version + "@zip", false);
     }
 
-    private String getMCVersion(String version) {
-        int idx = version.lastIndexOf('-');
-        if (idx != -1 && MCP_CONFIG_VERSION.matcher(version.substring(idx)).matches()) {
-            return version.substring(0, idx);
-        }
-        return version;
-    }
-
     private File findVersion(String version) throws IOException {
         File manifest = cache("versions", "manifest.json");
         if (!Utils.downloadEtag(new URL(MinecraftRepo.MANIFEST_URL), manifest, project.getGradle().getStartParameter().isOffline()))
@@ -244,7 +234,7 @@ public class MCPRepo extends BaseRepo {
         HashStore cache = commonHash(mcp).load(cacheMC(side, version, null, "pom.input"));
         File json = null;
         if (!"server".equals(side)) {
-            json = findVersion(getMCVersion(version));
+            json = findVersion(MinecraftRepo.getMCVersion(version));
             if (json == null) {
                 project.getLogger().lifecycle("Could not make Minecraft POM. Missing version json");
                 return null;
@@ -269,10 +259,10 @@ public class MCPRepo extends BaseRepo {
                         }
                     }
                 }
-                builder.dependencies().add("net.minecraft:client:" + getMCVersion(version), "compile").withClassifier("extra");
+                builder.dependencies().add("net.minecraft:client:" + version, "compile").withClassifier("extra");
                 //builder.dependencies().add("net.minecraft:client:" + getMCVersion(version), "compile").withClassifier("data");
             } else {
-                builder.dependencies().add("net.minecraft:server:" + getMCVersion(version), "compile").withClassifier("extra");
+                builder.dependencies().add("net.minecraft:server:" + version, "compile").withClassifier("extra");
                 //builder.dependencies().add("net.minecraft:server:" + getMCVersion(version), "compile").withClassifier("data");
             }
 
