@@ -20,6 +20,13 @@
 
 package net.minecraftforge.gradle.common.task;
 
+import net.minecraftforge.gradle.common.util.Utils;
+import net.minecraftforge.gradle.common.util.VersionJson;
+import org.apache.commons.io.FileUtils;
+import org.gradle.api.DefaultTask;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.TaskAction;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -27,38 +34,56 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.commons.io.FileUtils;
-import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.TaskAction;
-
-import net.minecraftforge.gradle.common.util.Utils;
-import net.minecraftforge.gradle.common.util.VersionJson;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class DownloadAssets extends DefaultTask {
     private static final String RESOURCE_REPO = "http://resources.download.minecraft.net/";
     private File meta;
 
     @TaskAction
-    public void run() throws IOException {
+    public void run() throws IOException, InterruptedException {
         AssetIndex index = Utils.loadJson(getIndex(), AssetIndex.class);
         List<String> keys = new ArrayList<>(index.objects.keySet());
         Collections.sort(keys);
+        ExecutorService executorService = Executors.newFixedThreadPool(16);
+        CopyOnWriteArrayList<String> downloadingFailedURL = new CopyOnWriteArrayList<>();
         for (String key : keys) {
             Asset asset = index.objects.get(key);
             File target = Utils.getCache(getProject(), "assets", "objects", asset.getPath());
             if (!target.exists()) {
                 URL url = new URL(RESOURCE_REPO + asset.getPath());
-                getProject().getLogger().lifecycle("Downloading: " + url + " Asset: " + key);
-                FileUtils.copyURLToFile(url, target);
+                Runnable copyURLtoFile = () -> {
+                    try {
+                        getProject().getLogger().lifecycle("Downloading: " + url + " Asset: " + key);
+                        FileUtils.copyURLToFile(url, target, 10_000, 5_000);
+
+                    } catch (IOException e) {
+                        downloadingFailedURL.add(key);
+                        getProject().getLogger().error("{} downloading fails.", key);
+                        e.printStackTrace();
+                    }
+                };
+                executorService.execute(copyURLtoFile);
             }
+        }
+        executorService.shutdown();
+        executorService.awaitTermination(8, TimeUnit.HOURS);
+        if (!downloadingFailedURL.isEmpty()) {
+            String errorMessage = "";
+            for (String key : downloadingFailedURL) {
+                errorMessage = errorMessage + "Downloading failed Asset: " + key + "\n";
+            }
+            errorMessage = errorMessage + "Don't be panic. There are just some assets downloading fails, Maybe you should try to run again the task which you just ran.";
+            throw new RuntimeException(errorMessage);
         }
     }
 
     private File getIndex() throws IOException {
         VersionJson json = Utils.loadJson(getMeta(), VersionJson.class);
-        File target = Utils.getCache(getProject(), "assets" , "indexes", json.assetIndex.id + ".json");
+        File target = Utils.getCache(getProject(), "assets", "indexes", json.assetIndex.id + ".json");
         return Utils.updateDownload(getProject(), target, json.assetIndex);
     }
 
@@ -66,6 +91,7 @@ public class DownloadAssets extends DefaultTask {
     public File getMeta() {
         return this.meta;
     }
+
     public void setMeta(File value) {
         this.meta = value;
     }
@@ -77,6 +103,7 @@ public class DownloadAssets extends DefaultTask {
     private static class AssetIndex {
         Map<String, Asset> objects;
     }
+
     private static class Asset {
         String hash;
 
