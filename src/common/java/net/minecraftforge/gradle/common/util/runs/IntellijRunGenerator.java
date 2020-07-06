@@ -213,23 +213,20 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
     }
 
     private static Stream<String> mapModClassesToIdea(@Nonnull final Project project, @Nonnull final RunConfig runConfig) {
-        final IdeaModel idea = project.getExtensions().findByType(IdeaModel.class);
-
-        JavaPluginConvention javaPlugin = project.getConvention().getPlugin(JavaPluginConvention.class);
-        SourceSetContainer sourceSets = javaPlugin.getSourceSets();
-        final SourceSet main = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
         if (runConfig.getMods().isEmpty()) {
-            return getIdeaPathsForSourceset(project, idea, "production", null);
+            return getIdeaPathsForSourceset(project, project.getExtensions().findByType(IdeaModel.class), "production", null);
         } else {
-
             return runConfig.getMods().stream()
-                    .map(modConfig -> {
+                    .flatMap(modConfig -> {
+                        final Project modProject = modConfig.getModProject();
+                        final IdeaModel idea = modProject.getExtensions().findByType(IdeaModel.class);
+                        final SourceSet main = modProject.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+                        
                         return modConfig.getSources().stream().flatMap(source -> {
                             String outName = source == main ? "production" : source.getName();
-                            return getIdeaPathsForSourceset(project, idea, outName, modConfig.getName());
+                            return getIdeaPathsForSourceset(modProject, idea, outName, modConfig.getName());
                         });
-                    })
-                    .flatMap(Function.identity());
+                    });
         }
     }
 
