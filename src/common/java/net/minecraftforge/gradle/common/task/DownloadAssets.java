@@ -76,7 +76,7 @@ public class DownloadAssets extends DefaultTask {
             for (String key : downloadingFailedURL) {
                 errorMessage = errorMessage + "Downloading failed Asset: " + key + "\n";
             }
-            errorMessage = errorMessage + "Don't be panic. There are just some assets downloading fails, Maybe you should try to run again the task which you just ran.";
+            errorMessage = errorMessage + "Don't panic. There are just some assets downloading fails, Maybe you should try to run again the task which you just ran.";
             throw new RuntimeException(errorMessage);
         }
     }
