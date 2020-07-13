@@ -38,10 +38,11 @@ public class RenameJarSrg2Mcp extends JarExec {
     private Supplier<File> input;
     private File output;
     private Supplier<File> mappings;
+    private boolean signatureRemoval;
 
     public RenameJarSrg2Mcp() {
         tool = Utils.INSTALLERTOOLS;
-        args = new String[] { "--task", "SRG_TO_MCP", "--input", "{input}", "--output", "{output}", "--mcp", "{mappings}"};
+        args = new String[] { "--task", "SRG_TO_MCP", "--input", "{input}", "--output", "{output}", "--mcp", "{mappings}", "{strip}"};
     }
 
     @Override
@@ -50,8 +51,16 @@ public class RenameJarSrg2Mcp extends JarExec {
         replace.put("{input}", getInput().getAbsolutePath());
         replace.put("{output}", getOutput().getAbsolutePath());
         replace.put("{mappings}", getMappings().getAbsolutePath());
+        replace.put("{strip}", getSignatureRemoval()? "--strip-signatures" : "");
 
-        return Arrays.stream(getArgs()).map(arg -> replace.getOrDefault(arg, arg)).collect(Collectors.toList());
+        return Arrays.stream(getArgs()).map(arg -> replace.getOrDefault(arg, arg)).filter(it -> !it.isEmpty()).collect(Collectors.toList());
+    }
+
+    public boolean getSignatureRemoval() {
+        return this.signatureRemoval;
+    }
+    public void setSignatureRemoval(boolean value) {
+        this.signatureRemoval = value;
     }
 
     @InputFile
