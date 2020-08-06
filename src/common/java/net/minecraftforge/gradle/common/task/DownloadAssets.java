@@ -40,7 +40,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class DownloadAssets extends DefaultTask {
-    private static final String RESOURCE_REPO = "http://resources.download.minecraft.net/";
+    private static final String RESOURCE_REPO = "https://resources.download.minecraft.net/";
     private File meta;
 
     @TaskAction
