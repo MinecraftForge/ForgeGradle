@@ -30,6 +30,7 @@ import org.gradle.api.tasks.TaskAction;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -44,7 +45,7 @@ public class DownloadAssets extends DefaultTask {
     private File meta;
 
     @TaskAction
-    public void run() throws IOException, InterruptedException {
+    public void run() throws IOException, InterruptedException, NoSuchAlgorithmException {
         AssetIndex index = Utils.loadJson(getIndex(), AssetIndex.class);
         List<String> keys = new ArrayList<>(index.objects.keySet());
         Collections.sort(keys);
@@ -53,14 +54,16 @@ public class DownloadAssets extends DefaultTask {
         for (String key : keys) {
             Asset asset = index.objects.get(key);
             File target = Utils.getCache(getProject(), "assets", "objects", asset.getPath());
-            if (!target.exists()) {
+            if (!target.exists() || !asset.hash.equals(Utils.sha1Code(target))) {
                 URL url = new URL(RESOURCE_REPO + asset.getPath());
                 Runnable copyURLtoFile = () -> {
                     try {
                         getProject().getLogger().lifecycle("Downloading: " + url + " Asset: " + key);
                         FileUtils.copyURLToFile(url, target, 10_000, 5_000);
-
-                    } catch (IOException e) {
+                        if (!asset.hash.equals(Utils.sha1Code(target))) {
+                            throw new IOException(key + " Hash dose march");
+                        }
+                    } catch (IOException | NoSuchAlgorithmException e) {
                         downloadingFailedURL.add(key);
                         getProject().getLogger().error("{} downloading fails.", key);
                         e.printStackTrace();
