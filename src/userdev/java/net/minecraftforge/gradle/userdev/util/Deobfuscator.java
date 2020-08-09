@@ -126,6 +126,7 @@ public class Deobfuscator {
             rename.setInput(original);
             rename.setOutput(output);
             rename.setMappings(names);
+            rename.setSignatureRemoval(true);
             rename.apply();
             project.getTasks().remove(rename);
 
