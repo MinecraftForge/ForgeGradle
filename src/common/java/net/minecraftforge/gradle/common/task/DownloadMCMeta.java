@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.common.task;
 
+import net.minecraftforge.gradle.common.util.Utils;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
@@ -50,7 +51,7 @@ public class DownloadMCMeta extends DefaultTask {
         try (InputStream manin = new URL(MANIFEST_URL).openStream()) {
             URL url = GSON.fromJson(new InputStreamReader(manin), ManifestJson.class).getUrl(getMCVersion());
             if (url != null) {
-                FileUtils.copyURLToFile(url, getOutput());
+                FileUtils.copyURLToFile(url, getOutput(), Utils.CONNECTION_TIMEOUT, Utils.READ_TIMEOUT);
             } else {
                 throw new RuntimeException("Missing version from manifest: " + getMCVersion());
             }

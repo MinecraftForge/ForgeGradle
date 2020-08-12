@@ -58,7 +58,7 @@ public class DownloadAssets extends DefaultTask {
                 Runnable copyURLtoFile = () -> {
                     try {
                         getProject().getLogger().lifecycle("Downloading: " + url + " Asset: " + key);
-                        FileUtils.copyURLToFile(url, target, 10_000, 5_000);
+                        FileUtils.copyURLToFile(url, target, Utils.CONNECTION_TIMEOUT, Utils.READ_TIMEOUT);
 
                     } catch (IOException e) {
                         downloadingFailedURL.add(key);

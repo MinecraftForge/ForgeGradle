@@ -152,7 +152,7 @@ public class MinecraftRepo extends BaseRepo {
         net.minecraftforge.gradle.common.util.Artifact mcp = net.minecraftforge.gradle.common.util.Artifact.from("de.oceanlabs.mcp:mcp_config:" + version + "@zip");
         File zip = cache("versions", version, "mcp.zip");
         if (!zip.exists()) {
-            FileUtils.copyURLToFile(new URL(Utils.FORGE_MAVEN + mcp.getPath()), zip);
+            FileUtils.copyURLToFile(new URL(Utils.FORGE_MAVEN + mcp.getPath()), zip, Utils.CONNECTION_TIMEOUT, Utils.READ_TIMEOUT);
             Utils.updateHash(zip);
         }
         return zip;
@@ -259,7 +259,7 @@ public class MinecraftRepo extends BaseRepo {
 
         Download dl = json.downloads.get(key);
         if (!target.exists() || !HashFunction.SHA1.hash(target).equals(dl.sha1)) {
-            FileUtils.copyURLToFile(dl.url, target);
+            FileUtils.copyURLToFile(dl.url, target, Utils.CONNECTION_TIMEOUT, Utils.READ_TIMEOUT);
             Utils.updateHash(target, HashFunction.SHA1);
         }
         return target;

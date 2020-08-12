@@ -110,6 +110,8 @@ public class Utils {
           + "REFERENCE purposes. Please avoid publishing any source code referencing these mappings. A full copy of "
           + "the license can be found at the top of the mapping file itself and in the 19w36a snapshot article at: "
           + "https://www.minecraft.net/en-us/article/minecraft-snapshot-19w36a.";
+    public static final int CONNECTION_TIMEOUT = 40_000;
+    public static final int READ_TIMEOUT = 4_000;
 
     public static void extractFile(ZipFile zip, String name, File output) throws IOException {
         extractFile(zip, zip.getEntry(name), output);
@@ -221,7 +223,7 @@ public class Utils {
                 target.getParentFile().mkdirs();
             }
 
-            FileUtils.copyURLToFile(dl.url, target);
+            FileUtils.copyURLToFile(dl.url, target, Utils.CONNECTION_TIMEOUT, Utils.READ_TIMEOUT);
         }
         return target;
     }

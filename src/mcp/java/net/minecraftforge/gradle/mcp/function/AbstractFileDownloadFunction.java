@@ -55,7 +55,7 @@ public abstract class AbstractFileDownloadFunction implements MCPFunction {
         if (info.hash != null && output.exists() && HashUtil.sha1(output).equals(info.hash)) {
             return output; // If the hash matches, don't download again
         }
-        FileUtils.copyURLToFile(new URL(info.url), download);
+        FileUtils.copyURLToFile(new URL(info.url), download, Utils.CONNECTION_TIMEOUT, Utils.READ_TIMEOUT);
 
         if (output != download) {
             if (FileUtils.contentEquals(output, download)) {
