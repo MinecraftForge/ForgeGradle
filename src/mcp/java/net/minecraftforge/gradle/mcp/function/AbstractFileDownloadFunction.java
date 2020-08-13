@@ -57,7 +57,7 @@ public abstract class AbstractFileDownloadFunction implements MCPFunction {
             return output; // If the hash matches, don't download again
         }
         if (info.type != null && info.type.equals("jar") && info.side.equals("client")) {
-            String cachePath = Utils.getMinecraftDict() + File.separator + "minecraft" + File.separator + "versions" + File.separator + info.version + File.separator + info.version + ".jar";
+            String cachePath = Utils.getMinecraftDict()  + File.separator + "versions" + File.separator + info.version + File.separator + info.version + ".jar";
             File cacheJar = new File(cachePath);
             if (HashUtil.sha1(cacheJar).equals(info.hash)) {
                 FileUtils.copyFile(cacheJar, download);

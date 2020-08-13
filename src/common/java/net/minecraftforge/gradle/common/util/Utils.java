@@ -636,11 +636,11 @@ public class Utils {
     public static String getMinecraftDict() {
         switch (VersionJson.OS.getCurrent()) {
             case OSX:
-                return System.getProperty("user.home") + "/Library/Application Support";
+                return System.getProperty("user.home") + "/Library/Application Support/minecraft";
             case WINDOWS:
                 return "";
             case LINUX:
-                return "";
+                return System.getProperty("user.home") + "/.minecraft";
         }
         return "";
     }
