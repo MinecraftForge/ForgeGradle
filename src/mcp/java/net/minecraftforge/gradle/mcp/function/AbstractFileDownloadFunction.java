@@ -26,6 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.gradle.internal.hash.HashUtil;
 import org.gradle.internal.hash.HashValue;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.net.URL;
 import java.util.function.Function;
@@ -41,12 +42,12 @@ public abstract class AbstractFileDownloadFunction implements MCPFunction {
     }
 
     public AbstractFileDownloadFunction(String defaultOutput, String url) {
-        this(env -> defaultOutput, env -> new DownloadInfo(url, null));
+        this(env -> defaultOutput, env -> new DownloadInfo(url, null, null, null, null));
     }
 
     @Override
     public File execute(MCPEnvironment environment) throws Exception {
-        File output = (File)environment.getArguments().computeIfAbsent("output", k -> environment.getFile(outputGetter.apply(environment)));
+        File output = (File) environment.getArguments().computeIfAbsent("output", k -> environment.getFile(outputGetter.apply(environment)));
         File download = !output.exists() ? output : environment.getFile(output.getAbsolutePath() + ".new");
 
         Utils.delete(download); // This file should never exist, but abrupt termination of the process may leave it behind
@@ -55,7 +56,15 @@ public abstract class AbstractFileDownloadFunction implements MCPFunction {
         if (info.hash != null && output.exists() && HashUtil.sha1(output).equals(info.hash)) {
             return output; // If the hash matches, don't download again
         }
-        FileUtils.copyURLToFile(new URL(info.url), download);
+        if (info.type != null && info.type.equals("jar") && info.side.equals("client")) {
+            String cachePath = Utils.getMinecraftDict() + File.separator + "minecraft" + File.separator + "versions" + File.separator + info.version + File.separator + info.version + ".jar";
+            File cacheJar = new File(cachePath);
+            if (HashUtil.sha1(cacheJar).equals(info.hash)) {
+                FileUtils.copyFile(cacheJar, download);
+            }
+        } else {
+            FileUtils.copyURLToFile(new URL(info.url), download);
+        }
 
         if (output != download) {
             if (FileUtils.contentEquals(output, download)) {
@@ -73,10 +82,16 @@ public abstract class AbstractFileDownloadFunction implements MCPFunction {
 
         private final String url;
         private final HashValue hash;
+        private final String type;
+        private final String version;
+        private final String side;
 
-        public DownloadInfo(String url, HashValue hash) {
+        public DownloadInfo(String url, @Nullable HashValue hash, @Nullable String type, @Nullable String version, @Nullable String side) {
             this.url = url;
             this.hash = hash;
+            this.type = type;
+            this.version = version;
+            this.side = side;
         }
 
     }

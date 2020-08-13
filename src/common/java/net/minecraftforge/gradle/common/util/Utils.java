@@ -632,4 +632,16 @@ public class Utils {
             RunConfigGenerator.createIDEGenRunsTasks(extension, prepareRuns, makeSrcDirs, additionalClientArgs);
         });
     }
+
+    public static String getMinecraftDict() {
+        switch (VersionJson.OS.getCurrent()) {
+            case OSX:
+                return System.getProperty("user.home") + "/Library/Application Support";
+            case WINDOWS:
+                return "";
+            case LINUX:
+                return "";
+        }
+        return "";
+    }
 }
