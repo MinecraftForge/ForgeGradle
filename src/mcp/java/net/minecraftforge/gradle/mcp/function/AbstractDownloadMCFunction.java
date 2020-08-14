@@ -45,7 +45,8 @@ public abstract class AbstractDownloadMCFunction extends AbstractFileDownloadFun
             JsonObject artifactInfo = json.getAsJsonObject("downloads").getAsJsonObject(artifact);
             String url = artifactInfo.get("url").getAsString();
             HashValue hash = HashValue.parse(artifactInfo.get("sha1").getAsString());
-            return new DownloadInfo(url, hash);
+            String version = json.getAsJsonObject().get("id").getAsString();
+            return new DownloadInfo(url, hash, "jar", version, artifact);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
