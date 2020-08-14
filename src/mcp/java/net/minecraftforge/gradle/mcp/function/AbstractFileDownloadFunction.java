@@ -42,7 +42,7 @@ public abstract class AbstractFileDownloadFunction implements MCPFunction {
     }
 
     public AbstractFileDownloadFunction(String defaultOutput, String url) {
-        this(env -> defaultOutput, env -> new DownloadInfo(url, null, null, null, null));
+        this(env -> defaultOutput, env -> new DownloadInfo(url, null, "unknown", null, null));
     }
 
     @Override
@@ -56,7 +56,8 @@ public abstract class AbstractFileDownloadFunction implements MCPFunction {
         if (info.hash != null && output.exists() && HashUtil.sha1(output).equals(info.hash)) {
             return output; // If the hash matches, don't download again
         }
-        if (info.type != null && info.type.equals("jar") && info.side.equals("client")) {
+        // Before download Client.jar, we should check out official launcher's cache to avoid unnecessary download.
+        if (info.type.equals("jar") && info.side.equals("client")) {
             String cachePath = Utils.getMinecraftDict()  + File.separator + "versions" + File.separator + info.version + File.separator + info.version + ".jar";
             File cacheJar = new File(cachePath);
             if (HashUtil.sha1(cacheJar).equals(info.hash)) {
@@ -86,7 +87,7 @@ public abstract class AbstractFileDownloadFunction implements MCPFunction {
         private final String version;
         private final String side;
 
-        public DownloadInfo(String url, @Nullable HashValue hash, @Nullable String type, @Nullable String version, @Nullable String side) {
+        public DownloadInfo(String url, @Nullable HashValue hash, String type, @Nullable String version, @Nullable String side) {
             this.url = url;
             this.hash = hash;
             this.type = type;

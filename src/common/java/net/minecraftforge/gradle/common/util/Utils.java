@@ -634,11 +634,12 @@ public class Utils {
     }
 
     public static String getMinecraftDict() {
+        //Maybe move this to static value is a better choice?
         switch (VersionJson.OS.getCurrent()) {
             case OSX:
                 return System.getProperty("user.home") + "/Library/Application Support/minecraft";
             case WINDOWS:
-                return "";
+                return System.getenv("APPDATA") + "\\.minecraft";
             case LINUX:
                 return System.getProperty("user.home") + "/.minecraft";
         }
