@@ -26,6 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.gradle.internal.hash.HashUtil;
 import org.gradle.internal.hash.HashValue;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.net.URL;
 import java.util.function.Function;
@@ -41,7 +42,7 @@ public abstract class AbstractFileDownloadFunction implements MCPFunction {
     }
 
     public AbstractFileDownloadFunction(String defaultOutput, String url) {
-        this(env -> defaultOutput, env -> new DownloadInfo(url, null));
+        this(env -> defaultOutput, env -> new DownloadInfo(url, null, "unknown", null, null));
     }
 
     @Override
@@ -55,7 +56,17 @@ public abstract class AbstractFileDownloadFunction implements MCPFunction {
         if (info.hash != null && output.exists() && HashUtil.sha1(output).equals(info.hash)) {
             return output; // If the hash matches, don't download again
         }
-        FileUtils.copyURLToFile(new URL(info.url), download, Utils.CONNECTION_TIMEOUT, Utils.READ_TIMEOUT);
+
+        // Check if file exists in local installer cache
+        if (info.type.equals("jar") && info.side.equals("client")) {
+            File localPath = new File(Utils.getMCDir() + File.separator + "versions" + File.separator + info.version + File.separator + info.version + ".jar");
+            if (HashUtil.sha1(localPath).equals(info.hash)) {
+                FileUtils.copyFile(localPath, download);
+            }
+        } else {
+            FileUtils.copyURLToFile(new URL(info.url), download, Utils.CONNECTION_TIMEOUT, Utils.READ_TIMEOUT);
+        }
+
 
         if (output != download) {
             if (FileUtils.contentEquals(output, download)) {
@@ -73,10 +84,17 @@ public abstract class AbstractFileDownloadFunction implements MCPFunction {
 
         private final String url;
         private final HashValue hash;
+        private final String type;
+        private final String version;
+        private final String side;
 
-        public DownloadInfo(String url, HashValue hash) {
+        public DownloadInfo(String url, @Nullable HashValue hash, String type, @Nullable String version, @Nullable String side) {
             this.url = url;
             this.hash = hash;
+            this.type = type;
+            this.version = version;
+            this.side = side;
+
         }
 
     }
