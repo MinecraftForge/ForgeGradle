@@ -63,7 +63,7 @@ public abstract class AbstractFileDownloadFunction implements MCPFunction {
             if (localPath.exists() && HashUtil.sha1(localPath).equals(info.hash)) {
                 FileUtils.copyFile(localPath, download);
             } else {
-                FileUtils.copyURLToFile(new URL(info.url), download);
+                FileUtils.copyURLToFile(new URL(info.url), download, Utils.CONNECTION_TIMEOUT, Utils.READ_TIMEOUT);
             }
         } else {
             FileUtils.copyURLToFile(new URL(info.url), download, Utils.CONNECTION_TIMEOUT, Utils.READ_TIMEOUT);
