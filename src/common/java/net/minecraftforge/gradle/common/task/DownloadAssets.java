@@ -61,7 +61,9 @@ public class DownloadAssets extends DefaultTask {
                         getProject().getLogger().lifecycle("Downloading: " + url + " Asset: " + key);
                         FileUtils.copyURLToFile(url, target, 10_000, 5_000);
                         if (!HashFunction.SHA1.hash(target).equals(asset.hash)) {
-                            throw new IOException(key + " Hash failed.");
+                            downloadingFailedURL.add(key);
+                            Utils.delete(target);
+                            getProject().getLogger().error("{} Hash failed.", key);
                         }
                     } catch (IOException e) {
                         downloadingFailedURL.add(key);
