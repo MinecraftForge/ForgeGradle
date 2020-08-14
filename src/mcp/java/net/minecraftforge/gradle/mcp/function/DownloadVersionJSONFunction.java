@@ -48,7 +48,7 @@ public class DownloadVersionJSONFunction extends AbstractFileDownloadFunction {
             for (JsonElement e : json.getAsJsonArray("versions")) {
                 String v = e.getAsJsonObject().get("id").getAsString();
                 if (v.equals(environment.getMinecraftVersion().toString())) {
-                    return new DownloadInfo(e.getAsJsonObject().get("url").getAsString(), null);
+                    return new DownloadInfo(e.getAsJsonObject().get("url").getAsString(), null,"json", v, null);
                 }
             }
         } catch (IOException ex) {
