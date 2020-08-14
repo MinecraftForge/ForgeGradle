@@ -59,8 +59,10 @@ public abstract class AbstractFileDownloadFunction implements MCPFunction {
         // Check if file exists in local installer cache
         if (info.type.equals("jar") && info.side.equals("client")) {
             File localPath = new File(Utils.getMCDir() + File.separator + "versions" + File.separator + info.version + File.separator + info.version + ".jar");
-            if (HashUtil.sha1(localPath).equals(info.hash)) {
+            if (localPath.exists() && HashUtil.sha1(localPath).equals(info.hash)) {
                 FileUtils.copyFile(localPath, download);
+            } else {
+                FileUtils.copyURLToFile(new URL(info.url), download);
             }
         } else {
             FileUtils.copyURLToFile(new URL(info.url), download);
