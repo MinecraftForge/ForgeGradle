@@ -34,6 +34,7 @@ import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import net.minecraftforge.gradle.common.util.runs.RunConfigGenerator;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -468,7 +469,7 @@ public class Utils {
 
         if (target.exists() && !(changing || bypassLocal)) {
             String expected = md5_file.exists() ? new String(Files.readAllBytes(md5_file.toPath()), StandardCharsets.UTF_8) : null;
-            if (expected == null || expected.equals(actual))
+            if ((expected == null && isValid(target)) ||(expected != null && expected.equals(actual))) //if file dose not have md5 file, we also should do some basic valid check.
                 return target;
             target.delete();
         }
@@ -643,6 +644,33 @@ public class Utils {
             case LINUX:
             default:
                 return new File(System.getProperty("user.home") + "/.minecraft");
+        }
+    }
+
+    private static boolean isValid(final File file) {
+        String ext = FilenameUtils.getExtension(file.getName());
+        switch (ext) {
+            case "jar":
+            case "zip":
+                return _isValidZip(file); // Jar is also Zip file.
+        }
+        return true;
+    }
+
+    private static boolean _isValidZip(final File file){
+        ZipFile zipfile = null;
+        try {
+            zipfile = new ZipFile(file);
+            return true;
+        } catch (IOException e) {
+            return false;
+        } finally {
+            try {
+                if (zipfile != null) {
+                    zipfile.close();
+                }
+            } catch (IOException e) {
+            }
         }
     }
 }
