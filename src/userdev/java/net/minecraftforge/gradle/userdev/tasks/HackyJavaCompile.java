@@ -52,10 +52,10 @@ public class HackyJavaCompile extends JavaCompile {
         // Normally, the output history is set by Gradle. Since we're bypassing
         // the normal gradle task infrastructure, we need to do it ourselves.
 
-        // TaskExecutionHistory is removed in 5.1.0, so we only try to set it
-        // on versions below 5.1.0
+        // TaskExecutionHistory is removed in 5.1, so we only try to set it
+        // on versions below 5.1
 
-        if (GradleVersion.current().compareTo(GradleVersion.version("5.1.0")) < 0) {
+        if (GradleVersion.current().compareTo(GradleVersion.version("5.1")) < 0) {
             try {
                 Class<?> taskExectionHistory = Class.forName("org.gradle.api.internal.TaskExecutionHistory");
                 Method setHistory = this.getOutputs().getClass().getMethod("setHistory", taskExectionHistory);
