@@ -50,7 +50,7 @@ public class DownloadAssets extends DefaultTask {
         List<String> keys = new ArrayList<>(index.objects.keySet());
         Collections.sort(keys);
         File assetsPath = new File(Utils.getMCDir(), "/assets/objects");
-        ExecutorService executorService = Executors.newFixedThreadPool(8);
+        ExecutorService executorService = Executors.newFixedThreadPool(Math.min(16, Math.max(Runtime.getRuntime().availableProcessors() / 2, 1)));
         CopyOnWriteArrayList<String> failedDownloads = new CopyOnWriteArrayList<>();
         for (String key : keys) {
             Asset asset = index.objects.get(key);
@@ -60,7 +60,7 @@ public class DownloadAssets extends DefaultTask {
                 Runnable copyURLtoFile = () -> {
                     try {
                         File localFile = FileUtils.getFile(assetsPath + File.separator + asset.getPath());
-                        if (localFile.exists()) {
+                        if (localFile.exists() && HashFunction.SHA1.hash(localFile).equals(asset.hash)) {
                             getProject().getLogger().lifecycle("Copying local object: " + asset.getPath() + " Asset: " + key);
                             FileUtils.copyFile(localFile, target);
                         } else {
