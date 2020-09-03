@@ -29,6 +29,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,7 +48,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class McpNames {
     private static final String NEWLINE = System.getProperty("line.separator");
-    private static final Pattern SRG_FINDER             = Pattern.compile("func_[0-9]+_[a-zA-Z_]+|field_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_\\b");
+    private static final Pattern SRG_FINDER             = Pattern.compile("[fF]unc_[0-9]+_[a-zA-Z_]+|[fF]ield_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_\\b");
     private static final Pattern METHOD_JAVADOC_PATTERN = Pattern.compile("^(?<indent>(?: {3})+|\\t+)(?!return)(?:\\w+\\s+)*(?<generic><[\\w\\W]*>\\s+)?(?<return>\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>func_[0-9]+_[a-zA-Z_]+)\\(");
     private static final Pattern FIELD_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: {3})+|\\t+)(?!return)(?:\\w+\\s+)*(?:\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
     private static final Pattern CLASS_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: )*|\\t*)([\\w|@]*\\s)*(class|interface|@interface|enum) (?<name>[\\w]+)");
@@ -180,11 +181,24 @@ public class McpNames {
         list.add(list.size() - back, line);
     }
 
+    /*
+     * There are certain times, such as Mixin Accessors that we wish to have the name of this method with the first character upper case.
+     */
+    private String getMapped(String srg) {
+        boolean cap = srg.charAt(0) == 'F';
+        if (cap)
+            srg = 'f' + srg.substring(1);
+        String ret = names.getOrDefault(srg, srg);
+        if (cap)
+            ret = ret.substring(0, 1).toUpperCase(Locale.ENGLISH) + ret.substring(1);
+        return ret;
+    }
+
     private String replaceInLine(String line) {
         StringBuffer buf = new StringBuffer();
         Matcher matcher = SRG_FINDER.matcher(line);
         while (matcher.find())
-            matcher.appendReplacement(buf, names.getOrDefault(matcher.group(), matcher.group()));
+            matcher.appendReplacement(buf, getMapped(matcher.group()));
         matcher.appendTail(buf);
         return buf.toString();
     }
