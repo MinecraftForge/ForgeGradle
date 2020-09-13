@@ -153,7 +153,7 @@ public class TaskReobfuscateJar extends DefaultTask {
 
             output_temp.delete();
         } finally {
-            getProject().getTasks().remove(java);
+            java.setEnabled(false);
         }
     }
 

@@ -1296,7 +1296,7 @@ public class MinecraftUserRepo extends BaseRepo {
             e.printStackTrace();
             return null;
         } finally {
-            project.getTasks().remove(compile);
+            compile.setEnabled(false);
         }
     }
 

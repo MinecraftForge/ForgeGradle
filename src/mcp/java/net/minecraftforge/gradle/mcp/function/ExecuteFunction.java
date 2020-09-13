@@ -137,7 +137,7 @@ public class ExecuteFunction implements MCPFunction {
             java.setStandardOutput(log_out);
             java.exec();
         } finally {
-            environment.project.getTasks().remove(java);
+            java.setEnabled(false);
         }
 
         // Return the output file
