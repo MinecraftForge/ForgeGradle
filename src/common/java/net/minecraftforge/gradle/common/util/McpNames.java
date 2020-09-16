@@ -199,7 +199,7 @@ public class McpNames {
         Matcher matcher = SRG_FINDER.matcher(line);
         while (matcher.find()) {
             // Since '$' is a valid character in identifiers, but we need to NOT treat this as a regex group, escape any occurances
-            matcher.appendReplacement(buf, getMapped(matcher.group()).replace("$", "\\$"));
+            matcher.appendReplacement(buf, getMapped(Pattern.quote(matcher.group())));
         }
         matcher.appendTail(buf);
         return buf.toString();
