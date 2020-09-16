@@ -198,8 +198,8 @@ public class McpNames {
         StringBuffer buf = new StringBuffer();
         Matcher matcher = SRG_FINDER.matcher(line);
         while (matcher.find()) {
-            // Since '$' is a valid character in identifiers, but we need to NOT treat this as a regex group, escape any occurances
-            matcher.appendReplacement(buf, getMapped(Pattern.quote(matcher.group())));
+            // Since '$' is a valid character in identifiers, but we need to NOT treat this as a regex group, escape any occurrences
+            matcher.appendReplacement(buf, Matcher.quoteReplacement(getMapped(matcher.group())));
         }
         matcher.appendTail(buf);
         return buf.toString();
