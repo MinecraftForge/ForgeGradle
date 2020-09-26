@@ -72,6 +72,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.util.GradleVersion;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -1296,7 +1297,11 @@ public class MinecraftUserRepo extends BaseRepo {
             e.printStackTrace();
             return null;
         } finally {
-            project.getTasks().remove(compile);
+            if (GradleVersion.current().compareTo(GradleVersion.version("6.0.0")) >= 0) {
+                compile.setEnabled(false);
+            } else {
+                project.getTasks().remove(compile);
+            }
         }
     }
 

@@ -24,6 +24,7 @@ import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import org.gradle.api.tasks.JavaExec;
+import org.gradle.util.GradleVersion;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -137,7 +138,11 @@ public class ExecuteFunction implements MCPFunction {
             java.setStandardOutput(log_out);
             java.exec();
         } finally {
-            environment.project.getTasks().remove(java);
+            if (GradleVersion.current().compareTo(GradleVersion.version("6.0.0")) >= 0) {
+                java.setEnabled(false);
+            } else {
+                environment.project.getTasks().remove(java);
+            }
         }
 
         // Return the output file

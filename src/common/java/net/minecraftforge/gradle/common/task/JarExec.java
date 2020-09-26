@@ -42,6 +42,7 @@ import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
+import org.gradle.util.GradleVersion;
 
 public class JarExec extends DefaultTask {
     private static final OutputStream NULL = new OutputStream() { @Override public void write(int b) throws IOException { } };
@@ -99,7 +100,11 @@ public class JarExec extends DefaultTask {
             });
             java.exec();
         } finally {
-            getProject().getTasks().remove(java);
+            if (GradleVersion.current().compareTo(GradleVersion.version("6.0.0")) >= 0) {
+                java.setEnabled(false);
+            } else {
+                getProject().getTasks().remove(java);
+            }
         }
 
         if (hasLog)

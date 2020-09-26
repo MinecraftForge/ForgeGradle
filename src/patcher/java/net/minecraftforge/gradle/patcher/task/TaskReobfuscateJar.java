@@ -35,6 +35,7 @@ import com.google.common.io.Files;
 
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.Utils;
+import org.gradle.util.GradleVersion;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -153,7 +154,11 @@ public class TaskReobfuscateJar extends DefaultTask {
 
             output_temp.delete();
         } finally {
-            getProject().getTasks().remove(java);
+            if (GradleVersion.current().compareTo(GradleVersion.version("6.0.0")) >= 0) {
+                java.setEnabled(false);
+            } else {
+                getProject().getTasks().remove(java);
+            }
         }
     }
 

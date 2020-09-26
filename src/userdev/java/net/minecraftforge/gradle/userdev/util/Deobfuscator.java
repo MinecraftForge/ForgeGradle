@@ -26,6 +26,7 @@ import net.minecraftforge.gradle.userdev.tasks.RenameJarSrg2Mcp;
 
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
+import org.gradle.util.GradleVersion;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -128,7 +129,11 @@ public class Deobfuscator {
             rename.setMappings(names);
             rename.setSignatureRemoval(true);
             rename.apply();
-            project.getTasks().remove(rename);
+            if (GradleVersion.current().compareTo(GradleVersion.version("6.0.0")) >= 0) {
+                rename.setEnabled(false);
+            } else {
+                project.getTasks().remove(rename);
+            }
 
             Utils.updateHash(output, HashFunction.SHA1);
             cache.save();
