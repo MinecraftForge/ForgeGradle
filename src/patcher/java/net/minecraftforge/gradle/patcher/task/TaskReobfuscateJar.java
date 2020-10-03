@@ -49,6 +49,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
@@ -94,7 +95,7 @@ public class TaskReobfuscateJar extends DefaultTask {
             workDir.mkdirs();
         }
 
-        JavaExec java = getProject().getTasks().create("_", JavaExec.class);
+        JavaExec java = getProject().getTasks().create("_reobfuscateJar_" + getName() + new Random().nextInt(), JavaExec.class);
         try (OutputStream log = new BufferedOutputStream(new FileOutputStream(new File(workDir, "log.txt")))) {
             // Execute command
             java.setArgs(_args);
