@@ -29,6 +29,7 @@ import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -37,6 +38,8 @@ import net.minecraftforge.gradle.common.util.McpNames;
 import net.minecraftforge.gradle.common.util.Utils;
 
 public class TaskApplyMappings extends DefaultTask {
+    private boolean javadocs = false;
+    private boolean lambdas = true;
     private File mappings;
     private File input;
     private File output = getProject().file("build/" + getName() + "/output.zip");
@@ -54,7 +57,7 @@ public class TaskApplyMappings extends DefaultTask {
                         if (!e.getName().endsWith(".java")) {
                             IOUtils.copy(zin.getInputStream(e), out);
                         } else {
-                            out.write(names.rename(zin.getInputStream(e), false).getBytes(StandardCharsets.UTF_8));
+                            out.write(names.rename(zin.getInputStream(e), getJavadocs(), getLambdas()).getBytes(StandardCharsets.UTF_8));
                         }
                         out.closeEntry();
                     } catch (IOException e1) {
@@ -63,6 +66,16 @@ public class TaskApplyMappings extends DefaultTask {
                 });
             }
         }
+    }
+
+    @Input
+    public boolean getJavadocs() {
+        return this.javadocs;
+    }
+
+    @Input
+    public boolean getLambdas() {
+        return this.lambdas;
     }
 
     @InputFile
@@ -78,6 +91,14 @@ public class TaskApplyMappings extends DefaultTask {
     @OutputFile
     public File getOutput() {
         return output;
+    }
+
+    public void setJavadocs(boolean value) {
+        this.javadocs = value;
+    }
+
+    public void setLambdas(boolean value) {
+        this.lambdas = value;
     }
 
     public void setInput(File clean) {
