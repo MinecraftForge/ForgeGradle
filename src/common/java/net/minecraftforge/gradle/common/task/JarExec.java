@@ -25,13 +25,18 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
+import com.google.common.io.CharStreams;
+import com.google.common.io.Files;
+import org.apache.commons.io.output.NullWriter;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Input;
@@ -69,7 +74,7 @@ public class JarExec extends DefaultTask {
         File logFile = new File(workDir, "log.txt");
 
         try (OutputStream log = hasLog ? new BufferedOutputStream(new FileOutputStream(logFile)) : NULL) {
-            PrintWriter printer = new PrintWriter(log, true);
+            PrintWriter printer = new PrintWriter(new OutputStreamWriter(log, StandardCharsets.UTF_8), true);
             getProject().javaexec(java -> {
                 // Execute command
                 java.setArgs(filterArgs());

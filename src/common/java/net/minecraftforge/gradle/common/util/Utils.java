@@ -25,8 +25,8 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonIOException;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
-
 import groovy.lang.Closure;
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
 import net.minecraftforge.gradle.common.task.ExtractNatives;
@@ -73,6 +73,7 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.Callable;
@@ -243,13 +244,16 @@ public class Utils {
         return target;
     }
 
+    public static JsonObject loadJson(File target) throws IOException {
+        return loadJson(target, JsonObject.class);
+    }
     public static <T> T loadJson(File target, Class<T> clz) throws IOException {
         try (InputStream in = new FileInputStream(target)) {
-            return GSON.fromJson(new InputStreamReader(in), clz);
+            return GSON.fromJson(new InputStreamReader(in, StandardCharsets.UTF_8), clz);
         }
     }
     public static <T> T loadJson(InputStream in, Class<T> clz) throws IOException {
-        return GSON.fromJson(new InputStreamReader(in), clz);
+        return GSON.fromJson(new InputStreamReader(in, StandardCharsets.UTF_8), clz);
     }
 
     public static void updateHash(File target) throws IOException {
@@ -260,7 +264,7 @@ public class Utils {
             File cache = new File(target.getAbsolutePath() + "." + function.getExtension());
             if (target.exists()) {
                 String hash = function.hash(target);
-                Files.write(cache.toPath(), hash.getBytes());
+                Files.write(cache.toPath(), hash.getBytes(StandardCharsets.UTF_8));
             } else if (cache.exists()) {
                 cache.delete();
             }
@@ -338,12 +342,11 @@ public class Utils {
         }
     }
 
-
     public static <T> T fromJson(InputStream stream, Class<T> classOfT) throws JsonSyntaxException, JsonIOException {
-        return GSON.fromJson(new InputStreamReader(stream), classOfT);
+        return GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), classOfT);
     }
     public static <T> T fromJson(byte[] data, Class<T> classOfT) throws JsonSyntaxException, JsonIOException {
-        return GSON.fromJson(new InputStreamReader(new ByteArrayInputStream(data)), classOfT);
+        return GSON.fromJson(new InputStreamReader(new ByteArrayInputStream(data), StandardCharsets.UTF_8), classOfT);
     }
 
     public static boolean downloadEtag(URL url, File output, boolean offline) throws IOException {
@@ -399,7 +402,7 @@ public class Utils {
     }
 
     public static boolean downloadFile(URL url, File output, boolean deleteOn404) {
-        String proto = url.getProtocol().toLowerCase();
+        String proto = url.getProtocol().toLowerCase(Locale.ROOT);
 
         try {
             if ("http".equals(proto) || "https".equals(proto)) {
@@ -454,7 +457,7 @@ public class Utils {
     }
 
     public static String downloadString(URL url) throws IOException {
-        String proto = url.getProtocol().toLowerCase();
+        String proto = url.getProtocol().toLowerCase(Locale.ROOT);
 
         if ("http".equals(proto) || "https".equals(proto)) {
             HttpURLConnection con = connectHttpWithRedirects(url);
@@ -514,15 +517,17 @@ public class Utils {
 
     @Nonnull
     public static final String capitalize(@Nonnull final String toCapitalize) {
-        return toCapitalize.length() > 1 ? toCapitalize.substring(0, 1).toUpperCase() + toCapitalize.substring(1) : toCapitalize;
+        return toCapitalize.length() > 1 ?
+                toCapitalize.substring(0, 1).toUpperCase(Locale.ROOT) + toCapitalize.substring(1) :
+                toCapitalize;
     }
 
     public static void checkJavaRange( @Nullable JavaVersionParser.JavaVersion minVersionInclusive, @Nullable JavaVersionParser.JavaVersion maxVersionExclusive) {
         JavaVersionParser.JavaVersion currentJavaVersion = JavaVersionParser.getCurrentJavaVersion();
         if (minVersionInclusive != null && currentJavaVersion.compareTo(minVersionInclusive) < 0)
-            throw new RuntimeException(String.format("Found java version %s. Minimum required is %s.", currentJavaVersion, minVersionInclusive));
+            throw new RuntimeException(String.format(Locale.ROOT, "Found java version %s. Minimum required is %s.", currentJavaVersion, minVersionInclusive));
         if (maxVersionExclusive != null && currentJavaVersion.compareTo(maxVersionExclusive) >= 0)
-            throw new RuntimeException(String.format("Found java version %s. Versions %s and newer are not supported yet.", currentJavaVersion, maxVersionExclusive));
+            throw new RuntimeException(String.format(Locale.ROOT, "Found java version %s. Versions %s and newer are not supported yet.", currentJavaVersion, maxVersionExclusive));
     }
 
     public static void checkJavaVersion() {
@@ -547,7 +552,7 @@ public class Utils {
             conn.connect();
             conn.getResponseCode();
         } catch (SSLException e) {
-            throw new RuntimeException(String.format("Failed to validate certificate for %s, Most likely cause is an outdated JDK. Try updating at https://adoptopenjdk.net/ " +
+            throw new RuntimeException(String.format(Locale.ROOT, "Failed to validate certificate for %s, Most likely cause is an outdated JDK. Try updating at https://adoptopenjdk.net/ " +
                     "To disable this check re-run with -Dnet.minecraftforge.gradle.test_certs=false", url), e);
         } catch (IOException e) {
             //Normal connection failed, not the point of this test so ignore

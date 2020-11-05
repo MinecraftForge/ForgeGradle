@@ -29,6 +29,7 @@ import org.gradle.api.Project;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -70,7 +71,7 @@ public class AccessTransformerFunction extends ExecuteFunction {
         if (transformers != null) {
             File tmp = File.createTempFile("FG_ats_", ".cfg");
             tmp.deleteOnExit();
-            Files.write(tmp.toPath(), transformers.getBytes());
+            Files.write(tmp.toPath(), transformers.getBytes(StandardCharsets.UTF_8));
             List<String> args = new ArrayList<>(Arrays.asList(runArgs));
             args.add("--atFile");
             args.add(tmp.getAbsolutePath());

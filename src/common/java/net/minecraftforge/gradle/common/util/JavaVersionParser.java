@@ -21,6 +21,7 @@ import com.google.common.primitives.Ints;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -42,7 +43,7 @@ public class JavaVersionParser {
     private static String UPDATE_NUMBER_PATTERN = "\\d+";
 
     // Forge: Changed to make only one part required, OpenJDK publishes a version with just '9'
-    private static Pattern VERSION_REGEX = Pattern.compile(String.format("(%s)(?:\\.(%s)\\.(%s))?(?:_(%s))?.*",
+    private static Pattern VERSION_REGEX = Pattern.compile(String.format(Locale.ROOT, "(%s)(?:\\.(%s)\\.(%s))?(?:_(%s))?.*",
             MAJOR_VERSION_FAMILY_PATTERN, MAJOR_VERSION_PATTERN, MAINTENANCE_NUMBER_PATTERN, UPDATE_NUMBER_PATTERN));
 
     private static final JavaVersion currentJavaVersion = parseJavaVersion(System.getProperty(JAVA_VERSION_PROPERTY));
@@ -147,7 +148,7 @@ public class JavaVersionParser {
          * @return Major version string if available. Examples include '1.6', '1.7', '1.8'
          */
         public String getMajorVersionString() {
-            return String.format("%d.%d", this.majorVersionFamily, this.majorVersion);
+            return String.format(Locale.ROOT, "%d.%d", this.majorVersionFamily, this.majorVersion);
         }
 
         /**

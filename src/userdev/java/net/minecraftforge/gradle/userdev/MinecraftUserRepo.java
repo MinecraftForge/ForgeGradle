@@ -96,6 +96,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -899,7 +900,7 @@ public class MinecraftUserRepo extends BaseRepo {
     }
 
     private File findObfToSrg(IMappingFile.Format format) throws IOException {
-        String ext = format.name().toLowerCase();
+        String ext = format.name().toLowerCase(Locale.ROOT);
         File root = cache(mcp.getArtifact().getGroup().replace('.', '/'), mcp.getArtifact().getName(), mcp.getArtifact().getVersion());
         File file = new File(root, "obf_to_srg." + ext);
 
