@@ -25,12 +25,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -45,7 +41,7 @@ public class MappingFile {
         SRG, CSRG, TSRG, PG;
         public static Format get(String value) {
             try {
-                return Format.valueOf(value.toUpperCase());
+                return Format.valueOf(value.toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException e) {
                 return null;
             }
@@ -62,7 +58,10 @@ public class MappingFile {
     }
     public static MappingFile load(InputStream input) throws IOException {
         MappingFile ret = new MappingFile();
-        List<String> lines = IOUtils.readLines(input).stream().map(line -> (line + '#').split("#")[0].replaceFirst("\\s++$", "")).filter(l -> !l.isEmpty()).collect(Collectors.toList());
+        List<String> lines = IOUtils.readLines(input, StandardCharsets.UTF_8).stream()
+                .map(line -> (line + '#').split("#")[0].replaceFirst("\\s++$", ""))
+                .filter(l -> !l.isEmpty())
+                .collect(Collectors.toList());
         String firstLine = lines.get(0);
         String test = firstLine.split(" ")[0];
         if ("PK:".equals(test) || "CL:".equals(test) || "FD:".equals(test) || "MD:".equals(test)) { //SRG
@@ -212,7 +211,7 @@ public class MappingFile {
 
         try (FileOutputStream out = new FileOutputStream(file)){
             for (String line : lines) {
-                out.write(line.getBytes());
+                out.write(line.getBytes(StandardCharsets.UTF_8));
                 out.write('\n');
             }
         }

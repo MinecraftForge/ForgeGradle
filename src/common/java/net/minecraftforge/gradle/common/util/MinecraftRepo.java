@@ -26,6 +26,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
@@ -236,7 +237,7 @@ public class MinecraftRepo extends BaseRepo {
             if (ret == null) {
                 return null;
             }
-            FileUtils.writeByteArrayToFile(pom, ret.getBytes());
+            FileUtils.writeByteArrayToFile(pom, ret.getBytes(StandardCharsets.UTF_8));
             cache.save();
             Utils.updateHash(pom);
         }

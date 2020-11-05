@@ -43,7 +43,7 @@ public enum HashFunction {
 
     private HashFunction(String algo, int length) {
         this.algo = algo;
-        this.pad = String.format("%0" + length + "d", 0);
+        this.pad = String.format(Locale.ROOT, "%0" + length + "d", 0);
     }
 
     public String getExtension() {

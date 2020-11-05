@@ -49,10 +49,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -241,7 +239,7 @@ public abstract class RunConfigGenerator
     {
         final Stream<String> propStream = Stream.concat(
                 runConfig.getProperties().entrySet().stream()
-                    .map(kv -> String.format("-D%s=%s", kv.getKey(), runConfig.replace(updatedTokens, kv.getValue()))),
+                    .map(kv -> String.format(Locale.ROOT, "-D%s=%s", kv.getKey(), runConfig.replace(updatedTokens, kv.getValue()))),
                 runConfig.getJvmArgs().stream()).map(RunConfigGenerator::fixupArg);
         if (runConfig.isClient()) {
             return Stream.concat(propStream, additionalClientArgs.stream());
@@ -299,12 +297,9 @@ public abstract class RunConfigGenerator
                 runConfigs.add(createRunConfiguration(project, runConfig, additionalClientArgs));
             });
             rootObject.add("configurations", runConfigs);
-            Writer writer;
-            try {
-                writer = new FileWriter(new File(runConfigurationsDir, "launch.json"));
+            try(Writer writer = new PrintWriter(new File(runConfigurationsDir, "launch.json"),StandardCharsets.UTF_8.name())) {
                 Gson gson = new GsonBuilder().setPrettyPrinting().create();
-                writer.write(gson.toJson(rootObject));
-                writer.close();
+                gson.toJson(rootObject, writer);
             } catch (IOException e) {
                 e.printStackTrace();
             }

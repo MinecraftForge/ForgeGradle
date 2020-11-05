@@ -29,12 +29,8 @@ import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashingInputStream;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -88,7 +84,7 @@ public class ArchiveChecksum extends DefaultTask {
             }
         }
 
-        try(PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(getOutput())))) {
+        try(PrintWriter out = new PrintWriter(getOutput(), StandardCharsets.UTF_8.name())) {
             checksums.forEach((name, hash) -> {
                 out.write(hash);
                 out.write(' ');

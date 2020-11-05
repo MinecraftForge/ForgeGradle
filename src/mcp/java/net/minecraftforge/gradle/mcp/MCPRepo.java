@@ -54,11 +54,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.zip.ZipOutputStream;
 
 /**
@@ -272,7 +269,7 @@ public class MCPRepo extends BaseRepo {
             String ret = builder.tryBuild();
             if (ret == null)
                 return null;
-            FileUtils.writeByteArrayToFile(pom, ret.getBytes());
+            FileUtils.writeByteArrayToFile(pom, ret.getBytes(StandardCharsets.UTF_8));
             cache.save();
             Utils.updateHash(pom, HashFunction.SHA1);
         }
@@ -330,7 +327,7 @@ public class MCPRepo extends BaseRepo {
     }
 
     private File findRenames(String classifier, MappingFile.Format format, String version, boolean toObf) throws IOException {
-        String ext = format.name().toLowerCase();
+        String ext = format.name().toLowerCase(Locale.ROOT);
         //File names = findNames(version));
         File mcp = getMCP(version);
         if (mcp == null)
@@ -381,7 +378,7 @@ public class MCPRepo extends BaseRepo {
 
     @SuppressWarnings("unused")
     private File findRenames(String classifier, MappingFile.Format format, String version, String mapping, boolean obf, boolean reverse) throws IOException {
-        String ext = format.name().toLowerCase();
+        String ext = format.name().toLowerCase(Locale.ROOT);
         File names = findNames(version);
         File mcp = getMCP(version);
         if (mcp == null || names == null)
@@ -552,11 +549,11 @@ public class MCPRepo extends BaseRepo {
                  ZipOutputStream out = new ZipOutputStream(fos)) {
 
                 out.putNextEntry(Utils.getStableEntry("fields.csv"));
-                csv.write(new OutputStreamWriter(out), fields);
+                csv.write(new OutputStreamWriter(out, StandardCharsets.UTF_8), fields);
                 out.closeEntry();
 
                 out.putNextEntry(Utils.getStableEntry("methods.csv"));
-                csv.write(new OutputStreamWriter(out), methods);
+                csv.write(new OutputStreamWriter(out, StandardCharsets.UTF_8), methods);
                 out.closeEntry();
             }
 

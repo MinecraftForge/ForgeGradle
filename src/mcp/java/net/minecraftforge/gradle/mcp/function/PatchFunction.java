@@ -32,6 +32,8 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -52,8 +54,8 @@ public class PatchFunction implements MCPFunction {
     public  void initialize(MCPEnvironment environment, ZipFile zip) throws IOException {
         patches = zip.stream().filter(e -> !e.isDirectory() && e.getName().startsWith(path) && e.getName().endsWith(".patch"))
         .collect(Collectors.toMap(e -> e.getName().substring(path.length()), e -> {
-            try {
-                return IOUtils.toString(zip.getInputStream(e));
+            try (InputStream stream = zip.getInputStream(e)) {
+                return IOUtils.toString(stream, StandardCharsets.UTF_8);
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }

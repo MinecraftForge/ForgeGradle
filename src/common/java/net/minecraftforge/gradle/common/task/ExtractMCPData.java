@@ -25,6 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -60,7 +61,8 @@ public class ExtractMCPData extends DefaultTask {
             }
             int spec = Config.getSpec(zip.getInputStream(entry));
             if (spec == 1) {
-                MCPConfigV1 cfg = GSON.fromJson(new InputStreamReader(zip.getInputStream(entry)), MCPConfigV1.class);
+                MCPConfigV1 cfg = GSON.fromJson(
+                        new InputStreamReader(zip.getInputStream(entry), StandardCharsets.UTF_8), MCPConfigV1.class);
                 String path = cfg.getData(key.split("/"));
                 if (path == null && "statics".equals(key)) { //TODO: Remove when I next push MCPConfig
                     path = "config/static_methods.txt";

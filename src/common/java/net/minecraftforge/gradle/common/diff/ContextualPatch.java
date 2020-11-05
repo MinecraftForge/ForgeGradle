@@ -57,6 +57,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -155,7 +156,7 @@ public final class ContextualPatch {
     }
 
     private void init() throws IOException {
-        patchReader = new BufferedReader(new InputStreamReader(patchFile.openStream()));
+        patchReader = new BufferedReader(new InputStreamReader(patchFile.openStream(), StandardCharsets.UTF_8));
         if (!patchFile.requiresFurtherProcessing()) return;
         String encoding = "ISO-8859-1";
         String line = patchReader.readLine();

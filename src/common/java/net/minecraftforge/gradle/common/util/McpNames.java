@@ -70,7 +70,7 @@ public class McpNames {
             for (ZipEntry entry : entries) {
                 CsvReader reader = new CsvReader();
                 reader.setContainsHeader(true);
-                CsvContainer csv = reader.read(new InputStreamReader(zip.getInputStream(entry)));
+                CsvContainer csv = reader.read(new InputStreamReader(zip.getInputStream(entry), StandardCharsets.UTF_8));
                 for (CsvRow row : csv.getRows()) {
                     String searge = row.getField("searge");
                     if (searge == null)

@@ -3,6 +3,7 @@ package net.minecraftforge.gradle.common.diff;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 class LocalContext implements PatchContextProvider {
@@ -29,7 +30,7 @@ class LocalContext implements PatchContextProvider {
     @Override
     public void setFailed(ContextualPatch.SinglePatch patch, List<String> lines) throws IOException {
         if (lines.isEmpty()) return;
-        try (PrintWriter p = new PrintWriter(new FileOutputStream(patch.targetFile + ".rej"))) {
+        try (PrintWriter p = new PrintWriter(patch.targetFile + ".rej", StandardCharsets.UTF_8.name())) {
             for (String line : lines) {
                 p.println(line);
             }

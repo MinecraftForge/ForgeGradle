@@ -85,15 +85,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -503,7 +496,7 @@ public class MinecraftUserRepo extends BaseRepo {
             if (ret == null) {
                 return null;
             }
-            FileUtils.writeByteArrayToFile(pom, ret.getBytes());
+            FileUtils.writeStringToFile(pom, ret, StandardCharsets.UTF_8);
             cache.save();
             Utils.updateHash(pom, HashFunction.SHA1);
         }
@@ -667,7 +660,7 @@ public class MinecraftUserRepo extends BaseRepo {
                     File parentAT = project.file("build/" + at.getName() + "/parent_at.cfg");
                     if (!parentAT.getParentFile().exists())
                         parentAT.getParentFile().mkdirs();
-                    Files.write(parentAT.toPath(), baseAT.toString().getBytes());
+                    Files.write(parentAT.toPath(), baseAT.toString().getBytes(StandardCharsets.UTF_8));
                     at.setAts(parentAT);
                 }
 
@@ -831,8 +824,8 @@ public class MinecraftUserRepo extends BaseRepo {
                         if (name.startsWith("META-INF/services/") && !entry.isDirectory()) {
                             List<String> existing = servicesLists.computeIfAbsent(name, k -> new ArrayList<>());
                             if (existing.size() > 0) existing.add("");
-                            existing.add(String.format("# %s - %s", patcher.artifact, patcher.getUniversal().getCanonicalFile().getName()));
-                            existing.addAll(IOUtils.readLines(zin));
+                            existing.add(String.format(Locale.ROOT, "# %s - %s", patcher.artifact, patcher.getUniversal().getCanonicalFile().getName()));
+                            existing.addAll(IOUtils.readLines(zin, StandardCharsets.UTF_8));
                         } else {
                             ZipEntry _new = new ZipEntry(name);
                             _new.setTime(0); //SHOULD be the same time as the main entry, but NOOOO _new.setTime(entry.getTime()) throws DateTimeException, so you get 0, screw you!
@@ -858,8 +851,8 @@ public class MinecraftUserRepo extends BaseRepo {
                         if (name.startsWith("META-INF/services/") && !entry.isDirectory()) {
                             List<String> existing = servicesLists.computeIfAbsent(name, k -> new ArrayList<>());
                             if (existing.size() > 0) existing.add("");
-                            existing.add(String.format("# %s - %s", patcher.artifact, patcher.getZip().getCanonicalFile().getName()));
-                            existing.addAll(IOUtils.readLines(zin));
+                            existing.add(String.format(Locale.ROOT, "# %s - %s", patcher.artifact, patcher.getZip().getCanonicalFile().getName()));
+                            existing.addAll(IOUtils.readLines(zin, StandardCharsets.UTF_8));
                         } else {
                             ZipEntry _new = new ZipEntry(name);
                             _new.setTime(0);
@@ -878,7 +871,7 @@ public class MinecraftUserRepo extends BaseRepo {
             ZipEntry _new = new ZipEntry(name);
             _new.setTime(0);
             zip.putNextEntry(_new);
-            IOUtils.writeLines(kv.getValue(), "\n", zip);
+            IOUtils.writeLines(kv.getValue(), "\n", zip, StandardCharsets.UTF_8);
             added.add(name);
         }
     }
@@ -894,7 +887,7 @@ public class MinecraftUserRepo extends BaseRepo {
     }
 
     private File findObfToSrg(MappingFile.Format format) throws IOException {
-        String ext = format.name().toLowerCase();
+        String ext = format.name().toLowerCase(Locale.ROOT);
         File root = cache(mcp.getArtifact().getGroup().replace('.', '/'), mcp.getArtifact().getName(), mcp.getArtifact().getVersion());
         File file = new File(root, "obf_to_srg." + ext);
 
@@ -1152,7 +1145,7 @@ public class MinecraftUserRepo extends BaseRepo {
 
                     if (name.endsWith(".java")) {
                         String mapped = map.rename(zin, addJavadocs && vanilla.contains(name.substring(0, name.length() - 5)));
-                        IOUtils.write(mapped, zout);
+                        IOUtils.write(mapped, zout, StandardCharsets.UTF_8);
                     } else {
                         IOUtils.copy(zin, zout);
                     }

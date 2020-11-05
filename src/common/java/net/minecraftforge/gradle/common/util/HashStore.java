@@ -26,6 +26,7 @@ import org.gradle.internal.hash.HashUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -88,7 +89,7 @@ public class HashStore {
         this.target = file;
         oldHashes.clear();
         if(!file.exists()) return this;
-        for (String line : FileUtils.readLines(file)) {
+        for (String line : FileUtils.readLines(file, StandardCharsets.UTF_8)) {
             String[] split = line.split("=");
             oldHashes.put(split[0], split[1]);
         }
@@ -153,7 +154,10 @@ public class HashStore {
         save(target);
     }
     public void save(File file) throws IOException {
-        FileUtils.writeByteArrayToFile(file, newHashes.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue()).collect(Collectors.joining("\n")).getBytes());
+        FileUtils.writeByteArrayToFile(file, newHashes.entrySet().stream()
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .collect(Collectors.joining("\n"))
+                .getBytes(StandardCharsets.UTF_8));
     }
 
     private String getPath(File file) {

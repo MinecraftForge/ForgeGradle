@@ -20,18 +20,17 @@
 
 package net.minecraftforge.gradle.common.task;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
+import com.google.common.io.CharStreams;
+import com.google.common.io.Files;
+import org.apache.commons.io.output.NullWriter;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Input;
@@ -71,7 +70,7 @@ public class JarExec extends DefaultTask {
 
         JavaExec java = getProject().getTasks().create("_java_exec_" + index++ + "_", JavaExec.class);
         try (OutputStream log = hasLog ? new BufferedOutputStream(new FileOutputStream(logFile)) : NULL) {
-            PrintWriter printer = new PrintWriter(log, true);
+            PrintWriter printer = new PrintWriter(new OutputStreamWriter(log, StandardCharsets.UTF_8), true);
             // Execute command
             java.setArgs(filterArgs());
             printer.println("Args: " + java.getArgs().stream().map(m -> '"' + m +'"').collect(Collectors.joining(", ")));

@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 public class DownloadMCMeta extends DefaultTask {
     private static final String MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
@@ -48,7 +49,7 @@ public class DownloadMCMeta extends DefaultTask {
     @TaskAction
     public void downloadMCMeta() throws IOException {
         try (InputStream manin = new URL(MANIFEST_URL).openStream()) {
-            URL url = GSON.fromJson(new InputStreamReader(manin), ManifestJson.class).getUrl(getMCVersion());
+            URL url = GSON.fromJson(new InputStreamReader(manin, StandardCharsets.UTF_8), ManifestJson.class).getUrl(getMCVersion());
             if (url != null) {
                 FileUtils.copyURLToFile(url, getOutput());
             } else {

@@ -25,11 +25,8 @@ import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import org.gradle.api.tasks.JavaExec;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -121,7 +118,7 @@ public class ExecuteFunction implements MCPFunction {
         // Execute command
         JavaExec java = environment.project.getTasks().create("_", JavaExec.class);
         try (BufferedOutputStream log_out = new BufferedOutputStream(new FileOutputStream(environment.getFile("console.log")))) {
-            PrintWriter writer = new PrintWriter(log_out);
+            PrintWriter writer = new PrintWriter(new OutputStreamWriter(log_out, StandardCharsets.UTF_8.name()));
             Function<String,String> quote = s -> '"' + s + '"';
             writer.println("JVM Args:    " + jvmArgList.stream().map(quote).collect(Collectors.joining(", ")));
             writer.println("Run Args:    " + runArgList.stream().map(quote).collect(Collectors.joining(", ")));

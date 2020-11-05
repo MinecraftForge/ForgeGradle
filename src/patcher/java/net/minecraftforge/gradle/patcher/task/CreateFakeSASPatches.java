@@ -22,6 +22,7 @@ package net.minecraftforge.gradle.patcher.task;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -66,7 +67,7 @@ public class CreateFakeSASPatches extends DefaultTask {
             getOutput().mkdirs();
         for (File file : getFiles()) {
             getProject().getLogger().lifecycle("File: " + file);
-            for (String line : FileUtils.readLines(file)) {
+            for (String line : FileUtils.readLines(file, StandardCharsets.UTF_8)) {
                 int idx = line.indexOf('#');
                 if (idx == 0 || line.isEmpty()) continue;
                 if (idx != -1) line = line.substring(0, idx - 1);

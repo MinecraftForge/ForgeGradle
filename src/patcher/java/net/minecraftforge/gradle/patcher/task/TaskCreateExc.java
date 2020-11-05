@@ -171,7 +171,7 @@ public class TaskCreateExc extends DefaultTask {
                 CsvReader reader = new CsvReader();
                 reader.setContainsHeader(true);
                 try {
-                    CsvContainer csv  = reader.read(new InputStreamReader(zip.getInputStream(e)));
+                    CsvContainer csv  = reader.read(new InputStreamReader(zip.getInputStream(e), StandardCharsets.UTF_8));
                     for (CsvRow row : csv.getRows()) {
                         names.put(row.getField("searge"), row.getField("name"));
                     }

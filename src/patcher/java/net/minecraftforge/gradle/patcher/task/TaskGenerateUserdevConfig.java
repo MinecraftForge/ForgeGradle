@@ -23,15 +23,7 @@ package net.minecraftforge.gradle.patcher.task;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 import groovy.lang.MissingPropertyException;
 import org.gradle.api.DefaultTask;
@@ -127,7 +119,7 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
         if (patcher != null) {
             if (project != getProject() && patcher.patches != null) { //patches == null means they dont add anything, used by us as a 'clean' workspace.
                 if (json.parent == null) {
-                    json.parent = String.format("%s:%s:%s:userdev", project.getGroup(), project.getName(), project.getVersion());
+                    json.parent = String.format(Locale.ROOT, "%s:%s:%s:userdev", project.getGroup(), project.getName(), project.getVersion());
                     return;
                 }
             }

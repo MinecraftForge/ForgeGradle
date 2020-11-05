@@ -20,6 +20,8 @@
 
 package net.minecraftforge.gradle.mcp.function;
 
+import com.google.common.io.Files;
+import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -28,6 +30,7 @@ import com.google.gson.JsonObject;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 
 public class DownloadVersionJSONFunction extends AbstractFileDownloadFunction {
 
@@ -39,10 +42,7 @@ public class DownloadVersionJSONFunction extends AbstractFileDownloadFunction {
 
     private static DownloadInfo getDownloadInfo(MCPEnvironment environment) {
         try {
-            Gson gson = new Gson();
-            Reader reader = new FileReader(environment.getStepOutput(DownloadManifestFunction.class));
-            JsonObject json = gson.fromJson(reader, JsonObject.class);
-            reader.close();
+            JsonObject json = Utils.loadJson(environment.getStepOutput(DownloadManifestFunction.class));
 
             // Look for the version we want and return its URL
             for (JsonElement e : json.getAsJsonArray("versions")) {
