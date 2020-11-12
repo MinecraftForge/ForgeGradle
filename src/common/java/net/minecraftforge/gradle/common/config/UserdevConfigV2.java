@@ -22,6 +22,8 @@ package net.minecraftforge.gradle.common.config;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,6 +46,7 @@ public class UserdevConfigV2 extends UserdevConfigV1 {
     public String patchesModifiedPrefix;
     private Boolean notchObf; //This is a Boolean so we can set to null and it won't be printed in the json.
     private List<String> universalFilters;
+    private String sourceFileCharset = StandardCharsets.UTF_8.name();
 
     public void setNotchObf(boolean value) {
         this.notchObf = value ? true : null;
@@ -51,6 +54,17 @@ public class UserdevConfigV2 extends UserdevConfigV1 {
 
     public boolean getNotchObf() {
         return this.notchObf == null ? false : this.notchObf;
+    }
+
+    public void setSourceFileCharset(String value) {
+        if (!Charset.isSupported(value)) {
+            throw new IllegalArgumentException("Unsupported charset: " + value);
+        }
+        sourceFileCharset = value;
+    }
+
+    public String getSourceFileCharset() {
+        return sourceFileCharset;
     }
 
     public void addUniversalFilter(String value) {

@@ -47,6 +47,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -165,7 +166,7 @@ public class Deobfuscator {
 
                     if (_old.getName().endsWith(".java")) {
                         String mapped = map.rename(zin, false);
-                        IOUtils.write(mapped, zout);
+                        IOUtils.write(mapped, zout, StandardCharsets.UTF_8);
                     } else {
                         IOUtils.copy(zin, zout);
                     }
