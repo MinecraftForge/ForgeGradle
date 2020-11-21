@@ -88,6 +88,7 @@ import java.util.zip.ZipFile;
 public class Utils {
     private static final boolean ENABLE_TEST_CERTS = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_certs", "true"));
     private static final boolean ENABLE_TEST_JAVA  = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_java", "true"));
+    private static boolean OFFLINE_MODE = false;
 
     public static final Gson GSON = new GsonBuilder()
         .registerTypeAdapter(MCPConfigV1.Step.class, new MCPConfigV1.Step.Deserializer())
@@ -110,6 +111,10 @@ public class Utils {
           + "REFERENCE purposes. Please avoid publishing any source code referencing these mappings. A full copy of "
           + "the license can be found at the top of the mapping file itself and in the 19w36a snapshot article at: "
           + "https://www.minecraft.net/en-us/article/minecraft-snapshot-19w36a.";
+
+    public static void initUtils(Project p) {
+        OFFLINE_MODE = p.getGradle().getStartParameter().isOffline();
+    }
 
     public static void extractFile(ZipFile zip, String name, File output) throws IOException {
         extractFile(zip, zip.getEntry(name), output);
@@ -330,6 +335,13 @@ public class Utils {
     }
 
     public static boolean downloadEtag(URL url, File output, boolean offline) throws IOException {
+        // If we are in OFFLINE_MODE, check if file exists; If not, we return false
+        if(OFFLINE_MODE) {
+            if (output.exists())
+                return true;
+            return false;
+        }
+
         if (output.exists() && output.lastModified() > System.currentTimeMillis() - CACHE_TIMEOUT) {
             return true;
         }
@@ -382,6 +394,13 @@ public class Utils {
     }
 
     public static boolean downloadFile(URL url, File output, boolean deleteOn404) {
+        // If we are in OFFLINE_MODE, check to see if the output file exists. If not, we return false.
+        if(OFFLINE_MODE) {
+            if (output.exists())
+                return true;
+            return false;
+        }
+
         String proto = url.getProtocol().toLowerCase();
 
         try {
@@ -413,6 +432,13 @@ public class Utils {
     }
 
     private static boolean downloadFile(URLConnection con, File output) throws IOException {
+        //If we are in OFFLINE_MODE, check to see if the file exists, if it doesn't, return false.
+        if(OFFLINE_MODE) {
+            if(output.exists())
+                return true;
+            return false;
+        }
+
         try {
             InputStream stream = con.getInputStream();
             int len = con.getContentLength();
@@ -437,6 +463,10 @@ public class Utils {
     }
 
     public static String downloadString(URL url) throws IOException {
+        // If we are in OFFLINE_MODE, return null
+        if(OFFLINE_MODE)
+            return null;
+
         String proto = url.getProtocol().toLowerCase();
 
         if ("http".equals(proto) || "https".equals(proto)) {
@@ -453,6 +483,10 @@ public class Utils {
     }
 
     private static String downloadString(URLConnection con) throws IOException {
+        // If we are in OFFLINE_MODE, simply return null, don't try to connect.
+        if(OFFLINE_MODE)
+            return null;
+
         InputStream stream = con.getInputStream();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         int len = con.getContentLength();
@@ -463,6 +497,13 @@ public class Utils {
     }
 
     public static File downloadWithCache(URL url, File target, boolean changing, boolean bypassLocal) throws IOException {
+        //If we are in OFFLINE_MODE, we check the cache, if it isn't there we return null
+        if(OFFLINE_MODE) {
+            if(target.exists())
+                return target;
+            return null;
+        }
+
         File md5_file = new File(target.getAbsolutePath() + ".md5");
         String actual = target.exists() ? HashFunction.MD5.hash(target) : null;
 
@@ -517,7 +558,7 @@ public class Utils {
             );
         }
 
-        if (ENABLE_TEST_CERTS) {
+        if (ENABLE_TEST_CERTS && !OFFLINE_MODE) {
             testServerConnection(FORGE_MAVEN);
             testServerConnection(MOJANG_MAVEN);
         }

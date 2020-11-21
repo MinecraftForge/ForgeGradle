@@ -58,6 +58,7 @@ public class UserDevPlugin implements Plugin<Project> {
 
     @Override
     public void apply(@Nonnull Project project) {
+        Utils.initUtils(project);
         Utils.checkJavaVersion();
 
         @SuppressWarnings("unused")
