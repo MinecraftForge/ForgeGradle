@@ -1155,7 +1155,9 @@ public class MinecraftUserRepo extends BaseRepo {
                     zout.putNextEntry(Utils.getStableEntry(name));
 
                     if (name.endsWith(".java")) {
-                        String mapped = map.rename(zin, addJavadocs && vanilla.contains(name.substring(0, name.length() - 5)));
+                        String mapped = map.rename(zin,
+                                addJavadocs && vanilla.contains(name.substring(0, name.length() - 5)),
+                                true, sourceFileCharset);
                         IOUtils.write(mapped, zout, sourceFileCharset);
                     } else {
                         IOUtils.copy(zin, zout);

@@ -20,14 +20,12 @@
 
 package net.minecraftforge.gradle.common.util;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.StringReader;
-import java.io.StringWriter;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -43,7 +41,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
 
 import de.siegmar.fastcsv.reader.CsvContainer;
 import de.siegmar.fastcsv.reader.CsvReader;
@@ -97,21 +94,18 @@ public class McpNames {
     }
 
     public String rename(InputStream stream, boolean javadocs) throws IOException {
-        return rename(stream, javadocs, true);
+        return rename(stream, javadocs, true, StandardCharsets.UTF_8);
     }
 
     public String rename(InputStream stream, boolean javadocs, boolean lambdas) throws IOException {
-        List<String> input = new ArrayList<>();
-        StringWriter writer = new StringWriter();
-        IOUtils.copy(stream, writer, StandardCharsets.UTF_8);
-        String data = writer.toString();
+        return rename(stream, javadocs, lambdas, StandardCharsets.UTF_8);
+    }
 
-        try (BufferedReader reader = new BufferedReader(new StringReader(data))) {
-            String line = null;
-            while ((line = reader.readLine()) != null) {
-                input.add(line);
-            }
-        }
+    public String rename(InputStream stream, boolean javadocs, boolean lambdas, Charset sourceFileCharset)
+            throws IOException {
+
+        String data = IOUtils.toString(stream, sourceFileCharset);
+        List<String> input = IOUtils.readLines(new StringReader(data));
 
         //Reader doesn't give us the empty line if the file ends with a newline.. so add one.
         if (data.charAt(data.length() - 1) == '\r' || data.charAt(data.length() - 1) == '\n')
