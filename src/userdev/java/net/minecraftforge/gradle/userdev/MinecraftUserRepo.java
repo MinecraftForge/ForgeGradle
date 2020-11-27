@@ -79,6 +79,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -503,7 +504,7 @@ public class MinecraftUserRepo extends BaseRepo {
             if (ret == null) {
                 return null;
             }
-            FileUtils.writeByteArrayToFile(pom, ret.getBytes());
+            FileUtils.writeByteArrayToFile(pom, ret.getBytes(StandardCharsets.UTF_8));
             cache.save();
             Utils.updateHash(pom, HashFunction.SHA1);
         }
@@ -667,7 +668,7 @@ public class MinecraftUserRepo extends BaseRepo {
                     File parentAT = project.file("build/" + at.getName() + "/parent_at.cfg");
                     if (!parentAT.getParentFile().exists())
                         parentAT.getParentFile().mkdirs();
-                    Files.write(parentAT.toPath(), baseAT.toString().getBytes());
+                    Files.write(parentAT.toPath(), baseAT.toString().getBytes(StandardCharsets.UTF_8));
                     at.setAts(parentAT);
                 }
 
@@ -878,7 +879,8 @@ public class MinecraftUserRepo extends BaseRepo {
             ZipEntry _new = new ZipEntry(name);
             _new.setTime(0);
             zip.putNextEntry(_new);
-            IOUtils.writeLines(kv.getValue(), "\n", zip);
+            // JAR File Specification requires UTF-8 encoding here
+            IOUtils.writeLines(kv.getValue(), "\n", zip, StandardCharsets.UTF_8);
             added.add(name);
         }
     }
@@ -1142,6 +1144,8 @@ public class MinecraftUserRepo extends BaseRepo {
                 sources.getParentFile().mkdirs();
 
             boolean addJavadocs = parent == null || parent.getConfigV2() == null || parent.getConfigV2().processor == null;
+            Charset sourceFileCharset = parent == null || parent.getConfigV2() == null ? StandardCharsets.UTF_8 :
+                    Charset.forName(parent.getConfigV2().getSourceFileCharset());
             debug("    Renaming Sources, Javadocs: " + addJavadocs);
             try(ZipInputStream zin = new ZipInputStream(new FileInputStream(patched));
                 ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(sources))) {
@@ -1151,8 +1155,10 @@ public class MinecraftUserRepo extends BaseRepo {
                     zout.putNextEntry(Utils.getStableEntry(name));
 
                     if (name.endsWith(".java")) {
-                        String mapped = map.rename(zin, addJavadocs && vanilla.contains(name.substring(0, name.length() - 5)));
-                        IOUtils.write(mapped, zout);
+                        String mapped = map.rename(zin,
+                                addJavadocs && vanilla.contains(name.substring(0, name.length() - 5)),
+                                true, sourceFileCharset);
+                        IOUtils.write(mapped, zout, sourceFileCharset);
                     } else {
                         IOUtils.copy(zin, zout);
                     }

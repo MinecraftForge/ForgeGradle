@@ -22,6 +22,7 @@ package net.minecraftforge.gradle.patcher.task;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,6 +80,7 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
     private String patchesModifiedPrefix;
     private boolean notchObf = false;
     private List<String> universalFilters;
+    private Charset sourceFileEncoding = StandardCharsets.UTF_8;
 
     @Inject
     public TaskGenerateUserdevConfig(@Nonnull final Project project) {
@@ -113,6 +115,7 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
             json.patchesOriginalPrefix = this.patchesOriginalPrefix;
             json.patchesModifiedPrefix = this.patchesModifiedPrefix;
             json.setNotchObf(this.notchObf);
+            json.setSourceFileCharset(this.sourceFileEncoding.name());
             if (this.universalFilters != null)
                 this.universalFilters.forEach(json::addUniversalFilter);
         }
@@ -337,6 +340,17 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
     }
     public void setNotchObf(boolean value) {
         this.notchObf = value;
+    }
+
+    @Input
+    public Charset getSourceFileEncoding() {
+        return this.sourceFileEncoding;
+    }
+    public void setSourceFileEncoding(Charset value) {
+        this.sourceFileEncoding = value;
+    }
+    public void setSourceFileEncoding(String value) {
+        this.sourceFileEncoding = Charset.forName(value);
     }
 
     @Input
