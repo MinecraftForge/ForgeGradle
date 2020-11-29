@@ -80,7 +80,7 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
     private String patchesModifiedPrefix;
     private boolean notchObf = false;
     private List<String> universalFilters;
-    private Charset sourceFileEncoding = StandardCharsets.UTF_8;
+    private String sourceFileEncoding = StandardCharsets.UTF_8.name();
 
     @Inject
     public TaskGenerateUserdevConfig(@Nonnull final Project project) {
@@ -115,7 +115,7 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
             json.patchesOriginalPrefix = this.patchesOriginalPrefix;
             json.patchesModifiedPrefix = this.patchesModifiedPrefix;
             json.setNotchObf(this.notchObf);
-            json.setSourceFileCharset(this.sourceFileEncoding.name());
+            json.setSourceFileCharset(this.sourceFileEncoding);
             if (this.universalFilters != null)
                 this.universalFilters.forEach(json::addUniversalFilter);
         }
@@ -343,14 +343,14 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
     }
 
     @Input
-    public Charset getSourceFileEncoding() {
+    public String getSourceFileEncoding() {
         return this.sourceFileEncoding;
     }
     public void setSourceFileEncoding(Charset value) {
-        this.sourceFileEncoding = value;
+        this.sourceFileEncoding = value.name();
     }
     public void setSourceFileEncoding(String value) {
-        this.sourceFileEncoding = Charset.forName(value);
+        this.sourceFileEncoding = Charset.forName(value).name();//Load then get name to ensure valid.
     }
 
     @Input
