@@ -28,6 +28,7 @@ import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -52,6 +53,7 @@ import org.apache.commons.lang3.tuple.Pair;
 public class McpNames {
     private static final String NEWLINE = System.getProperty("line.separator");
     private static final Pattern SRG_FINDER             = Pattern.compile("[fF]unc_[0-9]+_[a-zA-Z_]+|[fF]ield_[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_\\b");
+    private static final Pattern JAVADOC_INSERTER_TOKEN = Pattern.compile("\\{@fg\\.insertDoc ?(?<srg>[A-Za-z0-9_]*)(?: (?<def>.*))?}");
     private static final Pattern METHOD_JAVADOC_PATTERN = Pattern.compile("^(?<indent>(?: {3})+|\\t+)(?!return)(?:\\w+\\s+)*(?<generic><[\\w\\W]*>\\s+)?(?<return>\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>func_[0-9]+_[a-zA-Z_]+)\\(");
     private static final Pattern FIELD_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: {3})+|\\t+)(?!return)(?:\\w+\\s+)*(?:\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>field_[0-9]+_[a-zA-Z_]+) *(?:=|;)");
     private static final Pattern CLASS_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: )*|\\t*)([\\w|@]*\\s)*(class|interface|@interface|enum) (?<name>[\\w]+)");
@@ -157,7 +159,7 @@ public class McpNames {
         // methods
         Matcher matcher = METHOD_JAVADOC_PATTERN.matcher(line);
         if (matcher.find()) {
-            String javadoc = docs.get(matcher.group("name"));
+            String javadoc = getJavadoc(matcher.group("name"));
             if (javadoc != null)
                 insertAboveAnnotations(lines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, true));
 
@@ -168,7 +170,7 @@ public class McpNames {
         // fields
         matcher = FIELD_JAVADOC_PATTERN.matcher(line);
         if (matcher.find()) {
-            String javadoc = docs.get(matcher.group("name"));
+            String javadoc = getJavadoc(matcher.group("name"));
             if (javadoc != null)
                 insertAboveAnnotations(lines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, false));
 
@@ -182,7 +184,7 @@ public class McpNames {
             //if the stack is not empty we are entering a new inner class
             String currentClass = (innerClasses.isEmpty() ? _package : innerClasses.peek().getLeft() + "$") + matcher.group("name");
             innerClasses.push(Pair.of(currentClass, matcher.group("indent").length()));
-            String javadoc = docs.get(currentClass);
+            String javadoc = getJavadoc(currentClass);
             if (javadoc != null) {
                 insertAboveAnnotations(lines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, true));
             }
@@ -205,6 +207,51 @@ public class McpNames {
         }
 
         return true;
+    }
+
+    /**
+     * Returns the javadoc lines for the given member.
+     * <p>
+     * If there is no javadocs for {@code member}, then this will return {@code null}.
+     * <p>
+     * First, this replaces all tokens of {@code {@fg.insertDoc <srg> [def]}} with the corresponding documentation of the
+     * SRG member specified in the tag.
+     * <p>
+     * If no such documentation exists for that SRG member (including if the SRG member does not exist), or if that token's
+     * SRG member is the same as the {@code member} parameter, then it will be replaced with either the {@code def} argument if
+     * it exists, or an empty string.
+     * <p>
+     * Ex. {@code {@fg.insertDoc p_12345_b}} will be replaced with the documentation of {@code p_12345_b} if it exists.
+     * <p>
+     * Then, all SRG member names within the text (e.g. {@code field_31415_s_}, {@code func_11235_a}) will be replaced with
+     * their respective MCP names (or failing that, they will not be replaced and remain the same).
+     *
+     * @param member The SRG member to get the javadoc line for
+     * @return The javadoc for the member, or {@code null}
+     */
+    private String getJavadoc(String member) {
+        String javadoc = docs.get(member);
+        if (javadoc == null)
+            return null;
+
+        // 1st part: replace the insertion tokens
+        StringBuffer buf = new StringBuffer();
+        Matcher matcher = JAVADOC_INSERTER_TOKEN.matcher(javadoc);
+        while (matcher.find()) {
+            String srg = matcher.group("srg");
+            String def = matcher.group("def");
+            if (srg == null || srg.equals(member))
+                continue;
+            if (def == null || def.isEmpty())
+                def = "";
+            // Matcher#quoteReplacement is there so special regex tokens are not recognized in the javadoc (like $1)
+            matcher.appendReplacement(buf, Matcher.quoteReplacement(docs.getOrDefault(srg, def)));
+        }
+        matcher.appendTail(buf);
+
+        // 2nd part: replace all SRG names with MCP
+        // Blacklist is empty since we do not need to blacklist lambdas here (we're in javadocs)
+        return replaceInLine(buf.toString(), Collections.emptySet());
     }
 
     /** Inserts the given javadoc line into the list of lines before any annotations */
