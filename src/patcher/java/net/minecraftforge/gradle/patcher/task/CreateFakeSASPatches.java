@@ -65,7 +65,6 @@ public class CreateFakeSASPatches extends DefaultTask {
         if (getOutput().exists())
             getOutput().mkdirs();
         for (File file : getFiles()) {
-            getProject().getLogger().lifecycle("File: " + file);
             for (String line : FileUtils.readLines(file)) {
                 int idx = line.indexOf('#');
                 if (idx == 0 || line.isEmpty()) continue;
