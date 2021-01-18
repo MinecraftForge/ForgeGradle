@@ -21,7 +21,6 @@
 package net.minecraftforge.gradle.mcp.function;
 
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
-import org.gradle.internal.hash.HashValue;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -44,7 +43,7 @@ public abstract class AbstractDownloadMCFunction extends AbstractFileDownloadFun
 
             JsonObject artifactInfo = json.getAsJsonObject("downloads").getAsJsonObject(artifact);
             String url = artifactInfo.get("url").getAsString();
-            HashValue hash = HashValue.parse(artifactInfo.get("sha1").getAsString());
+            String hash = artifactInfo.get("sha1").getAsString();
             String version = json.getAsJsonObject().get("id").getAsString();
             return new DownloadInfo(url, hash, "jar", version, artifact);
         } catch (IOException ex) {

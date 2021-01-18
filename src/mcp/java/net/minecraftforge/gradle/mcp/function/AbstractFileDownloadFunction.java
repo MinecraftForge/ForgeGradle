@@ -20,11 +20,10 @@
 
 package net.minecraftforge.gradle.mcp.function;
 
+import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import org.apache.commons.io.FileUtils;
-import org.gradle.internal.hash.HashUtil;
-import org.gradle.internal.hash.HashValue;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -53,13 +52,13 @@ public abstract class AbstractFileDownloadFunction implements MCPFunction {
         Utils.delete(download); // This file should never exist, but abrupt termination of the process may leave it behind
 
         DownloadInfo info = downloadGetter.apply(environment);
-        if (info.hash != null && output.exists() && HashUtil.sha1(output).equals(info.hash)) {
+        if (info.hash != null && output.exists() && HashFunction.SHA1.hash(output).equalsIgnoreCase(info.hash)) {
             return output; // If the hash matches, don't download again
         }
         // Check if file exists in local installer cache
         if (info.type.equals("jar") && info.side.equals("client")) {
             File localPath = new File(Utils.getMCDir() + File.separator + "versions" + File.separator + info.version + File.separator + info.version + ".jar");
-            if (localPath.exists() && HashUtil.sha1(localPath).equals(info.hash)) {
+            if (localPath.exists() && HashFunction.SHA1.hash(localPath).equalsIgnoreCase(info.hash)) {
                 FileUtils.copyFile(localPath, download);
             } else {
                 FileUtils.copyURLToFile(new URL(info.url), download);
@@ -83,12 +82,12 @@ public abstract class AbstractFileDownloadFunction implements MCPFunction {
     static class DownloadInfo {
 
         private final String url;
-        private final HashValue hash;
+        private final String hash;
         private final String type;
         private final String version;
         private final String side;
 
-        public DownloadInfo(String url, @Nullable HashValue hash, String type, @Nullable String version, @Nullable String side) {
+        public DownloadInfo(String url, @Nullable String hash, String type, @Nullable String version, @Nullable String side) {
             this.url = url;
             this.hash = hash;
             this.type = type;

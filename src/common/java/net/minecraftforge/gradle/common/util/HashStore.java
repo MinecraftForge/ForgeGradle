@@ -22,7 +22,6 @@ package net.minecraftforge.gradle.common.util;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
-import org.gradle.internal.hash.HashUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -76,7 +75,6 @@ public class HashStore {
                 }
                 return true;
             }
-            HashUtil.sha1(file);
             String fileHash = HashFunction.SHA1.hash(file);
             newHashes.put(path, fileHash);
             return fileHash.equals(hash);
