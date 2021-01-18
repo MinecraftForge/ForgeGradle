@@ -39,6 +39,11 @@ pipeline {
         stage('buildandtest') {
             steps {
                 sh './gradlew ${GRADLE_ARGS} --refresh-dependencies --continue build test'
+                script {
+                    env.MYGROUP = sh(returnStdout: true, script: './gradlew properties -q | grep "group:" | awk \'{print $2}\'').trim()
+                    env.MYARTIFACT = sh(returnStdout: true, script: './gradlew properties -q | grep "name:" | awk \'{print $2}\'').trim()
+                    env.MYVERSION = sh(returnStdout: true, script: './gradlew properties -q | grep "version:" | awk \'{print $2}\'').trim()
+                }
             }
         }
         stage('publish') {
@@ -52,6 +57,7 @@ pipeline {
             }
             steps {
                 sh './gradlew ${GRADLE_ARGS} publish -PforgeMavenUser=${FORGE_MAVEN_USR} -PforgeMavenPassword=${FORGE_MAVEN_PSW}'
+                sh 'curl --user ${FORGE_MAVEN} http://files.minecraftforge.net/maven/manage/promote/latest/${MYGROUP}.${MYARTIFACT}/${MYVERSION}'
             }
         }
     }
