@@ -20,15 +20,16 @@
 
 package net.minecraftforge.gradle.mcp;
 
-import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
-import com.amadornes.artifactural.api.repository.ArtifactProvider;
-import com.amadornes.artifactural.api.repository.Repository;
-import com.amadornes.artifactural.base.repository.ArtifactProviderBuilder;
-import com.amadornes.artifactural.base.repository.SimpleRepository;
-import com.amadornes.artifactural.gradle.GradleRepositoryAdapter;
+import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
+import net.minecraftforge.artifactural.api.repository.ArtifactProvider;
+import net.minecraftforge.artifactural.api.repository.Repository;
+import net.minecraftforge.artifactural.base.repository.ArtifactProviderBuilder;
+import net.minecraftforge.artifactural.base.repository.SimpleRepository;
+import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 import com.google.common.collect.Maps;
 
 import de.siegmar.fastcsv.writer.CsvWriter;
+import de.siegmar.fastcsv.writer.LineDelimiter;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.HashStore;
@@ -166,12 +167,14 @@ public class MCPRepo extends BaseRepo {
         debug("  " + REPO_NAME + " Request: " + artifact.getGroup() + ":" + name + ":" + version + ":" + classifier + "@" + ext);
 
         if (group.equals(GROUP_MINECRAFT)) {
-            if ("pom".equals(ext)) {
-                return findPom(name, version);
-            } else if (name.startsWith("mappings_")) {
+            if (name.startsWith("mappings_")) {
                 if ("zip".equals(ext)) {
                     return findNames(name.substring(9) + '_' + version);
+                } else if ("pom".equals(ext)) {
+                    return findEmptyPom(name, version);
                 }
+            } else if ("pom".equals(ext)) {
+                return findPom(name, version);
             } else {
                 switch (classifier) {
                     case "":              return findRaw(name, version);
@@ -543,8 +546,6 @@ public class MCPRepo extends BaseRepo {
             sfields.forEach((k,v) -> fields.add(new String[] {k, v, "1", ""}));
             smethods.forEach((k,v) -> methods.add(new String[] {k, v, "1", ""}));
 
-            CsvWriter csv = new CsvWriter();
-
             if (!mappings.getParentFile().exists())
                 mappings.getParentFile().mkdirs();
 
@@ -552,11 +553,15 @@ public class MCPRepo extends BaseRepo {
                  ZipOutputStream out = new ZipOutputStream(fos)) {
 
                 out.putNextEntry(Utils.getStableEntry("fields.csv"));
-                csv.write(new OutputStreamWriter(out), fields);
+                try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new OutputStreamWriter(out))) {
+                    fields.forEach(writer::writeRow);
+                }
                 out.closeEntry();
 
                 out.putNextEntry(Utils.getStableEntry("methods.csv"));
-                csv.write(new OutputStreamWriter(out), methods);
+                try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new OutputStreamWriter(out))) {
+                    methods.forEach(writer::writeRow);
+                }
                 out.closeEntry();
             }
 
@@ -566,5 +571,22 @@ public class MCPRepo extends BaseRepo {
 
 
         return mappings;
+    }
+
+    private File findEmptyPom(String side, String version) throws IOException {
+        File pom = cacheMC(side, version, null, "pom");
+        debug("    Finding pom: " + pom);
+        HashStore cache = new HashStore(this.getCacheRoot()).load(cacheMC(side, version, null, "pom.input"));
+
+        if (!cache.isSame() || !pom.exists()) {
+            String ret = new POMBuilder(GROUP_MINECRAFT, side, version).tryBuild();
+            if (ret == null)
+                return null;
+            FileUtils.writeByteArrayToFile(pom, ret.getBytes());
+            cache.save();
+            Utils.updateHash(pom, HashFunction.SHA1);
+        }
+
+        return pom;
     }
 }

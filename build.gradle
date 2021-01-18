@@ -3,22 +3,12 @@ plugins {
     id 'eclipse'
     id 'maven-publish'
     id 'net.minecrell.licenser' version '0.4.1'
-    id 'org.ajoberstar.grgit' version '3.0.0'
-    id 'com.github.ben-manes.versions' version '0.20.0'
+    id 'org.ajoberstar.grgit' version '4.1.0'
+    id 'com.github.ben-manes.versions' version '0.36.0'
   //id 'com.github.johnrengelman.shadow' version '2.0.4'
 }
 
-group = 'net.minecraftforge.gradle'
-version = gitVersion()
-def gitVersion() {
-    def raw = grgit.describe(longDescr: true, tags: true)
-    def desc = (raw == null ? 'unknown-unknown-unknown' : raw).split('-') as List
-    def hash = desc.remove(desc.size() - 1)
-    def offset = desc.remove(desc.size() - 1)
-    def tag = desc.join('-')
-    def branch = grgit.branch.current().name    
-    return "${tag}.${offset}" //${t -> if (branch != 'master') t << '-' + branch}"
-}
+version = (grgit.describe(longDescr: true, tags: true) ?: 'unknown-unknown-unknown').split('-').with { "${it[0]}.${it[1]}" }
 println('Version: ' + version + ' Java: ' + System.getProperty('java.version') + ' JVM: ' + System.getProperty('java.vm.version') + '(' + System.getProperty('java.vendor') + ') Arch: ' + System.getProperty('os.arch'))
 
 sourceSets {
@@ -27,6 +17,8 @@ sourceSets {
     patcher
     userdev
 }
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(8)
 
 configurations {
     all {
@@ -45,9 +37,19 @@ jar {
     from sourceSets.userdev.output
 }
 
+task sourcesJar(type: Jar) {
+    from sourceSets.common.allJava
+    from sourceSets.mcp.allJava
+    from sourceSets.patcher.allJava
+    from sourceSets.userdev.allJava
+    archiveClassifier = 'sources'
+}
+
 repositories {
+	mavenLocal()
     jcenter()
     maven { url = 'https://files.minecraftforge.net/maven' }
+	maven { url = 'https://repo.gradle.org/gradle/libs-releases-local/' }
 }
 
 license {
@@ -69,16 +71,16 @@ wrapper {
 
 dependencies {
     commonImplementation gradleApi()
-    commonImplementation 'com.cloudbees:diff4j:1.2'
-    commonImplementation 'commons-io:commons-io:2.4'
+    commonImplementation 'com.cloudbees:diff4j:1.3'
+    commonImplementation 'commons-io:commons-io:2.8.0'
     commonImplementation 'com.github.jponge:lzma-java:1.3' // replaces the LZMA binary
     commonImplementation 'com.nothome:javaxdelta:2.0.1' // GDIFF implementation for BinPatches
-    commonImplementation 'com.google.code.gson:gson:2.8.5'
-    commonImplementation 'com.google.guava:guava:26.0-jre'
-    commonImplementation 'de.siegmar:fastcsv:1.0.2'
-    commonImplementation 'net.minecraftforge:artifactural:1.0.+'
-    commonImplementation 'org.apache.maven:maven-artifact:3.6.0'
-    commonImplementation 'org.apache.httpcomponents:httpclient:4.3.3'
+    commonImplementation 'com.google.code.gson:gson:2.8.6'
+    commonImplementation 'com.google.guava:guava:30.1-jre'
+    commonImplementation 'de.siegmar:fastcsv:2.0.0'
+    commonImplementation 'net.minecraftforge:artifactural:2.0.3'
+    commonImplementation 'org.apache.maven:maven-artifact:3.6.3'
+    commonImplementation 'org.apache.httpcomponents:httpclient:4.5.13'
     commonImplementation 'net.minecraftforge:srgutils:0.2.12'
 
     mcpImplementation sourceSets.common.output
@@ -105,8 +107,8 @@ project.extensions.eclipse.classpath.file.whenMerged { Classpath cp ->
 
 publishing {
     publications {
-        mavenJava(MavenPublication) {
-            from components.java
+        pluginMaven(MavenPublication) {
+            artifact sourcesJar
         }
     }
     repositories {

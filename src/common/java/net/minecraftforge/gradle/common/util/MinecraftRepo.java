@@ -41,12 +41,12 @@ import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
-import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
-import com.amadornes.artifactural.api.repository.ArtifactProvider;
-import com.amadornes.artifactural.api.repository.Repository;
-import com.amadornes.artifactural.base.repository.ArtifactProviderBuilder;
-import com.amadornes.artifactural.base.repository.SimpleRepository;
-import com.amadornes.artifactural.gradle.GradleRepositoryAdapter;
+import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
+import net.minecraftforge.artifactural.api.repository.ArtifactProvider;
+import net.minecraftforge.artifactural.api.repository.Repository;
+import net.minecraftforge.artifactural.base.repository.ArtifactProviderBuilder;
+import net.minecraftforge.artifactural.base.repository.SimpleRepository;
+import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 

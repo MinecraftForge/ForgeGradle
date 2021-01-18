@@ -65,6 +65,11 @@ public class MCPPlugin implements Plugin<Project> {
             });
             project.getRepositories().maven(e -> {
                 e.setUrl(Utils.FORGE_MAVEN);
+                e.metadataSources(m -> {
+                    m.gradleMetadata();
+                    m.mavenPom();
+                    m.artifact();
+                });
             });
             project.getRepositories().mavenCentral(); //Needed for MCP Deps
         });

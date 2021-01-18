@@ -120,6 +120,11 @@ public class PatcherPlugin implements Plugin<Project> {
         //Add Known repos
         project.getRepositories().maven(e -> {
             e.setUrl(Utils.FORGE_MAVEN);
+            e.metadataSources(m -> {
+                m.gradleMetadata();
+                m.mavenPom();
+                m.artifact();
+            });
         });
         new BaseRepo.Builder()
             .add(MCPRepo.create(project))

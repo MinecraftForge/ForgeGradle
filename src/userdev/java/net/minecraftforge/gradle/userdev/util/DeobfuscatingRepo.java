@@ -20,7 +20,7 @@
 
 package net.minecraftforge.gradle.userdev.util;
 
-import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
+import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
 import net.minecraftforge.gradle.common.util.*;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.*;

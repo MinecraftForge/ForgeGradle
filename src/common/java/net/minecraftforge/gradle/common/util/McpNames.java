@@ -42,9 +42,7 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import de.siegmar.fastcsv.reader.CsvContainer;
-import de.siegmar.fastcsv.reader.CsvReader;
-import de.siegmar.fastcsv.reader.CsvRow;
+import de.siegmar.fastcsv.reader.NamedCsvReader;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -65,17 +63,18 @@ public class McpNames {
         try (ZipFile zip = new ZipFile(data)) {
             List<ZipEntry> entries = zip.stream().filter(e -> e.getName().endsWith(".csv")).collect(Collectors.toList());
             for (ZipEntry entry : entries) {
-                CsvReader reader = new CsvReader();
-                reader.setContainsHeader(true);
-                CsvContainer csv = reader.read(new InputStreamReader(zip.getInputStream(entry)));
-                for (CsvRow row : csv.getRows()) {
-                    String searge = row.getField("searge");
-                    if (searge == null)
-                        searge = row.getField("param");
-                    String desc = row.getField("desc");
-                    names.put(searge, row.getField("name"));
-                    if (desc != null && !desc.isEmpty())
-                        docs.put(searge, desc);
+                try (NamedCsvReader reader = NamedCsvReader.builder().build(new InputStreamReader(zip.getInputStream(entry)))) {
+                    String obf = reader.getHeader().contains("searge") ? "searge" : "param";
+                    boolean hasDesc = reader.getHeader().contains("desc");
+                    reader.forEach(row -> {
+                        String searge = row.getField(obf);
+                        names.put(searge, row.getField("name"));
+                        if (hasDesc) {
+                            String desc = row.getField("desc");
+                            if (!desc.isEmpty())
+                                docs.put(searge, desc);
+                        }
+                    });
                 }
             }
         }

@@ -45,9 +45,7 @@ import org.gradle.api.tasks.TaskAction;
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
 
-import de.siegmar.fastcsv.reader.CsvContainer;
-import de.siegmar.fastcsv.reader.CsvReader;
-import de.siegmar.fastcsv.reader.CsvRow;
+import de.siegmar.fastcsv.reader.NamedCsvReader;
 
 public class TaskCreateExc extends DefaultTask {
     private static Pattern CLS_ENTRY = Pattern.compile("L([^;]+);");
@@ -168,13 +166,8 @@ public class TaskCreateExc extends DefaultTask {
         Map<String, String> names = new HashMap<>();
         try (ZipFile zip = new ZipFile(getMappings())) {
             zip.stream().filter(e -> e.getName().equals("fields.csv") || e.getName().equals("methods.csv")).forEach(e -> {
-                CsvReader reader = new CsvReader();
-                reader.setContainsHeader(true);
-                try {
-                    CsvContainer csv  = reader.read(new InputStreamReader(zip.getInputStream(e)));
-                    for (CsvRow row : csv.getRows()) {
-                        names.put(row.getField("searge"), row.getField("name"));
-                    }
+                try (NamedCsvReader reader = NamedCsvReader.builder().build(new InputStreamReader(zip.getInputStream(e)))) {
+                    reader.forEach(row -> names.put(row.getField("searge"), row.getField("name")));
                 } catch (IOException e1) {
                     throw new RuntimeException(e1);
                 }

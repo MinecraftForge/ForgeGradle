@@ -20,10 +20,10 @@
 
 package net.minecraftforge.gradle.userdev;
 
-import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
-import com.amadornes.artifactural.api.repository.Repository;
-import com.amadornes.artifactural.base.repository.ArtifactProviderBuilder;
-import com.amadornes.artifactural.base.repository.SimpleRepository;
+import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
+import net.minecraftforge.artifactural.api.repository.Repository;
+import net.minecraftforge.artifactural.base.repository.ArtifactProviderBuilder;
+import net.minecraftforge.artifactural.base.repository.SimpleRepository;
 import com.cloudbees.diff.PatchException;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -833,7 +833,7 @@ public class MinecraftUserRepo extends BaseRepo {
                             List<String> existing = servicesLists.computeIfAbsent(name, k -> new ArrayList<>());
                             if (existing.size() > 0) existing.add("");
                             existing.add(String.format("# %s - %s", patcher.artifact, patcher.getUniversal().getCanonicalFile().getName()));
-                            existing.addAll(IOUtils.readLines(zin));
+                            existing.addAll(IOUtils.readLines(zin, StandardCharsets.UTF_8));
                         } else {
                             ZipEntry _new = new ZipEntry(name);
                             _new.setTime(0); //SHOULD be the same time as the main entry, but NOOOO _new.setTime(entry.getTime()) throws DateTimeException, so you get 0, screw you!
@@ -860,7 +860,7 @@ public class MinecraftUserRepo extends BaseRepo {
                             List<String> existing = servicesLists.computeIfAbsent(name, k -> new ArrayList<>());
                             if (existing.size() > 0) existing.add("");
                             existing.add(String.format("# %s - %s", patcher.artifact, patcher.getZip().getCanonicalFile().getName()));
-                            existing.addAll(IOUtils.readLines(zin));
+                            existing.addAll(IOUtils.readLines(zin, StandardCharsets.UTF_8));
                         } else {
                             ZipEntry _new = new ZipEntry(name);
                             _new.setTime(0);
@@ -1397,7 +1397,7 @@ public class MinecraftUserRepo extends BaseRepo {
                         if (entry == null)
                             throw new IllegalStateException("Invalid Patcher config, Missing Access Transformer: " + at + " Zip: " + data);
                         buf.append("# ").append(artifact).append(" - ").append(at).append('\n');
-                        buf.append(IOUtils.toString(zip.getInputStream(entry), Charsets.UTF_8));
+                        buf.append(IOUtils.toString(zip.getInputStream(entry), StandardCharsets.UTF_8));
                         buf.append('\n');
                     }
                     ATs = buf.toString();
@@ -1420,7 +1420,7 @@ public class MinecraftUserRepo extends BaseRepo {
                         if (entry == null)
                             throw new IllegalStateException("Invalid Patcher config, Missing Side Annotation Stripper: " + sas + " Zip: " + data);
                         buf.append("# ").append(artifact).append(" - ").append(sas).append('\n');
-                        buf.append(IOUtils.toString(zip.getInputStream(entry), Charsets.UTF_8));
+                        buf.append(IOUtils.toString(zip.getInputStream(entry), StandardCharsets.UTF_8));
                         buf.append('\n');
                     }
                     SASs = buf.toString();

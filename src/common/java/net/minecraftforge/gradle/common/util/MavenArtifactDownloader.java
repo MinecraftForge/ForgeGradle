@@ -33,7 +33,7 @@ import org.gradle.api.artifacts.repositories.ArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.xml.sax.SAXException;
 
-import com.amadornes.artifactural.gradle.GradleRepositoryAdapter;
+import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 

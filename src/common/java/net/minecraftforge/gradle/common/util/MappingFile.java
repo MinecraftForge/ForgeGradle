@@ -25,6 +25,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,6 +41,7 @@ import org.apache.commons.io.IOUtils;
 import com.google.common.base.Joiner;
 
 @SuppressWarnings("unused")
+@Deprecated // Use SRGUtils
 public class MappingFile {
     public enum Format {
         SRG, CSRG, TSRG, PG;
@@ -62,7 +64,7 @@ public class MappingFile {
     }
     public static MappingFile load(InputStream input) throws IOException {
         MappingFile ret = new MappingFile();
-        List<String> lines = IOUtils.readLines(input).stream().map(line -> (line + '#').split("#")[0].replaceFirst("\\s++$", "")).filter(l -> !l.isEmpty()).collect(Collectors.toList());
+        List<String> lines = IOUtils.readLines(input, StandardCharsets.UTF_8).stream().map(line -> (line + '#').split("#")[0].replaceFirst("\\s++$", "")).filter(l -> !l.isEmpty()).collect(Collectors.toList());
         String firstLine = lines.get(0);
         String test = firstLine.split(" ")[0];
         if ("PK:".equals(test) || "CL:".equals(test) || "FD:".equals(test) || "MD:".equals(test)) { //SRG

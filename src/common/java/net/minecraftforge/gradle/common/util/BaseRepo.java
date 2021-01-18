@@ -29,14 +29,14 @@ import java.util.Random;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
-import com.amadornes.artifactural.api.artifact.Artifact;
-import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
-import com.amadornes.artifactural.api.artifact.ArtifactType;
-import com.amadornes.artifactural.api.repository.ArtifactProvider;
-import com.amadornes.artifactural.base.artifact.StreamableArtifact;
-import com.amadornes.artifactural.base.repository.ArtifactProviderBuilder;
-import com.amadornes.artifactural.base.repository.SimpleRepository;
-import com.amadornes.artifactural.gradle.GradleRepositoryAdapter;
+import net.minecraftforge.artifactural.api.artifact.Artifact;
+import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
+import net.minecraftforge.artifactural.api.artifact.ArtifactType;
+import net.minecraftforge.artifactural.api.repository.ArtifactProvider;
+import net.minecraftforge.artifactural.base.artifact.StreamableArtifact;
+import net.minecraftforge.artifactural.base.repository.ArtifactProviderBuilder;
+import net.minecraftforge.artifactural.base.repository.SimpleRepository;
+import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 
 public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
     private final File cache;

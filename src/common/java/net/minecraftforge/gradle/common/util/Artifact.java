@@ -20,7 +20,7 @@
 
 package net.minecraftforge.gradle.common.util;
 
-import com.amadornes.artifactural.api.artifact.ArtifactIdentifier;
+import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import org.apache.maven.artifact.versioning.ComparableVersion;
