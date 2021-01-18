@@ -44,7 +44,6 @@ import net.minecraftforge.gradle.common.util.Artifact;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.HashStore;
-import net.minecraftforge.gradle.common.util.MappingFile;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.McpNames;
 import net.minecraftforge.gradle.common.util.POMBuilder;
@@ -62,8 +61,12 @@ import net.minecraftforge.gradle.userdev.tasks.ApplyMCPFunction;
 import net.minecraftforge.gradle.userdev.tasks.HackyJavaCompile;
 import net.minecraftforge.gradle.userdev.tasks.RenameJar;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
+import net.minecraftforge.srgutils.IMappingFile;
 import net.minecraftforge.srgutils.MinecraftVersion;
-import org.apache.commons.io.Charsets;
+import net.minecraftforge.srgutils.IMappingFile.IField;
+import net.minecraftforge.srgutils.IMappingFile.IMethod;
+import net.minecraftforge.srgutils.IRenamer;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
@@ -719,7 +722,7 @@ public class MinecraftUserRepo extends BaseRepo {
         File obf2Srg = null;
         try (ZipFile tmp = new ZipFile(clean)) {
             if (notch) {
-                obf2Srg = findObfToSrg(MappingFile.Format.TSRG);
+                obf2Srg = findObfToSrg(IMappingFile.Format.TSRG);
                 if (obf2Srg == null) {
                     debug("  Failed to find obf to mcp mapping file. " + mcp.getVersion());
                     project.getLogger().error("MinecraftUserRepo: Failed to find obf to mcp mapping file. Should not be possible. " + mcp.getVersion());
@@ -732,10 +735,10 @@ public class MinecraftUserRepo extends BaseRepo {
                 .map(e -> e.substring(0, e.length() - 6))
                 .collect(Collectors.toSet());
 
-                MappingFile o2s = MappingFile.load(obf2Srg);
+                IMappingFile o2s = IMappingFile.load(obf2Srg);
                 o2s.getClasses().stream()
                 .filter(e -> vanillaClasses.contains(e.getOriginal()))
-                .map(MappingFile.Node::getMapped)
+                .map(IMappingFile.INode::getMapped)
                 .map(e -> e.indexOf('/') == -1 ? "" : e.substring(0, e.lastIndexOf('/')))
                 .forEach(packages::add);
 
@@ -895,7 +898,7 @@ public class MinecraftUserRepo extends BaseRepo {
         return map;
     }
 
-    private File findObfToSrg(MappingFile.Format format) throws IOException {
+    private File findObfToSrg(IMappingFile.Format format) throws IOException {
         String ext = format.name().toLowerCase();
         File root = cache(mcp.getArtifact().getGroup().replace('.', '/'), mcp.getArtifact().getName(), mcp.getArtifact().getVersion());
         File file = new File(root, "obf_to_srg." + ext);
@@ -906,8 +909,8 @@ public class MinecraftUserRepo extends BaseRepo {
 
         if (!cache.isSame() || !file.exists()) {
             byte[] data = mcp.getData("mappings");
-            MappingFile obf_to_srg = MappingFile.load(new ByteArrayInputStream(data));
-            obf_to_srg.write(format, file, false);
+            IMappingFile obf_to_srg = IMappingFile.load(new ByteArrayInputStream(data));
+            obf_to_srg.write(file.toPath(), format, false);
             cache.save();
         }
 
@@ -932,18 +935,20 @@ public class MinecraftUserRepo extends BaseRepo {
             info("Creating SRG -> MCP TSRG");
             byte[] data = mcp.getData("mappings");
             McpNames mcp_names = loadMCPNames(mapping, names);
-            MappingFile obf_to_srg = MappingFile.load(new ByteArrayInputStream(data));
-            MappingFile srg_to_named = new MappingFile();
+            IMappingFile obf_to_srg = IMappingFile.load(new ByteArrayInputStream(data));
+            IMappingFile srg_to_named = obf_to_srg.reverse().chain(obf_to_srg).rename(new IRenamer() {
+                @Override
+                public String rename(IField value) {
+                    return mcp_names.rename(value.getMapped());
+                }
 
-            obf_to_srg.getPackages().forEach(e -> srg_to_named.addPackage(e.getMapped(), e.getMapped()));
-            obf_to_srg.getClasses().forEach(cls -> {
-               srg_to_named.addClass(cls.getMapped(), cls.getMapped());
-               MappingFile.Cls _cls = srg_to_named.getClass(cls.getMapped());
-               cls.getFields().forEach(fld -> _cls.addField(fld.getMapped(), mcp_names.rename(fld.getMapped())));
-               cls.getMethods().forEach(mtd -> _cls.addMethod(mtd.getMapped(), mtd.getMappedDescriptor(), mcp_names.rename(mtd.getMapped())));
+                @Override
+                public String rename(IMethod value) {
+                    return mcp_names.rename(value.getMapped());
+                }
             });
 
-            srg_to_named.write(MappingFile.Format.TSRG, srg, false);
+            srg_to_named.write(srg.toPath(), IMappingFile.Format.TSRG, false);
             cache.save();
         }
 
@@ -1121,7 +1126,7 @@ public class MinecraftUserRepo extends BaseRepo {
             return null;
         }
 
-        File obf2srg = findObfToSrg(MappingFile.Format.TSRG);
+        File obf2srg = findObfToSrg(IMappingFile.Format.TSRG);
         if (obf2srg == null) {
             debug("  Finding Source: No obf2srg");
             return patched;
@@ -1135,7 +1140,7 @@ public class MinecraftUserRepo extends BaseRepo {
         if (cache.isSame() && sources.exists()) {
             debug("    Cache hit");
         } else if (sources.exists() || generate) {
-            MappingFile obf_to_srg = MappingFile.load(obf2srg);
+            IMappingFile obf_to_srg = IMappingFile.load(obf2srg);
             Set<String> vanilla = obf_to_srg.getClasses().stream().map(e -> e.getMapped()).collect(Collectors.toSet());
 
             McpNames map = McpNames.load(names);

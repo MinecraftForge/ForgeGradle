@@ -34,8 +34,6 @@ import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.ManifestJson;
-import net.minecraftforge.gradle.common.util.MappingFile;
-import net.minecraftforge.gradle.common.util.MappingFile.Cls;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.McpNames;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
@@ -44,6 +42,11 @@ import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.common.util.VersionJson;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import net.minecraftforge.gradle.mcp.util.MCPWrapper;
+import net.minecraftforge.srgutils.IMappingFile;
+import net.minecraftforge.srgutils.IRenamer;
+import net.minecraftforge.srgutils.IMappingFile.IClass;
+import net.minecraftforge.srgutils.IMappingFile.IField;
+import net.minecraftforge.srgutils.IMappingFile.IMethod;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
@@ -332,7 +335,7 @@ public class MCPRepo extends BaseRepo {
         return ret;
     }
 
-    private File findRenames(String classifier, MappingFile.Format format, String version, boolean toObf) throws IOException {
+    private File findRenames(String classifier, IMappingFile.Format format, String version, boolean toObf) throws IOException {
         String ext = format.name().toLowerCase();
         //File names = findNames(version));
         File mcp = getMCP(version);
@@ -346,8 +349,8 @@ public class MCPRepo extends BaseRepo {
         if (!cache.isSame() || !file.exists()) {
             MCPWrapper wrapper = getWrapper(version, mcp);
             byte[] data = wrapper.getData("mappings");
-            MappingFile obf_to_srg = MappingFile.load(new ByteArrayInputStream(data));
-            obf_to_srg.write(format, file, toObf);
+            IMappingFile obf_to_srg = IMappingFile.load(new ByteArrayInputStream(data));
+            obf_to_srg.write(file.toPath(), format, toObf);
             cache.save();
             Utils.updateHash(file, HashFunction.SHA1);
         }
@@ -383,7 +386,7 @@ public class MCPRepo extends BaseRepo {
     }
 
     @SuppressWarnings("unused")
-    private File findRenames(String classifier, MappingFile.Format format, String version, String mapping, boolean obf, boolean reverse) throws IOException {
+    private File findRenames(String classifier, IMappingFile.Format format, String version, String mapping, boolean obf, boolean reverse) throws IOException {
         String ext = format.name().toLowerCase();
         File names = findNames(version);
         File mcp = getMCP(version);
@@ -397,28 +400,24 @@ public class MCPRepo extends BaseRepo {
         if (!cache.isSame() || !file.exists()) {
             MCPWrapper wrapper = getWrapper(version, mcp);
             byte[] data = wrapper.getData("mappings");
-            MappingFile obf_to_srg = MappingFile.load(new ByteArrayInputStream(data));
-            McpNames mcp_names = loadMCPNames(mapping, names);
-            MappingFile ret = new MappingFile();
-            if (obf) {
-                obf_to_srg.getPackages().forEach(e -> ret.addPackage(e.getOriginal(), e.getMapped()));
-                obf_to_srg.getClasses().forEach(cls -> {
-                   ret.addClass(cls.getOriginal(), cls.getMapped());
-                   MappingFile.Cls _cls = ret.getClass(cls.getOriginal());
-                   cls.getFields().forEach(fld -> _cls.addField(fld.getOriginal(), mcp_names.rename(fld.getMapped())));
-                   cls.getMethods().forEach(mtd -> _cls.addMethod(mtd.getOriginal(), mtd.getDescriptor(), mcp_names.rename(mtd.getMapped())));
-                });
-            } else {
-                obf_to_srg.getPackages().forEach(e -> ret.addPackage(e.getMapped(), e.getMapped()));
-                obf_to_srg.getClasses().forEach(cls -> {
-                   ret.addClass(cls.getMapped(), cls.getMapped());
-                   MappingFile.Cls _cls = ret.getClass(cls.getMapped());
-                   cls.getFields().forEach(fld -> _cls.addField(fld.getMapped(), mcp_names.rename(fld.getMapped())));
-                   cls.getMethods().forEach(mtd -> _cls.addMethod(mtd.getMapped(), mtd.getMappedDescriptor(), mcp_names.rename(mtd.getMapped())));
-                });
-            }
+            IMappingFile input = IMappingFile.load(new ByteArrayInputStream(data)); //SRG->OBF
+            if (obf)
+                input = input.reverse().chain(input); //SRG->OBF + OBF->SRG = SRG->SRG
 
-            ret.write(format, file, reverse);
+            McpNames map = loadMCPNames(mapping, names);
+            IMappingFile ret = input.rename(new IRenamer() {
+                @Override
+                public String rename(IField value) {
+                    return map.rename(value.getMapped());
+                }
+
+                @Override
+                public String rename(IMethod value) {
+                    return map.rename(value.getMapped());
+                }
+            });
+
+            ret.write(file.toPath(), format, reverse);
             cache.save();
             Utils.updateHash(file, HashFunction.SHA1);
         }
@@ -460,7 +459,7 @@ public class MCPRepo extends BaseRepo {
         if (client == null || server == null)
             throw new IllegalStateException("Could not create " + mcpversion + " official mappings due to missing ProGuard mappings.");
 
-        File tsrg = findRenames("obf_to_srg", MappingFile.Format.TSRG, mcpversion, false);
+        File tsrg = findRenames("obf_to_srg", IMappingFile.Format.TSRG, mcpversion, false);
         if (tsrg == null)
             throw new IllegalStateException("Could not create " + mcpversion + " official mappings due to missing MCP's tsrg");
 
@@ -477,41 +476,41 @@ public class MCPRepo extends BaseRepo {
                 .add("codever", "1");
 
         if (!cache.isSame() || !mappings.exists()) {
-            MappingFile pg_client = MappingFile.load(client);
-            MappingFile pg_server = MappingFile.load(server);
+            IMappingFile pg_client = IMappingFile.load(client);
+            IMappingFile pg_server = IMappingFile.load(server);
 
             //Verify that the PG files merge, merge in MCPConfig, but doesn't hurt to double check here.
             //And if we don't we need to write a handler to spit out correctly sided info.
 
-            MappingFile srg = MappingFile.load(tsrg);
+            IMappingFile srg = IMappingFile.load(tsrg);
 
             Map<String, String> cfields = new TreeMap<>();
             Map<String, String> sfields = new TreeMap<>();
             Map<String, String> cmethods = new TreeMap<>();
             Map<String, String> smethods = new TreeMap<>();
 
-            for (Cls cls : pg_client.getClasses()) {
-                Cls obf = srg.getClass(cls.getMapped());
-                for (Cls.Field fld : cls.getFields()) {
-                    String name = obf.remap(fld.getMapped());
+            for (IClass cls : pg_client.getClasses()) {
+                IClass obf = srg.getClass(cls.getMapped());
+                for (IField fld : cls.getFields()) {
+                    String name = obf.remapField(fld.getMapped());
                     if (name.startsWith("field_"))
                         cfields.put(name, fld.getOriginal());
                 }
-                for (Cls.Method mtd : cls.getMethods()) {
-                    String name = obf.remap(mtd.getMapped(), mtd.getMappedDescriptor());
+                for (IMethod mtd : cls.getMethods()) {
+                    String name = obf.remapMethod(mtd.getMapped(), mtd.getMappedDescriptor());
                     if (name.startsWith("func_"))
                         cmethods.put(name, mtd.getOriginal());
                 }
             }
-            for (Cls cls : pg_server.getClasses()) {
-                Cls obf = srg.getClass(cls.getMapped());
-                for (Cls.Field fld : cls.getFields()) {
-                    String name = obf.remap(fld.getMapped());
+            for (IClass cls : pg_server.getClasses()) {
+                IClass obf = srg.getClass(cls.getMapped());
+                for (IField fld : cls.getFields()) {
+                    String name = obf.remapField(fld.getMapped());
                     if (name.startsWith("field_"))
                         sfields.put(name, fld.getOriginal());
                 }
-                for (Cls.Method mtd : cls.getMethods()) {
-                    String name = obf.remap(mtd.getMapped(), mtd.getMappedDescriptor());
+                for (IMethod mtd : cls.getMethods()) {
+                    String name = obf.remapMethod(mtd.getMapped(), mtd.getMappedDescriptor());
                     if (name.startsWith("func_"))
                         smethods.put(name, mtd.getOriginal());
                 }

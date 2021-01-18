@@ -43,7 +43,6 @@ package net.minecraftforge.gradle.common.diff;
 import com.cloudbees.diff.Hunk;
 import com.cloudbees.diff.PatchException;
 import net.minecraftforge.gradle.common.util.Utils;
-import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -382,16 +381,13 @@ public final class ContextualPatch {
     }
 
     List<String> readFile(File target) throws IOException {
-        BufferedReader r = new BufferedReader(new InputStreamReader(new FileInputStream(target), getEncoding(target)));
-        try {
+        try (BufferedReader r = new BufferedReader(new InputStreamReader(new FileInputStream(target), getEncoding(target)))) {
             List<String> lines = new ArrayList<String>();
             String line;
             while ((line = r.readLine()) != null) {
                 lines.add(line);
             }
             return lines;
-        } finally {
-            IOUtils.closeQuietly(r);
         }
     }
 
@@ -680,9 +676,9 @@ public final class ContextualPatch {
         }
 
         if (this.originalPrefix != null && base.startsWith(this.originalPrefix))
-        	base = base.substring(this.originalPrefix.length());
+            base = base.substring(this.originalPrefix.length());
         if (this.modifiedPrefix != null && modified.startsWith(this.modifiedPrefix))
-        	modified = modified.substring(this.modifiedPrefix.length());
+            modified = modified.substring(this.modifiedPrefix.length());
 
         base = untilTab(base).trim();
         if (base.equals("/dev/null")) {

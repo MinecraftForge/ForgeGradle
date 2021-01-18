@@ -171,7 +171,7 @@ public class PatcherPlugin implements Plugin<Project> {
         extractRangeConfig.configure(task -> {
             task.dependsOn(jarConfig);
             task.setOnlyIf(t -> extension.patches != null);
-            task.addDependencies(jarConfig.getArchivePath());
+            task.addDependencies(jarConfig.getArchiveFile().get().getAsFile());
         });
         createMcp2Srg.configure(task -> {
             task.setReverse(true);
@@ -208,7 +208,7 @@ public class PatcherPlugin implements Plugin<Project> {
 
         reobfJar.configure(task -> {
             task.dependsOn(jarConfig, dlMappingsConfig);
-            task.setInput(jarConfig.getArchivePath());
+            task.setInput(jarConfig.getArchiveFile().get().getAsFile());
             task.setClasspath(project.getConfigurations().getByName(MC_DEP_CONFIG));
             //TODO: Extra SRGs
         });
@@ -244,7 +244,7 @@ public class PatcherPlugin implements Plugin<Project> {
         sourcesJar.configure(task -> {
             task.dependsOn(applyRangeConfig);
             task.from(project.zipTree(applyRangeConfig.get().getOutput()));
-            task.setClassifier("sources");
+            task.getArchiveClassifier().set("sources");
         });
         /* Universal:
          * All of our classes and resources as normal jar.
@@ -254,7 +254,7 @@ public class PatcherPlugin implements Plugin<Project> {
             task.dependsOn(filterNew);
             task.from(project.zipTree(filterNew.get().getOutput()));
             task.from(javaConv.getSourceSets().getByName("main").getResources());
-            task.setClassifier("universal");
+            task.getArchiveClassifier().set("universal");
         });
         /*UserDev:
          * config.json
@@ -278,7 +278,7 @@ public class PatcherPlugin implements Plugin<Project> {
             task.from(genConfig.get().getPatches(), e -> {
                 e.into("patches/");
             });
-            task.setClassifier("userdev");
+            task.getArchiveClassifier().set("userdev");
         });
 
         final boolean doingUpdate = project.hasProperty("UPDATE_MAPPINGS");
@@ -496,7 +496,7 @@ public class PatcherPlugin implements Plugin<Project> {
                     }
 
                     filterNew.get().dependsOn(tasks.getByName("jar"));
-                    filterNew.get().addBlacklist(((Jar) tasks.getByName("jar")).getArchivePath());
+                    filterNew.get().addBlacklist(((Jar) tasks.getByName("jar")).getArchiveFile().get().getAsFile());
                 } else {
                     throw new IllegalStateException("Parent must either be a Patcher or MCP project");
                 }
@@ -588,10 +588,10 @@ public class PatcherPlugin implements Plugin<Project> {
                 userdevConfig.get().setArguments("--clean", "{clean}", "--output", "{output}", "--apply", "{patch}");
             }
             if (userdevConfig.get().getUniversal() == null) {
-                userdevConfig.get().setUniversal(project.getGroup().toString() + ':' + universalJar.get().getBaseName() + ':' + project.getVersion() + ':' + universalJar.get().getClassifier() + '@' + universalJar.get().getExtension());
+                userdevConfig.get().setUniversal(project.getGroup().toString() + ':' + universalJar.get().getArchiveBaseName().getOrNull() + ':' + project.getVersion() + ':' + universalJar.get().getArchiveClassifier().getOrNull() + '@' + universalJar.get().getArchiveExtension().getOrNull());
             }
             if (userdevConfig.get().getSource() == null) {
-                userdevConfig.get().setSource(project.getGroup().toString() + ':' + sourcesJar.get().getBaseName() + ':' + project.getVersion() + ':' + sourcesJar.get().getClassifier() + '@' + sourcesJar.get().getExtension());
+                userdevConfig.get().setSource(project.getGroup().toString() + ':' + sourcesJar.get().getArchiveBaseName().getOrNull() + ':' + project.getVersion() + ':' + sourcesJar.get().getArchiveClassifier().getOrNull() + '@' + sourcesJar.get().getArchiveExtension().getOrNull());
             }
             if (!"a/".contentEquals(genConfig.get().getOriginalPrefix())) {
                 userdevConfig.get().setPatchesOriginalPrefix(genConfig.get().getOriginalPrefix());
@@ -624,15 +624,15 @@ public class PatcherPlugin implements Plugin<Project> {
                 //Zip up the current working folder as genPatches takes a zip
                 Zip dirtyZip = project.getTasks().register("patchedZip", Zip.class).get();
                 dirtyZip.from(extension.patchedSrc);
-                dirtyZip.setArchiveName("output.zip");
-                dirtyZip.setDestinationDir(project.file("build/" + dirtyZip.getName() + "/"));
+                dirtyZip.getArchiveFileName().set("output.zip");
+                dirtyZip.getDestinationDirectory().set(project.file("build/" + dirtyZip.getName() + "/"));
 
                 //Fixup the inputs.
                 applyConfig.get().setDependsOn(Lists.newArrayList(toMCPClean));
                 applyConfig.get().setClean(toMCPClean.getOutput());
                 genConfig.get().setDependsOn(Lists.newArrayList(toMCPClean, dirtyZip));
                 genConfig.get().setClean(toMCPClean.getOutput());
-                genConfig.get().setModified(dirtyZip.getArchivePath());
+                genConfig.get().setModified(dirtyZip.getArchiveFile().get().getAsFile());
             }
 
             {

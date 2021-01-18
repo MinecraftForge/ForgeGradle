@@ -22,7 +22,6 @@ package net.minecraftforge.gradle.userdev;
 
 import net.minecraftforge.gradle.common.task.*;
 import net.minecraftforge.gradle.common.util.BaseRepo;
-import net.minecraftforge.gradle.common.util.MappingFile;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.common.util.VersionJson;
@@ -33,6 +32,8 @@ import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 import net.minecraftforge.gradle.userdev.util.DeobfuscatingRepo;
 import net.minecraftforge.gradle.userdev.util.Deobfuscator;
 import net.minecraftforge.gradle.userdev.util.DependencyRemapper;
+import net.minecraftforge.srgutils.IMappingFile;
+
 import org.gradle.api.*;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
@@ -90,7 +91,7 @@ public class UserDevPlugin implements Plugin<Project> {
                     Task jar = project.getTasks().getByName(jarName);
                     if (!(jar instanceof Jar))
                         throw new IllegalStateException(jarName + "  is not a jar task. Can only reobf jars!");
-                    task.setInput(((Jar) jar).getArchivePath());
+                    task.setInput(((Jar) jar).getArchiveFile().get().getAsFile());
                     task.dependsOn(jar);
 
                     if (createMcpToSrg != null && task.getMappings().equals(createMcpToSrg.getOutputs().getFiles().getSingleFile())) {
@@ -152,7 +153,7 @@ public class UserDevPlugin implements Plugin<Project> {
             task.dependsOn(extractSrg);
             task.setSrg(extractSrg.get().getOutput());
             task.setMappings(extension.getMappings());
-            task.setFormat(MappingFile.Format.SRG);
+            task.setFormat(IMappingFile.Format.SRG);
             task.setOutput(project.file("build/" + createSrgToMcp.getName() + "/output.srg"));
         });
 

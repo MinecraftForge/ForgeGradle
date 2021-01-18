@@ -28,15 +28,18 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import net.minecraftforge.gradle.common.util.MappingFile;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.McpNames;
 import net.minecraftforge.gradle.mcp.MCPRepo;
+import net.minecraftforge.srgutils.IMappingFile;
+import net.minecraftforge.srgutils.IMappingFile.IField;
+import net.minecraftforge.srgutils.IMappingFile.IMethod;
+import net.minecraftforge.srgutils.IRenamer;
 
 public class GenerateSRG extends DefaultTask {
     private File srg;
     private String mapping;
-    private MappingFile.Format format = MappingFile.Format.TSRG;
+    private IMappingFile.Format format = IMappingFile.Format.TSRG;
     private boolean notch = false;
     private boolean reverse = false;
     private File output = getProject().file("build/" + getName() + "/output.tsrg");
@@ -47,29 +50,24 @@ public class GenerateSRG extends DefaultTask {
         if (names == null)
             throw new IllegalStateException("Invalid mappings: " + getMappings() + " Could not find archive");
 
-        MappingFile obf_to_srg = MappingFile.load(srg);
-        MappingFile ret = new MappingFile();
+        IMappingFile input = IMappingFile.load(srg);
+        if (!getNotch())
+            input.reverse().chain(input); // Reverse makes SRG->OBF, chain makes SRG->SRG
+
         McpNames map = McpNames.load(names);
+        IMappingFile ret = input.rename(new IRenamer() {
+            @Override
+            public String rename(IField value) {
+                return map.rename(value.getMapped());
+            }
 
-        if (getNotch()) {
-            obf_to_srg.getPackages().forEach(e -> ret.addPackage(e.getOriginal(), e.getMapped()));
-            obf_to_srg.getClasses().forEach(cls -> {
-               ret.addClass(cls.getOriginal(), cls.getMapped());
-               MappingFile.Cls _cls = ret.getClass(cls.getOriginal());
-               cls.getFields().forEach(fld -> _cls.addField(fld.getOriginal(), map.rename(fld.getMapped())));
-               cls.getMethods().forEach(mtd -> _cls.addMethod(mtd.getOriginal(), mtd.getDescriptor(), map.rename(mtd.getMapped())));
-            });
-        } else {
-            obf_to_srg.getPackages().forEach(e -> ret.addPackage(e.getMapped(), e.getMapped()));
-            obf_to_srg.getClasses().forEach(cls -> {
-               ret.addClass(cls.getMapped(), cls.getMapped());
-               MappingFile.Cls _cls = ret.getClass(cls.getMapped());
-               cls.getFields().forEach(fld -> _cls.addField(fld.getMapped(), map.rename(fld.getMapped())));
-               cls.getMethods().forEach(mtd -> _cls.addMethod(mtd.getMapped(), mtd.getMappedDescriptor(), map.rename(mtd.getMapped())));
-            });
-        }
+            @Override
+            public String rename(IMethod value) {
+                return map.rename(value.getMapped());
+            }
+        });
 
-        ret.write(getFormat(), getOutput(), getReverse());
+        ret.write(getOutput().toPath(), getFormat(), getReverse());
     }
 
     private File findNames(String mapping) {
@@ -98,14 +96,14 @@ public class GenerateSRG extends DefaultTask {
     }
 
     @Input
-    public MappingFile.Format getFormat() {
+    public IMappingFile.Format getFormat() {
         return format;
     }
-    public void setFormat(MappingFile.Format value) {
+    public void setFormat(IMappingFile.Format value) {
         this.format = value;
     }
     public void setFormat(String value) {
-        this.setFormat(MappingFile.Format.valueOf(value));
+        this.setFormat(IMappingFile.Format.valueOf(value));
     }
 
     @Input
