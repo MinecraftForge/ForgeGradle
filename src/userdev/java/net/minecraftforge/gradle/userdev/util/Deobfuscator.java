@@ -129,7 +129,7 @@ public class Deobfuscator {
             rename.setMappings(names);
             rename.setSignatureRemoval(true);
             rename.apply();
-            project.getTasks().remove(rename);
+            rename.setEnabled(false);
 
             Utils.updateHash(output, HashFunction.SHA1);
             cache.save();

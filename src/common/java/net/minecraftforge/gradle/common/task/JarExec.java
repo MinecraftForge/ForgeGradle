@@ -99,7 +99,7 @@ public class JarExec extends DefaultTask {
             });
             java.exec();
         } finally {
-            getProject().getTasks().remove(java);
+            java.setEnabled(false);
         }
 
         if (hasLog)

@@ -1,17 +1,11 @@
 plugins {
+    id 'java-gradle-plugin'
+    id 'eclipse'
+    id 'maven-publish'
     id 'net.minecrell.licenser' version '0.4.1'
     id 'org.ajoberstar.grgit' version '3.0.0'
     id 'com.github.ben-manes.versions' version '0.20.0'
   //id 'com.github.johnrengelman.shadow' version '2.0.4'
-}
-
-apply plugin: 'java'
-apply plugin: 'maven-publish'
-apply plugin: 'eclipse'
-
-sourceCompatibility = targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
-compileJava {
-    sourceCompatibility = targetCompatibility = '1.8'
 }
 
 group = 'net.minecraftforge.gradle'
@@ -69,7 +63,7 @@ license {
 }
 
 wrapper {
-    gradleVersion = '4.9'
+    gradleVersion = '6.8'
     distributionType = Wrapper.DistributionType.ALL
 }
 

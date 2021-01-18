@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.jar.Attributes;
@@ -119,7 +120,7 @@ public class ExecuteFunction implements MCPFunction {
         jarFile.close();
 
         // Execute command
-        JavaExec java = environment.project.getTasks().create("_", JavaExec.class);
+        JavaExec java = environment.project.getTasks().create("_decompileJar" + new Random().nextInt(), JavaExec.class);
         try (BufferedOutputStream log_out = new BufferedOutputStream(new FileOutputStream(environment.getFile("console.log")))) {
             PrintWriter writer = new PrintWriter(log_out);
             Function<String,String> quote = s -> '"' + s + '"';
@@ -137,7 +138,7 @@ public class ExecuteFunction implements MCPFunction {
             java.setStandardOutput(log_out);
             java.exec();
         } finally {
-            environment.project.getTasks().remove(java);
+            java.setEnabled(false);
         }
 
         // Return the output file
