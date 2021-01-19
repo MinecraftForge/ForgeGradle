@@ -48,7 +48,7 @@ public class MCPRuntime {
     final MCPEnvironment environment;
     final File mcpDirectory;
 
-    private final File zipFile;
+    final File zipFile;
 
     final Map<String, Step> steps = new LinkedHashMap<>();
     Step currentStep;

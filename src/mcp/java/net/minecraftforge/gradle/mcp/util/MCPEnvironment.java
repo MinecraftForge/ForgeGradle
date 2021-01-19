@@ -51,6 +51,10 @@ public class MCPEnvironment {
         return runtime.currentStep.workingDirectory;
     }
 
+    public File getConfigZip() {
+        return runtime.zipFile;
+    }
+
     public File getFile(String name) {
         File file = new File(name);
         if (file.getAbsolutePath().equals(name)) { // If this is already an absolute path, don't mess with it

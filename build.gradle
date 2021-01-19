@@ -50,6 +50,7 @@ repositories {
     jcenter()
     maven { url = 'https://files.minecraftforge.net/maven' }
 	maven { url = 'https://repo.gradle.org/gradle/libs-releases-local/' }
+    maven { url = 'https://maven.covers1624.net/' } //TODO, TESTING ONLY REMOVE BEFORE MERGE
 }
 
 license {
@@ -71,7 +72,6 @@ wrapper {
 
 dependencies {
     commonImplementation gradleApi()
-    commonImplementation 'com.cloudbees:diff4j:1.3'
     commonImplementation 'commons-io:commons-io:2.8.0'
     commonImplementation 'com.github.jponge:lzma-java:1.3' // replaces the LZMA binary
     commonImplementation 'com.nothome:javaxdelta:2.0.1' // GDIFF implementation for BinPatches
@@ -82,6 +82,7 @@ dependencies {
     commonImplementation 'org.apache.maven:maven-artifact:3.6.3'
     commonImplementation 'org.apache.httpcomponents:httpclient:4.5.13'
     commonImplementation 'net.minecraftforge:srgutils:0.2.13'
+    commonImplementation 'codechicken:DiffPatch:1.2.4.+:all'
 
     mcpImplementation sourceSets.common.output
     patcherImplementation sourceSets.mcp.output

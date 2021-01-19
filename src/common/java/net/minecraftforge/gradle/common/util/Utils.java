@@ -79,11 +79,14 @@ import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 public class Utils {
     private static final boolean ENABLE_TEST_CERTS = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_certs", "true"));
@@ -133,6 +136,20 @@ public class Utils {
             if (!e.getName().startsWith(directory)) continue;
             extractFile(zip, e, fileLocator.apply(e.getName()));
         }
+    }
+
+    public static Set<String> copyZipEntries(ZipOutputStream zout, ZipInputStream zin, Predicate<String> filter) throws IOException {
+        Set<String> added = new HashSet<>();
+        ZipEntry entry;
+        while ((entry = zin.getNextEntry()) != null) {
+            if (!filter.test(entry.getName())) continue;
+            ZipEntry _new = new ZipEntry(entry.getName());
+            _new.setTime(0); //SHOULD be the same time as the main entry, but NOOOO _new.setTime(entry.getTime()) throws DateTimeException, so you get 0, screw you!
+            zout.putNextEntry(_new);
+            IOUtils.copy(zin, zout);
+            added.add(entry.getName());
+        }
+        return added;
     }
 
     public static byte[] base64DecodeStringList(List<String> strings) throws IOException {
