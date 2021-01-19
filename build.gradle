@@ -2,7 +2,7 @@ plugins {
     id 'java-gradle-plugin'
     id 'eclipse'
     id 'maven-publish'
-    id 'net.minecrell.licenser' version '0.4.1'
+    id 'org.cadixdev.licenser' version '0.5.0'
     id 'org.ajoberstar.grgit' version '4.1.0'
     id 'com.github.ben-manes.versions' version '0.36.0'
   //id 'com.github.johnrengelman.shadow' version '2.0.4'
