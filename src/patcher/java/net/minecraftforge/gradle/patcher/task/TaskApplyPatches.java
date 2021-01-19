@@ -135,14 +135,4 @@ public class TaskApplyPatches extends DefaultTask {
                               public void setOriginalPrefix(String originalPrefix) { this.originalPrefix = originalPrefix; }
                               public void setModifiedPrefix(String modifiedPrefix) { this.modifiedPrefix = modifiedPrefix; }
     //@formatter:on
-
-    //Legacy binary compat half-stubs
-    //@formatter:off
-    @Deprecated public int getMaxFuzz() { return 0; }
-    @Deprecated public void setMaxFuzz(int value) {}
-    @Deprecated public boolean getCanonicalizeWhitespace() { return getPatchMode().ordinal() >= PatchMode.ACCESS.ordinal(); }
-    @Deprecated public boolean getCanonicalizeAccess() { return getPatchMode().ordinal() >= PatchMode.ACCESS.ordinal(); }
-    @Deprecated public void setCanonicalizeWhitespace(boolean value) { if (value && getPatchMode() == PatchMode.EXACT) setPatchMode(PatchMode.ACCESS); }
-    @Deprecated public void setCanonicalizeAccess(boolean value) { if (value && getPatchMode() == PatchMode.EXACT) setPatchMode(PatchMode.ACCESS); }
-    //@formatter:on
 }
