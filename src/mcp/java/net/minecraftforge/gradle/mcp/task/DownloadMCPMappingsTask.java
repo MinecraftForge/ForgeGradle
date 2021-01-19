@@ -59,11 +59,7 @@ public class DownloadMCPMappingsTask extends DefaultTask {
     @TaskAction
     public void download() throws IOException {
         File out = getMappingFile();
-        if (out != null && out.exists()) {
-            this.setDidWork(true);
-        } else {
-            this.setDidWork(false);
-        }
+        this.setDidWork(out != null && out.exists());
         if (FileUtils.contentEquals(out, output)) return;
         if (output.exists()) output.delete();
         if (!output.getParentFile().exists()) output.getParentFile().mkdirs();

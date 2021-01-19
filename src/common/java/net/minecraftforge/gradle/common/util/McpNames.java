@@ -28,6 +28,7 @@ import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -121,8 +122,7 @@ public class McpNames {
                 Matcher m = LAMBDA_DECL.matcher(line);
                 if (!m.find())
                     continue;
-                for (String arg : m.group("args").split(", "))
-                    blacklist.add(arg);
+                blacklist.addAll(Arrays.asList(m.group("args").split(", ")));
             }
         }
 
@@ -137,7 +137,7 @@ public class McpNames {
             }
             lines.add(replaceInLine(line, blacklist));
         }
-        return lines.stream().collect(Collectors.joining(NEWLINE));
+        return String.join(NEWLINE, lines);
     }
 
     public String rename(String entry) {

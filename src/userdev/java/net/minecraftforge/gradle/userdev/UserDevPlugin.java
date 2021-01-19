@@ -39,6 +39,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository.MetadataSources;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.TaskProvider;
@@ -54,7 +55,6 @@ import java.util.concurrent.TimeUnit;
 
 public class UserDevPlugin implements Plugin<Project> {
     private static String MINECRAFT = "minecraft";
-    private static String DEOBF = "deobf";
     public static String OBF = "__obfuscated";
 
     @Override
@@ -70,37 +70,34 @@ public class UserDevPlugin implements Plugin<Project> {
         }
         final File nativesFolder = project.file("build/natives/");
 
-        NamedDomainObjectContainer<RenameJarInPlace> reobf = project.container(RenameJarInPlace.class, new NamedDomainObjectFactory<RenameJarInPlace>() {
-            @Override
-            public RenameJarInPlace create(String jarName) {
-                String name = Character.toUpperCase(jarName.charAt(0)) + jarName.substring(1);
-                JavaPluginConvention java = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+        NamedDomainObjectContainer<RenameJarInPlace> reobf = project.container(RenameJarInPlace.class, jarName -> {
+            String name = Character.toUpperCase(jarName.charAt(0)) + jarName.substring(1);
+            JavaPluginConvention java = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
 
-                final RenameJarInPlace task = project.getTasks().maybeCreate("reobf" + name, RenameJarInPlace.class);
-                task.setClasspath(java.getSourceSets().getByName("main").getCompileClasspath());
+            final RenameJarInPlace task = project.getTasks().maybeCreate("reobf" + name, RenameJarInPlace.class);
+            task.setClasspath(java.getSourceSets().getByName("main").getCompileClasspath());
 
-                final Task createMcpToSrg = project.getTasks().findByName("createMcpToSrg");
-                if (createMcpToSrg != null) {
-                    task.setMappings(() -> createMcpToSrg.getOutputs().getFiles().getSingleFile());
-                }
-
-                project.getTasks().getByName("assemble").dependsOn(task);
-
-                // do after-Evaluate resolution, for the same of good error reporting
-                project.afterEvaluate(p -> {
-                    Task jar = project.getTasks().getByName(jarName);
-                    if (!(jar instanceof Jar))
-                        throw new IllegalStateException(jarName + "  is not a jar task. Can only reobf jars!");
-                    task.setInput(((Jar) jar).getArchiveFile().get().getAsFile());
-                    task.dependsOn(jar);
-
-                    if (createMcpToSrg != null && task.getMappings().equals(createMcpToSrg.getOutputs().getFiles().getSingleFile())) {
-                        task.dependsOn(createMcpToSrg); // Add needed dependency if uses default mappings
-                    }
-                });
-
-                return task;
+            final Task createMcpToSrg = project.getTasks().findByName("createMcpToSrg");
+            if (createMcpToSrg != null) {
+                task.setMappings(() -> createMcpToSrg.getOutputs().getFiles().getSingleFile());
             }
+
+            project.getTasks().getByName("assemble").dependsOn(task);
+
+            // do after-Evaluate resolution, for the same of good error reporting
+            project.afterEvaluate(p -> {
+                Task jar = project.getTasks().getByName(jarName);
+                if (!(jar instanceof Jar))
+                    throw new IllegalStateException(jarName + "  is not a jar task. Can only reobf jars!");
+                task.setInput(((Jar) jar).getArchiveFile().get().getAsFile());
+                task.dependsOn(jar);
+
+                if (createMcpToSrg != null && task.getMappings().equals(createMcpToSrg.getOutputs().getFiles().getSingleFile())) {
+                    task.dependsOn(createMcpToSrg); // Add needed dependency if uses default mappings
+                }
+            });
+
+            return task;
         });
         project.getExtensions().add("reobf", reobf);
 
@@ -115,25 +112,9 @@ public class UserDevPlugin implements Plugin<Project> {
 
         //create extension for dependency remapping
         //can't create at top-level or put in `minecraft` ext due to configuration name conflict
-        //TODO move in FG 3.1 when configurations are removed
         Deobfuscator deobfuscator = new Deobfuscator(project, Utils.getCache(project, "deobf_dependencies"));
         DependencyRemapper remapper = new DependencyRemapper(project, deobfuscator);
         project.getExtensions().create(DependencyManagementExtension.EXTENSION_NAME, DependencyManagementExtension.class, project, remapper);
-
-        //TODO remove this block in FG 3.1
-        {
-            Configuration deobfConfiguration = project.getConfigurations().maybeCreate(DEOBF);
-
-            project.afterEvaluate(p -> {
-                DependencySet legacyDeps = deobfConfiguration.getDependencies();
-                if (!legacyDeps.isEmpty()) {
-                    logger.warn("deobf dependency configuration is deprecated. Please use deobfuscated dependencies in standard configurations");
-                    logger.warn("For example, `api fg.deobf(\"your:dependency\")`. More about available configurations: https://docs.gradle.org/current/userguide/java_library_plugin.html#sec:java_library_configurations_graph");
-                }
-
-                legacyDeps.forEach(d -> p.getDependencies().add("compile", remapper.remap(d)));
-            });
-        }
 
         TaskProvider<DownloadMavenArtifact> downloadMcpConfig = project.getTasks().register("downloadMcpConfig", DownloadMavenArtifact.class);
         TaskProvider<ExtractMCPData> extractSrg = project.getTasks().register("extractSrg", ExtractMCPData.class);
@@ -284,7 +265,7 @@ public class UserDevPlugin implements Plugin<Project> {
                     .attach(project);
             project.getRepositories().maven(e -> {
                 e.setUrl(Utils.MOJANG_MAVEN);
-                e.metadataSources(src -> src.artifact());
+                e.metadataSources(MetadataSources::artifact);
             });
             project.getRepositories().mavenCentral(); //Needed for MCP Deps
             if (mcrepo == null)

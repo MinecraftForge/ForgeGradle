@@ -34,6 +34,7 @@ import net.minecraftforge.gradle.mcp.task.DownloadMCPConfigTask;
 import net.minecraftforge.gradle.mcp.task.SetupMCPTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository.MetadataSources;
 import org.gradle.api.tasks.TaskProvider;
 
 import javax.annotation.Nonnull;
@@ -61,7 +62,7 @@ public class MCPPlugin implements Plugin<Project> {
             //Add Known repos
             project.getRepositories().maven(e -> {
                 e.setUrl(Utils.MOJANG_MAVEN);
-                e.metadataSources(src -> src.artifact());
+                e.metadataSources(MetadataSources::artifact);
             });
             project.getRepositories().maven(e -> {
                 e.setUrl(Utils.FORGE_MAVEN);

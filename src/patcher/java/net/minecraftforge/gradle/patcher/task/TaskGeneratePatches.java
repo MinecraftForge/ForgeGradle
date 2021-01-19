@@ -58,8 +58,8 @@ public class TaskGeneratePatches extends DefaultTask {
         Files.walk(getPatches().toPath()).filter(Files::isRegularFile).forEach(paths::add);
         try (ZipFile clean = new ZipFile(getClean());
              ZipFile dirty = new ZipFile(getModified())) {
-            Set<String> _old = Collections.list(clean.entries()).stream().filter(e -> !e.isDirectory()).map(e -> e.getName()).collect(Collectors.toSet());
-            Set<String> _new = Collections.list(dirty.entries()).stream().filter(e -> !e.isDirectory()).map(e -> e.getName()).collect(Collectors.toSet());
+            Set<String> _old = Collections.list(clean.entries()).stream().filter(e -> !e.isDirectory()).map(ZipEntry::getName).collect(Collectors.toSet());
+            Set<String> _new = Collections.list(dirty.entries()).stream().filter(e -> !e.isDirectory()).map(ZipEntry::getName).collect(Collectors.toSet());
             for (String o : _old) {
                 ZipEntry newEntry = dirty.getEntry(o);
                 String diff = makePatch(o, clean.getInputStream(clean.getEntry(o)), newEntry == null ? null : dirty.getInputStream(newEntry));
@@ -80,7 +80,7 @@ public class TaskGeneratePatches extends DefaultTask {
             }
         }
         paths.forEach(p -> p.toFile().delete());
-        List<File> dirs = Files.walk(getPatches().toPath()).filter(Files::isDirectory).map(p -> p.toFile()).collect(Collectors.toList());
+        List<File> dirs = Files.walk(getPatches().toPath()).filter(Files::isDirectory).map(Path::toFile).collect(Collectors.toList());
         Collections.reverse(dirs);
         dirs.forEach(p -> {
            if (p.list().length == 0)

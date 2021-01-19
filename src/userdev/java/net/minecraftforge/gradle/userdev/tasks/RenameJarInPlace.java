@@ -112,13 +112,11 @@ public class RenameJarInPlace extends JarExec {
         return this.extraMappings == null ? Collections.emptyList() : this.extraMappings.stream().map(Supplier::get).collect(Collectors.toList());
     }
     public void setExtraMappingsDelayed(Collection<Supplier<File>> values) {
-        List<Supplier<File>> _new = new ArrayList<>();
-        values.forEach(_new::add);
-        this.extraMappings = _new;
+        this.extraMappings = new ArrayList<>(values);
     }
     public void setExtraMappings(Collection<File> values) {
         List<Supplier<File>> _new = new ArrayList<>();
-        values.stream().forEach(f  -> _new.add(() -> f));
+        values.forEach(f  -> _new.add(() -> f));
         this.extraMappings = _new;
     }
     public void extraMapping(File value) {

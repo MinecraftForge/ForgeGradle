@@ -591,9 +591,7 @@ public class Utils {
     }
 
     public static void createRunConfigTasks(final MinecraftExtension extension, final ExtractNatives extractNatives, final Task... setupTasks) {
-        List<Task> setupTasksLst = new ArrayList<>();
-        for (Task t : setupTasks)
-            setupTasksLst.add(t);
+        List<Task> setupTasksLst = new ArrayList<>(Arrays.asList(setupTasks));
 
         final TaskProvider<Task> prepareRuns = extension.getProject().getTasks().register("prepareRuns", Task.class, task -> {
             task.setGroup(RunConfig.RUNS_GROUP);

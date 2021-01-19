@@ -253,7 +253,7 @@ public class PatcherExtension extends MinecraftExtension {
                 this.processor.setVersion((String)value);
             } else if ("args".equals(key)) {
                 if (value instanceof String)
-                    this.processor.setArgs(Arrays.asList((String)value));
+                    this.processor.setArgs(Collections.singletonList((String) value));
                 else if (value instanceof String[])
                     this.processor.setArgs(Arrays.asList((String[])value));
                 else if (value instanceof Collection)

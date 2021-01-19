@@ -120,13 +120,12 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
             int random = new Random().nextInt();
             File cache = Utils.getCache(project, "bundeled_repo");
             GradleRepositoryAdapter.add(project.getRepositories(), "BUNDELED_" + random, cache,
-                SimpleRepository.of(ArtifactProviderBuilder.begin(ArtifactIdentifier.class).provide(
-                    new ArtifactProvider<ArtifactIdentifier>() {
-                        @Override
-                        public Artifact getArtifact(ArtifactIdentifier artifact) {
-                            return repos.stream().map(repo -> repo.getArtifact(artifact)).filter(Artifact::isPresent).findFirst().orElse(Artifact.none());
-                        }
-                    }
+                SimpleRepository.of(ArtifactProviderBuilder.begin(ArtifactIdentifier.class)
+                        .provide(artifact -> repos.stream()
+                                .map(repo -> repo.getArtifact(artifact))
+                                .filter(Artifact::isPresent)
+                                .findFirst()
+                                .orElse(Artifact.none())
                 ))
             );
         }

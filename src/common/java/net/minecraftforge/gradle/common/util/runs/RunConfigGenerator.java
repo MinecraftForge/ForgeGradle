@@ -61,7 +61,6 @@ public abstract class RunConfigGenerator
 {
     public abstract void createRunConfiguration(@Nonnull final MinecraftExtension minecraft, @Nonnull final File runConfigurationsDir, @Nonnull final Project project, List<String> additionalClientArgs);
 
-    @SuppressWarnings("UnstableApiUsage")
     public static void createIDEGenRunsTasks(@Nonnull final MinecraftExtension minecraft, @Nonnull final TaskProvider<Task> prepareRuns, @Nonnull final TaskProvider<Task> makeSourceDirs, List<String> additionalClientArgs) {
         final Project project = minecraft.getProject();
 
@@ -157,12 +156,10 @@ public abstract class RunConfigGenerator
         return tokens;
     }
 
-    @SuppressWarnings("UnstableApiUsage")
     public static TaskProvider<JavaExec> createRunTask(final RunConfig runConfig, final Project project, final TaskProvider<Task> prepareRuns, final List<String> additionalClientArgs) {
         return createRunTask(runConfig, project, prepareRuns.get(), additionalClientArgs);
     }
 
-    @SuppressWarnings("UnstableApiUsage")
     public static TaskProvider<JavaExec> createRunTask(final RunConfig runConfig, final Project project, final Task prepareRuns, final List<String> additionalClientArgs) {
 
         Map<String, String> updatedTokens = configureTokens(runConfig, mapModClassesToGradle(project, runConfig));

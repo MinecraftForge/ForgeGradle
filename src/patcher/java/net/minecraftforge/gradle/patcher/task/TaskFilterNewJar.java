@@ -34,10 +34,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -116,9 +113,7 @@ public class TaskFilterNewJar extends DefaultTask { //TODO: Copy task?
         this.blacklist.addAll(values);
     }
     public void addBlacklist(File... values) {
-        for (File value : values) {
-            this.blacklist.add(value);
-        }
+        this.blacklist.addAll(Arrays.asList(values));
     }
 
     @OutputFile

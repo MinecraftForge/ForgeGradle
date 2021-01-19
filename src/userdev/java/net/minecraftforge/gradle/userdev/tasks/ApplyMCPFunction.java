@@ -96,7 +96,7 @@ public class ApplyMCPFunction extends JarExec {
                                 Utils.extractFile(zip, entry, data);
                             }
                             replacements.put(arg, data.getAbsolutePath());
-                        } catch (IOException e) {}
+                        } catch (IOException ignored) {}
                     }
                 }
             });

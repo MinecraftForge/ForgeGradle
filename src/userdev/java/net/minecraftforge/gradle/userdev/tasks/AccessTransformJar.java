@@ -71,8 +71,7 @@ public class AccessTransformJar extends JarExec {
     public void setAts(File... values) {
         if (ats == null)
             ats = new ArrayList<>();
-        for (File value : values)
-            ats.add(value);
+        ats.addAll(Arrays.asList(values));
     }
 
     @InputFile

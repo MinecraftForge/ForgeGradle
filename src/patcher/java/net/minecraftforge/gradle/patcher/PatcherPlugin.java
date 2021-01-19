@@ -57,6 +57,7 @@ import net.minecraftforge.gradle.patcher.task.TaskReobfuscateJar;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository.MetadataSources;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
@@ -132,7 +133,7 @@ public class PatcherPlugin implements Plugin<Project> {
             .attach(project);
         project.getRepositories().maven(e -> {
             e.setUrl(Utils.MOJANG_MAVEN);
-            e.metadataSources(src -> src.artifact());
+            e.metadataSources(MetadataSources::artifact);
         });
 
         release.configure(task -> {

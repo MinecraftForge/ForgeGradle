@@ -282,8 +282,7 @@ public class MinecraftUserRepo extends BaseRepo {
             patcher = patcher.getParent();
         }
         deps.forEach(dep -> cfg.getDependencies().add(project.getDependencies().create(dep)));
-        Set<File> files = cfg.resolve();
-        return files;
+        return cfg.resolve();
     }
 
     @SuppressWarnings("unused")
@@ -1141,7 +1140,7 @@ public class MinecraftUserRepo extends BaseRepo {
             debug("    Cache hit");
         } else if (sources.exists() || generate) {
             IMappingFile obf_to_srg = IMappingFile.load(obf2srg);
-            Set<String> vanilla = obf_to_srg.getClasses().stream().map(e -> e.getMapped()).collect(Collectors.toSet());
+            Set<String> vanilla = obf_to_srg.getClasses().stream().map(IMappingFile.INode::getMapped).collect(Collectors.toSet());
 
             McpNames map = McpNames.load(names);
 
@@ -1284,8 +1283,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 output.mkdirs();
             }
             Set<File> files = Sets.newHashSet(this.extraDataFiles);
-            for (File ext : extraDeps)
-                files.add(ext);
+            Collections.addAll(files, extraDeps);
             compile.setClasspath(project.files(files));
             if (parent != null) {
                 compile.setSourceCompatibility(parent.getConfig().getSourceCompatibility());
