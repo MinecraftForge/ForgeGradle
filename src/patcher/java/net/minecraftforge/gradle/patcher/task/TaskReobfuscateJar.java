@@ -94,45 +94,45 @@ public class TaskReobfuscateJar extends DefaultTask {
             workDir.mkdirs();
         }
 
-        JavaExec java = getProject().getTasks().create("_reobfuscateJar_" + getName() + new Random().nextInt(), JavaExec.class);
         try (OutputStream log = new BufferedOutputStream(new FileOutputStream(new File(workDir, "log.txt")))) {
-            // Execute command
-            java.setArgs(_args);
-            if (getClasspath() == null) {
-                java.setClasspath(getProject().files(jar));
-            } else {
-                java.setClasspath(getProject().files(getClasspath(), jar));
-            }
-            java.setWorkingDir(workDir);
-            java.setMain(mainClass);
-            java.setStandardOutput(new OutputStream() {
-                @Override
-                public void flush() throws IOException {
-                    log.flush();
+            getProject().javaexec(java -> {
+                // Execute command
+                java.setArgs(_args);
+                if (getClasspath() == null) {
+                    java.setClasspath(getProject().files(jar));
+                } else {
+                    java.setClasspath(getProject().files(getClasspath(), jar));
                 }
-                @Override
-                public void close() {}
-                @Override
-                public void write(int b) throws IOException {
-                    log.write(b);
-                }
+                java.setWorkingDir(workDir);
+                java.setMain(mainClass);
+                java.setStandardOutput(new OutputStream() {
+                    @Override
+                    public void flush() throws IOException {
+                        log.flush();
+                    }
+                    @Override
+                    public void close() {}
+                    @Override
+                    public void write(int b) throws IOException {
+                        log.write(b);
+                    }
+                }); 
             });
-            java.exec();
 
             List<String> lines = Files.readLines(getSrg(), StandardCharsets.UTF_8);
             lines = lines.stream().map(line -> line.split("#")[0]).filter(l -> l != null & !l.trim().isEmpty()).collect(Collectors.toList()); //Strip empty/comments
 
             Set<String> packages = new HashSet<>();
             lines.stream()
-            .filter(line -> !line.startsWith("\t") || (line.indexOf(':') != -1 && line.startsWith("CL:")))
-            .map(line -> line.indexOf(':') != -1 ? line.substring(4).split(" ") : line.split(" "))
-            .filter(pts -> pts.length == 2)
-            .forEach(pts -> {
-                int idx = pts[0].lastIndexOf('/');
-                if (idx != -1) {
-                    packages.add(pts[0].substring(0, idx + 1) + "package-info.class");
-                }
-            });
+                    .filter(line -> !line.startsWith("\t") || (line.indexOf(':') != -1 && line.startsWith("CL:")))
+                    .map(line -> line.indexOf(':') != -1 ? line.substring(4).split(" ") : line.split(" "))
+                    .filter(pts -> pts.length == 2)
+                    .forEach(pts -> {
+                        int idx = pts[0].lastIndexOf('/');
+                        if (idx != -1) {
+                            packages.add(pts[0].substring(0, idx + 1) + "package-info.class");
+                        }
+                    });
 
             try (ZipFile zin = new ZipFile(output_temp);
                  ZipOutputStream out = new ZipOutputStream(new FileOutputStream(getOutput()))) {
@@ -153,8 +153,6 @@ public class TaskReobfuscateJar extends DefaultTask {
             }
 
             output_temp.delete();
-        } finally {
-            java.setEnabled(false);
         }
     }
 

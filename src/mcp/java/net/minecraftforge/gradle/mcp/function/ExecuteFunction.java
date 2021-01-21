@@ -23,7 +23,6 @@ package net.minecraftforge.gradle.mcp.function;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
-import org.gradle.api.tasks.JavaExec;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -120,26 +119,26 @@ public class ExecuteFunction implements MCPFunction {
         jarFile.close();
 
         // Execute command
-        JavaExec java = environment.project.getTasks().create("_decompileJar" + new Random().nextInt(), JavaExec.class);
-        try (BufferedOutputStream log_out = new BufferedOutputStream(new FileOutputStream(environment.getFile("console.log")))) {
-            PrintWriter writer = new PrintWriter(log_out);
-            Function<String,String> quote = s -> '"' + s + '"';
-            writer.println("JVM Args:    " + jvmArgList.stream().map(quote).collect(Collectors.joining(", ")));
-            writer.println("Run Args:    " + runArgList.stream().map(quote).collect(Collectors.joining(", ")));
-            writer.println("Classpath:   " + jar.getAbsolutePath());
-            writer.println("Working Dir: " + workingDir.getAbsolutePath());
-            writer.println("Main Class:  " + mainClass);
-            writer.flush();
-            java.setJvmArgs(jvmArgList);
-            java.setArgs(runArgList);
-            java.setClasspath(environment.project.files(jar));
-            java.setWorkingDir(workingDir);
-            java.setMain(mainClass);
-            java.setStandardOutput(log_out);
-            java.exec();
-        } finally {
-            java.setEnabled(false);
-        }
+        environment.project.javaexec(java -> {
+            try (BufferedOutputStream log_out = new BufferedOutputStream(new FileOutputStream(environment.getFile("console.log")))) {
+                PrintWriter writer = new PrintWriter(log_out);
+                Function<String,String> quote = s -> '"' + s + '"';
+                writer.println("JVM Args:    " + jvmArgList.stream().map(quote).collect(Collectors.joining(", ")));
+                writer.println("Run Args:    " + runArgList.stream().map(quote).collect(Collectors.joining(", ")));
+                writer.println("Classpath:   " + jar.getAbsolutePath());
+                writer.println("Working Dir: " + workingDir.getAbsolutePath());
+                writer.println("Main Class:  " + mainClass);
+                writer.flush();
+                java.setJvmArgs(jvmArgList);
+                java.setArgs(runArgList);
+                java.setClasspath(environment.project.files(jar));
+                java.setWorkingDir(workingDir);
+                java.setMain(mainClass);
+                java.setStandardOutput(log_out);
+            } catch (IOException exception) {
+                throw new RuntimeException(exception);
+            }
+        }).rethrowFailure().assertNormalExitValue();
 
         // Return the output file
         hashStore.save();
