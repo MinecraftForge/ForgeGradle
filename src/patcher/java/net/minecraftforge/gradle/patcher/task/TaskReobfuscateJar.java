@@ -117,7 +117,7 @@ public class TaskReobfuscateJar extends DefaultTask {
                         log.write(b);
                     }
                 }); 
-            });
+            }).rethrowFailure().assertNormalExitValue();
 
             List<String> lines = Files.readLines(getSrg(), StandardCharsets.UTF_8);
             lines = lines.stream().map(line -> line.split("#")[0]).filter(l -> l != null & !l.trim().isEmpty()).collect(Collectors.toList()); //Strip empty/comments
