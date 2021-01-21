@@ -119,10 +119,10 @@ public class ExecuteFunction implements MCPFunction {
         jarFile.close();
 
         // Execute command
-        environment.project.javaexec(java -> {
-            try (BufferedOutputStream log_out = new BufferedOutputStream(new FileOutputStream(environment.getFile("console.log")))) {
+        try (BufferedOutputStream log_out = new BufferedOutputStream(new FileOutputStream(environment.getFile("console.log")))) {
+            environment.project.javaexec(java -> {
                 PrintWriter writer = new PrintWriter(log_out);
-                Function<String,String> quote = s -> '"' + s + '"';
+                Function<String, String> quote = s -> '"' + s + '"';
                 writer.println("JVM Args:    " + jvmArgList.stream().map(quote).collect(Collectors.joining(", ")));
                 writer.println("Run Args:    " + runArgList.stream().map(quote).collect(Collectors.joining(", ")));
                 writer.println("Classpath:   " + jar.getAbsolutePath());
@@ -135,10 +135,8 @@ public class ExecuteFunction implements MCPFunction {
                 java.setWorkingDir(workingDir);
                 java.setMain(mainClass);
                 java.setStandardOutput(log_out);
-            } catch (IOException exception) {
-                throw new RuntimeException(exception);
-            }
-        }).rethrowFailure().assertNormalExitValue();
+            }).rethrowFailure().assertNormalExitValue();
+        }
 
         // Return the output file
         hashStore.save();
