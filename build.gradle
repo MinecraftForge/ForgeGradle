@@ -64,6 +64,40 @@ license {
     exclude 'net/minecraftforge/gradle/common/util/JavaVersionParser.java'
 }
 
+gradlePlugin {
+    plugins {
+        mcp0 {
+            id = 'net.minecraftforge.gradle.forgedev.mcp'
+            implementationClass = 'net.minecraftforge.gradle.mcp.MCPPlugin'
+        }
+
+        mcp1 {
+            id = 'net.minecraftforge.gradle.mcp'
+            implementationClass = 'net.minecraftforge.gradle.mcp.MCPPlugin'
+        }
+
+        patcher0 {
+            id = 'net.minecraftforge.gradle.forgedev.patcher'
+            implementationClass = 'net.minecraftforge.gradle.patcher.PatcherPlugin'
+        }
+
+        patcher1 {
+            id = 'net.minecraftforge.gradle.forgedev'
+            implementationClass = 'net.minecraftforge.gradle.patcher.PatcherPlugin'
+        }
+
+        patcher2 {
+            id = 'net.minecraftforge.gradle.patcher'
+            implementationClass = 'net.minecraftforge.gradle.patcher.PatcherPlugin'
+        }
+
+        userdev {
+            id = 'net.minecraftforge.gradle'
+            implementationClass = 'net.minecraftforge.gradle.userdev.UserDevPlugin'
+        }
+    }
+}
+
 wrapper {
     gradleVersion = '6.8'
     distributionType = Wrapper.DistributionType.ALL
