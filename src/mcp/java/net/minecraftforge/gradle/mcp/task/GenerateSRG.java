@@ -52,7 +52,7 @@ public class GenerateSRG extends DefaultTask {
 
         IMappingFile input = IMappingFile.load(srg);
         if (!getNotch())
-            input.reverse().chain(input); // Reverse makes SRG->OBF, chain makes SRG->SRG
+            input = input.reverse().chain(input); // Reverse makes SRG->OBF, chain makes SRG->SRG
 
         McpNames map = McpNames.load(names);
         IMappingFile ret = input.rename(new IRenamer() {

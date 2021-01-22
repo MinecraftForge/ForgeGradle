@@ -401,7 +401,7 @@ public class MCPRepo extends BaseRepo {
             MCPWrapper wrapper = getWrapper(version, mcp);
             byte[] data = wrapper.getData("mappings");
             IMappingFile input = IMappingFile.load(new ByteArrayInputStream(data)); //SRG->OBF
-            if (obf)
+            if (!obf)
                 input = input.reverse().chain(input); //SRG->OBF + OBF->SRG = SRG->SRG
 
             McpNames map = loadMCPNames(mapping, names);
