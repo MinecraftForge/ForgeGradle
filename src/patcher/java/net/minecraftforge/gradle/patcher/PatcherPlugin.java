@@ -75,7 +75,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class PatcherPlugin implements Plugin<Project> {
-    private static final String MC_DEP_CONFIG = "compile";
+    private static final String MC_DEP_CONFIG = "implementation";
 
     @Override
     public void apply(@Nonnull Project project) {
