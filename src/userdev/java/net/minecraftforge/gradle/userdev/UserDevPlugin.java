@@ -102,9 +102,11 @@ public class UserDevPlugin implements Plugin<Project> {
         project.getExtensions().add("reobf", reobf);
 
         Configuration minecraft = project.getConfigurations().maybeCreate(MINECRAFT);
-        Configuration compile = project.getConfigurations().maybeCreate("compile");
-        compile.extendsFrom(minecraft);
-
+        for (String cfg : new String[] {"compile", "implementation"}) {
+            Configuration c = project.getConfigurations().findByName(cfg);
+            if (c != null)
+                c.extendsFrom(minecraft);
+        }
 
         //Let gradle handle the downloading by giving it a configuration to dl. We'll focus on applying mappings to it.
         Configuration internalObfConfiguration = project.getConfigurations().maybeCreate(OBF);

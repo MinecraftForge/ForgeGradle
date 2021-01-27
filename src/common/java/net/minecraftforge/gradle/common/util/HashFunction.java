@@ -36,7 +36,8 @@ import org.apache.commons.io.IOUtils;
 public enum HashFunction {
     MD5("md5", 32),
     SHA1("SHA-1", 40),
-    SHA256("SHA-256", 64);
+    SHA256("SHA-256", 64),
+    SHA512("SHA-512", 128);
 
     private String algo;
     private String pad;

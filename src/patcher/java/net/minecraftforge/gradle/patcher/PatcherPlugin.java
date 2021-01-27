@@ -57,6 +57,7 @@ import net.minecraftforge.gradle.patcher.task.TaskReobfuscateJar;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository.MetadataSources;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
@@ -75,7 +76,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class PatcherPlugin implements Plugin<Project> {
-    private static final String MC_DEP_CONFIG = "implementation";
+    private static final String MC_DEP_CONFIG = "minecraftImplementation";
 
     @Override
     public void apply(@Nonnull Project project) {
@@ -87,6 +88,10 @@ public class PatcherPlugin implements Plugin<Project> {
         }
         final JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
         final File natives_folder = project.file("build/natives/");
+
+        Configuration mcImplementation = project.getConfigurations().maybeCreate(MC_DEP_CONFIG);
+        mcImplementation.setCanBeResolved(true);
+        project.getConfigurations().getByName("implementation").extendsFrom(mcImplementation);
 
         Jar jarConfig = (Jar) project.getTasks().getByName("jar");
         JavaCompile javaCompile = (JavaCompile) project.getTasks().getByName("compileJava");
