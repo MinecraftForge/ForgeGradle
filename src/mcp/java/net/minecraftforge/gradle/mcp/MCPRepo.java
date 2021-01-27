@@ -491,6 +491,8 @@ public class MCPRepo extends BaseRepo {
 
             for (IClass cls : pg_client.getClasses()) {
                 IClass obf = srg.getClass(cls.getMapped());
+                if (obf == null) // Class exists in official source, but doesn't make it past obfusication so it's not in our mappings.
+                    continue;
                 for (IField fld : cls.getFields()) {
                     String name = obf.remapField(fld.getMapped());
                     if (name.startsWith("field_"))
@@ -504,6 +506,8 @@ public class MCPRepo extends BaseRepo {
             }
             for (IClass cls : pg_server.getClasses()) {
                 IClass obf = srg.getClass(cls.getMapped());
+                if (obf == null) // Class exists in official source, but doesn't make it past obfusication so it's not in our mappings.
+                    continue;
                 for (IField fld : cls.getFields()) {
                     String name = obf.remapField(fld.getMapped());
                     if (name.startsWith("field_"))
