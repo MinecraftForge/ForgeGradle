@@ -56,6 +56,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.util.ArrayList;
@@ -556,13 +557,13 @@ public class MCPRepo extends BaseRepo {
                  ZipOutputStream out = new ZipOutputStream(fos)) {
 
                 out.putNextEntry(Utils.getStableEntry("fields.csv"));
-                try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new OutputStreamWriter(out))) {
+                try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWritter(out))) {
                     fields.forEach(writer::writeRow);
                 }
                 out.closeEntry();
 
                 out.putNextEntry(Utils.getStableEntry("methods.csv"));
-                try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new OutputStreamWriter(out))) {
+                try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWritter(out))) {
                     methods.forEach(writer::writeRow);
                 }
                 out.closeEntry();
@@ -574,6 +575,17 @@ public class MCPRepo extends BaseRepo {
 
 
         return mappings;
+    }
+
+    private class UncloseableOutputStreamWritter extends OutputStreamWriter {
+        public UncloseableOutputStreamWritter(OutputStream out) {
+            super(out);
+        }
+
+        @Override
+        public void close() throws IOException {
+            super.flush();
+        }
     }
 
     private File findEmptyPom(String side, String version) throws IOException {
