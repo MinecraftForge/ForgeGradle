@@ -22,6 +22,7 @@ package net.minecraftforge.gradle.userdev;
 
 import net.minecraftforge.gradle.common.task.*;
 import net.minecraftforge.gradle.common.util.BaseRepo;
+import net.minecraftforge.gradle.common.util.DeobfTransformer;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.common.util.VersionJson;
@@ -29,9 +30,6 @@ import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.mcp.task.DownloadMCPMappingsTask;
 import net.minecraftforge.gradle.mcp.task.GenerateSRG;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
-import net.minecraftforge.gradle.userdev.util.DeobfuscatingRepo;
-import net.minecraftforge.gradle.userdev.util.Deobfuscator;
-import net.minecraftforge.gradle.userdev.util.DependencyRemapper;
 import net.minecraftforge.srgutils.IMappingFile;
 
 import org.gradle.api.*;
@@ -107,16 +105,6 @@ public class UserDevPlugin implements Plugin<Project> {
             if (c != null)
                 c.extendsFrom(minecraft);
         }
-
-        //Let gradle handle the downloading by giving it a configuration to dl. We'll focus on applying mappings to it.
-        Configuration internalObfConfiguration = project.getConfigurations().maybeCreate(OBF);
-        internalObfConfiguration.setDescription("Generated scope for obfuscated dependencies");
-
-        //create extension for dependency remapping
-        //can't create at top-level or put in `minecraft` ext due to configuration name conflict
-        Deobfuscator deobfuscator = new Deobfuscator(project, Utils.getCache(project, "deobf_dependencies"));
-        DependencyRemapper remapper = new DependencyRemapper(project, deobfuscator);
-        project.getExtensions().create(DependencyManagementExtension.EXTENSION_NAME, DependencyManagementExtension.class, project, remapper);
 
         TaskProvider<DownloadMavenArtifact> downloadMcpConfig = project.getTasks().register("downloadMcpConfig", DownloadMavenArtifact.class);
         TaskProvider<ExtractMCPData> extractSrg = project.getTasks().register("extractSrg", ExtractMCPData.class);
@@ -217,7 +205,6 @@ public class UserDevPlugin implements Plugin<Project> {
             }
 
             MinecraftUserRepo mcrepo = null;
-            DeobfuscatingRepo deobfrepo = null;
 
             DependencySet deps = minecraft.getDependencies();
             for (Dependency dep : new ArrayList<>(deps)) {
@@ -250,18 +237,9 @@ public class UserDevPlugin implements Plugin<Project> {
                 });
             });
 
-            if (!internalObfConfiguration.getDependencies().isEmpty()) {
-                deobfrepo = new DeobfuscatingRepo(project, internalObfConfiguration, deobfuscator);
-                if (deobfrepo.getResolvedOrigin() == null) {
-                    project.getLogger().error("DeobfRepo attempted to resolve an origin repo early but failed, this may cause issues with some IDEs");
-                }
-            }
-            remapper.attachMappings(extension.getMappings());
-
             // We have to add these AFTER our repo so that we get called first, this is annoying...
             new BaseRepo.Builder()
                     .add(mcrepo)
-                    .add(deobfrepo)
                     .add(MCPRepo.create(project))
                     .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
                     .attach(project);
@@ -305,6 +283,7 @@ public class UserDevPlugin implements Plugin<Project> {
             extension.getRuns().forEach(runConfig -> runConfig.token("asset_index", finalAssetIndex));
             Utils.createRunConfigTasks(extension, extractNatives.get(), downloadAssets.get(), createSrgToMcp.get());
         });
+        DeobfTransformer.apply(extension);
     }
 
 }
