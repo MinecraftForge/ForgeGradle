@@ -20,203 +20,119 @@
 
 package net.minecraftforge.gradle.patcher.task;
 
+import codechicken.diffpatch.cli.CliOperation;
+import codechicken.diffpatch.cli.PatchOperation;
+import codechicken.diffpatch.util.LoggingOutputStream;
+import codechicken.diffpatch.util.PatchMode;
+import codechicken.diffpatch.util.archiver.ArchiveFormat;
+import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputDirectory;
-import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.Optional;
-import org.gradle.api.tasks.OutputFile;
-import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.logging.LogLevel;
+import org.gradle.api.tasks.*;
 
-import com.cloudbees.diff.PatchException;
-
-import net.minecraftforge.gradle.common.diff.ContextualPatch;
-import net.minecraftforge.gradle.common.diff.HunkReport;
-import net.minecraftforge.gradle.common.diff.PatchFile;
-import net.minecraftforge.gradle.common.diff.ZipContext;
-import net.minecraftforge.gradle.common.diff.ContextualPatch.PatchReport;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.List;
-import java.util.zip.ZipFile;
+import java.nio.file.Path;
 
 public class TaskApplyPatches extends DefaultTask {
 
-    private File clean;
+    private File base;
     private File patches;
-    private File output = getProject().file("build/" + getName() + "/output.zip");
-    private File rejects = getProject().file("build/" + getName() + "/rejects.zip");
-    private int maxFuzz = 0;
-    private boolean canonicalizeAccess = true;
-    private boolean canonicalizeWhitespace = true;
-    private boolean failOnErrors = true;
-    private String originalPrefix;
-    private String modifiedPrefix;
+    private File output;
+    private File rejects;
+    private ArchiveFormat outputFormat;
+    private ArchiveFormat rejectsFormat;
+    private float minFuzzQuality = -1;
+    private int maxFuzzOffset = -1;
+    private PatchMode patchMode = PatchMode.EXACT;
+    private String patchesPrefix = "";
+    private boolean verbose = false;
+    private boolean printSummary = true;
+    private boolean failOnError = true;
+
+    private String originalPrefix = "a/";
+    private String modifiedPrefix = "b/";
 
     @TaskAction
-    public void applyPatches() {
-        try (ZipFile zip = new ZipFile(getClean())) {
-            ZipContext context = new ZipContext(zip);
+    public void doTask() throws Exception {
+        if (patches == null) {
+            FileUtils.copyFile(getBase(), getOutput());
+            return;
+        }
 
-            if (getPatches() == null) {
-                context.save(getOutput());
-                return;
-            }
+        Path outputPath = getOutput().toPath();
+        ArchiveFormat outputFormat = getOutputFormat();
+        if (outputFormat == null) {
+            outputFormat = ArchiveFormat.findFormat(outputPath.getFileName());
+        }
 
-            boolean all_success = Files.walk(getPatches().toPath())
-            .filter(p -> Files.isRegularFile(p) && p.getFileName().toString().endsWith(".patch"))
-            .map(p -> {
-                boolean success = true;
-                ContextualPatch patch = ContextualPatch.create(PatchFile.from(p.toFile()), context, getOriginalPrefix(), getModifiedPrefix());
-                patch.setCanonialization(getCanonicalizeAccess(), getCanonicalizeWhitespace());
-                patch.setMaxFuzz(getMaxFuzz());
-                String name = p.toFile().getAbsolutePath().substring(getPatches().getAbsolutePath().length() + 1);
+        Path rejectsPath = getOutput().toPath();
+        ArchiveFormat rejectsFormat = getOutputFormat();
+        if (rejectsFormat == null) {
+            rejectsFormat = ArchiveFormat.findFormat(rejectsPath.getFileName());
+        }
 
-                try {
-                    getLogger().info("Apply Patch: " + name);
-                    List<PatchReport> result = patch.patch(false);
-                    for (int x = 0; x < result.size(); x++) {
-                        PatchReport report = result.get(x);
-                        if (!report.getStatus().isSuccess()) {
-                            getLogger().error("  Apply Patch: " + name);
-                            success = false;
-                            for (int y = 0; y < report.hunkReports().size(); y++) {
-                                HunkReport hunk = report.hunkReports().get(y);
-                                if (hunk.hasFailed()) {
-                                    if (hunk.failure == null) {
-                                        getLogger().error("    Hunk #" + hunk.hunkID + " Failed @" + hunk.index + " Fuzz: " + hunk.fuzz);
-                                    } else {
-                                        getLogger().error("    Hunk #" + hunk.hunkID + " Failed: " + hunk.failure.getMessage());
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (PatchException e) {
-                    getLogger().error("  Apply Patch: " + name);
-                    getLogger().error("    " + e.getMessage());
-                } catch (IOException e) {
-                    getLogger().error("  Apply Patch: " + name);
-                    throw new RuntimeException(e);
-                }
-                return success;
-            }).reduce(true, (a,b) -> a && b);
+        PatchOperation.Builder builder = PatchOperation.builder()
+                .logTo(new LoggingOutputStream(getLogger(), LogLevel.LIFECYCLE))
+                .basePath(getBase().toPath())
+                .patchesPath(getPatches().toPath())
+                .outputPath(outputPath, outputFormat)
+                .rejectsPath(rejectsPath, rejectsFormat)
+                .verbose(isVerbose())
+                .summary(isPrintSummary())
+                .mode(getPatchMode())
+                .aPrefix(originalPrefix)
+                .bPrefix(modifiedPrefix)
+                .patchesPrefix(getPatchesPrefix());
+        float minFuzz = getMinFuzzQuality();
+        int maxOffset = getMaxFuzzOffset();
+        if (minFuzz != -1) {
+            builder.minFuzz(minFuzz);
+        }
+        if (maxOffset != -1) {
+            builder.maxOffset(maxOffset);
+        }
 
-            if (all_success || !failOnErrors) {
-                context.save(getOutput());
-                saveRejects(context);
-            } else {
-                saveRejects(context);
-                throw new RuntimeException("Failed to apply patches. See log for details.");
-            }
-        } catch (IOException e1) {
-            throw new RuntimeException(e1);
+        CliOperation.Result<PatchOperation.PatchesSummary> result = builder.build().operate();
+
+        int exit = result.exit;
+        if (exit != 0 && exit != 1) {
+            throw new RuntimeException("DiffPatch failed with exit code: " + exit);
+        }
+        if (exit != 0 && isFailOnError()) {
+            throw new RuntimeException("Patches failed to apply.");
         }
     }
 
-    private void saveRejects(ZipContext context) throws IOException {
-        File rejectsFile = getRejects();
-        if (!rejectsFile.getName().endsWith(".zip") && !rejectsFile.getName().endsWith(".jar") && !rejectsFile.isFile()) {
-            File tmp = new File(getTemporaryDir(), "rejects_tmp.zip");
-            context.saveRejects(tmp);
-            getProject().copy(spec -> {
-                spec.from(getProject().zipTree(tmp));
-                spec.into(rejectsFile);
-            });
-        } else {
-            context.saveRejects(rejectsFile);
-        }
-    }
-
-    @InputFile
-    public File getClean() {
-        return clean;
-    }
-
-    @Optional
-    @InputDirectory
-    public File getPatches() {
-        return patches;
-    }
-
-    @Input
-    public int getMaxFuzz() {
-        return maxFuzz;
-    }
-
-    @Input
-    public boolean getCanonicalizeWhitespace() {
-        return canonicalizeWhitespace;
-    }
-
-    @Input
-    public boolean getCanonicalizeAccess() {
-        return canonicalizeAccess;
-    }
-
-    @Input
-    @Optional
-    public String getOriginalPrefix() {
-    	return this.originalPrefix;
-    }
-
-    @Input
-    @Optional
-    public String getModifiedPrefix() {
-    	return this.modifiedPrefix;
-    }
-
-    public boolean getFailOnErrors() {
-        return failOnErrors;
-    }
-    public void setFailOnErrors(boolean value) {
-        this.failOnErrors = value;
-    }
-
-    @OutputFile
-    public File getOutput() {
-        return output;
-    }
-
-    @OutputFile
-    public File getRejects() {
-        return rejects;
-    }
-
-    public void setClean(File clean) {
-        this.clean = clean;
-    }
-
-    public void setPatches(File value) {
-        patches = value;
-    }
-
-    public void setMaxFuzz(int value) {
-        maxFuzz = value;
-    }
-
-    public void setCanonicalizeWhitespace(boolean value) {
-        canonicalizeWhitespace = value;
-    }
-
-    public void setCanonicalizeAccess(boolean value) {
-        canonicalizeAccess = value;
-    }
-
-    public void setOriginalPrefix(String value) {
-    	this.originalPrefix = value;
-    }
-
-    public void setModifiedPrefix(String value) {
-    	this.modifiedPrefix = value;
-    }
-
-    public void setOutput(File value) {
-        output = value;
-    }
-
-    public void setRejects(File rejects) {
-        this.rejects = rejects;
-    }
+    //@formatter:off
+    @Input                    public File getBase() { return base; }
+    @InputDirectory @Optional public File getPatches() { return patches ; }
+    @OutputFile               public File getOutput() { return output; }
+                    @Optional public File getRejects() { return rejects; }
+    @Input          @Optional public ArchiveFormat getOutputFormat() { return outputFormat; }
+    @Input          @Optional public ArchiveFormat getRejectsFormat() { return rejectsFormat; }
+    @Input          @Optional public float getMinFuzzQuality() { return minFuzzQuality; }
+    @Input          @Optional public int getMaxFuzzOffset() { return maxFuzzOffset; }
+    @Input          @Optional public PatchMode getPatchMode() { return patchMode; }
+    @Input          @Optional public String getPatchesPrefix() { return patchesPrefix; }
+                    @Optional public boolean isVerbose() { return verbose; }
+                    @Optional public boolean isPrintSummary() { return printSummary; }
+    @Input          @Optional public boolean isFailOnError() { return failOnError; }
+    @Input          @Optional public String getOriginalPrefix() { return originalPrefix; }
+    @Input          @Optional public String getModifiedPrefix() { return modifiedPrefix; }
+                              public void setBase(File base) { this.base = base; }
+                              public void setPatches(File patches) { this.patches = patches; }
+                              public void setOutput(File output) { this.output = output; }
+                              public void setRejects(File rejects) { this.rejects = rejects; }
+                              public void setOutputFormat(ArchiveFormat outputFormat) { this.outputFormat = outputFormat; }
+                              public void setRejectsFormat(ArchiveFormat rejectsFormat) { this.rejectsFormat = rejectsFormat; }
+                              public void setMinFuzzQuality(float minFuzzQuality) { this.minFuzzQuality = minFuzzQuality; }
+                              public void setMaxFuzzOffset(int maxFuzzOffset) { this.maxFuzzOffset = maxFuzzOffset; }
+                              public void setPatchMode(PatchMode patchMode) { this.patchMode = patchMode; }
+                              public void setPatchesPrefix(String patchesPrefix) { this.patchesPrefix = patchesPrefix; }
+                              public void setVerbose(boolean verbose) { this.verbose = verbose; }
+                              public void setPrintSummary(boolean printSummary) { this.printSummary = printSummary; }
+                              public void setFailOnError(boolean failOnError) { this.failOnError = failOnError; }
+                              public void setOriginalPrefix(String originalPrefix) { this.originalPrefix = originalPrefix; }
+                              public void setModifiedPrefix(String modifiedPrefix) { this.modifiedPrefix = modifiedPrefix; }
+    //@formatter:on
 }

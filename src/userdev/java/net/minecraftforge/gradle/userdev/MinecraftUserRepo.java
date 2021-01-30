@@ -24,18 +24,17 @@ import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
 import net.minecraftforge.artifactural.api.repository.Repository;
 import net.minecraftforge.artifactural.base.repository.ArtifactProviderBuilder;
 import net.minecraftforge.artifactural.base.repository.SimpleRepository;
-import com.cloudbees.diff.PatchException;
+import codechicken.diffpatch.cli.CliOperation;
+import codechicken.diffpatch.cli.PatchOperation;
+import codechicken.diffpatch.util.LoggingOutputStream;
+import codechicken.diffpatch.util.PatchMode;
+import codechicken.diffpatch.util.archiver.ArchiveFormat;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import net.minecraftforge.gradle.common.config.Config;
 import net.minecraftforge.gradle.common.config.UserdevConfigV1;
 import net.minecraftforge.gradle.common.config.UserdevConfigV2;
 import net.minecraftforge.gradle.common.config.UserdevConfigV2.DataFunction;
-import net.minecraftforge.gradle.common.diff.ContextualPatch;
-import net.minecraftforge.gradle.common.diff.ContextualPatch.PatchReport;
-import net.minecraftforge.gradle.common.diff.HunkReport;
-import net.minecraftforge.gradle.common.diff.PatchFile;
-import net.minecraftforge.gradle.common.diff.ZipContext;
 import net.minecraftforge.gradle.common.task.ApplyBinPatches;
 import net.minecraftforge.gradle.common.task.DownloadAssets;
 import net.minecraftforge.gradle.common.task.DynamicJarExec;
@@ -73,10 +72,12 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.logging.LogLevel;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
 import org.gradle.api.plugins.JavaPluginConvention;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -1026,78 +1027,47 @@ public class MinecraftUserRepo extends BaseRepo {
                 patcher = patcher.getParent();
             }
 
-            try (ZipFile zip = new ZipFile(decomp)) {
-                ZipContext context = new ZipContext(zip);
+            boolean failed = false;
+            byte[] lastPatched = FileUtils.readFileToByteArray(decomp);
+            for (Patcher p : parents) {
+                ByteArrayOutputStream bout = new ByteArrayOutputStream();
+                CliOperation.Result<PatchOperation.PatchesSummary> result = PatchOperation.builder()
+                        .logTo(new LoggingOutputStream(project.getLogger(), LogLevel.LIFECYCLE))
+                        .basePath(lastPatched, ArchiveFormat.ZIP)
+                        .patchesPath(p.getZip().toPath())
+                        .patchesPrefix(p.getPatches())
+                        .outputPath(bout, ArchiveFormat.ZIP)
+                        .mode(PatchMode.ACCESS)
+                        .verbose(DEBUG)
+                        .summary(DEBUG)
+                        .build()
+                        .operate();
+                failed = result.exit != 0;
+                if (failed) {
+                    break; //Pointless errors if we continue.
+                }
+                lastPatched = bout.toByteArray();
+            }
+            if (failed)
+                throw new RuntimeException("Failed to apply patches to source file, see log for details: " + decomp);
 
-                boolean failed = false;
-                for (Patcher p : parents) {
-                    Map<String, PatchFile> patches = p.getPatches();
-                    if (!patches.isEmpty()) {
-                        String prefixO = parent.getConfigV2() == null ? null : parent.getConfigV2().patchesOriginalPrefix;
-                        String prefixM = parent.getConfigV2() == null ? null : parent.getConfigV2().patchesModifiedPrefix;
-                        debug("      Apply Patches:   " + p.artifact);
-                        debug("      Original Prefix: " + prefixO);
-                        debug("      Modified Prefix: " + prefixM);
-                        List<String> keys = new ArrayList<>(patches.keySet());
-                        Collections.sort(keys);
-                        for (String key : keys) {
-                            ContextualPatch patch = ContextualPatch.create(patches.get(key), context, prefixO, prefixM);
-                            patch.setCanonialization(true, false);
-                            patch.setMaxFuzz(0);
-                            try {
-                                debug("        Apply Patch: " + key);
-                                List<PatchReport> result = patch.patch(false);
-                                for (int x = 0; x < result.size(); x++) {
-                                    PatchReport report = result.get(x);
-                                    if (!report.getStatus().isSuccess()) {
-                                        log.error("  Failed to apply patch: " + p.artifact + ": " + key);
-                                        failed = true;
-                                        for (int y = 0; y < report.hunkReports().size(); y++) {
-                                            HunkReport hunk = report.hunkReports().get(y);
-                                            if (hunk.hasFailed()) {
-                                                if (hunk.failure == null) {
-                                                    log.error("    Hunk #" + hunk.hunkID + " Failed @" + hunk.index + " Fuzz: " + hunk.fuzz);
-                                                } else {
-                                                    log.error("    Hunk #" + hunk.hunkID + " Failed: " + hunk.failure.getMessage());
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            } catch (PatchException e) {
-                                log.error("  Apply Patch: " + p.artifact + ": " + key);
-                                log.error("    " + e.getMessage());
-                            }
-                        }
+            try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(patched))) {
+                Set<String> added = new HashSet<>();
+                if (lastPatched != null) {
+                    try (ZipInputStream zin = new ZipInputStream(new ByteArrayInputStream(lastPatched))) {
+                        added.addAll(Utils.copyZipEntries(zout, zin, e -> true));
                     }
                 }
-                if (failed)
-                    throw new RuntimeException("Failed to apply patches to source file, see log for details: " + decomp);
-
                 debug("    Injecting patcher extras");
-                Set<String> added = new HashSet<>();
-                try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(patched))) {
-                    added.addAll(context.save(zout));
-
-                    // Walk parents and combine from bottom up so we get any overridden files.
-                    patcher = parent;
-                    while (patcher != null) {
-                        if (patcher.getSources() != null) {
-                            try (ZipInputStream zin = new ZipInputStream(new FileInputStream(patcher.getSources()))) {
-                                ZipEntry entry;
-                                while ((entry = zin.getNextEntry()) != null) {
-                                    if (added.contains(entry.getName()) || entry.getName().startsWith("patches/")) //Skip patches, as they are included in src for reference.
-                                        continue;
-                                    ZipEntry _new = new ZipEntry(entry.getName());
-                                    _new.setTime(0); //SHOULD be the same time as the main entry, but NOOOO _new.setTime(entry.getTime()) throws DateTimeException, so you get 0, screw you!
-                                    zout.putNextEntry(_new);
-                                    IOUtils.copy(zin, zout);
-                                    added.add(entry.getName());
-                                }
-                            }
+                // Walk parents and combine from bottom up so we get any overridden files.
+                patcher = parent;
+                while (patcher != null) {
+                    if (patcher.getSources() != null) {
+                        try (ZipInputStream zin = new ZipInputStream(new FileInputStream(patcher.getSources()))) {
+                            added.addAll(Utils.copyZipEntries(zout, zin, e -> !added.contains(e) && !e.startsWith("patches/"))); //Skip patches, as they are included in src for reference.
                         }
-                        patcher = patcher.getParent();
                     }
+                    patcher = patcher.getParent();
                 }
 
                 cache.save();
@@ -1319,7 +1289,6 @@ public class MinecraftUserRepo extends BaseRepo {
         private Patcher parent;
         private String ATs = null;
         private String SASs = null;
-        private Map<String, PatchFile> patches;
         private List<Pattern> universalFilters;
 
         private Patcher(Project project, File data, String artifact) {
@@ -1449,23 +1418,8 @@ public class MinecraftUserRepo extends BaseRepo {
             return config.inject;
         }
 
-        public Map<String, PatchFile> getPatches() throws IOException {
-            if (config.patches == null)
-                return Collections.emptyMap();
-
-            if (patches == null) {
-                patches = new HashMap<>();
-                try (ZipInputStream zin = new ZipInputStream(new FileInputStream(getZip()))) {
-                    ZipEntry entry;
-                    while ((entry = zin.getNextEntry()) != null) {
-                        if (!entry.getName().startsWith(config.patches) || !entry.getName().endsWith(".patch"))
-                            continue;
-                        byte[] data = IOUtils.toByteArray(zin);
-                        patches.put(entry.getName().substring(0, entry.getName().length() - 6), PatchFile.from(data));
-                    }
-                }
-            }
-            return patches;
+        public String getPatches() {
+            return config.patches;
         }
 
         public List<Pattern> getUniversalFilters() {

@@ -20,145 +20,85 @@
 
 package net.minecraftforge.gradle.patcher.task;
 
-import org.apache.commons.io.IOUtils;
+import codechicken.diffpatch.cli.CliOperation;
+import codechicken.diffpatch.cli.DiffOperation;
+import codechicken.diffpatch.util.LoggingOutputStream;
+import codechicken.diffpatch.util.archiver.ArchiveFormat;
 import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.OutputDirectory;
-import org.gradle.api.tasks.TaskAction;
-
-import com.cloudbees.diff.Diff;
+import org.gradle.api.logging.LogLevel;
+import org.gradle.api.tasks.*;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 public class TaskGeneratePatches extends DefaultTask {
+
+    private File base;
+    private File modified;
+    private File output;
+    private ArchiveFormat outputFormat;
+    private boolean autoHeader;
+    private int contextLines = -1;
+    private boolean verbose = false;
+    private boolean printSummary = true;
+
     private String originalPrefix = "a/";
     private String modifiedPrefix = "b/";
-    private File clean;
-    private File modified;
-    private File patches;
 
     @TaskAction
-    public void generatePatches() throws IOException {
-        Set<Path> paths = new HashSet<>();
-        Files.walk(getPatches().toPath()).filter(Files::isRegularFile).forEach(paths::add);
-        try (ZipFile clean = new ZipFile(getClean());
-             ZipFile dirty = new ZipFile(getModified())) {
-            Set<String> _old = Collections.list(clean.entries()).stream().filter(e -> !e.isDirectory()).map(ZipEntry::getName).collect(Collectors.toSet());
-            Set<String> _new = Collections.list(dirty.entries()).stream().filter(e -> !e.isDirectory()).map(ZipEntry::getName).collect(Collectors.toSet());
-            for (String o : _old) {
-                ZipEntry newEntry = dirty.getEntry(o);
-                String diff = makePatch(o, clean.getInputStream(clean.getEntry(o)), newEntry == null ? null : dirty.getInputStream(newEntry));
-                _new.remove(o);
-                if (diff != null) {
-                    File patch = new File(getPatches(), o + ".patch");
-                    writePatch(patch, diff);
-                    paths.remove(patch.toPath());
-                }
-            }
-            for (String n : _new) {
-                String diff = makePatch(n, null, dirty.getInputStream(dirty.getEntry(n)));
-                if (diff != null) {
-                    File patch = new File(getPatches(), n + ".patch");
-                    writePatch(patch, diff);
-                    paths.remove(patch.toPath());
-                }
-            }
+    public void doTask() throws Exception {
+        Path outputPath = getOutput().toPath();
+        ArchiveFormat outputFormat = getOutputFormat();
+        if (outputFormat == null) {
+            outputFormat = ArchiveFormat.findFormat(outputPath.getFileName());
         }
-        paths.forEach(p -> p.toFile().delete());
-        List<File> dirs = Files.walk(getPatches().toPath()).filter(Files::isDirectory).map(Path::toFile).collect(Collectors.toList());
-        Collections.reverse(dirs);
-        dirs.forEach(p -> {
-           if (p.list().length == 0)
-               p.delete();
-        });
+        getProject().getLogger().info("Base:" + getBase().toString());
+        getProject().getLogger().info("Modified:" + getModified().toString());
 
-    }
+        DiffOperation.Builder builder = DiffOperation.builder()
+                .logTo(new LoggingOutputStream(getLogger(), LogLevel.LIFECYCLE))
+                .aPath(getBase().toPath())
+                .bPath(getModified().toPath())
+                .outputPath(outputPath, outputFormat)
+                .autoHeader(isAutoHeader())
+                .verbose(isVerbose())
+                .summary(isPrintSummary())
+                .aPrefix(originalPrefix)
+                .bPrefix(modifiedPrefix);
 
-    private void writePatch(File patch, String diff) throws IOException {
-        File parent = patch.getParentFile();
-        if (!parent.exists()) {
-            parent.mkdirs();
+        int context = getContextLines();
+        if (context != -1) {
+            builder.context(context);
         }
-        try (FileOutputStream fos = new FileOutputStream(patch)) {
-            IOUtils.write(diff, fos, StandardCharsets.UTF_8);
+
+        CliOperation.Result<DiffOperation.DiffSummary> result = builder.build().operate();
+
+        int exit = result.exit;
+        if (exit != 0 && exit != 1) {
+            throw new RuntimeException("DiffPatch failed with exit code: " + exit);
         }
     }
 
-    private String makePatch(String relative, InputStream original, InputStream modified) throws IOException {
-        String originalRelative = original == null ? "/dev/null" : originalPrefix + relative;
-        String modifiedRelative = modified == null ? "/dev/null" : modifiedPrefix + relative;
-
-        String originalData = original == null ? "" : new String(IOUtils.toByteArray(original), StandardCharsets.UTF_8);
-        String modifiedData = modified == null ? "" : new String(IOUtils.toByteArray(modified), StandardCharsets.UTF_8);
-
-        final Diff diff = Diff.diff(new StringReader(originalData), new StringReader(modifiedData), false);
-
-        if (!diff.isEmpty()) {
-            return diff.toUnifiedDiff(originalRelative, modifiedRelative,
-                    new StringReader(originalData), new StringReader(modifiedData), 3)
-                    .replaceAll("\r?\n", "\n");
-        }
-        return null;
-    }
-
-    @InputFile
-    public File getClean() {
-        return clean;
-    }
-
-    @InputFile
-    public File getModified() {
-        return modified;
-    }
-
-    @Input
-    public String getOriginalPrefix() {
-    	return this.originalPrefix;
-    }
-
-    @Input
-    public String getModifiedPrefix() {
-    	return this.modifiedPrefix;
-    }
-
-    @OutputDirectory
-    public File getPatches() {
-        return patches;
-    }
-
-    public void setClean(File clean) {
-        this.clean = clean;
-    }
-
-    public void setModified(File modified) {
-        this.modified = modified;
-    }
-
-    public void setOriginalPrefix(String value) {
-    	this.originalPrefix = value;
-    }
-
-    public void setModifiedPrefix(String value) {
-    	this.modifiedPrefix = value;
-    }
-
-    public void setPatches(File patches) {
-        this.patches = patches;
-    }
-
+    //@formatter:off
+    @InputFile                 public File getBase() { return base; }
+    @InputFile                 public File getModified() { return modified; }
+    @OutputDirectory           public File getOutput() { return output; }
+    @Input           @Optional public ArchiveFormat getOutputFormat() { return outputFormat; }
+    @Input           @Optional public boolean isAutoHeader() { return autoHeader; }
+    @Input           @Optional public int getContextLines() { return contextLines; }
+                     @Optional public boolean isVerbose() { return verbose; }
+                     @Optional public boolean isPrintSummary() { return printSummary; }
+    @Input           @Optional public String getOriginalPrefix() { return originalPrefix; }
+    @Input           @Optional public String getModifiedPrefix() { return modifiedPrefix; }
+                               public void setBase(File base) { this.base = base; }
+                               public void setModified(File modified) { this.modified = modified; }
+                               public void setOutput(File patches) { this.output = patches; }
+                               public void setOutputFormat(ArchiveFormat format) { this.outputFormat = format; }
+                               public void setAutoHeader(boolean autoHeader) { this.autoHeader = autoHeader; }
+                               public void setContextLines(int lines) { this.contextLines = lines; }
+                               public void setVerbose(boolean verbose) { this.verbose = verbose; }
+                               public void setPrintSummary(boolean printSummary) { this.printSummary = printSummary; }
+                               public void setOriginalPrefix(String originalPrefix) { this.originalPrefix = originalPrefix; }
+                               public void setModifiedPrefix(String modifiedPrefix) { this.modifiedPrefix = modifiedPrefix; }
+    //@formatter:on
 }

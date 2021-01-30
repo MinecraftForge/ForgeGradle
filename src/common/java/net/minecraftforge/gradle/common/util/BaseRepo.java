@@ -39,6 +39,9 @@ import net.minecraftforge.artifactural.base.repository.SimpleRepository;
 import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 
 public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
+
+    public static final boolean DEBUG = Boolean.getBoolean("fg.debugRepo");
+
     private final File cache;
     protected final Logger log;
     protected final String REPO_NAME = getClass().getSimpleName();
@@ -61,7 +64,7 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
     }
 
     protected void debug(String message) {
-        if (System.getProperty("fg.debugRepo", "false").equals("true"))
+        if (DEBUG)
             this.log.lifecycle(message);
     }
     protected void info(String message) {
