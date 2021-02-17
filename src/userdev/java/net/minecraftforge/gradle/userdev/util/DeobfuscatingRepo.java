@@ -127,6 +127,7 @@ public class DeobfuscatingRepo extends BaseRepo {
 
     private File findSource(Artifact artifact, String mapping) throws IOException {
         File origFile = MavenArtifactDownloader.manual(project, artifact.getDescriptor(), false);
+        if (origFile == null) return null;
 
         return deobfuscator.deobfSources(origFile, mapping, getArtifactPath(artifact, mapping));
     }
