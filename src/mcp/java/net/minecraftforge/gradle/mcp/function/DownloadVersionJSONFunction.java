@@ -29,7 +29,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 
-public class DownloadVersionJSONFunction extends AbstractFileDownloadFunction {
+class DownloadVersionJSONFunction extends DownloadFileFunction {
 
     private static final String DEFAULT_OUTPUT = "version.json";
 

@@ -33,6 +33,7 @@ import com.google.common.collect.Maps;
 
 import net.minecraftforge.gradle.common.config.Config;
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
+import net.minecraftforge.gradle.common.config.MCPConfigV2;
 import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.Utils;
 
@@ -40,7 +41,7 @@ public class MCPWrapper {
     private final String hash;
     private final File data;
     private final File root;
-    private final MCPConfigV1 config;
+    private final MCPConfigV2 config;
     protected final Map<String, MCPRuntime> runtimes = Maps.newHashMap();
 
     public MCPWrapper(File data, File root) throws IOException {
@@ -53,9 +54,12 @@ public class MCPWrapper {
         this.root = root;
         byte[] cfg_data = Utils.getZipData(data, "config.json");
         int spec = Config.getSpec(cfg_data);
-        if (spec != 1)
+        if (spec != 1 && spec != 2)
             throw new IllegalStateException("Could not load MCP config, Unknown Spec: " + spec + " File: " + data);
-        this.config = MCPConfigV1.get(cfg_data);
+        if (spec == 2)
+            this.config = MCPConfigV2.get(cfg_data);
+        else
+            this.config = new MCPConfigV2(MCPConfigV1.get(cfg_data));
     }
 
     public MCPRuntime getRuntime(Project project, String side) {
@@ -75,7 +79,7 @@ public class MCPWrapper {
         return this.hash;
     }
 
-    public MCPConfigV1 getConfig() {
+    public MCPConfigV2 getConfig() {
         return this.config;
     }
 

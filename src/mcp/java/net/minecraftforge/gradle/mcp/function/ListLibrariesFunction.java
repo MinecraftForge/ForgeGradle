@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Set;
 import java.nio.charset.StandardCharsets;
 
-public class ListLibrariesFunction implements MCPFunction {
+class ListLibrariesFunction implements MCPFunction {
 
     @Override
     public File execute(MCPEnvironment environment) {

@@ -49,9 +49,8 @@ import net.minecraftforge.gradle.common.util.POMBuilder;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPRepo;
-import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
-import net.minecraftforge.gradle.mcp.function.SideAnnotationStripperFunction;
+import net.minecraftforge.gradle.mcp.function.MCPFunctionFactory;
 import net.minecraftforge.gradle.mcp.task.GenerateSRG;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import net.minecraftforge.gradle.mcp.util.MCPWrapper;
@@ -1460,39 +1459,37 @@ public class MinecraftUserRepo extends BaseRepo {
                         MCPRuntime ret = runtimes.get(side);
                         if (ret == null) {
                             File dir = new File(wrapper.getRoot(), side);
-                            String AT_HASH = MinecraftUserRepo.this.AT_HASH;
-                            List<File> ATS = MinecraftUserRepo.this.ATS;
+                            List<String> ats = new ArrayList<>();
+                            List<String> sas = new ArrayList<>();
 
-                            AccessTransformerFunction function = new AccessTransformerFunction(project, ATS);
-                            boolean emptyAT = true;
-                            if (AT_HASH != null) {
+                            if (AT_HASH != null)
                                 dir = new File(dir, AT_HASH);
-                                emptyAT = false;
-                            }
-
-                            SideAnnotationStripperFunction stripper = new SideAnnotationStripperFunction(project, Collections.emptyList());
-                            boolean emptyStripper = true;
 
                             Patcher patcher = MinecraftUserRepo.this.parent;
                             while (patcher != null) {
-                                String at = patcher.getATData();
-                                if (at != null && !at.isEmpty()) {
-                                    function.addTransformer(at);
-                                    emptyAT = false;
-                                }
-                                String sas = patcher.getSASData();
-                                if (sas != null) {
-                                    stripper.addData(sas);
-                                    emptyStripper = false;
-                                }
+                                String data = patcher.getATData();
+                                if (data != null && !data.isEmpty())
+                                    ats.add(data);
+
+                                data = patcher.getSASData();
+                                if (data != null && !data.isEmpty())
+                                    sas.add(data);
+
                                 patcher = patcher.getParent();
                             }
 
                             Map<String, MCPFunction> preDecomps = Maps.newLinkedHashMap();
-                            if (!emptyAT)
+                            if (!ats.isEmpty() || AT_HASH != null) {
+                                @SuppressWarnings("deprecation")
+                                MCPFunction function = MCPFunctionFactory.createAT(project, MinecraftUserRepo.this.ATS, ats);
                                 preDecomps.put("AccessTransformer", function);
-                            if (!emptyStripper)
-                                preDecomps.put("SideStripper", stripper);
+                            }
+
+                            if (!sas.isEmpty()) {
+                                @SuppressWarnings("deprecation")
+                                MCPFunction function = MCPFunctionFactory.createSAS(project, Collections.emptyList(), sas);
+                                preDecomps.put("SideStripper", function);
+                            }
 
                             ret = new MCPRuntime(project, data, getConfig(), side, dir, preDecomps);
                             runtimes.put(side, ret);

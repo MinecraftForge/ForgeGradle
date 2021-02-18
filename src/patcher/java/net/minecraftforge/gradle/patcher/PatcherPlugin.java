@@ -36,8 +36,8 @@ import net.minecraftforge.gradle.common.util.VersionJson;
 import net.minecraftforge.gradle.mcp.MCPExtension;
 import net.minecraftforge.gradle.mcp.MCPPlugin;
 import net.minecraftforge.gradle.mcp.MCPRepo;
-import net.minecraftforge.gradle.mcp.function.AccessTransformerFunction;
-import net.minecraftforge.gradle.mcp.function.SideAnnotationStripperFunction;
+import net.minecraftforge.gradle.mcp.function.MCPFunction;
+import net.minecraftforge.gradle.mcp.function.MCPFunctionFactory;
 import net.minecraftforge.gradle.mcp.task.DownloadMCPConfigTask;
 import net.minecraftforge.gradle.mcp.task.SetupMCPTask;
 import net.minecraftforge.gradle.patcher.task.CreateFakeSASPatches;
@@ -73,6 +73,7 @@ import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -554,7 +555,9 @@ public class PatcherPlugin implements Plugin<Project> {
 
             if (!extension.getAccessTransformers().isEmpty()) {
                 SetupMCPTask setupMCP = (SetupMCPTask) mcp.getTasks().getByName("setupMCP");
-                setupMCP.addPreDecompile(project.getName() + "AccessTransformer", new AccessTransformerFunction(mcp, extension.getAccessTransformers()));
+                @SuppressWarnings("deprecation")
+                MCPFunction function = MCPFunctionFactory.createAT(mcp, extension.getAccessTransformers(), Collections.emptyList());
+                setupMCP.addPreDecompile(project.getName() + "AccessTransformer", function);
                 extension.getAccessTransformers().forEach(f -> {
                     userdevJar.get().from(f, e -> e.into("ats/"));
                     userdevConfig.get().addAT(f);
@@ -563,7 +566,9 @@ public class PatcherPlugin implements Plugin<Project> {
 
             if (!extension.getSideAnnotationStrippers().isEmpty()) {
                 SetupMCPTask setupMCP = (SetupMCPTask) mcp.getTasks().getByName("setupMCP");
-                setupMCP.addPreDecompile(project.getName() + "SideStripper", new SideAnnotationStripperFunction(mcp, extension.getSideAnnotationStrippers()));
+                @SuppressWarnings("deprecation")
+                MCPFunction function = MCPFunctionFactory.createSAS(mcp, extension.getSideAnnotationStrippers(), Collections.emptyList());
+                setupMCP.addPreDecompile(project.getName() + "SideStripper", function);
                 extension.getSideAnnotationStrippers().forEach(f -> {
                     userdevJar.get().from(f, e -> e.into("sas/"));
                     userdevConfig.get().addSAS(f);

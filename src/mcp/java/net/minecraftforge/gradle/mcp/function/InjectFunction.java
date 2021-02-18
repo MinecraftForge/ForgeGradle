@@ -42,7 +42,7 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-public class InjectFunction implements MCPFunction {
+class InjectFunction implements MCPFunction {
     private static final MinecraftVersion v1_14_4 = MinecraftVersion.from("1.14.4");
 
     private String inject;

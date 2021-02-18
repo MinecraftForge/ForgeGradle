@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class PatchFunction implements MCPFunction {
+class PatchFunction implements MCPFunction {
 
     private String path;
 

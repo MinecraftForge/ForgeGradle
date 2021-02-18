@@ -39,7 +39,7 @@ import java.util.jar.JarOutputStream;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
-public class StripJarFunction implements MCPFunction {
+class StripJarFunction implements MCPFunction {
 
     private String mappings;
     private Set<String> filter;

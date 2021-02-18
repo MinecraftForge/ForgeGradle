@@ -33,7 +33,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.jar.Attributes;
@@ -44,7 +43,7 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-public class ExecuteFunction implements MCPFunction {
+class ExecuteFunction implements MCPFunction {
 
     private static final Pattern REPLACE_PATTERN = Pattern.compile("^\\{(\\w+)\\}$");
 

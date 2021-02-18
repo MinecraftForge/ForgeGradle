@@ -37,7 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class AccessTransformerFunction extends ExecuteFunction {
+class AccessTransformerFunction extends ExecuteFunction {
     private List<File> files;
     private String transformers;
 

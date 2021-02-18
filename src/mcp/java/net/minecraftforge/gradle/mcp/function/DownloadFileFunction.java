@@ -30,17 +30,17 @@ import java.io.File;
 import java.net.URL;
 import java.util.function.Function;
 
-public abstract class AbstractFileDownloadFunction implements MCPFunction {
+class DownloadFileFunction implements MCPFunction {
 
     private final Function<MCPEnvironment, String> outputGetter;
     private final Function<MCPEnvironment, DownloadInfo> downloadGetter;
 
-    public AbstractFileDownloadFunction(Function<MCPEnvironment, String> outputGetter, Function<MCPEnvironment, DownloadInfo> downloadGetter) {
+    public DownloadFileFunction(Function<MCPEnvironment, String> outputGetter, Function<MCPEnvironment, DownloadInfo> downloadGetter) {
         this.outputGetter = outputGetter;
         this.downloadGetter = downloadGetter;
     }
 
-    public AbstractFileDownloadFunction(String defaultOutput, String url) {
+    public DownloadFileFunction(String defaultOutput, String url) {
         this(env -> defaultOutput, env -> new DownloadInfo(url, null, "unknown", null, null));
     }
 

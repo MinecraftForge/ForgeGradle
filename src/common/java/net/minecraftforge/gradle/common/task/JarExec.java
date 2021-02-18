@@ -44,7 +44,6 @@ import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 
 public class JarExec extends DefaultTask {
     private static final OutputStream NULL = new OutputStream() { @Override public void write(int b) throws IOException { } };
-    private static int index = 0;
     protected boolean hasLog = true;
     protected String tool;
     private File _tool;

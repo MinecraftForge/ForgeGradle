@@ -26,7 +26,6 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -48,7 +47,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
@@ -116,7 +114,7 @@ public class TaskReobfuscateJar extends DefaultTask {
                     public void write(int b) throws IOException {
                         log.write(b);
                     }
-                }); 
+                });
             }).rethrowFailure().assertNormalExitValue();
 
             List<String> lines = Files.readLines(getSrg(), StandardCharsets.UTF_8);

@@ -45,11 +45,11 @@ public class MCPConfigV1 extends Config {
         return get(new ByteArrayInputStream(data));
     }
 
-    private String version; // Minecraft version
-    private Map<String, Object> data;
-    private Map<String, List<Step>> steps;
-    private Map<String, Function> functions;
-    private Map<String, List<String>> libraries;
+    protected String version; // Minecraft version
+    protected Map<String, Object> data;
+    protected Map<String, List<Step>> steps;
+    protected Map<String, Function> functions;
+    protected Map<String, List<String>> libraries;
 
     public String getVersion() {
         return version;

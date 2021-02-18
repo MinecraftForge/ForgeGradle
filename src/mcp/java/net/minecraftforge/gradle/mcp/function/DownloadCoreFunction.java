@@ -28,13 +28,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 
-public abstract class AbstractDownloadMCFunction extends AbstractFileDownloadFunction {
-
-    public AbstractDownloadMCFunction(String artifact) {
-        super(env -> artifact + ".jar", env -> getDownloadInfo(env, artifact));
+class DownloadCoreFunction extends DownloadFileFunction {
+    DownloadCoreFunction(String artifact, String ext) {
+        super(env -> artifact + '.' + ext, env -> getDownloadInfo(env, artifact, ext));
     }
 
-    private static DownloadInfo getDownloadInfo(MCPEnvironment environment, String artifact) {
+    private static DownloadInfo getDownloadInfo(MCPEnvironment environment, String artifact, String extension) {
         try {
             Gson gson = new Gson();
             Reader reader = new FileReader(environment.getStepOutput(DownloadVersionJSONFunction.class));
@@ -45,7 +44,7 @@ public abstract class AbstractDownloadMCFunction extends AbstractFileDownloadFun
             String url = artifactInfo.get("url").getAsString();
             String hash = artifactInfo.get("sha1").getAsString();
             String version = json.getAsJsonObject().get("id").getAsString();
-            return new DownloadInfo(url, hash, "jar", version, artifact);
+            return new DownloadInfo(url, hash, extension, version, artifact);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }

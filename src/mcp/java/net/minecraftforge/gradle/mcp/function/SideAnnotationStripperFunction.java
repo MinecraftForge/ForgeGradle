@@ -36,7 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class SideAnnotationStripperFunction extends ExecuteFunction {
+class SideAnnotationStripperFunction extends ExecuteFunction {
     private List<File> files;
     private String data;
 

@@ -21,15 +21,14 @@
 package net.minecraftforge.gradle.mcp.util;
 
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
+import net.minecraftforge.gradle.common.config.MCPConfigV2;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
-import net.minecraftforge.gradle.mcp.MCPPlugin;
-import net.minecraftforge.gradle.mcp.function.ExecuteFunction;
+import net.minecraftforge.gradle.mcp.function.MCPFunctionFactory;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,7 +52,7 @@ public class MCPRuntime {
     final Map<String, Step> steps = new LinkedHashMap<>();
     Step currentStep;
 
-    public MCPRuntime(Project project, File mcp_config, MCPConfigV1 config, String side,
+    public MCPRuntime(Project project, File mcp_config, MCPConfigV2 config, String side,
             File mcpDirectory, Map<String, MCPFunction> extraPres) {
         this.project = project;
         this.environment = new MCPEnvironment(this, config.getVersion(), side);
@@ -70,7 +69,6 @@ public class MCPRuntime {
         if (steps.isEmpty())
             throw new IllegalArgumentException("Unknown side: " + side + " For Config: " + mcp_config);
 
-        boolean hasDownloadJson = false; //TODO: Remove when MCPConfig is published. I derped for the server -Lex
         for (MCPConfigV1.Step step : steps) {
             if (step.getName().equals("decompile")) { //TODO: Clearly define decomp vs bin, needs MCPConfig spec bump.
                 if (!extraPres.isEmpty()) {
@@ -88,12 +86,8 @@ public class MCPRuntime {
                 }
             }
 
-            MCPFunction function = MCPPlugin.createBuiltInFunction(step.getType());
-            if ("downloadJson".equals(step.getType())) hasDownloadJson = true;
-            if ("downloadServer".equals(step.getType()) && !hasDownloadJson) {
-                this.steps.put("downloadJson", new Step("downloadJson", MCPPlugin.createBuiltInFunction("downloadJson"), Collections.emptyMap(), new File(this.mcpDirectory, "downloadJson"), data));
-                hasDownloadJson = true; //I derped the server side steps, hack fix until I publish a new MCPConfig -Lex
-            }
+            @SuppressWarnings("deprecation")
+            MCPFunction function = MCPFunctionFactory.createBuiltIn(step.getType(), config.spec);
 
             if (function == null) {
                 MCPConfigV1.Function custom = config.getFunction(step.getType());
@@ -103,8 +97,10 @@ public class MCPRuntime {
                 File jar = MavenArtifactDownloader.manual(project, custom.getVersion(), false);
                 if (jar == null || !jar.exists())
                     throw new IllegalArgumentException("Could not download MCP Config dependency: " + custom.getVersion());
-                function = new ExecuteFunction(jar, custom.getJvmArgs().toArray(new String[custom.getJvmArgs().size()]),
-                                                    custom.getArgs().toArray(new String[custom.getArgs().size()]), Collections.emptyMap());
+
+                @SuppressWarnings("deprecation")
+                MCPFunction tmp = MCPFunctionFactory.createExecute(jar, custom.getJvmArgs(), custom.getArgs());
+                function = tmp;
             }
 
             File workingDir = new File(this.mcpDirectory, step.getName());
