@@ -75,7 +75,7 @@ public class PatchFunction implements MCPFunction {
                 .patchesPrefix(path)
                 .outputPath(output.toPath())
                 .verbose(false)
-                .mode(PatchMode.ACCESS)
+                .mode(PatchMode.OFFSET)
                 .rejectsPath(rejects.toPath())
                 .build()
                 .operate();
