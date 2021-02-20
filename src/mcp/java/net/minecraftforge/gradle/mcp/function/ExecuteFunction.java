@@ -28,7 +28,9 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -121,7 +123,7 @@ public class ExecuteFunction implements MCPFunction {
         // Execute command
         try (BufferedOutputStream log_out = new BufferedOutputStream(new FileOutputStream(environment.getFile("console.log")))) {
             environment.project.javaexec(java -> {
-                PrintWriter writer = new PrintWriter(log_out);
+                PrintWriter writer = new PrintWriter(new OutputStreamWriter(log_out, StandardCharsets.UTF_8));
                 Function<String, String> quote = s -> '"' + s + '"';
                 writer.println("JVM Args:    " + jvmArgList.stream().map(quote).collect(Collectors.joining(", ")));
                 writer.println("Run Args:    " + runArgList.stream().map(quote).collect(Collectors.joining(", ")));

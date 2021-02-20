@@ -64,7 +64,7 @@ public class McpNames {
         try (ZipFile zip = new ZipFile(data)) {
             List<ZipEntry> entries = zip.stream().filter(e -> e.getName().endsWith(".csv")).collect(Collectors.toList());
             for (ZipEntry entry : entries) {
-                try (NamedCsvReader reader = NamedCsvReader.builder().build(new InputStreamReader(zip.getInputStream(entry)))) {
+                try (NamedCsvReader reader = NamedCsvReader.builder().build(new InputStreamReader(zip.getInputStream(entry), StandardCharsets.UTF_8))) {
                     String obf = reader.getHeader().contains("searge") ? "searge" : "param";
                     boolean hasDesc = reader.getHeader().contains("desc");
                     reader.forEach(row -> {

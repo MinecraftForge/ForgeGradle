@@ -31,6 +31,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
 import java.util.jar.JarEntry;
@@ -52,7 +53,8 @@ public class StripJarFunction implements MCPFunction {
     @Override
     public void initialize(MCPEnvironment environment, ZipFile zip) throws IOException {
         // Read valid file names from mapping
-        BufferedReader br = new BufferedReader(new InputStreamReader(zip.getInputStream(zip.getEntry(mappings))));
+        BufferedReader br = new BufferedReader(new InputStreamReader(zip.getInputStream(zip.getEntry(mappings)),
+                StandardCharsets.UTF_8));
         filter = br.lines().filter(l -> !l.startsWith("\t")).map(s -> s.split(" ")[0] + ".class").collect(Collectors.toSet());
         br.close();
     }

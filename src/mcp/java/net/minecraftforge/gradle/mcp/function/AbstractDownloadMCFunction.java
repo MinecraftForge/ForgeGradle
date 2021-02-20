@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.mcp.function;
 
+import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -36,10 +37,7 @@ public abstract class AbstractDownloadMCFunction extends AbstractFileDownloadFun
 
     private static DownloadInfo getDownloadInfo(MCPEnvironment environment, String artifact) {
         try {
-            Gson gson = new Gson();
-            Reader reader = new FileReader(environment.getStepOutput(DownloadVersionJSONFunction.class));
-            JsonObject json = gson.fromJson(reader, JsonObject.class);
-            reader.close();
+            JsonObject json = Utils.loadJson(environment.getStepOutput(DownloadVersionJSONFunction.class));
 
             JsonObject artifactInfo = json.getAsJsonObject("downloads").getAsJsonObject(artifact);
             String url = artifactInfo.get("url").getAsString();

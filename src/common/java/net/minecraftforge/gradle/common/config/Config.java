@@ -24,6 +24,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 import net.minecraftforge.gradle.common.util.Utils;
 
@@ -31,7 +32,7 @@ public class Config {
     public int spec;
 
     public static int getSpec(InputStream stream) throws IOException {
-        return Utils.GSON.fromJson(new InputStreamReader(stream), Config.class).spec;
+        return Utils.GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), Config.class).spec;
     }
     public static int getSpec(byte[] data) throws IOException {
         return getSpec(new ByteArrayInputStream(data));

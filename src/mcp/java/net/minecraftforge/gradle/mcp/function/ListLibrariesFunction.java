@@ -20,6 +20,9 @@
 
 package net.minecraftforge.gradle.mcp.function;
 
+import com.google.common.io.CharStreams;
+import com.google.common.io.Files;
+import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import com.google.gson.Gson;
@@ -46,10 +49,7 @@ public class ListLibrariesFunction implements MCPFunction {
         File output = (File)environment.getArguments().computeIfAbsent("output", (key) -> environment.getFile("libraries.txt"));
 
         try {
-            Gson gson = new Gson();
-            Reader reader = new FileReader(environment.getStepOutput(DownloadVersionJSONFunction.class));
-            JsonObject json = gson.fromJson(reader, JsonObject.class);
-            reader.close();
+            JsonObject json = Utils.loadJson(environment.getStepOutput(DownloadVersionJSONFunction.class));
 
             // Gather all the libraries
             Set<File> files = new HashSet<>();

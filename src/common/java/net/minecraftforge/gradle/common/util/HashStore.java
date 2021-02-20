@@ -152,7 +152,10 @@ public class HashStore {
         save(target);
     }
     public void save(File file) throws IOException {
-        FileUtils.writeByteArrayToFile(file, newHashes.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue()).collect(Collectors.joining("\n")).getBytes());
+        FileUtils.writeByteArrayToFile(file, newHashes.entrySet().stream()
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .collect(Collectors.joining("\n"))
+                .getBytes(StandardCharsets.UTF_8));
     }
 
     private String getPath(File file) {

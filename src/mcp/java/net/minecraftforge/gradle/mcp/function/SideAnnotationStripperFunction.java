@@ -29,6 +29,7 @@ import org.gradle.api.Project;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -69,7 +70,7 @@ public class SideAnnotationStripperFunction extends ExecuteFunction {
             File tmp = env.getFile("string_data.sas").getAbsoluteFile();
             if (!tmp.getParentFile().exists())
                 tmp.getParentFile().mkdirs();
-            Files.write(tmp.toPath(), data.getBytes());
+            Files.write(tmp.toPath(), data.getBytes(StandardCharsets.UTF_8));
             List<String> args = new ArrayList<>(Arrays.asList(runArgs));
             args.add("--data");
             args.add(tmp.getAbsolutePath());

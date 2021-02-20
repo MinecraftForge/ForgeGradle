@@ -34,6 +34,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayOutputStream;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -127,11 +129,11 @@ public class POMBuilder {
         transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
         DOMSource source = new DOMSource(doc);
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        StreamResult result = new StreamResult(baos);
+        StringWriter writer = new StringWriter();
+        StreamResult result = new StreamResult(writer);
         transformer.transform(source, result);
 
-        return new String(baos.toByteArray());
+        return writer.toString();
     }
 
     private static void set(Document doc, Element parent, String name, String value) {
