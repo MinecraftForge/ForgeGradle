@@ -47,7 +47,7 @@ class ListLibrariesFunction implements MCPFunction {
 
         try {
             Gson gson = new Gson();
-            Reader reader = new FileReader(environment.getStepOutput(DownloadVersionJSONFunction.class));
+            Reader reader = new FileReader(environment.getStepOutput("downloadJson"));
             JsonObject json = gson.fromJson(reader, JsonObject.class);
             reader.close();
 

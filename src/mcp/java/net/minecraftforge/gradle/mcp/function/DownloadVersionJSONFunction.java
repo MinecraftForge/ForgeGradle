@@ -40,7 +40,7 @@ class DownloadVersionJSONFunction extends DownloadFileFunction {
     private static DownloadInfo getDownloadInfo(MCPEnvironment environment) {
         try {
             Gson gson = new Gson();
-            Reader reader = new FileReader(environment.getStepOutput(DownloadManifestFunction.class));
+            Reader reader = new FileReader(environment.getStepOutput("downloadManifest"));
             JsonObject json = gson.fromJson(reader, JsonObject.class);
             reader.close();
 

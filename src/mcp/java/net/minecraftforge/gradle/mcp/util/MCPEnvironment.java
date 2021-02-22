@@ -77,15 +77,6 @@ public class MCPEnvironment {
         return step.output;
     }
 
-    public File getStepOutput(Class<? extends MCPFunction> type) {
-        for (MCPRuntime.Step step : runtime.steps.values()) {
-            if (step.isOfType(type)) {
-                return step.output;
-            }
-        }
-        throw new IllegalArgumentException("Could not find a step of type " + type.getName());
-    }
-
     public MinecraftVersion getMinecraftVersion() {
         return this.mcVersion;
     }
