@@ -1031,7 +1031,7 @@ public class MinecraftUserRepo extends BaseRepo {
             byte[] lastPatched = FileUtils.readFileToByteArray(decomp);
             for (Patcher p : parents) {
                 ByteArrayOutputStream bout = new ByteArrayOutputStream();
-                CliOperation.Result<PatchOperation.PatchesSummary> result = PatchOperation.builder()
+                PatchOperation.Builder opBuilder = PatchOperation.builder()
                         .logTo(new LoggingOutputStream(project.getLogger(), LogLevel.LIFECYCLE))
                         .basePath(lastPatched, ArchiveFormat.ZIP)
                         .patchesPath(p.getZip().toPath())
@@ -1039,7 +1039,20 @@ public class MinecraftUserRepo extends BaseRepo {
                         .outputPath(bout, ArchiveFormat.ZIP)
                         .mode(PatchMode.ACCESS)
                         .verbose(DEBUG)
-                        .summary(DEBUG)
+                        .summary(DEBUG);
+                // Note that pre-1.13 patches use ../{src-base,src-work}/minecraft/ prefixes
+                // instead of the default {a,b}/ prefixes. Also, be sure not to override the
+                // defaults with null values.
+                UserdevConfigV2 cfg = p.getConfigV2();
+                if (cfg != null) {
+                    if (cfg.patchesOriginalPrefix != null) {
+                        opBuilder = opBuilder.aPrefix(cfg.patchesOriginalPrefix);
+                    }
+                    if (cfg.patchesModifiedPrefix != null) {
+                        opBuilder = opBuilder.bPrefix(cfg.patchesModifiedPrefix);
+                    }
+                }
+                CliOperation.Result<PatchOperation.PatchesSummary> result = opBuilder
                         .build()
                         .operate();
                 failed = result.exit != 0;
