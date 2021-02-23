@@ -36,7 +36,7 @@ class DownloadCoreFunction extends DownloadFileFunction {
     private static DownloadInfo getDownloadInfo(MCPEnvironment environment, String artifact, String extension) {
         try {
             Gson gson = new Gson();
-            Reader reader = new FileReader(environment.getStepOutput("downloadManifest"));
+            Reader reader = new FileReader(environment.getStepOutput("downloadJson"));
             JsonObject json = gson.fromJson(reader, JsonObject.class);
             reader.close();
 
