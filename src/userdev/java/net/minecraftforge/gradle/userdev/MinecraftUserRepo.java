@@ -708,7 +708,7 @@ public class MinecraftUserRepo extends BaseRepo {
     private File findBinpatched(final Set<String> packages) throws IOException {
         boolean notch = parent != null && parent.getConfigV2() != null && parent.getConfigV2().getNotchObf();
 
-        String desc = "net.minecraft:" + (isPatcher ? "joined" : NAME) + ":" + (notch ? mcp.getMCVersion() : mcp.getVersion() + ":srg");
+        String desc = "net.minecraft:" + (isPatcher ? "joined" : NAME) + ":" + mcp.getVersion() + (notch ? "" : ":srg");
         File clean = MavenArtifactDownloader.generate(project, desc, true);
 
         if (clean == null || !clean.exists()) {
