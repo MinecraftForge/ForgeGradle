@@ -40,7 +40,7 @@ public class TaskGeneratePatches extends DefaultTask {
     private boolean autoHeader;
     private int contextLines = -1;
     private boolean verbose = false;
-    private boolean printSummary = true;
+    private boolean printSummary = false;
 
     private String originalPrefix = "a/";
     private String modifiedPrefix = "b/";

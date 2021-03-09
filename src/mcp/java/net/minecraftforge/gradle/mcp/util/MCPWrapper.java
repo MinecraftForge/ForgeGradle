@@ -31,8 +31,6 @@ import org.gradle.api.Project;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
 
-import net.minecraftforge.gradle.common.config.Config;
-import net.minecraftforge.gradle.common.config.MCPConfigV1;
 import net.minecraftforge.gradle.common.config.MCPConfigV2;
 import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.Utils;
@@ -52,14 +50,7 @@ public class MCPWrapper {
         this.hash = hash;
         this.data = data;
         this.root = root;
-        byte[] cfg_data = Utils.getZipData(data, "config.json");
-        int spec = Config.getSpec(cfg_data);
-        if (spec != 1 && spec != 2)
-            throw new IllegalStateException("Could not load MCP config, Unknown Spec: " + spec + " File: " + data);
-        if (spec == 2)
-            this.config = MCPConfigV2.get(cfg_data);
-        else
-            this.config = new MCPConfigV2(MCPConfigV1.get(cfg_data));
+        this.config = MCPConfigV2.getFromArchive(data);
     }
 
     public MCPRuntime getRuntime(Project project, String side) {

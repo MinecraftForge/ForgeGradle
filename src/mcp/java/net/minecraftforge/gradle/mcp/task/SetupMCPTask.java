@@ -20,8 +20,6 @@
 
 package net.minecraftforge.gradle.mcp.task;
 
-import net.minecraftforge.gradle.common.config.Config;
-import net.minecraftforge.gradle.common.config.MCPConfigV1;
 import net.minecraftforge.gradle.common.config.MCPConfigV2;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.Utils;
@@ -90,13 +88,7 @@ public class SetupMCPTask extends DefaultTask {
 
     @TaskAction
     public void setupMCP() throws Exception {
-        byte[] config_data = Utils.getZipData(config, "config.json");
-        int spec = Config.getSpec(config_data);
-        if (spec != 1 && spec != 2)
-            throw new IllegalStateException("Invalid MCP Config: " + config + " Unknown spec: " + spec);
-        MCPConfigV2 mcpconfig = spec == 2 ? MCPConfigV2.get(config_data) :
-                new MCPConfigV2(MCPConfigV1.get(config_data));
-
+        MCPConfigV2 mcpconfig = MCPConfigV2.getFromArchive(config);
         MCPRuntime runtime = new MCPRuntime(getProject(), config, mcpconfig, getPipeline(), getProject().file("build/mcp/"), extrasPre);
         File out = runtime.execute(getLogger());
         if (FileUtils.contentEquals(out, output)) return;

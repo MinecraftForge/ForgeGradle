@@ -50,8 +50,8 @@ import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 
-import net.minecraftforge.gradle.common.config.Config;
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
+import net.minecraftforge.gradle.common.config.MCPConfigV2;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import net.minecraftforge.gradle.common.util.VersionJson.OS;
 import net.minecraftforge.srgutils.MinecraftVersion;
@@ -388,11 +388,7 @@ public class MinecraftRepo extends BaseRepo {
         private final MCPConfigV1 config;
         public MCPWrapperSlim(File data) throws IOException {
             this.data = data;
-            byte[] cfg_data = Utils.getZipData(data, "config.json");
-            int spec = Config.getSpec(cfg_data);
-            if (spec != 1)
-                throw new IllegalStateException("Could not load MCP config, Unknown Spec: " + spec + " File: " + data);
-            this.config = MCPConfigV1.get(cfg_data);
+            this.config = MCPConfigV2.getFromArchive(data);
         }
 
         public void extractData(File target, String... path) throws IOException {

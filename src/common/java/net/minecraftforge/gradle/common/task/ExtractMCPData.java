@@ -23,7 +23,6 @@ package net.minecraftforge.gradle.common.task;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.function.Supplier;
 import java.util.zip.ZipEntry;
@@ -36,49 +35,50 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
-import net.minecraftforge.gradle.common.config.Config;
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
+import net.minecraftforge.gradle.common.config.MCPConfigV2;
 
 public class ExtractMCPData extends DefaultTask {
-    private static final Gson GSON = new GsonBuilder().create();
-
     private String key = "mappings";
     private Supplier<File> configSupplier;
     private File config;
+    private boolean allowEmpty = false;
     private File output = getProject().file("build/" + getName() + "/output.srg");
-
 
     @TaskAction
     public void run() throws IOException {
+        MCPConfigV1 cfg = MCPConfigV2.getFromArchive(getConfig());
+
         try (ZipFile zip = new ZipFile(getConfig())) {
-            ZipEntry entry = zip.getEntry("config.json");
-            if (entry == null) {
-                throw new IllegalStateException("Could not find 'config.json' in " + getConfig().getAbsolutePath());
+            String path = cfg.getData(key.split("/"));
+            if (path == null && "statics".equals(key))
+                path = "config/static_methods.txt";
+
+            if (path == null) {
+                error("Could not find data entry for '" + key + "'");
+                return;
             }
-            int spec = Config.getSpec(zip.getInputStream(entry));
-            if (spec == 1) {
-                MCPConfigV1 cfg = GSON.fromJson(new InputStreamReader(zip.getInputStream(entry)), MCPConfigV1.class);
-                String path = cfg.getData(key.split("/"));
-                if (path == null && "statics".equals(key)) { //TODO: Remove when I next push MCPConfig
-                    path = "config/static_methods.txt";
-                }
-                if (path == null) {
-                    throw new IllegalStateException("Could not find data entry for '" + key + "'");
-                }
-                entry = zip.getEntry(path);
-                if (entry == null) {
-                    throw new IllegalStateException("Invalid config zip, Missing path '" + path + "'");
-                }
-                try (OutputStream out = new FileOutputStream(getOutput())) {
-                    IOUtils.copy(zip.getInputStream(entry), out);
-                }
-            } else {
-                throw new IllegalStateException("Unsupported spec version '" + spec + "'");
+
+            ZipEntry entry = zip.getEntry(path);
+            if (entry == null) {
+                error("Invalid config zip, Missing path '" + path + "'");
+                return;
+            }
+
+            try (OutputStream out = new FileOutputStream(getOutput())) {
+                IOUtils.copy(zip.getInputStream(entry), out);
             }
         }
+    }
+
+    private void error(String message) throws IOException {
+        if (!isAllowEmpty())
+            throw new IllegalStateException(message);
+
+        if (getOutput().exists())
+            getOutput().delete();
+
+        getOutput().createNewFile();
     }
 
     @InputFile
@@ -104,6 +104,14 @@ public class ExtractMCPData extends DefaultTask {
     }
     public void setKey(String value) {
         this.key = value;
+    }
+
+    @Input
+    public boolean isAllowEmpty() {
+        return this.allowEmpty;
+    }
+    public void setAllowEmpty(boolean value) {
+        this.allowEmpty = value;
     }
 
     @OutputFile

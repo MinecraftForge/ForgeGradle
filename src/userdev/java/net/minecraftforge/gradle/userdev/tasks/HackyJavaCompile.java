@@ -41,8 +41,12 @@ import java.lang.reflect.Method;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 
-// A terrible hack to use JavaCompile while bypassing
-// Gradle's normal task infrastructure.
+/*
+ *  A terrible hack to use JavaCompile while bypassing
+ *  Gradle's normal task infrastructure.
+ *  This is internal API Modderrs DO NOT referencee this.
+ *  It can and will be removed if we get a better way to do this.
+ */
 public class HackyJavaCompile extends JavaCompile {
 
     @SuppressWarnings({"rawtypes", "unchecked", "deprecation", "UnstableApiUsage"})

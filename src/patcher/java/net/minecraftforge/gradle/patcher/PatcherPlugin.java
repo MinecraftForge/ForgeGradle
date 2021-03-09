@@ -230,7 +230,6 @@ public class PatcherPlugin implements Plugin<Project> {
             task.dependsOn(jarConfig, dlMappingsConfig);
             task.setInput(jarConfig.getArchiveFile().get().getAsFile());
             task.setClasspath(project.getConfigurations().getByName(MC_DEP_CONFIG));
-            //TODO: Extra SRGs
         });
         genJoinedBinPatches.configure(task -> {
             task.dependsOn(reobfJar);
@@ -329,8 +328,6 @@ public class PatcherPlugin implements Plugin<Project> {
         }
 
         project.afterEvaluate(p -> {
-            MojangLicenseHelper.displayWarning(p, extension.getMappingChannel());
-
             //Add PatchedSrc to a main sourceset and build range tasks
             SourceSet mainSource = javaConv.getSourceSets().getByName("main");
             applyRangeConfig.get().setSources(mainSource.getJava().getSrcDirs().stream().filter(f -> !f.equals(extension.patchedSrc)).collect(Collectors.toList()));
@@ -373,6 +370,7 @@ public class PatcherPlugin implements Plugin<Project> {
                 PatcherPlugin patcher = extension.parent.getPlugins().findPlugin(PatcherPlugin.class);
 
                 if (mcp != null) {
+                    MojangLicenseHelper.displayWarning(p, extension.getMappingChannel());
                     SetupMCPTask setupMCP = (SetupMCPTask) tasks.getByName("setupMCP");
 
                     if (procConfig != null) {
@@ -421,6 +419,7 @@ public class PatcherPlugin implements Plugin<Project> {
                         ext.get().dependsOn(dlMCP);
                         ext.get().setConfig(dlMCP.getOutput());
                         ext.get().setKey("statics");
+                        ext.get().setAllowEmpty(true);
                         ext.get().setOutput(project.file("build/" + ext.get().getName() + "/output.txt"));
                         createExc.get().setStatics(ext.get().getOutput());
                         createExc.get().dependsOn(ext);
@@ -431,6 +430,7 @@ public class PatcherPlugin implements Plugin<Project> {
                         ext.get().dependsOn(dlMCP);
                         ext.get().setConfig(dlMCP.getOutput());
                         ext.get().setKey("constructors");
+                        ext.get().setAllowEmpty(true);
                         ext.get().setOutput(project.file("build/" + ext.get().getName() + "/output.txt"));
                         createExc.get().setConstructors(ext.get().getOutput());
                         createExc.get().dependsOn(ext);

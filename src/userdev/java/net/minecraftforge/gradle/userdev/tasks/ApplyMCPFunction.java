@@ -24,8 +24,8 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import net.minecraftforge.gradle.common.config.Config;
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
+import net.minecraftforge.gradle.common.config.MCPConfigV2;
 import net.minecraftforge.gradle.common.task.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
 
@@ -55,12 +55,7 @@ public class ApplyMCPFunction extends JarExec {
 
     @TaskAction
     public void apply() throws IOException {
-        byte[] cfg_data = Utils.getZipData(getMCP(), "config.json");
-        int spec = Config.getSpec(cfg_data);
-        if (spec != 1)
-            throw new IllegalStateException("Could not load MCP config, Unknown Spec: " + spec + " File: " + getMCP());
-        MCPConfigV1 config = MCPConfigV1.get(cfg_data);
-
+        MCPConfigV1 config = MCPConfigV2.getFromArchive(getMCP());
         MCPConfigV1.Function function = config.getFunction(functionName);
 
         tool = function.getVersion();

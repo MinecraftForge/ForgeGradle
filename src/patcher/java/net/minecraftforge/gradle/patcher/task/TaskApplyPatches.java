@@ -46,7 +46,7 @@ public class TaskApplyPatches extends DefaultTask {
     private PatchMode patchMode = PatchMode.EXACT;
     private String patchesPrefix = "";
     private boolean verbose = false;
-    private boolean printSummary = true;
+    private boolean printSummary = false;
     private boolean failOnError = true;
 
     private String originalPrefix = "a/";
@@ -65,7 +65,7 @@ public class TaskApplyPatches extends DefaultTask {
             outputFormat = ArchiveFormat.findFormat(outputPath.getFileName());
         }
 
-        Path rejectsPath = getOutput().toPath();
+        Path rejectsPath = getRejects().toPath();
         ArchiveFormat rejectsFormat = getOutputFormat();
         if (rejectsFormat == null) {
             rejectsFormat = ArchiveFormat.findFormat(rejectsPath.getFileName());
