@@ -527,7 +527,7 @@ public class Utils {
             throw new RuntimeException(String.format("Found %s version %s. Minimum required is %s.%s", name, current, minVersionInclusive, additional));
 
         if (maxVersionExclusive != null && current.compareTo(maxVersionExclusive) >= 0)
-            throw new RuntimeException(String.format("Found %s version %s. Versions %s and newer are not supported yet.%s", name, current, maxVersionExclusive, additional));
+            throw new RuntimeException(String.format("Found %s version %s. Versions %s and newer are not supported yet.", name, current, maxVersionExclusive));
     }
 
     /**
