@@ -514,19 +514,20 @@ public class Utils {
         return toCapitalize.length() > 1 ? toCapitalize.substring(0, 1).toUpperCase() + toCapitalize.substring(1) : toCapitalize;
     }
 
-    public static void checkJavaRange( @Nullable JavaVersionParser.JavaVersion minVersionInclusive, @Nullable JavaVersionParser.JavaVersion maxVersionExclusive) {
-        checkRange("java", JavaVersionParser.getCurrentJavaVersion(), minVersionInclusive, maxVersionExclusive);
+    public static void checkJavaRange(@Nullable JavaVersionParser.JavaVersion minVersionInclusive, @Nullable JavaVersionParser.JavaVersion maxVersionExclusive) {
+        checkRange("java", JavaVersionParser.getCurrentJavaVersion(), minVersionInclusive, maxVersionExclusive, "");
     }
 
-    public static void checkGradleRange( @Nullable GradleVersion minVersionInclusive, @Nullable GradleVersion maxVersionExclusive) {
-        checkRange("Gradle", GradleVersion.current(), minVersionInclusive, maxVersionExclusive);
+    public static void checkGradleRange(@Nullable GradleVersion minVersionInclusive, @Nullable GradleVersion maxVersionExclusive) {
+        checkRange("Gradle", GradleVersion.current(), minVersionInclusive, maxVersionExclusive, "\nNote: Upgrade your gradle version first before trying to switch to FG4.");
     }
 
-    private static <T> void checkRange(String name, Comparable<T> current, @Nullable T minVersionInclusive, @Nullable T maxVersionExclusive) {
+    private static <T> void checkRange(String name, Comparable<T> current, @Nullable T minVersionInclusive, @Nullable T maxVersionExclusive, String additional) {
         if (minVersionInclusive != null && current.compareTo(minVersionInclusive) < 0)
-            throw new RuntimeException(String.format("Found %s version %s. Minimum required is %s.", name, current, minVersionInclusive));
+            throw new RuntimeException(String.format("Found %s version %s. Minimum required is %s.%s", name, current, minVersionInclusive, additional));
+
         if (maxVersionExclusive != null && current.compareTo(maxVersionExclusive) >= 0)
-            throw new RuntimeException(String.format("Found %s version %s. Versions %s and newer are not supported yet.", name, current, maxVersionExclusive));
+            throw new RuntimeException(String.format("Found %s version %s. Versions %s and newer are not supported yet.%s", name, current, maxVersionExclusive, additional));
     }
 
     /**
@@ -540,7 +541,7 @@ public class Utils {
     public static void checkEnvironment() {
         if (ENABLE_TEST_JAVA) {
             checkJavaRange(
-                // Mininum must be update 101 as it's the first one to include Let's Encrypt certificates.
+                // Minimum must be update 101 as it's the first one to include Let's Encrypt certificates.
                 JavaVersionParser.parseJavaVersion("1.8.0_101"),
                 null //TODO: Add JDK range check to MCPConfig?
             );
