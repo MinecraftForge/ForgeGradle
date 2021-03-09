@@ -23,6 +23,7 @@ package net.minecraftforge.gradle.userdev;
 import net.minecraftforge.gradle.common.task.*;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
+import net.minecraftforge.gradle.common.util.MojangLicenseHelper;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.common.util.VersionJson;
 import net.minecraftforge.gradle.mcp.MCPRepo;
@@ -162,10 +163,7 @@ public class UserDevPlugin implements Plugin<Project> {
             String channel = project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String)project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot";
 
             logger.lifecycle("This process uses Srg2Source for java source file renaming. Please forward relevant bug reports to https://github.com/MinecraftForge/Srg2Source/issues.");
-            if ("official".equals(channel)) {
-                String warning = "WARNING: This project will be updated to use the official obfuscation mappings provided by Mojang. " + Utils.OFFICIAL_MAPPING_USAGE;
-                logger.warn(warning);
-            }
+            MojangLicenseHelper.displayWarning(project, channel);
 
             JavaCompile javaCompile = (JavaCompile) project.getTasks().getByName("compileJava");
             JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
@@ -211,10 +209,7 @@ public class UserDevPlugin implements Plugin<Project> {
         }
 
         project.afterEvaluate(p -> {
-            if ("official".equals(extension.getMappingChannel())) {
-                String warning = "WARNING: This project is configured to use the official obfuscation mappings provided by Mojang. " + Utils.OFFICIAL_MAPPING_USAGE;
-                logger.warn(warning);
-            }
+            MojangLicenseHelper.displayWarning(p, extension.getMappingChannel());
 
             MinecraftUserRepo mcrepo = null;
             DeobfuscatingRepo deobfrepo = null;
@@ -229,7 +224,7 @@ public class UserDevPlugin implements Plugin<Project> {
 
                 mcrepo = new MinecraftUserRepo(p, dep.getGroup(), dep.getName(), dep.getVersion(), extension.getAccessTransformers(), extension.getMappings());
                 String newDep = mcrepo.getDependencyString();
-                p.getLogger().lifecycle("New Dep: " + newDep);
+                //p.getLogger().lifecycle("New Dep: " + newDep);
                 ExternalModuleDependency ext = (ExternalModuleDependency) p.getDependencies().create(newDep);
                 {
                     if (MinecraftUserRepo.CHANGING_USERDEV)

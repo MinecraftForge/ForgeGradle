@@ -108,11 +108,6 @@ public class Utils {
     public static final String INSTALLERTOOLS = "net.minecraftforge:installertools:1.1.10:fatjar";
     public static final long ZIPTIME = 628041600000L;
     public static final TimeZone GMT = TimeZone.getTimeZone("GMT");
-    public static final String OFFICIAL_MAPPING_USAGE =
-            "These mapping files are licensed as All Rights Reserved with permission to use the contents for INTERNAL, "
-          + "REFERENCE purposes. Please avoid publishing any source code referencing these mappings. A full copy of "
-          + "the license can be found at the top of the mapping file itself and in the 19w36a snapshot article at: "
-          + "https://www.minecraft.net/en-us/article/minecraft-snapshot-19w36a.";
 
     public static void extractFile(ZipFile zip, String name, File output) throws IOException {
         extractFile(zip, zip.getEntry(name), output);

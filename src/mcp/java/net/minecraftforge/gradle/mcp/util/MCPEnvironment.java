@@ -21,7 +21,6 @@
 package net.minecraftforge.gradle.mcp.util;
 
 import net.minecraftforge.srgutils.MinecraftVersion;
-import net.minecraftforge.gradle.mcp.function.MCPFunction;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 

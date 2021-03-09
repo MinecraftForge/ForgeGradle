@@ -31,6 +31,7 @@ import net.minecraftforge.gradle.common.task.ExtractZip;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
+import net.minecraftforge.gradle.common.util.MojangLicenseHelper;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.common.util.VersionJson;
 import net.minecraftforge.gradle.mcp.MCPExtension;
@@ -304,6 +305,7 @@ public class PatcherPlugin implements Plugin<Project> {
         if (doingUpdate) {
             String version = (String) project.property("UPDATE_MAPPINGS");
             String channel = project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String) project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot";
+            MojangLicenseHelper.displayWarning(project, channel);
 
             TaskProvider<DownloadMCPMappingsTask> dlMappingsNew = project.getTasks().register("downloadMappingsNew", DownloadMCPMappingsTask.class);
             dlMappingsNew.get().setMappings(channel + '_' + version);
@@ -327,6 +329,8 @@ public class PatcherPlugin implements Plugin<Project> {
         }
 
         project.afterEvaluate(p -> {
+            MojangLicenseHelper.displayWarning(p, extension.getMappingChannel());
+
             //Add PatchedSrc to a main sourceset and build range tasks
             SourceSet mainSource = javaConv.getSourceSets().getByName("main");
             applyRangeConfig.get().setSources(mainSource.getJava().getSrcDirs().stream().filter(f -> !f.equals(extension.patchedSrc)).collect(Collectors.toList()));
