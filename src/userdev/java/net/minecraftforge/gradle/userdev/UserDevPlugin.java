@@ -60,7 +60,7 @@ public class UserDevPlugin implements Plugin<Project> {
 
     @Override
     public void apply(@Nonnull Project project) {
-        Utils.checkJavaVersion();
+        Utils.checkEnvironment();
 
         @SuppressWarnings("unused")
         final Logger logger = project.getLogger();
