@@ -102,7 +102,7 @@ public class Utils {
     public static final String MOJANG_MAVEN = "https://libraries.minecraft.net/";
     public static final String BINPATCHER =  "net.minecraftforge:binarypatcher:1.+:fatjar";
     public static final String ACCESSTRANSFORMER = "net.minecraftforge:accesstransformers:1.0.+:fatjar";
-    public static final String SPECIALSOURCE = "net.md-5:SpecialSource:1.8.3:shaded";
+    public static final String SPECIALSOURCE = "net.md-5:SpecialSource:1.9.0:shaded";
     public static final String SRG2SOURCE =  "net.minecraftforge:Srg2Source:7.+:fatjar";
     public static final String SIDESTRIPPER = "net.minecraftforge:mergetool:1.0.7:fatjar";
     public static final String INSTALLERTOOLS = "net.minecraftforge:installertools:1.1.10:fatjar";
