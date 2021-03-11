@@ -111,7 +111,7 @@ public class MavenArtifactDownloader {
             if (activeDownload != null) {
                 // Some other thread is already working downloading this exact artifact, wait for it to finish
                 try {
-                    project.getLogger().lifecycle("Waiting for download of {} on other thread", artifact);
+                    project.getLogger().info("Waiting for download of {} on other thread", artifact);
                     return activeDownload.get();
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -123,7 +123,7 @@ public class MavenArtifactDownloader {
                     }
                 }
             } else {
-                project.getLogger().lifecycle("Downloading {}", artifact);
+                project.getLogger().info("Downloading {}", artifact);
                 // We're the first thread to download the artifact, make sure concurrent downloads just wait for us
                 future = new CompletableFuture<>();
                 ACTIVE_DOWNLOADS.put(downloadKey, future);
