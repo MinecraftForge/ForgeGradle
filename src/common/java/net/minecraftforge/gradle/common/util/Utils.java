@@ -39,6 +39,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.util.GradleVersion;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -87,6 +88,7 @@ import java.util.zip.ZipFile;
 
 public class Utils {
     private static final boolean ENABLE_TEST_CERTS = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_certs", "true"));
+    private static final boolean ENABLE_TEST_GRADLE = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_gradle", "true"));
     private static final boolean ENABLE_TEST_JAVA  = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_java", "true"));
 
     public static final Gson GSON = new GsonBuilder()
@@ -500,20 +502,35 @@ public class Utils {
         return toCapitalize.length() > 1 ? toCapitalize.substring(0, 1).toUpperCase() + toCapitalize.substring(1) : toCapitalize;
     }
 
-    public static void checkJavaRange( @Nullable JavaVersionParser.JavaVersion minVersionInclusive, @Nullable JavaVersionParser.JavaVersion maxVersionExclusive) {
-        JavaVersionParser.JavaVersion currentJavaVersion = JavaVersionParser.getCurrentJavaVersion();
-        if (minVersionInclusive != null && currentJavaVersion.compareTo(minVersionInclusive) < 0)
-            throw new RuntimeException(String.format("Found java version %s. Minimum required is %s.", currentJavaVersion, minVersionInclusive));
-        if (maxVersionExclusive != null && currentJavaVersion.compareTo(maxVersionExclusive) >= 0)
-            throw new RuntimeException(String.format("Found java version %s. Versions %s and newer are not supported yet.", currentJavaVersion, maxVersionExclusive));
+    public static void checkJavaRange(@Nullable JavaVersionParser.JavaVersion minVersionInclusive, @Nullable JavaVersionParser.JavaVersion maxVersionExclusive) {
+        checkRange("java", JavaVersionParser.getCurrentJavaVersion(), minVersionInclusive, maxVersionExclusive, ".");
+    }
+
+    public static void checkGradleRange(@Nullable GradleVersion minVersionInclusive, @Nullable GradleVersion maxVersionExclusive) {
+        checkRange("Gradle", GradleVersion.current(), minVersionInclusive, maxVersionExclusive, " in FG3, FG4 however supports Versions 6.8.1 and newer. Consider upgrading.");
+    }
+
+    private static <T> void checkRange(String name, Comparable<T> current, @Nullable T minVersionInclusive, @Nullable T maxVersionExclusive, String additional) {
+        if (minVersionInclusive != null && current.compareTo(minVersionInclusive) < 0)
+            throw new RuntimeException(String.format("Found %s version %s. Minimum required is %s.", name, current, minVersionInclusive));
+
+        if (maxVersionExclusive != null && current.compareTo(maxVersionExclusive) >= 0)
+            throw new RuntimeException(String.format("Found %s version %s. Versions %s and newer are not supported%s", name, current, maxVersionExclusive, additional));
     }
 
     public static void checkJavaVersion() {
         if (ENABLE_TEST_JAVA) {
             checkJavaRange(
-                // Mininum must be update 101 as it's the first one to include Let's Encrypt certificates.
+                // Minimum must be update 101 as it's the first one to include Let's Encrypt certificates.
                 JavaVersionParser.parseJavaVersion("1.8.0_101"),
                 null //TODO: Add JDK range check to MCPConfig?
+            );
+        }
+
+        if (ENABLE_TEST_GRADLE) {
+            checkGradleRange(
+                GradleVersion.version("4.9"),
+                GradleVersion.version("6.0.0")
             );
         }
 
