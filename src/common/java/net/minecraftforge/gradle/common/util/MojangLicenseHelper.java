@@ -45,6 +45,12 @@ public class MojangLicenseHelper {
         displayWarning(project, channel, null);
     }
 
+    public static void displayWarningUpdate(Project project, String originalChannel, String channel, @Nullable String version) {
+        if ("official".equals(originalChannel)) return;
+
+        displayWarning(project, channel, version);
+    }
+
     public static void displayWarning(Project project, String channel, @Nullable String version) {
         if ("official".equals(channel)) {
             Optional<String> license = version != null ? getOfficialLicense(project, version) : Optional.empty();
@@ -114,9 +120,14 @@ public class MojangLicenseHelper {
 
         File client = MavenArtifactDownloader.generate(project, artifact, true);
 
-        if (client == null) return Optional.empty();
-
         try {
+            if (client == null && project.hasProperty("UPDATE_MAPPINGS")) {
+                MinecraftRepo repo = (MinecraftRepo) MinecraftRepo.create(project);
+                client = repo.findFile(Artifact.from(artifact));
+            }
+
+            if (client == null) return Optional.empty();
+
             return Optional.of(
                 Files.lines(client.toPath())
                     .filter(line -> line.startsWith("#"))        // Only Comments

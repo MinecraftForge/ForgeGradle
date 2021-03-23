@@ -177,7 +177,7 @@ public class UserDevPlugin implements Plugin<Project> {
             String channel = project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String)project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot";
 
             logger.lifecycle("This process uses Srg2Source for java source file renaming. Please forward relevant bug reports to https://github.com/MinecraftForge/Srg2Source/issues.");
-            MojangLicenseHelper.displayWarning(project, channel, version);
+            project.afterEvaluate(p -> MojangLicenseHelper.displayWarningUpdate(p, extension.getMappingChannel(), channel, version));
 
             JavaCompile javaCompile = (JavaCompile) project.getTasks().getByName("compileJava");
             JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
