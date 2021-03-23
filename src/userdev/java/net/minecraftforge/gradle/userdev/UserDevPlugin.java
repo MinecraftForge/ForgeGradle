@@ -126,6 +126,20 @@ public class UserDevPlugin implements Plugin<Project> {
         TaskProvider<DownloadMCMeta> downloadMCMeta = project.getTasks().register("downloadMCMeta", DownloadMCMeta.class);
         TaskProvider<ExtractNatives> extractNatives = project.getTasks().register("extractNatives", ExtractNatives.class);
         TaskProvider<DownloadAssets> downloadAssets = project.getTasks().register("downloadAssets", DownloadAssets.class);
+        TaskProvider<DefaultTask> acceptLicense = project.getTasks().register(MojangLicenseHelper.ACCEPT_LICENSE, DefaultTask.class);
+        TaskProvider<DefaultTask> revokeLicense = project.getTasks().register(MojangLicenseHelper.REVOKE_LICENSE, DefaultTask.class);
+
+        acceptLicense.configure(task -> {
+            task.doLast(_task -> {
+                MojangLicenseHelper.accept(project, extension.getMappingChannel(), extension.getMappingVersion());
+            });
+        });
+
+        revokeLicense.configure(task -> {
+            task.doLast(_task -> {
+                MojangLicenseHelper.revoke(project, extension.getMappingChannel(), extension.getMappingVersion());
+            });
+        });
 
         extractSrg.configure(task -> {
             task.dependsOn(downloadMcpConfig);
@@ -163,7 +177,7 @@ public class UserDevPlugin implements Plugin<Project> {
             String channel = project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String)project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot";
 
             logger.lifecycle("This process uses Srg2Source for java source file renaming. Please forward relevant bug reports to https://github.com/MinecraftForge/Srg2Source/issues.");
-            MojangLicenseHelper.displayWarning(project, channel);
+            MojangLicenseHelper.displayWarning(project, channel, version);
 
             JavaCompile javaCompile = (JavaCompile) project.getTasks().getByName("compileJava");
             JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
@@ -209,8 +223,6 @@ public class UserDevPlugin implements Plugin<Project> {
         }
 
         project.afterEvaluate(p -> {
-            MojangLicenseHelper.displayWarning(p, extension.getMappingChannel());
-
             MinecraftUserRepo mcrepo = null;
             DeobfuscatingRepo deobfrepo = null;
 
@@ -260,6 +272,9 @@ public class UserDevPlugin implements Plugin<Project> {
                     .add(MCPRepo.create(project))
                     .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
                     .attach(project);
+
+            MojangLicenseHelper.displayWarning(p, extension.getMappingChannel(), extension.getMappingVersion());
+
             project.getRepositories().maven(e -> {
                 e.setUrl(Utils.MOJANG_MAVEN);
                 e.metadataSources(MetadataSources::artifact);
