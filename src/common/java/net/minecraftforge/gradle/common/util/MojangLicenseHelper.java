@@ -35,8 +35,8 @@ import org.gradle.api.Project;
 
 public class MojangLicenseHelper {
 
-    public static final String ACCEPT_LICENSE = "acceptTheCurrentOfficialLicense";
-    public static final String REVOKE_LICENSE = "revokeAcceptanceOfTheCurrentOfficialLicense";
+    public static final String HIDE_LICENSE = "hideOfficialWarningUntilChanged";
+    public static final String SHOW_LICENSE = "reshowOfficialWarning";
 
     /**
      * @see #displayWarning(Project, String, String) 
@@ -59,7 +59,7 @@ public class MojangLicenseHelper {
             Optional<String> license = version != null ? getOfficialLicense(project, version) : Optional.empty();
             Optional<String> licenseHash = license.map(HashFunction.SHA1::hash);
 
-            if (license.isPresent() && isAccepted(project, licenseHash.get())) return;
+            if (license.isPresent() && isHidden(project, licenseHash.get())) return;
 
             String warning = getWarning(license.orElse(null));
 
@@ -68,7 +68,7 @@ public class MojangLicenseHelper {
         }
     }
 
-    public static void accept(Project project, String channel, String version) {
+    public static void hide(Project project, String channel, String version) {
         if (!"official".equals(channel)) return;
 
         String hash = getOfficialLicense(project, version)
@@ -82,13 +82,16 @@ public class MojangLicenseHelper {
         try {
             Utils.createEmpty(accepted.toFile());
 
-            project.getLogger().warn("WARNING: These warnings will not be shown again until the license changes");
+            String warning = "WARNING: These warnings will not be shown again until the license changes "
+                + "or the task `{TASK}` is run.";
+
+            project.getLogger().warn(warning.replace("{TASK}", SHOW_LICENSE));
         } catch (IOException exception) {
             project.getLogger().error("Could not accept Mojang license", exception);
         }
     }
 
-    public static void revoke(Project project, String channel, String version) {
+    public static void show(Project project, String channel, String version) {
         if (!"official".equals(channel)) return;
 
         String hash = getOfficialLicense(project, version)
@@ -110,10 +113,10 @@ public class MojangLicenseHelper {
 
         return warning
             .replace("{REFER}", license != null ? "below" : "to the mapping file itself")
-            .replace("{TASK}", ACCEPT_LICENSE);
+            .replace("{TASK}", HIDE_LICENSE);
     }
 
-    private static boolean isAccepted(Project project, String hash) {
+    private static boolean isHidden(Project project, String hash) {
         return Files.exists(getLicensePath(project, hash));
     }
 
@@ -140,7 +143,7 @@ public class MojangLicenseHelper {
     }
 
     private static Path getLicensePath(Project project, String hash) {
-        return new File(Utils.getCache(project, "licenses"), hash + ".accepted").toPath();
+        return new File(Utils.getCache(project, "licenses"), hash + ".marker").toPath();
     }
 
     private static final Predicate<String> MCP_CONFIG_TIMESTAMP = Pattern.compile("\\d{8}\\.\\d{6}").asPredicate();

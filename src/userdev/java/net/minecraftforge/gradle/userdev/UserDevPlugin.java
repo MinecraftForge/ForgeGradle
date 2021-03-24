@@ -126,18 +126,18 @@ public class UserDevPlugin implements Plugin<Project> {
         TaskProvider<DownloadMCMeta> downloadMCMeta = project.getTasks().register("downloadMCMeta", DownloadMCMeta.class);
         TaskProvider<ExtractNatives> extractNatives = project.getTasks().register("extractNatives", ExtractNatives.class);
         TaskProvider<DownloadAssets> downloadAssets = project.getTasks().register("downloadAssets", DownloadAssets.class);
-        TaskProvider<DefaultTask> acceptLicense = project.getTasks().register(MojangLicenseHelper.ACCEPT_LICENSE, DefaultTask.class);
-        TaskProvider<DefaultTask> revokeLicense = project.getTasks().register(MojangLicenseHelper.REVOKE_LICENSE, DefaultTask.class);
+        TaskProvider<DefaultTask> hideLicense = project.getTasks().register(MojangLicenseHelper.HIDE_LICENSE, DefaultTask.class);
+        TaskProvider<DefaultTask> showLicense = project.getTasks().register(MojangLicenseHelper.SHOW_LICENSE, DefaultTask.class);
 
-        acceptLicense.configure(task -> {
+        hideLicense.configure(task -> {
             task.doLast(_task -> {
-                MojangLicenseHelper.accept(project, extension.getMappingChannel(), extension.getMappingVersion());
+                MojangLicenseHelper.hide(project, extension.getMappingChannel(), extension.getMappingVersion());
             });
         });
 
-        revokeLicense.configure(task -> {
+        showLicense.configure(task -> {
             task.doLast(_task -> {
-                MojangLicenseHelper.revoke(project, extension.getMappingChannel(), extension.getMappingVersion());
+                MojangLicenseHelper.show(project, extension.getMappingChannel(), extension.getMappingVersion());
             });
         });
 
