@@ -172,12 +172,13 @@ public class UserDevPlugin implements Plugin<Project> {
             task.setMeta(downloadMCMeta.get().getOutput());
         });
 
-        if (project.hasProperty("UPDATE_MAPPINGS")) {
-            String version = (String)project.property("UPDATE_MAPPINGS");
-            String channel = project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String)project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot";
-
+        final boolean doingUpdate = project.hasProperty("UPDATE_MAPPINGS");
+        final String updateVersion = doingUpdate ? (String)project.property("UPDATE_MAPPINGS") : null;
+        final String updateChannel = doingUpdate
+            ? (project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String)project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot")
+            : null;
+        if (doingUpdate) {
             logger.lifecycle("This process uses Srg2Source for java source file renaming. Please forward relevant bug reports to https://github.com/MinecraftForge/Srg2Source/issues.");
-            project.afterEvaluate(p -> MojangLicenseHelper.displayWarningUpdate(p, extension.getMappingChannel(), channel, version));
 
             JavaCompile javaCompile = (JavaCompile) project.getTasks().getByName("compileJava");
             JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
@@ -202,7 +203,7 @@ public class UserDevPlugin implements Plugin<Project> {
             });
 
             dlMappingsNew.configure(task -> {
-                task.setMappings(channel + "_" + version);
+                task.setMappings(updateChannel + "_" + updateVersion);
                 task.setOutput(project.file("build/mappings_new.zip"));
             });
 
@@ -273,7 +274,7 @@ public class UserDevPlugin implements Plugin<Project> {
                     .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
                     .attach(project);
 
-            MojangLicenseHelper.displayWarning(p, extension.getMappingChannel(), extension.getMappingVersion());
+            MojangLicenseHelper.displayWarning(p, extension.getMappingChannel(), extension.getMappingVersion(), updateChannel, updateVersion);
 
             project.getRepositories().maven(e -> {
                 e.setUrl(Utils.MOJANG_MAVEN);

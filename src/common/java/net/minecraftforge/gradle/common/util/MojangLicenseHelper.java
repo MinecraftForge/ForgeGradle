@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -45,10 +46,12 @@ public class MojangLicenseHelper {
         displayWarning(project, channel, null);
     }
 
-    public static void displayWarningUpdate(Project project, String originalChannel, String channel, @Nullable String version) {
-        if ("official".equals(originalChannel)) return;
-
+    public static void displayWarning(Project project, String channel, @Nullable String version, @Nullable String updateChannel, @Nullable String updateVersion) {
         displayWarning(project, channel, version);
+
+        if (updateChannel == null || Objects.equals(channel, updateChannel)) return;
+
+        displayWarning(project, updateChannel, updateVersion);
     }
 
     public static void displayWarning(Project project, String channel, @Nullable String version) {
@@ -120,14 +123,9 @@ public class MojangLicenseHelper {
 
         File client = MavenArtifactDownloader.generate(project, artifact, true);
 
+        if (client == null) return Optional.empty();
+
         try {
-            if (client == null && project.hasProperty("UPDATE_MAPPINGS")) {
-                MinecraftRepo repo = (MinecraftRepo) MinecraftRepo.create(project);
-                client = repo.findFile(Artifact.from(artifact));
-            }
-
-            if (client == null) return Optional.empty();
-
             return Optional.of(
                 Files.lines(client.toPath())
                     .filter(line -> line.startsWith("#"))        // Only Comments
