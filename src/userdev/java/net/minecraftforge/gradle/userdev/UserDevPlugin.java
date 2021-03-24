@@ -126,6 +126,20 @@ public class UserDevPlugin implements Plugin<Project> {
         TaskProvider<DownloadMCMeta> downloadMCMeta = project.getTasks().register("downloadMCMeta", DownloadMCMeta.class);
         TaskProvider<ExtractNatives> extractNatives = project.getTasks().register("extractNatives", ExtractNatives.class);
         TaskProvider<DownloadAssets> downloadAssets = project.getTasks().register("downloadAssets", DownloadAssets.class);
+        TaskProvider<DefaultTask> hideLicense = project.getTasks().register(MojangLicenseHelper.HIDE_LICENSE, DefaultTask.class);
+        TaskProvider<DefaultTask> showLicense = project.getTasks().register(MojangLicenseHelper.SHOW_LICENSE, DefaultTask.class);
+
+        hideLicense.configure(task -> {
+            task.doLast(_task -> {
+                MojangLicenseHelper.hide(project, extension.getMappingChannel(), extension.getMappingVersion());
+            });
+        });
+
+        showLicense.configure(task -> {
+            task.doLast(_task -> {
+                MojangLicenseHelper.show(project, extension.getMappingChannel(), extension.getMappingVersion());
+            });
+        });
 
         extractSrg.configure(task -> {
             task.dependsOn(downloadMcpConfig);
@@ -158,12 +172,13 @@ public class UserDevPlugin implements Plugin<Project> {
             task.setMeta(downloadMCMeta.get().getOutput());
         });
 
-        if (project.hasProperty("UPDATE_MAPPINGS")) {
-            String version = (String)project.property("UPDATE_MAPPINGS");
-            String channel = project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String)project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot";
-
+        final boolean doingUpdate = project.hasProperty("UPDATE_MAPPINGS");
+        final String updateVersion = doingUpdate ? (String)project.property("UPDATE_MAPPINGS") : null;
+        final String updateChannel = doingUpdate
+            ? (project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String)project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot")
+            : null;
+        if (doingUpdate) {
             logger.lifecycle("This process uses Srg2Source for java source file renaming. Please forward relevant bug reports to https://github.com/MinecraftForge/Srg2Source/issues.");
-            MojangLicenseHelper.displayWarning(project, channel);
 
             JavaCompile javaCompile = (JavaCompile) project.getTasks().getByName("compileJava");
             JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
@@ -188,7 +203,7 @@ public class UserDevPlugin implements Plugin<Project> {
             });
 
             dlMappingsNew.configure(task -> {
-                task.setMappings(channel + "_" + version);
+                task.setMappings(updateChannel + "_" + updateVersion);
                 task.setOutput(project.file("build/mappings_new.zip"));
             });
 
@@ -209,8 +224,6 @@ public class UserDevPlugin implements Plugin<Project> {
         }
 
         project.afterEvaluate(p -> {
-            MojangLicenseHelper.displayWarning(p, extension.getMappingChannel());
-
             MinecraftUserRepo mcrepo = null;
             DeobfuscatingRepo deobfrepo = null;
 
@@ -260,6 +273,9 @@ public class UserDevPlugin implements Plugin<Project> {
                     .add(MCPRepo.create(project))
                     .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
                     .attach(project);
+
+            MojangLicenseHelper.displayWarning(p, extension.getMappingChannel(), extension.getMappingVersion(), updateChannel, updateVersion);
+
             project.getRepositories().maven(e -> {
                 e.setUrl(Utils.MOJANG_MAVEN);
                 e.metadataSources(MetadataSources::artifact);

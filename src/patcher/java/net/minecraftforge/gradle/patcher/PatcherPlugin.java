@@ -127,6 +127,8 @@ public class PatcherPlugin implements Plugin<Project> {
         TaskProvider<Jar> userdevJar = project.getTasks().register("userdevJar", Jar.class);
         TaskProvider<TaskGenerateUserdevConfig> userdevConfig = project.getTasks().register("userdevConfig", TaskGenerateUserdevConfig.class, project);
         TaskProvider<DefaultTask> release = project.getTasks().register("release", DefaultTask.class);
+        TaskProvider<DefaultTask> hideLicense = project.getTasks().register(MojangLicenseHelper.HIDE_LICENSE, DefaultTask.class);
+        TaskProvider<DefaultTask> showLicense = project.getTasks().register(MojangLicenseHelper.SHOW_LICENSE, DefaultTask.class);
 
         //Add Known repos
         project.getRepositories().maven(e -> {
@@ -144,6 +146,18 @@ public class PatcherPlugin implements Plugin<Project> {
         project.getRepositories().maven(e -> {
             e.setUrl(Utils.MOJANG_MAVEN);
             e.metadataSources(MetadataSources::artifact);
+        });
+
+        hideLicense.configure(task -> {
+            task.doLast(_task -> {
+                MojangLicenseHelper.hide(project, extension.getMappingChannel(), extension.getMappingVersion());
+            });
+        });
+
+        showLicense.configure(task -> {
+            task.doLast(_task -> {
+                MojangLicenseHelper.show(project, extension.getMappingChannel(), extension.getMappingVersion());
+            });
         });
 
         release.configure(task -> {
@@ -301,13 +315,13 @@ public class PatcherPlugin implements Plugin<Project> {
         });
 
         final boolean doingUpdate = project.hasProperty("UPDATE_MAPPINGS");
+        final String updateVersion = doingUpdate ? (String)project.property("UPDATE_MAPPINGS") : null;
+        final String updateChannel = doingUpdate
+            ? (project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String)project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot")
+            : null;
         if (doingUpdate) {
-            String version = (String) project.property("UPDATE_MAPPINGS");
-            String channel = project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String) project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot";
-            MojangLicenseHelper.displayWarning(project, channel);
-
             TaskProvider<DownloadMCPMappingsTask> dlMappingsNew = project.getTasks().register("downloadMappingsNew", DownloadMCPMappingsTask.class);
-            dlMappingsNew.get().setMappings(channel + '_' + version);
+            dlMappingsNew.get().setMappings(updateChannel + '_' + updateVersion);
 
             TaskProvider<TaskApplyMappings> toMCPNew = project.getTasks().register("srg2mcpNew", TaskApplyMappings.class);
             toMCPNew.configure(task -> {
@@ -370,7 +384,7 @@ public class PatcherPlugin implements Plugin<Project> {
                 PatcherPlugin patcher = extension.parent.getPlugins().findPlugin(PatcherPlugin.class);
 
                 if (mcp != null) {
-                    MojangLicenseHelper.displayWarning(p, extension.getMappingChannel());
+                    MojangLicenseHelper.displayWarning(p, extension.getMappingChannel(), extension.getMappingVersion(), updateChannel, updateVersion);
                     SetupMCPTask setupMCP = (SetupMCPTask) tasks.getByName("setupMCP");
 
                     if (procConfig != null) {
