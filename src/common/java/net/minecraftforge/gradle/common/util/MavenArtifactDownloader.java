@@ -103,6 +103,8 @@ public class MavenArtifactDownloader {
          * try to download the same artifact.
          * The first thread registers a future that other threads can wait on.
          * Once it finishes, the future will be removed and subsequent calls will use the CACHE instead.
+         * We use all parameters of the function as the key here to prevent subtle bugs where the same artifact
+         * is looked up simultaneously with different resolver-options, leading only to one attempt being made.
          */
         DownloadKey downloadKey = new DownloadKey(project, artifact, changing, generated, gradle, manual);
         CompletableFuture<File> future;
