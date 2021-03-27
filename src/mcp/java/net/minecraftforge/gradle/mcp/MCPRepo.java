@@ -28,8 +28,7 @@ import net.minecraftforge.artifactural.base.repository.SimpleRepository;
 import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 import com.google.common.collect.Maps;
 
-import de.siegmar.fastcsv.writer.CsvWriter;
-import de.siegmar.fastcsv.writer.LineDelimiter;
+import net.minecraftforge.gradle.common.mapping.MappingProviders;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.HashStore;
@@ -44,7 +43,6 @@ import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import net.minecraftforge.gradle.mcp.util.MCPWrapper;
 import net.minecraftforge.srgutils.IMappingFile;
 import net.minecraftforge.srgutils.IRenamer;
-import net.minecraftforge.srgutils.IMappingFile.IClass;
 import net.minecraftforge.srgutils.IMappingFile.IField;
 import net.minecraftforge.srgutils.IMappingFile.IMethod;
 
@@ -54,17 +52,10 @@ import org.gradle.api.logging.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
-import java.util.zip.ZipOutputStream;
 
 /**
  * Provides the following artifacts:
@@ -173,7 +164,7 @@ public class MCPRepo extends BaseRepo {
         if (group.equals(GROUP_MINECRAFT)) {
             if (name.startsWith("mappings_")) {
                 if ("zip".equals(ext)) {
-                    return findNames(name.substring(9) + '_' + version);
+                    return findNames(name.substring(9), version);
                 } else if ("pom".equals(ext)) {
                     return findEmptyPom(name, version);
                 }
@@ -336,44 +327,12 @@ public class MCPRepo extends BaseRepo {
         return ret;
     }
 
-    private File findRenames(String classifier, IMappingFile.Format format, String version, boolean toObf) throws IOException {
-        String ext = format.name().toLowerCase();
-        //File names = findNames(version));
-        File mcp = getMCP(version);
-        if (mcp == null)
-            return null;
-
-        File file = cacheMCP(version, classifier, ext);
-        debug("    Finding Renames: " + file);
-        HashStore cache = commonHash(mcp).load(cacheMCP(version, classifier, ext + ".input"));
-
-        if (!cache.isSame() || !file.exists()) {
-            MCPWrapper wrapper = getWrapper(version, mcp);
-            byte[] data = wrapper.getData("mappings");
-            IMappingFile obf_to_srg = IMappingFile.load(new ByteArrayInputStream(data));
-            obf_to_srg.write(file.toPath(), format, toObf);
-            cache.save();
-            Utils.updateHash(file, HashFunction.SHA1);
-        }
-
-        return file;
+    private File findNames(String mapping) throws IOException {
+        return MappingProviders.getInfo(project, mapping).get();
     }
 
-    private File findNames(String mapping) throws IOException {
-        int idx = mapping.lastIndexOf('_');
-        if (idx == -1) return null; //Invalid format
-        String channel = mapping.substring(0, idx);
-        String version = mapping.substring(idx + 1);
-
-        if ("official".equals(channel)) {
-            return findOfficialMapping(version);
-        } else if ("snapshot".equals(channel) || "snapshot_nodoc".equals(channel) || "stable".equals(channel) || "stable_nodoc".equals(channel)) { //MCP
-            String desc = "de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
-            debug("    Mapping: " + desc);
-            return MavenArtifactDownloader.manual(project, desc, false);
-        }
-        //TODO? Yarn/Other crowdsourcing?
-        throw new IllegalArgumentException("Unknown mapping provider: " + mapping);
+    private File findNames(String channel, String version) throws IOException {
+        return MappingProviders.getInfo(project, channel, version).get();
     }
 
     private McpNames loadMCPNames(String name, File data) throws IOException {
@@ -446,146 +405,6 @@ public class MCPRepo extends BaseRepo {
         }
 
         return extra;
-    }
-
-    private File findOfficialMapping(String version) throws IOException {
-        String mcpversion = version;
-        int idx = version.lastIndexOf('-');
-        if (idx != -1 && version.substring(idx + 1).matches("\\d{8}\\.\\d{6}")) { //Timestamp, so lets assume that's the MCP part.
-            //mcpversion = version.substring(idx);
-            version = version.substring(0, idx);
-        }
-        File client = MavenArtifactDownloader.generate(project, "net.minecraft:client:" + version + ":mappings@txt", true);
-        File server = MavenArtifactDownloader.generate(project, "net.minecraft:server:" + version + ":mappings@txt", true);
-        if (client == null || server == null)
-            throw new IllegalStateException("Could not create " + mcpversion + " official mappings due to missing ProGuard mappings.");
-
-        File tsrg = findRenames("obf_to_srg", IMappingFile.Format.TSRG, mcpversion, false);
-        if (tsrg == null)
-            throw new IllegalStateException("Could not create " + mcpversion + " official mappings due to missing MCP's tsrg");
-
-        File mcp = getMCP(mcpversion);
-        if (mcp == null)
-            return null;
-
-        File mappings = cacheMC("mapping", mcpversion, "mapping", "zip");
-        HashStore cache = commonHash(mcp)
-                .load( cacheMC("mapping", mcpversion, "mapping", "zip.input"))
-                .add("pg_client", client)
-                .add("pg_server", server)
-                .add("tsrg", tsrg)
-                .add("codever", "1");
-
-        if (!cache.isSame() || !mappings.exists()) {
-            IMappingFile pg_client = IMappingFile.load(client);
-            IMappingFile pg_server = IMappingFile.load(server);
-
-            //Verify that the PG files merge, merge in MCPConfig, but doesn't hurt to double check here.
-            //And if we don't we need to write a handler to spit out correctly sided info.
-
-            IMappingFile srg = IMappingFile.load(tsrg);
-
-            Map<String, String> cfields = new TreeMap<>();
-            Map<String, String> sfields = new TreeMap<>();
-            Map<String, String> cmethods = new TreeMap<>();
-            Map<String, String> smethods = new TreeMap<>();
-
-            for (IClass cls : pg_client.getClasses()) {
-                IClass obf = srg.getClass(cls.getMapped());
-                if (obf == null) // Class exists in official source, but doesn't make it past obfusication so it's not in our mappings.
-                    continue;
-                for (IField fld : cls.getFields()) {
-                    String name = obf.remapField(fld.getMapped());
-                    if (name.startsWith("field_"))
-                        cfields.put(name, fld.getOriginal());
-                }
-                for (IMethod mtd : cls.getMethods()) {
-                    String name = obf.remapMethod(mtd.getMapped(), mtd.getMappedDescriptor());
-                    if (name.startsWith("func_"))
-                        cmethods.put(name, mtd.getOriginal());
-                }
-            }
-            for (IClass cls : pg_server.getClasses()) {
-                IClass obf = srg.getClass(cls.getMapped());
-                if (obf == null) // Class exists in official source, but doesn't make it past obfusication so it's not in our mappings.
-                    continue;
-                for (IField fld : cls.getFields()) {
-                    String name = obf.remapField(fld.getMapped());
-                    if (name.startsWith("field_"))
-                        sfields.put(name, fld.getOriginal());
-                }
-                for (IMethod mtd : cls.getMethods()) {
-                    String name = obf.remapMethod(mtd.getMapped(), mtd.getMappedDescriptor());
-                    if (name.startsWith("func_"))
-                        smethods.put(name, mtd.getOriginal());
-                }
-            }
-
-            String[] header = new String[] {"searge", "name", "side", "desc"};
-            List<String[]> fields = new ArrayList<>();
-            List<String[]> methods = new ArrayList<>();
-            fields.add(header);
-            methods.add(header);
-
-            for (String name : cfields.keySet()) {
-                String cname = cfields.get(name);
-                String sname = sfields.get(name);
-                if (cname.equals(sname)) {
-                    fields.add(new String[]{name, cname, "2", ""});
-                    sfields.remove(name);
-                } else
-                    fields.add(new String[]{name, cname, "0", ""});
-            }
-
-            for (String name : cmethods.keySet()) {
-                String cname = cmethods.get(name);
-                String sname = smethods.get(name);
-                if (cname.equals(sname)) {
-                    methods.add(new String[]{name, cname, "2", ""});
-                    smethods.remove(name);
-                } else
-                    methods.add(new String[]{name, cname, "0", ""});
-            }
-
-            sfields.forEach((k,v) -> fields.add(new String[] {k, v, "1", ""}));
-            smethods.forEach((k,v) -> methods.add(new String[] {k, v, "1", ""}));
-
-            if (!mappings.getParentFile().exists())
-                mappings.getParentFile().mkdirs();
-
-            try (FileOutputStream fos = new FileOutputStream(mappings);
-                 ZipOutputStream out = new ZipOutputStream(fos)) {
-
-                out.putNextEntry(Utils.getStableEntry("fields.csv"));
-                try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWritter(out))) {
-                    fields.forEach(writer::writeRow);
-                }
-                out.closeEntry();
-
-                out.putNextEntry(Utils.getStableEntry("methods.csv"));
-                try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWritter(out))) {
-                    methods.forEach(writer::writeRow);
-                }
-                out.closeEntry();
-            }
-
-            cache.save();
-            Utils.updateHash(mappings, HashFunction.SHA1);
-        }
-
-
-        return mappings;
-    }
-
-    private class UncloseableOutputStreamWritter extends OutputStreamWriter {
-        public UncloseableOutputStreamWritter(OutputStream out) {
-            super(out);
-        }
-
-        @Override
-        public void close() throws IOException {
-            super.flush();
-        }
     }
 
     private File findEmptyPom(String side, String version) throws IOException {
