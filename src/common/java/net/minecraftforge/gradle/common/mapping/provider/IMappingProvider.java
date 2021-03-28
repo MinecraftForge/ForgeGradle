@@ -18,16 +18,15 @@
  * USA
  */
 
-package net.minecraftforge.gradle.common.mapping;
+package net.minecraftforge.gradle.common.mapping.provider;
 
 import java.io.IOException;
-import java.util.Collection;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
 import org.gradle.api.Project;
-import net.minecraftforge.gradle.common.mapping.provider.McpMappingProvider;
-import net.minecraftforge.gradle.common.mapping.provider.OfficialMappingProvider;
+import net.minecraftforge.gradle.common.mapping.info.IMappingInfo;
 
 /**
  * @see McpMappingProvider
@@ -37,17 +36,15 @@ public interface IMappingProvider {
 
     /**
      * Channels should match the regex of [a-z_]+
-     * @return The collection of channels that this provider handles.
+     * @return The set of channels that this provider handles as an (effectively) immutable collection.
      */
-    Collection<String> getMappingChannels();
+    Set<String> getMappingChannels();
 
     /**
-     * Supplies a location to an `mappings.zip`, generating/downloading it if necessary <br>
-     * Channels should match the regex of [a-z_]+ <br>
-     * Versions should be any maven artifact / filesystem compatible string <br>
+     * Supplies a location to an `mappings.zip`, generating/downloading it if necessary
      * @param project The current gradle project
-     * @param channel The requested channel
-     * @param version The requested version
+     * @param channel The requested channel matching the regex of [a-z_]+
+     * @param version The requested version should be any maven artifact / filesystem compatible string
      * @return An enhanced Supplier for the location of the `mappings.zip`
      * @throws IOException
      */

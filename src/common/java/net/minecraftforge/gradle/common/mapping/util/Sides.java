@@ -18,7 +18,7 @@
  * USA
  */
 
-package net.minecraftforge.gradle.common.mapping;
+package net.minecraftforge.gradle.common.mapping.util;
 
 public interface Sides {
     String CLIENT = "0";

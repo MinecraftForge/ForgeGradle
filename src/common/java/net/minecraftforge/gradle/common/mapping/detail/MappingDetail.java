@@ -22,9 +22,7 @@ package net.minecraftforge.gradle.common.mapping.detail;
 
 import java.util.Map;
 
-import net.minecraftforge.gradle.common.mapping.IMappingDetail;
-
-public class MappingDetail implements IMappingDetail {
+class MappingDetail implements IMappingDetail {
     protected final Map<String, INode> classes;
     protected final Map<String, INode> fields;
     protected final Map<String, INode> methods;
@@ -57,7 +55,4 @@ public class MappingDetail implements IMappingDetail {
         return params;
     }
 
-    public static IMappingDetail of(Map<String, INode> classes, Map<String, INode> fields, Map<String, INode> methods, Map<String, INode> params) {
-        return new MappingDetail(classes, fields, methods, params);
-    }
 }

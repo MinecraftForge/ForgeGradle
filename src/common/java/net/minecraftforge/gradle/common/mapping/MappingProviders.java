@@ -23,9 +23,13 @@ package net.minecraftforge.gradle.common.mapping;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 import org.gradle.api.Project;
+import net.minecraftforge.gradle.common.mapping.info.IMappingInfo;
+import net.minecraftforge.gradle.common.mapping.provider.IMappingProvider;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.mapping.provider.McpMappingProvider;
 import net.minecraftforge.gradle.common.mapping.provider.OfficialMappingProvider;
@@ -40,6 +44,7 @@ public class MappingProviders {
      * 500+ IMappingProviders from the original 9 over the course of 30 minutes, thanks.
      */
     private static final Map<String, IMappingProvider> PROVIDERS = new HashMap<>();
+    private static final Predicate<String> VALID_CHANNEL = Pattern.compile("^[a-z_]+$").asPredicate();
 
     static {
         /* The default ForgeGradle IMappingProviders */
@@ -83,6 +88,10 @@ public class MappingProviders {
     public static IMappingInfo getInfo(Project project, String channel, String version) throws IOException {
         String mapping = channel + "_" + version;
 
+        if (!VALID_CHANNEL.test(channel)) {
+            throw new IllegalArgumentException("Illegal channel: " + mapping);
+        }
+
         final IMappingProvider provider = MappingProviders.getProvider(project, channel);
         if (provider == null) {
             throw new IllegalArgumentException("Unknown mapping provider: " + mapping);
@@ -101,7 +110,6 @@ public class MappingProviders {
      */
     @Nullable
     public static IMappingProvider getProvider(Project project, String channel) {
-        project.getLogger().lifecycle("Current number of providers: " + PROVIDERS.size());
         debug(project, "Looking for: " + channel);
         for (Map.Entry<String, IMappingProvider> entry : PROVIDERS.entrySet()) {
             String key = entry.getKey();

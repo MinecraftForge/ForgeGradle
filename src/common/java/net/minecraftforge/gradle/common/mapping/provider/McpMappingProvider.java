@@ -21,15 +21,13 @@
 package net.minecraftforge.gradle.common.mapping.provider;
 
 import java.io.File;
-import java.util.Collection;
+import java.util.Set;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableSet;
 import org.gradle.api.Project;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
-import net.minecraftforge.gradle.common.mapping.IMappingInfo;
-import net.minecraftforge.gradle.common.mapping.IMappingProvider;
-import net.minecraftforge.gradle.common.mapping.info.MappingInfo;
+import net.minecraftforge.gradle.common.mapping.info.IMappingInfo;
 
 public class McpMappingProvider implements IMappingProvider {
 
@@ -37,9 +35,13 @@ public class McpMappingProvider implements IMappingProvider {
         if (BaseRepo.DEBUG) project.getLogger().lifecycle(message);
     }
 
+    private static final ImmutableSet<String> channels = ImmutableSet.<String>builder()
+        .add("snapshot", "snapshot_nodoc", "stable", "stable_nodoc")
+        .build();
+
     @Override
-    public Collection<String> getMappingChannels() {
-        return Lists.newArrayList("snapshot", "snapshot_nodoc", "stable", "stable_nodoc");
+    public Set<String> getMappingChannels() {
+        return channels;
     }
 
     @Override
@@ -49,11 +51,6 @@ public class McpMappingProvider implements IMappingProvider {
         debug(project, "    Mapping: " + desc);
         File destination = MavenArtifactDownloader.manual(project, desc, false);
 
-        return MappingInfo.of(channel, version, destination);
-    }
-
-    @Override
-    public String toString() {
-        return "MCP CrowdSourced Mappings";
+        return IMappingInfo.of(channel, version, destination);
     }
 }

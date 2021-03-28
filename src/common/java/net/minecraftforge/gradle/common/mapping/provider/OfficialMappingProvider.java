@@ -22,16 +22,14 @@ package net.minecraftforge.gradle.common.mapping.provider;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
 import org.gradle.api.Project;
-import net.minecraftforge.gradle.common.mapping.IMappingProvider;
 import net.minecraftforge.gradle.common.mapping.detail.MappingDetails;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
-import net.minecraftforge.gradle.common.util.MojangLicenseHelper;
-import net.minecraftforge.gradle.common.mapping.IMappingInfo;
+import net.minecraftforge.gradle.common.mapping.info.IMappingInfo;
 import net.minecraftforge.srgutils.IMappingFile;
 
 import static net.minecraftforge.gradle.common.mapping.util.CacheUtils.*;
@@ -40,9 +38,13 @@ public class OfficialMappingProvider implements IMappingProvider {
 
     public static String OFFICIAL_CHANNEL = "official";
 
+    private static final ImmutableSet<String> channels = ImmutableSet.<String>builder()
+        .add(OFFICIAL_CHANNEL)
+        .build();
+
     @Override
-    public Collection<String> getMappingChannels() {
-        return Collections.singleton(OFFICIAL_CHANNEL);
+    public Set<String> getMappingChannels() {
+        return channels;
     }
 
     @Override
@@ -73,7 +75,7 @@ public class OfficialMappingProvider implements IMappingProvider {
             .add("tsrg", tsrgFile)
             .add("codever", "1");
 
-        return fromCachable(channel, version, cache, mappings, () -> {
+        return fromCacheable(channel, version, cache, mappings, () -> {
             // PG file: [MAP->OBF]
             IMappingFile pgClient = IMappingFile.load(clientPG);
             IMappingFile pgServer = IMappingFile.load(serverPG);
@@ -102,10 +104,5 @@ public class OfficialMappingProvider implements IMappingProvider {
             return version.substring(0, idx);
         }
         return version;
-    }
-
-    @Override
-    public String toString() {
-        return "Official Mappings";
     }
 }

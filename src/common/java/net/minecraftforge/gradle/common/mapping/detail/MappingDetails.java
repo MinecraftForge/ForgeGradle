@@ -37,21 +37,22 @@ import java.util.zip.ZipFile;
 
 import de.siegmar.fastcsv.reader.NamedCsvReader;
 import de.siegmar.fastcsv.reader.NamedCsvRow;
-import net.minecraftforge.gradle.common.mapping.IMappingDetail;
-import net.minecraftforge.gradle.common.mapping.Sides;
+import net.minecraftforge.gradle.common.mapping.util.Sides;
 import net.minecraftforge.gradle.common.mapping.util.MappingStreams;
 import net.minecraftforge.srgutils.IMappingFile;
+
+import static net.minecraftforge.gradle.common.mapping.detail.IMappingDetail.*;
 
 public class MappingDetails {
 
     /**
-     * Converts two {@link IMappingFile}s into an {@link IMappingDetail} with {@link IMappingDetail.INode#getSide} calculated based on the inputs
+     * Converts two {@link IMappingFile}s into an {@link IMappingDetail} with {@link INode#getSide} calculated based on the inputs
      */
     public static IMappingDetail fromSrg(IMappingFile client, IMappingFile server) {
-        Map<String, IMappingDetail.INode> classes = new HashMap<>();
-        Map<String, IMappingDetail.INode> fields = new HashMap<>();
-        Map<String, IMappingDetail.INode> methods = new HashMap<>();
-        Map<String, IMappingDetail.INode> params = new HashMap<>();
+        Map<String, INode> classes = new HashMap<>();
+        Map<String, INode> fields = new HashMap<>();
+        Map<String, INode> methods = new HashMap<>();
+        Map<String, INode> params = new HashMap<>();
 
         forEach(client, server, MappingDetails::forEachClass, classes::put);
         forEach(client, server, MappingDetails::forEachFields, fields::put);
@@ -65,10 +66,10 @@ public class MappingDetails {
      * Converts a {@link IMappingFile} into an {@link IMappingDetail}
      */
     public static IMappingDetail fromSrg(IMappingFile input) {
-        Map<String, IMappingDetail.INode> classes = new HashMap<>();
-        Map<String, IMappingDetail.INode> fields = new HashMap<>();
-        Map<String, IMappingDetail.INode> methods = new HashMap<>();
-        Map<String, IMappingDetail.INode> params = new HashMap<>();
+        Map<String, INode> classes = new HashMap<>();
+        Map<String, INode> fields = new HashMap<>();
+        Map<String, INode> methods = new HashMap<>();
+        Map<String, INode> params = new HashMap<>();
 
         forEachClass(input, classes::put);
         forEachFields(input, fields::put);
@@ -83,10 +84,10 @@ public class MappingDetails {
      */
     public static IMappingDetail fromZip(File input) throws IOException {
         try (ZipFile zip = new ZipFile(input)) {
-            Map<String, IMappingDetail.INode> classes = readEntry(zip, "classes.csv");
-            Map<String, IMappingDetail.INode> fields = readEntry(zip, "fields.csv");
-            Map<String, IMappingDetail.INode> methods = readEntry(zip, "methods.csv");
-            Map<String, IMappingDetail.INode> params = readEntry(zip, "params.csv");
+            Map<String, INode> classes = readEntry(zip, "classes.csv");
+            Map<String, INode> fields = readEntry(zip, "fields.csv");
+            Map<String, INode> methods = readEntry(zip, "methods.csv");
+            Map<String, INode> params = readEntry(zip, "params.csv");
 
             return new MappingDetail(classes, fields, methods, params);
         }
@@ -124,9 +125,9 @@ public class MappingDetails {
         return javadoc.replaceAll("\\n", "\n");
     }
 
-    private static void forEach(IMappingFile client, IMappingFile server, BiConsumer<IMappingFile, BiConsumer<String, Node>> iterator, BiConsumer<String, Node> consumer) {
-        Map<String, Node> clientNodes = new HashMap<>();
-        Map<String, Node> serverNodes = new HashMap<>();
+    private static void forEach(IMappingFile client, IMappingFile server, BiConsumer<IMappingFile, BiConsumer<String, INode>> iterator, BiConsumer<String, INode> consumer) {
+        Map<String, INode> clientNodes = new HashMap<>();
+        Map<String, INode> serverNodes = new HashMap<>();
 
         iterator.accept(client, clientNodes::put);
         iterator.accept(server, serverNodes::put);
@@ -137,7 +138,7 @@ public class MappingDetails {
         // Calculate Intersection between Client and Server
         Set<String> bothKeys = new HashSet<>(clientKeys);
         bothKeys.retainAll(serverNodes.keySet());
-        Map<String, Node> bothNodes = new TreeMap<>();
+        Map<String, INode> bothNodes = new TreeMap<>();
         bothKeys.forEach(key -> bothNodes.put(key, clientNodes.get(key)));
 
         // Remove Both from Client / Server
@@ -150,28 +151,28 @@ public class MappingDetails {
         bothNodes.values().stream().map(it -> it.withSide(Sides.BOTH)).forEach(node -> consumer.accept(node.getOriginal(), node));
     }
 
-    private static void forEachClass(IMappingFile input, BiConsumer<String, Node> consumer) {
-        MappingStreams.classes(input).map(Node::of).forEach(node -> consumer.accept(node.getOriginal(), node));
+    private static void forEachClass(IMappingFile input, BiConsumer<String, INode> consumer) {
+        MappingStreams.classes(input).map(INode::of).forEach(node -> consumer.accept(node.getOriginal(), node));
     }
 
-    private static void forEachFields(IMappingFile input, BiConsumer<String, Node> consumer) {
-        MappingStreams.fields(input).map(Node::of).forEach(node -> consumer.accept(node.getOriginal(), node));
+    private static void forEachFields(IMappingFile input, BiConsumer<String, INode> consumer) {
+        MappingStreams.fields(input).map(INode::of).forEach(node -> consumer.accept(node.getOriginal(), node));
     }
 
-    private static void forEachMethod(IMappingFile input, BiConsumer<String, Node> consumer) {
-        MappingStreams.methods(input).map(Node::of).forEach(node -> consumer.accept(node.getOriginal(), node));
+    private static void forEachMethod(IMappingFile input, BiConsumer<String, INode> consumer) {
+        MappingStreams.methods(input).map(INode::of).forEach(node -> consumer.accept(node.getOriginal(), node));
     }
 
-    private static void forEachParam(IMappingFile input, BiConsumer<String, Node> consumer) {
-        MappingStreams.parameters(input).map(Node::of).forEach(node -> consumer.accept(node.getOriginal(), node));
+    private static void forEachParam(IMappingFile input, BiConsumer<String, INode> consumer) {
+        MappingStreams.parameters(input).map(INode::of).forEach(node -> consumer.accept(node.getOriginal(), node));
     }
 
-    private static Map<String, IMappingDetail.INode> readEntry(ZipFile zip, String entryName) throws IOException {
+    private static Map<String, INode> readEntry(ZipFile zip, String entryName) throws IOException {
         Optional<? extends ZipEntry> entry = zip.stream().filter(e -> Objects.equals(entryName, e.getName())).findFirst();
 
         if (!entry.isPresent()) return Collections.emptyMap();
 
-        Map<String, IMappingDetail.INode> nodes = new HashMap<>();
+        Map<String, INode> nodes = new HashMap<>();
 
         try (NamedCsvReader reader = NamedCsvReader.builder().build(new InputStreamReader(zip.getInputStream(entry.get())))) {
             Set<String> headers = reader.getHeader();
@@ -183,7 +184,7 @@ public class MappingDetails {
                 String side = get(headers, row, "side", Sides.BOTH);
                 String javadoc = decodeJavadoc(get(headers, row, "desc", ""));
 
-                nodes.put(obfuscated, Node.of(obfuscated, name, side, javadoc));
+                nodes.put(obfuscated, INode.of(obfuscated, name, side, javadoc));
             });
         }
 

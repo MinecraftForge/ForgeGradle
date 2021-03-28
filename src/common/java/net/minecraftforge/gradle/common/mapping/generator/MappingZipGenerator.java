@@ -37,7 +37,7 @@ import de.siegmar.fastcsv.writer.CsvWriter;
 import de.siegmar.fastcsv.writer.LineDelimiter;
 import de.siegmar.fastcsv.writer.QuoteStrategy;
 import net.minecraftforge.gradle.common.util.Utils;
-import net.minecraftforge.gradle.common.mapping.IMappingDetail;
+import net.minecraftforge.gradle.common.mapping.detail.IMappingDetail;
 
 import static net.minecraftforge.gradle.common.mapping.detail.MappingDetails.encodeClass;
 import static net.minecraftforge.gradle.common.mapping.detail.MappingDetails.encodeJavadoc;
@@ -66,23 +66,23 @@ public class MappingZipGenerator {
                 .build(new UnclosingWriter(writer));
 
             // Classes
-            writeCsvFile(supplier, zip, "classes.csv", mappings.getClasses(), MappingZipGenerator::isClassSrg);
+            writeCsvFile(supplier, zip, "classes.csv", mappings.getClasses());
 
             // Methods
-            writeCsvFile(supplier, zip, "methods.csv", mappings.getMethods(), MappingZipGenerator::isMethodSrg);
+            writeCsvFile(supplier, zip, "methods.csv", mappings.getMethods());
 
             // Fields
-            writeCsvFile(supplier, zip, "fields.csv", mappings.getFields(), MappingZipGenerator::isFieldSrg);
+            writeCsvFile(supplier, zip, "fields.csv", mappings.getFields());
 
             // Parameters
-            writeCsvFile(supplier, zip, "params.csv", mappings.getParameters(), MappingZipGenerator::isParamSrg);
+            writeCsvFile(supplier, zip, "params.csv", mappings.getParameters());
         }
     }
 
     private static final Comparator<IMappingDetail.INode> BY_ORIGINAL = Comparator.comparing(IMappingDetail.INode::getOriginal);
 
-    public static void writeCsvFile(Supplier<CsvWriter> writer, ZipOutputStream zipOut, String fileName, Map<String, IMappingDetail.INode> input, Predicate<IMappingDetail.INode> predicate) throws IOException {
-        Iterator<IMappingDetail.INode> nodes = input.values().stream().sorted(BY_ORIGINAL).filter(predicate).iterator();
+    private static void writeCsvFile(Supplier<CsvWriter> writer, ZipOutputStream zipOut, String fileName, Map<String, IMappingDetail.INode> input) throws IOException {
+        Iterator<IMappingDetail.INode> nodes = input.values().stream().sorted(BY_ORIGINAL).iterator();
 
         if (nodes.hasNext()) {
             zipOut.putNextEntry(Utils.getStableEntry(fileName));
@@ -97,25 +97,5 @@ public class MappingZipGenerator {
 
             zipOut.closeEntry();
         }
-    }
-
-    private static boolean isClassSrg(IMappingDetail.INode node) {
-        String original = node.getOriginal();
-        return original.startsWith("net/minecraft/src/C_") || !node.getJavadoc().isEmpty();
-    }
-
-    private static boolean isFieldSrg(IMappingDetail.INode node) {
-        String original = node.getOriginal();
-        return original.startsWith("field_") || original.startsWith("f_") || !node.getJavadoc().isEmpty();
-    }
-
-    private static boolean isMethodSrg(IMappingDetail.INode node) {
-        String original = node.getOriginal();
-        return original.startsWith("func_") || original.startsWith("m_") || !node.getJavadoc().isEmpty();
-    }
-
-    private static boolean isParamSrg(IMappingDetail.INode node) {
-        String original = node.getOriginal();
-        return original.startsWith("p_") || !node.getJavadoc().isEmpty();
     }
 }

@@ -18,15 +18,18 @@
  * USA
  */
 
-package net.minecraftforge.gradle.common.mapping;
+package net.minecraftforge.gradle.common.mapping.info;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.function.Supplier;
 
-import net.minecraftforge.gradle.common.mapping.info.MappingInfo;
+import net.minecraftforge.gradle.common.mapping.detail.IMappingDetail;
+import net.minecraftforge.gradle.common.mapping.detail.MappingDetails;
+import net.minecraftforge.gradle.common.util.func.IOSupplier;
 
 /**
+ * A resolved `mapping.zip`
  * @see MappingInfo
  */
 public interface IMappingInfo extends Supplier<File> {
@@ -41,7 +44,7 @@ public interface IMappingInfo extends Supplier<File> {
     String getVersion();
 
     /**
-     * @return The location of the `mappings.zip`
+     * @return The location of the `mappings.zip`, considered guaranteed to exist.
      */
     @Override
     File get();
@@ -50,4 +53,16 @@ public interface IMappingInfo extends Supplier<File> {
      * @return A representation of the `mappings.zip` in an easy to manipulate format
      */
     IMappingDetail getDetails() throws IOException;
+
+    static IMappingInfo of(String channel, String version, File destination) {
+        return of(channel, version, destination, () -> MappingDetails.fromZip(destination));
+    }
+
+    static IMappingInfo of(String channel, String version, File destination, IMappingDetail detail) {
+        return of(channel, version, destination, () -> detail);
+    }
+
+    static IMappingInfo of(String channel, String version, File destination, IOSupplier<IMappingDetail> detail) {
+        return new MappingInfo(channel, version, destination, detail);
+    }
 }

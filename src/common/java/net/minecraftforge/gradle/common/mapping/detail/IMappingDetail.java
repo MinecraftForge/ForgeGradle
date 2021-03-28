@@ -18,13 +18,15 @@
  * USA
  */
 
-package net.minecraftforge.gradle.common.mapping;
+package net.minecraftforge.gradle.common.mapping.detail;
 
 import java.util.Map;
 
-import net.minecraftforge.gradle.common.mapping.detail.MappingDetail;
-import net.minecraftforge.gradle.common.mapping.detail.MappingDetails;
+import javax.annotation.Nullable;
+
+import net.minecraftforge.gradle.common.mapping.util.Sides;
 import net.minecraftforge.gradle.common.mapping.generator.MappingZipGenerator;
+import net.minecraftforge.srgutils.IMappingFile;
 
 /**
  * A Collection of maps of `SRG NAME` -> {@link INode} <br>
@@ -59,5 +61,25 @@ public interface IMappingDetail {
         INode withSide(String side);
 
         INode withJavadoc(String javadoc);
+
+        static INode or(String key, @Nullable IMappingDetail.INode node) {
+            return node != null ? node : of(key, key, Sides.BOTH, "");
+        }
+
+        static INode of(IMappingFile.INode node) {
+            Map<String, String> meta = node.getMetadata();
+            String side = meta.getOrDefault("side", Sides.BOTH);
+            String javadoc = meta.getOrDefault("comment", ""); //TODO: Check that `comment` is the right key
+
+            return of(node.getOriginal(), node.getMapped(), side, javadoc);
+        }
+
+        static INode of(String original, String mapped, String side, String javadoc) {
+            return new Node(original, mapped, side, javadoc);
+        }
+    }
+
+    static IMappingDetail of(Map<String, INode> classes, Map<String, INode> fields, Map<String, INode> methods, Map<String, INode> params) {
+        return new MappingDetail(classes, fields, methods, params);
     }
 }

@@ -27,9 +27,9 @@ import java.util.Objects;
 
 import org.gradle.api.Project;
 import net.minecraftforge.gradle.common.config.MCPConfigV2;
-import net.minecraftforge.gradle.common.mapping.IMappingDetail;
+import net.minecraftforge.gradle.common.mapping.detail.IMappingDetail;
 import net.minecraftforge.gradle.common.mapping.generator.MappingZipGenerator;
-import net.minecraftforge.gradle.common.mapping.info.MappingInfo;
+import net.minecraftforge.gradle.common.mapping.info.IMappingInfo;
 import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
@@ -43,7 +43,7 @@ import net.minecraftforge.srgutils.IMappingFile;
  */
 public class CacheUtils {
 
-    public static MappingInfo fromCachable(String channel, String version, HashStore cache, File destination, IOSupplier<IMappingDetail> supplier) throws IOException {
+    public static IMappingInfo fromCacheable(String channel, String version, HashStore cache, File destination, IOSupplier<IMappingDetail> supplier) throws IOException {
         if (!cache.isSame() || !destination.exists()) {
             IMappingDetail detail = supplier.get();
 
@@ -52,10 +52,10 @@ public class CacheUtils {
             cache.save();
             Utils.updateHash(destination, HashFunction.SHA1);
 
-            return MappingInfo.of(channel, version, destination, detail);
+            return IMappingInfo.of(channel, version, destination, detail);
         }
 
-        return MappingInfo.of(channel, version, destination);
+        return IMappingInfo.of(channel, version, destination);
     }
 
     public static File findRenames(Project project, String classifier, IMappingFile.Format format, String version, boolean toObf) throws IOException {
