@@ -38,9 +38,7 @@ public class OfficialMappingProvider implements IMappingProvider {
 
     public static String OFFICIAL_CHANNEL = "official";
 
-    private static final ImmutableSet<String> channels = ImmutableSet.<String>builder()
-        .add(OFFICIAL_CHANNEL)
-        .build();
+    private static final ImmutableSet<String> channels = ImmutableSet.of(OFFICIAL_CHANNEL);
 
     @Override
     public Set<String> getMappingChannels() {

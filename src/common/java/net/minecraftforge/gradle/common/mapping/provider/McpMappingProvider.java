@@ -35,9 +35,7 @@ public class McpMappingProvider implements IMappingProvider {
         if (BaseRepo.DEBUG) project.getLogger().lifecycle(message);
     }
 
-    private static final ImmutableSet<String> channels = ImmutableSet.<String>builder()
-        .add("snapshot", "snapshot_nodoc", "stable", "stable_nodoc")
-        .build();
+    private static final ImmutableSet<String> channels = ImmutableSet.of("snapshot", "snapshot_nodoc", "stable", "stable_nodoc");
 
     @Override
     public Set<String> getMappingChannels() {
