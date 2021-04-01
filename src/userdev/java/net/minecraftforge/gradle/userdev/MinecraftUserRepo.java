@@ -1017,7 +1017,7 @@ public class MinecraftUserRepo extends BaseRepo {
 
         if (cache.isSame() && patched.exists()) {
             debug("    Cache Hit");
-        } else if (patched.exists() || generate) {
+        } else if (!patched.exists() || generate) {
             debug("    Generating");
             LinkedList<Patcher> parents = new LinkedList<>();
             Patcher patcher = parent;
