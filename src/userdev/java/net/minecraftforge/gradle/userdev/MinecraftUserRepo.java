@@ -963,7 +963,7 @@ public class MinecraftUserRepo extends BaseRepo {
 
         if (cache.isSame() && decomp.exists()) {
             debug("  Cache Hit");
-        } else if (decomp.exists() || generate) {
+        } else if (!decomp.exists() || generate) {
             debug("  Decompiling");
             File output = mcp.getStepOutput(isPatcher ? "joined" : NAME, null);
             if (parent != null && parent.getConfigV2() != null && parent.getConfigV2().processor != null) {
