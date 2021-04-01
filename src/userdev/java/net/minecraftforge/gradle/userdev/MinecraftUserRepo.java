@@ -1120,7 +1120,7 @@ public class MinecraftUserRepo extends BaseRepo {
         cache.load(cacheMapped(mapping, "sources", "jar.input"));
         if (cache.isSame() && sources.exists()) {
             debug("    Cache hit");
-        } else if (sources.exists() || generate) {
+        } else if (!sources.exists() || generate) {
             IMappingFile obf_to_srg = IMappingFile.load(obf2srg);
             Set<String> vanilla = obf_to_srg.getClasses().stream().map(IMappingFile.INode::getMapped).collect(Collectors.toSet());
 
