@@ -26,7 +26,7 @@ import net.minecraftforge.gradle.common.util.VersionJson;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
@@ -109,7 +109,7 @@ public class DownloadAssets extends DefaultTask {
         this.meta = value;
     }
 
-    @Internal
+    @OutputDirectory
     public File getOutput() {
         return Utils.getCache(getProject(), "assets");
     }
