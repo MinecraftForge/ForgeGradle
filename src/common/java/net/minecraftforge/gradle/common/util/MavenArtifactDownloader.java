@@ -185,6 +185,7 @@ public class MavenArtifactDownloader {
             if (meta == null)
                 return null; //Don't error, other repos might have it.
             try {
+                // When we drop support for Gradle 6.8, change to reference groovy.xml.XmlParser
                 Node xml = new XmlParser().parse(meta);
                 Node versioning = getPath(xml, "versioning/versions");
                 List<Node> versions = versioning == null ? null : (List<Node>)versioning.get("version");

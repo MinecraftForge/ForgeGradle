@@ -673,7 +673,7 @@ public class PatcherPlugin implements Plugin<Project> {
                 applyPatches.get().setBase(toMCPClean.getOutput());
                 genPatches.get().setDependsOn(Lists.newArrayList(toMCPClean, dirtyZip));
                 genPatches.get().setBase(toMCPClean.getOutput());
-                genPatches.get().setModified(dirtyZip.getArchivePath());
+                genPatches.get().setModified(dirtyZip.getArchiveFile().get().getAsFile());
             }
 
             {
