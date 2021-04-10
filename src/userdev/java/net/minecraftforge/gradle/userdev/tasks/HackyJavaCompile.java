@@ -20,33 +20,14 @@
 
 package net.minecraftforge.gradle.userdev.tasks;
 
-import javax.annotation.Nullable;
-
-import org.gradle.api.internal.tasks.compile.CleaningJavaCompiler;
-import org.gradle.api.internal.tasks.compile.DefaultJavaCompileSpec;
-import org.gradle.api.internal.tasks.compile.JavaCompileSpec;
-import org.gradle.api.provider.Provider;
-import org.gradle.api.tasks.WorkResult;
-import org.gradle.api.tasks.compile.JavaCompile;
-import org.gradle.internal.file.impl.DefaultDeleter;
-import org.gradle.internal.nativeintegration.filesystem.FileSystem;
-import org.gradle.internal.nativeintegration.services.FileSystems;
-import org.gradle.internal.os.OperatingSystem;
-import org.gradle.internal.time.Clock;
-import org.gradle.internal.time.Time;
-import org.gradle.jvm.toolchain.JavaCompiler;
-import org.gradle.jvm.toolchain.JavaToolchainSpec;
-import org.gradle.jvm.toolchain.internal.CurrentJvmToolchainSpec;
-import org.gradle.jvm.toolchain.internal.DefaultToolchainJavaCompiler;
-import org.gradle.jvm.toolchain.internal.SpecificInstallationToolchainSpec;
-import org.gradle.language.base.internal.compile.CompileSpec;
-import org.gradle.language.base.internal.compile.Compiler;
-
-import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.function.LongSupplier;
-import java.util.function.Predicate;
+
+import org.gradle.api.internal.tasks.compile.DefaultJavaCompileSpec;
+import org.gradle.api.internal.tasks.compile.JavaCompileSpec;
+import org.gradle.api.tasks.WorkResult;
+import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.language.base.internal.compile.Compiler;
 
 /*
  *  A terrible hack to use JavaCompile while bypassing
@@ -56,7 +37,6 @@ import java.util.function.Predicate;
  */
 public class HackyJavaCompile extends JavaCompile {
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public void doHackyCompile() {
 
         // What follows is a horrible hack to allow us to call JavaCompile
@@ -67,64 +47,64 @@ public class HackyJavaCompile extends JavaCompile {
 
         this.getOutputs().setPreviousOutputFiles(this.getProject().files());
 
-        final Clock clock = Time.clock();
-        final LongSupplier supplier = clock::getCurrentTime;
-        final FileSystem fileSystem = FileSystems.getDefault();
-        final Predicate<? super File> isSymLink = fileSystem::isSymlink;
-        final DefaultDeleter defaultDeleter = new DefaultDeleter(supplier, isSymLink, OperatingSystem.current().isWindows());
-
-        final DefaultJavaCompileSpec spec;
-        try {
-            Method createSpec = JavaCompile.class.getDeclaredMethod("createSpec");
-            createSpec.setAccessible(true);
-            spec = (DefaultJavaCompileSpec) createSpec.invoke(this);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException("Exception calling createSpec ", e);
-        }
+        final JavaCompileSpec spec = createSpec();
         spec.setSourceFiles(getSource());
-        Compiler<JavaCompileSpec> javaCompiler = createToolchainCompiler();
-        CleaningJavaCompiler compiler = new CleaningJavaCompiler(javaCompiler, getOutputs(), defaultDeleter);
+        Compiler<JavaCompileSpec> compiler = createCompiler(spec);
         final WorkResult execute = compiler.execute(spec);
         setDidWork(execute.getDidWork());
     }
 
-    // Copied from JavaCompile#createToolchainCompiler
-    private <T extends CompileSpec> Compiler<T> createToolchainCompiler() {
-        return spec -> {
-            final Provider<JavaCompiler> compilerProvider = getCompilerTool();
-            final DefaultToolchainJavaCompiler compiler = (DefaultToolchainJavaCompiler) compilerProvider.get();
-            return compiler.execute(spec);
-        };
-    }
+    /*
+     * We need to get a Compiler<JavaCompileSpec> for our compile hack.
+     * However, Gradle 6.8.x and Gradle 7.0 create the toolchain compiler differently.
+     * To avoid having to maintain separate code for each major version, we'll call their private methods using reflection.
+     * Since the methods are different across the two major versions, we have to do some checks for the two methods.
+     *
+     * Our targets:
+     * - Gradle 6.8.1: https://github.com/gradle/gradle/blob/d5661e3f0e07a8caff705f1badf79fb5df8022c4/subprojects/language-java/src/main/java/org/gradle/api/tasks/compile/JavaCompile.java#L242
+     *      method signature: CleaningJavaCompiler<JavaCompileSpec> createCompiler(JavaCompileSpec spec)
+     * - Gradle 7.0: https://github.com/gradle/gradle/blob/31f14a87d93945024ab7a78de84102a3400fa5b2/subprojects/language-java/src/main/java/org/gradle/api/tasks/compile/JavaCompile.java#L302
+     *      method signature: CleaningJavaCompiler<JavaCompileSpec> createCompiler()
+     */
+    @SuppressWarnings("unchecked")
+    private Compiler<JavaCompileSpec> createCompiler(JavaCompileSpec spec) {
+        try {
+            //noinspection RedundantSuppression
+            try { // Gradle 6.8.1
 
-    // Copied from JavaCompile#getCompilerTool
-    private Provider<JavaCompiler> getCompilerTool() {
-        JavaToolchainSpec explicitToolchain = determineExplicitToolchain();
-        if(explicitToolchain == null) {
-            if(getJavaCompiler().isPresent()) {
-                return this.getJavaCompiler();
-            } else {
-                explicitToolchain = new CurrentJvmToolchainSpec(getProject().getObjects());
-            }
-        }
-        return getJavaToolchainService().compilerFor(explicitToolchain);
-    }
+                //noinspection JavaReflectionMemberAccess
+                Method createCompiler = JavaCompile.class.getDeclaredMethod("createCompiler", JavaCompileSpec.class);
+                createCompiler.setAccessible(true);
+                return (Compiler<JavaCompileSpec>) createCompiler.invoke(this, spec);
 
-    // Copied from JavaCompile#determineExplicitToolchain
-    @Nullable
-    private JavaToolchainSpec determineExplicitToolchain() {
-        final File customJavaHome = getOptions().getForkOptions().getJavaHome();
-        if (customJavaHome != null) {
-            return new SpecificInstallationToolchainSpec(getProject().getObjects(), customJavaHome);
-        } else {
-            final String customExecutable = getOptions().getForkOptions().getExecutable();
-            if (customExecutable != null) {
-                final File executable = new File(customExecutable);
-                if(executable.exists()) {
-                    return new SpecificInstallationToolchainSpec(getProject().getObjects(), executable.getParentFile().getParentFile());
+            } catch (NoSuchMethodException gradle6) { // Method is missing, might be Gradle 7.0
+                //noinspection RedundantSuppression
+                try {
+                    //noinspection JavaReflectionMemberAccess
+                    Method createCompiler = JavaCompile.class.getDeclaredMethod("createCompiler");
+                    createCompiler.setAccessible(true);
+                    return (Compiler<JavaCompileSpec>) createCompiler.invoke(this);
+
+                } catch (NoSuchMethodException gradle7) { // Both are missing, we're incompatible with this Gradle version
+                    RuntimeException ex = new RuntimeException("Could not find JavaCompile#createCompiler method; might be on incompatible newer version of Gradle", gradle7);
+                    ex.addSuppressed(gradle6); // So we have both exceptions in the stack trace
+                    throw ex;
                 }
             }
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException("Exception while invoking JavaCompile#createCompiler", e);
         }
-        return null;
+    }
+
+    private DefaultJavaCompileSpec createSpec() {
+        try {
+            Method createSpec = JavaCompile.class.getDeclaredMethod("createSpec");
+            createSpec.setAccessible(true);
+            return (DefaultJavaCompileSpec) createSpec.invoke(this);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException("Could not find JavaCompile#createSpec method; might be on incompatible newer version of Gradle");
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException("Exception while invoking JavaCompile#createSpec", e);
+        }
     }
 }
