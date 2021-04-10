@@ -23,6 +23,7 @@ package net.minecraftforge.gradle.common.task;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -62,6 +63,7 @@ public class DownloadMCMeta extends DefaultTask {
         return mcVersion;
     }
 
+    @Internal
     public File getManifest() {
         return manifest;
     }

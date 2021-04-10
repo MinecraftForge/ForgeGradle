@@ -25,6 +25,7 @@ import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -43,6 +44,7 @@ public class DownloadMavenArtifact extends DefaultTask {
         getOutputs().upToDateWhen(task -> false); //We need to always ask, in case the file on maven/our local MinecraftRepo has changed.
     }
 
+    @Internal
     public String getResolvedVersion() {
         return MavenArtifactDownloader.getVersion(getProject(), _artifact.getDescriptor());
     }

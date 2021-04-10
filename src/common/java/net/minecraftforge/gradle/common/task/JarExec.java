@@ -37,6 +37,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 
@@ -112,6 +113,7 @@ public class JarExec extends DefaultTask {
     protected void postProcess(File log) {
     }
 
+    @Internal
     public String getResolvedVersion() {
         return MavenArtifactDownloader.getVersion(getProject(), getTool());
     }

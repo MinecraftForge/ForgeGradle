@@ -24,6 +24,7 @@ import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -52,6 +53,7 @@ public class DownloadMCPConfigTask extends DefaultTask {
         setDidWork(true);
     }
 
+    @Internal
     public Object getConfig() {
         return this.config;
     }
