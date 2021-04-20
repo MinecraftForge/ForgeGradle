@@ -3,7 +3,7 @@
 pipeline {
     agent {
         docker {
-            image 'gradlew:jdk8'
+            image 'gradle:jdk8'
             args '-v gradlecache:/gradlecache'
         }
     }
