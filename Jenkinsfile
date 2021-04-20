@@ -3,7 +3,7 @@
 pipeline {
     agent {
         docker {
-            image 'gradlewrapper:latest'
+            image 'gradle:jdk8'
             args '-v gradlecache:/gradlecache'
         }
     }
@@ -71,8 +71,6 @@ pipeline {
     post {
         always {
             script {
-                archiveArtifacts artifacts: 'build/libs/**/*.jar', fingerprint: true
-
                 if (env.CHANGE_ID == null) { // This is unset for non-PRs
                     discordSend(
                         title: "${DISCORD_PREFIX} Finished ${currentBuild.currentResult}",
