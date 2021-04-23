@@ -21,7 +21,7 @@ repositories {
     mavenLocal()
     maven {
         name = "forge"
-        url = "http://files.minecraftforge.net/maven"
+        url = "https://maven.minecraftforge.net"
     }
     maven {
         // because Srg2Source needs an eclipse dependency.
@@ -87,6 +87,9 @@ dependencies {
     //Stuff used in the GradleStart classes
     compileOnly 'com.mojang:authlib:1.5.16'
     compileOnly "net.minecraft:launchwrapper:1.11"
+
+    // Google FindBugs JSR305
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 }
 
 compileJava {
@@ -134,7 +137,7 @@ uploadArchives {
             mavenDeployer {
                 configuration = configurations.deployerJars
 
-				repository(url: "https://files.minecraftforge.net/maven/manage/upload") {
+				repository(url: "https://maven.minecraftforge.net/manage/upload") {
 					authentication(userName: "forge", password: project.getProperty('forgeMavenPass'))
 				}
 
