@@ -99,7 +99,7 @@ public class TaskReobfuscateJar extends DefaultTask {
                 if (getClasspath() == null) {
                     java.setClasspath(getProject().files(jar));
                 } else {
-                    java.setClasspath(getProject().files(getClasspath(), jar));
+                    java.setClasspath(getProject().files(jar, getClasspath()));
                 }
                 java.setWorkingDir(workDir);
                 java.setMain(mainClass);
