@@ -28,6 +28,7 @@ import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
 import groovy.lang.Closure;
+import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
 import net.minecraftforge.gradle.common.task.ExtractNatives;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
@@ -37,6 +38,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.artifacts.repositories.ArtifactRepository;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.util.GradleVersion;
@@ -93,6 +95,7 @@ public class Utils {
     private static final boolean ENABLE_TEST_CERTS = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_certs", "true"));
     private static final boolean ENABLE_TEST_GRADLE = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_gradle", "true"));
     private static final boolean ENABLE_TEST_JAVA  = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_java", "true"));
+    private static final boolean ENABLE_FILTER_REPOS = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.filter_repos", "true"));
 
     public static final Gson GSON = new GsonBuilder()
         .registerTypeAdapter(MCPConfigV1.Step.class, new MCPConfigV1.Step.Deserializer())
@@ -666,6 +669,21 @@ public class Utils {
 
             RunConfigGenerator.createIDEGenRunsTasks(extension, prepareRuns, makeSrcDirs, additionalClientArgs);
         });
+    }
+
+    public static void addRepoFilters(Project project) {
+        if (!ENABLE_FILTER_REPOS) return;
+
+        // Modify Repos already present and when they get added
+        project.getRepositories().all(Utils::addMappedFilter);
+    }
+
+    private static void addMappedFilter(ArtifactRepository repository) {
+        // Skip our "Fake" Repos that actually do provide the de-obfuscated Artifacts
+        if (repository instanceof GradleRepositoryAdapter) return;
+
+        // Exclude Artifacts that are being de-obfuscated via ForgeGradle (_mapped_ in version)
+        repository.content(rcd -> rcd.excludeVersionByRegex(".*", ".*", ".*_mapped_.*"));
     }
 
     public static File getMCDir()
