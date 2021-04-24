@@ -217,7 +217,8 @@ public class MinecraftRepo extends BaseRepo {
                 VersionJson meta = Utils.loadJson(json, VersionJson.class);
                 for (VersionJson.Library lib : meta.libraries) {
                     if (lib.isAllowed()) {
-                        builder.dependencies().add(lib.name, "compile");
+                        if (lib.downloads.artifact != null)
+                            builder.dependencies().add(lib.name, "compile");
                         if (lib.downloads.classifiers != null) {
                             if (lib.downloads.classifiers.containsKey("test")) {
                                 builder.dependencies().add(lib.name, "test").withClassifier("test");
