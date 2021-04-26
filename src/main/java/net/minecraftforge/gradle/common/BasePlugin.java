@@ -266,6 +266,9 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             doFGVersionCheck(lines);
         }
 
+        LOGGER.warn("WARNING: You are using an unsupported version of ForgeGradle.");
+        LOGGER.warn("Please consider upgrading to ForgeGradle 4 and helping in the efforts to get old versions working on the modern toolchain. See #mcpconfig in the Forge discord for more info.");
+
         if (!displayBanner)
             return;
 
@@ -281,9 +284,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
         for (String str : lines)
             LOGGER.lifecycle(str);
-
-        LOGGER.warn("WARNING: You are using an unsupported version of ForgeGradle.");
-        LOGGER.warn("Please consider upgrading to ForgeGradle 4 and helping in the efforts to get old versions working on the modern toolchain. See #mcpconfig in the Forge discord for more info.");
 
         displayBanner = false;
     }
