@@ -120,7 +120,7 @@ public class Constants
     public static final String URL_ASSETS          = "http://resources.download.minecraft.net";
     public static final String URL_LIBRARY         = "https://libraries.minecraft.net/"; // Mojang's Cloudflare front end
     //public static final String URL_LIBRARY         = "https://minecraft-libraries.s3.amazonaws.com/"; // Mojang's AWS server, as Cloudflare is having issues, TODO: Switch back to above when their servers are fixed.
-    public static final String URL_FORGE_MAVEN     = "https://files.minecraftforge.net/maven";
+    public static final String URL_FORGE_MAVEN     = "https://maven.minecraftforge.net";
     public static final List<String> URLS_MCP_JSON = Arrays.asList(
             URL_FORGE_MAVEN + "/de/oceanlabs/mcp/versions.json",
             "http://export.mcpbot.bspk.rs/versions.json"
