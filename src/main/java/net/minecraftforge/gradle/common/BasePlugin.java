@@ -267,7 +267,8 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         }
 
         LOGGER.warn("WARNING: You are using an unsupported version of ForgeGradle.");
-        LOGGER.warn("Please consider upgrading to ForgeGradle 4 and helping in the efforts to get old versions working on the modern toolchain. See #mcpconfig in the Forge discord for more info.");
+        LOGGER.warn("Please consider upgrading to ForgeGradle 4 and helping in the efforts to get old versions working on the modern toolchain.");
+        LOGGER.warn("See https://gist.github.com/TheCurle/fe7ad3ede188cbdd15c235cc75d52d4a for more info on contributing.");
 
         if (!displayBanner)
             return;
