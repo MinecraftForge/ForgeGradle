@@ -116,7 +116,6 @@ public class Constants
 
     // urls
     public static final String URL_MC_MANIFEST     = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
-    public static final String URL_FF              = "https://gregtech.overminddl1.com/fernflower-fix-1.0.zip";
     public static final String URL_ASSETS          = "http://resources.download.minecraft.net";
     public static final String URL_LIBRARY         = "https://libraries.minecraft.net/"; // Mojang's Cloudflare front end
     //public static final String URL_LIBRARY         = "https://minecraft-libraries.s3.amazonaws.com/"; // Mojang's AWS server, as Cloudflare is having issues, TODO: Switch back to above when their servers are fixed.
