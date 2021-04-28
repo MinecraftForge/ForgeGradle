@@ -30,7 +30,7 @@ repositories {
     mavenLocal()
     maven {
         name = "forge"
-        url = "https://files.minecraftforge.net/maven"
+        url = "https://maven.minecraftforge.net"
     }
     maven {
         // because Srg2Source needs an eclipse dependency.
@@ -362,10 +362,10 @@ uploadArchives {
 
         dependsOn 'build'
 
-        if (project.hasProperty('forgeMavenPassword'))
+        if (System.getenv('MAVEN_USER'))
         {
-            repository(url: "https://files.minecraftforge.net/maven/manage/upload") {
-                authentication(userName: project.getProperty('forgeMavenUser'), password: project.getProperty('forgeMavenPassword'))
+            repository(url: "https://maven.minecraftforge.net/") {
+                authentication(userName: System.getenv('MAVEN_USER'), password: System.getenv('MAVEN_PASSWORD'))
             }
         }
         else
