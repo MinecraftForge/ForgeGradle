@@ -169,7 +169,7 @@ public abstract class RunConfigGenerator
 
         TaskProvider<Task> prepareRun = project.getTasks().register("prepare" + Utils.capitalize(runConfig.getTaskName()), Task.class, task -> {
             task.setGroup(RunConfig.RUNS_GROUP);
-            task.dependsOn(prepareRuns, runConfig.getAllSources().stream().map(SourceSet::getClassesTaskName).toArray());
+            task.dependsOn(prepareRuns);
 
             File workDir = new File(runConfig.getWorkingDirectory());
 
@@ -180,7 +180,7 @@ public abstract class RunConfigGenerator
 
         return project.getTasks().register(runConfig.getTaskName(), JavaExec.class, task -> {
             task.setGroup(RunConfig.RUNS_GROUP);
-            task.dependsOn(prepareRun.get());
+            task.dependsOn(runConfig.getAllSources().stream().map(SourceSet::getClassesTaskName).toArray(), prepareRun.get());
 
             File workDir = new File(runConfig.getWorkingDirectory());
 
