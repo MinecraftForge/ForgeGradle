@@ -9,6 +9,7 @@ buildscript {
         classpath 'nl.javadude.gradle.plugins:license-gradle-plugin:0.11.0'
         classpath 'org.ow2.asm:asm:6.2.1'
         classpath 'org.ow2.asm:asm-tree:6.2.1'
+        classpath 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
     }
 }
 
@@ -20,8 +21,7 @@ apply plugin: "com.gradle.plugin-publish"
 apply plugin: 'license'
 
 group = 'net.minecraftforge.gradle'
-version = '2.3-SNAPSHOT'
-//version = '2.2.1'
+version = gitVersion()
 archivesBaseName = 'ForgeGradle'
 targetCompatibility = '1.8'
 sourceCompatibility = '1.8'
@@ -426,7 +426,51 @@ file('build').mkdirs()
 file('build/version.txt').text = version;
 
 def getGitHash() {
-    def process = 'git rev-parse --short HEAD'.execute()
-    process.waitFor()
-    return '-' + (process.exitValue() ? 'unknown' : process.text.trim())
+    return '-' + gitInfo(rootProject.file('.')).hash
+}
+
+def gitInfo(dir) {
+    String.metaClass.rsplit = { String del, int limit = -1 ->
+        def lst = new ArrayList()
+        def x = 0, idx
+        def tmp = delegate
+        while ((idx = tmp.lastIndexOf(del)) != -1 && (limit == -1 || x++ < limit)) {
+            lst.add(0, tmp.substring(idx + del.length(), tmp.length()))
+            tmp = tmp.substring(0, idx)
+        }
+        lst.add(0, tmp)
+        return lst
+    }
+
+    def git = null
+    try {
+        git = org.eclipse.jgit.api.Git.open(dir)
+    } catch (org.eclipse.jgit.errors.RepositoryNotFoundException e) {
+        return [
+                tag: '0.0',
+                offset: '0',
+                hash: '00000000',
+                branch: 'master',
+                commit: '0000000000000000000000',
+                abbreviatedId: '00000000'
+        ]
+    }
+    def desc = git.describe().setLong(true).setTags(true).call().rsplit('-', 2)
+    def head = git.repository.exactRef('HEAD')
+    def longBranch = head.symbolic ? head?.target?.name : null // matches Repository.getFullBranch() but returning null when on a detached HEAD
+
+    def ret = [:]
+    ret.tag = desc[0]
+    ret.offset = desc[1]
+    ret.hash = desc[2]
+    ret.branch = longBranch != null ? org.eclipse.jgit.lib.Repository.shortenRefName(longBranch) : null
+    ret.commit = org.eclipse.jgit.lib.ObjectId.toString(head.objectId)
+    ret.abbreviatedId = head.objectId.abbreviate(8).name()
+
+    return ret
+}
+
+def gitVersion() {
+    def info = gitInfo(rootProject.file('.'))
+    return "${info.tag}.${info.offset}".toString()
 }
