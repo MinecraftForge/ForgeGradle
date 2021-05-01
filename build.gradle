@@ -29,28 +29,19 @@ repositories {
         url = "https://repo.eclipse.org/content/groups/eclipse/"
     }
     maven {
-        // because SpecialSource doesnt have a full release
-        name = "sonatype"
-        url = "https://oss.sonatype.org/content/repositories/snapshots/"
+        name = "central"
+        url = "https://repo1.maven.org/maven2"
     }
-    mavenCentral()
     maven {
         name = "mojang"
         url = "https://libraries.minecraft.net/"
     }
 }
 
-jar {
-    manifest {
-        attributes 'version':project.version, 'javaCompliance': project.targetCompatibility
-        attributes 'group':project.group
-        attributes 'Implementation-Version': project.version + getGitHash()
-    }
-}
-
 configurations {
     deployerJars
-    compileOnly
+    shade
+    compileOnly.extendsFrom shade
 }
 
 dependencies {
@@ -70,19 +61,19 @@ dependencies {
     compile 'com.google.code.gson:gson:2.2.4' // Used instead of Argo for buuilding changelog.
     compile 'com.github.tony19:named-regexp:0.2.3' // 1.7 Named regexp features
     
-    compile 'net.md-5:SpecialSource:1.7.3' // deobf and reobs
+    shade 'net.md-5:SpecialSource:1.7.3' // deobf and reobs
     
     // because curse
     compile 'org.apache.httpcomponents:httpclient:4.3.3'
     compile 'org.apache.httpcomponents:httpmime:4.3.3'
     
     // mcp stuff
-    compile 'de.oceanlabs.mcp:RetroGuard:3.6.6'
-    compile 'de.oceanlabs.mcp:mcinjector:3.2-SNAPSHOT'
-    compile 'net.minecraftforge.srg2source:Srg2Source:3.2-SNAPSHOT'
+    shade 'de.oceanlabs.mcp:RetroGuard:3.6.6'
+    shade 'de.oceanlabs.mcp:mcinjector:3.2-SNAPSHOT'
+    shade 'net.minecraftforge.srg2source:Srg2Source:3.2-SNAPSHOT'
 
     // The old version used by S2S is gone, so we need to force the latest build of that minor release
-    compile('org.eclipse.jdt:org.eclipse.jdt.core:3.10.0.+') {
+    shade('org.eclipse.jdt:org.eclipse.jdt.core:3.10.0.+') {
         force = true
     }
 
@@ -122,9 +113,26 @@ artifacts {
 }
 
 //These should add a compile time only dependancies to eclipse, ide, and javac, but NOT to the generated POM on maven.
-sourceSets.main.compileClasspath += [ configurations.compileOnly ]
-idea.module.scopes.PROVIDED.plus += [ configurations.compileOnly ]
-eclipse.classpath.plusConfigurations += [ configurations.compileOnly ]
+sourceSets {
+    main.compileClasspath += configurations.shade;
+    main.runtimeClasspath += configurations.shade;
+    test.compileClasspath += configurations.shade;
+    test.runtimeClasspath += configurations.shade;
+}
+
+jar {
+    configurations.shade.each { dep ->
+        from(project.zipTree(dep)){
+            exclude 'META-INF', 'META-INF/**'
+        }
+    }
+
+    manifest {
+        attributes 'version':project.version, 'javaCompliance': project.targetCompatibility
+        attributes 'group':project.group
+        attributes 'Implementation-Version': project.version + getGitHash()
+    }
+}
 
 test {
     if (project.hasProperty("filesmaven")) // disable this test when on the forge jenkins
