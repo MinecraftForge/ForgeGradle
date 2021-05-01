@@ -81,6 +81,11 @@ dependencies {
     compile 'de.oceanlabs.mcp:mcinjector:3.2-SNAPSHOT'
     compile 'net.minecraftforge.srg2source:Srg2Source:3.2-SNAPSHOT'
 
+    // The old version used by S2S is gone, so we need to force the latest build of that minor release
+    compile('org.eclipse.jdt:org.eclipse.jdt.core:3.10.0.+') {
+        force = true
+    }
+
     // stupid maven
     deployerJars "org.apache.maven.wagon:wagon-ssh:2.2"
     
