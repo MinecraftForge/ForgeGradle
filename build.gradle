@@ -88,6 +88,11 @@ dependencies {
     shade 'de.oceanlabs.mcp:mcinjector:3.4-SNAPSHOT'
     shade 'net.minecraftforge.srg2source:Srg2Source:3.3-SNAPSHOT'
 
+    // The old version used by S2S is gone, so we need to force the latest build of that minor release
+    shade('org.eclipse.jdt:org.eclipse.jdt.core:3.10.0.+') {
+        force = true
+    }
+
     //Stuff used in the GradleStart classes
     compileOnly 'com.mojang:authlib:1.5.16'
     compileOnly "net.minecraft:launchwrapper:1.11"
