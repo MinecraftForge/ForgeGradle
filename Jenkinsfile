@@ -57,7 +57,8 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'maven-forge-user', usernameVariable: 'MAVEN_USER', passwordVariable: 'MAVEN_PASSWORD')]) {
                     withGradle {
-                        sh './gradlew ${GRADLE_ARGS} uploadArchives'
+                        sh './gradlew ${GRADLE_ARGS} -PoldFormat=true publish'
+                        sh './gradlew ${GRADLE_ARGS} publish'
                     }
                 }
             }
