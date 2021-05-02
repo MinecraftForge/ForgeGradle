@@ -32,21 +32,38 @@ import java.util.List;
 
 public class ModConfig extends GroovyObjectSupport {
 
-    private transient final Project project;
+    private transient final Project rootProject;
 
     private final String name;
+    private Project modProject;
     private FileCollection resources;
     private FileCollection classes;
 
     private List<SourceSet> sources;
 
-    public ModConfig(@Nonnull final Project project, @Nonnull final String name) {
-        this.project = project;
+    public ModConfig(@Nonnull final Project rootProject, @Nonnull final String name) {
+        this.rootProject = rootProject;
         this.name = name;
     }
 
     public String getName() {
         return name;
+    }
+    
+    public void setModProject(Project project) {
+        modProject = project;
+    }
+    
+    public void modProject(Project project) {
+        setModProject(project);
+    }
+    
+    public Project getModProject() {
+        if (modProject == null) {
+            modProject = rootProject;
+        }
+        
+        return modProject;
     }
 
     public void setClasses(FileCollection classes) {
@@ -54,12 +71,12 @@ public class ModConfig extends GroovyObjectSupport {
     }
 
     public void classes(@Nonnull final Object... classes) {
-        setClasses(getClasses().plus(project.files(classes)));
+        setClasses(getClasses().plus(getModProject().files(classes)));
     }
 
     public FileCollection getClasses() {
         if (classes == null) {
-            classes = project.files();
+            classes = getModProject().files();
         }
 
         return classes;
@@ -74,7 +91,7 @@ public class ModConfig extends GroovyObjectSupport {
     }
 
     public void resources(@Nonnull final Object... resources) {
-        setResources(getResources().plus(project.files(resources)));
+        setResources(getResources().plus(getModProject().files(resources)));
     }
 
     public void resource(@Nonnull final Object resource) {
@@ -83,7 +100,7 @@ public class ModConfig extends GroovyObjectSupport {
 
     public FileCollection getResources() {
         if (resources == null) {
-            resources = project.files();
+            resources = getModProject().files();
         }
 
         return resources;
@@ -125,10 +142,15 @@ public class ModConfig extends GroovyObjectSupport {
 
     public void merge(@Nonnull final ModConfig other, boolean overwrite) {
         if (overwrite) {
+            modProject = other.modProject == null ? modProject : other.modProject;
             sources = other.sources == null ? sources : other.sources;
             classes = other.classes == null ? classes : other.classes;
             resources = other.resources == null ? resources : other.resources;
         } else {
+            if (other.modProject != null) {
+                modProject(other.getModProject());
+            }
+            
             if (other.resources != null) {
                 resources(other.getResources());
             }
