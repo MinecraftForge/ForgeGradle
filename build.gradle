@@ -20,6 +20,7 @@ apply plugin: 'license'
 
 project.ext {
     GIT_INFO = gitInfo(rootProject.file('.'))
+    OLD_FORMAT = '2.2-SNAPSHOT'
 }
 
 group = 'net.minecraftforge.gradle'
@@ -229,7 +230,7 @@ publishing {
     publications {
         pluginMaven(MavenPublication) {
             from components.java
-            version project.hasProperty('oldFormat') ? '2.3-SNAPSHOT' : project.version
+            version project.hasProperty('oldFormat') ? OLD_FORMAT : project.version
         }
     }
     repositories {
