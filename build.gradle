@@ -14,7 +14,7 @@ buildscript {
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
-apply plugin: 'maven-publish'
+apply plugin: 'maven'
 apply plugin: "com.gradle.plugin-publish"
 apply plugin: 'license'
 
@@ -226,26 +226,65 @@ pluginBundle {
     }
 }
 
-publishing {
-    publications {
-        pluginMaven(MavenPublication) {
-            from components.java
-            version project.hasProperty('oldFormat') ? OLD_FORMAT : project.version
+uploadArchives {
+    repositories.mavenDeployer {
+
+        dependsOn 'build'
+
+        if (System.env.MAVEN_USER)
+        {
+            repository(url: "https://maven.minecraftforge.net/") {
+                authentication(userName: System.env.MAVEN_USER, password: System.env.MAVEN_PASSWORD)
+            }
         }
-    }
-    repositories {
-        maven {
-            if (System.env.MAVEN_USER) {
-                url 'https://maven.minecraftforge.net/'
-                authentication {
-                    basic(BasicAuthentication)
+        else
+        {
+            // local repo folder. Might wanna juset use  gradle install   if you wanans end it to maven-local
+            repository(url: 'file://localhost/' + project.file('repo').getAbsolutePath())
+        }
+
+
+        pom {
+            groupId = project.group
+            version = project.hasProperty('oldFormat') ? OLD_FORMAT : project.version
+            artifactId = project.archivesBaseName
+            project {
+                name project.archivesBaseName
+                packaging 'jar'
+                description 'Gradle plugin for Forge'
+                url 'https://github.com/MinecraftForge/ForgeGradle'
+
+                scm {
+                    url 'https://github.com/MinecraftForge/ForgeGradle'
+                    connection 'scm:git:git://github.com/MinecraftForge/ForgeGradle.git'
+                    developerConnection 'scm:git:git@github.com:MinecraftForge/ForgeGradle.git'
                 }
-                credentials {
-                    username = System.env.MAVEN_USER ?: 'not'
-                    password = System.env.MAVEN_PASSWORD ?: 'set'
+
+                issueManagement {
+                    system 'github'
+                    url 'https://github.com/MinecraftForge/ForgeGradle/issues'
                 }
-            } else {
-                url 'file://' + rootProject.file('repo').getAbsolutePath()
+
+                licenses {
+                    license {
+                        name 'Lesser GNU Public License, Version 2.1'
+                        url 'https://www.gnu.org/licenses/lgpl-2.1.html'
+                        distribution 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'AbrarSyed'
+                        name 'Abrar Syed'
+                        roles { role 'developer' }
+                    }
+                    developer {
+                        id 'LexManos'
+                        name 'Lex Manos'
+                        roles { role 'developer' }
+                    }
+                }
             }
         }
     }
