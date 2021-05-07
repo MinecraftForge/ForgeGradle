@@ -88,7 +88,7 @@ dependencies {
     compile 'net.minecraftforge.srg2source:Srg2Source:3.2-SNAPSHOT'
 
     // The old version used by S2S is gone, so we need to force the latest build of that minor release
-    compile('org.eclipse.jdt:org.eclipse.jdt.core:3.10.0.+') {
+    compile('org.eclipse.jdt:org.eclipse.jdt.core:3.10.0.v20140604-1726') {
         force = true
     }
 
