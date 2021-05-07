@@ -229,7 +229,7 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 //        ApplyFernFlowerTask ffTask = ((ApplyFernFlowerTask) project.getTasks().getByName("decompileJar"));
 //        ffTask.setClasspath(javaConv.getSourceSets().getByName("main").getCompileClasspath());
 
-        // http://files.minecraftforge.net/maven/de/oceanlabs/mcp/mcp/1.7.10/mcp-1.7.10-srg.zip
+        // https://maven.minecraftforge.net/de/oceanlabs/mcp/mcp/1.7.10/mcp-1.7.10-srg.zip
         project.getDependencies().add(CONFIG_MAPPINGS, ImmutableMap.of(
                 "group", "de.oceanlabs.mcp",
                 "name", delayedString("mcp_" + REPLACE_MCP_CHANNEL).call(),
@@ -253,10 +253,14 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             doFGVersionCheck(lines);
         }
 
+        Logger logger = this.project.getLogger();
+        logger.warn("WARNING: You are using an unsupported version of ForgeGradle.");
+        logger.warn("Please consider upgrading to ForgeGradle 4 and helping in the efforts to get old versions working on the modern toolchain.");
+        logger.warn("See https://gist.github.com/TheCurle/fe7ad3ede188cbdd15c235cc75d52d4a for more info on contributing.");
+
         if (!displayBanner)
             return;
 
-        Logger logger = this.project.getLogger();
         logger.lifecycle("#################################################");
         logger.lifecycle("         ForgeGradle {}        ", this.getVersionString());
         logger.lifecycle("  https://github.com/MinecraftForge/ForgeGradle  ");
