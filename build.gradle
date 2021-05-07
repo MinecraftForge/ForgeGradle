@@ -46,17 +46,10 @@ repositories {
     }
 }
 
-jar {
-    manifest {
-        attributes 'version':project.version, 'javaCompliance': project.targetCompatibility
-        attributes 'group':project.group
-        attributes 'Implementation-Version': project.version + "-" + GIT_INFO.hash
-    }
-}
-
 configurations {
     deployerJars
-    compileOnly
+    shade
+    compileOnly.extendsFrom shade
 }
 
 dependencies {
@@ -85,10 +78,10 @@ dependencies {
     // mcp stuff
     compile 'de.oceanlabs.mcp:RetroGuard:3.6.6'
     compile 'de.oceanlabs.mcp:mcinjector:3.2-SNAPSHOT'
-    compile 'net.minecraftforge.srg2source:Srg2Source:3.2-SNAPSHOT'
+    shade 'net.minecraftforge.srg2source:Srg2Source:3.2-SNAPSHOT'
 
     // The old version used by S2S is gone, so we need to force the latest build of that minor release
-    compile('org.eclipse.jdt:org.eclipse.jdt.core:3.10.0.v20140604-1726') {
+    shade('org.eclipse.jdt:org.eclipse.jdt.core:3.10.0.v20140604-1726') {
         force = true
     }
 
@@ -128,9 +121,26 @@ artifacts {
 }
 
 //These should add a compile time only dependancies to eclipse, ide, and javac, but NOT to the generated POM on maven.
-sourceSets.main.compileClasspath += [ configurations.compileOnly ]
-idea.module.scopes.PROVIDED.plus += [ configurations.compileOnly ]
-eclipse.classpath.plusConfigurations += [ configurations.compileOnly ]
+sourceSets {
+    main.compileClasspath += configurations.shade;
+    main.runtimeClasspath += configurations.shade;
+    test.compileClasspath += configurations.shade;
+    test.runtimeClasspath += configurations.shade;
+}
+
+jar {
+    configurations.shade.each { dep ->
+        from(project.zipTree(dep)){
+            exclude 'META-INF', 'META-INF/**'
+        }
+    }
+
+    manifest {
+        attributes 'version':project.version, 'javaCompliance': project.targetCompatibility
+        attributes 'group':project.group
+        attributes 'Implementation-Version': project.version + "-" + GIT_INFO.hash
+    }
+}
 
 test {
     // These tests are outdated, and I can't be arsed to fix them
