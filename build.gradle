@@ -50,7 +50,7 @@ jar {
     manifest {
         attributes 'version':project.version, 'javaCompliance': project.targetCompatibility
         attributes 'group':project.group
-        attributes 'Implementation-Version': project.version + getGitHash()
+        attributes 'Implementation-Version': project.version + "-" + GIT_INFO.hash
     }
 }
 
