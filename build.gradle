@@ -46,10 +46,17 @@ repositories {
     }
 }
 
+jar {
+    manifest {
+        attributes 'version':project.version, 'javaCompliance': project.targetCompatibility
+        attributes 'group':project.group
+        attributes 'Implementation-Version': project.version + getGitHash()
+    }
+}
+
 configurations {
     deployerJars
-    shade
-    compileOnly.extendsFrom shade
+    compileOnly
 }
 
 dependencies {
@@ -69,19 +76,19 @@ dependencies {
     compile 'com.google.code.gson:gson:2.2.4' // Used instead of Argo for buuilding changelog.
     compile 'com.github.tony19:named-regexp:0.2.3' // 1.7 Named regexp features
     
-    shade 'net.md-5:SpecialSource:1.7.3' // deobf and reobs
+    compile 'net.md-5:SpecialSource:1.7.3' // deobf and reobs
     
     // because curse
     compile 'org.apache.httpcomponents:httpclient:4.3.3'
     compile 'org.apache.httpcomponents:httpmime:4.3.3'
     
     // mcp stuff
-    shade 'de.oceanlabs.mcp:RetroGuard:3.6.6'
-    shade 'de.oceanlabs.mcp:mcinjector:3.2-SNAPSHOT'
-    shade 'net.minecraftforge.srg2source:Srg2Source:3.2-SNAPSHOT'
+    compile 'de.oceanlabs.mcp:RetroGuard:3.6.6'
+    compile 'de.oceanlabs.mcp:mcinjector:3.2-SNAPSHOT'
+    compile 'net.minecraftforge.srg2source:Srg2Source:3.2-SNAPSHOT'
 
     // The old version used by S2S is gone, so we need to force the latest build of that minor release
-    shade('org.eclipse.jdt:org.eclipse.jdt.core:3.10.0.+') {
+    compile('org.eclipse.jdt:org.eclipse.jdt.core:3.10.0.+') {
         force = true
     }
 
@@ -121,26 +128,9 @@ artifacts {
 }
 
 //These should add a compile time only dependancies to eclipse, ide, and javac, but NOT to the generated POM on maven.
-sourceSets {
-    main.compileClasspath += configurations.shade;
-    main.runtimeClasspath += configurations.shade;
-    test.compileClasspath += configurations.shade;
-    test.runtimeClasspath += configurations.shade;
-}
-
-jar {
-    configurations.shade.each { dep ->
-        from(project.zipTree(dep)){
-            exclude 'META-INF', 'META-INF/**'
-        }
-    }
-
-    manifest {
-        attributes 'version':project.version, 'javaCompliance': project.targetCompatibility
-        attributes 'group':project.group
-        attributes 'Implementation-Version': project.version + "-" + GIT_INFO.hash
-    }
-}
+sourceSets.main.compileClasspath += [ configurations.compileOnly ]
+idea.module.scopes.PROVIDED.plus += [ configurations.compileOnly ]
+eclipse.classpath.plusConfigurations += [ configurations.compileOnly ]
 
 test {
     // These tests are outdated, and I can't be arsed to fix them
