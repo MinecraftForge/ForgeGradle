@@ -49,12 +49,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import javax.xml.parsers.ParserConfigurationException;
 
 public class MavenArtifactDownloader {
+    /**
+     * This tracks downloads that are <b>currently</b> active. As soon as a download has finished it will be removed
+     * from this map.
+     */
+    private static final Map<DownloadKey, Future<File>> ACTIVE_DOWNLOADS = new HashMap<>();
+
     private static final Cache<String, File> CACHE = CacheBuilder.newBuilder()
             .expireAfterWrite(5, TimeUnit.MINUTES)
             .build();
@@ -87,11 +97,45 @@ public class MavenArtifactDownloader {
         return _download(project, artifact, changing, false, false, true);
     }
 
-
     private static File _download(Project project, String artifact, boolean changing, boolean generated, boolean gradle, boolean manual) {
-        Artifact art = Artifact.from(artifact);
+        /*
+         * This somewhat convoluted code is necessary to avoid race-conditions when two Gradle worker threads simultaneously
+         * try to download the same artifact.
+         * The first thread registers a future that other threads can wait on.
+         * Once it finishes, the future will be removed and subsequent calls will use the CACHE instead.
+         * We use all parameters of the function as the key here to prevent subtle bugs where the same artifact
+         * is looked up simultaneously with different resolver-options, leading only to one attempt being made.
+         */
+        DownloadKey downloadKey = new DownloadKey(project, artifact, changing, generated, gradle, manual);
+        CompletableFuture<File> future;
+        synchronized (ACTIVE_DOWNLOADS) {
+            Future<File> activeDownload = ACTIVE_DOWNLOADS.get(downloadKey);
+            if (activeDownload != null) {
+                // Some other thread is already working downloading this exact artifact, wait for it to finish
+                try {
+                    project.getLogger().info("Waiting for download of {} on other thread", artifact);
+                    return activeDownload.get();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                } catch (ExecutionException e) {
+                    if (e.getCause() instanceof RuntimeException) {
+                        throw (RuntimeException) e.getCause();
+                    } else {
+                        throw new RuntimeException(e.getCause());
+                    }
+                }
+            } else {
+                project.getLogger().info("Downloading {}", artifact);
+                // We're the first thread to download the artifact, make sure concurrent downloads just wait for us
+                future = new CompletableFuture<>();
+                ACTIVE_DOWNLOADS.put(downloadKey, future);
+            }
+        }
+
         File ret = null;
         try {
+            Artifact art = Artifact.from(artifact);
+
             ret = CACHE.getIfPresent(artifact);
             if (ret != null && !ret.exists()) {
                 CACHE.invalidate(artifact);
@@ -125,8 +169,15 @@ public class MavenArtifactDownloader {
 
             if (ret != null)
                 CACHE.put(artifact, ret);
+
+            future.complete(ret);
         } catch (RuntimeException | IOException | URISyntaxException e) {
+            future.completeExceptionally(e);
             e.printStackTrace();
+        } finally {
+            synchronized (ACTIVE_DOWNLOADS) {
+                ACTIVE_DOWNLOADS.remove(downloadKey);
+            }
         }
         return ret;
     }
@@ -290,4 +341,41 @@ public class MavenArtifactDownloader {
         File target = Utils.getCache(project, "maven_downloader", path);
         return Utils.downloadWithCache(url, target, changing, bypassLocal);
     }
+
+    /**
+     * Key used to track active downloads and avoid downloading the same file in two threads concurrently,
+     * leading to corrupted files on disk.
+     */
+    private static class DownloadKey {
+        private final Project project;
+        private final String artifact;
+        private final boolean changing;
+        private final boolean generated;
+        private final boolean gradle;
+        private final boolean manual;
+
+        DownloadKey(Project project, String artifact, boolean changing, boolean generated, boolean gradle, boolean manual) {
+            this.project = project;
+            this.artifact = artifact;
+            this.changing = changing;
+            this.generated = generated;
+            this.gradle = gradle;
+            this.manual = manual;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            DownloadKey that = (DownloadKey) o;
+            return changing == that.changing && generated == that.generated && gradle == that.gradle && manual == that.manual && project.equals(that.project) && artifact.equals(that.artifact);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(project, artifact, changing, generated, gradle, manual);
+        }
+
+    }
+
 }
