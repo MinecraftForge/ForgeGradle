@@ -11,7 +11,7 @@ There are some public methods in the minecraft extension object that are meant t
 - `String getApiVersion()`
     - Specifically returns the MinecraftForge or FML version in form `McVersion-#.#.#.#`. the branch is appended if it exists resulting in the following: `McVersion-#.#.#.#-branch`
 - `void setVersion(String version)`
-    - The argument passed to this method is parsed and verified against the [forge](http://files.minecraftforge.net/maven/net/minecraftforge/forge/json) or [fml](http://files.minecraftforge.net/maven/net/minecraftforge/fml/json) jsons.
+    - The argument passed to this method is parsed and verified against the [forge](http://maven.minecraftforge.net/net/minecraftforge/forge/json) or [fml](http://maven.minecraftforge.net/net/minecraftforge/fml/json) jsons.
     - Possible argument notations:
         - A forge/fml buildnumber, eg: `1232`
         - A forge/fml promotion,, eg: `1.7.10-latest`, `1.7.10-recommended`

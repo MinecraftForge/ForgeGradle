@@ -103,7 +103,7 @@ public class UserPatchExtension extends UserExtension
          *     Output: 1.8-11.14.4.1563
          *   Solution:
          *     Again, Abrar downloaded a 2MB MASSIVE json file, when a slim json would do.
-         *     https://files.minecraftforge.net/maven/net/minecraftforge/forge/promotions_slim.json
+         *     https://maven.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json
          *
          *
          * API-Wildcards:
