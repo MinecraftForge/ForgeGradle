@@ -518,19 +518,22 @@ public class Utils {
     }
 
     public static void checkJavaRange(@Nullable JavaVersionParser.JavaVersion minVersionInclusive, @Nullable JavaVersionParser.JavaVersion maxVersionExclusive) {
-        checkRange("java", JavaVersionParser.getCurrentJavaVersion(), minVersionInclusive, maxVersionExclusive, "");
+        checkRange("java", JavaVersionParser.getCurrentJavaVersion(), minVersionInclusive, maxVersionExclusive, "",
+                "\nNote: Support for running under Java 16 requires Gradle 7, which will be supported in ForgeGradle 5.");
     }
 
     public static void checkGradleRange(@Nullable GradleVersion minVersionInclusive, @Nullable GradleVersion maxVersionExclusive) {
-        checkRange("Gradle", GradleVersion.current(), minVersionInclusive, maxVersionExclusive, "\nNote: Upgrade your gradle version first before trying to switch to FG4.");
+        checkRange("Gradle", GradleVersion.current(), minVersionInclusive, maxVersionExclusive,
+                "\nNote: Upgrade your gradle version first before trying to switch to FG4.",
+                "\nNote: Support for Gradle 7 will be added in ForgeGradle 5.");
     }
 
-    private static <T> void checkRange(String name, Comparable<T> current, @Nullable T minVersionInclusive, @Nullable T maxVersionExclusive, String additional) {
+    private static <T> void checkRange(String name, Comparable<T> current, @Nullable T minVersionInclusive, @Nullable T maxVersionExclusive, String additionalMin, String additionalMax) {
         if (minVersionInclusive != null && current.compareTo(minVersionInclusive) < 0)
-            throw new RuntimeException(String.format("Found %s version %s. Minimum required is %s.%s", name, current, minVersionInclusive, additional));
+            throw new RuntimeException(String.format("Found %s version %s. Minimum required is %s.%s", name, current, minVersionInclusive, additionalMin));
 
         if (maxVersionExclusive != null && current.compareTo(maxVersionExclusive) >= 0)
-            throw new RuntimeException(String.format("Found %s version %s. Versions %s and newer are not supported yet.", name, current, maxVersionExclusive));
+            throw new RuntimeException(String.format("Found %s version %s. Versions %s and newer are not supported yet.%s", name, current, maxVersionExclusive, additionalMax));
     }
 
     /**
@@ -546,14 +549,14 @@ public class Utils {
             checkJavaRange(
                 // Minimum must be update 101 as it's the first one to include Let's Encrypt certificates.
                 JavaVersionParser.parseJavaVersion("1.8.0_101"),
-                null //TODO: Add JDK range check to MCPConfig?
+                JavaVersionParser.parseJavaVersion("16.0")
             );
         }
 
         if (ENABLE_TEST_GRADLE) {
             checkGradleRange(
                 GradleVersion.version("6.8.1"),
-                null
+                GradleVersion.version("7.0")
             );
         }
 
