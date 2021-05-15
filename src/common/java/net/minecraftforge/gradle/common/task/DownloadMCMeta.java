@@ -42,7 +42,6 @@ public class DownloadMCMeta extends DefaultTask {
     private static final Gson GSON = new GsonBuilder().create();
 
     private String mcVersion;
-    private File manifest = getProject().file("build/" + getName() + "/manifest.json");
     private File output = getProject().file("build/" + getName() + "/version.json");
 
     @TaskAction
@@ -62,10 +61,6 @@ public class DownloadMCMeta extends DefaultTask {
         return mcVersion;
     }
 
-    public File getManifest() {
-        return manifest;
-    }
-
     @OutputFile
     public File getOutput() {
         return output;
@@ -73,10 +68,6 @@ public class DownloadMCMeta extends DefaultTask {
 
     public void setMCVersion(String mcVersion) {
         this.mcVersion = mcVersion;
-    }
-
-    public void setManifest(File manifest) {
-        this.manifest = manifest;
     }
 
     public void setOutput(File output) {

@@ -38,7 +38,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
 import groovy.util.Node;
-import groovy.util.XmlParser;
+import groovy.xml.XmlParser;
 
 import java.io.File;
 import java.io.IOException;

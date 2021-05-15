@@ -43,10 +43,6 @@ public class DownloadMavenArtifact extends DefaultTask {
         getOutputs().upToDateWhen(task -> false); //We need to always ask, in case the file on maven/our local MinecraftRepo has changed.
     }
 
-    public String getResolvedVersion() {
-        return MavenArtifactDownloader.getVersion(getProject(), _artifact.getDescriptor());
-    }
-
     @Input
     public String getArtifact() {
         return artifact;

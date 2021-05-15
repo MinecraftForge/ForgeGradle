@@ -20,36 +20,22 @@
 
 package net.minecraftforge.gradle.userdev.tasks;
 
-import org.gradle.api.internal.tasks.compile.CleaningJavaCompiler;
 import org.gradle.api.internal.tasks.compile.DefaultJavaCompileSpec;
 import org.gradle.api.internal.tasks.compile.JavaCompileSpec;
 import org.gradle.api.tasks.WorkResult;
 import org.gradle.api.tasks.compile.JavaCompile;
-import org.gradle.internal.file.impl.DefaultDeleter;
-import org.gradle.internal.nativeintegration.filesystem.FileSystem;
-import org.gradle.internal.nativeintegration.services.FileSystems;
-import org.gradle.internal.os.OperatingSystem;
-import org.gradle.internal.time.Clock;
-import org.gradle.internal.time.Time;
-import org.gradle.jvm.internal.toolchain.JavaToolChainInternal;
 import org.gradle.language.base.internal.compile.Compiler;
-import org.gradle.language.base.internal.compile.CompilerUtil;
-
-import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.function.LongSupplier;
-import java.util.function.Predicate;
 
 /*
  *  A terrible hack to use JavaCompile while bypassing
  *  Gradle's normal task infrastructure.
- *  This is internal API Modderrs DO NOT referencee this.
+ *  This is internal API Modders DO NOT reference this.
  *  It can and will be removed if we get a better way to do this.
  */
 public class HackyJavaCompile extends JavaCompile {
 
-    @SuppressWarnings({"rawtypes", "unchecked", "deprecation", "UnstableApiUsage"})
     public void doHackyCompile() {
 
         // What follows is a horrible hack to allow us to call JavaCompile
@@ -59,26 +45,36 @@ public class HackyJavaCompile extends JavaCompile {
         // when done from a dependency resolver.
 
         this.getOutputs().setPreviousOutputFiles(this.getProject().files());
+        final DefaultJavaCompileSpec spec = reflectCreateSpec();
+        spec.setSourceFiles(getSource());
+        Compiler<JavaCompileSpec> compiler = createCompiler(spec);
+        final WorkResult execute = compiler.execute(spec);
+        setDidWork(execute.getDidWork());
+    }
 
-        final Clock clock = Time.clock();
-        final LongSupplier supplier = clock::getCurrentTime;
-        final FileSystem fileSystem = FileSystems.getDefault();
-        final Predicate<? super File> isSymLink = fileSystem::isSymlink;
-        final DefaultDeleter defaultDeleter = new DefaultDeleter(supplier, isSymLink, OperatingSystem.current().isWindows());
-
-        final DefaultJavaCompileSpec spec;
+    private DefaultJavaCompileSpec reflectCreateSpec() {
         try {
             Method createSpec = JavaCompile.class.getDeclaredMethod("createSpec");
             createSpec.setAccessible(true);
-            spec = (DefaultJavaCompileSpec) createSpec.invoke(this);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException("Exception calling createSpec ", e);
+            return (DefaultJavaCompileSpec) createSpec.invoke(this);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException("Could not find JavaCompile#createSpec method; might be on incompatible newer version of Gradle", e);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException("Exception while invoking JavaCompile#createSpec", e);
         }
-        spec.setSourceFiles(getSource());
-        Compiler<JavaCompileSpec> javaCompiler = CompilerUtil.castCompiler(((JavaToolChainInternal) getToolChain()).select(getPlatform()).newCompiler(spec.getClass()));
-        CleaningJavaCompiler compiler = new CleaningJavaCompiler(javaCompiler, getOutputs(), defaultDeleter);
-        final WorkResult execute = compiler.execute(spec);
-        setDidWork(execute.getDidWork());
+    }
+
+    @SuppressWarnings("unchecked")
+    private Compiler<JavaCompileSpec> createCompiler(JavaCompileSpec spec) {
+        try {
+            Method createCompiler = JavaCompile.class.getDeclaredMethod("createCompiler");
+            createCompiler.setAccessible(true);
+            return (Compiler<JavaCompileSpec>) createCompiler.invoke(this);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException("Could not find JavaCompile#createCompiler method; might be on incompatible newer version of Gradle", e);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException("Exception while invoking JavaCompile#createCompiler", e);
+        }
     }
 
 }
