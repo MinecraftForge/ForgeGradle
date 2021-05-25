@@ -518,14 +518,12 @@ public class Utils {
     }
 
     public static void checkJavaRange(@Nullable JavaVersionParser.JavaVersion minVersionInclusive, @Nullable JavaVersionParser.JavaVersion maxVersionExclusive) {
-        checkRange("java", JavaVersionParser.getCurrentJavaVersion(), minVersionInclusive, maxVersionExclusive, "",
-                "\nNote: Support for running under Java 16 requires Gradle 7, which will be supported in ForgeGradle 5.");
+        checkRange("java", JavaVersionParser.getCurrentJavaVersion(), minVersionInclusive, maxVersionExclusive, "", "");
     }
 
     public static void checkGradleRange(@Nullable GradleVersion minVersionInclusive, @Nullable GradleVersion maxVersionExclusive) {
         checkRange("Gradle", GradleVersion.current(), minVersionInclusive, maxVersionExclusive,
-                "\nNote: Upgrade your gradle version first before trying to switch to FG4.",
-                "\nNote: Support for Gradle 7 will be added in ForgeGradle 5.");
+                "\nNote: Upgrade your gradle version first before trying to switch to FG5.", "");
     }
 
     private static <T> void checkRange(String name, Comparable<T> current, @Nullable T minVersionInclusive, @Nullable T maxVersionExclusive, String additionalMin, String additionalMax) {
@@ -549,14 +547,14 @@ public class Utils {
             checkJavaRange(
                 // Minimum must be update 101 as it's the first one to include Let's Encrypt certificates.
                 JavaVersionParser.parseJavaVersion("1.8.0_101"),
-                JavaVersionParser.parseJavaVersion("16.0")
+                null
             );
         }
 
         if (ENABLE_TEST_GRADLE) {
             checkGradleRange(
-                GradleVersion.version("6.8.1"),
-                GradleVersion.version("7.0")
+                GradleVersion.version("7.0"),
+                null
             );
         }
 
