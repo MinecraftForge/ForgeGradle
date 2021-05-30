@@ -21,8 +21,8 @@
 package net.minecraftforge.gradle.mcp;
 
 import net.minecraftforge.gradle.common.util.Utils;
-import net.minecraftforge.gradle.mcp.task.DownloadMCPConfigTask;
-import net.minecraftforge.gradle.mcp.task.SetupMCPTask;
+import net.minecraftforge.gradle.mcp.tasks.DownloadMCPConfigTask;
+import net.minecraftforge.gradle.mcp.tasks.SetupMCPTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository.MetadataSources;

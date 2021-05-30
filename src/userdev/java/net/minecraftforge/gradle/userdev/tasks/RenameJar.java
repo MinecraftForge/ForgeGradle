@@ -26,7 +26,7 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 
-import net.minecraftforge.gradle.common.task.JarExec;
+import net.minecraftforge.gradle.common.tasks.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
 
 import java.io.File;

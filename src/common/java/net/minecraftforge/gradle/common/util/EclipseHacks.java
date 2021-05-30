@@ -20,7 +20,7 @@
 
 package net.minecraftforge.gradle.common.util;
 
-import net.minecraftforge.gradle.common.task.ExtractNatives;
+import net.minecraftforge.gradle.common.tasks.ExtractNatives;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;

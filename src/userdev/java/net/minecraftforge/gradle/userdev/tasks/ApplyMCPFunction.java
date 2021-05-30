@@ -26,7 +26,7 @@ import org.gradle.api.tasks.TaskAction;
 
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
 import net.minecraftforge.gradle.common.config.MCPConfigV2;
-import net.minecraftforge.gradle.common.task.JarExec;
+import net.minecraftforge.gradle.common.tasks.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
 
 import java.io.File;

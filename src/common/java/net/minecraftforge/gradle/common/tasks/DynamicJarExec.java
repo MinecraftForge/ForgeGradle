@@ -18,61 +18,52 @@
  * USA
  */
 
-package net.minecraftforge.gradle.userdev.tasks;
-
-import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.OutputFile;
-
-import net.minecraftforge.gradle.common.tasks.JarExec;
-import net.minecraftforge.gradle.common.util.Utils;
+package net.minecraftforge.gradle.common.tasks;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class AccessTransformJar extends JarExec {
-    private File input;
-    private File output;
-    private List<File> ats;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.OutputFile;
 
-    public AccessTransformJar() {
-        tool = Utils.ACCESSTRANSFORMER; // AT spec *should* be standardized, it has been for years. So we *shouldn't* need to configure this.
-        args = new String[] { "--inJar", "{input}", "--outJar", "{output}", "--logFile", "accesstransform.log"};
-    }
+public class DynamicJarExec extends JarExec {
+	private File input;
+	private File output;
+	private Map<String, File> data;
 
     @Override
     protected List<String> filterArgs() {
         Map<String, String> replace = new HashMap<>();
         replace.put("{input}", getInput().getAbsolutePath());
         replace.put("{output}", getOutput().getAbsolutePath());
+        if (this.data != null)
+        	this.data.forEach((key,value) -> replace.put('{' + key + '}', value.getAbsolutePath()));
 
-        List<String> ret = Arrays.stream(getArgs()).map(arg -> replace.getOrDefault(arg, arg)).collect(Collectors.toList());
-        ats.forEach(f -> {
-            ret.add("--atFile");
-            ret.add(f.getAbsolutePath());
-        });
-        return ret;
+        return Arrays.stream(getArgs()).map(arg -> replace.getOrDefault(arg, arg)).collect(Collectors.toList());
     }
 
-    @InputFiles
-    public List<File> getAts() {
-        return ats;
-    }
-    public void setAts(Iterable<File> values) {
-        if (ats == null)
-            ats = new ArrayList<>();
-        values.forEach(ats::add);
-    }
-    public void setAts(File... values) {
-        if (ats == null)
-            ats = new ArrayList<>();
-        ats.addAll(Arrays.asList(values));
-    }
+	@InputFiles
+	@Optional
+	public Collection<File> getData() {
+		return this.data == null ? Collections.emptyList() : this.data.values();
+	}
+
+	public void data(String key, File file) {
+		this.setData(key, file);
+	}
+	public void setData(String key, File file) {
+		if (this.data == null)
+			this.data = new HashMap<>();
+		this.data.put(key, file);
+	}
 
     @InputFile
     public File getInput() {
@@ -84,6 +75,8 @@ public class AccessTransformJar extends JarExec {
 
     @OutputFile
     public File getOutput() {
+        if (output == null)
+            setOutput(getProject().file("build/" + getName() + "/output.jar"));
         return output;
     }
     public void setOutput(File value) {

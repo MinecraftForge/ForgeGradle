@@ -30,7 +30,7 @@ import com.google.gson.JsonSyntaxException;
 import groovy.lang.Closure;
 import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
-import net.minecraftforge.gradle.common.task.ExtractNatives;
+import net.minecraftforge.gradle.common.tasks.ExtractNatives;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import net.minecraftforge.gradle.common.util.runs.RunConfigGenerator;
 

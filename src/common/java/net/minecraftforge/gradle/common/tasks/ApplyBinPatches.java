@@ -18,12 +18,11 @@
  * USA
  */
 
-package net.minecraftforge.gradle.userdev.tasks;
+package net.minecraftforge.gradle.common.tasks;
 
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 
-import net.minecraftforge.gradle.common.tasks.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
 
 import java.io.File;
@@ -34,59 +33,49 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public class RenameJarSrg2Mcp extends JarExec {
-    private Supplier<File> input;
+public class ApplyBinPatches extends JarExec {
+    private Supplier<File> clean;
+    private File patch;
     private File output;
-    private Supplier<File> mappings;
-    private boolean signatureRemoval;
 
-    public RenameJarSrg2Mcp() {
-        tool = Utils.INSTALLERTOOLS;
-        args = new String[] { "--task", "SRG_TO_MCP", "--input", "{input}", "--output", "{output}", "--mcp", "{mappings}", "{strip}"};
+    public ApplyBinPatches() {
+        tool = Utils.BINPATCHER;
+        args = new String[] { "--clean", "{clean}", "--output", "{output}", "--apply", "{patch}"};
     }
 
     @Override
     protected List<String> filterArgs() {
         Map<String, String> replace = new HashMap<>();
-        replace.put("{input}", getInput().getAbsolutePath());
+        replace.put("{clean}", getClean().getAbsolutePath());
         replace.put("{output}", getOutput().getAbsolutePath());
-        replace.put("{mappings}", getMappings().getAbsolutePath());
-        replace.put("{strip}", getSignatureRemoval()? "--strip-signatures" : "");
+        replace.put("{patch}", getPatch().getAbsolutePath());
 
-        return Arrays.stream(getArgs()).map(arg -> replace.getOrDefault(arg, arg)).filter(it -> !it.isEmpty()).collect(Collectors.toList());
-    }
-
-    public boolean getSignatureRemoval() {
-        return this.signatureRemoval;
-    }
-    public void setSignatureRemoval(boolean value) {
-        this.signatureRemoval = value;
+        return Arrays.stream(getArgs()).map(arg -> replace.getOrDefault(arg, arg)).collect(Collectors.toList());
     }
 
     @InputFile
-    public File getMappings() {
-        return mappings.get();
+    public File getClean() {
+        return clean.get();
     }
-    public void setMappings(File value) {
-        this.mappings = () -> value;
+    public void setClean(File value) {
+        this.clean = () -> value;
     }
-    public void setMappings(Supplier<File> value) {
-        this.mappings = value;
+    public void setClean(Supplier<File> value) {
+        this.clean = value;
     }
 
     @InputFile
-    public File getInput() {
-        return input.get();
+    public File getPatch() {
+        return patch;
     }
-    public void setInput(File value) {
-        this.input = () -> value;
-    }
-    public void setInput(Supplier<File> value) {
-        this.input = value;
+    public void setPatch(File value) {
+        this.patch = value;
     }
 
     @OutputFile
     public File getOutput() {
+        if (output == null)
+            setOutput(getProject().file("build/" + getName() + "/output.jar"));
         return output;
     }
     public void setOutput(File value) {

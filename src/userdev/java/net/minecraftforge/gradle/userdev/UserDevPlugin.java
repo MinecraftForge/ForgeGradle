@@ -20,15 +20,15 @@
 
 package net.minecraftforge.gradle.userdev;
 
-import net.minecraftforge.gradle.common.task.*;
+import net.minecraftforge.gradle.common.tasks.*;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.common.util.MojangLicenseHelper;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.common.util.VersionJson;
 import net.minecraftforge.gradle.mcp.MCPRepo;
-import net.minecraftforge.gradle.mcp.task.DownloadMCPMappingsTask;
-import net.minecraftforge.gradle.mcp.task.GenerateSRG;
+import net.minecraftforge.gradle.mcp.tasks.DownloadMCPMappingsTask;
+import net.minecraftforge.gradle.mcp.tasks.GenerateSRG;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 import net.minecraftforge.gradle.userdev.util.DeobfuscatingRepo;
 import net.minecraftforge.gradle.userdev.util.Deobfuscator;
