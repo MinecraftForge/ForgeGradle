@@ -32,7 +32,7 @@ import org.gradle.api.tasks.TaskAction;
 import java.io.File;
 import java.io.IOException;
 
-public class DownloadMCPMappingsTask extends DefaultTask {
+public class DownloadMCPMappings extends DefaultTask {
 
     private String mappings;
 

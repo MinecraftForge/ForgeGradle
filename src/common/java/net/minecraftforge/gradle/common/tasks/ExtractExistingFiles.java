@@ -34,7 +34,7 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
 
-public class TaskExtractExistingFiles extends DefaultTask {
+public class ExtractExistingFiles extends DefaultTask {
     private File archive;
     private List<File> targets = new ArrayList<>();
 

@@ -31,7 +31,7 @@ import org.gradle.api.tasks.TaskAction;
 import java.io.File;
 import java.io.IOException;
 
-public class DownloadMCPConfigTask extends DefaultTask {
+public class DownloadMCPConfig extends DefaultTask {
 
     private String config;
     private File output;

@@ -35,14 +35,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class TaskExtractRangeMap extends JarExec {
+public class ExtractRangeMap extends JarExec {
     private Set<File> sources;
     private Set<FileCollection> dependencies = new HashSet<>();
     private File output = getProject().file("build/" + getName() + "/output.txt");
     private String source_compatibility = "1.8";
     private boolean batch = true;
 
-    public TaskExtractRangeMap() {
+    public ExtractRangeMap() {
         tool = Utils.SRG2SOURCE;
         args = new String[] { "--extract", "--source-compatibility", "{compat}", "--output", "{output}", "--lib", "{library}", "--input", "{input}", "--batch", "{batched}"};
     }

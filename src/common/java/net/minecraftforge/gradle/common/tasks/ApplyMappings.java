@@ -37,7 +37,7 @@ import org.gradle.api.tasks.TaskAction;
 import net.minecraftforge.gradle.common.util.McpNames;
 import net.minecraftforge.gradle.common.util.Utils;
 
-public class TaskApplyMappings extends DefaultTask {
+public class ApplyMappings extends DefaultTask {
     private boolean javadocs = false;
     private boolean lambdas = true;
     private File mappings;

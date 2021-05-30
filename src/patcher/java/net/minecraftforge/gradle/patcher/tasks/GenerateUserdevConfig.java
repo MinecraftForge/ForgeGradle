@@ -59,7 +59,7 @@ import net.minecraftforge.gradle.patcher.PatcherExtension;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
-public class TaskGenerateUserdevConfig extends DefaultTask {
+public class GenerateUserdevConfig extends DefaultTask {
 
     private final NamedDomainObjectContainer<RunConfig> runs;
 
@@ -83,7 +83,7 @@ public class TaskGenerateUserdevConfig extends DefaultTask {
     private String sourceFileEncoding = StandardCharsets.UTF_8.name();
 
     @Inject
-    public TaskGenerateUserdevConfig(@Nonnull final Project project) {
+    public GenerateUserdevConfig(@Nonnull final Project project) {
         this.runs = project.container(RunConfig.class, name -> new RunConfig(project, name));
     }
 

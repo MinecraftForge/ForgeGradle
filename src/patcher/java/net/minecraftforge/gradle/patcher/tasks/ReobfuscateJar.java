@@ -56,7 +56,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-public class TaskReobfuscateJar extends DefaultTask {
+public class ReobfuscateJar extends DefaultTask {
 
     private String tool = Utils.SPECIALSOURCE;
     private String[] args = new String[] {"--in-jar", "{input}", "--out-jar", "{output}", "--srg-in", "{srg}", "--live"};

@@ -31,7 +31,7 @@ import org.gradle.api.tasks.*;
 import java.io.File;
 import java.nio.file.Path;
 
-public class TaskGeneratePatches extends DefaultTask {
+public class GeneratePatches extends DefaultTask {
 
     private File base;
     private File modified;

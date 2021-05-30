@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-public class TaskFilterNewJar extends DefaultTask { //TODO: Copy task?
+public class FilterNewJar extends DefaultTask { //TODO: Copy task?
     private File input;
     private File srg;
     private Set<File> blacklist = new HashSet<>();

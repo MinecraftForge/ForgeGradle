@@ -33,7 +33,7 @@ import org.gradle.api.tasks.*;
 import java.io.File;
 import java.nio.file.Path;
 
-public class TaskApplyPatches extends DefaultTask {
+public class ApplyPatches extends DefaultTask {
 
     private File base;
     private File patches;

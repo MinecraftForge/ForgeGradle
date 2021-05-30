@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class TaskApplyRangeMap extends JarExec {
+public class ApplyRangeMap extends JarExec {
 
     //private Set<String> srgExtra = new HashSet<>(); //TODO: Make S2S read strings easier
     //private Set<String> excExtra = new HashSet<>(); //TODO: Make S2S read strings easier
@@ -49,7 +49,7 @@ public class TaskApplyRangeMap extends JarExec {
 
     private File output = getProject().file("build/" + getName() + "/output.zip");
 
-    public TaskApplyRangeMap() {
+    public ApplyRangeMap() {
         tool = Utils.SRG2SOURCE;
         args = new String[] { "--apply", "--input", "{input}", "--range", "{range}", "--srg", "{srg}", "--exc", "{exc}", "--output", "{output}", "--keepImports", "{keepImports}"};
     }

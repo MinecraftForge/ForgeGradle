@@ -36,7 +36,7 @@ import java.io.IOException;
 /**
  * Bakes Auto-Header patch files.
  */
-public class TaskBakePatches extends DefaultTask {
+public class BakePatches extends DefaultTask {
 
     private File input;
     private File output;
