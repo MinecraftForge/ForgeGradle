@@ -20,41 +20,46 @@
 
 package net.minecraftforge.gradle.patcher.tasks;
 
-import codechicken.diffpatch.cli.PatchOperation;
-import codechicken.diffpatch.util.InputPath;
-import codechicken.diffpatch.util.OutputPath;
-import codechicken.diffpatch.util.archiver.ArchiveFormat;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import codechicken.diffpatch.cli.PatchOperation;
+import codechicken.diffpatch.util.InputPath;
+import codechicken.diffpatch.util.OutputPath;
+import codechicken.diffpatch.util.archiver.ArchiveFormat;
 import java.io.File;
 import java.io.IOException;
 
 /**
  * Bakes Auto-Header patch files.
  */
-public class BakePatches extends DefaultTask {
+public abstract class BakePatches extends DefaultTask {
 
-    private File input;
-    private File output;
-    private String lineEnding = System.lineSeparator();
-
-    @TaskAction
-    public void doTask() throws IOException {
-        File output = getOutput();
-        ArchiveFormat outputFormat = ArchiveFormat.findFormat(output.getName());
-        PatchOperation.bakePatches(new InputPath.FilePath(getInput().toPath(), null), new OutputPath.FilePath(output.toPath(), outputFormat), lineEnding);
+    public BakePatches() {
+        getLineEnding().convention(System.lineSeparator());
     }
 
-    //@formatter:off
-    @InputDirectory public File getInput() { return input; }
-    @Input          public String getLineEnding() { return lineEnding; }
-    @OutputFile     public File getOutput() { return output; }
-                    public void setInput(File input) { this.input = input; }
-                    public void setOutput(File output) { this.output = output; }
-                    public void setLineEnding(String value) { this.lineEnding = value; }
-    //@formatter:on
+    @SuppressWarnings("deprecation")
+    @TaskAction
+    public void doTask() throws IOException {
+        File output = getOutput().get().getAsFile();
+        ArchiveFormat outputFormat = ArchiveFormat.findFormat(output.getName());
+        PatchOperation.bakePatches(new InputPath.FilePath(getInput().get().getAsFile().toPath(), null),
+                new OutputPath.FilePath(output.toPath(), outputFormat), getLineEnding().get());
+    }
+
+    @InputDirectory
+    public abstract DirectoryProperty getInput();
+
+    @OutputFile
+    public abstract RegularFileProperty getOutput();
+
+    @Input
+    public abstract Property<String> getLineEnding();
 }

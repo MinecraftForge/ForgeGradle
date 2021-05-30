@@ -20,41 +20,30 @@
 
 package net.minecraftforge.gradle.common.tasks;
 
-import java.io.File;
-import java.io.IOException;
+import net.minecraftforge.gradle.common.util.Utils;
+
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
-import net.minecraftforge.gradle.common.util.Utils;
+import java.io.IOException;
 
-public class ExtractZip extends DefaultTask {
-    private File zip;
-    private File output;
-
+public abstract class ExtractZip extends DefaultTask {
     public ExtractZip() {
         getOutputs().upToDateWhen(task -> false); //Gradle considers this up to date if the output exists at all...
     }
 
     @TaskAction
     public void run() throws IOException {
-        Utils.extractZip(getZip(), getOutput(), true, true);
+        Utils.extractZip(getZip().get().getAsFile(), getOutput().get().getAsFile(), true, true);
     }
 
     @InputFile
-    public File getZip() {
-        return this.zip;
-    }
-    public void setZip(File value) {
-        this.zip = value;
-    }
+    public abstract RegularFileProperty getZip();
 
     @OutputDirectory
-    public File getOutput() {
-        return this.output;
-    }
-    public void setOutput(File value) {
-        this.output = value;
-    }
+    public abstract DirectoryProperty getOutput();
 }

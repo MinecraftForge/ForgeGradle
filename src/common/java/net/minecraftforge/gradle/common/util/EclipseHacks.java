@@ -31,18 +31,19 @@ import org.gradle.plugins.ide.eclipse.model.ClasspathEntry;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.eclipse.model.SourceFolder;
 
-import javax.annotation.Nonnull;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nonnull;
+
 public class EclipseHacks {
 
     public static void doEclipseFixes(@Nonnull final MinecraftExtension minecraft, @Nonnull final ExtractNatives nativesTask, @Nonnull final List<? extends Task> setupTasks) {
         final Project project = minecraft.getProject();
-        final File natives = nativesTask.getOutput();
+        final File natives = nativesTask.getOutput().get().getAsFile();
 
         final EclipseModel eclipseConv = (EclipseModel)project.getExtensions().findByName("eclipse");
         if (eclipseConv == null) {

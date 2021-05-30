@@ -20,14 +20,6 @@
 
 package net.minecraftforge.gradle.mcp.tasks;
 
-import java.io.File;
-import java.io.IOException;
-import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.OutputFile;
-import org.gradle.api.tasks.TaskAction;
-
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.McpNames;
 import net.minecraftforge.gradle.mcp.MCPRepo;
@@ -36,22 +28,34 @@ import net.minecraftforge.srgutils.IMappingFile.IField;
 import net.minecraftforge.srgutils.IMappingFile.IMethod;
 import net.minecraftforge.srgutils.IRenamer;
 
-public class GenerateSRG extends DefaultTask {
-    private File srg;
-    private String mapping;
-    private IMappingFile.Format format = IMappingFile.Format.TSRG2;
+import org.gradle.api.DefaultTask;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.TaskAction;
+
+import java.io.File;
+import java.io.IOException;
+
+public abstract class GenerateSRG extends DefaultTask {
     private boolean notch = false;
     private boolean reverse = false;
-    private File output = getProject().file("build/" + getName() + "/output.tsrg");
+
+    public GenerateSRG() {
+        getFormat().convention(IMappingFile.Format.TSRG2);
+        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(f -> f.file("output.tsrg")));
+    }
 
     @TaskAction
     public void apply() throws IOException {
-        File names = findNames(getMappings());
+        File names = findNames(getMappings().get());
         if (names == null)
             throw new IllegalStateException("Invalid mappings: " + getMappings() + " Could not find archive");
 
-        IMappingFile input = IMappingFile.load(srg);
-        if (!getNotch())
+        IMappingFile input = IMappingFile.load(getSrg().get().getAsFile());
+        if (!notch)
             input = input.reverse().chain(input); // Reverse makes SRG->OBF, chain makes SRG->SRG
 
         McpNames map = McpNames.load(names);
@@ -67,7 +71,7 @@ public class GenerateSRG extends DefaultTask {
             }
         });
 
-        ret.write(getOutput().toPath(), getFormat(), getReverse());
+        ret.write(getOutput().get().getAsFile().toPath(), getFormat().get(), reverse);
     }
 
     private File findNames(String mapping) {
@@ -80,36 +84,23 @@ public class GenerateSRG extends DefaultTask {
     }
 
     @InputFile
-    public File getSrg() {
-        return srg;
-    }
-    public void setSrg(File value) {
-        this.srg = value;
-    }
+    public abstract RegularFileProperty getSrg();
 
     @Input
-    public String getMappings() {
-        return mapping;
-    }
-    public void setMappings(String value) {
-        this.mapping = value;
-    }
+    public abstract Property<String> getMappings();
 
     @Input
-    public IMappingFile.Format getFormat() {
-        return format;
-    }
-    public void setFormat(IMappingFile.Format value) {
-        this.format = value;
-    }
+    public abstract Property<IMappingFile.Format> getFormat();
+
     public void setFormat(String value) {
-        this.setFormat(IMappingFile.Format.valueOf(value));
+        this.getFormat().set(IMappingFile.Format.valueOf(value));
     }
 
     @Input
     public boolean getNotch() {
         return this.notch;
     }
+
     public void setNotch(boolean value) {
         this.notch = value;
     }
@@ -118,15 +109,11 @@ public class GenerateSRG extends DefaultTask {
     public boolean getReverse() {
         return this.reverse;
     }
+
     public void setReverse(boolean value) {
         this.reverse = value;
     }
 
     @OutputFile
-    public File getOutput() {
-        return output;
-    }
-    public void setOutput(File value) {
-        this.output = value;
-    }
+    public abstract RegularFileProperty getOutput();
 }

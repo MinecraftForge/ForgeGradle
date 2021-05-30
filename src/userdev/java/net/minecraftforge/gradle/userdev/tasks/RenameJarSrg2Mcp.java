@@ -20,76 +20,49 @@
 
 package net.minecraftforge.gradle.userdev.tasks;
 
-import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.OutputFile;
-
 import net.minecraftforge.gradle.common.tasks.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
 
-import java.io.File;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.OutputFile;
 
-public class RenameJarSrg2Mcp extends JarExec {
-    private Supplier<File> input;
-    private File output;
-    private Supplier<File> mappings;
-    private boolean signatureRemoval;
+import com.google.common.collect.ImmutableMap;
+import java.util.List;
+
+public abstract class RenameJarSrg2Mcp extends JarExec {
+    private boolean signatureRemoval = false;
 
     public RenameJarSrg2Mcp() {
-        tool = Utils.INSTALLERTOOLS;
-        args = new String[] { "--task", "SRG_TO_MCP", "--input", "{input}", "--output", "{output}", "--mcp", "{mappings}", "{strip}"};
+        getTool().set(Utils.INSTALLERTOOLS);
+        getArgs().addAll("--task", "SRG_TO_MCP", "--input", "{input}", "--output", "{output}", "--mcp", "{mappings}", "{strip}");
     }
 
     @Override
-    protected List<String> filterArgs() {
-        Map<String, String> replace = new HashMap<>();
-        replace.put("{input}", getInput().getAbsolutePath());
-        replace.put("{output}", getOutput().getAbsolutePath());
-        replace.put("{mappings}", getMappings().getAbsolutePath());
-        replace.put("{strip}", getSignatureRemoval()? "--strip-signatures" : "");
-
-        return Arrays.stream(getArgs()).map(arg -> replace.getOrDefault(arg, arg)).filter(it -> !it.isEmpty()).collect(Collectors.toList());
+    protected List<String> filterArgs(List<String> args) {
+        return replaceArgs(args, ImmutableMap.of(
+                "{input}", getInput().get().getAsFile(),
+                "{output}", getOutput().get().getAsFile(),
+                "{mappings}", getMappings().get().getAsFile(),
+                "{strip}", signatureRemoval ? "--strip-signatures" : ""), null);
     }
 
+    @Input
     public boolean getSignatureRemoval() {
         return this.signatureRemoval;
     }
+
     public void setSignatureRemoval(boolean value) {
         this.signatureRemoval = value;
     }
 
     @InputFile
-    public File getMappings() {
-        return mappings.get();
-    }
-    public void setMappings(File value) {
-        this.mappings = () -> value;
-    }
-    public void setMappings(Supplier<File> value) {
-        this.mappings = value;
-    }
+    public abstract RegularFileProperty getMappings();
 
     @InputFile
-    public File getInput() {
-        return input.get();
-    }
-    public void setInput(File value) {
-        this.input = () -> value;
-    }
-    public void setInput(Supplier<File> value) {
-        this.input = value;
-    }
+    public abstract RegularFileProperty getInput();
 
     @OutputFile
-    public File getOutput() {
-        return output;
-    }
-    public void setOutput(File value) {
-        this.output = value;
-    }
+    public abstract RegularFileProperty getOutput();
 }

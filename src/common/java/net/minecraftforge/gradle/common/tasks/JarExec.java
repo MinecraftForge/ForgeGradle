@@ -20,22 +20,16 @@
 
 package net.minecraftforge.gradle.common.tasks;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.util.Arrays;
-import java.util.List;
-import java.util.jar.Attributes;
-import java.util.jar.JarFile;
-import java.util.stream.Collectors;
+import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 
+import org.codehaus.groovy.control.io.NullWriter;
 import org.gradle.api.DefaultTask;
-import org.gradle.api.file.FileCollection;
-import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.Directory;
+import org.gradle.api.file.RegularFile;
+import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
@@ -45,149 +39,189 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
-
-import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.jvm.toolchain.JavaToolchainSpec;
 
-public class JarExec extends DefaultTask {
-    private static final OutputStream NULL = new OutputStream() { @Override public void write(int b) throws IOException { } };
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
+import javax.inject.Inject;
+
+/**
+ * Executes the tool JAR.
+ *
+ * <p>The tool JAR is specified using Maven coordinates, and downloaded using the repositories defined through Gradle.</p>
+ */
+// TODO: refactor to extend JavaExec?
+public abstract class JarExec extends DefaultTask {
     protected boolean hasLog = true;
-    protected String tool;
-    private File _tool;
-    protected String[] args;
-    protected FileCollection classpath = null;
-    protected final Property<JavaLauncher> javaLauncher;
+
+    private final Provider<File> toolFile;
+    private final Provider<String> resolvedVersion;
+
+    protected final Provider<Directory> workDir = getProject().getLayout().getBuildDirectory().dir(getName());
+    protected final Provider<RegularFile> logFile = workDir.map(d -> d.file("log.txt"));
 
     public JarExec() {
-        ObjectFactory objectFactory = getProject().getObjects();
-        this.javaLauncher = objectFactory.property(JavaLauncher.class);
+        toolFile = getTool().map(toolStr -> MavenArtifactDownloader.gradle(getProject(), toolStr, false));
+        resolvedVersion = getTool().map(toolStr -> MavenArtifactDownloader.getVersion(getProject(), toolStr));
+
+        final JavaToolchainSpec toolchain = getProject().getExtensions().getByType(JavaPluginExtension.class).getToolchain();
+        getJavaLauncher().convention(getJavaToolchainService().launcherFor(toolchain));
+    }
+
+    @Inject
+    protected JavaToolchainService getJavaToolchainService() {
+        throw new UnsupportedOperationException("Decorated instance, this should never be thrown unless shenanigans");
     }
 
     @TaskAction
     public void apply() throws IOException {
-
-        File jar = getToolJar();
+        File jar = getToolJar().get();
+        File logFile = this.logFile.get().getAsFile();
 
         // Locate main class in jar file
         JarFile jarFile = new JarFile(jar);
         String mainClass = jarFile.getManifest().getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
         jarFile.close();
 
-        File workDir = getProject().file("build/" + getName());
-        if (!workDir.exists()) {
-            workDir.mkdirs();
+        // Create parent directory for log file
+        Logger logger = getProject().getLogger();
+        if (logFile.getParentFile() != null && !logFile.getParentFile().exists() && !logFile.getParentFile().mkdirs()) {
+            logger.warn("Could not create parent directory '{}' for log file", logFile.getParentFile().getAbsolutePath());
         }
 
-        File logFile = new File(workDir, "log.txt");
+        final List<String> args = filterArgs(getArgs().get());
+        final ConfigurableFileCollection classpath = getProject().files(getToolJar(), getClasspath());
+        final File workingDirectory = workDir.get().getAsFile();
 
-        try (OutputStream log = hasLog ? new BufferedOutputStream(new FileOutputStream(logFile)) : NULL) {
-            PrintWriter printer = new PrintWriter(log, true);
-            getProject().javaexec(java -> {
-                // Set executable
-                java.setExecutable(this.javaLauncher.orElse(this.getProjectJavaLauncher()).get().getExecutablePath());
-                // Execute command
-                java.setArgs(filterArgs());
-                printer.println("Args: " + java.getArgs().stream().map(m -> '"' + m +'"').collect(Collectors.joining(", ")));
-                if (getClasspath() == null)
-                    java.setClasspath(getProject().files(jar));
-                else
-                    java.setClasspath(getProject().files(jar, getClasspath()));
-                java.getClasspath().forEach(f -> printer.println("Classpath: " + f.getAbsolutePath()));
-                java.setWorkingDir(workDir);
-                printer.println("WorkDir: " + workDir);
-                java.getMainClass().set(mainClass);
-                printer.println("Main: " + mainClass);
-                printer.println("====================================");
-                java.setStandardOutput(new OutputStream() {
+        try (PrintWriter log = new PrintWriter(hasLog ? new FileWriter(logFile) : NullWriter.DEFAULT, true)) {
+            getProject().javaexec(spec -> {
+                spec.setExecutable(getJavaLauncher().get().getExecutablePath());
+                spec.setArgs(args);
+                spec.setClasspath(classpath);
+                spec.setWorkingDir(workingDirectory);
+                spec.getMainClass().set(mainClass);
+
+                log.println("Java Launcher: " + spec.getExecutable());
+                log.println("Arguments: " + args.stream().collect(Collectors.joining(", ", "'", "'")));
+                log.println("Classpath:");
+                classpath.forEach(f -> log.println(" - " + f.getAbsolutePath()));
+                log.println("Working directory: " + workingDirectory.getAbsolutePath());
+                log.println("Main class: " + mainClass);
+                log.println("====================================");
+
+                spec.setStandardOutput(new OutputStream() {
                     @Override
-                    public void flush() throws IOException {
-                        log.flush();
-                    }
+                    public void flush() { log.flush(); }
                     @Override
                     public void close() {}
                     @Override
-                    public void write(int b) throws IOException {
-                        log.write(b);
-                    }
+                    public void write(int b) { log.write(b); }
                 });
             }).rethrowFailure().assertNormalExitValue();
         }
 
-        if (hasLog)
+        if (hasLog) {
             postProcess(logFile);
+        }
 
-        if (workDir.list().length == 0)
-            workDir.delete();
+        // Delete working directory if empty
+        final String[] workingDirContents = workingDirectory.list();
+        if ((workingDirContents == null || workingDirContents.length == 0) && !workingDirectory.delete()) {
+            logger.warn("Could not delete empty working directory '{}'", workingDirectory.getAbsolutePath());
+        }
     }
 
-    protected List<String> filterArgs() {
-        return Arrays.asList(getArgs());
+    protected List<String> filterArgs(List<String> args) {
+        return args;
     }
 
+    // TODO: remove this? as this isn't used anywhere
     protected void postProcess(File log) {
     }
 
-    @Internal //TODO: Remove
+    protected List<String> replaceArgs(List<String> args, @Nullable Map<String, Object> normalReplacements, @Nullable Multimap<String, Object> multiReplacements) {
+        // prevent nulls
+        normalReplacements = normalReplacements != null ? normalReplacements : Collections.emptyMap();
+        multiReplacements = multiReplacements != null ? multiReplacements : ImmutableMultimap.of();
+        if (normalReplacements.isEmpty() && multiReplacements.isEmpty()) return args;
+
+        ArrayList<String> newArgs = new ArrayList<>(args.size());
+
+        // normalReplacements, it is a normal token substitution
+        // multiReplacements, it will take the previous token and prepend that to each value for the token
+
+        for (String arg : args) {
+            if (multiReplacements.containsKey(arg)) {
+                String prefix = newArgs.size() > 1 ? newArgs.remove(newArgs.size() - 1) : null;
+                for (Object value : multiReplacements.get(arg)) {
+                    if (prefix != null) newArgs.add(prefix);
+                    newArgs.add(toString(value));
+                }
+            } else {
+                newArgs.add(toString(normalReplacements.getOrDefault(arg, arg)));
+            }
+        }
+
+        return newArgs;
+    }
+
+    private String toString(Object obj) {
+        if (obj instanceof File) {
+            return ((File) obj).getAbsolutePath();
+        } else if (obj instanceof Path) {
+            return ((Path) obj).toAbsolutePath().toString();
+        }
+        return Objects.toString(obj);
+    }
+
+    @Internal
     public String getResolvedVersion() {
-        return MavenArtifactDownloader.getVersion(getProject(), getTool());
+        return resolvedVersion.get();
     }
 
     @Input
     public boolean getHasLog() {
         return hasLog;
     }
+
     public void setHasLog(boolean value) {
         this.hasLog = value;
     }
 
     @InputFile
-    public File getToolJar() {
-        if (_tool == null)
-            _tool = MavenArtifactDownloader.gradle(getProject(), getTool(), false);
-        return _tool;
+    public Provider<File> getToolJar() {
+        return toolFile;
     }
 
     @Input
-    public String getTool() {
-        return tool;
-    }
-
-    public void setTool(String value) {
-        this.tool = value;
-    }
+    public abstract Property<String> getTool();
 
     @Input
-    public String[] getArgs() {
-        return this.args;
-    }
-    public void setArgs(String[] value) {
-        this.args = value;
-    }
-    public void setArgs(List<String> value) {
-        setArgs(value.toArray(new String[value.size()]));
-    }
+    public abstract ListProperty<String> getArgs();
 
     @Optional
     @InputFiles
-    public FileCollection getClasspath() {
-        return this.classpath;
-    }
-    public void setClasspath(FileCollection value) {
-        this.classpath = value;
-    }
-
-    private Provider<JavaLauncher> getProjectJavaLauncher() {
-        // Get the project's java toolchain and java launcher
-        JavaToolchainSpec toolchain = getProject().getExtensions().getByType(JavaPluginExtension.class).getToolchain();
-        JavaToolchainService service = getProject().getExtensions().getByType(JavaToolchainService.class);
-        return service.launcherFor(toolchain);
-    }
+    public abstract ConfigurableFileCollection getClasspath();
 
     @Nested
     @Optional
-    public Property<JavaLauncher> getJavaLauncher() {
-        return this.javaLauncher;
-    }
+    public abstract Property<JavaLauncher> getJavaLauncher();
 }

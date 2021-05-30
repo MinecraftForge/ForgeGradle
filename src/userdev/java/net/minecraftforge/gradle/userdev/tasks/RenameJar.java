@@ -20,140 +20,65 @@
 
 package net.minecraftforge.gradle.userdev.tasks;
 
+import net.minecraftforge.gradle.common.tasks.JarExec;
+import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.srgutils.IMappingFile;
+
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.RegularFile;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 
-import net.minecraftforge.gradle.common.tasks.JarExec;
-import net.minecraftforge.gradle.common.util.Utils;
-
-import java.io.File;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
-public class RenameJar extends JarExec {
-    private Supplier<File> input;
-    private File output;
-    private Supplier<File> mappings;
-    private List<Supplier<File>> extraMappings;
-    private File input_srg_temp = getProject().file("build/" + getName() + "/input.srg");
+public abstract class RenameJar extends JarExec {
+    private final Provider<RegularFile> srgTemp = getProject().getLayout().getBuildDirectory()
+            .dir(getName()).map(d -> d.file("input.srg"));
 
     public RenameJar() {
-        tool = Utils.SPECIALSOURCE;
-        args = new String[] { "--in-jar", "{input}", "--out-jar", "{output}", "--srg-in", "{mappings}"};
+        getTool().set(Utils.SPECIALSOURCE);
+        getArgs().addAll("--in-jar", "{input}", "--out-jar", "{output}", "--srg-in", "{mappings}");
     }
 
     @Override
     public void apply() throws IOException {
         // Have to make sure we use TSRGv1 in SpecialSource
-        IMappingFile.load(getMappings()).write(input_srg_temp.toPath(), IMappingFile.Format.TSRG, false);
+        IMappingFile.load(getMappings().get().getAsFile()).write(srgTemp.get().getAsFile().toPath(),
+                IMappingFile.Format.TSRG, false);
 
         super.apply();
 
-        input_srg_temp.delete();
+        srgTemp.get().getAsFile().delete();
     }
 
-    @Override
-    protected List<String> filterArgs() {
-        Map<String, String> replace = new HashMap<>();
-
-        File mappings = input_srg_temp;
-
-        replace.put("{input}", getInput().getAbsolutePath());
-        replace.put("{output}", getOutput().getAbsolutePath());
-        replace.put("{mappings}", mappings.getAbsolutePath());
-
-        List<String> _args = new ArrayList<>();
-        for (String arg : getArgs()) {
-            if ("{mappings}".equals(arg)) {
-                String prefix = _args.get(_args.size() - 1);
-                _args.add(mappings.getAbsolutePath());
-
-                getExtraMappings().forEach(f -> {
-                   _args.add(prefix);
-                   _args.add(f.getAbsolutePath());
-                });
-            } else {
-                _args.add(replace.getOrDefault(arg, arg));
-            }
-        }
-
-        return _args;
+    protected List<String> filterArgs(List<String> args) {
+        return replaceArgs(args, ImmutableMap.of(
+                "{input}", getInput().get().getAsFile(),
+                "{output}", getOutput().get().getAsFile()
+                ), ImmutableMultimap.<String, Object>builder()
+                        .put("{mappings}", srgTemp.get().getAsFile())
+                        .putAll("{mappings}", getExtraMappings().getFiles()).build()
+        );
     }
 
+    // TODO: Make this a ConfigurableFileCollection? (then remove getExtraMappings())
     @InputFile
-    public File getMappings() {
-        return mappings.get();
-    }
-    public void setMappings(Supplier<File> value) {
-        this.mappings = value;
-    }
-    public void setMappings(File value) {
-        this.mappings(value);
-    }
-    public void mappings(File value) {
-        this.mappings(() -> value);
-    }
-    public void mappings(Supplier<File> value) {
-        this.setMappings(value);
-    }
+    public abstract RegularFileProperty getMappings();
 
     @Optional
     @InputFiles
-    public List<File> getExtraMappings() {
-        return this.extraMappings == null ? Collections.emptyList() : this.extraMappings.stream().map(Supplier::get).collect(Collectors.toList());
-    }
-    public void setExtraMappingsDelayed(Collection<Supplier<File>> values) {
-        this.extraMappings = new ArrayList<>(values);
-    }
-    public void setExtraMappings(Collection<File> values) {
-        List<Supplier<File>> _new = new ArrayList<>();
-        values.forEach(f  -> _new.add(() -> f));
-        this.extraMappings = _new;
-    }
-    public void extraMapping(File value) {
-        this.extraMapping(() -> value);
-    }
-    public void extraMapping(Supplier<File> value) {
-        if (this.extraMappings == null)
-            this.extraMappings = new ArrayList<>();
-        this.extraMappings.add(value);
-    }
+    public abstract ConfigurableFileCollection getExtraMappings();
 
     @InputFile
-    public File getInput() {
-        return input.get();
-    }
-    public void setInput(Supplier<File> value) {
-        this.input = value;
-    }
-    public void setInput(File value) {
-        this.setInput(() -> value);
-    }
-    public void input(File value) {
-        this.input(() -> value);
-    }
-    public void input(Supplier<File> value) {
-        this.setInput(value);
-    }
+    public abstract RegularFileProperty getInput();
 
     @OutputFile
-    public File getOutput() {
-        return output;
-    }
-    public void setOutput(File value) {
-        this.output = value;
-    }
-    public void output(File value) {
-        this.setOutput(value);
-    }
+    public abstract RegularFileProperty getOutput();
 }

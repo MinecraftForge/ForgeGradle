@@ -20,39 +20,42 @@
 
 package net.minecraftforge.gradle.common.tasks;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.function.Supplier;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-
+import net.minecraftforge.gradle.common.config.MCPConfigV2;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.srgutils.IMappingFile;
 import net.minecraftforge.srgutils.IRenamer;
+
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import net.minecraftforge.gradle.common.config.MCPConfigV2;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
-public class ExtractMCPData extends DefaultTask {
-    private String key = "mappings";
-    private Supplier<File> configSupplier;
-    private File config;
+public abstract class ExtractMCPData extends DefaultTask {
     private boolean allowEmpty = false;
-    private File output = getProject().file("build/" + getName() + "/output.srg");
+
+    public ExtractMCPData() {
+        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(s -> s.file("output.srg")));
+        getKey().convention("mappings");
+    }
 
     @TaskAction
     public void run() throws IOException {
-        MCPConfigV2 cfg = MCPConfigV2.getFromArchive(getConfig());
+        MCPConfigV2 cfg = MCPConfigV2.getFromArchive(getConfig().get().getAsFile());
 
-        try (ZipFile zip = new ZipFile(getConfig())) {
+        try (ZipFile zip = new ZipFile(getConfig().get().getAsFile())) {
+            String key = getKey().get();
             String path = cfg.getData(key.split("/"));
             if (path == null && "statics".equals(key))
                 path = "config/static_methods.txt";
@@ -68,24 +71,24 @@ public class ExtractMCPData extends DefaultTask {
                 return;
             }
 
-            try (OutputStream out = new FileOutputStream(getOutput())) {
+            try (OutputStream out = new FileOutputStream(getOutput().get().getAsFile())) {
                 IOUtils.copy(zip.getInputStream(entry), out);
             }
         }
 
-        if (cfg.isOfficial() && getOutput().exists()) {
+        if (cfg.isOfficial() && getOutput().get().getAsFile().exists()) {
             String minecraftVersion = MinecraftRepo.getMCVersion(cfg.getVersion());
             File client = MavenArtifactDownloader.generate(getProject(), "net.minecraft:client:" + minecraftVersion + ":mappings@txt", true);
 
             IMappingFile obfToOfficial = IMappingFile.load(client).reverse();
-            IMappingFile srg = IMappingFile.load(getOutput());
+            IMappingFile srg = IMappingFile.load(getOutput().get().getAsFile());
 
             srg.rename(new IRenamer() {
                 @Override
                 public String rename(IMappingFile.IClass value) {
                     return obfToOfficial.remapClass(value.getOriginal());
                 }
-            }).write(getOutput().toPath(), IMappingFile.Format.TSRG2, false);
+            }).write(getOutput().get().getAsFile().toPath(), IMappingFile.Format.TSRG2, false);
         }
     }
 
@@ -93,50 +96,28 @@ public class ExtractMCPData extends DefaultTask {
         if (!isAllowEmpty())
             throw new IllegalStateException(message);
 
-        if (getOutput().exists())
-            getOutput().delete();
+        File outputFile = getOutput().get().getAsFile();
+        if (outputFile.exists())
+            outputFile.delete();
 
-        getOutput().createNewFile();
-    }
-
-    @InputFile
-    public File getConfig() {
-        if (config == null && configSupplier != null)
-            config = configSupplier.get();
-
-        return config;
-    }
-    public void setConfig(File value) {
-        this.config = value;
-        this.configSupplier = null;
-    }
-    public void setConfig(Supplier<File> valueSupplier)
-    {
-        this.configSupplier = valueSupplier;
-        this.config = null;
+        outputFile.createNewFile();
     }
 
     @Input
-    public String getKey() {
-        return this.key;
-    }
-    public void setKey(String value) {
-        this.key = value;
-    }
+    public abstract Property<String> getKey();
+
+    @InputFile
+    public abstract RegularFileProperty getConfig();
 
     @Input
     public boolean isAllowEmpty() {
-        return this.allowEmpty;
+        return allowEmpty;
     }
-    public void setAllowEmpty(boolean value) {
-        this.allowEmpty = value;
+
+    public void setAllowEmpty(boolean allowEmpty) {
+        this.allowEmpty = allowEmpty;
     }
 
     @OutputFile
-    public File getOutput() {
-        return output;
-    }
-    public void setOutput(File value) {
-        this.output = value;
-    }
+    public abstract RegularFileProperty getOutput();
 }

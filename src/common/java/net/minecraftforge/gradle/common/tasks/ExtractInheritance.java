@@ -20,59 +20,44 @@
 
 package net.minecraftforge.gradle.common.tasks;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import org.gradle.api.tasks.*;
-
 import net.minecraftforge.gradle.common.util.Utils;
 
-public class ExtractInheritance extends JarExec {
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.OutputFile;
+
+import com.google.common.collect.ImmutableMap;
+import java.util.List;
+
+public abstract class ExtractInheritance extends JarExec {
     public ExtractInheritance() {
-        tool = Utils.INSTALLERTOOLS;
-        args = new String[] { "--task", "extract_inheritance", "--input", "{input}", "--output", "{output}"};
+        getTool().set(Utils.INSTALLERTOOLS);
+        getArgs().addAll("--task", "extract_inheritance", "--input", "{input}", "--output", "{output}");
+
+        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.json")));
     }
+
     @Override
-    protected List<String> filterArgs() {
-        Map<String, String> replace = new HashMap<>();
-        replace.put("{input}", getInput().getAbsolutePath());
-        replace.put("{output}", getOutput().getAbsolutePath());
-
-        List<String> ret = Arrays.stream(getArgs()).map(arg -> replace.getOrDefault(arg, arg)).collect(Collectors.toList());
+    protected List<String> filterArgs(List<String> args) {
+        List<String> newArgs = replaceArgs(args, ImmutableMap.of(
+                "{input}", getInput().get().getAsFile(),
+                "{output}", getOutput().get().getAsFile()), null);
         getLibraries().forEach(f -> {
-            ret.add("--lib");
-            ret.add(f.getAbsolutePath());
+            newArgs.add("--lib");
+            newArgs.add(f.getAbsolutePath());
         });
-        return ret;
+        return newArgs;
     }
 
 
-    private Supplier<File> input;
     @InputFile
-    public File getInput(){ return input == null ? null : input.get(); }
-    public void setInput(Supplier<File> v) { input = v; }
-    public void input(Supplier<File> v) { setInput(v); }
-    public void setInput(File v){ setInput(() -> v); }
-    public void input(File v) { setInput(v); }
+    public abstract RegularFileProperty getInput();
 
-    private List<Supplier<File>> libraries = new ArrayList<>();
     @InputFiles
-    public List<File> getLibraries() { return libraries.stream().map(Supplier::get).collect(Collectors.toList()); }
-    public void addLibrary(Supplier<File> v){ libraries.add(v); }
-    public void library(Supplier<File> v) { addLibrary(v); }
-    public void addLibrary(File lib){ addLibrary(() -> lib); }
-    public void library(File v) { addLibrary(v); }
+    public abstract ConfigurableFileCollection getLibraries();
 
-    private Supplier<File> output = () -> getProject().file("build/" + getName() + "/output.json");
     @OutputFile
-    public File getOutput(){ return output.get(); }
-    public void setOutput(Supplier<File> v){ output = v; }
-    public void output(Supplier<File> v){ setOutput(v); }
-    public void setOutput(File v){ setInput(() -> v); }
-    public void output(File v){ setOutput(v); }
+    public abstract RegularFileProperty getOutput();
 }

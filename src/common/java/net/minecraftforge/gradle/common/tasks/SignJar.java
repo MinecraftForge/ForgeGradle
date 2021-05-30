@@ -21,24 +21,25 @@
 package net.minecraftforge.gradle.common.tasks;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.NonNullApi;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.util.PatternFilterable;
 import org.gradle.api.tasks.util.PatternSet;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import groovy.lang.Closure;
 import groovy.util.MapEntry;
-import net.minecraftforge.gradle.common.util.Utils;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -52,37 +53,31 @@ import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-public class SignJar extends DefaultTask implements PatternFilterable {
-    private PatternSet patternSet = new PatternSet();
-    private Object     alias;
-    private Object     storePass;
-    private Object     keyPass;
-    private Object     keyStore;
-    private Object     inputFile;
-    private Object     outputFile;
-
+@NonNullApi
+public abstract class SignJar extends DefaultTask implements PatternFilterable {
+    private final PatternSet patternSet = new PatternSet();
     @TaskAction
     public void doTask() throws IOException {
         final Map<String, Entry<byte[], Long>> ignoredStuff = Maps.newHashMap();
-        File input = getInputFile();
+        File input = getInputFile().get().getAsFile();
         File toSign = new File(getTemporaryDir(), input.getName() + ".unsigned.tmp");
         File signed = new File(getTemporaryDir(), input.getName() + ".signed.tmp");
-        File output = getOutputFile();
+        File output = getOutputFile().get().getAsFile();
 
         // load in input jar, and create temp jar
         processInputJar(input, toSign, ignoredStuff);
 
         // SIGN!
         Map<String, Object> map = Maps.newHashMap();
-        map.put("alias", getAlias());
-        map.put("storePass", getStorePass());
+        map.put("alias", getAlias().get());
+        map.put("storePass", getStorePass().get());
         map.put("jar", toSign.getAbsolutePath());
         map.put("signedJar", signed.getAbsolutePath());
 
-        if (!Strings.isNullOrEmpty(getKeyPass()))
-            map.put("keypass", getKeyPass());
-        if (!Strings.isNullOrEmpty(getKeyStore()))
-            map.put("keyStore", getKeyStore());
+        if (getKeyPass().isPresent())
+            map.put("keypass", getKeyPass().get());
+        if (getKeyStore().isPresent())
+            map.put("keyStore", getKeyStore().get());
 
         getProject().getAnt().invokeMethod("signjar", map);
 
@@ -152,7 +147,7 @@ public class SignJar extends DefaultTask implements PatternFilterable {
         }
         base.close();
 
-        for (Map.Entry<String, Map.Entry<byte[], Long>> e : unsigned.entrySet()) {
+        for (Entry<String, Entry<byte[], Long>> e : unsigned.entrySet()) {
             ZipEntry n = new ZipEntry(e.getKey());
             n.setTime(e.getValue().getValue());
             outs.putNextEntry(n);
@@ -162,6 +157,26 @@ public class SignJar extends DefaultTask implements PatternFilterable {
 
         outs.close();
     }
+
+    @InputFile
+    public abstract RegularFileProperty getInputFile();
+
+    @OutputFile
+    public abstract RegularFileProperty getOutputFile();
+
+    @Input
+    public abstract Property<String> getAlias();
+
+    @Input
+    public abstract Property<String> getStorePass();
+
+    @Input
+    @Optional
+    public abstract Property<String> getKeyPass();
+
+    @Input
+    @Optional
+    public abstract Property<String> getKeyStore();
 
     @Override
     public PatternFilterable exclude(String... arg0) {
@@ -179,7 +194,6 @@ public class SignJar extends DefaultTask implements PatternFilterable {
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
     public PatternFilterable exclude(Closure arg0) {
         return patternSet.exclude(arg0);
     }
@@ -210,7 +224,6 @@ public class SignJar extends DefaultTask implements PatternFilterable {
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
     public PatternFilterable include(Closure arg0) {
         return patternSet.include(arg0);
     }
@@ -223,63 +236,5 @@ public class SignJar extends DefaultTask implements PatternFilterable {
     @Override
     public PatternFilterable setIncludes(Iterable<String> arg0) {
         return patternSet.setIncludes(arg0);
-    }
-
-    @InputFile
-    public File getInputFile() {
-        if (inputFile == null)
-            return null;
-        return getProject().file(inputFile);
-    }
-
-    public void setInputFile(Object inputFile) {
-        this.inputFile = inputFile;
-    }
-
-    @OutputFile
-    public File getOutputFile() {
-        if (outputFile == null)
-            return null;
-        return getProject().file(outputFile);
-    }
-
-    public void setOutputFile(Object outputFile) {
-        this.outputFile = outputFile;
-    }
-
-    @Input
-    public String getAlias() {
-        return Utils.resolveString(alias);
-    }
-
-    public void setAlias(Object alias) {
-        this.alias = alias;
-    }
-
-    @Input
-    public String getStorePass() {
-        return Utils.resolveString(storePass);
-    }
-
-    public void setStorePass(Object storePass) {
-        this.storePass = storePass;
-    }
-
-    @Input
-    public String getKeyPass() {
-        return Utils.resolveString(keyPass);
-    }
-
-    public void setKeyPass(Object keyPass) {
-        this.keyPass = keyPass;
-    }
-
-    @Input
-    public String getKeyStore() {
-        return Utils.resolveString(keyStore);
-    }
-
-    public void setKeyStore(Object keyStore) {
-        this.keyStore = keyStore;
     }
 }

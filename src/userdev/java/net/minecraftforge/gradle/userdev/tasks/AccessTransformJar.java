@@ -20,73 +20,42 @@
 
 package net.minecraftforge.gradle.userdev.tasks;
 
+import net.minecraftforge.gradle.common.tasks.JarExec;
+import net.minecraftforge.gradle.common.util.Utils;
+
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 
-import net.minecraftforge.gradle.common.tasks.JarExec;
-import net.minecraftforge.gradle.common.util.Utils;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
+import com.google.common.collect.ImmutableMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
-public class AccessTransformJar extends JarExec {
-    private File input;
-    private File output;
-    private List<File> ats;
-
+public abstract class AccessTransformJar extends JarExec {
     public AccessTransformJar() {
-        tool = Utils.ACCESSTRANSFORMER; // AT spec *should* be standardized, it has been for years. So we *shouldn't* need to configure this.
-        args = new String[] { "--inJar", "{input}", "--outJar", "{output}", "--logFile", "accesstransform.log"};
+        getTool().set(Utils.ACCESSTRANSFORMER);
+        getArgs().addAll("--inJar", "{input}", "--outJar", "{output}", "--logFile", "accesstransform.log");
     }
 
     @Override
-    protected List<String> filterArgs() {
-        Map<String, String> replace = new HashMap<>();
-        replace.put("{input}", getInput().getAbsolutePath());
-        replace.put("{output}", getOutput().getAbsolutePath());
-
-        List<String> ret = Arrays.stream(getArgs()).map(arg -> replace.getOrDefault(arg, arg)).collect(Collectors.toList());
-        ats.forEach(f -> {
-            ret.add("--atFile");
-            ret.add(f.getAbsolutePath());
+    protected List<String> filterArgs(List<String> args) {
+        List<String> newArgs = replaceArgs(args, ImmutableMap.of(
+                "{input}", getInput().get().getAsFile().getAbsolutePath(),
+                "{output}", getOutput().get().getAsFile().getAbsolutePath()), null);
+        getAccessTransformers().forEach(f -> {
+            newArgs.add("--atFile");
+            newArgs.add(f.getAbsolutePath());
         });
-        return ret;
+        return newArgs;
     }
 
     @InputFiles
-    public List<File> getAts() {
-        return ats;
-    }
-    public void setAts(Iterable<File> values) {
-        if (ats == null)
-            ats = new ArrayList<>();
-        values.forEach(ats::add);
-    }
-    public void setAts(File... values) {
-        if (ats == null)
-            ats = new ArrayList<>();
-        ats.addAll(Arrays.asList(values));
-    }
+    public abstract ConfigurableFileCollection getAccessTransformers();
 
     @InputFile
-    public File getInput() {
-        return input;
-    }
-    public void setInput(File value) {
-        this.input = value;
-    }
+    public abstract RegularFileProperty getInput();
 
     @OutputFile
-    public File getOutput() {
-        return output;
-    }
-    public void setOutput(File value) {
-        this.output = value;
-    }
+    public abstract RegularFileProperty getOutput();
 }

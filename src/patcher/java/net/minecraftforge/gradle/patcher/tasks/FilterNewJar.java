@@ -20,30 +20,33 @@
 
 package net.minecraftforge.gradle.patcher.tasks;
 
+import net.minecraftforge.gradle.common.util.Utils;
+
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.io.Files;
-import net.minecraftforge.gradle.common.util.Utils;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-public class FilterNewJar extends DefaultTask { //TODO: Copy task?
-    private File input;
-    private File srg;
-    private Set<File> blacklist = new HashSet<>();
-    private File output = getProject().file("build/" + getName() + "/output.jar");
+public abstract class FilterNewJar extends DefaultTask { //TODO: Copy task?
+    public FilterNewJar() {
+        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.jar")));
+    }
 
     @TaskAction
     public void apply() throws IOException {
@@ -55,19 +58,22 @@ public class FilterNewJar extends DefaultTask { //TODO: Copy task?
         }
 
         Set<String> classes = new HashSet<>();
-        List<String> lines = Files.readLines(getSrg(), StandardCharsets.UTF_8).stream().map(line -> line.split("#")[0]).filter(l -> l != null & !l.trim().isEmpty()).collect(Collectors.toList());
+        List<String> lines = Files.readLines(getSrg().get().getAsFile(), StandardCharsets.UTF_8).stream()
+                .map(line -> line.split("#")[0])
+                .filter(l -> l != null & !l.trim().isEmpty())
+                .collect(Collectors.toList());
         lines.stream()
-        .filter(line -> !line.startsWith("\t") || (line.indexOf(':') != -1 && line.startsWith("CL:")))
-        .map(line -> line.indexOf(':') != -1 ? line.substring(4).split(" ") : line.split(" "))
-        .filter(pts -> pts.length == 2 && !pts[0].endsWith("/"))
-        .forEach(pts -> classes.add(pts[1]));
+                .filter(line -> !line.startsWith("\t") || (line.indexOf(':') != -1 && line.startsWith("CL:")))
+                .map(line -> line.indexOf(':') != -1 ? line.substring(4).split(" ") : line.split(" "))
+                .filter(pts -> pts.length == 2 && !pts[0].endsWith("/"))
+                .forEach(pts -> classes.add(pts[1]));
 
-        try (ZipFile zin = new ZipFile(getInput());
-             ZipOutputStream out = new ZipOutputStream(new FileOutputStream(getOutput()))){
+        try (ZipFile zin = new ZipFile(getInput().get().getAsFile());
+             ZipOutputStream out = new ZipOutputStream(new FileOutputStream(getOutput().get().getAsFile()))){
 
             Utils.forZip(zin, entry -> {
                 if (entry.isDirectory() || filter.contains(entry.getName()) ||
-                    (entry.getName().endsWith(".class") && isVanilla(classes, entry.getName().substring(0, entry.getName().length() - 6)))) {
+                        (entry.getName().endsWith(".class") && isVanilla(classes, entry.getName().substring(0, entry.getName().length() - 6)))) {
                     return;
                 }
                 out.putNextEntry(Utils.getStableEntry(entry.getName()));
@@ -87,40 +93,14 @@ public class FilterNewJar extends DefaultTask { //TODO: Copy task?
     }
 
     @InputFile
-    public File getInput() {
-        return input;
-    }
-    public void setInput(File value) {
-        this.input = value;
-    }
+    public abstract RegularFileProperty getInput();
 
     @InputFile
-    public File getSrg() {
-        return srg;
-    }
-    public void setSrg(File value) {
-        this.srg = value;
-    }
+    public abstract RegularFileProperty getSrg();
 
     @InputFiles
-    public Set<File> getBlacklist() {
-        return this.blacklist;
-    }
-    public void setBlacklist(Set<File> value) {
-        this.blacklist = value;
-    }
-    public void addBlacklist(Collection<File> values) {
-        this.blacklist.addAll(values);
-    }
-    public void addBlacklist(File... values) {
-        this.blacklist.addAll(Arrays.asList(values));
-    }
+    public abstract ConfigurableFileCollection getBlacklist();
 
     @OutputFile
-    public File getOutput() {
-        return output;
-    }
-    public void setOutput(File value) {
-        this.output = value;
-    }
+    public abstract RegularFileProperty getOutput();
 }

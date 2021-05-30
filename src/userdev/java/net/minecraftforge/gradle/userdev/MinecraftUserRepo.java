@@ -24,13 +24,6 @@ import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
 import net.minecraftforge.artifactural.api.repository.Repository;
 import net.minecraftforge.artifactural.base.repository.ArtifactProviderBuilder;
 import net.minecraftforge.artifactural.base.repository.SimpleRepository;
-import codechicken.diffpatch.cli.CliOperation;
-import codechicken.diffpatch.cli.PatchOperation;
-import codechicken.diffpatch.util.LoggingOutputStream;
-import codechicken.diffpatch.util.PatchMode;
-import codechicken.diffpatch.util.archiver.ArchiveFormat;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import net.minecraftforge.gradle.common.config.Config;
 import net.minecraftforge.gradle.common.config.UserdevConfigV1;
 import net.minecraftforge.gradle.common.config.UserdevConfigV2;
@@ -60,10 +53,10 @@ import net.minecraftforge.gradle.userdev.tasks.HackyJavaCompile;
 import net.minecraftforge.gradle.userdev.tasks.RenameJar;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 import net.minecraftforge.srgutils.IMappingFile;
-import net.minecraftforge.srgutils.MinecraftVersion;
 import net.minecraftforge.srgutils.IMappingFile.IField;
 import net.minecraftforge.srgutils.IMappingFile.IMethod;
 import net.minecraftforge.srgutils.IRenamer;
+import net.minecraftforge.srgutils.MinecraftVersion;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -73,8 +66,14 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
-import org.gradle.api.plugins.JavaPluginConvention;
 
+import codechicken.diffpatch.cli.CliOperation;
+import codechicken.diffpatch.cli.PatchOperation;
+import codechicken.diffpatch.util.LoggingOutputStream;
+import codechicken.diffpatch.util.PatchMode;
+import codechicken.diffpatch.util.archiver.ArchiveFormat;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -211,11 +210,11 @@ public class MinecraftUserRepo extends BaseRepo {
 
         Map<String, String> tokens = new HashMap<>();
         tokens.put("assets_root", downloadAssets.getOutput().getAbsolutePath());
-        tokens.put("natives", extractNatives.getOutput().getAbsolutePath());
+        tokens.put("natives", extractNatives.getOutput().get().getAsFile().getAbsolutePath());
         tokens.put("mc_version", mcp.getMCVersion());
         tokens.put("mcp_version", mcp.getArtifact().getVersion());
         tokens.put("mcp_mappings", MAPPING);
-        tokens.put("mcp_to_srg", createSrgToMcp.getOutput().getAbsolutePath());
+        tokens.put("mcp_to_srg", createSrgToMcp.getOutput().get().getAsFile().getAbsolutePath());
 
         if (parent != null && parent.getConfig().runs != null) {
             parent.getConfig().runs.forEach((name, dev) -> {
@@ -581,13 +580,13 @@ public class MinecraftUserRepo extends BaseRepo {
                 mcinject = cacheRaw("mci", "jar");
 
                 debug("    Applying MCInjector");
-                //Apply MCInjector so we can compile against this jar
+                // Apply MCInjector so we can compile against this jar
                 ApplyMCPFunction mci = createTask("mciJar", ApplyMCPFunction.class);
-                mci.setFunctionName("mcinject");
+                mci.getFunctionName().set("mcinject");
                 mci.setHasLog(false);
-                mci.setInput(srged);
-                mci.setMCP(mcp.getZip());
-                mci.setOutput(mcinject);
+                mci.getInput().set(srged);
+                mci.getMCP().set(mcp.getZip());
+                mci.getOutput().set(mcinject);
                 mci.apply();
             }
 
@@ -667,16 +666,16 @@ public class MinecraftUserRepo extends BaseRepo {
 
                 debug("    Applying Access Transformer");
                 AccessTransformJar at = createTask("atJar", AccessTransformJar.class);
-                at.setInput(injected);
-                at.setOutput(bin);
-                at.setAts(ATS);
+                at.getInput().set(injected);
+                at.getOutput().set(bin);
+                at.getAccessTransformers().from(ATS);
 
                 if (baseAT.length() != 0) {
                     File parentAT = project.file("build/" + at.getName() + "/parent_at.cfg");
                     if (!parentAT.getParentFile().exists())
                         parentAT.getParentFile().mkdirs();
                     Files.write(parentAT.toPath(), baseAT.toString().getBytes(StandardCharsets.UTF_8));
-                    at.setAts(parentAT);
+                    at.getAccessTransformers().from(parentAT);
                 }
 
                 at.apply();
@@ -689,17 +688,17 @@ public class MinecraftUserRepo extends BaseRepo {
                 //Remap library to MCP names, in place, sorta hacky with ATs but it should work.
                 RenameJarInPlace rename = createTask("renameJarInPlace", RenameJarInPlace.class);
                 rename.setHasLog(false);
-                rename.setInput(bin);
-                rename.setMappings(findSrgToMcp(mapping, names));
+                rename.getInput().set(bin);
+                rename.getMappings().set(findSrgToMcp(mapping, names));
                 rename.apply();
             } else {
                 debug("    Renaming injected jar");
                 //Remap library to MCP names
                 RenameJar rename = createTask("renameJar", RenameJar.class);
                 rename.setHasLog(false);
-                rename.setInput(injected);
-                rename.setOutput(bin);
-                rename.setMappings(findSrgToMcp(mapping, names));
+                rename.getInput().set(injected);
+                rename.getOutput().set(bin);
+                rename.getMappings().set(findSrgToMcp(mapping, names));
                 rename.apply();
             }
 
@@ -765,11 +764,11 @@ public class MinecraftUserRepo extends BaseRepo {
             //Apply bin patches to vanilla
             ApplyBinPatches apply = createTask("applyBinpatches", ApplyBinPatches.class);
             apply.setHasLog(true);
-            apply.setTool(parent.getConfig().binpatcher.getVersion());
-            apply.setArgs(parent.getConfig().binpatcher.getArgs());
-            apply.setClean(clean);
-            apply.setPatch(findBinPatches());
-            apply.setOutput(binpatched);
+            apply.getTool().set(parent.getConfig().binpatcher.getVersion());
+            apply.getArgs().set(parent.getConfig().binpatcher.getArgs());
+            apply.getClean().set(clean);
+            apply.getPatch().set(findBinPatches());
+            apply.getOutput().set(binpatched);
             apply.apply();
 
             debug("    Injecting binpatch extras");
@@ -805,9 +804,9 @@ public class MinecraftUserRepo extends BaseRepo {
                 //Remap to SRG names
                 RenameJar rename = createTask("renameJar", RenameJar.class);
                 rename.setHasLog(false);
-                rename.setInput(merged);
-                rename.setOutput(srged);
-                rename.setMappings(obf2Srg);
+                rename.getInput().set(merged);
+                rename.getOutput().set(srged);
+                rename.getMappings().set(obf2Srg);
                 rename.apply();
                 return srged;
             } else {
@@ -974,10 +973,10 @@ public class MinecraftUserRepo extends BaseRepo {
             if (parent != null && parent.getConfigV2() != null && parent.getConfigV2().processor != null) {
                 DataFunction data = parent.getConfigV2().processor;
                 DynamicJarExec proc = createTask("postProcess", DynamicJarExec.class);
-                proc.setInput(output);
-                proc.setOutput(decomp);
-                proc.setTool(data.getVersion());
-                proc.setArgs(data.getArgs());
+                proc.getInput().set(output);
+                proc.getOutput().set(decomp);
+                proc.getTool().set(data.getVersion());
+                proc.getArgs().set(data.getArgs());
 
                 if (data.getData() != null) {
                     File root = project.file("build/" + proc.getName());
@@ -988,7 +987,7 @@ public class MinecraftUserRepo extends BaseRepo {
                         for (Entry<String, String> ent : data.getData().entrySet()) {
                             File target = new File(root, ent.getValue());
                             Utils.extractFile(zip, ent.getValue(), target);
-                            proc.setData(ent.getKey(), target);
+                            proc.getData().put(ent.getKey(), target);
                         }
                     }
                 }

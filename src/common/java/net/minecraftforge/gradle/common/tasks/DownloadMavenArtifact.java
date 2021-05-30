@@ -22,35 +22,40 @@ package net.minecraftforge.gradle.common.tasks;
 
 import net.minecraftforge.gradle.common.util.Artifact;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
+
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
 import java.io.IOException;
 
-public class DownloadMavenArtifact extends DefaultTask {
-
+public abstract class DownloadMavenArtifact extends DefaultTask {
     private boolean changing = false;
-    private String artifact;
-    private Artifact _artifact;
-
-    private File output;
 
     public DownloadMavenArtifact() {
-        getOutputs().upToDateWhen(task -> false); //We need to always ask, in case the file on maven/our local MinecraftRepo has changed.
+        // We need to always ask, in case the file on the remote maven/local fake repo has changed.
+        getOutputs().upToDateWhen(task -> false);
+
+        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName())
+                        .zip(getArtifact(), (d, a) -> d.file("output." + a.getExtension())));
+    }
+
+    @Internal
+    public String getResolvedVersion() {
+        return MavenArtifactDownloader.getVersion(getProject(), getArtifact().get().getDescriptor());
     }
 
     @Input
-    public String getArtifact() {
-        return artifact;
-    }
+    public abstract Property<Artifact> getArtifact();
 
     public void setArtifact(String value) {
-        this.artifact = value;
-        this._artifact = Artifact.from(value);
+        getArtifact().set(Artifact.from(value));
     }
 
     @Input
@@ -63,21 +68,14 @@ public class DownloadMavenArtifact extends DefaultTask {
     }
 
     @OutputFile
-    public File getOutput() {
-        if (output == null)
-            output = getProject().file("build/" + getName() + "/output." + _artifact.getExtension());
-        return output;
-    }
-
-    public void setOutput(File output) {
-        this.output = output;
-    }
+    public abstract RegularFileProperty getOutput();
 
     @TaskAction
     public void run() throws IOException {
-        File out = MavenArtifactDownloader.download(getProject(), _artifact.getDescriptor(), getChanging());
+        File out = MavenArtifactDownloader.download(getProject(), getArtifact().get().getDescriptor(), getChanging());
         this.setDidWork(out != null && out.exists());
 
+        File output = getOutput().get().getAsFile();
         if (FileUtils.contentEquals(out, output)) return;
         if (output.exists()) output.delete();
         if (!output.getParentFile().exists()) output.getParentFile().mkdirs();

@@ -20,109 +20,58 @@
 
 package net.minecraftforge.gradle.patcher.tasks;
 
+import net.minecraftforge.gradle.common.tasks.JarExec;
+import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.srgutils.IMappingFile;
+
 import org.apache.commons.io.IOUtils;
-import org.gradle.api.DefaultTask;
-import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.RegularFile;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
-
-import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
-import net.minecraftforge.gradle.common.util.Utils;
-
 import java.io.BufferedOutputStream;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.jar.Attributes;
-import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-public class ReobfuscateJar extends DefaultTask {
-
-    private String tool = Utils.SPECIALSOURCE;
-    private String[] args = new String[] {"--in-jar", "{input}", "--out-jar", "{output}", "--srg-in", "{srg}", "--live"};
-    private FileCollection classpath = null;
-    private File input;
-    private File srg;
-    //TODO: Extra SRGs
+public abstract class ReobfuscateJar extends JarExec {
     private boolean keepPackages = false;
     private boolean keepData = false;
-    private File output = getProject().file("build/" + getName() + "/output.jar");
-    private File input_srg_temp = getProject().file("build/" + getName() + "/input.srg");
-    private File output_temp = getProject().file("build/" + getName() + "/output_temp.jar");
+
+    private final Provider<RegularFile> inputSrgTemp = workDir.map(d -> d.file("input.srg"));
+    private final Provider<RegularFile> outputTemp = workDir.map(d -> d.file("output_temp.jar"));
+
+    public ReobfuscateJar() {
+        getTool().set(Utils.SPECIALSOURCE);
+        getArgs().addAll("--in-jar", "{input}", "--out-jar", "{output}", "--srg-in", "{srg}", "--live");
+        getOutput().convention(workDir.map(d -> d.file("output.jar")));
+    }
 
     @TaskAction
     public void apply() throws IOException {
-        File jar = MavenArtifactDownloader.gradle(getProject(), getTool(), false);
-
-        File srg = input_srg_temp;
         // Have to make sure we use TSRGv1 in SpecialSource
-        IMappingFile.load(getSrg()).write(input_srg_temp.toPath(), IMappingFile.Format.TSRG, false);
-        Map<String, String> replace = new HashMap<>();
-        replace.put("{input}", getInput().getAbsolutePath());
-        replace.put("{output}", output_temp.getAbsolutePath());
-        replace.put("{srg}", srg.getAbsolutePath());
+        IMappingFile.load(getSrg().get().getAsFile()).write(inputSrgTemp.get().getAsFile().toPath(), IMappingFile.Format.TSRG, false);
 
-        List<String> _args = new ArrayList<>();
-        for (String arg : args) {
-            _args.add(replace.getOrDefault(arg, arg));
-        }
+        super.apply();
 
-        // Locate main class in jar file
-        JarFile jarFile = new JarFile(jar);
-        String mainClass = jarFile.getManifest().getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
-        jarFile.close();
+        try (OutputStream log = new BufferedOutputStream(new FileOutputStream(logFile.get().getAsFile()))) {
 
-        File workDir = getProject().file("build/" + getName());
-        if (!workDir.exists()) {
-            workDir.mkdirs();
-        }
-
-        try (OutputStream log = new BufferedOutputStream(new FileOutputStream(new File(workDir, "log.txt")))) {
-            getProject().javaexec(java -> {
-                // Execute command
-                java.setArgs(_args);
-                if (getClasspath() == null) {
-                    java.setClasspath(getProject().files(jar));
-                } else {
-                    java.setClasspath(getProject().files(jar, getClasspath()));
-                }
-                java.setWorkingDir(workDir);
-                java.setMain(mainClass);
-                java.setStandardOutput(new OutputStream() {
-                    @Override
-                    public void flush() throws IOException {
-                        log.flush();
-                    }
-                    @Override
-                    public void close() {}
-                    @Override
-                    public void write(int b) throws IOException {
-                        log.write(b);
-                    }
-                });
-            }).rethrowFailure().assertNormalExitValue();
-
-            List<String> lines = Files.readLines(srg, StandardCharsets.UTF_8);
+            List<String> lines = Files.readLines(inputSrgTemp.get().getAsFile(), StandardCharsets.UTF_8);
             lines = lines.stream().map(line -> line.split("#")[0]).filter(l -> l != null & !l.trim().isEmpty()).collect(Collectors.toList()); //Strip empty/comments
 
             Set<String> packages = new HashSet<>();
@@ -137,8 +86,8 @@ public class ReobfuscateJar extends DefaultTask {
                         }
                     });
 
-            try (ZipFile zin = new ZipFile(output_temp);
-                 ZipOutputStream out = new ZipOutputStream(new FileOutputStream(getOutput()))) {
+            try (ZipFile zin = new ZipFile(outputTemp.get().getAsFile());
+                 ZipOutputStream out = new ZipOutputStream(new FileOutputStream(getOutput().get().getAsFile()))) {
                 for (Enumeration<? extends ZipEntry> enu = zin.entries(); enu.hasMoreElements(); ) {
                     ZipEntry entry = enu.nextElement();
                     boolean filter = entry.isDirectory() || entry.getName().startsWith("mcp/"); //Directories and MCP's annotations
@@ -155,34 +104,37 @@ public class ReobfuscateJar extends DefaultTask {
                 }
             }
 
-            input_srg_temp.delete();
-            output_temp.delete();
+            inputSrgTemp.get().getAsFile().delete();
+            outputTemp.get().getAsFile().delete();
         }
     }
 
-    @Input
-    public String getTool() {
-        return this.tool;
-    }
-    public void setTool(String value) {
-        this.tool = value;
+    @Override
+    protected List<String> filterArgs(List<String> args) {
+        return replaceArgs(args, ImmutableMap.of(
+                "{input}", getInput().get().getAsFile(),
+                "{output}", outputTemp.get().getAsFile(),
+                "{srg}", inputSrgTemp.get().getAsFile()), null);
     }
 
-    @Input
-    public String[] getArgs() {
-        return this.args;
-    }
-    public void setArgs(String[] value) {
-        this.args = value;
-    }
+    @InputFile
+    public abstract RegularFileProperty getInput();
+
+    @InputFile
+    public abstract RegularFileProperty getSrg();
+
+    @OutputFile
+    public abstract RegularFileProperty getOutput();
 
     @Input
     public boolean getKeepPackages() {
         return this.keepPackages;
     }
+
     public void keepPackages() {
         this.keepPackages = true;
     }
+
     public void filterPackages() {
         this.keepPackages = false;
     }
@@ -191,43 +143,12 @@ public class ReobfuscateJar extends DefaultTask {
     public boolean getKeepData() {
         return this.keepData;
     }
+
     public void keepData() {
         this.keepData = true;
     }
+
     public void filterData() {
         this.keepData = false;
-    }
-
-    @InputFile
-    public File getInput() {
-        return input;
-    }
-    public void setInput(File value) {
-        this.input = value;
-    }
-
-    @InputFile
-    public File getSrg() {
-        return srg;
-    }
-    public void setSrg(File value) {
-        this.srg = value;
-    }
-
-    @Optional
-    @InputFiles
-    public FileCollection getClasspath() {
-        return this.classpath;
-    }
-    public void setClasspath(FileCollection value) {
-        this.classpath = value;
-    }
-
-    @OutputFile
-    public File getOutput() {
-        return output;
-    }
-    public void setOutput(File value) {
-        this.output = value;
     }
 }

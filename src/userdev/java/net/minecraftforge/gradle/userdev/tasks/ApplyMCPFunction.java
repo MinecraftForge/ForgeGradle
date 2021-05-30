@@ -20,79 +20,78 @@
 
 package net.minecraftforge.gradle.userdev.tasks;
 
-import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.OutputFile;
-import org.gradle.api.tasks.TaskAction;
-
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
 import net.minecraftforge.gradle.common.config.MCPConfigV2;
 import net.minecraftforge.gradle.common.tasks.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
 
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.TaskAction;
+
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-public class ApplyMCPFunction extends JarExec {
-    private static final Pattern REPLACE_PATTERN = Pattern.compile("^\\{(\\w+)\\}$");
+public abstract class ApplyMCPFunction extends JarExec {
+    private final Map<String, Object> replacements = new HashMap<>();
 
-    private File input;
-    private File output;
-    private File mcp;
-
-    private String functionName;
-    private Map<String, String> replacements = new HashMap<>();
-
-    public ApplyMCPFunction() {}
+    public ApplyMCPFunction() {
+        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.jar")));
+    }
 
     @TaskAction
     public void apply() throws IOException {
-        MCPConfigV1 config = MCPConfigV2.getFromArchive(getMCP());
-        MCPConfigV1.Function function = config.getFunction(functionName);
+        File mcp = getMCP().get().getAsFile();
+        MCPConfigV1 config = MCPConfigV2.getFromArchive(mcp);
+        MCPConfigV1.Function function = config.getFunction(getFunctionName().get());
 
-        tool = function.getVersion();
-        args = function.getArgs().toArray(new String[0]);
+        getTool().set(function.getVersion());
+        getArgs().set(function.getArgs());
 
-        try (ZipFile zip = new ZipFile(getMCP())) {
+        try (ZipFile zip = new ZipFile(mcp)) {
             function.getArgs().forEach(arg -> {
-                Matcher matcher = REPLACE_PATTERN.matcher(arg);
-                String argName = matcher.find() ? matcher.group(1) : null;
-                if (argName == null) return;
+                // A token must start with {, end with }, and be at least 3 large ("{x}")
+                if (arg.length() < 2 || !arg.startsWith("{") || !arg.endsWith("}")) return;
+                String argName = arg.substring(1, arg.length() - 1);
 
-                if (argName.equals("input")) {
-                    replacements.put(arg, getInput().getAbsolutePath());
-                }
-                else if (argName.equals("output")) {
-                    replacements.put(arg, getOutput().getAbsolutePath());
-                }
-                else if (argName.equals("log")) {
-                    replacements.put(arg, getOutput().getAbsolutePath() + ".log");
-                }
-                else {
-                    Object referencedData = config.getData().get(argName);
-                    if (referencedData instanceof String) {
-                        ZipEntry entry = zip.getEntry((String)referencedData);
-                        if (entry == null) return;
-                        String entryName = entry.getName();
+                switch (argName) {
+                    case "input":
+                        replacements.put(arg, getInput().get().getAsFile().getAbsolutePath());
+                        break;
+                    case "output":
+                        replacements.put(arg, getOutput().get().getAsFile().getAbsolutePath());
+                        break;
+                    case "log":
+                        replacements.put(arg, getOutput().get().getAsFile().getAbsolutePath() + ".log");
+                        break;
+                    default:
+                        Object referencedData = config.getData().get(argName);
+                        if (referencedData instanceof String) {
+                            ZipEntry entry = zip.getEntry((String) referencedData);
+                            if (entry == null) return;
+                            String entryName = entry.getName();
 
-                        try {
-                            File data = makeFile(entry.getName());
-                            if (entry.isDirectory()) {
-                                Utils.extractDirectory(this::makeFile, zip, entryName);
-                            } else {
-                                Utils.extractFile(zip, entry, data);
+                            try {
+                                File data = makeFile(entry.getName());
+                                if (entry.isDirectory()) {
+                                    Utils.extractDirectory(this::makeFile, zip, entryName);
+                                } else {
+                                    Utils.extractFile(zip, entry, data);
+                                }
+                                replacements.put(arg, data.getAbsolutePath());
+                            } catch (IOException e) {
+                                getLogger().debug("Exception while extracting referenced data for token {} in task {}", arg, getName(), e);
                             }
-                            replacements.put(arg, data.getAbsolutePath());
-                        } catch (IOException ignored) {}
-                    }
+                        }
+                        break;
                 }
             });
         }
@@ -101,41 +100,23 @@ public class ApplyMCPFunction extends JarExec {
     }
 
     @Override
-    protected List<String> filterArgs() {
-        return Arrays.stream(getArgs()).map(arg -> replacements.getOrDefault(arg, arg)).collect(Collectors.toList());
+    protected List<String> filterArgs(List<String> args) {
+        return replaceArgs(args, replacements, null);
     }
 
     @InputFile
-    public File getInput() {
-        return input;
-    }
-    public void setInput(File value) {
-        this.input = value;
-    }
+    public abstract RegularFileProperty getInput();
 
     @InputFile
-    public File getMCP() {
-        return mcp;
-    }
-    public void setMCP(File value) {
-        this.mcp = value;
-    }
+    public abstract RegularFileProperty getMCP();
 
     @OutputFile
-    public File getOutput() {
-        if (output == null)
-            setOutput(getProject().file("build/" + getName() + "/output.jar"));
-        return output;
-    }
-    public void setOutput(File value) {
-        this.output = value;
-    }
+    public abstract RegularFileProperty getOutput();
 
-    public void setFunctionName(String name) {
-        functionName = name;
-    }
+    @Input
+    public abstract Property<String> getFunctionName();
 
     private File makeFile(String name) {
-        return new File(getOutput().getParent(), name);
+        return new File(getOutput().get().getAsFile().getParent(), name);
     }
 }

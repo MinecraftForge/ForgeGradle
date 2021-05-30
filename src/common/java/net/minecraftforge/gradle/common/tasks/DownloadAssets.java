@@ -23,8 +23,10 @@ package net.minecraftforge.gradle.common.tasks;
 import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.common.util.VersionJson;
+
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
@@ -41,9 +43,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class DownloadAssets extends DefaultTask {
+public abstract class DownloadAssets extends DefaultTask {
+    // TODO: convert this into a property?
     private static final String RESOURCE_REPO = "https://resources.download.minecraft.net/";
-    private File meta;
 
     @TaskAction
     public void run() throws IOException, InterruptedException {
@@ -95,19 +97,13 @@ public class DownloadAssets extends DefaultTask {
     }
 
     private File getIndex() throws IOException {
-        VersionJson json = Utils.loadJson(getMeta(), VersionJson.class);
+        VersionJson json = Utils.loadJson(getMeta().get().getAsFile(), VersionJson.class);
         File target = Utils.getCache(getProject(), "assets", "indexes", json.assetIndex.id + ".json");
         return Utils.updateDownload(getProject(), target, json.assetIndex);
     }
 
     @InputFile
-    public File getMeta() {
-        return this.meta;
-    }
-
-    public void setMeta(File value) {
-        this.meta = value;
-    }
+    public abstract RegularFileProperty getMeta();
 
     @OutputDirectory
     public File getOutput() {
