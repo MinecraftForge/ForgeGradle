@@ -30,6 +30,8 @@ import net.minecraftforge.gradle.common.tasks.ExtractMCPData;
 import net.minecraftforge.gradle.common.tasks.ExtractNatives;
 import net.minecraftforge.gradle.common.tasks.ExtractRangeMap;
 import net.minecraftforge.gradle.common.tasks.ExtractZip;
+import net.minecraftforge.gradle.common.tasks.JarExec;
+import net.minecraftforge.gradle.common.util.Artifact;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
@@ -56,14 +58,20 @@ import net.minecraftforge.gradle.patcher.tasks.GenerateUserdevConfig;
 import net.minecraftforge.gradle.patcher.tasks.ReobfuscateJar;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository.MetadataSources;
+import org.gradle.api.file.Directory;
+import org.gradle.api.file.RegularFile;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.api.tasks.compile.JavaCompile;
@@ -77,9 +85,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class PatcherPlugin implements Plugin<Project> {
     private static final String MC_DEP_CONFIG = "minecraftImplementation";
@@ -89,48 +97,48 @@ public class PatcherPlugin implements Plugin<Project> {
         Utils.checkEnvironment();
 
         final PatcherExtension extension = project.getExtensions().create(PatcherExtension.class, PatcherExtension.EXTENSION_NAME, PatcherExtension.class, project);
-        if (project.getPluginManager().findPlugin("java") == null) {
-            project.getPluginManager().apply("java");
-        }
-        final JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+        project.getPluginManager().apply(JavaPlugin.class);
+        final JavaPluginConvention javaConv = project.getConvention().getPlugin(JavaPluginConvention.class);
         final File natives_folder = project.file("build/natives/");
 
         Configuration mcImplementation = project.getConfigurations().maybeCreate(MC_DEP_CONFIG);
         mcImplementation.setCanBeResolved(true);
-        project.getConfigurations().getByName("implementation").extendsFrom(mcImplementation);
+        project.getConfigurations().named(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
+                .configure(c -> c.extendsFrom(mcImplementation));
 
-        Jar jarConfig = (Jar) project.getTasks().getByName("jar");
-        JavaCompile javaCompile = (JavaCompile) project.getTasks().getByName("compileJava");
+        final TaskContainer tasks = project.getTasks();
+        final TaskProvider<Jar> jarTask = tasks.named(JavaPlugin.JAR_TASK_NAME, Jar.class);
+        final TaskProvider<JavaCompile> javaCompileTask = tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, JavaCompile.class);
 
-        TaskProvider<DownloadMCPMappings> dlMappingsConfig = project.getTasks().register("downloadMappings", DownloadMCPMappings.class);
-        TaskProvider<DownloadMCMeta> dlMCMetaConfig = project.getTasks().register("downloadMCMeta", DownloadMCMeta.class);
-        TaskProvider<ExtractNatives> extractNatives = project.getTasks().register("extractNatives", ExtractNatives.class);
-        TaskProvider<ApplyPatches> applyPatches = project.getTasks().register("applyPatches", ApplyPatches.class);
-        TaskProvider<ApplyMappings> toMCPConfig = project.getTasks().register("srg2mcp", ApplyMappings.class);
-        TaskProvider<ExtractZip> extractMapped = project.getTasks().register("extractMapped", ExtractZip.class);
-        TaskProvider<GenerateSRG> createMcp2Srg = project.getTasks().register("createMcp2Srg", GenerateSRG.class);
-        TaskProvider<GenerateSRG> createMcp2Obf = project.getTasks().register("createMcp2Obf", GenerateSRG.class);
-        TaskProvider<GenerateSRG> createSrg2Mcp = project.getTasks().register("createSrg2Mcp", GenerateSRG.class);
-        TaskProvider<CreateExc> createExc = project.getTasks().register("createExc", CreateExc.class);
-        TaskProvider<ExtractRangeMap> extractRangeConfig = project.getTasks().register("extractRangeMap", ExtractRangeMap.class);
-        TaskProvider<ApplyRangeMap> applyRangeConfig = project.getTasks().register("applyRangeMap", ApplyRangeMap.class);
-        TaskProvider<ApplyRangeMap> applyRangeBaseConfig = project.getTasks().register("applyRangeMapBase", ApplyRangeMap.class);
-        TaskProvider<GeneratePatches> genPatches = project.getTasks().register("genPatches", GeneratePatches.class);
-        TaskProvider<BakePatches> bakePatches = project.getTasks().register("bakePatches", BakePatches.class);
-        TaskProvider<DownloadAssets> downloadAssets = project.getTasks().register("downloadAssets", DownloadAssets.class);
-        TaskProvider<ReobfuscateJar> reobfJar = project.getTasks().register("reobfJar", ReobfuscateJar.class);
-        TaskProvider<GenerateBinPatches> genJoinedBinPatches = project.getTasks().register("genJoinedBinPatches", GenerateBinPatches.class);
-        TaskProvider<GenerateBinPatches> genClientBinPatches = project.getTasks().register("genClientBinPatches", GenerateBinPatches.class);
-        TaskProvider<GenerateBinPatches> genServerBinPatches = project.getTasks().register("genServerBinPatches", GenerateBinPatches.class);
-        TaskProvider<DefaultTask> genBinPatches = project.getTasks().register("genBinPatches", DefaultTask.class);
-        TaskProvider<FilterNewJar> filterNew = project.getTasks().register("filterJarNew", FilterNewJar.class);
-        TaskProvider<Jar> sourcesJar = project.getTasks().register("sourcesJar", Jar.class);
-        TaskProvider<Jar> universalJar = project.getTasks().register("universalJar", Jar.class);
-        TaskProvider<Jar> userdevJar = project.getTasks().register("userdevJar", Jar.class);
-        TaskProvider<GenerateUserdevConfig> userdevConfig = project.getTasks().register("userdevConfig", GenerateUserdevConfig.class, project);
-        TaskProvider<DefaultTask> release = project.getTasks().register("release", DefaultTask.class);
-        TaskProvider<DefaultTask> hideLicense = project.getTasks().register(MojangLicenseHelper.HIDE_LICENSE, DefaultTask.class);
-        TaskProvider<DefaultTask> showLicense = project.getTasks().register(MojangLicenseHelper.SHOW_LICENSE, DefaultTask.class);
+        final TaskProvider<DownloadMCPMappings> dlMappingsConfig = tasks.register("downloadMappings", DownloadMCPMappings.class);
+        final TaskProvider<DownloadMCMeta> dlMCMetaConfig = tasks.register("downloadMCMeta", DownloadMCMeta.class);
+        final TaskProvider<ExtractNatives> extractNatives = tasks.register("extractNatives", ExtractNatives.class);
+        final TaskProvider<ApplyPatches> applyPatches = tasks.register("applyPatches", ApplyPatches.class);
+        final TaskProvider<ApplyMappings> toMCPConfig = tasks.register("srg2mcp", ApplyMappings.class);
+        final TaskProvider<ExtractZip> extractMapped = tasks.register("extractMapped", ExtractZip.class);
+        final TaskProvider<GenerateSRG> createMcp2Srg = tasks.register("createMcp2Srg", GenerateSRG.class);
+        final TaskProvider<GenerateSRG> createMcp2Obf = tasks.register("createMcp2Obf", GenerateSRG.class);
+        final TaskProvider<GenerateSRG> createSrg2Mcp = tasks.register("createSrg2Mcp", GenerateSRG.class);
+        final TaskProvider<CreateExc> createExc = tasks.register("createExc", CreateExc.class);
+        final TaskProvider<ExtractRangeMap> extractRangeConfig = tasks.register("extractRangeMap", ExtractRangeMap.class);
+        final TaskProvider<ApplyRangeMap> applyRangeConfig = tasks.register("applyRangeMap", ApplyRangeMap.class);
+        final TaskProvider<ApplyRangeMap> applyRangeBaseConfig = tasks.register("applyRangeMapBase", ApplyRangeMap.class);
+        final TaskProvider<GeneratePatches> genPatches = tasks.register("genPatches", GeneratePatches.class);
+        final TaskProvider<BakePatches> bakePatches = tasks.register("bakePatches", BakePatches.class);
+        final TaskProvider<DownloadAssets> downloadAssets = tasks.register("downloadAssets", DownloadAssets.class);
+        final TaskProvider<ReobfuscateJar> reobfJar = tasks.register("reobfJar", ReobfuscateJar.class);
+        final TaskProvider<GenerateBinPatches> genJoinedBinPatches = tasks.register("genJoinedBinPatches", GenerateBinPatches.class);
+        final TaskProvider<GenerateBinPatches> genClientBinPatches = tasks.register("genClientBinPatches", GenerateBinPatches.class);
+        final TaskProvider<GenerateBinPatches> genServerBinPatches = tasks.register("genServerBinPatches", GenerateBinPatches.class);
+        final TaskProvider<DefaultTask> genBinPatches = tasks.register("genBinPatches", DefaultTask.class);
+        final TaskProvider<FilterNewJar> filterNew = tasks.register("filterJarNew", FilterNewJar.class);
+        final TaskProvider<Jar> sourcesJar = tasks.register("sourcesJar", Jar.class);
+        final TaskProvider<Jar> universalJar = tasks.register("universalJar", Jar.class);
+        final TaskProvider<Jar> userdevJar = tasks.register("userdevJar", Jar.class);
+        final TaskProvider<GenerateUserdevConfig> userdevConfig = tasks.register("userdevConfig", GenerateUserdevConfig.class, project);
+        final TaskProvider<DefaultTask> release = tasks.register("release", DefaultTask.class);
+        final TaskProvider<DefaultTask> hideLicense = tasks.register(MojangLicenseHelper.HIDE_LICENSE, DefaultTask.class);
+        final TaskProvider<DefaultTask> showLicense = tasks.register(MojangLicenseHelper.SHOW_LICENSE, DefaultTask.class);
 
         //Add Known repos
         project.getRepositories().maven(e -> {
@@ -141,101 +149,89 @@ public class PatcherPlugin implements Plugin<Project> {
                 m.artifact();
             });
         });
+
         new BaseRepo.Builder()
-            .add(MCPRepo.create(project))
-            .add(MinecraftRepo.create(project))
-            .attach(project);
+                .add(MCPRepo.create(project))
+                .add(MinecraftRepo.create(project))
+                .attach(project);
         project.getRepositories().maven(e -> {
             e.setUrl(Utils.MOJANG_MAVEN);
             e.metadataSources(MetadataSources::artifact);
         });
 
-        hideLicense.configure(task -> {
-            task.doLast(_task -> {
-                MojangLicenseHelper.hide(project, extension.getMappingChannel().get(), extension.getMappingVersion().get());
-            });
-        });
+        hideLicense.configure(task -> task.doLast(_task ->
+                MojangLicenseHelper.hide(project, extension.getMappingChannel().get(), extension.getMappingVersion().get())));
 
-        showLicense.configure(task -> {
-            task.doLast(_task -> {
-                MojangLicenseHelper.show(project, extension.getMappingChannel().get(), extension.getMappingVersion().get());
-            });
-        });
+        showLicense.configure(task -> task.doLast(_task ->
+                MojangLicenseHelper.show(project, extension.getMappingChannel().get(), extension.getMappingVersion().get())));
 
-        release.configure(task -> {
-            task.dependsOn(sourcesJar, universalJar, userdevJar);
-        });
-        dlMappingsConfig.configure(task -> {
-            task.getMappings().set(extension.getMappings());
-        });
+        release.configure(task -> task.dependsOn(sourcesJar, universalJar, userdevJar));
+
+        dlMappingsConfig.configure(task -> task.getMappings().set(extension.getMappings()));
+
         extractNatives.configure(task -> {
-            task.dependsOn(dlMCMetaConfig.get());
-            task.getMeta().set(dlMCMetaConfig.get().getOutput());
+            task.getMeta().set(dlMCMetaConfig.flatMap(DownloadMCMeta::getOutput));
             task.getOutput().set(natives_folder);
         });
-        downloadAssets.configure(task -> {
-            task.dependsOn(dlMCMetaConfig.get());
-            task.getMeta().set(dlMCMetaConfig.get().getOutput());
-        });
+
+        downloadAssets.configure(task -> task.getMeta().set(dlMCMetaConfig.flatMap(DownloadMCMeta::getOutput)));
+
         applyPatches.configure(task -> {
-            task.getOutput().set(project.file("build/" + task.getName() + "/output.zip"));
-            task.getRejects().set(project.file("build/" + task.getName() + "/rejects.zip"));
+            final Provider<Directory> workDir = project.getLayout().getBuildDirectory().dir(task.getName());
+            task.getOutput().set(workDir.map(s -> s.file("output.zip")));
+            task.getRejects().set(workDir.map(s -> s.file("rejects.zip").getAsFile()));
             task.getPatches().set(extension.getPatches());
             task.getPatchMode().set(PatchMode.ACCESS);
             if (project.hasProperty("UPDATING")) {
                 task.getPatchMode().set(PatchMode.FUZZY);
-                task.getRejects().set(project.file("rejects/"));
+                task.getRejects().set(project.getLayout().getProjectDirectory().dir("rejects").getAsFile());
                 task.setFailOnError(false);
             }
         });
+
         toMCPConfig.configure(task -> {
-            task.dependsOn(dlMappingsConfig, applyPatches);
-            task.getInput().set(applyPatches.get().getOutput());
-            task.getMappings().set(dlMappingsConfig.get().getOutput());
+            task.getInput().set(applyPatches.flatMap(ApplyPatches::getOutput));
+            task.getMappings().set(dlMappingsConfig.flatMap(DownloadMCPMappings::getOutput));
             task.setLambdas(false);
         });
+
         extractMapped.configure(task -> {
-            task.dependsOn(toMCPConfig);
-            task.getZip().set(toMCPConfig.get().getOutput());
+            task.getZip().set(toMCPConfig.flatMap(ApplyMappings::getOutput));
             task.getOutput().set(extension.getPatchedSrc());
         });
+
         extractRangeConfig.configure(task -> {
-            task.dependsOn(jarConfig);
-            task.setOnlyIf(t -> extension.getPatches() != null);
-            task.getDependencies().from(jarConfig.getArchiveFile().get().getAsFile());
+            task.setOnlyIf(t -> extension.getPatches().isPresent());
+            task.getDependencies().from(jarTask.flatMap(AbstractArchiveTask::getArchiveFile));
         });
-        createMcp2Srg.configure(task -> {
-            task.setReverse(true);
-        });
-        createSrg2Mcp.configure(task -> {
-            task.setReverse(false);
-        });
+
+        createMcp2Srg.configure(task -> task.setReverse(true));
+        createSrg2Mcp.configure(task -> task.setReverse(false));
         createMcp2Obf.configure(task -> {
             task.setNotch(true);
             task.setReverse(true);
         });
-        createExc.configure(task -> {
-            task.dependsOn(dlMappingsConfig);
-            task.getMappings().set(dlMappingsConfig.get().getOutput());
-        });
+
+        createExc.configure(task -> task.getMappings().set(dlMappingsConfig.flatMap(DownloadMCPMappings::getOutput)));
 
         applyRangeConfig.configure(task -> {
-            task.dependsOn(extractRangeConfig, createMcp2Srg, createExc);
-            task.getRangeMap().set(extractRangeConfig.get().getOutput());
-            task.getSrgFiles().from(createMcp2Srg.get().getOutput());
-            task.getExcFiles().from(createExc.get().getOutput());
+            task.getRangeMap().set(extractRangeConfig.flatMap(ExtractRangeMap::getOutput));
+            task.getSrgFiles().from(createMcp2Srg.flatMap(GenerateSRG::getOutput));
+            task.getExcFiles().from(createExc.flatMap(CreateExc::getOutput));
         });
+
         applyRangeBaseConfig.configure(task -> {
-            task.setOnlyIf(t -> extension.getPatches() != null);
-            task.dependsOn(extractRangeConfig, createMcp2Srg, createExc);
-            task.getRangeMap().set(extractRangeConfig.get().getOutput());
-            task.getSrgFiles().from(createMcp2Srg.get().getOutput());
-            task.getExcFiles().from(createExc.get().getOutput());
+            task.setOnlyIf(t -> extension.getPatches().isPresent());
+            task.getRangeMap().set(extractRangeConfig.flatMap(ExtractRangeMap::getOutput));
+            task.getSrgFiles().from(createMcp2Srg.flatMap(GenerateSRG::getOutput));
+            task.getExcFiles().from(createExc.flatMap(CreateExc::getOutput));
         });
+
         genPatches.configure(task -> {
-            task.setOnlyIf(t -> extension.getPatches() != null);
+            task.setOnlyIf(t -> extension.getPatches().isPresent());
             task.getOutput().set(extension.getPatches());
         });
+
         bakePatches.configure(task -> {
             task.dependsOn(genPatches);
             task.getInput().set(extension.getPatches());
@@ -243,54 +239,48 @@ public class PatcherPlugin implements Plugin<Project> {
         });
 
         reobfJar.configure(task -> {
-            task.dependsOn(jarConfig, dlMappingsConfig);
-            task.getInput().set(jarConfig.getArchiveFile().get().getAsFile());
-            task.getClasspath().from(project.getConfigurations().getByName(MC_DEP_CONFIG));
+            task.getInput().set(jarTask.flatMap(AbstractArchiveTask::getArchiveFile));
+            task.getClasspath().from(project.getConfigurations().named(MC_DEP_CONFIG));
         });
+
         genJoinedBinPatches.configure(task -> {
-            task.dependsOn(reobfJar);
-            task.getDirtyJar().set(reobfJar.get().getOutput());
+            task.getDirtyJar().set(reobfJar.flatMap(ReobfuscateJar::getOutput));
             task.getPatchSets().from(extension.getPatches());
             task.getSide().set("joined");
         });
         genClientBinPatches.configure(task -> {
-            task.dependsOn(reobfJar);
-            task.getDirtyJar().set(reobfJar.get().getOutput());
+            task.getDirtyJar().set(reobfJar.flatMap(ReobfuscateJar::getOutput));
             task.getPatchSets().from(extension.getPatches());
             task.getSide().set("client");
         });
         genServerBinPatches.configure(task -> {
-            task.dependsOn(reobfJar);
-            task.getDirtyJar().set(reobfJar.get().getOutput());
+            task.getDirtyJar().set(reobfJar.flatMap(ReobfuscateJar::getOutput));
             task.getPatchSets().from(extension.getPatches());
             task.getSide().set("server");
         });
-        genBinPatches.configure(task -> {
-            task.dependsOn(genJoinedBinPatches.get(), genClientBinPatches.get(), genServerBinPatches.get());
-        });
-        filterNew.configure(task -> {
-            task.dependsOn(reobfJar);
-            task.getInput().set(reobfJar.get().getOutput());
-        });
+        genBinPatches.configure(task -> task.dependsOn(genJoinedBinPatches, genClientBinPatches, genServerBinPatches));
+
+        filterNew.configure(task -> task.getInput().set(reobfJar.flatMap(ReobfuscateJar::getOutput)));
+
         /*
          * All sources in SRG names.
          * patches in /patches/
          */
         sourcesJar.configure(task -> {
-            task.dependsOn(applyRangeConfig);
-            task.from(project.zipTree(applyRangeConfig.get().getOutput()));
+            task.from(project.zipTree(applyRangeConfig.flatMap(ApplyRangeMap::getOutput)));
             task.getArchiveClassifier().set("sources");
         });
+
         /* Universal:
          * All of our classes and resources as normal jar.
          *   Should only be OUR classes, not parent patcher projects.
          */
         universalJar.configure(task -> {
-            task.dependsOn(filterNew);
-            task.from(project.zipTree(filterNew.get().getOutput()));
-            task.from(javaConv.getSourceSets().getByName("main").getResources());
+            task.from(project.zipTree(filterNew.flatMap(FilterNewJar::getOutput)));
+            task.from(javaConv.getSourceSets().named(SourceSet.MAIN_SOURCE_SET_NAME).map(SourceSet::getResources));
             task.getArchiveClassifier().set("universal");
         });
+
         /*UserDev:
          * config.json
          * joined.lzma
@@ -302,291 +292,196 @@ public class PatcherPlugin implements Plugin<Project> {
          *   at2.cfg
          */
         userdevJar.configure(task -> {
-            task.dependsOn(userdevConfig, genJoinedBinPatches, sourcesJar, bakePatches);
+            task.dependsOn(sourcesJar);
             task.setOnlyIf(t -> extension.isSrgPatches());
-            task.from(userdevConfig.get().getOutput(), e -> {
-                e.rename(f -> "config.json");
-            });
-            task.from(genJoinedBinPatches.get().getOutput(), e -> {
-                e.rename(f -> "joined.lzma");
-            });
-            task.from(project.zipTree(bakePatches.get().getOutput()), e -> {
-                e.into("patches/");
-            });
+            task.from(userdevConfig.flatMap(GenerateUserdevConfig::getOutput), e -> e.rename(f -> "config.json"));
+            task.from(genJoinedBinPatches.flatMap(GenerateBinPatches::getOutput), e -> e.rename(f -> "joined.lzma"));
+            task.from(project.zipTree(bakePatches.flatMap(BakePatches::getOutput)), e -> e.into("patches/"));
             task.getArchiveClassifier().set("userdev");
         });
 
         final boolean doingUpdate = project.hasProperty("UPDATE_MAPPINGS");
-        final String updateVersion = doingUpdate ? (String)project.property("UPDATE_MAPPINGS") : null;
+        final String updateVersion = doingUpdate ? (String) project.property("UPDATE_MAPPINGS") : null;
         final String updateChannel = doingUpdate
-            ? (project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String)project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot")
-            : null;
+                ? (project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String) project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot")
+                : null;
         if (doingUpdate) {
-            TaskProvider<DownloadMCPMappings> dlMappingsNew = project.getTasks().register("downloadMappingsNew", DownloadMCPMappings.class);
+            TaskProvider<DownloadMCPMappings> dlMappingsNew = tasks.register("downloadMappingsNew", DownloadMCPMappings.class);
             dlMappingsNew.get().getMappings().set(updateChannel + '_' + updateVersion);
 
-            TaskProvider<ApplyMappings> toMCPNew = project.getTasks().register("srg2mcpNew", ApplyMappings.class);
+            TaskProvider<ApplyMappings> toMCPNew = tasks.register("srg2mcpNew", ApplyMappings.class);
             toMCPNew.configure(task -> {
-                task.dependsOn(dlMappingsNew.get(), applyRangeConfig.get());
-                task.getInput().set(applyRangeConfig.get().getOutput().get().getAsFile());
-                task.getMappings().set(dlMappingsConfig.get().getOutput());
+                task.getInput().set(applyRangeConfig.flatMap(ApplyRangeMap::getOutput));
+                task.getMappings().set(dlMappingsConfig.flatMap(DownloadMCPMappings::getOutput));
                 task.setLambdas(false);
             });
 
-            TaskProvider<ExtractExistingFiles> extractMappedNew = project.getTasks().register("extractMappedNew", ExtractExistingFiles.class);
-            extractMappedNew.configure(task -> {
-                task.dependsOn(toMCPNew.get());
-                task.getArchive().set(toMCPNew.get().getOutput());
-            });
+            TaskProvider<ExtractExistingFiles> extractMappedNew = tasks.register("extractMappedNew", ExtractExistingFiles.class);
+            extractMappedNew.configure(task -> task.getArchive().set(toMCPNew.flatMap(ApplyMappings::getOutput)));
 
-            TaskProvider<DefaultTask> updateMappings = project.getTasks().register("updateMappings", DefaultTask.class);
-            updateMappings.get().dependsOn(extractMappedNew.get());
+            TaskProvider<DefaultTask> updateMappings = tasks.register("updateMappings", DefaultTask.class);
+            updateMappings.configure(task -> task.dependsOn(extractMappedNew));
         }
 
         project.afterEvaluate(p -> {
-            //Add PatchedSrc to a main sourceset and build range tasks
-            SourceSet mainSource = javaConv.getSourceSets().getByName("main");
-            applyRangeConfig.get().getSources().from(mainSource.getJava().getSrcDirs().stream().filter(f -> !f.equals(extension.getPatchedSrc())).collect(Collectors.toList()));
-            applyRangeBaseConfig.get().getSources().from(extension.getPatchedSrc());
-            mainSource.java(v -> {
-                v.srcDir(extension.getPatchedSrc());
-            });
+            //Add patched source to the main sourceset and build range tasks
+            final NamedDomainObjectProvider<SourceSet> main = javaConv.getSourceSets().named(SourceSet.MAIN_SOURCE_SET_NAME);
+            applyRangeConfig.configure(task ->
+                    task.getSources().from(main.map(s -> s.getJava().minus(project.files(extension.getPatchedSrc())))));
+            applyRangeBaseConfig.configure(task -> task.getSources().from(extension.getPatchedSrc()));
+            main.configure(set -> set.getJava().srcDir(extension.getPatchedSrc()));
 
             if (doingUpdate) {
-                ExtractExistingFiles extract = (ExtractExistingFiles)p.getTasks().getByName("extractMappedNew");
-                for (File dir : mainSource.getJava().getSrcDirs()) {
-                    if (dir.equals(extension.getPatchedSrc())) //Don't overwrite the patched code, re-setup the project.
-                        continue;
-                    extract.getTargets().from(dir);
-                }
+                final TaskProvider<ExtractExistingFiles> extractMappedNew = tasks.named("extractMappedNew", ExtractExistingFiles.class);
+                extractMappedNew.configure(task ->
+                        task.getTargets().from(main.map(s -> s.getJava().minus(project.files(extension.getPatchedSrc())))));
             }
 
             //mainSource.resources(v -> {
             //}); //TODO: Asset downloading, needs asset index from json.
             //javaConv.getSourceSets().stream().forEach(s -> extractRangeConfig.get().addSources(s.getJava().getSrcDirs()));
-            // Only add main source, as we inject the patchedSrc into it as a sourceset.
-            extractRangeConfig.get().getSources().from(mainSource.getJava().getSrcDirs());
-            extractRangeConfig.get().getDependencies().from(javaCompile.getClasspath());
 
-            if (extension.getPatches() != null && !extension.getPatches().get().getAsFile().exists()) { //Auto-make folders so that gradle doesnt explode some tasks.
+            // Only add main source, as we inject the patchedSrc into it as a sourceset.
+            extractRangeConfig.configure(task -> {
+                task.getSources().from(main.map(SourceSet::getJava));
+                task.getDependencies().from(javaCompileTask.map(JavaCompile::getClasspath));
+            });
+
+            // Auto-make folders so that gradle doesnt explode some tasks.
+            if (extension.getPatches().isPresent() && !extension.getPatches().get().getAsFile().exists()) {
                 extension.getPatches().get().getAsFile().mkdirs();
             }
 
-            if (extension.getPatches() != null) {
-                sourcesJar.get().dependsOn(genPatches);
-                sourcesJar.get().from(genPatches.get().getOutput(), e -> {
-                    e.into("patches/");
-                });
-            }
-            TaskProvider<DynamicJarExec> procConfig = extension.getProcessor() == null ? null : project.getTasks().register("postProcess", DynamicJarExec.class);
+            sourcesJar.configure(task -> task.from(genPatches.flatMap(GeneratePatches::getOutput), e -> e.into("patches/")));
+            final TaskProvider<DynamicJarExec> procConfig = extension.getProcessor() == null ? null
+                    : tasks.register("postProcess", DynamicJarExec.class);
 
-            if (extension.getParent() != null) { //Most of this is done after evaluate, and checks for nulls to allow the build script to override us. We can't do it in the config step because if someone configs a task in the build script it resolves our config during evaluation.
-                TaskContainer tasks = extension.getParent().get().getTasks();
-                MCPPlugin mcp = extension.getParent().get().getPlugins().findPlugin(MCPPlugin.class);
-                PatcherPlugin patcher = extension.getParent().get().getPlugins().findPlugin(PatcherPlugin.class);
+            if (extension.getParent().isPresent()) { //Most of this is done after evaluate, and checks for nulls to allow the build script to override us. We can't do it in the config step because if someone configs a task in the build script it resolves our config during evaluation.
+                final Project parent = extension.getParent().get();
+                TaskContainer parentTasks = parent.getTasks();
+                MCPPlugin parentMCPPlugin = parent.getPlugins().findPlugin(MCPPlugin.class);
+                PatcherPlugin parentPatcherPlugin = parent.getPlugins().findPlugin(PatcherPlugin.class);
 
-                if (mcp != null) {
+                if (parentMCPPlugin != null) {
                     MojangLicenseHelper.displayWarning(p, extension.getMappingChannel().get(), extension.getMappingVersion().get(), updateChannel, updateVersion);
-                    SetupMCP setupMCP = (SetupMCP) tasks.getByName("setupMCP");
+                    final TaskProvider<SetupMCP> setupMCP = parentTasks.named("setupMCP", SetupMCP.class);
 
+                    Provider<RegularFile> setupOutput = setupMCP.flatMap(SetupMCP::getOutput);
                     if (procConfig != null) {
-                        procConfig.get().dependsOn(setupMCP);
-                        procConfig.get().getInput().set(setupMCP.getOutput());
-                        procConfig.get().getTool().set(extension.getProcessor().getVersion());
-                        procConfig.get().getArgs().set(extension.getProcessor().getArgs());
-                        extension.getProcessorData().get().forEach((key, value) -> procConfig.get().getData().put(key, value));
+                        procConfig.configure(task -> {
+                            task.getInput().set(setupMCP.flatMap(SetupMCP::getOutput));
+                            task.getTool().set(extension.getProcessor().getVersion());
+                            task.getArgs().set(extension.getProcessor().getArgs());
+                            task.getData().set(extension.getProcessorData());
+                        });
+                        setupOutput = procConfig.flatMap(DynamicJarExec::getOutput);
                     }
 
-                    if (extension.getCleanSrc() == null) {
-                        if (procConfig != null) {
-                            extension.getCleanSrc().set(procConfig.get().getOutput().get().getAsFile());
-                            applyPatches.get().dependsOn(procConfig);
-                            genPatches.get().dependsOn(procConfig);
-                        } else {
-                            extension.getCleanSrc().set(setupMCP.getOutput().get().getAsFile());
-                            applyPatches.get().dependsOn(setupMCP);
-                            genPatches.get().dependsOn(setupMCP);
-                        }
-                    }
-                    if (applyPatches.get().getBase() == null) {
-                        applyPatches.get().getBase().set(extension.getCleanSrc().getAsFile());
-                    }
-                    if (genPatches.get().getBase() == null) {
-                        genPatches.get().getBase().set(extension.getCleanSrc());
-                    }
+                    extension.getCleanSrc().convention(setupOutput);
+                    applyPatches.configure(task -> task.getBase().convention(extension.getCleanSrc().getAsFile()));
+                    genPatches.configure(task -> task.getBase().convention(extension.getCleanSrc()));
 
-                    DownloadMCPConfig dlMCP = (DownloadMCPConfig)tasks.getByName("downloadConfig");
+                    final TaskProvider<DownloadMCPConfig> downloadConfig = parentTasks.named("downloadConfig", DownloadMCPConfig.class);
 
-                    if (createMcp2Srg.get().getSrg() == null) { //TODO: Make extractMCPData macro
-                        TaskProvider<ExtractMCPData> ext = project.getTasks().register("extractSrg", ExtractMCPData.class);
-                        ext.get().dependsOn(dlMCP, dlMappingsConfig);
-                        ext.get().getConfig().set(dlMCP.getOutput());
-                        createMcp2Srg.get().getSrg().set(ext.get().getOutput());
-                        createMcp2Srg.get().dependsOn(ext);
-                    }
+                    final TaskProvider<ExtractMCPData> extractSrg = tasks.register("extractSrg", ExtractMCPData.class);
+                    extractSrg.configure(task -> task.getConfig().set(downloadConfig.flatMap(DownloadMCPConfig::getOutput)));
+                    createMcp2Srg.configure(task -> task.getSrg().convention(extractSrg.flatMap(ExtractMCPData::getOutput)));
 
-                    if (createExc.get().getConfig() == null) {
-                        createExc.get().dependsOn(dlMCP);
-                        createExc.get().getConfig().set(dlMCP.getOutput());
-                    }
+                    final TaskProvider<ExtractMCPData> extractStatic = tasks.register("extractStatic", ExtractMCPData.class);
+                    extractStatic.configure(task -> {
+                        task.getConfig().set(downloadConfig.flatMap(DownloadMCPConfig::getOutput));
+                        task.getKey().set("statics");
+                        task.setAllowEmpty(true);
+                        task.getOutput().set(project.getLayout().getBuildDirectory()
+                                .dir(task.getName()).map(d -> d.file("output.txt")));
+                    });
 
-                    if (createExc.get().getSrg() == null) {
-                        createExc.get().getSrg().set(createMcp2Srg.get().getSrg());
-                        createExc.get().dependsOn(createMcp2Srg);
-                    }
+                    final TaskProvider<ExtractMCPData> extractConstructors = tasks.register("extractConstructors", ExtractMCPData.class);
+                    extractConstructors.configure(task -> {
+                        task.getConfig().set(downloadConfig.flatMap(DownloadMCPConfig::getOutput));
+                        task.getKey().set("constructors");
+                        task.setAllowEmpty(true);
+                        task.getOutput().set(project.getLayout().getBuildDirectory()
+                                .dir(task.getName()).map(d -> d.file("output.txt")));
+                    });
 
-                    if (createExc.get().getStatics() == null) {
-                        TaskProvider<ExtractMCPData> ext = project.getTasks().register("extractStatic", ExtractMCPData.class);
-                        ext.get().dependsOn(dlMCP);
-                        ext.get().getConfig().set(dlMCP.getOutput());
-                        ext.get().getKey().set("statics");
-                        ext.get().setAllowEmpty(true);
-                        ext.get().getOutput().set(project.file("build/" + ext.get().getName() + "/output.txt"));
-                        createExc.get().getStatics().set(ext.get().getOutput());
-                        createExc.get().dependsOn(ext);
-                    }
+                    createExc.configure(task -> {
+                        task.getConfig().convention(downloadConfig.flatMap(s -> s.getOutput()));
+                        task.getSrg().convention(createMcp2Srg.flatMap(GenerateSRG::getOutput));
+                        task.getStatics().convention(extractStatic.flatMap(ExtractMCPData::getOutput));
+                        task.getConstructors().convention(extractConstructors.flatMap(ExtractMCPData::getOutput));
+                    });
 
-                    if (createExc.get().getConstructors() == null) {
-                        TaskProvider<ExtractMCPData> ext = project.getTasks().register("extractConstructors", ExtractMCPData.class);
-                        ext.get().dependsOn(dlMCP);
-                        ext.get().getConfig().set(dlMCP.getOutput());
-                        ext.get().getKey().set("constructors");
-                        ext.get().setAllowEmpty(true);
-                        ext.get().getOutput().set(project.file("build/" + ext.get().getName() + "/output.txt"));
-                        createExc.get().getConstructors().set(ext.get().getOutput());
-                        createExc.get().dependsOn(ext);
-                    }
-                } else if (patcher != null) {
-                    PatcherExtension pExt = extension.getParent().get().getExtensions().getByType(PatcherExtension.class);
-                    extension.copyFrom(pExt);
+                } else if (parentPatcherPlugin != null) {
+                    PatcherExtension parentPatcher = parent.getExtensions().getByType(PatcherExtension.class);
+                    final TaskProvider<ApplyPatches> parentApplyPatches = parentTasks.named("applyPatches", ApplyPatches.class);
+                    extension.copyFrom(parentPatcher);
 
-                    ApplyPatches parentApply = (ApplyPatches) tasks.getByName(applyPatches.get().getName());
+                    Provider<RegularFile> setupOutput = parentApplyPatches.flatMap(ApplyPatches::getOutput);
                     if (procConfig != null) {
-                        procConfig.get().dependsOn(parentApply);
-                        procConfig.get().getInput().set(parentApply.getOutput());
-                        procConfig.get().getTool().set(extension.getProcessor().getVersion());
-                        procConfig.get().getArgs().set(extension.getProcessor().getArgs());
-                        extension.getProcessorData().get().forEach((key, value) -> procConfig.get().getData().put(key, value));
+                        procConfig.configure(task -> {
+                            task.getInput().set(parentApplyPatches.flatMap(ApplyPatches::getOutput));
+                            task.getTool().set(extension.getProcessor().getVersion());
+                            task.getArgs().set(extension.getProcessor().getArgs());
+                            task.getData().set(extension.getProcessorData());
+                        });
+                        setupOutput = procConfig.flatMap(DynamicJarExec::getOutput);
                     }
 
-                    if (extension.getCleanSrc() == null) {
-                        if (procConfig != null) {
-                            extension.getCleanSrc().set(procConfig.get().getOutput().get().getAsFile());
-                            applyPatches.get().dependsOn(procConfig);
-                            genPatches.get().dependsOn(procConfig);
-                        } else {
-                            extension.getCleanSrc().set(parentApply.getOutput().get().getAsFile());
-                            applyPatches.get().dependsOn(parentApply);
-                            genPatches.get().dependsOn(parentApply);
-                        }
-                    }
-                    if (applyPatches.get().getBase() == null) {
-                        applyPatches.get().getBase().set(extension.getCleanSrc().getAsFile());
-                    }
-                    if (genPatches.get().getBase() == null) {
-                        genPatches.get().getBase().set(extension.getCleanSrc());
+                    extension.getCleanSrc().convention(setupOutput);
+                    applyPatches.configure(task -> task.getBase().convention(extension.getCleanSrc().getAsFile()));
+                    genPatches.configure(task -> task.getBase().convention(extension.getCleanSrc()));
+
+                    final TaskProvider<GenerateSRG> parentCreateMcp2Srg = parentTasks.named("createMcp2Srg", GenerateSRG.class);
+                    createMcp2Srg.configure(task -> task.getSrg().convention(parentCreateMcp2Srg.flatMap(GenerateSRG::getSrg)));
+
+                    final TaskProvider<CreateExc> parentCreateExc = parentTasks.named("createExc", CreateExc.class);
+                    createExc.configure(task -> {
+                        task.getConfig().convention(parentCreateExc.flatMap(CreateExc::getConfig));
+                        task.getSrg().convention(parentCreateExc.flatMap(CreateExc::getSrg));
+                        task.getStatics().convention(parentCreateExc.flatMap(CreateExc::getStatics));
+                        task.getConstructors().convention(parentCreateExc.flatMap(CreateExc::getConstructors));
+                    });
+
+                    for (TaskProvider<GenerateBinPatches> binPatchesTask : Lists.newArrayList(genJoinedBinPatches, genClientBinPatches, genServerBinPatches)) {
+                        final TaskProvider<GenerateBinPatches> parentBinPatchesTask = parentTasks.named(binPatchesTask.getName(), GenerateBinPatches.class);
+                        binPatchesTask.configure(task -> task.getPatchSets().from(parentBinPatchesTask.map(GenerateBinPatches::getPatchSets)));
                     }
 
-                    if (createMcp2Srg.get().getSrg() == null) {
-                        ExtractMCPData extract = ((ExtractMCPData)tasks.getByName("extractSrg"));
-                        if (extract != null) {
-                            createMcp2Srg.get().getSrg().set(extract.getOutput());
-                            createMcp2Srg.get().dependsOn(extract);
-                        } else {
-                            GenerateSRG task = (GenerateSRG)tasks.getByName(createMcp2Srg.get().getName());
-                            createMcp2Srg.get().getSrg().set(task.getSrg());
-                            createMcp2Srg.get().dependsOn(task);
-                        }
-                    }
-
-                    if (createExc.get().getConfig() == null) {
-                        CreateExc task = (CreateExc) tasks.getByName(createExc.get().getName());
-                        createExc.get().getConfig().set(task.getConfig());
-                        createExc.get().dependsOn(task);
-                    }
-                    if (createExc.get().getSrg() == null) { //TODO: Make a macro for Srg/Static/Constructors
-                        ExtractMCPData extract = ((ExtractMCPData)tasks.getByName("extractSrg"));
-                        if (extract != null) {
-                            createExc.get().getSrg().set(extract.getOutput());
-                            createExc.get().dependsOn(extract);
-                        } else {
-                            CreateExc task = (CreateExc)tasks.getByName(createExc.get().getName());
-                            createExc.get().getSrg().set(task.getSrg());
-                            createExc.get().dependsOn(task);
-                        }
-                    }
-                    if (createExc.get().getStatics() == null) {
-                        ExtractMCPData extract = ((ExtractMCPData) tasks.getByName("extractStatic"));
-                        if (extract != null) {
-                            createExc.get().getStatics().set(extract.getOutput());
-                            createExc.get().dependsOn(extract);
-                        } else {
-                            CreateExc task = (CreateExc) tasks.getByName(createExc.get().getName());
-                            createExc.get().getStatics().set(task.getStatics());
-                            createExc.get().dependsOn(task);
-                        }
-                    }
-                    if (createExc.get().getConstructors() == null) {
-                        ExtractMCPData extract = ((ExtractMCPData) tasks.getByName("extractConstructors"));
-                        if (extract != null) {
-                            createExc.get().getConstructors().set(extract.getOutput());
-                            createExc.get().dependsOn(extract);
-                        } else {
-                            CreateExc task = (CreateExc) tasks.getByName(createExc.get().getName());
-                            createExc.get().getConstructors().set(task.getConstructors());
-                            createExc.get().dependsOn(task);
-                        }
-                    }
-                    for (TaskProvider<GenerateBinPatches> task : Lists.newArrayList(genJoinedBinPatches, genClientBinPatches, genServerBinPatches)) {
-                        GenerateBinPatches pgen = (GenerateBinPatches) tasks.getByName(task.get().getName());
-                        for (File patches : pgen.getPatchSets()) {
-                            task.get().getPatchSets().from(patches);
-                        }
-                    }
-
-                    filterNew.get().dependsOn(tasks.getByName("jar"));
-                    filterNew.get().getBlacklist().from(((Jar) tasks.getByName("jar")).getArchiveFile().get().getAsFile());
+                    filterNew.configure(task -> task.getBlacklist().from(parentTasks.named(JavaPlugin.JAR_TASK_NAME, Jar.class)
+                            .flatMap(AbstractArchiveTask::getArchiveFile)));
                 } else {
                     throw new IllegalStateException("Parent must either be a Patcher or MCP project");
                 }
 
-                if (dlMappingsConfig.get().getMappings() == null) {
-                    dlMappingsConfig.get().getMappings().set(extension.getMappings());
-                }
+                dlMappingsConfig.configure(task -> task.getMappings().convention(extension.getMappings()));
 
                 for (TaskProvider<GenerateSRG> genSrg : Arrays.asList(createMcp2Srg, createSrg2Mcp, createMcp2Obf)) {
-                    genSrg.get().dependsOn(dlMappingsConfig);
-                    if (genSrg.get().getMappings() == null) {
-                        genSrg.get().getMappings().set(dlMappingsConfig.get().getMappings());
-                    }
+                    genSrg.configure(task -> task.getMappings().convention(dlMappingsConfig.flatMap(DownloadMCPMappings::getMappings)));
                 }
 
-                if (createMcp2Obf.get().getSrg() == null) {
-                    createMcp2Obf.get().getSrg().set(createMcp2Srg.get().getSrg());
-                    createMcp2Obf.get().dependsOn(createMcp2Srg);
-                }
-
-                if (createSrg2Mcp.get().getSrg() == null) {
-                    createSrg2Mcp.get().getSrg().set(createMcp2Srg.get().getSrg());
-                    createSrg2Mcp.get().dependsOn(createMcp2Srg);
-                }
+                createMcp2Obf.configure(task -> task.getSrg().convention(createMcp2Srg.flatMap(GenerateSRG::getSrg)));
+                createSrg2Mcp.configure(task -> task.getSrg().convention(createMcp2Srg.flatMap(GenerateSRG::getSrg)));
             }
-            Project mcp = getMcpParent(project);
-            if (mcp == null) {
+            Project mcpParent = getMcpParent(project);
+            if (mcpParent == null) {
                 throw new IllegalStateException("Could not find MCP parent project, you must specify a parent chain to MCP.");
             }
-            String mcp_version = mcp.getExtensions().findByType(MCPExtension.class).getConfig().get().getVersion();
-            project.getDependencies().add(MC_DEP_CONFIG, "net.minecraft:client:" + mcp_version + ":extra"); //Needs to be client extra, to get the data files.
-            project.getDependencies().add(MC_DEP_CONFIG, MCPRepo.getMappingDep(extension.getMappingChannel().get(), extension.getMappingVersion().get())); //Add mappings so that it can be used by reflection tools.
+            final MCPExtension mcpParentExtension = mcpParent.getExtensions().getByType(MCPExtension.class);
+            // Needs to be client extra, to get the data files.
+            project.getDependencies().add(MC_DEP_CONFIG, mcpParentExtension.getConfig()
+                    .map(ver -> "net.minecraft:client:" + ver.getVersion() + ":extra"));
+            // Add mappings so that it can be used by reflection tools.
+            project.getDependencies().add(MC_DEP_CONFIG, extension.getMappingChannel()
+                    .zip(extension.getMappingVersion(), MCPRepo::getMappingDep));
 
-            if (dlMCMetaConfig.get().getMCVersion() == null) {
-                dlMCMetaConfig.get().getMCVersion().set(extension.getMappingChannel());
-            }
+            dlMCMetaConfig.configure(task -> task.getMCVersion().convention(extension.getMappingChannel()));
 
             if (!extension.getAccessTransformers().isEmpty()) {
-                SetupMCP setupMCP = (SetupMCP) mcp.getTasks().getByName("setupMCP");
+                SetupMCP setupMCP = (SetupMCP) mcpParent.getTasks().getByName("setupMCP");
                 @SuppressWarnings("deprecation")
-                MCPFunction function = MCPFunctionFactory.createAT(mcp, new ArrayList<>(extension.getAccessTransformers().getFiles()), Collections.emptyList());
+                MCPFunction function = MCPFunctionFactory.createAT(mcpParent,
+                        new ArrayList<>(extension.getAccessTransformers().getFiles()), Collections.emptyList());
                 setupMCP.getPreDecompile().put(project.getName() + "AccessTransformer", function);
                 extension.getAccessTransformers().forEach(f -> {
                     userdevJar.get().from(f, e -> e.into("ats/"));
@@ -595,9 +490,9 @@ public class PatcherPlugin implements Plugin<Project> {
             }
 
             if (!extension.getSideAnnotationStrippers().isEmpty()) {
-                SetupMCP setupMCP = (SetupMCP) mcp.getTasks().getByName("setupMCP");
+                SetupMCP setupMCP = (SetupMCP) mcpParent.getTasks().getByName("setupMCP");
                 @SuppressWarnings("deprecation")
-                MCPFunction function = MCPFunctionFactory.createSAS(mcp, new ArrayList<>(extension.getSideAnnotationStrippers().getFiles()), Collections.emptyList());
+                MCPFunction function = MCPFunctionFactory.createSAS(mcpParent, new ArrayList<>(extension.getSideAnnotationStrippers().getFiles()), Collections.emptyList());
                 setupMCP.getPreDecompile().put(project.getName() + "SideStripper", function);
                 extension.getSideAnnotationStrippers().forEach(f -> {
                     userdevJar.get().from(f, e -> e.into("sas/"));
@@ -605,134 +500,160 @@ public class PatcherPlugin implements Plugin<Project> {
                 });
             }
 
-            CreateFakeSASPatches fakePatches = null;
+            TaskProvider<CreateFakeSASPatches> fakePatches = null;
             PatcherExtension ext = extension;
             while (ext != null) {
                 if (!ext.getSideAnnotationStrippers().isEmpty()) {
-                    if (fakePatches == null)
-                        fakePatches = project.getTasks().register("createFakeSASPatches", CreateFakeSASPatches.class).get();
-                    fakePatches.getFiles().from(ext.getSideAnnotationStrippers());
+                    if (fakePatches == null) {
+                        fakePatches = tasks.register("createFakeSASPatches", CreateFakeSASPatches.class);
+                    }
+                    final PatcherExtension patcherExt = ext;
+                    fakePatches.configure(task -> task.getFiles().from(patcherExt.getSideAnnotationStrippers()));
                 }
-                if (ext.getParent() != null)
+                if (ext.getParent().isPresent()) { // FIXME: possible loop?
                     ext = ext.getParent().get().getExtensions().findByType(PatcherExtension.class);
+                }
             }
 
             if (fakePatches != null) {
-                for (TaskProvider<GenerateBinPatches> task : Lists.newArrayList(genJoinedBinPatches, genClientBinPatches, genServerBinPatches)) {
-                    task.get().dependsOn(fakePatches);
-                    task.get().getPatchSets().from(fakePatches.getOutput());
+                final TaskProvider<CreateFakeSASPatches> fakePatchesTask = fakePatches;
+                for (TaskProvider<GenerateBinPatches> binPatchesTask : Lists.newArrayList(genJoinedBinPatches, genClientBinPatches, genServerBinPatches)) {
+                    binPatchesTask.configure(task -> task.getPatchSets().from(fakePatchesTask.flatMap(CreateFakeSASPatches::getOutput)));
                 }
             }
 
-            applyRangeConfig.get().getExcFiles().from(extension.getExcs());
-            applyRangeBaseConfig.get().getExcFiles().from(extension.getExcs());
+            applyRangeConfig.configure(task -> task.getExcFiles().from(extension.getExcs()));
+            applyRangeBaseConfig.configure(task -> task.getExcFiles().from(extension.getExcs()));
 
             if (!extension.getExtraMappings().isEmpty()) {
                 extension.getExtraMappings().stream().filter(e -> e instanceof File).map(e -> (File) e).forEach(e -> {
                     userdevJar.get().from(e, c -> c.into("srgs/"));
                     userdevConfig.get().getSRGs().from(e);
                 });
-                extension.getExtraMappings().stream().filter(e -> e instanceof String).map(e -> (String) e).forEach(e -> userdevConfig.get().getSRGLines().add(e));
+                extension.getExtraMappings().stream().filter(e -> e instanceof String)
+                        .map(e -> (String) e).forEach(e -> userdevConfig.get().getSRGLines().add(e));
             }
 
             //UserDev Config Default Values
-            if (userdevConfig.get().getTool() == null) {
-                userdevConfig.get().getTool().set("net.minecraftforge:binarypatcher:" + genJoinedBinPatches.get().getResolvedVersion() + ":fatjar");
-                userdevConfig.get().getArguments().empty().addAll("--clean", "{clean}", "--output", "{output}", "--apply", "{patch}");
-            }
-            if (userdevConfig.get().getUniversal() == null) {
-                userdevConfig.get().getUniversal().set(project.getGroup().toString() + ':' + universalJar.get().getArchiveBaseName().getOrNull() + ':' + project.getVersion() + ':' + universalJar.get().getArchiveClassifier().getOrNull() + '@' + universalJar.get().getArchiveExtension().getOrNull());
-            }
-            if (userdevConfig.get().getSource() == null) {
-                userdevConfig.get().getSource().set(project.getGroup().toString() + ':' + sourcesJar.get().getArchiveBaseName().getOrNull() + ':' + project.getVersion() + ':' + sourcesJar.get().getArchiveClassifier().getOrNull() + '@' + sourcesJar.get().getArchiveExtension().getOrNull());
-            }
-            if (!"a/".contentEquals(genPatches.get().getOriginalPrefix().get())) {
-                userdevConfig.get().getPatchesOriginalPrefix().set(genPatches.get().getOriginalPrefix());
-            }
-            if (!"b/".contentEquals(genPatches.get().getModifiedPrefix().get())) {
-                userdevConfig.get().getPatchesModifiedPrefix().set(genPatches.get().getModifiedPrefix());
-            }
+            userdevConfig.configure(task -> {
+                task.getTool().convention(genJoinedBinPatches.map(JarExec::getResolvedVersion)
+                        .map(ver -> "net.minecraftforge:binarypatcher:" + ver + ":fatjar"));
+                task.getArguments().addAll("--clean", "{clean}", "--output", "{output}", "--apply", "{patch}");
+                task.getUniversal().convention(universalJar.flatMap(t ->
+                        t.getArchiveBaseName().flatMap(baseName ->
+                                t.getArchiveClassifier().flatMap(classifier ->
+                                        t.getArchiveExtension().map(jarExt ->
+                                                project.getGroup().toString() + ':' + baseName + ':' + project.getVersion() + ':' + classifier + '@' + jarExt
+                                        )))));
+                task.getSource().convention(sourcesJar.flatMap(t ->
+                        t.getArchiveBaseName().flatMap(baseName ->
+                                t.getArchiveClassifier().flatMap(classifier ->
+                                        t.getArchiveExtension().map(jarExt ->
+                                                project.getGroup().toString() + ':' + baseName + ':' + project.getVersion() + ':' + classifier + '@' + jarExt
+                                        )))));
+                task.getPatchesOriginalPrefix().convention(genPatches.flatMap(GeneratePatches::getOriginalPrefix));
+                task.getPatchesModifiedPrefix().convention(genPatches.flatMap(GeneratePatches::getModifiedPrefix));
+            });
+
             if (procConfig != null) {
-                userdevJar.get().dependsOn(procConfig);
-                userdevConfig.get().setProcessor(extension.getProcessor());
-                extension.getProcessorData().get().forEach((key, value) -> {
-                    userdevJar.get().from(value, c -> c.into("processor/"));
-                    userdevConfig.get().addProcessorData(key, value);
+                userdevJar.configure(task -> {
+                    task.dependsOn(procConfig);
+                    task.from(extension.getProcessorData().get().values(), c -> c.into("processor"));
+                });
+                userdevConfig.configure(task -> {
+                    task.setProcessor(extension.getProcessor());
+                    extension.getProcessorData().get().forEach(task::addProcessorData);
                 });
             }
-            userdevConfig.get().setNotchObf(extension.getNotchObf());
+            userdevConfig.configure(task -> task.setNotchObf(extension.getNotchObf()));
 
-            //Allow generation of patches to skip S2S. For in-dev patches while the code doesn't compile.
+            // Allow generation of patches to skip S2S. For in-dev patches while the code doesn't compile.
             if (extension.isSrgPatches()) {
-                genPatches.get().dependsOn(applyRangeBaseConfig);
-                genPatches.get().getModified().set(applyRangeBaseConfig.get().getOutput().get().getAsFile());
+                genPatches.configure(task -> task.getModified().value(applyRangeBaseConfig.flatMap(ApplyRangeMap::getOutput)));
             } else {
-                //Remap the 'clean' with out mappings.
-                ApplyMappings toMCPClean = project.getTasks().register("srg2mcpClean", ApplyMappings.class).get();
-                toMCPClean.dependsOn(dlMappingsConfig, Lists.newArrayList(applyPatches.get().getDependsOn()));
-                toMCPClean.getInput().fileProvider(applyPatches.get().getBase());
-                toMCPClean.getMappings().set(dlMappingsConfig.get().getOutput());
-                toMCPClean.setLambdas(false);
+                // Remap the 'clean' with out mappings.
+                TaskProvider<ApplyMappings> toMCPClean = tasks.register("srg2mcpClean", ApplyMappings.class);
+                toMCPClean.configure(task -> {
+                    task.dependsOn(applyPatches.map(DefaultTask::getDependsOn));
+                    task.getInput().fileProvider(applyPatches.flatMap(ApplyPatches::getBase));
+                    task.getMappings().value(dlMappingsConfig.flatMap(DownloadMCPMappings::getOutput));
+                    task.setLambdas(false);
+                });
 
-                //Zip up the current working folder as genPatches takes a zip
-                Zip dirtyZip = project.getTasks().register("patchedZip", Zip.class).get();
-                dirtyZip.from(extension.getPatchedSrc());
-                dirtyZip.getArchiveFileName().set("output.zip");
-                dirtyZip.getDestinationDirectory().set(project.file("build/" + dirtyZip.getName() + "/"));
+                // Zip up the current working folder as genPatches takes a zip
+                TaskProvider<Zip> dirtyZip = tasks.register("patchedZip", Zip.class);
+                dirtyZip.configure(task -> {
+                    task.from(extension.getPatchedSrc());
+                    task.getArchiveFileName().set("output.zip");
+                    task.getDestinationDirectory().set(project.getLayout().getBuildDirectory().dir(task.getName()));
+                });
 
-                //Fixup the inputs.
-                applyPatches.get().setDependsOn(Lists.newArrayList(toMCPClean));
-                applyPatches.get().getBase().set(toMCPClean.getOutput().getAsFile());
-                genPatches.get().setDependsOn(Lists.newArrayList(toMCPClean, dirtyZip));
-                genPatches.get().getBase().set(toMCPClean.getOutput());
-                genPatches.get().getModified().set(dirtyZip.getArchiveFile());
+                // Fixup the inputs.
+                applyPatches.configure(task -> task.getBase().set(toMCPClean.flatMap(s -> s.getOutput().getAsFile())));
+                genPatches.configure(task -> {
+                    task.getBase().set(toMCPClean.flatMap(ApplyMappings::getOutput));
+                    task.getModified().set(dirtyZip.flatMap(AbstractArchiveTask::getArchiveFile));
+                });
             }
 
             {
-                String suffix = extension.getNotchObf() ? mcp_version.substring(0, mcp_version.lastIndexOf('-')) : mcp_version + ":srg";
-                File client = MavenArtifactDownloader.generate(project, "net.minecraft:client:" + suffix, true);
-                File server = MavenArtifactDownloader.generate(project, "net.minecraft:server:" + suffix, true);
-                File joined = MavenArtifactDownloader.generate(project, "net.minecraft:joined:" + mcp_version + (extension.getNotchObf() ? "" : ":srg"), true);
+                final Provider<String> mcpConfigVersion = mcpParentExtension.getConfig().map(Artifact::getVersion);
+                Provider<String> version = mcpConfigVersion.map(ver -> extension.getNotchObf() ? ver.substring(0, ver.lastIndexOf('-')) : ver);
+                Provider<String> classifier = project.provider(() -> extension.getNotchObf() ? "" : ":srg");
 
-                if (client == null || !client.exists())
-                    throw new RuntimeException("Something horrible happenend, client " + (extension.getNotchObf() ? "notch" : "SRG") + " jar not found");
-                if (server == null || !server.exists())
-                    throw new RuntimeException("Something horrible happenend, server " + (extension.getNotchObf() ? "notch" : "SRG") + " jar not found");
-                if (joined == null || !joined.exists())
-                    throw new RuntimeException("Something horrible happenend, joined " + (extension.getNotchObf() ? "notch" : "SRG") + " jar not found");
+                Provider<File> clientJar = version.zip(classifier, (ver, cls) -> {
+                    File ret = MavenArtifactDownloader.generate(project, "net.minecraft:client:" + ver + cls, true);
+                    if (ret == null || !ret.exists())
+                        throw new RuntimeException("Client " + (extension.getNotchObf() ? "notch" : "SRG" + " jar not found"));
+                    return ret;
+                });
+                Provider<File> serverJar = version.zip(classifier, (ver, cls) -> {
+                    File ret = MavenArtifactDownloader.generate(project, "net.minecraft:server:" + ver + cls, true);
+                    if (ret == null || !ret.exists())
+                        throw new RuntimeException("Server " + (extension.getNotchObf() ? "notch" : "SRG" + " jar not found"));
+                    return ret;
+                });
+                Provider<File> joinedJar = mcpConfigVersion.zip(classifier, (ver, cls) -> {
+                    File ret = MavenArtifactDownloader.generate(project, "net.minecraft:joined:" + ver + cls, true);
+                    if (ret == null || !ret.exists())
+                        throw new RuntimeException("Joined " + (extension.getNotchObf() ? "notch" : "SRG" + " jar not found"));
+                    return ret;
+                });
 
                 TaskProvider<GenerateSRG> srg = extension.getNotchObf() ? createMcp2Obf : createMcp2Srg;
-                reobfJar.get().dependsOn(srg);
-                reobfJar.get().getSrg().set(srg.get().getOutput());
-                //TODO: Extra SRGs, I don't think this is needed tho...
+                reobfJar.configure(t -> t.getSrg().set(srg.flatMap(GenerateSRG::getOutput)));
 
-                genJoinedBinPatches.get().dependsOn(srg);
-                genJoinedBinPatches.get().getSrg().set(srg.get().getOutput());
-                genJoinedBinPatches.get().getCleanJar().set(joined);
+                genJoinedBinPatches.configure(t -> {
+                    t.getSrg().set(srg.flatMap(GenerateSRG::getOutput));
+                    t.getCleanJar().fileProvider(joinedJar);
+                });
+                genClientBinPatches.configure(t -> {
+                    t.getSrg().set(srg.flatMap(GenerateSRG::getOutput));
+                    t.getCleanJar().fileProvider(clientJar);
+                });
+                genServerBinPatches.configure(t -> {
+                    t.getSrg().set(srg.flatMap(GenerateSRG::getOutput));
+                    t.getCleanJar().fileProvider(serverJar);
+                });
 
-                genClientBinPatches.get().dependsOn(srg);
-                genClientBinPatches.get().getSrg().set(srg.get().getOutput());
-                genClientBinPatches.get().getCleanJar().set(client);
-
-                genServerBinPatches.get().dependsOn(srg);
-                genServerBinPatches.get().getSrg().set(srg.get().getOutput());
-                genServerBinPatches.get().getCleanJar().set(server);
-
-                filterNew.get().dependsOn(srg);
-                filterNew.get().getSrg().set(srg.get().getOutput());
-                filterNew.get().getBlacklist().from(joined);
+                filterNew.configure(t -> {
+                    t.getSrg().set(srg.flatMap(GenerateSRG::getOutput));
+                    t.getBlacklist().from(joinedJar);
+                });
             }
 
             Map<String, String> tokens = new HashMap<>();
 
             try {
                 // Check meta exists
-                if (!dlMCMetaConfig.get().getOutput().get().getAsFile().exists()) {
+                final DownloadMCMeta downloadMCMetaTask = dlMCMetaConfig.get();
+                final File metaOutput = downloadMCMetaTask.getOutput().get().getAsFile();
+                if (!metaOutput.exists()) {
                     // Force download meta
-                    dlMCMetaConfig.get().downloadMCMeta();
+                    downloadMCMetaTask.downloadMCMeta();
                 }
 
-                VersionJson json = Utils.loadJson(dlMCMetaConfig.get().getOutput().get().getAsFile(), VersionJson.class);
+                VersionJson json = Utils.loadJson(metaOutput, VersionJson.class);
 
                 tokens.put("asset_index", json.assetIndex.id);
             } catch (IOException e) {
@@ -747,18 +668,19 @@ public class PatcherPlugin implements Plugin<Project> {
         });
     }
 
-
+    @Nullable
     private Project getMcpParent(Project project) {
         final PatcherExtension extension = project.getExtensions().findByType(PatcherExtension.class);
-        if (extension == null || extension.getParent() == null) {
+        if (extension == null || !extension.getParent().isPresent()) {
             return null;
         }
-        MCPPlugin mcp = extension.getParent().get().getPlugins().findPlugin(MCPPlugin.class);
-        PatcherPlugin patcher = extension.getParent().get().getPlugins().findPlugin(PatcherPlugin.class);
+        final Project parent = extension.getParent().get();
+        MCPPlugin mcp = parent.getPlugins().findPlugin(MCPPlugin.class);
+        PatcherPlugin patcher = parent.getPlugins().findPlugin(PatcherPlugin.class);
         if (mcp != null) {
-            return extension.getParent().get();
+            return parent;
         } else if (patcher != null) {
-            return getMcpParent(extension.getParent().get());
+            return getMcpParent(parent);
         }
         return null;
     }

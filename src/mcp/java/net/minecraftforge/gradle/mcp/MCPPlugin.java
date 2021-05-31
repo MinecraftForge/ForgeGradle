@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.mcp;
 
+import net.minecraftforge.gradle.common.util.Artifact;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.tasks.DownloadMCPConfig;
 import net.minecraftforge.gradle.mcp.tasks.SetupMCP;
@@ -41,13 +42,12 @@ public class MCPPlugin implements Plugin<Project> {
         TaskProvider<SetupMCP> setupMCP = project.getTasks().register("setupMCP", SetupMCP.class);
 
         downloadConfig.configure(task -> {
-            task.getConfig().set(extension.getConfig().toString());
-            task.getOutput().set(project.file("build/mcp_config.zip"));
+            task.getConfig().set(extension.getConfig().map(Artifact::getDescriptor));
+            task.getOutput().set(project.getLayout().getBuildDirectory().file("mcp_config.zip"));
         });
         setupMCP.configure(task -> {
-            task.dependsOn(downloadConfig);
             task.getPipeline().set(extension.getPipeline());
-            task.getConfig().set(downloadConfig.get().getOutput());
+            task.getConfig().set(downloadConfig.flatMap(DownloadMCPConfig::getOutput));
         });
 
         project.afterEvaluate(p -> {
