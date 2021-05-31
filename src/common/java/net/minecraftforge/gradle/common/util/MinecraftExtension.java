@@ -20,33 +20,31 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.Project;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
+
 import groovy.lang.Closure;
 import groovy.lang.GroovyObjectSupport;
 import groovy.lang.MissingPropertyException;
-import org.gradle.api.NamedDomainObjectContainer;
-import org.gradle.api.Project;
-import javax.inject.Inject;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
+
+import javax.inject.Inject;
 
 public abstract class MinecraftExtension extends GroovyObjectSupport {
 
     protected final Project project;
     protected final NamedDomainObjectContainer<RunConfig> runs;
 
-    protected String mapping_channel;
-    protected String mapping_version;
-    protected List<File> accessTransformers;
-    protected List<File> sideAnnotationStrippers;
+    private final Provider<String> mapping;
 
     @Inject
     public MinecraftExtension(final Project project) {
         this.project = project;
-
-        this.runs = project.container(RunConfig.class, name -> new RunConfig(project, name));
+        this.mapping = getMappingChannel().zip(getMappingVersion(), (ch, ver) -> ch + '_' + ver);
+        this.runs = project.getObjects().domainObjectContainer(RunConfig.class, name -> new RunConfig(project, name));
     }
 
     public Project getProject() {
@@ -66,8 +64,7 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
             throw new MissingPropertyException(name);
         }
 
-        @SuppressWarnings("rawtypes")
-        final Closure closure = (Closure) value;
+        @SuppressWarnings("rawtypes") final Closure closure = (Closure) value;
         final RunConfig runConfig = getRuns().maybeCreate(name);
 
         closure.setResolveStrategy(Closure.DELEGATE_FIRST);
@@ -75,23 +72,25 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         closure.call();
     }
 
-    @Deprecated  //Remove when we can break things.
-    public void setMappings(String mappings) {
-        project.getLogger().warn("Deprecated MinecraftExtension.setMappings called. Use mappings(channel, version)");
-        int idx = mappings.lastIndexOf('_');
-        if (idx == -1)
-            throw new RuntimeException("Invalid mapping string format, must be {channel}_{version}. Consider using mappings(channel, version) directly.");
-        String channel = mappings.substring(0, idx);
-        String version = mappings.substring(idx + 1);
-        mappings(channel, version);
+    public abstract Property<String> getMappingChannel();
+
+    public abstract Property<String> getMappingVersion();
+
+    public Provider<String> getMappings() {
+        return mapping;
+    }
+
+    public void mappings(Provider<String> channel, Provider<String> version) {
+        getMappingChannel().set(channel);
+        getMappingVersion().set(version);
     }
 
     public void mappings(String channel, String version) {
-        this.mapping_channel = channel;
-        this.mapping_version = version;
+        getMappingChannel().set(channel);
+        getMappingVersion().set(version);
     }
 
-    public void mappings(Map<String, CharSequence> mappings) {
+    public void mappings(Map<String, ? extends CharSequence> mappings) {
         CharSequence channel = mappings.get("channel");
         CharSequence version = mappings.get("version");
 
@@ -102,73 +101,7 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         mappings(channel.toString(), version.toString());
     }
 
-    public String getMappings() {
-        return mapping_channel == null || mapping_version == null ? null : mapping_channel + '_' + mapping_version;
-    }
-    public String getMappingChannel() {
-        return mapping_channel;
-    }
-    public void setMappingChannel(String value) {
-        this.mapping_channel = value;
-    }
-    public String getMappingVersion() {
-        return mapping_version;
-    }
-    public void setMappingVersion(String value) {
-        this.mapping_version = value;
-    }
+    public abstract ConfigurableFileCollection getAccessTransformers();
 
-    public void setAccessTransformers(List<File> accessTransformers) {
-        this.accessTransformers = new ArrayList<>(accessTransformers);
-    }
-
-    public void setAccessTransformers(File... accessTransformers) {
-        setAccessTransformers(Arrays.asList(accessTransformers));
-    }
-
-    public void setAccessTransformer(File accessTransformers) {
-        setAccessTransformers(accessTransformers);
-    }
-
-    public void accessTransformer(File... accessTransformers) {
-        getAccessTransformers().addAll(Arrays.asList(accessTransformers));
-    }
-
-    public void accessTransformers(File... accessTransformers) {
-        accessTransformer(accessTransformers);
-    }
-
-    public List<File> getAccessTransformers() {
-        if (accessTransformers == null) {
-            accessTransformers = new ArrayList<>();
-        }
-
-        return accessTransformers;
-    }
-
-    public void setSideAnnotationStrippers(List<File> value) {
-        this.sideAnnotationStrippers = new ArrayList<>(value);
-    }
-    public void setSideAnnotationStrippers(File... value) {
-        setSideAnnotationStrippers(Arrays.asList(value));
-    }
-    public void setSideAnnotationStripper(File value) {
-        getSideAnnotationStrippers().add(value);
-    }
-    public void setSideAnnotationStripper(File... values) {
-        for (File value : values)
-            setSideAnnotationStripper(value);
-    }
-    public void sideAnnotationStripper(File... values) {
-        setSideAnnotationStripper(values);
-    }
-    public void sideAnnotationStrippers(File... values) {
-        sideAnnotationStripper(values);
-    }
-    public List<File> getSideAnnotationStrippers() {
-        if (sideAnnotationStrippers == null) {
-            sideAnnotationStrippers = new ArrayList<>();
-        }
-        return sideAnnotationStrippers;
-    }
+    public abstract ConfigurableFileCollection getSideAnnotationStrippers();
 }

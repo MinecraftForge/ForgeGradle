@@ -20,14 +20,18 @@
 
 package net.minecraftforge.gradle.patcher;
 
-import com.google.common.collect.ImmutableMap;
-
 import net.minecraftforge.gradle.common.config.UserdevConfigV2.DataFunction;
 import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.common.util.RunConfig;
-import org.gradle.api.Project;
 
-import javax.annotation.Nonnull;
+import org.gradle.api.Project;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.MapProperty;
+import org.gradle.api.provider.Property;
+
+import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,25 +41,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class PatcherExtension extends MinecraftExtension {
+import javax.annotation.Nullable;
 
+public abstract class PatcherExtension extends MinecraftExtension {
     public static final String EXTENSION_NAME = "patcher";
 
-    public Project parent;
-
-    public File cleanSrc, patchedSrc, patches;
-    public String mcVersion;
-
-    public boolean srgPatches = true;
+    private boolean srgPatches = true;
     private boolean notchObf = false;
 
-    private List<File> excs;
     private List<Object> extraExcs, extraMappings;
 
+    @Nullable
     private DataFunction processor;
-    private Map<String, File> processorData;
 
-    public PatcherExtension(@Nonnull final Project project) {
+    public PatcherExtension(final Project project) {
         super(project);
 
         ImmutableMap.<String, String>builder()
@@ -77,118 +76,33 @@ public class PatcherExtension extends MinecraftExtension {
         });
     }
 
-    public void setParent(Project parent) {
-        this.parent = parent;
-    }
+    public abstract Property<Project> getParent();
 
-    public void parent(Project parent) {
-        setParent(parent);
-    }
+    public abstract RegularFileProperty getCleanSrc();
 
-    public Project getParent() {
-        return parent;
-    }
+    public abstract DirectoryProperty getPatchedSrc();
 
-    public void setCleanSrc(File cleanSrc) {
-        this.cleanSrc = cleanSrc;
-    }
+    public abstract DirectoryProperty getPatches();
 
-    public void cleanSrc(File cleanSrc) {
-        setCleanSrc(cleanSrc);
-    }
+    public abstract Property<String> getMcVersion();
 
-    public File getCleanSrc() {
-        return cleanSrc;
-    }
-
-    public void setPatchedSrc(File patchedSrc) {
-        this.patchedSrc = patchedSrc;
-    }
-
-    public void patchedSrc(File patchedSrc) {
-        setPatchedSrc(patchedSrc);
-    }
-
-    public File getPatchedSrc() {
-        return patchedSrc;
-    }
-
-    public void setPatches(File patches) {
-        this.patches = patches;
-    }
-
-    public void patches(File patches) {
-        setPatches(patches);
-    }
-
-    public File getPatches() {
-        return patches;
-    }
-
-    public void setMcVersion(String mcVersion) {
-        this.mcVersion = mcVersion;
-    }
-
-    public void mcVersion(String mcVersion) {
-        setMcVersion(mcVersion);
-    }
-
-    public String getMcVersion() {
-        return mcVersion;
+    public boolean isSrgPatches() {
+        return srgPatches;
     }
 
     public void setSrgPatches(boolean srgPatches) {
         this.srgPatches = srgPatches;
     }
 
-    public void srgPatches(boolean srgPatches) {
-        setSrgPatches(srgPatches);
-    }
-
-    public void srgPatches() {
-        setSrgPatches(true);
-    }
-
-    public boolean isSrgPatches() {
-        return srgPatches;
+    public boolean getNotchObf() {
+        return this.notchObf;
     }
 
     public void setNotchObf(boolean value) {
         this.notchObf = value;
     }
 
-    public boolean getNotchObf() {
-        return this.notchObf;
-    }
-
-    public void setExcs(List<File> excs) {
-        this.excs = new ArrayList<>(excs);
-    }
-
-    public void setExcs(File... excs) {
-        setExcs(Arrays.asList(excs));
-    }
-
-    public void setExc(File exc) {
-        setExcs(exc);
-    }
-
-    public void excs(File... excs) {
-        getExcs().addAll(Arrays.asList(excs));
-    }
-
-    public void exc(File exc) {
-        excs(exc);
-    }
-
-    @Nonnull
-    public List<File> getExcs() {
-        if (excs == null) {
-            excs = new ArrayList<>();
-        }
-
-        return excs;
-    }
+    public abstract ConfigurableFileCollection getExcs();
 
     public void setExtraExcs(List<Object> extraExcs) {
         this.extraExcs = new ArrayList<>(extraExcs);
@@ -202,7 +116,6 @@ public class PatcherExtension extends MinecraftExtension {
         extraExcs(exc); // TODO: Type check!
     }
 
-    @Nonnull
     public List<Object> getExtraExcs() {
         if (extraExcs == null) {
             extraExcs = new ArrayList<>();
@@ -223,7 +136,6 @@ public class PatcherExtension extends MinecraftExtension {
         this.extraMappings = new ArrayList<>(extraMappings);
     }
 
-    @Nonnull
     public List<Object> getExtraMappings() {
         if (extraMappings == null) {
             extraMappings = new ArrayList<>();
@@ -232,15 +144,15 @@ public class PatcherExtension extends MinecraftExtension {
         return extraMappings;
     }
 
+    @Nullable
     public DataFunction getProcessor() {
         return this.processor;
     }
+
+    public abstract MapProperty<String, File> getProcessorData();
+
     public void setProcessor(Map<String, Object> map) {
         processor(map);
-    }
-
-    public Map<String, File> getProcessorData() {
-        return this.processorData == null ? Collections.emptyMap() : this.processorData;
     }
 
     @SuppressWarnings("unchecked")
@@ -250,24 +162,24 @@ public class PatcherExtension extends MinecraftExtension {
             if ("tool".equals(key)) {
                 if (!(value instanceof String))
                     throw new IllegalArgumentException("'tool' must be a string");
-                this.processor.setVersion((String)value);
+                this.processor.setVersion((String) value);
             } else if ("args".equals(key)) {
                 if (value instanceof String)
                     this.processor.setArgs(Collections.singletonList((String) value));
                 else if (value instanceof String[])
-                    this.processor.setArgs(Arrays.asList((String[])value));
+                    this.processor.setArgs(Arrays.asList((String[]) value));
                 else if (value instanceof Collection)
-                    this.processor.setArgs(new ArrayList<>((Collection<String>)value));
+                    this.processor.setArgs(new ArrayList<>((Collection<String>) value));
                 else
                     throw new IllegalArgumentException("'args' must be a String, or array of Strings");
             } else if ("repo".equals(key)) {
                 if (!(value instanceof String))
                     throw new IllegalArgumentException("'repo' must be a string");
-                this.processor.setRepo((String)value);
+                this.processor.setRepo((String) value);
             } else if ("data".equals(key)) {
                 if (!(value instanceof Map))
                     throw new IllegalArgumentException("'data' must be a map of string -> file");
-                this.processorData = (Map<String, File>)value;
+                getProcessorData().putAll((Map<String, File>) value);
             } else {
                 throw new IllegalArgumentException("Invalid processor key " + key);
             }
@@ -275,15 +187,8 @@ public class PatcherExtension extends MinecraftExtension {
     }
 
     void copyFrom(PatcherExtension other) {
-        if (mapping_channel == null) {
-            setMappingChannel(other.getMappingChannel());
-        }
-        if (mapping_version == null) {
-            setMappingVersion(other.getMappingVersion());
-        }
-
-        if (mcVersion == null) {
-            setMcVersion(other.getMcVersion());
-        }
+        getMappingChannel().set(other.getMappingChannel());
+        getMappingVersion().set(other.getMappingVersion());
+        getMcVersion().set(other.getMcVersion());
     }
 }

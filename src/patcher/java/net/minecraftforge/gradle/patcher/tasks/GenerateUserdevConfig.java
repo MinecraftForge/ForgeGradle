@@ -67,7 +67,7 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
 
     @Nullable
     private DataFunction processor;
-    private MapProperty<String, File> processorData;
+    private final MapProperty<String, File> processorData;
 
     private boolean notchObf = false;
 
@@ -124,21 +124,22 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
         MCPExtension mcp = project.getExtensions().findByType(MCPExtension.class);
 
         if (patcher != null) {
-            if (project != getProject() && patcher.getPatches() == null) { //patches == null means they dont add anything, used by us as a 'clean' workspace.
+            if (project != getProject() && patcher.getPatches().isPresent()) {
+                // !patches.isPresent() means they don't add anything, used by Forge as a 'clean' workspace
                 if (json.parent == null) {
                     json.parent = String.format("%s:%s:%s:userdev", project.getGroup(), project.getName(), project.getVersion());
                     return;
                 }
             }
-            if (patcher.getParent() != null) {
-                addParent(json, patcher.getParent());
+            if (patcher.getParent().isPresent()) {
+                addParent(json, patcher.getParent().get());
             }
             //TODO: MCP/Parents without separate projects?
         } else {
-            if (json.parent == null) { //Only specify mcp if we have no patcher parent.
+            if (json.parent == null) { // Only specify mcp if we have no patcher parent.
                 if (mcp == null)
                     throw new IllegalStateException("Could not determine MCP parent for userdev config");
-                json.mcp = mcp.getConfig().toString();;
+                json.mcp = mcp.getConfig().get().toString();
             }
         }
     }

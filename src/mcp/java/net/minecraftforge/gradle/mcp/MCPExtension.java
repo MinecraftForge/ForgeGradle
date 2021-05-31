@@ -20,31 +20,39 @@
 
 package net.minecraftforge.gradle.mcp;
 
-import org.gradle.api.Project;
-
 import net.minecraftforge.gradle.common.util.Artifact;
+
+import org.gradle.api.Project;
+import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 
 import javax.inject.Inject;
 
-public class MCPExtension {
+public abstract class MCPExtension {
+    public static final String EXTENSION_NAME = "mcp";
 
-    private Artifact config;
-    public String pipeline;
-
+    protected final Project project;
 
     @Inject
-    public MCPExtension(Project project) {
+    public MCPExtension(final Project project) {
+        this.project = project;
     }
 
-    public Artifact getConfig() {
-        return config;
+    public abstract Property<Artifact> getConfig();
+
+    public void setConfig(Provider<String> value) {
+        getConfig().set(value.map(s -> {
+            if (s.indexOf(':') != -1) { // Full artifact
+                return Artifact.from(s);
+            } else {
+                return Artifact.from("de.oceanlabs.mcp:mcp_config:" + s + "@zip");
+            }
+        }));
     }
 
     public void setConfig(String value) {
-        if (value.indexOf(':') != -1) // Full artifact
-            config = Artifact.from(value);
-        else
-            config = Artifact.from("de.oceanlabs.mcp:mcp_config:" + value + "@zip");
+        setConfig(project.provider(() -> value));
     }
 
+    public abstract Property<String> getPipeline();
 }
