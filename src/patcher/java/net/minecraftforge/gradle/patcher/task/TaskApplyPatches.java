@@ -104,19 +104,19 @@ public class TaskApplyPatches extends DefaultTask {
     }
 
     //@formatter:off
-    @Input                    public File getBase() { return base; }
+    @InputFile                public File getBase() { return base; }
     @InputDirectory @Optional public File getPatches() { return patches ; }
     @OutputFile               public File getOutput() { return output; }
-                    @Optional public File getRejects() { return rejects; }
+    @OutputFile     @Optional public File getRejects() { return rejects; }
     @Input          @Optional public ArchiveFormat getOutputFormat() { return outputFormat; }
     @Input          @Optional public ArchiveFormat getRejectsFormat() { return rejectsFormat; }
-    @Input          @Optional public float getMinFuzzQuality() { return minFuzzQuality; }
-    @Input          @Optional public int getMaxFuzzOffset() { return maxFuzzOffset; }
+    @Input                    public float getMinFuzzQuality() { return minFuzzQuality; }
+    @Input                    public int getMaxFuzzOffset() { return maxFuzzOffset; }
     @Input          @Optional public PatchMode getPatchMode() { return patchMode; }
     @Input          @Optional public String getPatchesPrefix() { return patchesPrefix; }
-                    @Optional public boolean isVerbose() { return verbose; }
-                    @Optional public boolean isPrintSummary() { return printSummary; }
-    @Input          @Optional public boolean isFailOnError() { return failOnError; }
+    @Input                    public boolean isVerbose() { return verbose; }
+    @Input                    public boolean isPrintSummary() { return printSummary; }
+    @Input                    public boolean isFailOnError() { return failOnError; }
     @Input          @Optional public String getOriginalPrefix() { return originalPrefix; }
     @Input          @Optional public String getModifiedPrefix() { return modifiedPrefix; }
                               public void setBase(File base) { this.base = base; }
