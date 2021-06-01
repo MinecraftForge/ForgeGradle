@@ -59,7 +59,7 @@ public class DownloadMCPConfigTask extends DefaultTask {
     }
 
     @InputFile
-    private File getConfigFile() {
+    public File getConfigFile() {
         return downloadConfigFile(config);
     }
 
