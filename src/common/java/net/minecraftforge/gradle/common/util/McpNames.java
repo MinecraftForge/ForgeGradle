@@ -50,7 +50,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class McpNames {
     private static final String NEWLINE = System.getProperty("line.separator");
-    private static final Pattern SRG_FINDER             = Pattern.compile("(?:[fF]unc_|m_)[0-9]+_[a-zA-Z_]+|(?:[fF]ield_|f_)[0-9]+_[a-zA-Z_]+|p_[\\w]+_\\d+_\\b");
+    private static final Pattern SRG_FINDER             = Pattern.compile("[fF]unc_[0-9]+_[a-zA-Z_]+|m_[0-9]+_|[fF]ield_[0-9]+_[a-zA-Z_]+|f_[0-9]+_|p_[\\w]+_\\d+_\\b");
     private static final Pattern METHOD_JAVADOC_PATTERN = Pattern.compile("^(?<indent>(?: {3})+|\\t+)(?!return)(?:\\w+\\s+)*(?<generic><[\\w\\W]*>\\s+)?(?<return>\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>(?:func_|m_)[0-9]+_[a-zA-Z_]+)\\(");
     private static final Pattern FIELD_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: {3})+|\\t+)(?!return)(?:\\w+\\s+)*(?:\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>(?:field_|f_)[0-9]+_[a-zA-Z_]+) *(?:=|;)");
     private static final Pattern CLASS_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: )*|\\t*)([\\w|@]*\\s)*(class|interface|@interface|enum) (?<name>[\\w]+)");

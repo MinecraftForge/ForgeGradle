@@ -66,10 +66,11 @@ public class TaskCreateExc extends DefaultTask {
         lines = lines.stream().map(line -> line.split("#")[0]).filter(l -> !Strings.isNullOrEmpty(l.trim())).collect(Collectors.toList()); //Strip empty/comments
 
         Map<String, String> classes = new HashMap<>();
+        boolean tsrgv2 = !lines.isEmpty() && lines.get(0).startsWith("tsrg2"); // TSRGv2 has an extra space that we must account for when splitting
         lines.stream()
         .filter(line -> !line.startsWith("\t") || (line.indexOf(':') != -1 && line.startsWith("CL:")))
         .map(line -> line.indexOf(':') != -1 ? line.substring(4).split(" ") : line.split(" "))
-        .filter(pts -> pts.length == 2 && !pts[0].endsWith("/"))
+        .filter(pts -> pts.length == (tsrgv2 ? 3 : 2) && !pts[0].endsWith("/")) //Skip packages
         .forEach(pts -> classes.put(pts[0], pts[1]));
 
         String currentClass = null;
@@ -81,7 +82,7 @@ public class TaskCreateExc extends DefaultTask {
                 if (pts[0].equals("MD:")) {
                     int idx = pts[3].lastIndexOf('/');
                     String name = pts[3].substring(idx + 1);
-                    if (name.startsWith("func_") && !pts[4].contains("()")) {
+                    if ((name.startsWith("func_") || name.startsWith("m_")) && !pts[4].contains("()")) {
                         out.add(pts[3].substring(0, idx + 1) + "." + names.getOrDefault(name, name) + pts[4] + "=|" + String.join(",", buildArgs(name, pts[4], staticMap.contains(name))));
                     }
                 }
@@ -90,7 +91,7 @@ public class TaskCreateExc extends DefaultTask {
                     currentClass = pts[1];
                 } else if (pts.length == 4) {
                     String name = pts[3];
-                    if (name.startsWith("func_") && !pts[2].contains("()")) {
+                    if ((name.startsWith("func_") || name.startsWith("m_")) && !pts[2].contains("()")) {
                         String desc = remapDesc(pts[2], classes);
                         out.add(currentClass + "." + names.getOrDefault(name, name) + desc + "=|" + String.join(",", buildArgs(name, desc, staticMap.contains(name))));
                     }
@@ -109,7 +110,7 @@ public class TaskCreateExc extends DefaultTask {
 
     private List<String> buildArgs(String name, String desc, boolean isStatic) {
         String prefix = "p_i" + name + "_";
-        if (name.startsWith("func_")) {
+        if (name.startsWith("func_") || name.startsWith("m_")) {
             prefix = "p_" + name.split("_")[1] + "_";
         }
         List<String> ret = new ArrayList<String>();
