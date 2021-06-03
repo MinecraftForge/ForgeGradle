@@ -316,10 +316,11 @@ public class MinecraftRepo extends BaseRepo {
 
             Set<String> whitelist = new HashSet<>();
             List<String> lines = Utils.lines(mappings).map(line -> line.split("#")[0]).filter(l -> !Strings.isNullOrEmpty(l.trim())).collect(Collectors.toList()); //Strip comments and empty lines
+            boolean tsrgv2 = !lines.isEmpty() && lines.get(0).startsWith("tsrg2"); // TSRGv2 has an extra space that we must account for when splitting
             lines.stream()
             .filter(line -> !line.startsWith("\t") || (line.indexOf(':') != -1 && line.startsWith("CL:"))) // Class lines only
             .map(line -> line.indexOf(':') != -1 ? line.substring(4).split(" ") : line.split(" ")) //Convert to: OBF SRG
-            .filter(pts -> pts.length == 2 && !pts[0].endsWith("/")) //Skip packages
+            .filter(pts -> pts.length == (tsrgv2 ? 3 : 2) && !pts[0].endsWith("/")) //Skip packages
             .forEach(pts -> whitelist.add(pts[0]));
 
             for (Enumeration<? extends ZipEntry> entries = zin.entries(); entries.hasMoreElements();) {

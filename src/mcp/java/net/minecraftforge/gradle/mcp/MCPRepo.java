@@ -497,12 +497,12 @@ public class MCPRepo extends BaseRepo {
                     continue;
                 for (IField fld : cls.getFields()) {
                     String name = obf.remapField(fld.getMapped());
-                    if (name.startsWith("field_"))
+                    if (name.startsWith("field_") || name.startsWith("f_"))
                         cfields.put(name, fld.getOriginal());
                 }
                 for (IMethod mtd : cls.getMethods()) {
                     String name = obf.remapMethod(mtd.getMapped(), mtd.getMappedDescriptor());
-                    if (name.startsWith("func_"))
+                    if (name.startsWith("func_") || name.startsWith("m_"))
                         cmethods.put(name, mtd.getOriginal());
                 }
             }
@@ -512,12 +512,12 @@ public class MCPRepo extends BaseRepo {
                     continue;
                 for (IField fld : cls.getFields()) {
                     String name = obf.remapField(fld.getMapped());
-                    if (name.startsWith("field_"))
+                    if (name.startsWith("field_") || name.startsWith("f_"))
                         sfields.put(name, fld.getOriginal());
                 }
                 for (IMethod mtd : cls.getMethods()) {
                     String name = obf.remapMethod(mtd.getMapped(), mtd.getMappedDescriptor());
-                    if (name.startsWith("func_"))
+                    if (name.startsWith("func_") || name.startsWith("m_"))
                         smethods.put(name, mtd.getOriginal());
                 }
             }
