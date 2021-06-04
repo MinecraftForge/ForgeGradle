@@ -68,6 +68,7 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
     @Nullable
     private DataFunction processor;
     private final MapProperty<String, File> processorData;
+    private final Property<String> sourceFileEncoding;
 
     private boolean notchObf = false;
 
@@ -78,7 +79,8 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
         ObjectFactory objects = project.getObjects();
         getPatchesOriginalPrefix().convention("a/");
         getPatchesModifiedPrefix().convention("b/");
-        getSourceFileEncoding().convention(StandardCharsets.UTF_8.name());
+        sourceFileEncoding = project.getObjects().property(String.class)
+                .convention(StandardCharsets.UTF_8.name());
 
         processorData = objects.mapProperty(String.class, File.class);
 
@@ -274,7 +276,9 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
     }
 
     @Input
-    public abstract Property<String> getSourceFileEncoding();
+    public Property<String> getSourceFileEncoding() {
+        return this.sourceFileEncoding;
+    }
 
     public void setSourceFileEncoding(Charset value) {
         getSourceFileEncoding().set(value.name());

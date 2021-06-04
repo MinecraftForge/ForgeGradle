@@ -40,11 +40,13 @@ import java.io.File;
 import java.io.IOException;
 
 public abstract class GenerateSRG extends DefaultTask {
+    private final Property<IMappingFile.Format> format;
     private boolean notch = false;
     private boolean reverse = false;
 
     public GenerateSRG() {
-        getFormat().convention(IMappingFile.Format.TSRG2);
+        this.format = getProject().getObjects().property(IMappingFile.Format.class)
+                .convention(IMappingFile.Format.TSRG2);
         getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(f -> f.file("output.tsrg")));
     }
 
@@ -90,7 +92,9 @@ public abstract class GenerateSRG extends DefaultTask {
     public abstract Property<String> getMappings();
 
     @Input
-    public abstract Property<IMappingFile.Format> getFormat();
+    public Property<IMappingFile.Format> getFormat() {
+        return this.format;
+    }
 
     public void setFormat(String value) {
         this.getFormat().set(IMappingFile.Format.valueOf(value));

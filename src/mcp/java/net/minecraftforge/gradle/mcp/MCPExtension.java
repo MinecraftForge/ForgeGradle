@@ -32,13 +32,17 @@ public abstract class MCPExtension {
     public static final String EXTENSION_NAME = "mcp";
 
     protected final Project project;
+    private final Property<Artifact> config;
 
     @Inject
     public MCPExtension(final Project project) {
         this.project = project;
+        this.config = project.getObjects().property(Artifact.class);
     }
 
-    public abstract Property<Artifact> getConfig();
+    public Property<Artifact> getConfig() {
+        return this.config;
+    }
 
     public void setConfig(Provider<String> value) {
         getConfig().set(value.map(s -> {

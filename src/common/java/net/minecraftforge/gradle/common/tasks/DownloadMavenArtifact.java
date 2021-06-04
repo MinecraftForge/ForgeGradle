@@ -36,12 +36,14 @@ import java.io.File;
 import java.io.IOException;
 
 public abstract class DownloadMavenArtifact extends DefaultTask {
+    private final Property<Artifact> artifact;
     private boolean changing = false;
 
     public DownloadMavenArtifact() {
         // We need to always ask, in case the file on the remote maven/local fake repo has changed.
         getOutputs().upToDateWhen(task -> false);
 
+        this.artifact = getProject().getObjects().property(Artifact.class);
         getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName())
                         .zip(getArtifact(), (d, a) -> d.file("output." + a.getExtension())));
     }
@@ -52,7 +54,9 @@ public abstract class DownloadMavenArtifact extends DefaultTask {
     }
 
     @Input
-    public abstract Property<Artifact> getArtifact();
+    public Property<Artifact> getArtifact() {
+        return this.artifact;
+    }
 
     public void setArtifact(String value) {
         getArtifact().set(Artifact.from(value));
