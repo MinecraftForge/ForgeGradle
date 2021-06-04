@@ -187,7 +187,7 @@ public class MinecraftRepo extends BaseRepo {
 
     private File findVersion(String version) throws IOException {
         File manifest = cache("versions/manifest.json");
-        if (!Utils.downloadEtag(new URL(MANIFEST_URL), manifest, offline))
+        if (!DownloadUtils.downloadEtag(new URL(MANIFEST_URL), manifest, offline))
             return null;
         Utils.updateHash(manifest, HashFunction.SHA1);
 
@@ -196,7 +196,7 @@ public class MinecraftRepo extends BaseRepo {
         if (url == null)
             throw new RuntimeException("Missing version from manifest: " + version);
 
-        if (!Utils.downloadEtag(url, json, offline))
+        if (!DownloadUtils.downloadEtag(url, json, offline))
             return null;
         Utils.updateHash(json, HashFunction.SHA1);
         return json;

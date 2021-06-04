@@ -339,7 +339,7 @@ public class MavenArtifactDownloader {
             .normalize()
             .toURL();
         File target = Utils.getCache(project, "maven_downloader", path);
-        return Utils.downloadWithCache(url, target, changing, bypassLocal);
+        return DownloadUtils.downloadWithCache(url, target, changing, bypassLocal);
     }
 
     /**

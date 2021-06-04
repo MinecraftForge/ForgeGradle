@@ -31,6 +31,7 @@ import com.google.common.collect.Maps;
 import de.siegmar.fastcsv.writer.CsvWriter;
 import de.siegmar.fastcsv.writer.LineDelimiter;
 import net.minecraftforge.gradle.common.util.BaseRepo;
+import net.minecraftforge.gradle.common.util.DownloadUtils;
 import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.ManifestJson;
@@ -216,7 +217,7 @@ public class MCPRepo extends BaseRepo {
 
     private File findVersion(String version) throws IOException {
         File manifest = cache("versions", "manifest.json");
-        if (!Utils.downloadEtag(new URL(MinecraftRepo.MANIFEST_URL), manifest, project.getGradle().getStartParameter().isOffline()))
+        if (!DownloadUtils.downloadEtag(new URL(MinecraftRepo.MANIFEST_URL), manifest, project.getGradle().getStartParameter().isOffline()))
             return null;
         Utils.updateHash(manifest);
         File json = cache("versions", version, "version.json");
@@ -225,7 +226,7 @@ public class MCPRepo extends BaseRepo {
         if (url == null)
             throw new RuntimeException("Missing version from manifest: " + version);
 
-        if (!Utils.downloadEtag(url, json, project.getGradle().getStartParameter().isOffline()))
+        if (!DownloadUtils.downloadEtag(url, json, project.getGradle().getStartParameter().isOffline()))
             return null;
         Utils.updateHash(json);
         return json;
