@@ -20,104 +20,108 @@
 
 package net.minecraftforge.gradle.common.util;
 
-import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
+import javax.annotation.Nullable;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.function.Predicate;
+
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
+import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
 import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.specs.Spec;
 
-import java.io.File;
-import java.util.Locale;
-import java.util.function.Predicate;
+public class Artifact implements ArtifactIdentifier, Comparable<Artifact>, Serializable {
+    private static final long serialVersionUID = 1L;
 
-public class Artifact implements ArtifactIdentifier, Comparable<Artifact> {
-    //Descriptor parts: group:name:version[:classifier][@extension]
-    private String group;
-    private String name;
-    private String version;
-    private String classifier = null;
-    private String ext = "jar";
+    // group:name:version[:classifier][@extension]
+    private final String group;
+    private final String name;
+    private final String version;
+    private final String classifier;
+    private final String ext;
 
-    //Caches so we don't rebuild every time we're asked.
-    private String path;
-    private String file;
-    private String descriptor;
-    private ComparableVersion comp;
-    private boolean isSnapshot = false;
+    // Cached so we don't rebuild every time we're asked.
+    // Transient field so these aren't serialized
+    // TODO: investigate whether this needs to be rebuilt because deserialization
+    private transient final String path;
+    private transient final String file;
+    private transient final String fullDescriptor;
+    private transient final ComparableVersion comparableVersion;
+    private transient final boolean isSnapshot;
 
     public static Artifact from(String descriptor) {
-        Artifact ret = new Artifact();
-        ret.descriptor = descriptor;
+        String group, name, version;
+        String ext = null, classifier = null;
 
         String[] pts = Iterables.toArray(Splitter.on(':').split(descriptor), String.class);
-        ret.group = pts[0];
-        ret.name = pts[1];
+        group = pts[0];
+        name = pts[1];
 
         int last = pts.length - 1;
         int idx = pts[last].indexOf('@');
-        if (idx != -1) {
-            ret.ext = pts[last].substring(idx + 1);
+        if (idx != -1) { // we have an extension
+            ext = pts[last].substring(idx + 1);
             pts[last] = pts[last].substring(0, idx);
         }
 
-        ret.version = pts[2];
-        ret.comp = new ComparableVersion(ret.version);
-        ret.isSnapshot = ret.version.toLowerCase(Locale.ENGLISH).endsWith("-snapshot");
+        version = pts[2];
 
-        if (pts.length > 3)
-            ret.classifier = pts[3];
+        if (pts.length > 3) // We have a classifier
+            classifier = pts[3];
 
-        ret.file = ret.name + '-' + ret.version;
-        if (ret.classifier != null) ret.file += '-' + ret.classifier;
-        ret.file += '.' + ret.ext;
-
-        ret.path = String.join("/", ret.group.replace('.', '/'), ret.name, ret.version, ret.file);
-
-        return ret;
+        return new Artifact(group, name, version, classifier, ext);
     }
 
     public static Artifact from(ArtifactIdentifier identifier) {
-        if (identifier instanceof Artifact) {
-            return (Artifact) identifier;
-        }
-
-        StringBuilder builder = new StringBuilder();
-        builder.append(identifier.getGroup()).append(':').append(identifier.getName()).append(':').append(identifier.getVersion());
-        if (identifier.getClassifier() != null && !identifier.getClassifier().isEmpty()) {
-            builder.append(':').append(identifier.getClassifier());
-        }
-
-        builder.append('@');
-        if (identifier.getExtension() == null || identifier.getExtension().isEmpty()) {
-            builder.append("jar");
-        } else {
-            builder.append(identifier.getExtension());
-        }
-
-        return from(builder.toString());
+        return new Artifact(identifier.getGroup(), identifier.getName(), identifier.getVersion(), identifier.getClassifier(), identifier.getExtension());
     }
 
-    public static Artifact from(String group, String name, String version, String classifier, String ext) {
+    public static Artifact from(String group, String name, String version, @Nullable String classifier, @Nullable String ext) {
+        return new Artifact(group, name, version, classifier, ext);
+    }
+
+    Artifact(String group, String name, String version, @Nullable String classifier, @Nullable String ext) {
+        this.group = group;
+        this.name = name;
+        this.version = version;
+        this.comparableVersion = new ComparableVersion(this.version);
+        this.isSnapshot = this.version.toLowerCase(Locale.ROOT).endsWith("-snapshot");
+        this.classifier = classifier;
+        this.ext = ext != null ? ext : "jar";
+
         StringBuilder buf = new StringBuilder();
-        buf.append(group).append(':').append(name).append(':').append(version);
-        if (classifier != null)
-            buf.append(':').append(classifier);
-        if (ext != null && !"jar".equals(ext))
-            buf.append('@').append(ext);
-        return from(buf.toString());
-    }
+        buf.append(this.group).append(':').append(this.name).append(':').append(this.version);
+        if (this.classifier != null) {
+            buf.append(':').append(this.classifier);
+        }
+        if (ext != null && !"jar".equals(this.ext)) {
+            buf.append('@').append(this.ext);
+        }
+        this.fullDescriptor = buf.toString();
 
-    public File getLocalFile(File base) {
-        return new File(base, getLocalPath());
+        String file;
+        file = this.name + '-' + this.version;
+        if (this.classifier != null) file += '-' + this.classifier;
+        file += '.' + this.ext;
+        this.file = file;
+
+        this.path = String.join("/", this.group.replace('.', '/'), this.name, this.version, this.file);
     }
 
     public String getLocalPath() {
         return path.replace('/', File.separatorChar);
     }
 
-    public String getDescriptor(){ return descriptor; }
+    public String getDescriptor(){ return fullDescriptor; }
     public String getPath()      { return path;       }
     @Override
     public String getGroup()     { return group;      }
@@ -168,13 +172,11 @@ public class Artifact implements ArtifactIdentifier, Comparable<Artifact> {
 
     @Override
     public int compareTo(Artifact o) {
-        int ret = 0;
+        int ret;
         if ((ret = group.compareTo(o.group)) != 0) return ret;
         if ((ret = name.compareTo(o.name)) != 0) return ret;
-        if ((ret = comp.compareTo(o.comp)) != 0) return ret;
-        if (isSnapshot) {
-            //TODO: Timestamps
-        }
+        if ((ret = comparableVersion.compareTo(o.comparableVersion)) != 0) return ret;
+        // TODO: comparison of timestamps for snapshot versions (isSnapshot)
         if ((ret = classifier.compareTo(o.classifier)) != 0) return ret;
         return ext.compareTo(o.ext);
     }
