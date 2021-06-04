@@ -44,7 +44,7 @@ import javax.annotation.Nullable;
 
 public class MCPRuntime {
 
-    private static final Pattern OUTPUT_REPLACE_PATTERN = Pattern.compile("^\\{(\\w+)Output\\}$");
+    private static final Pattern OUTPUT_REPLACE_PATTERN = Pattern.compile("^\\{(\\w+)Output}$");
 
     final Project project;
     final MCPEnvironment environment;

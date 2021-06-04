@@ -53,11 +53,11 @@ public class McpNames {
     private static final String NEWLINE = System.getProperty("line.separator");
     private static final Pattern SRG_FINDER             = Pattern.compile("[fF]unc_[0-9]+_[a-zA-Z_]+|m_[0-9]+_|[fF]ield_[0-9]+_[a-zA-Z_]+|f_[0-9]+_|p_[\\w]+_\\d+_\\b");
     private static final Pattern METHOD_JAVADOC_PATTERN = Pattern.compile("^(?<indent>(?: {3})+|\\t+)(?!return)(?:\\w+\\s+)*(?<generic><[\\w\\W]*>\\s+)?(?<return>\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>(?:func_|m_)[0-9]+_[a-zA-Z_]+)\\(");
-    private static final Pattern FIELD_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: {3})+|\\t+)(?!return)(?:\\w+\\s+)*(?:\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>(?:field_|f_)[0-9]+_[a-zA-Z_]+) *(?:=|;)");
-    private static final Pattern CLASS_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: )*|\\t*)([\\w|@]*\\s)*(class|interface|@interface|enum) (?<name>[\\w]+)");
-    private static final Pattern CLOSING_CURLY_BRACE    = Pattern.compile("^(?<indent>(?: )*|\\t*)}");
+    private static final Pattern FIELD_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: {3})+|\\t+)(?!return)(?:\\w+\\s+)*\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*\\s+(?<name>(?:field_|f_)[0-9]+_[a-zA-Z_]+) *[=;]");
+    private static final Pattern CLASS_JAVADOC_PATTERN  = Pattern.compile("^(?<indent> *|\\t*)([\\w|@]*\\s)*(class|interface|@interface|enum) (?<name>[\\w]+)");
+    private static final Pattern CLOSING_CURLY_BRACE    = Pattern.compile("^(?<indent> *|\\t*)}");
     private static final Pattern PACKAGE_DECL           = Pattern.compile("^[\\s]*package(\\s)*(?<name>[\\w|.]+);$");
-    private static final Pattern LAMBDA_DECL            = Pattern.compile("\\((?<args>(?:(?:, ){0,1}(?:p_[\\w]+_\\d+_\\b))+)\\) ->");
+    private static final Pattern LAMBDA_DECL            = Pattern.compile("\\((?<args>(?:(?:, ){0,1}p_[\\w]+_\\d+_\\b)+)\\) ->");
 
     public static McpNames load(File data) throws IOException {
         Map<String, String> names = new HashMap<>();
