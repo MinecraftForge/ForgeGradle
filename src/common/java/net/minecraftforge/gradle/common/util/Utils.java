@@ -33,7 +33,6 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.TaskProvider;
-import org.gradle.util.GradleVersion;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -86,14 +85,8 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLException;
 
 public class Utils {
-    private static final boolean ENABLE_TEST_CERTS = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_certs", "true"));
-    private static final boolean ENABLE_TEST_GRADLE = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_gradle", "true"));
-    private static final boolean ENABLE_TEST_JAVA  = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_java", "true"));
     private static final boolean ENABLE_FILTER_REPOS = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.filter_repos", "true"));
 
     public static final Gson GSON = new GsonBuilder()
@@ -514,67 +507,6 @@ public class Utils {
     @Nonnull
     public static final String capitalize(@Nonnull final String toCapitalize) {
         return toCapitalize.length() > 1 ? toCapitalize.substring(0, 1).toUpperCase() + toCapitalize.substring(1) : toCapitalize;
-    }
-
-    public static void checkJavaRange(@Nullable JavaVersionParser.JavaVersion minVersionInclusive, @Nullable JavaVersionParser.JavaVersion maxVersionExclusive) {
-        checkRange("java", JavaVersionParser.getCurrentJavaVersion(), minVersionInclusive, maxVersionExclusive, "", "");
-    }
-
-    public static void checkGradleRange(@Nullable GradleVersion minVersionInclusive, @Nullable GradleVersion maxVersionExclusive) {
-        checkRange("Gradle", GradleVersion.current(), minVersionInclusive, maxVersionExclusive,
-                "\nNote: Upgrade your gradle version first before trying to switch to FG5.", "");
-    }
-
-    private static <T> void checkRange(String name, Comparable<T> current, @Nullable T minVersionInclusive, @Nullable T maxVersionExclusive, String additionalMin, String additionalMax) {
-        if (minVersionInclusive != null && current.compareTo(minVersionInclusive) < 0)
-            throw new RuntimeException(String.format("Found %s version %s. Minimum required is %s.%s", name, current, minVersionInclusive, additionalMin));
-
-        if (maxVersionExclusive != null && current.compareTo(maxVersionExclusive) >= 0)
-            throw new RuntimeException(String.format("Found %s version %s. Versions %s and newer are not supported yet.%s", name, current, maxVersionExclusive, additionalMax));
-    }
-
-    /**
-     * @deprecated To be removed in FG 4.2, see {@link #checkEnvironment()}
-     */
-    @Deprecated
-    public static void checkJavaVersion() {
-        checkEnvironment();
-    }
-
-    public static void checkEnvironment() {
-        if (ENABLE_TEST_JAVA) {
-            checkJavaRange(
-                // Minimum must be update 101 as it's the first one to include Let's Encrypt certificates.
-                JavaVersionParser.parseJavaVersion("1.8.0_101"),
-                null
-            );
-        }
-
-        if (ENABLE_TEST_GRADLE) {
-            checkGradleRange(
-                GradleVersion.version("7.0"),
-                null
-            );
-        }
-
-        if (ENABLE_TEST_CERTS) {
-            testServerConnection(FORGE_MAVEN);
-            testServerConnection(MOJANG_MAVEN);
-        }
-    }
-
-    private static void testServerConnection(String url) {
-        try {
-            HttpsURLConnection conn = (HttpsURLConnection)new URL(url).openConnection();
-            conn.setRequestMethod("HEAD");
-            conn.connect();
-            conn.getResponseCode();
-        } catch (SSLException e) {
-            throw new RuntimeException(String.format("Failed to validate certificate for %s, Most likely cause is an outdated JDK. Try updating at https://adoptopenjdk.net/ " +
-                    "To disable this check re-run with -Dnet.minecraftforge.gradle.test_certs=false", url), e);
-        } catch (IOException e) {
-            //Normal connection failed, not the point of this test so ignore
-        }
     }
 
     public static HttpURLConnection connectHttpWithRedirects(URL url) throws IOException {
