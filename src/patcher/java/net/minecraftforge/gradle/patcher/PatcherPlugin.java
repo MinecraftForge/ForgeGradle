@@ -81,11 +81,7 @@ import codechicken.diffpatch.util.PatchMode;
 import com.google.common.collect.Lists;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -100,7 +96,6 @@ public class PatcherPlugin implements Plugin<Project> {
         final PatcherExtension extension = project.getExtensions().create(PatcherExtension.class, PatcherExtension.EXTENSION_NAME, PatcherExtension.class, project);
         project.getPluginManager().apply(JavaPlugin.class);
         final JavaPluginConvention javaConv = project.getConvention().getPlugin(JavaPluginConvention.class);
-        final File natives_folder = project.file("build/natives/");
 
         Configuration mcImplementation = project.getConfigurations().maybeCreate(MC_DEP_CONFIG);
         mcImplementation.setCanBeResolved(true);
@@ -110,6 +105,7 @@ public class PatcherPlugin implements Plugin<Project> {
         final TaskContainer tasks = project.getTasks();
         final TaskProvider<Jar> jarTask = tasks.named(JavaPlugin.JAR_TASK_NAME, Jar.class);
         final TaskProvider<JavaCompile> javaCompileTask = tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, JavaCompile.class);
+        final NamedDomainObjectProvider<SourceSet> mainSource = javaConv.getSourceSets().named(SourceSet.MAIN_SOURCE_SET_NAME);
 
         final TaskProvider<DownloadMCPMappings> dlMappingsConfig = tasks.register("downloadMappings", DownloadMCPMappings.class);
         final TaskProvider<DownloadMCMeta> dlMCMetaConfig = tasks.register("downloadMCMeta", DownloadMCMeta.class);
@@ -168,11 +164,11 @@ public class PatcherPlugin implements Plugin<Project> {
 
         release.configure(task -> task.dependsOn(sourcesJar, universalJar, userdevJar));
 
-        dlMappingsConfig.configure(task -> task.getMappings().set(extension.getMappings()));
+        dlMappingsConfig.configure(task -> task.getMappings().convention(extension.getMappings()));
 
         extractNatives.configure(task -> {
             task.getMeta().set(dlMCMetaConfig.flatMap(DownloadMCMeta::getOutput));
-            task.getOutput().set(natives_folder);
+            task.getOutput().set(project.getLayout().getBuildDirectory().dir("natives"));
         });
 
         downloadAssets.configure(task -> task.getMeta().set(dlMCMetaConfig.flatMap(DownloadMCMeta::getOutput)));
@@ -204,6 +200,10 @@ public class PatcherPlugin implements Plugin<Project> {
         extractRangeConfig.configure(task -> {
             task.setOnlyIf(t -> extension.getPatches().isPresent());
             task.getDependencies().from(jarTask.flatMap(AbstractArchiveTask::getArchiveFile));
+
+            // Only add main source, as we inject the patchedSrc into it as a sourceset.
+            task.getSources().from(mainSource.map(s -> s.getJava().getSourceDirectories()));
+            task.getDependencies().from(javaCompileTask.map(JavaCompile::getClasspath));
         });
 
         createMcp2Srg.configure(task -> task.setReverse(true));
@@ -216,16 +216,18 @@ public class PatcherPlugin implements Plugin<Project> {
         createExc.configure(task -> task.getMappings().set(dlMappingsConfig.flatMap(DownloadMCPMappings::getOutput)));
 
         applyRangeConfig.configure(task -> {
+            task.getSources().from(mainSource.map(s -> s.getJava().getSourceDirectories().minus(project.files(extension.getPatchedSrc()))));
             task.getRangeMap().set(extractRangeConfig.flatMap(ExtractRangeMap::getOutput));
             task.getSrgFiles().from(createMcp2Srg.flatMap(GenerateSRG::getOutput));
-            task.getExcFiles().from(createExc.flatMap(CreateExc::getOutput));
+            task.getExcFiles().from(createExc.flatMap(CreateExc::getOutput), extension.getExcs());
         });
 
         applyRangeBaseConfig.configure(task -> {
             task.setOnlyIf(t -> extension.getPatches().isPresent());
+            task.getSources().from(extension.getPatchedSrc());
             task.getRangeMap().set(extractRangeConfig.flatMap(ExtractRangeMap::getOutput));
             task.getSrgFiles().from(createMcp2Srg.flatMap(GenerateSRG::getOutput));
-            task.getExcFiles().from(createExc.flatMap(CreateExc::getOutput));
+            task.getExcFiles().from(createExc.flatMap(CreateExc::getOutput), extension.getExcs());
         });
 
         genPatches.configure(task -> {
@@ -246,17 +248,14 @@ public class PatcherPlugin implements Plugin<Project> {
 
         genJoinedBinPatches.configure(task -> {
             task.getDirtyJar().set(reobfJar.flatMap(ReobfuscateJar::getOutput));
-            task.getPatchSets().from(extension.getPatches());
             task.getSide().set("joined");
         });
         genClientBinPatches.configure(task -> {
             task.getDirtyJar().set(reobfJar.flatMap(ReobfuscateJar::getOutput));
-            task.getPatchSets().from(extension.getPatches());
             task.getSide().set("client");
         });
         genServerBinPatches.configure(task -> {
             task.getDirtyJar().set(reobfJar.flatMap(ReobfuscateJar::getOutput));
-            task.getPatchSets().from(extension.getPatches());
             task.getSide().set("server");
         });
         genBinPatches.configure(task -> task.dependsOn(genJoinedBinPatches, genClientBinPatches, genServerBinPatches));
@@ -268,6 +267,7 @@ public class PatcherPlugin implements Plugin<Project> {
          * patches in /patches/
          */
         sourcesJar.configure(task -> {
+            task.dependsOn(applyRangeConfig);
             task.from(project.zipTree(applyRangeConfig.flatMap(ApplyRangeMap::getOutput)));
             task.getArchiveClassifier().set("sources");
         });
@@ -277,6 +277,7 @@ public class PatcherPlugin implements Plugin<Project> {
          *   Should only be OUR classes, not parent patcher projects.
          */
         universalJar.configure(task -> {
+            task.dependsOn(filterNew);
             task.from(project.zipTree(filterNew.flatMap(FilterNewJar::getOutput)));
             task.from(javaConv.getSourceSets().named(SourceSet.MAIN_SOURCE_SET_NAME).map(SourceSet::getResources));
             task.getArchiveClassifier().set("universal");
@@ -293,7 +294,7 @@ public class PatcherPlugin implements Plugin<Project> {
          *   at2.cfg
          */
         userdevJar.configure(task -> {
-            task.dependsOn(sourcesJar);
+            task.dependsOn(sourcesJar, bakePatches);
             task.setOnlyIf(t -> extension.isSrgPatches());
             task.from(userdevConfig.flatMap(GenerateUserdevConfig::getOutput), e -> e.rename(f -> "config.json"));
             task.from(genJoinedBinPatches.flatMap(GenerateBinPatches::getOutput), e -> e.rename(f -> "joined.lzma"));
@@ -318,50 +319,41 @@ public class PatcherPlugin implements Plugin<Project> {
             });
 
             TaskProvider<ExtractExistingFiles> extractMappedNew = tasks.register("extractMappedNew", ExtractExistingFiles.class);
-            extractMappedNew.configure(task -> task.getArchive().set(toMCPNew.flatMap(ApplyMappings::getOutput)));
+            extractMappedNew.configure(task -> {
+                task.getArchive().set(toMCPNew.flatMap(ApplyMappings::getOutput));
+                task.getTargets().from(mainSource.map(s -> s.getJava().getSourceDirectories().minus(project.files(extension.getPatchedSrc()))));
+            });
 
             TaskProvider<DefaultTask> updateMappings = tasks.register("updateMappings", DefaultTask.class);
             updateMappings.configure(task -> task.dependsOn(extractMappedNew));
         }
 
         project.afterEvaluate(p -> {
-            //Add patched source to the main sourceset and build range tasks
-            final NamedDomainObjectProvider<SourceSet> main = javaConv.getSourceSets().named(SourceSet.MAIN_SOURCE_SET_NAME);
-            applyRangeConfig.configure(task ->
-                    task.getSources().from(main.map(s -> s.getJava().minus(project.files(extension.getPatchedSrc())))));
-            applyRangeBaseConfig.configure(task -> task.getSources().from(extension.getPatchedSrc()));
-            main.configure(set -> set.getJava().srcDir(extension.getPatchedSrc()));
-
-            if (doingUpdate) {
-                final TaskProvider<ExtractExistingFiles> extractMappedNew = tasks.named("extractMappedNew", ExtractExistingFiles.class);
-                extractMappedNew.configure(task ->
-                        task.getTargets().from(main.map(s -> s.getJava().minus(project.files(extension.getPatchedSrc())))));
-            }
+            // Add the patched source as a source dir during afterEvaluate, to not be overwritten by buildscripts
+            mainSource.configure(s -> s.getJava().srcDir(extension.getPatchedSrc()));
 
             //mainSource.resources(v -> {
             //}); //TODO: Asset downloading, needs asset index from json.
             //javaConv.getSourceSets().stream().forEach(s -> extractRangeConfig.get().addSources(s.getJava().getSrcDirs()));
 
-            // Only add main source, as we inject the patchedSrc into it as a sourceset.
-            extractRangeConfig.configure(task -> {
-                task.getSources().from(main.map(SourceSet::getJava));
-                task.getDependencies().from(javaCompileTask.map(JavaCompile::getClasspath));
-            });
 
-            // Auto-make folders so that gradle doesnt explode some tasks.
-            if (extension.getPatches().isPresent() && !extension.getPatches().get().getAsFile().exists()) {
-                extension.getPatches().get().getAsFile().mkdirs();
+            // Automatically create the patches folder if it does not exist
+            if (extension.getPatches().isPresent()) {
+                File patchesDir = extension.getPatches().get().getAsFile();
+                if (!patchesDir.exists() && !patchesDir.mkdirs()) { // TODO: validate if we actually need to do this
+                    p.getLogger().warn("Unable to create patches folder automatically, there may be some task errors");
+                }
+                sourcesJar.configure(t -> t.from(genPatches.flatMap(GeneratePatches::getOutput), e -> e.into("patches/")));
             }
 
-            sourcesJar.configure(task -> task.from(genPatches.flatMap(GeneratePatches::getOutput), e -> e.into("patches/")));
             final TaskProvider<DynamicJarExec> procConfig = extension.getProcessor() == null ? null
                     : tasks.register("postProcess", DynamicJarExec.class);
 
             if (extension.getParent().isPresent()) { //Most of this is done after evaluate, and checks for nulls to allow the build script to override us. We can't do it in the config step because if someone configs a task in the build script it resolves our config during evaluation.
                 final Project parent = extension.getParent().get();
-                TaskContainer parentTasks = parent.getTasks();
-                MCPPlugin parentMCPPlugin = parent.getPlugins().findPlugin(MCPPlugin.class);
-                PatcherPlugin parentPatcherPlugin = parent.getPlugins().findPlugin(PatcherPlugin.class);
+                final TaskContainer parentTasks = parent.getTasks();
+                final MCPPlugin parentMCPPlugin = parent.getPlugins().findPlugin(MCPPlugin.class);
+                final PatcherPlugin parentPatcherPlugin = parent.getPlugins().findPlugin(PatcherPlugin.class);
 
                 if (parentMCPPlugin != null) {
                     MojangLicenseHelper.displayWarning(p, extension.getMappingChannel().get(), extension.getMappingVersion().get(), updateChannel, updateVersion);
@@ -414,9 +406,9 @@ public class PatcherPlugin implements Plugin<Project> {
                     });
 
                 } else if (parentPatcherPlugin != null) {
-                    PatcherExtension parentPatcher = parent.getExtensions().getByType(PatcherExtension.class);
-                    final TaskProvider<ApplyPatches> parentApplyPatches = parentTasks.named("applyPatches", ApplyPatches.class);
+                    final PatcherExtension parentPatcher = parent.getExtensions().getByType(PatcherExtension.class);
                     extension.copyFrom(parentPatcher);
+                    final TaskProvider<ApplyPatches> parentApplyPatches = parentTasks.named("applyPatches", ApplyPatches.class);
 
                     Provider<RegularFile> setupOutput = parentApplyPatches.flatMap(ApplyPatches::getOutput);
                     if (procConfig != null) {
@@ -464,11 +456,12 @@ public class PatcherPlugin implements Plugin<Project> {
                 createMcp2Obf.configure(task -> task.getSrg().convention(createMcp2Srg.flatMap(GenerateSRG::getSrg)));
                 createSrg2Mcp.configure(task -> task.getSrg().convention(createMcp2Srg.flatMap(GenerateSRG::getSrg)));
             }
-            Project mcpParent = getMcpParent(project);
+            final Project mcpParent = getMcpParent(project);
             if (mcpParent == null) {
                 throw new IllegalStateException("Could not find MCP parent project, you must specify a parent chain to MCP.");
             }
             final MCPExtension mcpParentExtension = mcpParent.getExtensions().getByType(MCPExtension.class);
+
             // Needs to be client extra, to get the data files.
             project.getDependencies().add(MC_DEP_CONFIG, mcpParentExtension.getConfig()
                     .map(ver -> "net.minecraft:client:" + ver.getVersion() + ":extra"));
@@ -476,7 +469,7 @@ public class PatcherPlugin implements Plugin<Project> {
             project.getDependencies().add(MC_DEP_CONFIG, extension.getMappingChannel()
                     .zip(extension.getMappingVersion(), MCPRepo::getMappingDep));
 
-            dlMCMetaConfig.configure(task -> task.getMCVersion().convention(extension.getMappingChannel()));
+            dlMCMetaConfig.configure(task -> task.getMCVersion().convention(extension.getMcVersion()));
 
             if (!extension.getAccessTransformers().isEmpty()) {
                 SetupMCP setupMCP = (SetupMCP) mcpParent.getTasks().getByName("setupMCP");
@@ -523,9 +516,6 @@ public class PatcherPlugin implements Plugin<Project> {
                 }
             }
 
-            applyRangeConfig.configure(task -> task.getExcFiles().from(extension.getExcs()));
-            applyRangeBaseConfig.configure(task -> task.getExcFiles().from(extension.getExcs()));
-
             if (!extension.getExtraMappings().isEmpty()) {
                 extension.getExtraMappings().stream().filter(e -> e instanceof File).map(e -> (File) e).forEach(e -> {
                     userdevJar.get().from(e, c -> c.into("srgs/"));
@@ -554,6 +544,7 @@ public class PatcherPlugin implements Plugin<Project> {
                                         )))));
                 task.getPatchesOriginalPrefix().convention(genPatches.flatMap(GeneratePatches::getOriginalPrefix));
                 task.getPatchesModifiedPrefix().convention(genPatches.flatMap(GeneratePatches::getModifiedPrefix));
+                task.setNotchObf(extension.getNotchObf());
             });
 
             if (procConfig != null) {
@@ -566,7 +557,6 @@ public class PatcherPlugin implements Plugin<Project> {
                     extension.getProcessorData().get().forEach(task::addProcessorData);
                 });
             }
-            userdevConfig.configure(task -> task.setNotchObf(extension.getNotchObf()));
 
             // Allow generation of patches to skip S2S. For in-dev patches while the code doesn't compile.
             if (extension.isSrgPatches()) {
@@ -624,18 +614,17 @@ public class PatcherPlugin implements Plugin<Project> {
                 TaskProvider<GenerateSRG> srg = extension.getNotchObf() ? createMcp2Obf : createMcp2Srg;
                 reobfJar.configure(t -> t.getSrg().set(srg.flatMap(GenerateSRG::getOutput)));
 
-                genJoinedBinPatches.configure(t -> {
-                    t.getSrg().set(srg.flatMap(GenerateSRG::getOutput));
-                    t.getCleanJar().fileProvider(joinedJar);
-                });
-                genClientBinPatches.configure(t -> {
-                    t.getSrg().set(srg.flatMap(GenerateSRG::getOutput));
-                    t.getCleanJar().fileProvider(clientJar);
-                });
-                genServerBinPatches.configure(t -> {
-                    t.getSrg().set(srg.flatMap(GenerateSRG::getOutput));
-                    t.getCleanJar().fileProvider(serverJar);
-                });
+                genJoinedBinPatches.configure(t -> t.getCleanJar().fileProvider(joinedJar));
+                genClientBinPatches.configure(t -> t.getCleanJar().fileProvider(clientJar));
+                genServerBinPatches.configure(t -> t.getCleanJar().fileProvider(serverJar));
+                for (TaskProvider<GenerateBinPatches> binPatchesTask : Lists.newArrayList(genJoinedBinPatches, genClientBinPatches, genServerBinPatches)) {
+                    binPatchesTask.configure(task -> {
+                        task.getSrg().set(srg.flatMap(GenerateSRG::getOutput));
+                        if (extension.getPatches().isPresent()) {
+                            task.getPatchSets().from(extension.getPatches());
+                        }
+                    });
+                }
 
                 filterNew.configure(t -> {
                     t.getSrg().set(srg.flatMap(GenerateSRG::getOutput));

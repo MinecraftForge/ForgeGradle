@@ -54,6 +54,7 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository.MetadataSources;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPlugin;
@@ -94,12 +95,12 @@ public class UserDevPlugin implements Plugin<Project> {
         project.getConfigurations().named(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
                 .configure(c -> c.extendsFrom(minecraft));
 
-        //Let gradle handle the downloading by giving it a configuration to dl. We'll focus on applying mappings to it.
+        // Let gradle handle the downloading by giving it a configuration to dl. We'll focus on applying mappings to it.
         final Configuration internalObfConfiguration = project.getConfigurations().create(OBF);
         internalObfConfiguration.setDescription("Generated scope for obfuscated dependencies");
 
-        //create extension for dependency remapping
-        //can't create at top-level or put in `minecraft` ext due to configuration name conflict
+        // Create extension for dependency remapping
+        // Can't create at top-level or put in `minecraft` ext due to configuration name conflict
         final Deobfuscator deobfuscator = new Deobfuscator(project, Utils.getCache(project, "deobf_dependencies"));
         final DependencyRemapper remapper = new DependencyRemapper(project, deobfuscator);
         project.getExtensions().create(DependencyManagementExtension.EXTENSION_NAME, DependencyManagementExtension.class, project, remapper);
@@ -154,7 +155,7 @@ public class UserDevPlugin implements Plugin<Project> {
 
             final TaskProvider<JavaCompile> javaCompile = tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, JavaCompile.class);
             final JavaPluginConvention javaConv = project.getConvention().getPlugin(JavaPluginConvention.class);
-            final Provider<SourceDirectorySet> mainJavaSources = javaConv.getSourceSets().named(SourceSet.MAIN_SOURCE_SET_NAME).map(SourceSet::getJava);
+            final Provider<FileCollection> mainJavaSources = javaConv.getSourceSets().named(SourceSet.MAIN_SOURCE_SET_NAME).map(SourceSet::getJava).map(SourceDirectorySet::getSourceDirectories);
 
             final TaskProvider<DownloadMCPMappings> dlMappingsNew = tasks.register("downloadMappingsNew", DownloadMCPMappings.class);
             final TaskProvider<ExtractRangeMap> extractRangeConfig = tasks.register("extractRangeMap", ExtractRangeMap.class);
@@ -198,25 +199,28 @@ public class UserDevPlugin implements Plugin<Project> {
 
             DependencySet mcDependencies = minecraft.getDependencies();
             for (Dependency dep : new ArrayList<>(mcDependencies)) { // Copied to new list to avoid ConcurrentModificationException
-                if (!(dep instanceof ExternalModuleDependency))
+                if (!(dep instanceof ExternalModuleDependency)) {
                     throw new IllegalArgumentException(minecraft.getName() + " configuration must contain a Maven dependency");
-                if (mcrepo != null)
+                }
+                if (mcrepo != null) {
                     throw new IllegalArgumentException(minecraft.getName() + " configuration must contain exactly one dependency");
+                }
                 mcDependencies.remove(dep);
 
                 mcrepo = new MinecraftUserRepo(p, dep.getGroup(), dep.getName(), dep.getVersion(), new ArrayList<>(extension.getAccessTransformers().getFiles()), extension.getMappings().get());
                 String newDep = mcrepo.getDependencyString();
                 //p.getLogger().lifecycle("New Dep: " + newDep);
                 ExternalModuleDependency ext = (ExternalModuleDependency) p.getDependencies().create(newDep);
-                {
-                    if (MinecraftUserRepo.CHANGING_USERDEV)
-                        ext.setChanging(true);
-                    minecraft.resolutionStrategy(strat -> strat.cacheChangingModulesFor(10, TimeUnit.SECONDS));
+
+                if (MinecraftUserRepo.CHANGING_USERDEV) {
+                    ext.setChanging(true);
                 }
+                minecraft.resolutionStrategy(strat -> strat.cacheChangingModulesFor(10, TimeUnit.SECONDS));
+
                 minecraft.getDependencies().add(ext);
             }
             if (mcrepo == null) {
-                throw new IllegalStateException("Missing '" + minecraft.getName() + "' dependency entry.");
+                throw new IllegalStateException("Missing '" + minecraft.getName() + "' dependency.");
             }
 
             project.getRepositories().maven(e -> {
@@ -256,12 +260,11 @@ public class UserDevPlugin implements Plugin<Project> {
             String mcVer = (String) project.getExtensions().getExtraProperties().get("MC_VERSION");
             String mcpVer = (String) project.getExtensions().getExtraProperties().get("MCP_VERSION");
             // TODO: convert to constant and use String.format
-            downloadMcpConfig.get().setArtifact("de.oceanlabs.mcp:mcp_config:" + mcpVer + "@zip");
-            downloadMCMeta.get().getMCVersion().set(mcVer);
+            downloadMcpConfig.configure(t -> t.setArtifact("de.oceanlabs.mcp:mcp_config:" + mcpVer + "@zip"));
+            downloadMCMeta.configure(t -> t.getMCVersion().convention(mcVer));
 
-            RenameJarInPlace reobfJar = reobfExtension.create("jar");
-            reobfJar.dependsOn(createMcpToSrg);
-            reobfJar.getMappings().set(createMcpToSrg.get().getOutput());
+            // Register reobfJar for the 'jar' task
+            reobfExtension.create(JavaPlugin.JAR_TASK_NAME);
 
             String assetIndex = mcVer;
 
@@ -278,7 +281,7 @@ public class UserDevPlugin implements Plugin<Project> {
 
                 assetIndex = json.assetIndex.id;
             } catch (IOException e) {
-                e.printStackTrace();
+                project.getLogger().warn("Failed to retrieve asset index ID", e);
             }
 
             // Finalize asset index
