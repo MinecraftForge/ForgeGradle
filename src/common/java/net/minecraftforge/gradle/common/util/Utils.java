@@ -46,7 +46,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,7 +53,6 @@ import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -65,7 +63,6 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
@@ -367,13 +364,12 @@ public class Utils {
         return ret;
     }
 
-    public static void createRunConfigTasks(final MinecraftExtension extension, final ExtractNatives extractNatives, final Task... setupTasks) {
-        List<Task> setupTasksLst = new ArrayList<>(Arrays.asList(setupTasks));
+    public static void createRunConfigTasks(final MinecraftExtension extension, final TaskProvider<ExtractNatives> extractNatives, final TaskProvider<?>... setupTasks) {
+        List<TaskProvider<?>> setupTasksLst = new ArrayList<>(Arrays.asList(setupTasks));
 
         final TaskProvider<Task> prepareRuns = extension.getProject().getTasks().register("prepareRuns", Task.class, task -> {
             task.setGroup(RunConfig.RUNS_GROUP);
-            task.dependsOn(extractNatives);
-            setupTasksLst.forEach(task::dependsOn);
+            task.dependsOn(extractNatives, setupTasksLst);
         });
 
         final TaskProvider<Task> makeSrcDirs = extension.getProject().getTasks().register("makeSrcDirs", Task.class, task -> {
@@ -384,7 +380,7 @@ public class Utils {
                         .getSrcDirs().stream().filter(f -> !f.exists()).forEach(File::mkdirs));
             });
         });
-        setupTasksLst.add(makeSrcDirs.get());
+        setupTasksLst.add(makeSrcDirs);
 
         extension.getRuns().forEach(RunConfig::mergeParents);
 
@@ -393,7 +389,7 @@ public class Utils {
             VersionJson json = null;
 
             try {
-                json = Utils.loadJson(extractNatives.getMeta().get().getAsFile(), VersionJson.class);
+                json = Utils.loadJson(extractNatives.get().getMeta().get().getAsFile(), VersionJson.class);
             } catch (IOException ignored) {
             }
 

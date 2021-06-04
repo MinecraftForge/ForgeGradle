@@ -23,7 +23,8 @@ package net.minecraftforge.gradle.common.util;
 import net.minecraftforge.gradle.common.tasks.ExtractNatives;
 
 import org.gradle.api.Project;
-import org.gradle.api.Task;
+import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.TaskProvider;
 import org.gradle.plugins.ide.api.XmlFileContentMerger;
 import org.gradle.plugins.ide.eclipse.GenerateEclipseClasspath;
 import org.gradle.plugins.ide.eclipse.model.Classpath;
@@ -41,9 +42,9 @@ import javax.annotation.Nonnull;
 
 public class EclipseHacks {
 
-    public static void doEclipseFixes(@Nonnull final MinecraftExtension minecraft, @Nonnull final ExtractNatives nativesTask, @Nonnull final List<? extends Task> setupTasks) {
+    public static void doEclipseFixes(@Nonnull final MinecraftExtension minecraft, @Nonnull final TaskProvider<ExtractNatives> nativesTask, @Nonnull final List<? extends TaskProvider<?>> setupTasks) {
         final Project project = minecraft.getProject();
-        final File natives = nativesTask.getOutput().get().getAsFile();
+        final Provider<File> natives = nativesTask.flatMap(s -> s.getOutput().getAsFile());
 
         final EclipseModel eclipseConv = (EclipseModel)project.getExtensions().findByName("eclipse");
         if (eclipseConv == null) {
@@ -55,8 +56,7 @@ public class EclipseHacks {
         final String LIB_ATTR = "org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY";
 
         project.getTasks().withType(GenerateEclipseClasspath.class, task -> {
-            task.dependsOn(nativesTask);
-            setupTasks.forEach(task::dependsOn);
+            task.dependsOn(nativesTask, setupTasks);
         });
 
         classpathMerger.whenMerged(obj -> {
@@ -74,7 +74,7 @@ public class EclipseHacks {
                     }
 
                     if (!sf.getEntryAttributes().containsKey(LIB_ATTR)) {
-                        sf.getEntryAttributes().put(LIB_ATTR, natives.getAbsolutePath());
+                        sf.getEntryAttributes().put(LIB_ATTR, natives.get().getAbsolutePath());
                     }
                 }
             }

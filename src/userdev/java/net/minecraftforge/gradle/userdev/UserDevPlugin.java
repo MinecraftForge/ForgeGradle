@@ -288,7 +288,7 @@ public class UserDevPlugin implements Plugin<Project> {
             final String finalAssetIndex = assetIndex;
 
             extension.getRuns().forEach(runConfig -> runConfig.token("asset_index", finalAssetIndex));
-            Utils.createRunConfigTasks(extension, extractNatives.get(), downloadAssets.get(), createSrgToMcp.get());
+            Utils.createRunConfigTasks(extension, extractNatives, downloadAssets, createSrgToMcp);
         });
     }
 
