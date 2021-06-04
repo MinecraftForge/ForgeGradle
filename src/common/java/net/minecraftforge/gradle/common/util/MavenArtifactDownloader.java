@@ -20,6 +20,8 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
+
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.client.utils.URIBuilder;
@@ -33,13 +35,10 @@ import org.gradle.api.artifacts.repositories.ArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.xml.sax.SAXException;
 
-import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-
 import groovy.util.Node;
 import groovy.xml.XmlParser;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -56,6 +55,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
 import javax.xml.parsers.ParserConfigurationException;
 
 public class MavenArtifactDownloader {
@@ -72,7 +72,7 @@ public class MavenArtifactDownloader {
 
     private static final Map<String, String> VERSIONS = new HashMap<>();
 
-
+    @Nullable
     public static File download(Project project, String artifact, boolean changing) {
         return _download(project, artifact, changing, true, true, true);
     }
@@ -85,18 +85,22 @@ public class MavenArtifactDownloader {
         return VERSIONS.get(artifact);
     }
 
+    @Nullable
     public static File gradle(Project project, String artifact, boolean changing) {
         return _download(project, artifact, changing, false, true, true);
     }
 
+    @Nullable
     public static File generate(Project project, String artifact, boolean changing) {
         return _download(project, artifact, changing, true, false, true);
     }
 
+    @Nullable
     public static File manual(Project project, String artifact, boolean changing) {
         return _download(project, artifact, changing, false, false, true);
     }
 
+    @Nullable
     private static File _download(Project project, String artifact, boolean changing, boolean generated, boolean gradle, boolean manual) {
         /*
          * This somewhat convoluted code is necessary to avoid race-conditions when two Gradle worker threads simultaneously
@@ -182,6 +186,7 @@ public class MavenArtifactDownloader {
         return ret;
     }
 
+    @Nullable
     private static File _generate(List<GradleRepositoryAdapter> repos, Artifact artifact) {
         for (GradleRepositoryAdapter repo : repos) {
             File ret = repo.getArtifact(artifact);
@@ -191,6 +196,7 @@ public class MavenArtifactDownloader {
         return null;
     }
 
+    @Nullable
     private static File _manual(Project project, List<MavenArtifactRepository> repos, Artifact artifact, boolean changing) throws IOException, URISyntaxException {
         if (!artifact.getVersion().endsWith("+") && !artifact.isSnapshot()) {
             for (MavenArtifactRepository repo : repos) {
@@ -228,6 +234,7 @@ public class MavenArtifactDownloader {
     }
 
     @SuppressWarnings("unchecked")
+    @Nullable
     private static Pair<Artifact, File> _manualMaven(Project project, URI maven, Artifact artifact, boolean changing) throws IOException, URISyntaxException {
         if (artifact.getVersion().endsWith("+")) {
             //I THINK +'s are only valid in the end version, So 1.+ and not 1.+.4 as that'd make no sense.
@@ -275,6 +282,7 @@ public class MavenArtifactDownloader {
 
     //I'm sure there is a better way but not sure at the moment
     @SuppressWarnings("unchecked")
+    @Nullable
     private static Node getPath(Node node, String path) {
         Node tmp = node;
         for (String pt : path.split("/")) {
@@ -285,6 +293,7 @@ public class MavenArtifactDownloader {
         return tmp;
     }
 
+    @Nullable
     private static File _gradle(Project project, List<ArtifactRepository> repos, Artifact mine, boolean changing) {
         String name = "mavenDownloader_" + mine.getDescriptor().replace(':', '_');
         synchronized(project) {
@@ -306,7 +315,7 @@ public class MavenArtifactDownloader {
             strat.cacheChangingModulesFor(5, TimeUnit.MINUTES);
             strat.cacheDynamicVersionsFor(5, TimeUnit.MINUTES);
         });
-        Set<File> files = null;
+        Set<File> files;
         try {
             files = cfg.resolve();
         } catch (NullPointerException npe) {
@@ -332,6 +341,7 @@ public class MavenArtifactDownloader {
         return ret;
     }
 
+    @Nullable
     private static File _downloadWithCache(Project project, URI maven, String path, boolean changing, boolean bypassLocal) throws IOException, URISyntaxException {
         URL url = new URIBuilder(maven)
             .setPath(maven.getPath() + '/' + path)

@@ -20,6 +20,10 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.Pair;
+
+import de.siegmar.fastcsv.reader.NamedCsvReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,10 +47,7 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import de.siegmar.fastcsv.reader.NamedCsvReader;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.tuple.Pair;
+import javax.annotation.Nullable;
 
 public class McpNames {
     private static final String NEWLINE = System.getProperty("line.separator");
@@ -83,8 +84,8 @@ public class McpNames {
         return new McpNames(HashFunction.SHA1.hash(data), names, docs);
     }
 
-    private Map<String, String> names;
-    private Map<String, String> docs;
+    private final Map<String, String> names;
+    private final Map<String, String> docs;
     public final String hash;
 
     private McpNames(String hash, Map<String, String> names, Map<String, String> docs) {
@@ -217,13 +218,13 @@ public class McpNames {
     /*
      * There are certain times, such as Mixin Accessors that we wish to have the name of this method with the first character upper case.
      */
-    private String getMapped(String srg, Set<String> blacklist) {
+    private String getMapped(String srg, @Nullable Set<String> blacklist) {
         if (blacklist != null && blacklist.contains(srg))
             return srg;
 
         boolean cap = srg.charAt(0) == 'F';
         if (cap)
-            srg = 'f' + srg.substring(1);;
+            srg = 'f' + srg.substring(1);
 
         String ret = names.getOrDefault(srg, srg);
         if (cap)
@@ -231,7 +232,7 @@ public class McpNames {
         return ret;
     }
 
-    private String replaceInLine(String line, Set<String> blacklist) {
+    private String replaceInLine(String line, @Nullable Set<String> blacklist) {
         StringBuffer buf = new StringBuffer();
         Matcher matcher = SRG_FINDER.matcher(line);
         while (matcher.find()) {

@@ -23,6 +23,13 @@ package net.minecraftforge.gradle.common.util;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import java.io.ByteArrayOutputStream;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -33,12 +40,6 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.ByteArrayOutputStream;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class POMBuilder {
 
@@ -70,6 +71,7 @@ public class POMBuilder {
         return dependencies;
     }
 
+    @Nullable
     public String tryBuild() {
         try {
             return build();
@@ -131,7 +133,7 @@ public class POMBuilder {
         StreamResult result = new StreamResult(baos);
         transformer.transform(source, result);
 
-        return new String(baos.toByteArray());
+        return baos.toString();
     }
 
     private static void set(Document doc, Element parent, String name, String value) {

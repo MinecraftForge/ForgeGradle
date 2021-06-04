@@ -22,6 +22,8 @@ package net.minecraftforge.gradle.common.util;
 
 import java.net.URL;
 
+import javax.annotation.Nullable;
+
 public class ManifestJson {
     public ManifestJson.VersionInfo[] versions;
     public static class VersionInfo {
@@ -29,7 +31,8 @@ public class ManifestJson {
         public URL url;
     }
 
-    public URL getUrl(String version) {
+    @Nullable
+    public URL getUrl(@Nullable String version) {
         if (version == null) {
             return null;
         }

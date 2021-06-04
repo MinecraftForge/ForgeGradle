@@ -20,6 +20,25 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
+import net.minecraftforge.artifactural.api.repository.ArtifactProvider;
+import net.minecraftforge.artifactural.api.repository.Repository;
+import net.minecraftforge.artifactural.base.repository.ArtifactProviderBuilder;
+import net.minecraftforge.artifactural.base.repository.SimpleRepository;
+import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
+import net.minecraftforge.gradle.common.config.MCPConfigV1;
+import net.minecraftforge.gradle.common.config.MCPConfigV2;
+import net.minecraftforge.gradle.common.util.VersionJson.Download;
+import net.minecraftforge.gradle.common.util.VersionJson.OS;
+import net.minecraftforge.srgutils.MinecraftVersion;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.gradle.api.Project;
+import org.gradle.api.logging.Logger;
+
+import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -36,25 +55,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.gradle.api.Project;
-import org.gradle.api.logging.Logger;
-
-import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
-import net.minecraftforge.artifactural.api.repository.ArtifactProvider;
-import net.minecraftforge.artifactural.api.repository.Repository;
-import net.minecraftforge.artifactural.base.repository.ArtifactProviderBuilder;
-import net.minecraftforge.artifactural.base.repository.SimpleRepository;
-import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
-import com.google.common.base.Joiner;
-import com.google.common.base.Strings;
-
-import net.minecraftforge.gradle.common.config.MCPConfigV1;
-import net.minecraftforge.gradle.common.config.MCPConfigV2;
-import net.minecraftforge.gradle.common.util.VersionJson.Download;
-import net.minecraftforge.gradle.common.util.VersionJson.OS;
-import net.minecraftforge.srgutils.MinecraftVersion;
+import javax.annotation.Nullable;
 
 public class MinecraftRepo extends BaseRepo {
     private static MinecraftRepo INSTANCE;
@@ -92,6 +93,7 @@ public class MinecraftRepo extends BaseRepo {
         return getInstance(project);
     }
 
+    @Nullable
     protected String getMappings(String version) {
         if (!version.contains("_mapped_")) {
             return null;
@@ -106,6 +108,7 @@ public class MinecraftRepo extends BaseRepo {
     }
 
     @Override
+    @Nullable
     public File findFile(ArtifactIdentifier artifact) throws IOException {
         String side = artifact.getName();
 
@@ -149,7 +152,7 @@ public class MinecraftRepo extends BaseRepo {
     }
 
     private File findMcp(String version) throws IOException {
-        net.minecraftforge.gradle.common.util.Artifact mcp = net.minecraftforge.gradle.common.util.Artifact.from("de.oceanlabs.mcp:mcp_config:" + version + "@zip");
+        Artifact mcp = Artifact.from("de.oceanlabs.mcp:mcp_config:" + version + "@zip");
         File zip = cache("versions", version, "mcp.zip");
         if (!zip.exists()) {
             FileUtils.copyURLToFile(new URL(Utils.FORGE_MAVEN + mcp.getPath()), zip);
@@ -158,6 +161,7 @@ public class MinecraftRepo extends BaseRepo {
         return zip;
     }
 
+    @Nullable
     private File findMcpMappings(String version) throws IOException {
         File mcp = findMcp(version);
         if (mcp == null)
@@ -185,6 +189,7 @@ public class MinecraftRepo extends BaseRepo {
         return version;
     }
 
+    @Nullable
     private File findVersion(String version) throws IOException {
         File manifest = cache("versions/manifest.json");
         if (!DownloadUtils.downloadEtag(new URL(MANIFEST_URL), manifest, offline))
@@ -202,6 +207,7 @@ public class MinecraftRepo extends BaseRepo {
         return json;
     }
 
+    @Nullable
     protected File findPom(String side, String version, File json) throws IOException {
         File pom = cache("versions", version, side + ".pom");
         HashStore cache = commonCache(cache("versions", version, side + ".pom"));

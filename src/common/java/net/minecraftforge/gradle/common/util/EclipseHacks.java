@@ -38,11 +38,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import javax.annotation.Nonnull;
-
 public class EclipseHacks {
 
-    public static void doEclipseFixes(@Nonnull final MinecraftExtension minecraft, @Nonnull final TaskProvider<ExtractNatives> nativesTask, @Nonnull final List<? extends TaskProvider<?>> setupTasks) {
+    public static void doEclipseFixes(final MinecraftExtension minecraft, final TaskProvider<ExtractNatives> nativesTask, final List<? extends TaskProvider<?>> setupTasks) {
         final Project project = minecraft.getProject();
         final Provider<File> natives = nativesTask.flatMap(s -> s.getOutput().getAsFile());
 

@@ -20,24 +20,23 @@
 
 package net.minecraftforge.gradle.common.util;
 
-import javax.annotation.Nullable;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.function.Predicate;
-
-import com.google.common.base.Splitter;
-import com.google.common.collect.Iterables;
 import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
+
 import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.specs.Spec;
+
+import com.google.common.base.Splitter;
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Iterables;
+import java.io.File;
+import java.io.Serializable;
+import java.util.Comparator;
+import java.util.Locale;
+import java.util.function.Predicate;
+
+import javax.annotation.Nullable;
 
 public class Artifact implements ArtifactIdentifier, Comparable<Artifact>, Serializable {
     private static final long serialVersionUID = 1L;
@@ -46,7 +45,9 @@ public class Artifact implements ArtifactIdentifier, Comparable<Artifact>, Seria
     private final String group;
     private final String name;
     private final String version;
+    @Nullable
     private final String classifier;
+    @Nullable
     private final String ext;
 
     // Cached so we don't rebuild every time we're asked.
@@ -130,8 +131,10 @@ public class Artifact implements ArtifactIdentifier, Comparable<Artifact>, Seria
     @Override
     public String getVersion()   { return version;    }
     @Override
+    @Nullable
     public String getClassifier(){ return classifier; }
     @Override
+    @Nullable
     public String getExtension() { return ext;        }
     public String getFilename()  { return file;       }
 
@@ -172,12 +175,13 @@ public class Artifact implements ArtifactIdentifier, Comparable<Artifact>, Seria
 
     @Override
     public int compareTo(Artifact o) {
-        int ret;
-        if ((ret = group.compareTo(o.group)) != 0) return ret;
-        if ((ret = name.compareTo(o.name)) != 0) return ret;
-        if ((ret = comparableVersion.compareTo(o.comparableVersion)) != 0) return ret;
-        // TODO: comparison of timestamps for snapshot versions (isSnapshot)
-        if ((ret = classifier.compareTo(o.classifier)) != 0) return ret;
-        return ext.compareTo(o.ext);
+        return ComparisonChain.start()
+                .compare(group, o.group)
+                .compare(name, o.name)
+                .compare(comparableVersion, o.comparableVersion)
+                // TODO: comparison of timestamps for snapshot versions (isSnapshot)
+                .compare(classifier, o.classifier, Comparator.nullsFirst(Comparator.naturalOrder()))
+                .compare(ext, o.ext, Comparator.nullsFirst(Comparator.naturalOrder()))
+                .result();
     }
 }

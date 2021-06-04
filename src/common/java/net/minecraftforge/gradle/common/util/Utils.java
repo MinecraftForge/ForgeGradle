@@ -82,6 +82,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class Utils {
     private static final boolean ENABLE_FILTER_REPOS = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.filter_repos", "true"));
@@ -156,7 +157,7 @@ public class Utils {
     }
 
     public static File createEmpty(File file) throws IOException {
-        file = delete(file);
+        delete(file);
         file.createNewFile();
         return file;
     }
@@ -237,7 +238,7 @@ public class Utils {
             return GSON.fromJson(new InputStreamReader(in), clz);
         }
     }
-    public static <T> T loadJson(InputStream in, Class<T> clz) throws IOException {
+    public static <T> T loadJson(InputStream in, Class<T> clz) {
         return GSON.fromJson(new InputStreamReader(in), clz);
     }
 
@@ -262,8 +263,8 @@ public class Utils {
         }
     }
     @FunctionalInterface
-    public static interface IOConsumer<T> {
-        public void accept(T value) throws IOException;
+    public interface IOConsumer<T> {
+        void accept(T value) throws IOException;
     }
 
     /**
@@ -277,7 +278,8 @@ public class Utils {
      * @return resolved string
      */
     @SuppressWarnings("rawtypes")
-    public static String resolveString(Object obj) {
+    @Nullable
+    public static String resolveString(@Nullable Object obj) {
         if (obj == null)
             return null;
         else if (obj instanceof String) // stop early if its the right type. no need to do more expensive checks
@@ -336,7 +338,7 @@ public class Utils {
     }
 
     @Nonnull
-    public static final String capitalize(@Nonnull final String toCapitalize) {
+    public static String capitalize(@Nonnull final String toCapitalize) {
         return toCapitalize.length() > 1 ? toCapitalize.substring(0, 1).toUpperCase() + toCapitalize.substring(1) : toCapitalize;
     }
 
@@ -372,14 +374,13 @@ public class Utils {
             task.dependsOn(extractNatives, setupTasksLst);
         });
 
-        final TaskProvider<Task> makeSrcDirs = extension.getProject().getTasks().register("makeSrcDirs", Task.class, task -> {
-            task.doFirst(t -> {
-                final JavaPluginConvention java = task.getProject().getConvention().getPlugin(JavaPluginConvention.class);
+        final TaskProvider<Task> makeSrcDirs = extension.getProject().getTasks().register("makeSrcDirs", Task.class, task ->
+                task.doFirst(t -> {
+                    final JavaPluginConvention java = task.getProject().getConvention().getPlugin(JavaPluginConvention.class);
 
-                java.getSourceSets().forEach(s -> s.getAllSource()
-                        .getSrcDirs().stream().filter(f -> !f.exists()).forEach(File::mkdirs));
-            });
-        });
+                    java.getSourceSets().forEach(s -> s.getAllSource()
+                            .getSrcDirs().stream().filter(f -> !f.exists()).forEach(File::mkdirs));
+                }));
         setupTasksLst.add(makeSrcDirs);
 
         extension.getRuns().forEach(RunConfig::mergeParents);
