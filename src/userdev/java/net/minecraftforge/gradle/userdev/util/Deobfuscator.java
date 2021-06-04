@@ -44,6 +44,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -60,11 +61,11 @@ import javax.xml.xpath.XPathFactory;
 
 public class Deobfuscator {
     private final Project project;
-    private File cacheRoot;
+    private final File cacheRoot;
 
-    private DocumentBuilder xmlParser;
-    private XPath xPath;
-    private Transformer xmlTransformer;
+    private final DocumentBuilder xmlParser;
+    private final XPath xPath;
+    private final Transformer xmlTransformer;
 
     public Deobfuscator(Project project, File cacheRoot) {
         this.project = project;
@@ -111,7 +112,8 @@ public class Deobfuscator {
         return output;
     }
 
-    public File deobfBinary(File original, String mappings, String... cachePath) throws IOException {
+    @Nullable
+    public File deobfBinary(File original, @Nullable String mappings, String... cachePath) throws IOException {
         project.getLogger().debug("Deobfuscating binary file {} with mappings {}", original.getName(), mappings);
 
         File names = findMapping(mappings);
@@ -143,7 +145,8 @@ public class Deobfuscator {
         return output;
     }
 
-    public File deobfSources(File original, String mappings, String... cachePath) throws IOException {
+    @Nullable
+    public File deobfSources(File original, @Nullable String mappings, String... cachePath) throws IOException {
         project.getLogger().debug("Deobfuscating sources file {} with mappings {}", original.getName(), mappings);
 
         File names = findMapping(mappings);
@@ -191,7 +194,8 @@ public class Deobfuscator {
         return cacheFile;
     }
 
-    private File findMapping(String mapping) {
+    @Nullable
+    private File findMapping(@Nullable String mapping) {
         if (mapping == null)
             return null;
 

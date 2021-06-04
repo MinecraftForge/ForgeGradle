@@ -20,6 +20,10 @@
 
 package net.minecraftforge.gradle.common.config;
 
+import net.minecraftforge.gradle.common.config.MCPConfigV1.Function;
+import net.minecraftforge.gradle.common.util.RunConfig;
+import net.minecraftforge.gradle.common.util.Utils;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -28,9 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.minecraftforge.gradle.common.config.MCPConfigV1.Function;
-import net.minecraftforge.gradle.common.util.RunConfig;
-import net.minecraftforge.gradle.common.util.Utils;
+import javax.annotation.Nullable;
 
 public class UserdevConfigV1 extends Config {
     public static UserdevConfigV1 get(InputStream stream) {
@@ -40,21 +42,33 @@ public class UserdevConfigV1 extends Config {
         return get(new ByteArrayInputStream(data));
     }
 
+    @Nullable
     public String mcp;    // Do not specify this unless there is no parent.
+    @Nullable
     public String parent; // To fully resolve, we must walk the parents until we hit null, and that one must specify a MCP value.
+    @Nullable
     public List<String> ats;
+    @Nullable
     public List<String> sass;
+    @Nullable
     public List<String> srgs;
+    @Nullable
     public List<String> srg_lines;
     public String binpatches; //To be applied to joined.jar, remapped, and added to the classpath
     public Function binpatcher;
     public String patches;
+    @Nullable
     public String sources;
+    @Nullable
     public String universal; //Remapped and added to the classpath, Contains new classes and resources
+    @Nullable
     public List<String> libraries; //Additional libraries.
     public String inject;
+    @Nullable
     public Map<String, RunConfig> runs;
+    @Nullable
     public String sourceCompatibility;
+    @Nullable
     public String targetCompatibility;
 
 

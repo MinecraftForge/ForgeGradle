@@ -33,7 +33,7 @@ public class DependencyRemapper {
     private final Project project;
     @SuppressWarnings("unused")
     private Deobfuscator deobfuscator;
-    private List<Consumer<String>> mappingListeners = new ArrayList<>();
+    private final List<Consumer<String>> mappingListeners = new ArrayList<>();
 
     public DependencyRemapper(Project project, Deobfuscator deobfuscator) {
         this.project = project;

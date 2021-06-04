@@ -21,14 +21,23 @@
 package net.minecraftforge.gradle.userdev.util;
 
 import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
-import net.minecraftforge.gradle.common.util.*;
+import net.minecraftforge.gradle.common.util.Artifact;
+import net.minecraftforge.gradle.common.util.BaseRepo;
+import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
+import net.minecraftforge.gradle.common.util.Utils;
+
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.*;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.artifacts.ResolvedConfiguration;
+import org.gradle.api.artifacts.ResolvedDependency;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.stream.Stream;
+
+import javax.annotation.Nullable;
 
 /*
  * Takes in SRG names jars/sources and remaps them using MCPNames.
@@ -40,7 +49,7 @@ public class DeobfuscatingRepo extends BaseRepo {
     //once resolved by gradle, will contain SRG-named artifacts for us to deobf
     private final Configuration origin;
     private ResolvedConfiguration resolvedOrigin;
-    private Deobfuscator deobfuscator;
+    private final Deobfuscator deobfuscator;
 
     public DeobfuscatingRepo(Project project, Configuration origin, Deobfuscator deobfuscator) {
         super(Utils.getCache(project, "mod_remap_repo"), project.getLogger());
@@ -49,6 +58,7 @@ public class DeobfuscatingRepo extends BaseRepo {
         this.deobfuscator = deobfuscator;
     }
 
+    @Nullable
     private String getMappings(String version) {
         if (!version.contains("_mapped_"))
             return null;
@@ -80,10 +90,11 @@ public class DeobfuscatingRepo extends BaseRepo {
 
             return findRaw(unmappedArtifact, mappings);
         } else {
-            throw new RuntimeException("Invalid deobf dependency: " + artifact.toString());
+            throw new RuntimeException("Invalid deobf dependency: " + artifact);
         }
     }
 
+    @Nullable
     private File findPom(Artifact artifact, String mapping) throws IOException {
         Optional<File> orig = findArtifactFile(artifact);
 
@@ -114,6 +125,7 @@ public class DeobfuscatingRepo extends BaseRepo {
         ).map(ResolvedArtifact::getFile).filter(File::exists).findAny();
     }
 
+    @Nullable
     private File findRaw(Artifact artifact, String mapping) throws IOException {
         Optional<File> orig = findArtifactFile(artifact);
         if (!orig.isPresent()) {
@@ -125,6 +137,7 @@ public class DeobfuscatingRepo extends BaseRepo {
         return deobfuscator.deobfBinary(origFile, mapping, getArtifactPath(artifact, mapping));
     }
 
+    @Nullable
     private File findSource(Artifact artifact, String mapping) throws IOException {
         File origFile = MavenArtifactDownloader.manual(project, artifact.getDescriptor(), false);
         if (origFile == null) return null;

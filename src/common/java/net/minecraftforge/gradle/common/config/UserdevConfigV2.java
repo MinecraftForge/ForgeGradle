@@ -20,6 +20,9 @@
 
 package net.minecraftforge.gradle.common.config;
 
+import net.minecraftforge.gradle.common.config.MCPConfigV1.Function;
+import net.minecraftforge.gradle.common.util.Utils;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.Charset;
@@ -30,8 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.minecraftforge.gradle.common.config.MCPConfigV1.Function;
-import net.minecraftforge.gradle.common.util.Utils;
+import javax.annotation.Nullable;
 
 public class UserdevConfigV2 extends UserdevConfigV1 {
     public static UserdevConfigV2 get(InputStream stream) {
@@ -44,7 +46,9 @@ public class UserdevConfigV2 extends UserdevConfigV1 {
     public DataFunction processor;
     public String patchesOriginalPrefix;
     public String patchesModifiedPrefix;
+    @Nullable
     private Boolean notchObf; //This is a Boolean so we can set to null and it won't be printed in the json.
+    @Nullable
     private List<String> universalFilters;
     private String sourceFileCharset = StandardCharsets.UTF_8.name();
 
@@ -53,7 +57,7 @@ public class UserdevConfigV2 extends UserdevConfigV1 {
     }
 
     public boolean getNotchObf() {
-        return this.notchObf == null ? false : this.notchObf;
+        return this.notchObf != null && this.notchObf;
     }
 
     public void setSourceFileCharset(String value) {
@@ -84,6 +88,7 @@ public class UserdevConfigV2 extends UserdevConfigV1 {
             return this.data == null ? Collections.emptyMap() : data;
         }
 
+        @Nullable
         public String setData(String name, String path) {
             if (this.data == null)
                 this.data = new HashMap<>();
