@@ -38,14 +38,6 @@ public class MojangLicenseHelper {
     public static final String HIDE_LICENSE = "hideOfficialWarningUntilChanged";
     public static final String SHOW_LICENSE = "reshowOfficialWarning";
 
-    /**
-     * @see #displayWarning(Project, String, String) 
-     */
-    @Deprecated
-    public static void displayWarning(Project project, String channel) {
-        displayWarning(project, channel, null);
-    }
-
     public static void displayWarning(Project project, String channel, @Nullable String version, @Nullable String updateChannel, @Nullable String updateVersion) {
         displayWarning(project, channel, version);
 
