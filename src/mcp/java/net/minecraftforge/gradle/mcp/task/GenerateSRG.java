@@ -39,7 +39,7 @@ import net.minecraftforge.srgutils.IRenamer;
 public class GenerateSRG extends DefaultTask {
     private File srg;
     private String mapping;
-    private IMappingFile.Format format = IMappingFile.Format.TSRG2;
+    private IMappingFile.Format format = IMappingFile.Format.TSRG;
     private boolean notch = false;
     private boolean reverse = false;
     private File output = getProject().file("build/" + getName() + "/output.tsrg");

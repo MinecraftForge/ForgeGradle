@@ -66,10 +66,11 @@ public class TaskCreateExc extends DefaultTask {
         lines = lines.stream().map(line -> line.split("#")[0]).filter(l -> !Strings.isNullOrEmpty(l.trim())).collect(Collectors.toList()); //Strip empty/comments
 
         Map<String, String> classes = new HashMap<>();
+        boolean tsrgv2 = !lines.isEmpty() && lines.get(0).startsWith("tsrg2"); // TSRGv2 has an extra space that we must account for when splitting
         lines.stream()
         .filter(line -> !line.startsWith("\t") || (line.indexOf(':') != -1 && line.startsWith("CL:")))
         .map(line -> line.indexOf(':') != -1 ? line.substring(4).split(" ") : line.split(" "))
-        .filter(pts -> pts.length == 2 && !pts[0].endsWith("/")) //Skip packages
+        .filter(pts -> pts.length == (tsrgv2 ? 3 : 2) && !pts[0].endsWith("/")) //Skip packages
         .forEach(pts -> classes.put(pts[0], pts[1]));
 
         String currentClass = null;

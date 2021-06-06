@@ -417,9 +417,8 @@ public class PatcherPlugin implements Plugin<Project> {
 
                     if (createMcp2Srg.get().getSrg() == null) { //TODO: Make extractMCPData macro
                         TaskProvider<ExtractMCPData> ext = project.getTasks().register("extractSrg", ExtractMCPData.class);
-                        ext.get().dependsOn(dlMCP, dlMappingsConfig);
+                        ext.get().dependsOn(dlMCP);
                         ext.get().setConfig(dlMCP.getOutput());
-                        ext.get().setMappingsVersion(extension.getMappingVersion());
                         createMcp2Srg.get().setSrg(ext.get().getOutput());
                         createMcp2Srg.get().dependsOn(ext);
                     }
@@ -674,7 +673,7 @@ public class PatcherPlugin implements Plugin<Project> {
                 applyPatches.get().setBase(toMCPClean.getOutput());
                 genPatches.get().setDependsOn(Lists.newArrayList(toMCPClean, dirtyZip));
                 genPatches.get().setBase(toMCPClean.getOutput());
-                genPatches.get().setModified(dirtyZip.getArchiveFile().get().getAsFile());
+                genPatches.get().setModified(dirtyZip.getArchivePath());
             }
 
             {

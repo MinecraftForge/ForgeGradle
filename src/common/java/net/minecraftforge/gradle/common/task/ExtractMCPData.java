@@ -28,15 +28,10 @@ import java.util.function.Supplier;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
-import net.minecraftforge.gradle.common.util.MinecraftRepo;
-import net.minecraftforge.srgutils.IMappingFile;
-import net.minecraftforge.srgutils.IRenamer;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -47,16 +42,12 @@ public class ExtractMCPData extends DefaultTask {
     private String key = "mappings";
     private Supplier<File> configSupplier;
     private File config;
-    private String mappingsVersion;
     private boolean allowEmpty = false;
     private File output = getProject().file("build/" + getName() + "/output.srg");
 
     @TaskAction
     public void run() throws IOException {
         MCPConfigV1 cfg = MCPConfigV2.getFromArchive(getConfig());
-        MCPConfigV2 configV2 = null;
-        if (cfg instanceof MCPConfigV2)
-            configV2 = (MCPConfigV2) cfg;
 
         try (ZipFile zip = new ZipFile(getConfig())) {
             String path = cfg.getData(key.split("/"));
@@ -77,21 +68,6 @@ public class ExtractMCPData extends DefaultTask {
             try (OutputStream out = new FileOutputStream(getOutput())) {
                 IOUtils.copy(zip.getInputStream(entry), out);
             }
-        }
-
-        if (configV2 != null && configV2.isOfficial() && getOutput().exists()) {
-            String minecraftVersion = MinecraftRepo.getMCVersion(getMappingsVersion());
-            File client = MavenArtifactDownloader.generate(getProject(), "net.minecraft:client:" + minecraftVersion + ":mappings@txt", true);
-
-            IMappingFile obfToOfficial = IMappingFile.load(client).reverse();
-            IMappingFile srg = IMappingFile.load(getOutput());
-
-            srg.rename(new IRenamer() {
-                @Override
-                public String rename(IMappingFile.IClass value) {
-                    return obfToOfficial.remapClass(value.getOriginal());
-                }
-            }).write(getOutput().toPath(), IMappingFile.Format.TSRG2, false);
         }
     }
 
@@ -144,14 +120,5 @@ public class ExtractMCPData extends DefaultTask {
     }
     public void setOutput(File value) {
         this.output = value;
-    }
-
-    @Input
-    @Optional
-    public String getMappingsVersion() {
-        return mappingsVersion;
-    }
-    public void setMappingsVersion(String mappingsVersion) {
-        this.mappingsVersion = mappingsVersion;
     }
 }

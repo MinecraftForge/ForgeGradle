@@ -84,10 +84,10 @@ public class TaskGeneratePatches extends DefaultTask {
     @InputFile                 public File getModified() { return modified; }
     @OutputDirectory           public File getOutput() { return output; }
     @Input           @Optional public ArchiveFormat getOutputFormat() { return outputFormat; }
-    @Input                     public boolean isAutoHeader() { return autoHeader; }
-    @Input                     public int getContextLines() { return contextLines; }
-    @Input                     public boolean isVerbose() { return verbose; }
-    @Internal                  public boolean isPrintSummary() { return printSummary; }
+    @Input           @Optional public boolean isAutoHeader() { return autoHeader; }
+    @Input           @Optional public int getContextLines() { return contextLines; }
+                     @Optional public boolean isVerbose() { return verbose; }
+                     @Optional public boolean isPrintSummary() { return printSummary; }
     @Input           @Optional public String getOriginalPrefix() { return originalPrefix; }
     @Input           @Optional public String getModifiedPrefix() { return modifiedPrefix; }
                                public void setBase(File base) { this.base = base; }

@@ -121,7 +121,7 @@ public class MojangLicenseHelper {
     }
 
     private static Optional<String> getOfficialLicense(Project project, String version) {
-        String minecraftVersion = MinecraftRepo.getMCVersion(version);
+        String minecraftVersion = getMinecraftVersion(version);
         String artifact = "net.minecraft:client:" + minecraftVersion + ":mappings@txt";
 
         File client = MavenArtifactDownloader.generate(project, artifact, true);
@@ -144,5 +144,17 @@ public class MojangLicenseHelper {
 
     private static Path getLicensePath(Project project, String hash) {
         return new File(Utils.getCache(project, "licenses"), hash + ".marker").toPath();
+    }
+
+    private static final Predicate<String> MCP_CONFIG_TIMESTAMP = Pattern.compile("\\d{8}\\.\\d{6}").asPredicate();
+
+    private static String getMinecraftVersion(String version) {
+        int idx = version.lastIndexOf('-');
+
+        if (idx != -1 && MCP_CONFIG_TIMESTAMP.test(version.substring(idx + 1))) {
+            version = version.substring(0, idx);
+        }
+
+        return version;
     }
 }
