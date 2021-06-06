@@ -452,7 +452,7 @@ public class MCPRepo extends BaseRepo {
     private File findOfficialMapping(String version) throws IOException {
         String mcpversion = version;
         int idx = version.lastIndexOf('-');
-        if (idx != -1 && version.substring(idx + 1).matches("\\d{8}\\.\\d{6}")) { //Timestamp, so lets assume that's the MCP part.
+        if (idx != -1 && MinecraftRepo.MCP_CONFIG_VERSION.matcher(version.substring(idx + 1)).matches()) {
             //mcpversion = version.substring(idx);
             version = version.substring(0, idx);
         }
