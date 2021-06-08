@@ -151,6 +151,10 @@ public class PatcherPlugin implements Plugin<Project> {
                 m.artifact();
             });
         });
+        project.getRepositories().maven(e -> { // Needed for parchment mappings
+            e.setUrl(Utils.PARCHMENT_MAVEN);
+            e.mavenContent(filter -> filter.includeGroupByRegex("org\\.parchmentmc.*"));
+        });
 
         new BaseRepo.Builder()
                 .add(MCPRepo.create(project))
