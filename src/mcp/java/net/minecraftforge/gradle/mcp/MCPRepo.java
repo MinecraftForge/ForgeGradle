@@ -20,6 +20,11 @@
 
 package net.minecraftforge.gradle.mcp;
 
+import com.google.common.base.Functions;
+import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
 import net.minecraftforge.artifactural.api.repository.ArtifactProvider;
 import net.minecraftforge.artifactural.api.repository.Repository;
@@ -40,6 +45,9 @@ import net.minecraftforge.gradle.common.util.VersionJson;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import net.minecraftforge.gradle.mcp.util.MCPWrapper;
 import net.minecraftforge.srgutils.IMappingFile;
+import net.minecraftforge.srgutils.IMappingFile.INode;
+import net.minecraftforge.srgutils.IMappingFile.IParameter;
+import net.minecraftforge.srgutils.IRenamer;
 import net.minecraftforge.srgutils.IMappingFile.IClass;
 import net.minecraftforge.srgutils.IMappingFile.IField;
 import net.minecraftforge.srgutils.IMappingFile.IMethod;
@@ -56,6 +64,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.URL;
@@ -64,6 +73,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 import javax.annotation.Nullable;
@@ -92,6 +107,7 @@ import javax.annotation.Nullable;
  *         Current supported channels:
  *         'stable', 'snapshot': MCP's crowdsourced mappings.
  *         'official': Official mappings released by Mojang.
+ *         'parchment': Parchment mappings released by ParchemntMC.
  *
  *   Note: It does NOT provide the Obfed named jars for server and client, as that is provided by MinecraftRepo.
  */
@@ -103,6 +119,8 @@ public class MCPRepo extends BaseRepo {
     private static final String NAMES_MCP = "^(mcp_config)$";
     private static final String STEP_MERGE = "merge"; //TODO: Design better way to get steps output, for now hardcode
     private static final String STEP_RENAME = "rename";
+    private static final Pattern PARCHMENT_PATTERN = Pattern.compile("(?<mappingsversion>[\\w-]+)-(?<mcpversion>(?<mcversion>[\\d.]+)(?:-\\d{8}\\.\\d{6})?)");
+    private static final Gson GSON = new Gson();
 
     //This is the artifact we expose that is a zip containing SRG->Official fields and methods.
     public static final String MAPPING_DEP = "net.minecraft:mappings_{CHANNEL}:{VERSION}@zip";
@@ -150,6 +168,10 @@ public class MCPRepo extends BaseRepo {
     }
     private File cacheMCP(String version) {
         return cache("de", "oceanlabs", "mcp", "mcp_config", version);
+    }
+
+    private File cacheParchment(String mcpversion, String mappingsVersion, String ext) {
+        return cache("org", "parchmentmc", "data", "parchment-" + mcpversion, mappingsVersion, "parchment-" + mcpversion + '-' + mappingsVersion + '.' + ext);
     }
 
     @Override
@@ -378,6 +400,8 @@ public class MCPRepo extends BaseRepo {
 
         if ("official".equals(channel)) {
             return findOfficialMapping(version);
+        } else if ("parchment".equals(channel)) {
+            return findParchmentMapping(version);
         } else if ("snapshot".equals(channel) || "snapshot_nodoc".equals(channel) || "stable".equals(channel) || "stable_nodoc".equals(channel)) { //MCP
             String desc = "de.oceanlabs.mcp:mcp_" + channel + ":" + version + "@zip";
             debug("    Mapping: " + desc);
@@ -569,18 +593,8 @@ public class MCPRepo extends BaseRepo {
 
             try (FileOutputStream fos = new FileOutputStream(mappings);
                  ZipOutputStream out = new ZipOutputStream(fos)) {
-
-                out.putNextEntry(Utils.getStableEntry("fields.csv"));
-                try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWriter(out))) {
-                    fields.forEach(writer::writeRow);
-                }
-                out.closeEntry();
-
-                out.putNextEntry(Utils.getStableEntry("methods.csv"));
-                try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWriter(out))) {
-                    methods.forEach(writer::writeRow);
-                }
-                out.closeEntry();
+                writeJavadocs("fields.csv", fields, out);
+                writeJavadocs("methods.csv", methods, out);
             }
 
             cache.save();
@@ -591,7 +605,158 @@ public class MCPRepo extends BaseRepo {
         return mappings;
     }
 
-    private static class UncloseableOutputStreamWriter extends OutputStreamWriter {
+    private File findParchmentMapping(String version) throws IOException {
+        // Format is {MAPPINGS_VERSION}-{MC_VERSION}-{MCP_VERSION} where MCP_VERSION is optional
+        Matcher matcher = PARCHMENT_PATTERN.matcher(version);
+        if (!matcher.matches())
+            throw new IllegalStateException("Parchment version of " + version + " is invalid");
+
+        String mappingsversion = matcher.group("mappingsversion");
+        String mcversion = matcher.group("mcversion");
+        String mcpversion = matcher.group("mcpversion");
+
+        File client = MavenArtifactDownloader.generate(project, "net.minecraft:client:" + mcversion + ":mappings@txt", true);
+        if (client == null)
+            throw new IllegalStateException("Could not create " + mcversion + " official mappings due to missing ProGuard mappings.");
+
+        File tsrg = findRenames("obf_to_srg", IMappingFile.Format.TSRG, mcpversion, false);
+        if (tsrg == null)
+            throw new IllegalStateException("Could not create " + mcpversion + " parchment mappings due to missing MCP's tsrg");
+
+        File mcp = getMCP(mcpversion);
+        if (mcp == null)
+            return null;
+
+        String artifact = "org.parchmentmc.data:parchment-" + mcversion + ":" + mappingsversion + "@zip";
+        File dep = MavenArtifactDownloader.manual(project, artifact, false);
+        if (dep == null)
+            throw new IllegalStateException("Could not find Parchment version of " + mappingsversion + '-' + mcversion);
+
+        File mappings = cacheParchment(mcpversion, mappingsversion, "zip");
+        HashStore cache = commonHash(mcp)
+                .load(cacheParchment(mcpversion, mappingsversion, "zip.input"))
+                .add("mcversion", version)
+                .add("mappingsversion", mappingsversion)
+                .add("tsrg", tsrg)
+                .add("codever", "1");
+
+        if (cache.isSame() && mappings.exists())
+            return mappings;
+
+        try (ZipFile zip = new ZipFile(dep)) {
+            ZipEntry entry = zip.getEntry("parchment.json");
+            if (entry == null)
+                throw new IllegalStateException("Parchment zip did not contain \"parchment.json\"");
+
+            JsonObject json = GSON.fromJson(new InputStreamReader(zip.getInputStream(entry)), JsonObject.class);
+            String specversion = json.get("version").getAsString();
+            if (!specversion.startsWith("1."))
+                throw new IllegalStateException("Parchment mappings spec version was " + specversion + " and did not start with \"1.\", cannot parse!");
+            IMappingFile srg = IMappingFile.load(tsrg);
+            IMappingFile mojToObf = IMappingFile.load(client);
+            IMappingFile mojToSrg = mojToObf.chain(srg);
+
+            List<String[]> classJavadocs = getJavadocList();
+            List<String[]> fieldJavadocs = getJavadocList();
+            List<String[]> methodJavadocs = getJavadocList();
+
+            Map<String, JsonObject> classMap = getNamedJsonMap(json.getAsJsonArray("classes"), false);
+
+            for (IClass srgClass : mojToSrg.getClasses()) {
+                JsonObject cls = classMap.get(srgClass.getOriginal());
+                populateJavadocs(classJavadocs, srgClass, cls);
+
+                Map<String, JsonObject> fieldMap = cls == null ? ImmutableMap.of() : getNamedJsonMap(cls.getAsJsonArray("fields"), true);
+                for (IField srgField : srgClass.getFields()) {
+                    populateJavadocs(fieldJavadocs, srgField, fieldMap.get(srgField.getOriginal() + srgField.getDescriptor()));
+                }
+
+                Map<String, JsonObject> methodMap = cls == null ? ImmutableMap.of() : getNamedJsonMap(cls.getAsJsonArray("methods"), true);
+                for (IMethod srgMethod : srgClass.getMethods()) {
+                    JsonObject method = methodMap.get(srgMethod.getOriginal() + srgMethod.getDescriptor());
+                    StringBuilder mdJavadoc = new StringBuilder(getJavadocs(method));
+                    Map<String, JsonObject> paramMap =  method == null ? ImmutableMap.of() : getNamedJsonMap(method.getAsJsonArray("parameters"), false);
+                    for (IParameter srgParam : srgMethod.getParameters()) {
+                        String paramJavadoc = getJavadocs(paramMap.get(srgParam.getOriginal()));
+                        if (!paramJavadoc.isEmpty())
+                            mdJavadoc.append("\\n@param ").append(srgParam.getOriginal()).append(' ').append(paramJavadoc);
+                    }
+                    methodJavadocs.add(new String[]{srgMethod.getMapped(), srgMethod.getOriginal(), mdJavadoc.toString()});
+                }
+            }
+
+            if (!mappings.getParentFile().exists())
+                mappings.getParentFile().mkdirs();
+
+            try (FileOutputStream fos = new FileOutputStream(mappings);
+                    ZipOutputStream out = new ZipOutputStream(fos)) {
+                writeJavadocs("classes.csv", classJavadocs, out);
+                writeJavadocs("fields.csv", fieldJavadocs, out);
+                writeJavadocs("methods.csv", methodJavadocs, out);
+            }
+        }
+
+        cache.save();
+        Utils.updateHash(mappings, HashFunction.SHA1);
+
+        return mappings;
+    }
+
+    private Map<String, JsonObject> getNamedJsonMap(JsonArray array, boolean hasDescriptor) {
+        if (array == null || array.size() == 0)
+            return ImmutableMap.of();
+        return StreamSupport.stream(array.spliterator(), false)
+                .map(JsonObject.class::cast)
+                .collect(Collectors.toMap(j -> {
+                    String key = j.get("name").getAsString();
+                    if (hasDescriptor)
+                        key += j.get("descriptor").getAsString();
+                    return key;
+                }, Functions.identity()));
+    }
+
+    private void populateJavadocs(List<String[]> javadocs, INode srgNode, JsonObject json) {
+        if (srgNode instanceof IClass) {
+            String name = srgNode.getMapped().replace('/', '.');
+            javadocs.add(new String[]{name, name, getJavadocs(json)});
+            return;
+        }
+        String srgName = srgNode.getMapped();
+        String mojName = srgNode.getOriginal();
+        javadocs.add(new String[]{srgName, mojName, getJavadocs(json)});
+    }
+
+    private String getJavadocs(JsonObject json) {
+        if (json == null)
+            return "";
+        JsonArray array = json.getAsJsonArray("javadoc");
+        if (array == null)
+            return "";
+        StringBuilder sb = new StringBuilder();
+        int size = array.size();
+        for (int i = 0; i < size; i++) {
+            sb.append(array.get(i).getAsString());
+            if (i != size - 1)
+                sb.append("\\n");
+        }
+        return sb.toString();
+    }
+
+    private List<String[]> getJavadocList() {
+        List<String[]> javadocs = new ArrayList<>();
+        javadocs.add(new String[]{"searge", "name", "desc"});
+        return javadocs;
+    }
+
+    private void writeJavadocs(String name, List<String[]> javadocs, ZipOutputStream out) throws IOException {
+        out.putNextEntry(Utils.getStableEntry(name));
+        try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWriter(out))) {
+            javadocs.forEach(writer::writeRow);
+        }
+        out.closeEntry();
+    }
+
+    private class UncloseableOutputStreamWriter extends OutputStreamWriter {
         public UncloseableOutputStreamWriter(OutputStream out) {
             super(out);
         }
