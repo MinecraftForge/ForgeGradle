@@ -46,7 +46,7 @@ public class RenameJarInPlace extends JarExec {
     private File temp;
     private Supplier<File> mappings;
     private List<Supplier<File>> extraMappings;
-    private File input_srg_temp = getProject().file("build/" + getName() + "input.srg");
+    private File input_srg_temp = getProject().file("build/" + getName() + "/input.srg");
 
     public RenameJarInPlace() {
         tool = Utils.SPECIALSOURCE;

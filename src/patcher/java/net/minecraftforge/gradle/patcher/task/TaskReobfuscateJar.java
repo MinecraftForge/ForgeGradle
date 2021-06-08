@@ -67,7 +67,7 @@ public class TaskReobfuscateJar extends DefaultTask {
     private boolean keepPackages = false;
     private boolean keepData = false;
     private File output = getProject().file("build/" + getName() + "/output.jar");
-    private File input_srg_temp = getProject().file("build/" + getName() + "input.srg");
+    private File input_srg_temp = getProject().file("build/" + getName() + "/input.srg");
     private File output_temp = getProject().file("build/" + getName() + "/output_temp.jar");
 
     @TaskAction
