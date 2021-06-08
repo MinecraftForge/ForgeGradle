@@ -659,8 +659,8 @@ public class MCPRepo extends BaseRepo {
             IMappingFile mojToObf = IMappingFile.load(client);
             IMappingFile mojToSrg = mojToObf.chain(srg);
 
-            List<String[]> packageJavadocs = getJavadocList(false);
-            List<String[]> classJavadocs = getJavadocList(false);
+            List<String[]> packageJavadocs = getJavadocList(true);
+            List<String[]> classJavadocs = getJavadocList(true);
             List<String[]> fieldJavadocs = getJavadocList(true);
             List<String[]> methodJavadocs = getJavadocList(true);
 
@@ -732,7 +732,8 @@ public class MCPRepo extends BaseRepo {
     private void populateJavadocs(List<String[]> javadocs, IClass srgClass, INode srgNode, String desc) {
         if (srgNode instanceof IPackage || srgNode instanceof IClass) {
             String name = srgNode.getMapped().replace('/', '.');
-            javadocs.add(new String[]{name, desc});
+            // TODO fix InstallerTools so that we don't have to expand the csv size for no reason
+            javadocs.add(new String[]{name, name, desc});
             return;
         }
         String srgName = srgNode.getMapped();
