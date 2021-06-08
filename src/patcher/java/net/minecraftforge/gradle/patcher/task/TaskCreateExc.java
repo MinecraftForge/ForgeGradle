@@ -36,7 +36,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
-import net.minecraftforge.gradle.common.config.MCPConfigV1;
 import net.minecraftforge.gradle.common.config.MCPConfigV2;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
@@ -61,11 +60,8 @@ public class TaskCreateExc extends DefaultTask {
 
     @TaskAction
     public void run() throws IOException {
-        MCPConfigV1 cfg = MCPConfigV2.getFromArchive(getConfig());
-        MCPConfigV2 configV2 = null;
-        if (cfg instanceof MCPConfigV2)
-            configV2 = (MCPConfigV2) cfg;
-        if (configV2 != null && configV2.isOfficial()) {
+        MCPConfigV2 cfg = MCPConfigV2.getFromArchive(getConfig());
+        if (cfg != null && cfg.isOfficial()) {
             // Write empty file if MCPConfig is official because it means TSRGv2
             try (FileOutputStream fos = new FileOutputStream(getOutput())) {
                 IOUtils.write("", fos, StandardCharsets.UTF_8);

@@ -40,7 +40,6 @@ import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import net.minecraftforge.gradle.common.config.MCPConfigV1;
 import net.minecraftforge.gradle.common.config.MCPConfigV2;
 
 public class ExtractMCPData extends DefaultTask {
@@ -53,10 +52,7 @@ public class ExtractMCPData extends DefaultTask {
 
     @TaskAction
     public void run() throws IOException {
-        MCPConfigV1 cfg = MCPConfigV2.getFromArchive(getConfig());
-        MCPConfigV2 configV2 = null;
-        if (cfg instanceof MCPConfigV2)
-            configV2 = (MCPConfigV2) cfg;
+        MCPConfigV2 cfg = MCPConfigV2.getFromArchive(getConfig());
 
         try (ZipFile zip = new ZipFile(getConfig())) {
             String path = cfg.getData(key.split("/"));
@@ -79,7 +75,7 @@ public class ExtractMCPData extends DefaultTask {
             }
         }
 
-        if (configV2 != null && configV2.isOfficial() && getMappingsVersion() != null && getOutput().exists()) {
+        if (cfg.isOfficial() && getMappingsVersion() != null && getOutput().exists()) {
             String minecraftVersion = MinecraftRepo.getMCVersion(getMappingsVersion());
             File client = MavenArtifactDownloader.generate(getProject(), "net.minecraft:client:" + minecraftVersion + ":mappings@txt", true);
 
