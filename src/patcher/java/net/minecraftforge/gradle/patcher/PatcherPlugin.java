@@ -417,10 +417,15 @@ public class PatcherPlugin implements Plugin<Project> {
 
                     if (createMcp2Srg.get().getSrg() == null) { //TODO: Make extractMCPData macro
                         TaskProvider<ExtractMCPData> ext = project.getTasks().register("extractSrg", ExtractMCPData.class);
-                        ext.get().dependsOn(dlMCP);
+                        ext.get().dependsOn(dlMCP, dlMappingsConfig);
                         ext.get().setConfig(dlMCP.getOutput());
                         createMcp2Srg.get().setSrg(ext.get().getOutput());
                         createMcp2Srg.get().dependsOn(ext);
+                    }
+
+                    if (createExc.get().getConfig() == null) {
+                        createExc.get().dependsOn(dlMCP);
+                        createExc.get().setConfig(dlMCP.getOutput());
                     }
 
                     if (createExc.get().getSrg() == null) {
@@ -492,6 +497,11 @@ public class PatcherPlugin implements Plugin<Project> {
                         }
                     }
 
+                    if (createExc.get().getConfig() == null) {
+                        TaskCreateExc task = (TaskCreateExc) tasks.getByName(createExc.get().getName());
+                        createExc.get().setConfig(task.getConfig());
+                        createExc.get().dependsOn(task);
+                    }
                     if (createExc.get().getSrg() == null) { //TODO: Make a macro for Srg/Static/Constructors
                         ExtractMCPData extract = ((ExtractMCPData)tasks.getByName("extractSrg"));
                         if (extract != null) {
@@ -673,7 +683,7 @@ public class PatcherPlugin implements Plugin<Project> {
                 applyPatches.get().setBase(toMCPClean.getOutput());
                 genPatches.get().setDependsOn(Lists.newArrayList(toMCPClean, dirtyZip));
                 genPatches.get().setBase(toMCPClean.getOutput());
-                genPatches.get().setModified(dirtyZip.getArchivePath());
+                genPatches.get().setModified(dirtyZip.getArchiveFile().get().getAsFile());
             }
 
             {

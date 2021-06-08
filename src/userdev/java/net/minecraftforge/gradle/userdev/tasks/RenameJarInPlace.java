@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import net.minecraftforge.srgutils.IMappingFile;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
@@ -45,6 +46,7 @@ public class RenameJarInPlace extends JarExec {
     private File temp;
     private Supplier<File> mappings;
     private List<Supplier<File>> extraMappings;
+    private File input_srg_temp = getProject().file("build/" + getName() + "/input.srg");
 
     public RenameJarInPlace() {
         tool = Utils.SPECIALSOURCE;
@@ -54,8 +56,10 @@ public class RenameJarInPlace extends JarExec {
 
     @Override
     protected List<String> filterArgs() {
-
         Map<String, String> replace = new HashMap<>();
+
+        File mappings = input_srg_temp;
+
         replace.put("{input}", getInput().getAbsolutePath());
         replace.put("{output}", temp.getAbsolutePath());
 
@@ -63,7 +67,7 @@ public class RenameJarInPlace extends JarExec {
         for (String arg : getArgs()) {
             if ("{mappings}".equals(arg)) {
                 String prefix = _args.get(_args.size() - 1);
-                _args.add(getMappings().getAbsolutePath());
+                _args.add(mappings.getAbsolutePath());
 
                 getExtraMappings().forEach(f -> {
                    _args.add(prefix);
@@ -84,9 +88,13 @@ public class RenameJarInPlace extends JarExec {
         if (!temp.getParentFile().exists())
             temp.getParentFile().mkdirs();
 
+        // Have to make sure we use TSRGv1 in SpecialSource
+        IMappingFile.load(getMappings()).write(input_srg_temp.toPath(), IMappingFile.Format.TSRG, false);
+
         super.apply();
 
         FileUtils.copyFile(temp, getInput());
+        input_srg_temp.delete();
     }
 
     @InputFile

@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.patcher.task;
 
+import net.minecraftforge.srgutils.IMappingFile;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
@@ -66,16 +67,20 @@ public class TaskReobfuscateJar extends DefaultTask {
     private boolean keepPackages = false;
     private boolean keepData = false;
     private File output = getProject().file("build/" + getName() + "/output.jar");
+    private File input_srg_temp = getProject().file("build/" + getName() + "/input.srg");
     private File output_temp = getProject().file("build/" + getName() + "/output_temp.jar");
 
     @TaskAction
     public void apply() throws IOException {
         File jar = MavenArtifactDownloader.gradle(getProject(), getTool(), false);
 
+        File srg = input_srg_temp;
+        // Have to make sure we use TSRGv1 in SpecialSource
+        IMappingFile.load(getSrg()).write(input_srg_temp.toPath(), IMappingFile.Format.TSRG, false);
         Map<String, String> replace = new HashMap<>();
         replace.put("{input}", getInput().getAbsolutePath());
         replace.put("{output}", output_temp.getAbsolutePath());
-        replace.put("{srg}", getSrg().getAbsolutePath());
+        replace.put("{srg}", srg.getAbsolutePath());
 
         List<String> _args = new ArrayList<>();
         for (String arg : args) {
@@ -117,7 +122,7 @@ public class TaskReobfuscateJar extends DefaultTask {
                 });
             }).rethrowFailure().assertNormalExitValue();
 
-            List<String> lines = Files.readLines(getSrg(), StandardCharsets.UTF_8);
+            List<String> lines = Files.readLines(srg, StandardCharsets.UTF_8);
             lines = lines.stream().map(line -> line.split("#")[0]).filter(l -> l != null & !l.trim().isEmpty()).collect(Collectors.toList()); //Strip empty/comments
 
             Set<String> packages = new HashSet<>();
@@ -150,6 +155,7 @@ public class TaskReobfuscateJar extends DefaultTask {
                 }
             }
 
+            input_srg_temp.delete();
             output_temp.delete();
         }
     }

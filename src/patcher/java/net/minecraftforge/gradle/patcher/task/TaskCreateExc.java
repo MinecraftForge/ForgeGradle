@@ -36,6 +36,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
+import net.minecraftforge.gradle.common.config.MCPConfigV2;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.InputFile;
@@ -50,6 +51,7 @@ import de.siegmar.fastcsv.reader.NamedCsvReader;
 public class TaskCreateExc extends DefaultTask {
     private static Pattern CLS_ENTRY = Pattern.compile("L([^;]+);");
 
+    private File config;
     private File srg;
     private File statics;
     private File constructors;
@@ -58,6 +60,15 @@ public class TaskCreateExc extends DefaultTask {
 
     @TaskAction
     public void run() throws IOException {
+        MCPConfigV2 cfg = MCPConfigV2.getFromArchive(getConfig());
+        if (cfg != null && cfg.isOfficial()) {
+            // Write empty file if MCPConfig is official because it means TSRGv2
+            try (FileOutputStream fos = new FileOutputStream(getOutput())) {
+                IOUtils.write("", fos, StandardCharsets.UTF_8);
+            }
+            return;
+        }
+
         Set<String> staticMap = new HashSet<>(Files.readLines(getStatics(), StandardCharsets.UTF_8));
         Map<String, String> names = loadMappings();
         List<String> out = new ArrayList<>();
@@ -66,11 +77,10 @@ public class TaskCreateExc extends DefaultTask {
         lines = lines.stream().map(line -> line.split("#")[0]).filter(l -> !Strings.isNullOrEmpty(l.trim())).collect(Collectors.toList()); //Strip empty/comments
 
         Map<String, String> classes = new HashMap<>();
-        boolean tsrgv2 = !lines.isEmpty() && lines.get(0).startsWith("tsrg2"); // TSRGv2 has an extra space that we must account for when splitting
         lines.stream()
         .filter(line -> !line.startsWith("\t") || (line.indexOf(':') != -1 && line.startsWith("CL:")))
         .map(line -> line.indexOf(':') != -1 ? line.substring(4).split(" ") : line.split(" "))
-        .filter(pts -> pts.length == (tsrgv2 ? 3 : 2) && !pts[0].endsWith("/")) //Skip packages
+        .filter(pts -> pts.length == 2 && !pts[0].endsWith("/")) //Skip packages
         .forEach(pts -> classes.put(pts[0], pts[1]));
 
         String currentClass = null;
@@ -177,6 +187,13 @@ public class TaskCreateExc extends DefaultTask {
         return names;
     }
 
+    @InputFile
+    public File getConfig() {
+        return this.config;
+    }
+    public void setConfig(File config) {
+        this.config = config;
+    }
     @InputFile
     public File getSrg() {
         return this.srg;
