@@ -36,7 +36,6 @@ import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -46,7 +45,6 @@ public class ExtractMCPData extends DefaultTask {
     private String key = "mappings";
     private Supplier<File> configSupplier;
     private File config;
-    private String mappingsVersion;
     private boolean allowEmpty = false;
     private File output = getProject().file("build/" + getName() + "/output.srg");
 
@@ -75,8 +73,8 @@ public class ExtractMCPData extends DefaultTask {
             }
         }
 
-        if (cfg.isOfficial() && getMappingsVersion() != null && getOutput().exists()) {
-            String minecraftVersion = MinecraftRepo.getMCVersion(getMappingsVersion());
+        if (cfg.isOfficial() && getOutput().exists()) {
+            String minecraftVersion = MinecraftRepo.getMCVersion(cfg.getVersion());
             File client = MavenArtifactDownloader.generate(getProject(), "net.minecraft:client:" + minecraftVersion + ":mappings@txt", true);
 
             IMappingFile obfToOfficial = IMappingFile.load(client).reverse();
@@ -140,14 +138,5 @@ public class ExtractMCPData extends DefaultTask {
     }
     public void setOutput(File value) {
         this.output = value;
-    }
-
-    @Input
-    @Optional
-    public String getMappingsVersion() {
-        return mappingsVersion;
-    }
-    public void setMappingsVersion(String mappingsVersion) {
-        this.mappingsVersion = mappingsVersion;
     }
 }

@@ -145,7 +145,6 @@ public class UserDevPlugin implements Plugin<Project> {
         extractSrg.configure(task -> {
             task.dependsOn(downloadMcpConfig);
             task.setConfig(() -> downloadMcpConfig.get().getOutput());
-            task.setMappingsVersion(extension.getMappingVersion());
         });
 
         createSrgToMcp.configure(task -> {
