@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.userdev.tasks;
 
+import net.minecraftforge.srgutils.IMappingFile;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
@@ -29,6 +30,7 @@ import net.minecraftforge.gradle.common.task.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,6 +45,7 @@ public class RenameJar extends JarExec {
     private File output;
     private Supplier<File> mappings;
     private List<Supplier<File>> extraMappings;
+    private File input_srg_temp = getProject().file("build/" + getName() + "input.srg");
 
     public RenameJar() {
         tool = Utils.SPECIALSOURCE;
@@ -50,17 +53,30 @@ public class RenameJar extends JarExec {
     }
 
     @Override
+    public void apply() throws IOException {
+        // Have to make sure we use TSRGv1 in SpecialSource
+        IMappingFile.load(getMappings()).write(input_srg_temp.toPath(), IMappingFile.Format.TSRG, false);
+
+        super.apply();
+
+        input_srg_temp.delete();
+    }
+
+    @Override
     protected List<String> filterArgs() {
         Map<String, String> replace = new HashMap<>();
+
+        File mappings = input_srg_temp;
+
         replace.put("{input}", getInput().getAbsolutePath());
         replace.put("{output}", getOutput().getAbsolutePath());
-        replace.put("{mappings}", getMappings().getAbsolutePath());
+        replace.put("{mappings}", mappings.getAbsolutePath());
 
         List<String> _args = new ArrayList<>();
         for (String arg : getArgs()) {
             if ("{mappings}".equals(arg)) {
                 String prefix = _args.get(_args.size() - 1);
-                _args.add(getMappings().getAbsolutePath());
+                _args.add(mappings.getAbsolutePath());
 
                 getExtraMappings().forEach(f -> {
                    _args.add(prefix);
