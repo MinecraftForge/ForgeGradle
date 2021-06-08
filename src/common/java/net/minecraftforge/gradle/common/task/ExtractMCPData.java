@@ -79,7 +79,7 @@ public class ExtractMCPData extends DefaultTask {
             }
         }
 
-        if (configV2 != null && configV2.isOfficial() && getOutput().exists()) {
+        if (configV2 != null && configV2.isOfficial() && getMappingsVersion() != null && getOutput().exists()) {
             String minecraftVersion = MinecraftRepo.getMCVersion(getMappingsVersion());
             File client = MavenArtifactDownloader.generate(getProject(), "net.minecraft:client:" + minecraftVersion + ":mappings@txt", true);
 

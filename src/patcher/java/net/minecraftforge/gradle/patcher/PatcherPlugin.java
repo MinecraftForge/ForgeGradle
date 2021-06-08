@@ -424,6 +424,11 @@ public class PatcherPlugin implements Plugin<Project> {
                         createMcp2Srg.get().dependsOn(ext);
                     }
 
+                    if (createExc.get().getConfig() == null) {
+                        createExc.get().dependsOn(dlMCP);
+                        createExc.get().setConfig(dlMCP.getOutput());
+                    }
+
                     if (createExc.get().getSrg() == null) {
                         createExc.get().setSrg(createMcp2Srg.get().getSrg());
                         createExc.get().dependsOn(createMcp2Srg);
@@ -493,6 +498,11 @@ public class PatcherPlugin implements Plugin<Project> {
                         }
                     }
 
+                    if (createExc.get().getConfig() == null) {
+                        TaskCreateExc task = (TaskCreateExc) tasks.getByName(createExc.get().getName());
+                        createExc.get().setConfig(task.getConfig());
+                        createExc.get().dependsOn(task);
+                    }
                     if (createExc.get().getSrg() == null) { //TODO: Make a macro for Srg/Static/Constructors
                         ExtractMCPData extract = ((ExtractMCPData)tasks.getByName("extractSrg"));
                         if (extract != null) {
