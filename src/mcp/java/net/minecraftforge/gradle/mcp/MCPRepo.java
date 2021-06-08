@@ -24,7 +24,9 @@ import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
 import net.minecraftforge.artifactural.api.repository.ArtifactProvider;
 import net.minecraftforge.artifactural.api.repository.Repository;
@@ -46,6 +48,7 @@ import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import net.minecraftforge.gradle.mcp.util.MCPWrapper;
 import net.minecraftforge.srgutils.IMappingFile;
 import net.minecraftforge.srgutils.IMappingFile.INode;
+import net.minecraftforge.srgutils.IMappingFile.IPackage;
 import net.minecraftforge.srgutils.IMappingFile.IParameter;
 import net.minecraftforge.srgutils.IRenamer;
 import net.minecraftforge.srgutils.IMappingFile.IClass;
@@ -619,7 +622,7 @@ public class MCPRepo extends BaseRepo {
         if (client == null)
             throw new IllegalStateException("Could not create " + mcversion + " official mappings due to missing ProGuard mappings.");
 
-        File tsrg = findRenames("obf_to_srg", IMappingFile.Format.TSRG, mcpversion, false);
+        File tsrg = findRenames("obf_to_srg", IMappingFile.Format.TSRG2, mcpversion, false);
         if (tsrg == null)
             throw new IllegalStateException("Could not create " + mcpversion + " parchment mappings due to missing MCP's tsrg");
 
@@ -630,7 +633,7 @@ public class MCPRepo extends BaseRepo {
         String artifact = "org.parchmentmc.data:parchment-" + mcversion + ":" + mappingsversion + "@zip";
         File dep = MavenArtifactDownloader.manual(project, artifact, false);
         if (dep == null)
-            throw new IllegalStateException("Could not find Parchment version of " + mappingsversion + '-' + mcversion);
+            throw new IllegalStateException("Could not find Parchment version of " + mappingsversion + '-' + mcversion + " with artifact " + artifact);
 
         File mappings = cacheParchment(mcpversion, mappingsversion, "zip");
         HashStore cache = commonHash(mcp)
@@ -656,19 +659,25 @@ public class MCPRepo extends BaseRepo {
             IMappingFile mojToObf = IMappingFile.load(client);
             IMappingFile mojToSrg = mojToObf.chain(srg);
 
-            List<String[]> classJavadocs = getJavadocList();
-            List<String[]> fieldJavadocs = getJavadocList();
-            List<String[]> methodJavadocs = getJavadocList();
+            List<String[]> packageJavadocs = getJavadocList(false);
+            List<String[]> classJavadocs = getJavadocList(false);
+            List<String[]> fieldJavadocs = getJavadocList(true);
+            List<String[]> methodJavadocs = getJavadocList(true);
 
             Map<String, JsonObject> classMap = getNamedJsonMap(json.getAsJsonArray("classes"), false);
+            Map<String, JsonObject> packageMap = getNamedJsonMap(json.getAsJsonArray("packages"), false);
 
+            for (IPackage srgPackage : mojToSrg.getPackages()) {
+                JsonObject pckg = packageMap.get(srgPackage.getOriginal());
+                populateJavadocs(packageJavadocs, null, srgPackage, pckg);
+            }
             for (IClass srgClass : mojToSrg.getClasses()) {
                 JsonObject cls = classMap.get(srgClass.getOriginal());
-                populateJavadocs(classJavadocs, srgClass, cls);
+                populateJavadocs(classJavadocs, srgClass, srgClass, cls);
 
                 Map<String, JsonObject> fieldMap = cls == null ? ImmutableMap.of() : getNamedJsonMap(cls.getAsJsonArray("fields"), true);
                 for (IField srgField : srgClass.getFields()) {
-                    populateJavadocs(fieldJavadocs, srgField, fieldMap.get(srgField.getOriginal() + srgField.getDescriptor()));
+                    populateJavadocs(fieldJavadocs, srgClass, srgField, fieldMap.get(srgField.getOriginal() + srgField.getDescriptor()));
                 }
 
                 Map<String, JsonObject> methodMap = cls == null ? ImmutableMap.of() : getNamedJsonMap(cls.getAsJsonArray("methods"), true);
@@ -681,7 +690,7 @@ public class MCPRepo extends BaseRepo {
                         if (!paramJavadoc.isEmpty())
                             mdJavadoc.append("\\n@param ").append(srgParam.getOriginal()).append(' ').append(paramJavadoc);
                     }
-                    methodJavadocs.add(new String[]{srgMethod.getMapped(), srgMethod.getOriginal(), mdJavadoc.toString()});
+                    populateJavadocs(methodJavadocs, srgClass, srgMethod, mdJavadoc.toString());
                 }
             }
 
@@ -693,6 +702,7 @@ public class MCPRepo extends BaseRepo {
                 writeJavadocs("classes.csv", classJavadocs, out);
                 writeJavadocs("fields.csv", fieldJavadocs, out);
                 writeJavadocs("methods.csv", methodJavadocs, out);
+                writeJavadocs("packages.csv", packageJavadocs, out);
             }
         }
 
@@ -715,23 +725,46 @@ public class MCPRepo extends BaseRepo {
                 }, Functions.identity()));
     }
 
-    private void populateJavadocs(List<String[]> javadocs, INode srgNode, JsonObject json) {
-        if (srgNode instanceof IClass) {
+    private void populateJavadocs(List<String[]> javadocs, IClass srgClass, INode srgNode, JsonObject json) {
+        populateJavadocs(javadocs, srgClass, srgNode, getJavadocs(json));
+    }
+
+    private void populateJavadocs(List<String[]> javadocs, IClass srgClass, INode srgNode, String desc) {
+        if (srgNode instanceof IPackage || srgNode instanceof IClass) {
             String name = srgNode.getMapped().replace('/', '.');
-            javadocs.add(new String[]{name, name, getJavadocs(json)});
+            javadocs.add(new String[]{name, desc});
             return;
         }
         String srgName = srgNode.getMapped();
         String mojName = srgNode.getOriginal();
-        javadocs.add(new String[]{srgName, mojName, getJavadocs(json)});
+        boolean unique = false;
+        if (srgNode instanceof IParameter) {
+            unique = srgName.startsWith("p_");
+        } else if (srgNode instanceof IMethod) {
+            unique = srgName.startsWith("func_") || srgName.startsWith("m_");
+        } else if (srgNode instanceof IField) {
+            unique = srgName.startsWith("field_") || srgName.startsWith("f_");
+        }
+        // If it's not unique, we need to add the class to the beginning as it is a special method of some kind
+        if (!unique && !desc.isEmpty()) {
+            srgName = srgClass.getMapped().replace('/', '.') + '#' + srgName;
+        }
+        // ALWAYS put in the csv if it's a SRG id, otherwise only if its javadocs are not empty
+        if (unique || !desc.isEmpty())
+            javadocs.add(new String[]{srgName, mojName, desc});
     }
 
     private String getJavadocs(JsonObject json) {
         if (json == null)
             return "";
-        JsonArray array = json.getAsJsonArray("javadoc");
-        if (array == null)
+        JsonElement element = json.get("javadoc");
+        if (element == null)
             return "";
+        if (element instanceof JsonPrimitive)
+            return element.getAsString(); // Parameters don't use an array for some reason
+        if (!(element instanceof JsonArray))
+            return "";
+        JsonArray array = (JsonArray) element;
         StringBuilder sb = new StringBuilder();
         int size = array.size();
         for (int i = 0; i < size; i++) {
@@ -742,9 +775,9 @@ public class MCPRepo extends BaseRepo {
         return sb.toString();
     }
 
-    private List<String[]> getJavadocList() {
+    private List<String[]> getJavadocList(boolean isMapped) {
         List<String[]> javadocs = new ArrayList<>();
-        javadocs.add(new String[]{"searge", "name", "desc"});
+        javadocs.add(isMapped ? new String[]{"searge", "name", "desc"} : new String[]{"searge", "desc"});
         return javadocs;
     }
 
