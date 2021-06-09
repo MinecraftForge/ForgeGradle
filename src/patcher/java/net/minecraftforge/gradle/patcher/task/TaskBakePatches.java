@@ -25,6 +25,7 @@ import codechicken.diffpatch.util.InputPath;
 import codechicken.diffpatch.util.OutputPath;
 import codechicken.diffpatch.util.archiver.ArchiveFormat;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -39,18 +40,21 @@ public class TaskBakePatches extends DefaultTask {
 
     private File input;
     private File output;
+    private String lineEnding = System.lineSeparator();
 
     @TaskAction
     public void doTask() throws IOException {
         File output = getOutput();
         ArchiveFormat outputFormat = ArchiveFormat.findFormat(output.getName());
-        PatchOperation.bakePatches(new InputPath.FilePath(getInput().toPath(), null), new OutputPath.FilePath(output.toPath(), outputFormat));
+        PatchOperation.bakePatches(new InputPath.FilePath(getInput().toPath(), null), new OutputPath.FilePath(output.toPath(), outputFormat), lineEnding);
     }
 
     //@formatter:off
     @InputDirectory public File getInput() { return input; }
+    @Input          public String getLineEnding() { return lineEnding; }
     @OutputFile     public File getOutput() { return output; }
                     public void setInput(File input) { this.input = input; }
                     public void setOutput(File output) { this.output = output; }
+                    public void setLineEnding(String value) { this.lineEnding = value; }
     //@formatter:on
 }

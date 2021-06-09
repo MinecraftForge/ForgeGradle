@@ -44,6 +44,7 @@ public class TaskGeneratePatches extends DefaultTask {
 
     private String originalPrefix = "a/";
     private String modifiedPrefix = "b/";
+    private String lineEnding = System.lineSeparator();
 
     @TaskAction
     public void doTask() throws Exception {
@@ -64,7 +65,9 @@ public class TaskGeneratePatches extends DefaultTask {
                 .verbose(isVerbose())
                 .summary(isPrintSummary())
                 .aPrefix(originalPrefix)
-                .bPrefix(modifiedPrefix);
+                .bPrefix(modifiedPrefix)
+                .lineEnding(lineEnding)
+                ;
 
         int context = getContextLines();
         if (context != -1) {
@@ -90,6 +93,7 @@ public class TaskGeneratePatches extends DefaultTask {
     @Internal                  public boolean isPrintSummary() { return printSummary; }
     @Input           @Optional public String getOriginalPrefix() { return originalPrefix; }
     @Input           @Optional public String getModifiedPrefix() { return modifiedPrefix; }
+    @Input                     public String getLineEnding() { return lineEnding; }
                                public void setBase(File base) { this.base = base; }
                                public void setModified(File modified) { this.modified = modified; }
                                public void setOutput(File patches) { this.output = patches; }
@@ -100,5 +104,6 @@ public class TaskGeneratePatches extends DefaultTask {
                                public void setPrintSummary(boolean printSummary) { this.printSummary = printSummary; }
                                public void setOriginalPrefix(String originalPrefix) { this.originalPrefix = originalPrefix; }
                                public void setModifiedPrefix(String modifiedPrefix) { this.modifiedPrefix = modifiedPrefix; }
+                               public void setLineEnding(String value) { this.lineEnding = value; }
     //@formatter:on
 }
