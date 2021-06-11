@@ -783,6 +783,8 @@ public class MCPRepo extends BaseRepo {
     }
 
     private void writeJavadocs(String name, List<String[]> javadocs, ZipOutputStream out) throws IOException {
+        if (javadocs.isEmpty())
+            return;
         out.putNextEntry(Utils.getStableEntry(name));
         try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWriter(out))) {
             javadocs.forEach(writer::writeRow);
