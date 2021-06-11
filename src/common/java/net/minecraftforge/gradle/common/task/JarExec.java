@@ -34,6 +34,8 @@ import java.util.stream.Collectors;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
@@ -42,6 +44,9 @@ import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
+import org.gradle.jvm.toolchain.JavaLauncher;
+import org.gradle.jvm.toolchain.JavaToolchainService;
+import org.gradle.jvm.toolchain.JavaToolchainSpec;
 
 public class JarExec extends DefaultTask {
     private static final OutputStream NULL = new OutputStream() { @Override public void write(int b) throws IOException { } };
@@ -68,9 +73,16 @@ public class JarExec extends DefaultTask {
 
         File logFile = new File(workDir, "log.txt");
 
+        // Get the project's java toolchain and java launcher
+        JavaToolchainSpec toolchain = getProject().getExtensions().getByType(JavaPluginExtension.class).getToolchain();
+        JavaToolchainService service = getProject().getExtensions().getByType(JavaToolchainService.class);
+        Provider<JavaLauncher> launcherProvider = service.launcherFor(toolchain);
+
         try (OutputStream log = hasLog ? new BufferedOutputStream(new FileOutputStream(logFile)) : NULL) {
             PrintWriter printer = new PrintWriter(log, true);
             getProject().javaexec(java -> {
+                // Set executable
+                java.setExecutable(launcherProvider.get().getExecutablePath());
                 // Execute command
                 java.setArgs(filterArgs());
                 printer.println("Args: " + java.getArgs().stream().map(m -> '"' + m +'"').collect(Collectors.joining(", ")));
