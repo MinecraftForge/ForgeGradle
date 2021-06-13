@@ -22,8 +22,13 @@ package net.minecraftforge.gradle.userdev.tasks;
 
 import org.gradle.api.internal.tasks.compile.DefaultJavaCompileSpec;
 import org.gradle.api.internal.tasks.compile.JavaCompileSpec;
+import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.WorkResult;
 import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.jvm.toolchain.JavaCompiler;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
+import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.language.base.internal.compile.Compiler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -44,12 +49,21 @@ public class HackyJavaCompile extends JavaCompile {
         // invoking Gradle tasks in the normal way can lead to deadlocks
         // when done from a dependency resolver.
 
+        setCompiler();
+
         this.getOutputs().setPreviousOutputFiles(this.getProject().files());
         final DefaultJavaCompileSpec spec = reflectCreateSpec();
         spec.setSourceFiles(getSource());
         Compiler<JavaCompileSpec> compiler = createCompiler(spec);
         final WorkResult execute = compiler.execute(spec);
         setDidWork(execute.getDidWork());
+    }
+
+    private void setCompiler() {
+        JavaPluginExtension javaPlugin = getProject().getExtensions().getByType(JavaPluginExtension.class);
+        JavaToolchainService service = getProject().getExtensions().getByType(JavaToolchainService.class);
+        Provider<JavaCompiler> compiler = service.compilerFor(javaPlugin.toolchain(s -> s.getLanguageVersion().set(JavaLanguageVersion.of(this.getSourceCompatibility()))));
+        this.getJavaCompiler().set(compiler);
     }
 
     private DefaultJavaCompileSpec reflectCreateSpec() {

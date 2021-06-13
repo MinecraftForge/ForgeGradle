@@ -34,12 +34,15 @@ import java.util.stream.Collectors;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 
@@ -55,6 +58,12 @@ public class JarExec extends DefaultTask {
     private File _tool;
     protected String[] args;
     protected FileCollection classpath = null;
+    protected final Property<JavaLauncher> javaLauncher;
+
+    public JarExec() {
+        ObjectFactory objectFactory = getProject().getObjects();
+        this.javaLauncher = objectFactory.property(JavaLauncher.class);
+    }
 
     @TaskAction
     public void apply() throws IOException {
@@ -73,16 +82,11 @@ public class JarExec extends DefaultTask {
 
         File logFile = new File(workDir, "log.txt");
 
-        // Get the project's java toolchain and java launcher
-        JavaToolchainSpec toolchain = getProject().getExtensions().getByType(JavaPluginExtension.class).getToolchain();
-        JavaToolchainService service = getProject().getExtensions().getByType(JavaToolchainService.class);
-        Provider<JavaLauncher> launcherProvider = service.launcherFor(toolchain);
-
         try (OutputStream log = hasLog ? new BufferedOutputStream(new FileOutputStream(logFile)) : NULL) {
             PrintWriter printer = new PrintWriter(log, true);
             getProject().javaexec(java -> {
                 // Set executable
-                java.setExecutable(launcherProvider.get().getExecutablePath());
+                java.setExecutable(this.javaLauncher.orElse(this.getProjectJavaLauncher()).get().getExecutablePath());
                 // Execute command
                 java.setArgs(filterArgs());
                 printer.println("Args: " + java.getArgs().stream().map(m -> '"' + m +'"').collect(Collectors.joining(", ")));
@@ -172,5 +176,18 @@ public class JarExec extends DefaultTask {
     }
     public void setClasspath(FileCollection value) {
         this.classpath = value;
+    }
+
+    private Provider<JavaLauncher> getProjectJavaLauncher() {
+        // Get the project's java toolchain and java launcher
+        JavaToolchainSpec toolchain = getProject().getExtensions().getByType(JavaPluginExtension.class).getToolchain();
+        JavaToolchainService service = getProject().getExtensions().getByType(JavaToolchainService.class);
+        return service.launcherFor(toolchain);
+    }
+
+    @Nested
+    @Optional
+    public Property<JavaLauncher> getJavaLauncher() {
+        return this.javaLauncher;
     }
 }

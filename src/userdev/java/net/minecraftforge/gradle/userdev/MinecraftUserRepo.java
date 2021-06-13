@@ -574,17 +574,22 @@ public class MinecraftUserRepo extends BaseRepo {
             Set<String> packages = new HashSet<>();
             File srged = findBinpatched(packages);
 
-            File mcinject = cacheRaw("mci", "jar");
+            File mcinject;
+            if (mcp.wrapper.getConfig().isOfficial()) {
+                mcinject = srged;
+            } else {
+                mcinject = cacheRaw("mci", "jar");
 
-            debug("    Applying MCInjector");
-            //Apply MCInjector so we can compile against this jar
-            ApplyMCPFunction mci = createTask("mciJar", ApplyMCPFunction.class);
-            mci.setFunctionName("mcinject");
-            mci.setHasLog(false);
-            mci.setInput(srged);
-            mci.setMCP(mcp.getZip());
-            mci.setOutput(mcinject);
-            mci.apply();
+                debug("    Applying MCInjector");
+                //Apply MCInjector so we can compile against this jar
+                ApplyMCPFunction mci = createTask("mciJar", ApplyMCPFunction.class);
+                mci.setFunctionName("mcinject");
+                mci.setHasLog(false);
+                mci.setInput(srged);
+                mci.setMCP(mcp.getZip());
+                mci.setOutput(mcinject);
+                mci.apply();
+            }
 
             debug("    Creating MCP Inject Sources");
             //Build and inject MCP injected sources
@@ -1267,16 +1272,10 @@ public class MinecraftUserRepo extends BaseRepo {
             Set<File> files = Sets.newHashSet(this.extraDataFiles);
             Collections.addAll(files, extraDeps);
             compile.setClasspath(project.files(files));
-            if (parent != null) {
-                compile.setSourceCompatibility(parent.getConfig().getSourceCompatibility());
-                compile.setTargetCompatibility(parent.getConfig().getTargetCompatibility());
-            } else {
-                final JavaPluginConvention java = project.getConvention().findPlugin(JavaPluginConvention.class);
-                if (java != null) {
-                    compile.setSourceCompatibility(java.getSourceCompatibility().toString());
-                    compile.setTargetCompatibility(java.getTargetCompatibility().toString());
-                }
-            }
+            int target = mcp.wrapper.getConfig().getJavaTarget();
+            String targetString = (target <= 8 ? "1." : "") + target;
+            compile.setSourceCompatibility(targetString);
+            compile.setTargetCompatibility(targetString);
             compile.setDestinationDir(output);
             compile.setSource(source.isDirectory() ? project.fileTree(source) : project.zipTree(source));
 
