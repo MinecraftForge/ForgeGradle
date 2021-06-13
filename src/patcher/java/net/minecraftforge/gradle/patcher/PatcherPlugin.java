@@ -621,6 +621,7 @@ public class PatcherPlugin implements Plugin<Project> {
                     binPatchesTask.configure(task -> {
                         task.getSrg().set(srg.flatMap(GenerateSRG::getOutput));
                         if (extension.getPatches().isPresent()) {
+                            task.mustRunAfter(genPatches);
                             task.getPatchSets().from(extension.getPatches());
                         }
                     });
