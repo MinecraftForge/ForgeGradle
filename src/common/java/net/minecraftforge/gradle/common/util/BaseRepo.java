@@ -129,7 +129,7 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
                     SimpleRepository.of(ArtifactProviderBuilder.begin(ArtifactIdentifier.class).provide(
                             artifact -> repos.stream()
                                     .map(repo -> repo.getArtifact(artifact))
-                                    .filter(Artifact::isPresent)
+                                    .filter(s -> s.isPresent())
                                     .findFirst()
                                     .orElse(Artifact.none())
                     ))
