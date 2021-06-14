@@ -100,6 +100,38 @@ project.extensions.eclipse.classpath.file.whenMerged { Classpath cp ->
     }
 }
 
+gradlePlugin {
+    plugins {
+        mcp {
+            id = 'net.minecraftforge.gradle.mcp'
+            implementationClass = 'net.minecraftforge.gradle.mcp.MCPPlugin'
+        }
+        patcher {
+            id = 'net.minecraftforge.gradle.patcher'
+            implementationClass = 'net.minecraftforge.gradle.patcher.PatcherPlugin'
+        }
+        userdev {
+            id = 'net.minecraftforge.gradle'
+            implementationClass = 'net.minecraftforge.gradle.userdev.UserDevPlugin'
+        }
+
+        // legacy definitions
+        forgedev_mcp {
+            id = 'net.minecraftforge.gradle.forgedev.mcp'
+            implementationClass = 'net.minecraftforge.gradle.mcp.MCPPlugin'
+        }
+        forgedev_patcher {
+            id = 'net.minecraftforge.gradle.forgedev.patcher'
+            implementationClass = 'net.minecraftforge.gradle.patcher.PatcherPlugin'
+        }
+        forgedev {
+            id = 'net.minecraftforge.gradle.forgedev'
+            implementationClass = 'net.minecraftforge.gradle.patcher.PatcherPlugin'
+        }
+    }
+    automatedPublishing = false
+}
+
 publishing {
     publications {
         pluginMaven(MavenPublication) {
