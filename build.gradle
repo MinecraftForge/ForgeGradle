@@ -162,7 +162,7 @@ test {
     // These tests are outdated, and I can't be arsed to fix them
     exclude "*"
     // if (project.hasProperty("filesmaven")) // disable this test when on the forge jenkins
-    //     exclude "**/ExtensionMcpMappingTest*"}
+    //     exclude "**/ExtensionMcpMappingTest*"
 }
 
 license {
