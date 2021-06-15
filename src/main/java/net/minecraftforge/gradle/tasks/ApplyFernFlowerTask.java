@@ -46,7 +46,7 @@ public class ApplyFernFlowerTask extends CachedTask
     Object outJar;
     
     @TaskAction
-    public void applyFernFLower() throws IOException
+    public void applyFernFlower() throws IOException
     {
         final File in = getInJar();
         final File out = getOutJar();

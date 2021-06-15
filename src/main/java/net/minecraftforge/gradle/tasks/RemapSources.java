@@ -102,8 +102,8 @@ public class RemapSources extends AbstractEditJarTask
         ArrayList<String> newLines = new ArrayList<String>();
         for (String line : Constants.lines(text))
         {
-            // basically all this code is to find the javadocs for a field ebfore replacing it.
-            // if we arnt doing javadocs.. screw dat.
+            // basically all this code is to find the javadocs for a field before replacing it.
+            // if we aren't doing javadocs... screw dat.
             if (addsJavadocs)
             {
                 injectJavadoc(newLines, line);

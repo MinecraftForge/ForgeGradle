@@ -31,7 +31,6 @@ import org.gradle.api.Action;
 import org.gradle.api.tasks.bundling.Jar;
 
 import com.google.common.base.Strings;
-import com.google.gson.JsonSyntaxException;
 
 import net.minecraftforge.gradle.common.Constants;
 import net.minecraftforge.gradle.tasks.CreateStartTask;
@@ -41,10 +40,8 @@ import net.minecraftforge.gradle.user.TaskSingleReobf;
 import net.minecraftforge.gradle.user.UserConstants;
 import net.minecraftforge.gradle.user.patcherUser.PatcherUserBasePlugin;
 import net.minecraftforge.gradle.util.GradleConfigurationException;
-import net.minecraftforge.gradle.util.json.JsonFactory;
 import net.minecraftforge.gradle.util.json.fgversion.FGVersion;
 import net.minecraftforge.gradle.util.json.fgversion.FGVersionWrapper;
-import net.minecraftforge.gradle.util.json.forgeversion.ForgeVersion;
 
 public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
 {
@@ -52,9 +49,6 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
     @Override
     protected void applyUserPlugin()
     {
-        // set the version info into the extension object
-        setForgeVersionJson();
-
         super.applyUserPlugin();
 
         // setup reobf
@@ -144,26 +138,6 @@ public class ForgePlugin extends PatcherUserBasePlugin<ForgeExtension>
             {
                 jarTask.getManifest().getAttributes().put("FMLCorePlugin", ext.getCoreMod());
             }
-        }
-    }
-
-    private void setForgeVersionJson()
-    {
-        File jsonCache = cacheFile("ForgeVersion.json");
-        File etagFile = new File(jsonCache.getAbsolutePath() + ".etag");
-        String url = Constants.URL_FORGE_MAVEN + "/net/minecraftforge/forge/json";
-
-        try
-        {
-            getExtension().forgeJson = JsonFactory.GSON.fromJson(getWithEtag(url, jsonCache, etagFile), ForgeVersion.class);
-        }
-        catch(NullPointerException e)
-        {
-            getExtension().forgeJson = null;
-        }
-        catch(JsonSyntaxException e)
-        {
-            getExtension().forgeJson = null;
         }
     }
     

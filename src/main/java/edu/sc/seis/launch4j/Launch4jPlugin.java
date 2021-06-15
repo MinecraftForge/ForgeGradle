@@ -37,7 +37,7 @@ public class Launch4jPlugin implements Plugin<Project>
     static final String TASK_RUN_NAME               = "createExe";
     static final String TASK_LAUNCH4J_NAME          = "launch4j";
 
-    static final String URL_LAUNCH4J                = "http://files.minecraftforge.net/launch4j/launch4j-3.8.0-" + Constants.OPERATING_SYSTEM + ".zip";
+    static final String URL_LAUNCH4J                = "https://files.minecraftforge.net/launch4j/launch4j-3.8.0-" + Constants.OPERATING_SYSTEM + ".zip";
 
     static final String ZIP_LAUNCH4J                = "build/launch4j.zip";
     static final String DIR_LAUNCH4J                = "build/launch4j";

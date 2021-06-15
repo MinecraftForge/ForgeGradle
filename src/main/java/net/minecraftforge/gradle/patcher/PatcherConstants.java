@@ -29,7 +29,7 @@ final class PatcherConstants
 
     // installer stuff
     static final String REPLACE_INSTALLER        = "{INSTALLER}";
-    static final String INSTALLER_URL            = "http://files.minecraftforge.net/maven/net/minecraftforge/installer/" + REPLACE_INSTALLER + "/installer-" + REPLACE_INSTALLER + "-shrunk.jar";
+    static final String INSTALLER_URL            = "https://maven.minecraftforge.net/net/minecraftforge/installer/" + REPLACE_INSTALLER + "/installer-" + REPLACE_INSTALLER + "-shrunk.jar";
 
     // new project defaults
     static final String DEFAULT_PATCHES_DIR      = "patches";

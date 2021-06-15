@@ -114,11 +114,11 @@ public class Constants
 
     // urls
     public static final String URL_MC_MANIFEST  = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
-    public static final String URL_FF           = "http://files.minecraftforge.net/fernflower-fix-1.0.zip";
+    public static final String URL_FF           = "https://files.minecraftforge.net/fernflower-fix-1.0.zip";
     public static final String URL_ASSETS       = "http://resources.download.minecraft.net";
     public static final String URL_LIBRARY      = "https://libraries.minecraft.net/";
-    public static final String URL_FORGE_MAVEN  = "http://files.minecraftforge.net/maven";
-    public static final String URL_MCP_JSON     = "http://export.mcpbot.bspk.rs/versions.json";
+    public static final String URL_FORGE_MAVEN  = "https://maven.minecraftforge.net";
+    public static final String URL_MCP_JSON     = "https://maven.minecraftforge.net/de/oceanlabs/mcp/versions.json";
 
     // configs
     public static final String CONFIG_MCP_DATA       = "forgeGradleMcpData";

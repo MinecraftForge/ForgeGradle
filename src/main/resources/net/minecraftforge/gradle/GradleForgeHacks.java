@@ -75,7 +75,7 @@ public class GradleForgeHacks
             return;
         }
 
-        // intialize AT hack Method
+        // initialize AT hack Method
         Method atRegistrar = null;
         try
         {
