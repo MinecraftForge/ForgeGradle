@@ -21,7 +21,7 @@ package net.minecraftforge.gradle.tasks;
 
 import java.io.File;
 import java.io.IOException;
-import javax.net.HttpsURLConnection;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.zip.ZipEntry;
@@ -67,7 +67,7 @@ public class ObtainFernFlowerTask extends CachedTask
         getLogger().debug("Downloading " + url);
         getLogger().debug("Fernflower output location " + ff);
 
-        HttpsURLConnection connect = (HttpsURLConnection) (new URL(url)).openConnection();
+        HttpURLConnection connect = (HttpURLConnection) (new URL(url)).openConnection();
         connect.setRequestProperty("User-Agent", Constants.USER_AGENT);
         connect.setInstanceFollowRedirects(true);
 
