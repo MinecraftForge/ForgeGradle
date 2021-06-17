@@ -125,6 +125,8 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
         public void attach(Project project) {
             int random = new Random().nextInt();
             File cache = Utils.getCache(project, "bundeled_repo");
+            // Java 8's compiler doesn't allow the lambda to be a method reference, but Java 16 allows it
+            // noinspection Convert2MethodRef to prevent IDEA from warning us about it
             GradleRepositoryAdapter.add(project.getRepositories(), "BUNDELED_" + random, cache,
                     SimpleRepository.of(ArtifactProviderBuilder.begin(ArtifactIdentifier.class).provide(
                             artifact -> repos.stream()

@@ -296,10 +296,10 @@ public class MinecraftUserRepo extends BaseRepo {
     private File cacheRaw(String classifier, String ext) {
         return cache(GROUP.replace('.', File.separatorChar), NAME, VERSION, NAME + '-' + VERSION + '-' + classifier + '.' + ext);
     }
-    private File cacheMapped(String mapping, String ext) {
+    private File cacheMapped(@Nullable String mapping, String ext) {
         return cache(GROUP.replace('.', File.separatorChar), NAME, getVersion(mapping), NAME + '-' + getVersion(mapping) + '.' + ext);
     }
-    private File cacheMapped(String mapping, String classifier, String ext) {
+    private File cacheMapped(@Nullable String mapping, String classifier, String ext) {
         return cache(GROUP.replace('.', File.separatorChar), NAME, getVersion(mapping), NAME + '-' + getVersion(mapping) + '-' + classifier + '.' + ext);
     }
     private File cacheAT(String classifier, String ext) {
@@ -332,7 +332,7 @@ public class MinecraftUserRepo extends BaseRepo {
     private String getVersion(@Nullable String mappings) {
         return mappings == null ? VERSION : VERSION + "_mapped_" + mappings;
     }
-    private String getVersionWithAT(String mappings) {
+    private String getVersionWithAT(@Nullable String mappings) {
         if (AT_HASH == null) return getVersion(mappings);
         return getVersion(mappings) + "_at_" + AT_HASH;
     }
@@ -1307,10 +1307,13 @@ public class MinecraftUserRepo extends BaseRepo {
 
     private static class Patcher {
         private final File data;
+        @Nullable
         private final File universal;
+        @Nullable
         private final File sources;
         private final Artifact artifact;
         private final UserdevConfigV1 config;
+        @Nullable
         private final UserdevConfigV2 configv2;
         private Patcher parent;
         private String ATs = null;
@@ -1436,7 +1439,7 @@ public class MinecraftUserRepo extends BaseRepo {
         public File getZip() {
             return data;
         }
-
+        @Nullable
         public File getUniversal() {
             return universal;
         }
@@ -1444,7 +1447,7 @@ public class MinecraftUserRepo extends BaseRepo {
         public File getSources() {
             return sources;
         }
-
+        @Nullable
         public String getInject() {
             return config.inject;
         }

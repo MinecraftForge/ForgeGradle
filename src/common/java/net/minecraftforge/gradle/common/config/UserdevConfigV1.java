@@ -63,6 +63,7 @@ public class UserdevConfigV1 extends Config {
     public String universal; //Remapped and added to the classpath, Contains new classes and resources
     @Nullable
     public List<String> libraries; //Additional libraries.
+    @Nullable
     public String inject;
     @Nullable
     public Map<String, RunConfig> runs;

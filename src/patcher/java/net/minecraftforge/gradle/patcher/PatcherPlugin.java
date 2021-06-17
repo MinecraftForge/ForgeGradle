@@ -399,7 +399,7 @@ public class PatcherPlugin implements Plugin<Project> {
                     });
 
                     createExc.configure(task -> {
-                        task.getConfig().convention(downloadConfig.flatMap(s -> s.getOutput()));
+                        task.getConfig().convention(downloadConfig.flatMap(DownloadMCPConfig::getOutput));
                         task.getSrg().convention(createMcp2Srg.flatMap(GenerateSRG::getOutput));
                         task.getStatics().convention(extractStatic.flatMap(ExtractMCPData::getOutput));
                         task.getConstructors().convention(extractConstructors.flatMap(ExtractMCPData::getOutput));
