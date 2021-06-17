@@ -22,6 +22,7 @@ package net.minecraftforge.gradle.mcp;
 
 import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -410,7 +411,6 @@ public class MCPRepo extends BaseRepo {
             debug("    Mapping: " + desc);
             return MavenArtifactDownloader.manual(project, desc, false);
         }
-        //TODO? Yarn/Other crowdsourcing?
         throw new IllegalArgumentException("Unknown mapping provider: " + mapping);
     }
 
@@ -596,8 +596,8 @@ public class MCPRepo extends BaseRepo {
 
             try (FileOutputStream fos = new FileOutputStream(mappings);
                  ZipOutputStream out = new ZipOutputStream(fos)) {
-                writeJavadocs("fields.csv", fields, out);
-                writeJavadocs("methods.csv", methods, out);
+                writeCsv("fields.csv", fields, out);
+                writeCsv("methods.csv", methods, out);
             }
 
             cache.save();
@@ -657,40 +657,58 @@ public class MCPRepo extends BaseRepo {
                 throw new IllegalStateException("Parchment mappings spec version was " + specversion + " and did not start with \"1.\", cannot parse!");
             IMappingFile srg = IMappingFile.load(tsrg);
             IMappingFile mojToObf = IMappingFile.load(client);
-            IMappingFile mojToSrg = mojToObf.chain(srg);
+            // Have to do it this way to preserve parameters and eliminate SRG classnames
+            IMappingFile mojToSrg = srg.reverse().chain(mojToObf.reverse()).reverse().rename(new IRenamer() {
+                @Override
+                public String rename(IClass value) {
+                    return value.getOriginal();
+                }
+            });
 
-            List<String[]> packageJavadocs = getJavadocList(true);
-            List<String[]> classJavadocs = getJavadocList(true);
-            List<String[]> fieldJavadocs = getJavadocList(true);
-            List<String[]> methodJavadocs = getJavadocList(true);
+            String[] header = {"searge", "name", "desc"};
+            List<String[]> packages = Lists.<String[]>newArrayList(header);
+            List<String[]> classes = Lists.<String[]>newArrayList(header);
+            List<String[]> fields = Lists.<String[]>newArrayList(header);
+            List<String[]> methods = Lists.<String[]>newArrayList(header);
+            List<String[]> parameters = Lists.<String[]>newArrayList(header);
 
             Map<String, JsonObject> classMap = getNamedJsonMap(json.getAsJsonArray("classes"), false);
             Map<String, JsonObject> packageMap = getNamedJsonMap(json.getAsJsonArray("packages"), false);
 
             for (IPackage srgPackage : mojToSrg.getPackages()) {
                 JsonObject pckg = packageMap.get(srgPackage.getOriginal());
-                populateJavadocs(packageJavadocs, null, srgPackage, pckg);
+                populateMappings(packages, null, srgPackage, pckg);
             }
             for (IClass srgClass : mojToSrg.getClasses()) {
                 JsonObject cls = classMap.get(srgClass.getOriginal());
-                populateJavadocs(classJavadocs, srgClass, srgClass, cls);
+                populateMappings(classes, srgClass, srgClass, cls);
 
                 Map<String, JsonObject> fieldMap = cls == null ? ImmutableMap.of() : getNamedJsonMap(cls.getAsJsonArray("fields"), true);
                 for (IField srgField : srgClass.getFields()) {
-                    populateJavadocs(fieldJavadocs, srgClass, srgField, fieldMap.get(srgField.getOriginal() + srgField.getDescriptor()));
+                    populateMappings(fields, srgClass, srgField, fieldMap.get(srgField.getOriginal() + srgField.getDescriptor()));
                 }
 
                 Map<String, JsonObject> methodMap = cls == null ? ImmutableMap.of() : getNamedJsonMap(cls.getAsJsonArray("methods"), true);
                 for (IMethod srgMethod : srgClass.getMethods()) {
                     JsonObject method = methodMap.get(srgMethod.getOriginal() + srgMethod.getDescriptor());
                     StringBuilder mdJavadoc = new StringBuilder(getJavadocs(method));
-                    Map<String, JsonObject> paramMap =  method == null ? ImmutableMap.of() : getNamedJsonMap(method.getAsJsonArray("parameters"), false);
-                    for (IParameter srgParam : srgMethod.getParameters()) {
-                        String paramJavadoc = getJavadocs(paramMap.get(srgParam.getOriginal()));
-                        if (!paramJavadoc.isEmpty())
-                            mdJavadoc.append("\\n@param ").append(srgParam.getOriginal()).append(' ').append(paramJavadoc);
+                    List<IParameter> srgParams = new ArrayList<>(srgMethod.getParameters());
+                    if (method != null && method.has("parameters")) {
+                        JsonArray jsonParams = method.getAsJsonArray("parameters");
+                        if (jsonParams.size() == srgParams.size())
+                            for (int i = 0; i < srgParams.size(); i++) {
+                                IParameter srgParam = srgParams.get(i);
+                                JsonObject parameter = jsonParams.get(i).getAsJsonObject();
+                                String paramName = parameter.has("name") ? parameter.get("name").getAsString() : null;
+                                if (paramName != null) {
+                                    parameters.add(new String[]{srgParam.getMapped(), paramName, ""});
+                                }
+                                String paramJavadoc = getJavadocs(parameter);
+                                if (!paramJavadoc.isEmpty())
+                                    mdJavadoc.append("\\n@param ").append(paramName != null ? paramName : srgParam.getMapped()).append(' ').append(paramJavadoc);
+                            }
                     }
-                    populateJavadocs(methodJavadocs, srgClass, srgMethod, mdJavadoc.toString());
+                    populateMappings(methods, srgClass, srgMethod, mdJavadoc.toString());
                 }
             }
 
@@ -699,10 +717,11 @@ public class MCPRepo extends BaseRepo {
 
             try (FileOutputStream fos = new FileOutputStream(mappings);
                     ZipOutputStream out = new ZipOutputStream(fos)) {
-                writeJavadocs("classes.csv", classJavadocs, out);
-                writeJavadocs("fields.csv", fieldJavadocs, out);
-                writeJavadocs("methods.csv", methodJavadocs, out);
-                writeJavadocs("packages.csv", packageJavadocs, out);
+                writeCsv("classes.csv", classes, out);
+                writeCsv("fields.csv", fields, out);
+                writeCsv("methods.csv", methods, out);
+                writeCsv("params.csv", parameters, out);
+                writeCsv("packages.csv", packages, out);
             }
         }
 
@@ -725,34 +744,28 @@ public class MCPRepo extends BaseRepo {
                 }, Functions.identity()));
     }
 
-    private void populateJavadocs(List<String[]> javadocs, IClass srgClass, INode srgNode, JsonObject json) {
-        populateJavadocs(javadocs, srgClass, srgNode, getJavadocs(json));
+    private void populateMappings(List<String[]> mappings, IClass srgClass, INode srgNode, JsonObject json) {
+        populateMappings(mappings, srgClass, srgNode, getJavadocs(json));
     }
 
-    private void populateJavadocs(List<String[]> javadocs, IClass srgClass, INode srgNode, String desc) {
+    private void populateMappings(List<String[]> mappings, IClass srgClass, INode srgNode, String desc) {
         if (srgNode instanceof IPackage || srgNode instanceof IClass) {
             String name = srgNode.getMapped().replace('/', '.');
             // TODO fix InstallerTools so that we don't have to expand the csv size for no reason
-            javadocs.add(new String[]{name, name, desc});
+            if (!desc.isEmpty())
+                mappings.add(new String[]{name, name, desc});
             return;
         }
         String srgName = srgNode.getMapped();
         String mojName = srgNode.getOriginal();
-        boolean unique = false;
-        if (srgNode instanceof IParameter) {
-            unique = srgName.startsWith("p_");
-        } else if (srgNode instanceof IMethod) {
-            unique = srgName.startsWith("func_") || srgName.startsWith("m_");
-        } else if (srgNode instanceof IField) {
-            unique = srgName.startsWith("field_") || srgName.startsWith("f_");
-        }
-        // If it's not unique, we need to add the class to the beginning as it is a special method of some kind
-        if (!unique && !desc.isEmpty()) {
+        boolean isSrg = srgName.startsWith("p_") || srgName.startsWith("func_") || srgName.startsWith("m_") || srgName.startsWith("field_") || srgName.startsWith("f_");
+        // If it's not a srg id and has javadocs, we need to add the class to the beginning as it is a special method/field of some kind
+        if (!isSrg && !desc.isEmpty() && (srgNode instanceof IMethod || srgNode instanceof IField)) {
             srgName = srgClass.getMapped().replace('/', '.') + '#' + srgName;
         }
-        // ALWAYS put in the csv if it's a SRG id, otherwise only if its javadocs are not empty
-        if (unique || !desc.isEmpty())
-            javadocs.add(new String[]{srgName, mojName, desc});
+        // Only add to the mappings list if it is mapped or has javadocs
+        if ((isSrg && !srgName.equals(mojName)) || !desc.isEmpty())
+            mappings.add(new String[]{srgName, mojName, desc});
     }
 
     private String getJavadocs(JsonObject json) {
@@ -776,18 +789,12 @@ public class MCPRepo extends BaseRepo {
         return sb.toString();
     }
 
-    private List<String[]> getJavadocList(boolean isMapped) {
-        List<String[]> javadocs = new ArrayList<>();
-        javadocs.add(isMapped ? new String[]{"searge", "name", "desc"} : new String[]{"searge", "desc"});
-        return javadocs;
-    }
-
-    private void writeJavadocs(String name, List<String[]> javadocs, ZipOutputStream out) throws IOException {
-        if (javadocs.isEmpty())
+    private void writeCsv(String name, List<String[]> mappings, ZipOutputStream out) throws IOException {
+        if (mappings.size() <= 1)
             return;
         out.putNextEntry(Utils.getStableEntry(name));
-        try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWriter(out))) {
-            javadocs.forEach(writer::writeRow);
+        try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWritter(out))) {
+            mappings.forEach(writer::writeRow);
         }
         out.closeEntry();
     }

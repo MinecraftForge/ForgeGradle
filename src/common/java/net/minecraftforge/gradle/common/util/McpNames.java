@@ -69,10 +69,8 @@ public class McpNames {
                 try (NamedCsvReader reader = NamedCsvReader.builder().build(new InputStreamReader(zip.getInputStream(entry)))) {
                     String obf = reader.getHeader().contains("searge") ? "searge" : "param";
                     boolean hasDesc = reader.getHeader().contains("desc");
-                    // boolean hasMapped = reader.getHeader().contains("name");
                     reader.forEach(row -> {
                         String searge = row.getField(obf);
-                        // if (hasMapped)
                         names.put(searge, row.getField("name"));
                         if (hasDesc) {
                             String desc = row.getField("desc");
