@@ -132,7 +132,7 @@ class ExecuteFunction implements MCPFunction {
                 java.setArgs(runArgList);
                 java.setClasspath(environment.project.files(jar));
                 java.setWorkingDir(workingDir);
-                java.setMain(mainClass);
+                java.getMainClass().set(mainClass);
                 java.setStandardOutput(log_out);
             }).rethrowFailure().assertNormalExitValue();
         }

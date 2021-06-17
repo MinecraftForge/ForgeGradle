@@ -58,7 +58,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
@@ -154,7 +154,7 @@ public class UserDevPlugin implements Plugin<Project> {
             logger.lifecycle("This process uses Srg2Source for java source file renaming. Please forward relevant bug reports to https://github.com/MinecraftForge/Srg2Source/issues.");
 
             final TaskProvider<JavaCompile> javaCompile = tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, JavaCompile.class);
-            final JavaPluginConvention javaConv = project.getConvention().getPlugin(JavaPluginConvention.class);
+            final JavaPluginExtension javaConv = project.getExtensions().getByType(JavaPluginExtension.class);
             final Provider<FileCollection> mainJavaSources = javaConv.getSourceSets().named(SourceSet.MAIN_SOURCE_SET_NAME).map(SourceSet::getJava).map(SourceDirectorySet::getSourceDirectories);
 
             final TaskProvider<DownloadMCPMappings> dlMappingsNew = tasks.register("downloadMappingsNew", DownloadMCPMappings.class);
@@ -293,7 +293,7 @@ public class UserDevPlugin implements Plugin<Project> {
     }
 
     private NamedDomainObjectContainer<RenameJarInPlace> createReobfExtension(Project project) {
-        final JavaPluginConvention javaConv = project.getConvention().getPlugin(JavaPluginConvention.class);
+        final JavaPluginExtension javaConv = project.getExtensions().getByType(JavaPluginExtension.class);
         final NamedDomainObjectContainer<RenameJarInPlace> reobfExtension = project.container(RenameJarInPlace.class, jarName -> {
             String name = StringUtils.capitalize(jarName);
 

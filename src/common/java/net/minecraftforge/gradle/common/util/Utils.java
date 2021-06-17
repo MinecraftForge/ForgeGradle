@@ -31,7 +31,7 @@ import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.TaskProvider;
 
 import com.google.gson.Gson;
@@ -373,7 +373,7 @@ public class Utils {
 
         final TaskProvider<Task> makeSrcDirs = extension.getProject().getTasks().register("makeSrcDirs", Task.class, task ->
                 task.doFirst(t -> {
-                    final JavaPluginConvention java = task.getProject().getConvention().getPlugin(JavaPluginConvention.class);
+                    final JavaPluginExtension java = task.getProject().getExtensions().getByType(JavaPluginExtension.class);
 
                     java.getSourceSets().forEach(s -> s.getAllSource()
                             .getSrcDirs().stream().filter(f -> !f.exists()).forEach(File::mkdirs));

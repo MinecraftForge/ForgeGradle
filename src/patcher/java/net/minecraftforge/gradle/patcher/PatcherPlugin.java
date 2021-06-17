@@ -67,7 +67,7 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository.MetadataSou
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
@@ -81,7 +81,11 @@ import codechicken.diffpatch.util.PatchMode;
 import com.google.common.collect.Lists;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -95,7 +99,7 @@ public class PatcherPlugin implements Plugin<Project> {
 
         final PatcherExtension extension = project.getExtensions().create(PatcherExtension.class, PatcherExtension.EXTENSION_NAME, PatcherExtension.class, project);
         project.getPluginManager().apply(JavaPlugin.class);
-        final JavaPluginConvention javaConv = project.getConvention().getPlugin(JavaPluginConvention.class);
+        final JavaPluginExtension javaConv = project.getExtensions().getByType(JavaPluginExtension.class);
 
         Configuration mcImplementation = project.getConfigurations().maybeCreate(MC_DEP_CONFIG);
         mcImplementation.setCanBeResolved(true);
