@@ -135,6 +135,7 @@ gradlePlugin {
 publishing {
     publications {
         pluginMaven(MavenPublication) {
+            artifact jar
             artifact sourcesJar
         }
     }
