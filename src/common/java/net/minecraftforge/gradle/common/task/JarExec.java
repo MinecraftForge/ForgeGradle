@@ -97,7 +97,7 @@ public class JarExec extends DefaultTask {
                 java.getClasspath().forEach(f -> printer.println("Classpath: " + f.getAbsolutePath()));
                 java.setWorkingDir(workDir);
                 printer.println("WorkDir: " + workDir);
-                java.setMain(mainClass);
+                java.getMainClass().set(mainClass);
                 printer.println("Main: " + mainClass);
                 printer.println("====================================");
                 java.setStandardOutput(new OutputStream() {
