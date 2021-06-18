@@ -129,13 +129,11 @@ gradlePlugin {
             implementationClass = 'net.minecraftforge.gradle.patcher.PatcherPlugin'
         }
     }
-    automatedPublishing = false
 }
 
 publishing {
     publications {
         pluginMaven(MavenPublication) {
-            artifact jar
             artifact sourcesJar
         }
     }
