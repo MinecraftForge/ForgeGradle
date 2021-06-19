@@ -32,6 +32,7 @@ import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
@@ -219,6 +220,7 @@ public abstract class JarExec extends DefaultTask {
 
     @Optional
     @InputFiles
+    @Classpath
     public abstract ConfigurableFileCollection getClasspath();
 
     @Nested
