@@ -47,7 +47,7 @@ public abstract class SetupMCP extends DefaultTask {
             HashStore cache = new HashStore(getProject());
             try {
                 cache.load(getProject().file("build/" + getName() + "/inputcache.sha1"));
-                cache.add("configFile", getOutput().get().getAsFile());
+                cache.add("configFile", getConfig().get().getAsFile());
                 getPreDecompile().get().forEach((key, func) -> func.addInputs(cache, key + "."));
                 cache.save();
                 return cache.isSame() && getOutput().get().getAsFile().exists();
