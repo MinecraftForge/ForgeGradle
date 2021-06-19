@@ -37,6 +37,7 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
 
     protected final Project project;
     protected final NamedDomainObjectContainer<RunConfig> runs;
+    protected final ConfigurableFileCollection accessTransformers;
 
     private final Provider<String> mapping;
 
@@ -45,6 +46,7 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         this.project = project;
         this.mapping = getMappingChannel().zip(getMappingVersion(), (ch, ver) -> ch + '_' + ver);
         this.runs = project.getObjects().domainObjectContainer(RunConfig.class, name -> new RunConfig(project, name));
+        this.accessTransformers = project.getObjects().fileCollection();
     }
 
     public Project getProject() {
@@ -101,7 +103,28 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         mappings(channel.toString(), version.toString());
     }
 
-    public abstract ConfigurableFileCollection getAccessTransformers();
+    public ConfigurableFileCollection getAccessTransformers() {
+        return accessTransformers;
+    }
+
+    // Following are helper methods for adding ATs
+    // Equivalents are not added for SASs as it's not used outside of Forge
+
+    public void setAccessTransformers(Object... files) {
+        getAccessTransformers().setFrom(files);
+    }
+
+    public void setAccessTransformer(Object files) {
+        getAccessTransformers().setFrom(files);
+    }
+
+    public void accessTransformers(Object... files) {
+        getAccessTransformers().from(files);
+    }
+
+    public void accessTransformer(Object file) {
+        getAccessTransformers().from(file);
+    }
 
     public abstract ConfigurableFileCollection getSideAnnotationStrippers();
 }
