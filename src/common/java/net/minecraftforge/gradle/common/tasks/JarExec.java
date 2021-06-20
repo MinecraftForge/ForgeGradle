@@ -40,6 +40,7 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.internal.jvm.Jvm;
 import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.jvm.toolchain.JavaToolchainSpec;
@@ -114,7 +115,7 @@ public abstract class JarExec extends DefaultTask {
 
         try (PrintWriter log = new PrintWriter(hasLog ? new FileWriter(logFile) : NullWriter.DEFAULT, true)) {
             getProject().javaexec(spec -> {
-                spec.setExecutable(getJavaLauncher().get().getExecutablePath());
+                spec.setExecutable(getEffectiveExecutable());
                 spec.setArgs(args);
                 spec.setClasspath(classpath);
                 spec.setWorkingDir(workingDirectory);
@@ -226,4 +227,12 @@ public abstract class JarExec extends DefaultTask {
     @Nested
     @Optional
     public abstract Property<JavaLauncher> getJavaLauncher();
+
+    private String getEffectiveExecutable() {
+        if (getJavaLauncher().isPresent()) {
+            return getJavaLauncher().get().getExecutablePath().toString();
+        } else {
+            return Jvm.current().getJavaExecutable().getAbsolutePath();
+        }
+    }
 }
