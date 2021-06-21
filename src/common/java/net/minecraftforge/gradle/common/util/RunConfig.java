@@ -234,7 +234,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
 
     public final String getIdeaModule() {
         if (ideaModule == null) {
-            ideaModule = project.getName() + ".main";
+            ideaModule = project.getName().replace(' ', '_') + ".main";
         }
 
         return ideaModule;
