@@ -22,6 +22,7 @@ package net.minecraftforge.gradle.patcher.tasks;
 
 import net.minecraftforge.gradle.common.config.MCPConfigV2;
 
+import net.minecraftforge.srgutils.IMappingFile;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.RegularFileProperty;
@@ -72,12 +73,8 @@ public abstract class CreateExc extends DefaultTask {
         List<String> lines = Files.readLines(getSrg().get().getAsFile(), StandardCharsets.UTF_8);
         lines = lines.stream().map(line -> line.split("#")[0]).filter(l -> !Strings.isNullOrEmpty(l.trim())).collect(Collectors.toList()); //Strip empty/comments
 
-        Map<String, String> classes = new HashMap<>();
-        lines.stream()
-                .filter(line -> !line.startsWith("\t") || (line.indexOf(':') != -1 && line.startsWith("CL:")))
-                .map(line -> line.indexOf(':') != -1 ? line.substring(4).split(" ") : line.split(" "))
-                .filter(pts -> pts.length == 2 && !pts[0].endsWith("/")) //Skip packages
-                .forEach(pts -> classes.put(pts[0], pts[1]));
+        Map<String, String> classes = IMappingFile.load(getSrg().get().getAsFile()).getClasses().stream()
+                .collect(Collectors.toMap(IMappingFile.IClass::getOriginal, IMappingFile.IClass::getMapped));
 
         String currentClass = null;
         for (String line : lines) {

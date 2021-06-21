@@ -30,6 +30,7 @@ import net.minecraftforge.gradle.common.config.MCPConfigV1;
 import net.minecraftforge.gradle.common.config.MCPConfigV2;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import net.minecraftforge.gradle.common.util.VersionJson.OS;
+import net.minecraftforge.srgutils.IMappingFile;
 import net.minecraftforge.srgutils.MinecraftVersion;
 
 import org.apache.commons.io.FileUtils;
@@ -38,7 +39,6 @@ import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Strings;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -46,8 +46,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -320,14 +318,9 @@ public class MinecraftRepo extends BaseRepo {
              FileOutputStream fos = new FileOutputStream(output);
              ZipOutputStream out = new ZipOutputStream(fos)) {
 
-            Set<String> whitelist = new HashSet<>();
-            List<String> lines = Utils.lines(mappings).map(line -> line.split("#")[0]).filter(l -> !Strings.isNullOrEmpty(l.trim())).collect(Collectors.toList()); //Strip comments and empty lines
-            boolean tsrgv2 = !lines.isEmpty() && lines.get(0).startsWith("tsrg2"); // TSRGv2 has an extra space that we must account for when splitting
-            lines.stream()
-            .filter(line -> !line.startsWith("\t") || (line.indexOf(':') != -1 && line.startsWith("CL:"))) // Class lines only
-            .map(line -> line.indexOf(':') != -1 ? line.substring(4).split(" ") : line.split(" ")) //Convert to: OBF SRG
-            .filter(pts -> pts.length == (tsrgv2 ? 3 : 2) && !pts[0].endsWith("/")) //Skip packages
-            .forEach(pts -> whitelist.add(pts[0]));
+            Set<String> whitelist = IMappingFile.load(mappings).getClasses().stream()
+                    .map(IMappingFile.IClass::getOriginal)
+                    .collect(Collectors.toSet());
 
             for (Enumeration<? extends ZipEntry> entries = zin.entries(); entries.hasMoreElements();) {
                 ZipEntry entry = entries.nextElement();

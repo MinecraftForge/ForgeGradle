@@ -22,6 +22,7 @@ package net.minecraftforge.gradle.patcher.tasks;
 
 import net.minecraftforge.gradle.common.util.Utils;
 
+import net.minecraftforge.srgutils.IMappingFile;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
@@ -31,13 +32,10 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import com.google.common.io.Files;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
@@ -57,16 +55,9 @@ public abstract class FilterNewJar extends DefaultTask { //TODO: Copy task?
             }
         }
 
-        Set<String> classes = new HashSet<>();
-        List<String> lines = Files.readLines(getSrg().get().getAsFile(), StandardCharsets.UTF_8).stream()
-                .map(line -> line.split("#")[0])
-                .filter(l -> l != null & !l.trim().isEmpty())
-                .collect(Collectors.toList());
-        lines.stream()
-                .filter(line -> !line.startsWith("\t") || (line.indexOf(':') != -1 && line.startsWith("CL:")))
-                .map(line -> line.indexOf(':') != -1 ? line.substring(4).split(" ") : line.split(" "))
-                .filter(pts -> pts.length == 2 && !pts[0].endsWith("/"))
-                .forEach(pts -> classes.add(pts[1]));
+        Set<String> classes = IMappingFile.load(getSrg().get().getAsFile()).getClasses().stream()
+                .map(IMappingFile.IClass::getOriginal)
+                .collect(Collectors.toSet());
 
         try (ZipFile zin = new ZipFile(getInput().get().getAsFile());
              ZipOutputStream out = new ZipOutputStream(new FileOutputStream(getOutput().get().getAsFile()))){

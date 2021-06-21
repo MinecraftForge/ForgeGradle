@@ -23,6 +23,7 @@ package net.minecraftforge.gradle.patcher.tasks;
 import net.minecraftforge.gradle.common.tasks.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
 
+import net.minecraftforge.srgutils.IMappingFile;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.file.RegularFileProperty;
@@ -33,7 +34,6 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.Files;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -43,7 +43,6 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -65,21 +64,15 @@ public abstract class ReobfuscateJar extends JarExec {
         super.apply();
 
         try (OutputStream log = new BufferedOutputStream(new FileOutputStream(logFile.get().getAsFile()))) {
-
-            List<String> lines = Files.readLines(getSrg().get().getAsFile(), StandardCharsets.UTF_8);
-            lines = lines.stream().map(line -> line.split("#")[0]).filter(l -> l != null & !l.trim().isEmpty()).collect(Collectors.toList()); //Strip empty/comments
-
             Set<String> packages = new HashSet<>();
-            lines.stream()
-                    .filter(line -> !line.startsWith("\t") || (line.indexOf(':') != -1 && line.startsWith("CL:")))
-                    .map(line -> line.indexOf(':') != -1 ? line.substring(4).split(" ") : line.split(" "))
-                    .filter(pts -> pts.length == 2)
-                    .forEach(pts -> {
-                        int idx = pts[0].lastIndexOf('/');
-                        if (idx != -1) {
-                            packages.add(pts[0].substring(0, idx + 1) + "package-info.class");
-                        }
-                    });
+            IMappingFile srgMappings = IMappingFile.load(getSrg().get().getAsFile());
+            for (IMappingFile.IClass srgClass : srgMappings.getClasses()) {
+                String named = srgClass.getOriginal();
+                int idx = named.lastIndexOf('/');
+                if (idx != -1) {
+                    packages.add(named.substring(0, idx + 1) + "package-info.class");
+                }
+            }
 
             try (ZipFile zin = new ZipFile(outputTemp.get().getAsFile());
                  ZipOutputStream out = new ZipOutputStream(new FileOutputStream(getOutput().get().getAsFile()))) {
