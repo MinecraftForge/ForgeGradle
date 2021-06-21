@@ -56,7 +56,7 @@ public abstract class FilterNewJar extends DefaultTask { //TODO: Copy task?
         }
 
         Set<String> classes = IMappingFile.load(getSrg().get().getAsFile()).getClasses().stream()
-                .map(IMappingFile.IClass::getOriginal)
+                .map(IMappingFile.IClass::getMapped)
                 .collect(Collectors.toSet());
 
         try (ZipFile zin = new ZipFile(getInput().get().getAsFile());
