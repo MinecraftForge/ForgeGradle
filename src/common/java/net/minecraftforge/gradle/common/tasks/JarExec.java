@@ -172,7 +172,7 @@ public abstract class JarExec extends DefaultTask {
 
         for (String arg : args) {
             if (multiReplacements.containsKey(arg)) {
-                String prefix = newArgs.size() > 1 ? newArgs.remove(newArgs.size() - 1) : null;
+                String prefix = newArgs.isEmpty() ? null : newArgs.remove(newArgs.size() - 1);
                 for (Object value : multiReplacements.get(arg)) {
                     if (prefix != null) newArgs.add(prefix);
                     newArgs.add(toString(value));
