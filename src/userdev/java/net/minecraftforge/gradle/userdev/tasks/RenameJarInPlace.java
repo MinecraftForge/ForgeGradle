@@ -22,7 +22,6 @@ package net.minecraftforge.gradle.userdev.tasks;
 
 import net.minecraftforge.gradle.common.tasks.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
-import net.minecraftforge.srgutils.IMappingFile;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.file.ConfigurableFileCollection;
@@ -43,7 +42,6 @@ import java.util.List;
 
 public abstract class RenameJarInPlace extends JarExec {
     private final Provider<Directory> workDir = getProject().getLayout().getBuildDirectory().dir(getName());
-    private final Provider<RegularFile> srgTemp = workDir.map(s -> s.file("input.srg"));
     private final Provider<RegularFile> temp = workDir.map(s -> s.file("output.jar"));
 
     public RenameJarInPlace() {
@@ -58,7 +56,7 @@ public abstract class RenameJarInPlace extends JarExec {
                 "{input}", getInput().get().getAsFile(),
                 "{output}", temp.get().getAsFile()
                 ), ImmutableMultimap.<String, Object>builder()
-                        .put("{mappings}", srgTemp.get().getAsFile())
+                        .put("{mappings}", getMappings().get().getAsFile())
                         .putAll("{mappings}", getExtraMappings().getFiles()).build()
         );
     }
@@ -71,13 +69,9 @@ public abstract class RenameJarInPlace extends JarExec {
             getProject().getLogger().warn("Could not create parent directories for temp dir '{}'", temp.getAbsolutePath());
         }
 
-        // Have to make sure we use TSRGv1 in SpecialSource
-        IMappingFile.load(getMappings().get().getAsFile()).write(srgTemp.get().getAsFile().toPath(), IMappingFile.Format.TSRG, false);
-
         super.apply();
 
         FileUtils.copyFile(temp, getInput().get().getAsFile());
-        srgTemp.get().getAsFile().delete();
     }
 
     // TODO: Make this a ConfigurableFileCollection? (then remove getExtraMappings())

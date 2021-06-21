@@ -22,7 +22,6 @@ package net.minecraftforge.gradle.patcher.tasks;
 
 import net.minecraftforge.gradle.common.tasks.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
-import net.minecraftforge.srgutils.IMappingFile;
 
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.file.RegularFile;
@@ -53,7 +52,6 @@ public abstract class ReobfuscateJar extends JarExec {
     private boolean keepPackages = false;
     private boolean keepData = false;
 
-    private final Provider<RegularFile> inputSrgTemp = workDir.map(d -> d.file("input.srg"));
     private final Provider<RegularFile> outputTemp = workDir.map(d -> d.file("output_temp.jar"));
 
     public ReobfuscateJar() {
@@ -64,14 +62,11 @@ public abstract class ReobfuscateJar extends JarExec {
 
     @TaskAction
     public void apply() throws IOException {
-        // Have to make sure we use TSRGv1 in SpecialSource
-        IMappingFile.load(getSrg().get().getAsFile()).write(inputSrgTemp.get().getAsFile().toPath(), IMappingFile.Format.TSRG, false);
-
         super.apply();
 
         try (OutputStream log = new BufferedOutputStream(new FileOutputStream(logFile.get().getAsFile()))) {
 
-            List<String> lines = Files.readLines(inputSrgTemp.get().getAsFile(), StandardCharsets.UTF_8);
+            List<String> lines = Files.readLines(getSrg().get().getAsFile(), StandardCharsets.UTF_8);
             lines = lines.stream().map(line -> line.split("#")[0]).filter(l -> l != null & !l.trim().isEmpty()).collect(Collectors.toList()); //Strip empty/comments
 
             Set<String> packages = new HashSet<>();
@@ -104,7 +99,6 @@ public abstract class ReobfuscateJar extends JarExec {
                 }
             }
 
-            inputSrgTemp.get().getAsFile().delete();
             outputTemp.get().getAsFile().delete();
         }
     }
@@ -114,7 +108,7 @@ public abstract class ReobfuscateJar extends JarExec {
         return replaceArgs(args, ImmutableMap.of(
                 "{input}", getInput().get().getAsFile(),
                 "{output}", outputTemp.get().getAsFile(),
-                "{srg}", inputSrgTemp.get().getAsFile()), null);
+                "{srg}", getSrg().get().getAsFile()), null);
     }
 
     @InputFile

@@ -22,12 +22,9 @@ package net.minecraftforge.gradle.userdev.tasks;
 
 import net.minecraftforge.gradle.common.tasks.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
-import net.minecraftforge.srgutils.IMappingFile;
 
 import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.file.RegularFile;
 import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
@@ -35,27 +32,12 @@ import org.gradle.api.tasks.OutputFile;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
-import java.io.IOException;
 import java.util.List;
 
 public abstract class RenameJar extends JarExec {
-    private final Provider<RegularFile> srgTemp = getProject().getLayout().getBuildDirectory()
-            .dir(getName()).map(d -> d.file("input.srg"));
-
     public RenameJar() {
         getTool().set(Utils.SPECIALSOURCE);
         getArgs().addAll("--in-jar", "{input}", "--out-jar", "{output}", "--srg-in", "{mappings}");
-    }
-
-    @Override
-    public void apply() throws IOException {
-        // Have to make sure we use TSRGv1 in SpecialSource
-        IMappingFile.load(getMappings().get().getAsFile()).write(srgTemp.get().getAsFile().toPath(),
-                IMappingFile.Format.TSRG, false);
-
-        super.apply();
-
-        srgTemp.get().getAsFile().delete();
     }
 
     protected List<String> filterArgs(List<String> args) {
@@ -63,7 +45,7 @@ public abstract class RenameJar extends JarExec {
                 "{input}", getInput().get().getAsFile(),
                 "{output}", getOutput().get().getAsFile()
                 ), ImmutableMultimap.<String, Object>builder()
-                        .put("{mappings}", srgTemp.get().getAsFile())
+                        .put("{mappings}", getMappings().get().getAsFile())
                         .putAll("{mappings}", getExtraMappings().getFiles()).build()
         );
     }
