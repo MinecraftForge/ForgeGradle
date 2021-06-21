@@ -53,6 +53,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -75,16 +76,16 @@ public abstract class RunConfigGenerator
     public static void createIDEGenRunsTasks(@Nonnull final MinecraftExtension minecraft, @Nonnull final TaskProvider<Task> prepareRuns, @Nonnull final TaskProvider<Task> makeSourceDirs, List<String> additionalClientArgs) {
         final Project project = minecraft.getProject();
 
-        final Map<String, Triple<List<Object>, File, RunConfigGenerator>> ideConfigurationGenerators = ImmutableMap.<String, Triple<List<Object>, File, RunConfigGenerator>>builder()
+        final Map<String, Triple<List<Object>, File, Supplier<RunConfigGenerator>>> ideConfigurationGenerators = ImmutableMap.<String, Triple<List<Object>, File, Supplier<RunConfigGenerator>>>builder()
                 .put("genIntellijRuns", ImmutableTriple.of(Collections.singletonList(prepareRuns.get()),
                         new File(project.getRootProject().getRootDir(), ".idea/runConfigurations"),
-                        new IntellijRunGenerator(project.getRootProject())))
+                        () -> new IntellijRunGenerator(project.getRootProject())))
                 .put("genEclipseRuns", ImmutableTriple.of(ImmutableList.of(prepareRuns.get(), makeSourceDirs.get()),
                         project.getProjectDir(),
-                        new EclipseRunGenerator()))
+                        EclipseRunGenerator::new))
                 .put("genVSCodeRuns", ImmutableTriple.of(ImmutableList.of(prepareRuns.get(), makeSourceDirs.get()),
                         new File(project.getProjectDir(), ".vscode"),
-                        new VSCodeRunGenerator()))
+                        VSCodeRunGenerator::new))
                 .build();
 
         ideConfigurationGenerators.forEach((taskName, configurationGenerator) -> {
@@ -98,7 +99,7 @@ public abstract class RunConfigGenerator
                     if (!runConfigurationsDir.exists()) {
                         runConfigurationsDir.mkdirs();
                     }
-                    configurationGenerator.getRight().createRunConfiguration(minecraft, runConfigurationsDir, project, additionalClientArgs);
+                    configurationGenerator.getRight().get().createRunConfiguration(minecraft, runConfigurationsDir, project, additionalClientArgs);
                 });
             });
         });
