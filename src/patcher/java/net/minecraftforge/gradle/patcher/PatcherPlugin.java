@@ -180,12 +180,12 @@ public class PatcherPlugin implements Plugin<Project> {
         applyPatches.configure(task -> {
             final Provider<Directory> workDir = project.getLayout().getBuildDirectory().dir(task.getName());
             task.getOutput().set(workDir.map(s -> s.file("output.zip")));
-            task.getRejects().set(workDir.map(s -> s.file("rejects.zip")));
+            task.getRejects().set(workDir.map(s -> s.file("rejects.zip").getAsFile()));
             task.getPatches().set(extension.getPatches());
             task.getPatchMode().set(PatchMode.ACCESS);
             if (project.hasProperty("UPDATING")) {
                 task.getPatchMode().set(PatchMode.FUZZY);
-                task.getRejects().set(project.getLayout().getProjectDirectory().dir("rejects"));
+                task.getRejects().set(project.getLayout().getProjectDirectory().dir("rejects").getAsFile());
                 task.setFailOnError(false);
             }
         });
