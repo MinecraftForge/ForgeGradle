@@ -34,6 +34,7 @@ import net.minecraftforge.artifactural.api.repository.Repository;
 import net.minecraftforge.artifactural.base.repository.ArtifactProviderBuilder;
 import net.minecraftforge.artifactural.base.repository.SimpleRepository;
 import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
+import net.minecraftforge.gradle.common.config.MCPConfigV2;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.DownloadUtils;
 import net.minecraftforge.gradle.common.util.HashFunction;
@@ -55,7 +56,6 @@ import net.minecraftforge.srgutils.IRenamer;
 import net.minecraftforge.srgutils.IMappingFile.IClass;
 import net.minecraftforge.srgutils.IMappingFile.IField;
 import net.minecraftforge.srgutils.IMappingFile.IMethod;
-import net.minecraftforge.srgutils.IRenamer;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
@@ -646,6 +646,7 @@ public class MCPRepo extends BaseRepo {
         if (cache.isSame() && mappings.exists())
             return mappings;
 
+        boolean official = MCPConfigV2.getFromArchive(mcp).isOfficial();
         try (ZipFile zip = new ZipFile(dep)) {
             ZipEntry entry = zip.getEntry("parchment.json");
             if (entry == null)
@@ -695,17 +696,19 @@ public class MCPRepo extends BaseRepo {
                     List<IParameter> srgParams = new ArrayList<>(srgMethod.getParameters());
                     if (method != null && method.has("parameters")) {
                         JsonArray jsonParams = method.getAsJsonArray("parameters");
-                        if (jsonParams.size() == srgParams.size())
-                            for (int i = 0; i < srgParams.size(); i++) {
-                                IParameter srgParam = srgParams.get(i);
+                        if (!official || jsonParams.size() == srgParams.size())
+                            for (int i = 0; i < jsonParams.size(); i++) {
                                 JsonObject parameter = jsonParams.get(i).getAsJsonObject();
+                                String srgParam = official
+                                        ? srgParams.get(i).getMapped()
+                                        : String.format("p_%s_%s_", srgMethod.getMapped().split("_")[1], parameter.get("index").getAsString());
                                 String paramName = parameter.has("name") ? parameter.get("name").getAsString() : null;
                                 if (paramName != null) {
-                                    parameters.add(new String[]{srgParam.getMapped(), paramName, ""});
+                                    parameters.add(new String[]{srgParam, paramName, ""});
                                 }
                                 String paramJavadoc = getJavadocs(parameter);
                                 if (!paramJavadoc.isEmpty())
-                                    mdJavadoc.append("\\n@param ").append(paramName != null ? paramName : srgParam.getMapped()).append(' ').append(paramJavadoc);
+                                    mdJavadoc.append("\\n@param ").append(paramName != null ? paramName : srgParam).append(' ').append(paramJavadoc);
                             }
                     }
                     populateMappings(methods, srgClass, srgMethod, mdJavadoc.toString());
