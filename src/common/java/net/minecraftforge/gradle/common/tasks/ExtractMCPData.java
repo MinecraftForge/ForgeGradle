@@ -30,6 +30,7 @@ import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.Project;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
@@ -54,8 +55,9 @@ public abstract class ExtractMCPData extends DefaultTask {
     public void run() throws IOException {
         MCPConfigV2 cfg = MCPConfigV2.getFromArchive(getConfig().get().getAsFile());
 
+        String key = getKey().get();
+        File output = getOutput().get().getAsFile();
         try (ZipFile zip = new ZipFile(getConfig().get().getAsFile())) {
-            String key = getKey().get();
             String path = cfg.getData(key.split("/"));
             if (path == null && "statics".equals(key))
                 path = "config/static_methods.txt";
@@ -71,25 +73,29 @@ public abstract class ExtractMCPData extends DefaultTask {
                 return;
             }
 
-            try (OutputStream out = new FileOutputStream(getOutput().get().getAsFile())) {
+            try (OutputStream out = new FileOutputStream(output)) {
                 IOUtils.copy(zip.getInputStream(entry), out);
             }
         }
 
-        if (cfg.isOfficial() && getOutput().get().getAsFile().exists()) {
-            String minecraftVersion = MinecraftRepo.getMCVersion(cfg.getVersion());
-            File client = MavenArtifactDownloader.generate(getProject(), "net.minecraft:client:" + minecraftVersion + ":mappings@txt", true);
-
-            IMappingFile obfToOfficial = IMappingFile.load(client).reverse();
-            IMappingFile srg = IMappingFile.load(getOutput().get().getAsFile());
-
-            srg.rename(new IRenamer() {
-                @Override
-                public String rename(IMappingFile.IClass value) {
-                    return obfToOfficial.remapClass(value.getOriginal());
-                }
-            }).write(getOutput().get().getAsFile().toPath(), IMappingFile.Format.TSRG2, false);
+        if (cfg.isOfficial() && output.exists() && "mappings".equals(key)) {
+            IMappingFile obfToSrg = IMappingFile.load(output);
+            remapSrgClasses(getProject(), cfg, obfToSrg).write(output.toPath(), IMappingFile.Format.TSRG2, false);
         }
+    }
+
+    public static IMappingFile remapSrgClasses(Project project, MCPConfigV2 config, IMappingFile obfToSrg) throws IOException {
+        String minecraftVersion = MinecraftRepo.getMCVersion(config.getVersion());
+        File client = MavenArtifactDownloader.generate(project, "net.minecraft:client:" + minecraftVersion + ":mappings@txt", true);
+
+        IMappingFile obfToOfficial = IMappingFile.load(client).reverse();
+
+        return obfToSrg.rename(new IRenamer() {
+            @Override
+            public String rename(IMappingFile.IClass value) {
+                return obfToOfficial.remapClass(value.getOriginal());
+            }
+        });
     }
 
     private void error(String message) throws IOException {
