@@ -23,6 +23,7 @@ package net.minecraftforge.gradle.common.tasks;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 
 import org.codehaus.groovy.control.io.NullWriter;
+import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.Directory;
@@ -41,6 +42,7 @@ import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.internal.jvm.Jvm;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.jvm.toolchain.JavaToolchainSpec;
@@ -227,6 +229,18 @@ public abstract class JarExec extends DefaultTask {
     @Nested
     @Optional
     public abstract Property<JavaLauncher> getJavaLauncher();
+
+    public void setRuntimeJavaVersion(int version) {
+        setRuntimeJavaToolchain(tc -> tc.getLanguageVersion().set(JavaLanguageVersion.of(version)));
+    }
+
+    public void setRuntimeJavaToolchain(JavaToolchainSpec toolchain) {
+        getJavaLauncher().set(getJavaToolchainService().launcherFor(toolchain));
+    }
+
+    public void setRuntimeJavaToolchain(Action<? super JavaToolchainSpec> action) {
+        getJavaLauncher().set(getJavaToolchainService().launcherFor(action));
+    }
 
     private String getEffectiveExecutable() {
         if (getJavaLauncher().isPresent()) {
