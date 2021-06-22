@@ -21,10 +21,10 @@
 package net.minecraftforge.gradle.common.util;
 
 import com.google.common.base.Splitter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
+import com.google.common.collect.Lists;
+
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -45,7 +45,7 @@ public final class JavadocAdder
         StringBuilder builder = new StringBuilder();
 
         // split and wrap.
-        List<String> list = new LinkedList<>();
+        List<String> list = Lists.newLinkedList();
         for (String line : Splitter.on("\\n").splitToList(javadoc))
         {
             list.addAll(wrapText(line, 120 - (indent.length() + 3)));
@@ -88,22 +88,16 @@ public final class JavadocAdder
         // return empty array for null text
         if (text == null)
         {
-            return new ArrayList<>();
+            return Lists.newArrayList();
         }
 
-        // return text if len is zero or less
-        if (len <= 0)
+        // return text if len is zero or less OR text length is less than len
+        if (len <= 0 || text.length() <= len)
         {
-            return new ArrayList<>(Collections.singletonList(text));
+            return Lists.newArrayList(text);
         }
 
-        // return text if less than length
-        if (text.length() <= len)
-        {
-            return new ArrayList<>(Collections.singletonList(text));
-        }
-
-        List<String> lines = new LinkedList<>();
+        List<String> lines = Lists.newLinkedList();
         StringBuilder line = new StringBuilder();
         StringBuilder word = new StringBuilder();
         int tempNum;
@@ -157,11 +151,6 @@ public final class JavadocAdder
             lines.add(line.toString());
         }
 
-        List<String> temp = new ArrayList<>(lines.size());
-        for (String s : lines)
-        {
-            temp.add(s.trim());
-        }
-        return temp;
+        return lines.stream().map(String::trim).collect(Collectors.toList());
     }
 }
