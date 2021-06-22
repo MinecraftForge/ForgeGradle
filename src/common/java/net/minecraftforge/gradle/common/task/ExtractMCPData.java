@@ -34,6 +34,7 @@ import net.minecraftforge.srgutils.IMappingFile;
 import net.minecraftforge.srgutils.IRenamer;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.Project;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
@@ -73,20 +74,24 @@ public class ExtractMCPData extends DefaultTask {
             }
         }
 
-        if (cfg.isOfficial() && getOutput().exists()) {
-            String minecraftVersion = MinecraftRepo.getMCVersion(cfg.getVersion());
-            File client = MavenArtifactDownloader.generate(getProject(), "net.minecraft:client:" + minecraftVersion + ":mappings@txt", true);
-
-            IMappingFile obfToOfficial = IMappingFile.load(client).reverse();
-            IMappingFile srg = IMappingFile.load(getOutput());
-
-            srg.rename(new IRenamer() {
-                @Override
-                public String rename(IMappingFile.IClass value) {
-                    return obfToOfficial.remapClass(value.getOriginal());
-                }
-            }).write(getOutput().toPath(), IMappingFile.Format.TSRG2, false);
+        if (cfg.isOfficial() && getOutput().exists() && "mappings".equals(key)) {
+            IMappingFile obfToSrg = IMappingFile.load(getOutput());
+            remapSrgClasses(getProject(), cfg, obfToSrg).write(getOutput().toPath(), IMappingFile.Format.TSRG2, false);
         }
+    }
+
+    public static IMappingFile remapSrgClasses(Project project, MCPConfigV2 config, IMappingFile obfToSrg) throws IOException {
+        String minecraftVersion = MinecraftRepo.getMCVersion(config.getVersion());
+        File client = MavenArtifactDownloader.generate(project, "net.minecraft:client:" + minecraftVersion + ":mappings@txt", true);
+
+        IMappingFile obfToOfficial = IMappingFile.load(client).reverse();
+
+        return obfToSrg.rename(new IRenamer() {
+            @Override
+            public String rename(IMappingFile.IClass value) {
+                return obfToOfficial.remapClass(value.getOriginal());
+            }
+        });
     }
 
     private void error(String message) throws IOException {
