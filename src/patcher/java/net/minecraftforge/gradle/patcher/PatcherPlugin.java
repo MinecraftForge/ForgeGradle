@@ -476,11 +476,11 @@ public class PatcherPlugin implements Plugin<Project> {
             dlMCMetaConfig.configure(task -> task.getMCVersion().convention(extension.getMcVersion()));
 
             if (!extension.getAccessTransformers().isEmpty()) {
-                SetupMCP setupMCP = (SetupMCP) mcpParent.getTasks().getByName("setupMCP");
+                TaskProvider<SetupMCP> setupMCP = mcpParent.getTasks().named("setupMCP", SetupMCP.class);
                 @SuppressWarnings("deprecation")
                 MCPFunction function = MCPFunctionFactory.createAT(mcpParent,
                         new ArrayList<>(extension.getAccessTransformers().getFiles()), Collections.emptyList());
-                setupMCP.getPreDecompile().put(project.getName() + "AccessTransformer", function);
+                setupMCP.configure(task -> task.getPreDecompile().put(project.getName() + "AccessTransformer", function));
                 extension.getAccessTransformers().forEach(f -> {
                     userdevJar.get().from(f, e -> e.into("ats/"));
                     userdevConfig.get().getATs().from(f);
@@ -488,10 +488,10 @@ public class PatcherPlugin implements Plugin<Project> {
             }
 
             if (!extension.getSideAnnotationStrippers().isEmpty()) {
-                SetupMCP setupMCP = (SetupMCP) mcpParent.getTasks().getByName("setupMCP");
+                TaskProvider<SetupMCP> setupMCP = mcpParent.getTasks().named("setupMCP", SetupMCP.class);
                 @SuppressWarnings("deprecation")
                 MCPFunction function = MCPFunctionFactory.createSAS(mcpParent, new ArrayList<>(extension.getSideAnnotationStrippers().getFiles()), Collections.emptyList());
-                setupMCP.getPreDecompile().put(project.getName() + "SideStripper", function);
+                setupMCP.configure(task -> task.getPreDecompile().put(project.getName() + "SideStripper", function));
                 extension.getSideAnnotationStrippers().forEach(f -> {
                     userdevJar.get().from(f, e -> e.into("sas/"));
                     userdevConfig.get().getSASs().from(f);
