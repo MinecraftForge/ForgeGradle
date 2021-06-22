@@ -23,6 +23,8 @@ package net.minecraftforge.gradle.patcher.tasks;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.FileSystemLocation;
+import org.gradle.api.file.FileSystemLocationProperty;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.provider.Property;
@@ -70,7 +72,7 @@ public abstract class ApplyPatches extends DefaultTask {
             outputFormat = ArchiveFormat.findFormat(outputPath.getFileName());
         }
 
-        Path rejectsPath = getRejects().map(File::toPath).getOrNull();
+        Path rejectsPath = getRejects().getAsFile().map(File::toPath).getOrNull();
         ArchiveFormat rejectsFormat = getOutputFormat().getOrNull();
         if (rejectsFormat == null && rejectsPath != null) {
             rejectsFormat = ArchiveFormat.findFormat(rejectsPath.getFileName());
@@ -118,7 +120,7 @@ public abstract class ApplyPatches extends DefaultTask {
     public abstract RegularFileProperty getOutput();
 
     @Internal
-    public abstract Property<File> getRejects();
+    public abstract FileSystemLocationProperty<FileSystemLocation> getRejects();
 
     @Input
     @Optional
