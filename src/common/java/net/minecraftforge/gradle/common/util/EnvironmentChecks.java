@@ -72,8 +72,8 @@ public class EnvironmentChecks {
      *
      * Current environment checks:
      * <ul>
-     *     <li>Java version is above <em>1.8.0_101</em> (first JDK version to include Let's Encrypt certificates)</li>
-     *     <li>Gradle version is above <em>6.8.1</em> (minimum version required by ForgeGradle)</li>
+     *     <li>Java version is <em>1.8.0_101</em> or above (first JDK version to include Let's Encrypt certificates)</li>
+     *     <li>Gradle version is <em>7.1</em> or above (minimum version required by ForgeGradle)</li>
      *     <li>Certificates for {@link Utils#FORGE_MAVEN} and {@link Utils#MOJANG_MAVEN} are valid (required repositories)</li>
      * </ul>
      *
