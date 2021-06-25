@@ -36,10 +36,14 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.annotation.Nullable;
+
 public class VersionJson {
+    @Nullable
     public Arguments arguments;
     public AssetIndex assetIndex;
     public String assets;
+    @Nullable
     public Map<String, Download> downloads;
     public Library[] libraries;
 
@@ -77,13 +81,14 @@ public class VersionJson {
 
     public static class Arguments {
         public Argument[] game;
+        @Nullable
         public Argument[] jvm;
     }
 
     public static class Argument extends RuledObject {
         public List<String> value;
 
-        public Argument(Rule[] rules, List<String> value) {
+        public Argument(@Nullable Rule[] rules, List<String> value) {
             this.rules = rules;
             this.value = value;
         }
@@ -110,6 +115,7 @@ public class VersionJson {
     }
 
     public static class RuledObject {
+        @Nullable
         public Rule[] rules;
 
         public boolean isAllowed() {
@@ -134,8 +140,11 @@ public class VersionJson {
     }
 
     public static class OsCondition {
+        @Nullable
         public String name;
+        @Nullable
         public String version;
+        @Nullable
         public String arch;
 
         public boolean nameMatches() {
@@ -171,7 +180,9 @@ public class VersionJson {
     }
 
     public static class Downloads {
+        @Nullable
         public Map<String, LibraryDownload> classifiers;
+        @Nullable
         public LibraryDownload artifact;
     }
 
@@ -190,7 +201,7 @@ public class VersionJson {
         }
     }
 
-    public static enum OS {
+    public enum OS {
         WINDOWS("windows", "win"),
         LINUX("linux", "linux", "unix"),
         OSX("osx", "mac"),
@@ -199,7 +210,7 @@ public class VersionJson {
         private final String name;
         private final String[] keys;
 
-        private OS(String name, String... keys) {
+        OS(String name, String... keys) {
             this.name = name;
             this.keys = keys;
         }

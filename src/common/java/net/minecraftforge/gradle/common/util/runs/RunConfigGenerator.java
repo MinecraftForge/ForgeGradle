@@ -20,6 +20,21 @@
 
 package net.minecraftforge.gradle.common.util.runs;
 
+import net.minecraftforge.gradle.common.util.MinecraftExtension;
+import net.minecraftforge.gradle.common.util.RunConfig;
+import net.minecraftforge.gradle.common.util.Utils;
+
+import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.apache.commons.lang3.tuple.Triple;
+import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.tasks.JavaExec;
+import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.TaskProvider;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -28,35 +43,31 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import net.minecraftforge.gradle.common.util.MinecraftExtension;
-import net.minecraftforge.gradle.common.util.RunConfig;
-import net.minecraftforge.gradle.common.util.Utils;
-import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.apache.commons.lang3.tuple.Triple;
-import org.gradle.api.Project;
-import org.gradle.api.Task;
-import org.gradle.api.plugins.JavaPluginConvention;
-import org.gradle.api.tasks.JavaExec;
-import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.TaskProvider;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.annotation.Nonnull;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.*;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
-import java.util.*;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public abstract class RunConfigGenerator
 {
@@ -128,7 +139,7 @@ public abstract class RunConfigGenerator
                     sources.stream().map(source -> source.getOutput().getClassesDirs().getFiles()).flatMap(Collection::stream)
             ).map(File::getAbsolutePath);
         } else {
-            final SourceSet main = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+            final SourceSet main = project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
             return runConfig.getMods().stream()
                     .map(modConfig -> {
@@ -187,7 +198,7 @@ public abstract class RunConfigGenerator
             }
 
             task.setWorkingDir(workDir);
-            task.setMain(runConfig.getMain());
+            task.getMainClass().set(runConfig.getMain());
 
             task.args(getArgsStream(runConfig, updatedTokens, false).toArray());
             task.jvmArgs(runConfig.getJvmArgs());

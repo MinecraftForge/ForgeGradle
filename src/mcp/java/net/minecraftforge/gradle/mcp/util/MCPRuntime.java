@@ -23,8 +23,9 @@ package net.minecraftforge.gradle.mcp.util;
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
 import net.minecraftforge.gradle.common.config.MCPConfigV2;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
-import net.minecraftforge.gradle.mcp.function.MCPFunctionFactory;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
+import net.minecraftforge.gradle.mcp.function.MCPFunctionFactory;
+
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
@@ -39,9 +40,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
+import javax.annotation.Nullable;
+
 public class MCPRuntime {
 
-    private static final Pattern OUTPUT_REPLACE_PATTERN = Pattern.compile("^\\{(\\w+)Output\\}$");
+    private static final Pattern OUTPUT_REPLACE_PATTERN = Pattern.compile("^\\{(\\w+)Output}$");
 
     final Project project;
     final MCPEnvironment environment;
@@ -112,7 +115,7 @@ public class MCPRuntime {
         return execute(logger, null);
     }
 
-    public File executeUpTo(Logger logger, String stop) throws Exception {
+    public File executeUpTo(Logger logger, @Nullable String stop) throws Exception {
         String last = null;
         for(Step step : steps.values()) {
             if (step.name.equals(stop))
@@ -122,7 +125,7 @@ public class MCPRuntime {
         return execute(logger, last);
     }
 
-    public File execute(Logger logger, String stop) throws Exception {
+    public File execute(Logger logger, @Nullable String stop) throws Exception {
         environment.logger = logger;
 
         logger.lifecycle("Setting up MCP environment");

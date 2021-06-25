@@ -24,23 +24,16 @@ import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
 import net.minecraftforge.artifactural.api.repository.Repository;
 import net.minecraftforge.artifactural.base.repository.ArtifactProviderBuilder;
 import net.minecraftforge.artifactural.base.repository.SimpleRepository;
-import codechicken.diffpatch.cli.CliOperation;
-import codechicken.diffpatch.cli.PatchOperation;
-import codechicken.diffpatch.util.LoggingOutputStream;
-import codechicken.diffpatch.util.PatchMode;
-import codechicken.diffpatch.util.archiver.ArchiveFormat;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import net.minecraftforge.gradle.common.config.Config;
 import net.minecraftforge.gradle.common.config.MCPConfigV2;
 import net.minecraftforge.gradle.common.config.UserdevConfigV1;
 import net.minecraftforge.gradle.common.config.UserdevConfigV2;
 import net.minecraftforge.gradle.common.config.UserdevConfigV2.DataFunction;
-import net.minecraftforge.gradle.common.task.ApplyBinPatches;
-import net.minecraftforge.gradle.common.task.DownloadAssets;
-import net.minecraftforge.gradle.common.task.DynamicJarExec;
-import net.minecraftforge.gradle.common.task.ExtractMCPData;
-import net.minecraftforge.gradle.common.task.ExtractNatives;
+import net.minecraftforge.gradle.common.tasks.ApplyBinPatches;
+import net.minecraftforge.gradle.common.tasks.DownloadAssets;
+import net.minecraftforge.gradle.common.tasks.DynamicJarExec;
+import net.minecraftforge.gradle.common.tasks.ExtractMCPData;
+import net.minecraftforge.gradle.common.tasks.ExtractNatives;
 import net.minecraftforge.gradle.common.util.Artifact;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.HashFunction;
@@ -53,7 +46,7 @@ import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.mcp.function.MCPFunction;
 import net.minecraftforge.gradle.mcp.function.MCPFunctionFactory;
-import net.minecraftforge.gradle.mcp.task.GenerateSRG;
+import net.minecraftforge.gradle.mcp.tasks.GenerateSRG;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import net.minecraftforge.gradle.mcp.util.MCPWrapper;
 import net.minecraftforge.gradle.userdev.tasks.AccessTransformJar;
@@ -62,10 +55,10 @@ import net.minecraftforge.gradle.userdev.tasks.HackyJavaCompile;
 import net.minecraftforge.gradle.userdev.tasks.RenameJar;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 import net.minecraftforge.srgutils.IMappingFile;
-import net.minecraftforge.srgutils.MinecraftVersion;
 import net.minecraftforge.srgutils.IMappingFile.IField;
 import net.minecraftforge.srgutils.IMappingFile.IMethod;
 import net.minecraftforge.srgutils.IRenamer;
+import net.minecraftforge.srgutils.MinecraftVersion;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -75,8 +68,14 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
-import org.gradle.api.plugins.JavaPluginConvention;
 
+import codechicken.diffpatch.cli.CliOperation;
+import codechicken.diffpatch.cli.PatchOperation;
+import codechicken.diffpatch.util.LoggingOutputStream;
+import codechicken.diffpatch.util.PatchMode;
+import codechicken.diffpatch.util.archiver.ArchiveFormat;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -108,6 +107,8 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import javax.annotation.Nullable;
+
 public class MinecraftUserRepo extends BaseRepo {
     public static final boolean CHANGING_USERDEV = false; //Used when testing to update the userdev cache every 30 seconds.
     private static final MinecraftVersion v1_13 = MinecraftVersion.from("1.13");
@@ -116,12 +117,14 @@ public class MinecraftUserRepo extends BaseRepo {
     private final String NAME;
     private final String VERSION;
     private final List<File> ATS;
+    @Nullable
     private final String AT_HASH;
     private final String MAPPING;
     private final boolean isPatcher;
     private final Map<String, McpNames> mapCache = new HashMap<>();
     private boolean loadedParents = false;
     private Patcher parent;
+    @Nullable
     private MCP mcp;
     @SuppressWarnings("unused")
     private Repository repo;
@@ -213,11 +216,11 @@ public class MinecraftUserRepo extends BaseRepo {
 
         Map<String, String> tokens = new HashMap<>();
         tokens.put("assets_root", downloadAssets.getOutput().getAbsolutePath());
-        tokens.put("natives", extractNatives.getOutput().getAbsolutePath());
+        tokens.put("natives", extractNatives.getOutput().get().getAsFile().getAbsolutePath());
         tokens.put("mc_version", mcp.getMCVersion());
         tokens.put("mcp_version", mcp.getArtifact().getVersion());
         tokens.put("mcp_mappings", MAPPING);
-        tokens.put("mcp_to_srg", createSrgToMcp.getOutput().getAbsolutePath());
+        tokens.put("mcp_to_srg", createSrgToMcp.getOutput().get().getAsFile().getAbsolutePath());
 
         if (parent != null && parent.getConfig().runs != null) {
             parent.getConfig().runs.forEach((name, dev) -> {
@@ -233,45 +236,46 @@ public class MinecraftUserRepo extends BaseRepo {
     }
 
     /**
-     * Previously, Configuration.resolve() was called indirectly from
-     * BaseRepo.getArtifact(). Due to the extensive amount of Gradle code that
-     * runs as a result of the resolve() call, deadlock could occur as follows:
+     * <p>Previously, {@link Configuration#resolve()} was called indirectly from
+     * {@link BaseRepo#getArtifact(ArtifactIdentifier)}. Due to the extensive amount of Gradle code that
+     * runs as a result of the {@code resolve()} call, deadlock could occur as follows:</p>
      *
-     * 1. Thread #1: During resolution of a dependency, Gradle calls
-     * BaseRepo#getArtifact(). The 'synchronized' block is entering,
-     * causing a lock to be taken on the artifact name
+     * <ol>
+     * <li>Thread #1: During resolution of a dependency, Gradle calls
+     * {@code BaseRepo#getArtifact()}. The {@code synchronized} block is entering,
+     * causing a lock to be taken on the artifact name.</li>
      *
-     * 2. Thread #2: On a different thread, internal Gradle code takes a lock
-     * in the class org.gradle.internal.event.DefaultListenerManager.EventBroadcast.ListenerDispatch
+     * <li>Thread #2: On a different thread, internal Gradle code takes a lock
+     * in the class {@code org.gradle.internal.event.DefaultListenerManager.EventBroadcast.ListenerDispatch}.</li>
      *
-     * 3. Thread #1: Execution continues on the 'BaseRepo#getArtifact()' call
-     * stack, reaching the call to Configuration.resolve(). This call leads
+     * <li>Thread #1: Execution continues on the {@code BaseRepo#getArtifact()} call
+     * stack, reaching the call to {@code Configuration#resolve()}. This call leads
      * to Gradle internally dispatching events through the same class
-     * org.gradle.internal.event.DefaultListenerManager.EventBroadcast.ListenerDispatch.
-     * This thread is now blocked on the internal Gradle lock taken by Thread #2
+     * {@code DefaultListenerManager.EventBroadcast.ListenerDispatch}.
+     * This thread is now blocked on the internal Gradle lock taken by Thread #2.</li>
      *
-     * 4. Thread #2: Execution continues, and attempts to resolve the same
+     * <li>Thread #2: Execution continues, and attempts to resolve the same
      * dependency that Thread #1 is currently resolving. Since Thread #1 is
-     * still in the 'synchronized' block with the same artifact name, Thread #2
-     * blocks.
+     * still in the {@code synchronized} block with the same artifact name, Thread #2
+     * blocks.</li>
+     * </ol>
      *
-     * These threads are now deadlocked: Thread #1 is holding the
-     * BaseRepo#getArtifact lock while waiting on an internal Gradle lock,
+     * <p>These threads are now deadlocked: Thread #1 is holding the
+     * {@code BaseRepo#getArtifact} lock while waiting on an internal Gradle lock,
      * while Thread #2 is holding the same internal Gradle lock while waiting
-     * on the BaseRepo#getArtifact lock.
+     * on the {@code BaseRepo#getArtifact} lock.</p>
      *
-     * Visit https://git.io/fhHLk to see a stack dump showing this deadlock
+     * <p>Visit <a href="https://git.io/fhHLk">https://git.io/fhHLk</a> to see a stack dump showing this deadlock.</p>
      *
-     * Fortunately, the solution is fairly simply. We can move the entire
+     * <p>Fortunately, the solution is fairly simply. We can move the entire
      * dependency creation/resolution block to an earlier point in
-     * ForgeGradle's execution. Since the client 'data'/'extra'/libraries only
+     * ForgeGradle's execution. Since the client {@code data}/{@code extra}/libraries only
      * depend on the MCP config file, we can do this during plugin
-     * initialization.
+     * initialization.</p>
      *
-     * This has the added benefit of speeding up ForgeGradle - this block of
+     * <p>This has the added benefit of speeding up ForgeGradle - this block of
      * code will only be executed once, instead of during every call to
-     * compileJava
-     * @return
+     * {@code compileJava}.</p>
      */
     private Set<File> buildExtraDataFiles() {
         Configuration cfg = project.getConfigurations().create(getNextTaskName("compileJava"));
@@ -294,10 +298,10 @@ public class MinecraftUserRepo extends BaseRepo {
     private File cacheRaw(String classifier, String ext) {
         return cache(GROUP.replace('.', File.separatorChar), NAME, VERSION, NAME + '-' + VERSION + '-' + classifier + '.' + ext);
     }
-    private File cacheMapped(String mapping, String ext) {
+    private File cacheMapped(@Nullable String mapping, String ext) {
         return cache(GROUP.replace('.', File.separatorChar), NAME, getVersion(mapping), NAME + '-' + getVersion(mapping) + '.' + ext);
     }
-    private File cacheMapped(String mapping, String classifier, String ext) {
+    private File cacheMapped(@Nullable String mapping, String classifier, String ext) {
         return cache(GROUP.replace('.', File.separatorChar), NAME, getVersion(mapping), NAME + '-' + getVersion(mapping) + '-' + classifier + '.' + ext);
     }
     private File cacheAT(String classifier, String ext) {
@@ -314,21 +318,23 @@ public class MinecraftUserRepo extends BaseRepo {
         return ret;
     }
 
+    @Nullable
     private String getATHash(String version) {
         if (!version.contains("_at_"))
             return null;
         return version.split("_at_")[1];
     }
+    @Nullable
     private String getMappings(String version) {
         if (!version.contains("_mapped_"))
             return null;
         return version.split("_mapped_")[1];
     }
 
-    private String getVersion(String mappings) {
+    private String getVersion(@Nullable String mappings) {
         return mappings == null ? VERSION : VERSION + "_mapped_" + mappings;
     }
-    private String getVersionWithAT(String mappings) {
+    private String getVersionWithAT(@Nullable String mappings) {
         if (AT_HASH == null) return getVersion(mappings);
         return getVersion(mappings) + "_at_" + AT_HASH;
     }
@@ -418,7 +424,7 @@ public class MinecraftUserRepo extends BaseRepo {
         }
     }
 
-    private HashStore commonHash(File mapping) {
+    private HashStore commonHash(@Nullable File mapping) {
         getParents();
         HashStore ret = new HashStore(this.getCacheRoot());
         ret.add(mcp.artifact.getDescriptor(), mcp.getZip());
@@ -435,7 +441,8 @@ public class MinecraftUserRepo extends BaseRepo {
         return ret;
     }
 
-    private File findMapping(String mapping) {
+    @Nullable
+    private File findMapping(@Nullable String mapping) {
         if (mapping == null) {
             debug("  FindMappings: Null mappings");
             return null;
@@ -457,7 +464,8 @@ public class MinecraftUserRepo extends BaseRepo {
         return ret;
     }
 
-    private File findPom(String mapping, String rand) throws IOException {
+    @Nullable
+    private File findPom(@Nullable String mapping, String rand) throws IOException {
         getParents(); //Download parents
         if (mcp == null || mapping == null) {
             debug("  Finding Pom: MCP or Mappings were null");
@@ -534,7 +542,8 @@ public class MinecraftUserRepo extends BaseRepo {
         return ret;
     }
 
-    private File findRaw(String mapping) throws IOException {
+    @Nullable
+    private File findRaw(@Nullable String mapping) throws IOException {
         File names = findMapping(mapping);
         HashStore cache = commonHash(names)
             .add("codever", "2");
@@ -583,13 +592,13 @@ public class MinecraftUserRepo extends BaseRepo {
                 mcinject = cacheRaw("mci", "jar");
 
                 debug("    Applying MCInjector");
-                //Apply MCInjector so we can compile against this jar
+                // Apply MCInjector so we can compile against this jar
                 ApplyMCPFunction mci = createTask("mciJar", ApplyMCPFunction.class);
-                mci.setFunctionName("mcinject");
+                mci.getFunctionName().set("mcinject");
                 mci.setHasLog(false);
-                mci.setInput(srged);
-                mci.setMCP(mcp.getZip());
-                mci.setOutput(mcinject);
+                mci.getInput().set(srged);
+                mci.getMCP().set(mcp.getZip());
+                mci.getOutput().set(mcinject);
                 mci.apply();
             }
 
@@ -600,7 +609,7 @@ public class MinecraftUserRepo extends BaseRepo {
                  ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(inject_src)) ) {
                 String prefix = mcp.wrapper.getConfig().getData("inject");
                 String template = null;
-                ZipEntry entry = null;
+                ZipEntry entry;
                 while ((entry = zin.getNextEntry()) != null) {
                     if (!entry.getName().startsWith(prefix) || entry.isDirectory())
                         continue;
@@ -669,16 +678,16 @@ public class MinecraftUserRepo extends BaseRepo {
 
                 debug("    Applying Access Transformer");
                 AccessTransformJar at = createTask("atJar", AccessTransformJar.class);
-                at.setInput(injected);
-                at.setOutput(bin);
-                at.setAts(ATS);
+                at.getInput().set(injected);
+                at.getOutput().set(bin);
+                at.getAccessTransformers().from(ATS);
 
                 if (baseAT.length() != 0) {
                     File parentAT = project.file("build/" + at.getName() + "/parent_at.cfg");
                     if (!parentAT.getParentFile().exists())
                         parentAT.getParentFile().mkdirs();
                     Files.write(parentAT.toPath(), baseAT.toString().getBytes(StandardCharsets.UTF_8));
-                    at.setAts(parentAT);
+                    at.getAccessTransformers().from(parentAT);
                 }
 
                 at.apply();
@@ -691,17 +700,17 @@ public class MinecraftUserRepo extends BaseRepo {
                 //Remap library to MCP names, in place, sorta hacky with ATs but it should work.
                 RenameJarInPlace rename = createTask("renameJarInPlace", RenameJarInPlace.class);
                 rename.setHasLog(false);
-                rename.setInput(bin);
-                rename.setMappings(findSrgToMcp(mapping, names));
+                rename.getInput().set(bin);
+                rename.getMappings().set(findSrgToMcp(mapping, names));
                 rename.apply();
             } else {
                 debug("    Renaming injected jar");
                 //Remap library to MCP names
                 RenameJar rename = createTask("renameJar", RenameJar.class);
                 rename.setHasLog(false);
-                rename.setInput(injected);
-                rename.setOutput(bin);
-                rename.setMappings(findSrgToMcp(mapping, names));
+                rename.getInput().set(injected);
+                rename.getOutput().set(bin);
+                rename.getMappings().set(findSrgToMcp(mapping, names));
                 rename.apply();
             }
 
@@ -712,6 +721,7 @@ public class MinecraftUserRepo extends BaseRepo {
         return bin;
     }
 
+    @Nullable
     private File findBinpatched(final Set<String> packages) throws IOException {
         boolean notch = parent != null && parent.getConfigV2() != null && parent.getConfigV2().getNotchObf();
 
@@ -767,11 +777,11 @@ public class MinecraftUserRepo extends BaseRepo {
             //Apply bin patches to vanilla
             ApplyBinPatches apply = createTask("applyBinpatches", ApplyBinPatches.class);
             apply.setHasLog(true);
-            apply.setTool(parent.getConfig().binpatcher.getVersion());
-            apply.setArgs(parent.getConfig().binpatcher.getArgs());
-            apply.setClean(clean);
-            apply.setPatch(findBinPatches());
-            apply.setOutput(binpatched);
+            apply.getTool().set(parent.getConfig().binpatcher.getVersion());
+            apply.getArgs().set(parent.getConfig().binpatcher.getArgs());
+            apply.getClean().set(clean);
+            apply.getPatch().set(findBinPatches());
+            apply.getOutput().set(binpatched);
             apply.apply();
 
             debug("    Injecting binpatch extras");
@@ -807,9 +817,9 @@ public class MinecraftUserRepo extends BaseRepo {
                 //Remap to SRG names
                 RenameJar rename = createTask("renameJar", RenameJar.class);
                 rename.setHasLog(false);
-                rename.setInput(merged);
-                rename.setOutput(srged);
-                rename.setMappings(obf2Srg);
+                rename.getInput().set(merged);
+                rename.getOutput().set(srged);
+                rename.getMappings().set(obf2Srg);
                 rename.apply();
                 return srged;
             } else {
@@ -923,7 +933,7 @@ public class MinecraftUserRepo extends BaseRepo {
         return file;
     }
 
-    private File findSrgToMcp(String mapping, File names) throws IOException {
+    private File findSrgToMcp(String mapping, @Nullable File names) throws IOException {
         if (names == null) {
             debug("Attempted to create SRG to MCP with null MCP mappings: " + mapping);
             throw new IllegalArgumentException("Attempted to create SRG to MCP with null MCP mappings: " + mapping);
@@ -974,6 +984,7 @@ public class MinecraftUserRepo extends BaseRepo {
         return obf_to_srg;
     }
 
+    @Nullable
     private File findDecomp(boolean generate) throws IOException {
         HashStore cache = commonHash(null);
 
@@ -989,10 +1000,10 @@ public class MinecraftUserRepo extends BaseRepo {
             if (parent != null && parent.getConfigV2() != null && parent.getConfigV2().processor != null) {
                 DataFunction data = parent.getConfigV2().processor;
                 DynamicJarExec proc = createTask("postProcess", DynamicJarExec.class);
-                proc.setInput(output);
-                proc.setOutput(decomp);
-                proc.setTool(data.getVersion());
-                proc.setArgs(data.getArgs());
+                proc.getInput().set(output);
+                proc.getOutput().set(decomp);
+                proc.getTool().set(data.getVersion());
+                proc.getArgs().set(data.getArgs());
 
                 if (data.getData() != null) {
                     File root = project.file("build/" + proc.getName());
@@ -1003,7 +1014,7 @@ public class MinecraftUserRepo extends BaseRepo {
                         for (Entry<String, String> ent : data.getData().entrySet()) {
                             File target = new File(root, ent.getValue());
                             Utils.extractFile(zip, ent.getValue(), target);
-                            proc.setData(ent.getKey(), target);
+                            proc.getData().put(ent.getKey(), target);
                         }
                     }
                 }
@@ -1018,6 +1029,7 @@ public class MinecraftUserRepo extends BaseRepo {
         return decomp.exists() ? decomp : null;
     }
 
+    @Nullable
     private File findPatched(boolean generate) throws IOException {
         File decomp = findDecomp(generate);
         if (decomp == null || !decomp.exists()) {
@@ -1109,7 +1121,8 @@ public class MinecraftUserRepo extends BaseRepo {
         return patched.exists() ? patched : null;
     }
 
-    private File findSource(String mapping, boolean generate) throws IOException {
+    @Nullable
+    private File findSource(@Nullable String mapping, boolean generate) throws IOException {
         File patched = findPatched(generate);
         if (patched == null || !patched.exists()) {
             debug("  Finding Source: Patched not found");
@@ -1177,7 +1190,8 @@ public class MinecraftUserRepo extends BaseRepo {
         return sources.exists() ? sources : null;
     }
 
-    private File findRecomp(String mapping, boolean generate) throws IOException {
+    @Nullable
+    private File findRecomp(@Nullable String mapping, boolean generate) throws IOException {
         File source = findSource(mapping, generate);
         if (source == null || !source.exists()) {
             debug("  Finding Recomp: Sources not found");
@@ -1232,7 +1246,8 @@ public class MinecraftUserRepo extends BaseRepo {
         return recomp;
     }
 
-    private File findExtraClassifier(String mapping, String classifier, String extension) throws IOException {
+    @Nullable
+    private File findExtraClassifier(@Nullable String mapping, String classifier, String extension) throws IOException {
         //These are extra classifiers shipped by the normal repo. Except that gradle doesn't allow two artifacts with the same group:name
         // but different version. For good reason. So we change their version to ours. And provide them as is.
 
@@ -1273,6 +1288,7 @@ public class MinecraftUserRepo extends BaseRepo {
     }
 
     private int compileTaskCount = 1;
+    @Nullable
     private File compileJava(File source, File... extraDeps) {
         HackyJavaCompile compile = createTask("compileJava", HackyJavaCompile.class);
         try {
@@ -1290,7 +1306,7 @@ public class MinecraftUserRepo extends BaseRepo {
             String target = String.valueOf(mcp.wrapper.getConfig().getJavaTarget());
             compile.setSourceCompatibility(target);
             compile.setTargetCompatibility(target);
-            compile.setDestinationDir(output);
+            compile.getDestinationDirectory().set(output);
             compile.setSource(source.isDirectory() ? project.fileTree(source) : project.zipTree(source));
 
             compile.doHackyCompile();
@@ -1306,10 +1322,13 @@ public class MinecraftUserRepo extends BaseRepo {
 
     private static class Patcher {
         private final File data;
+        @Nullable
         private final File universal;
+        @Nullable
         private final File sources;
         private final Artifact artifact;
         private final UserdevConfigV1 config;
+        @Nullable
         private final UserdevConfigV2 configv2;
         private Patcher parent;
         private String ATs = null;
@@ -1360,6 +1379,7 @@ public class MinecraftUserRepo extends BaseRepo {
         public UserdevConfigV1 getConfig() {
             return config;
         }
+        @Nullable
         public UserdevConfigV2 getConfigV2() {
             return this.configv2;
         }
@@ -1374,6 +1394,7 @@ public class MinecraftUserRepo extends BaseRepo {
             return this.parent;
         }
 
+        @Nullable
         public String getParentDesc() {
             return this.config.mcp != null ? this.config.mcp : this.config.parent;
         }
@@ -1382,6 +1403,7 @@ public class MinecraftUserRepo extends BaseRepo {
             return this.config.libraries == null ? Collections.emptyList() : this.config.libraries;
         }
 
+        @Nullable
         public String getATData() {
             if (config.getATs().isEmpty())
                 return null;
@@ -1405,6 +1427,7 @@ public class MinecraftUserRepo extends BaseRepo {
             return ATs;
         }
 
+        @Nullable
         public String getSASData() {
             if (config.getSASs().isEmpty())
                 return null;
@@ -1431,14 +1454,15 @@ public class MinecraftUserRepo extends BaseRepo {
         public File getZip() {
             return data;
         }
-
+        @Nullable
         public File getUniversal() {
             return universal;
         }
+        @Nullable
         public File getSources() {
             return sources;
         }
-
+        @Nullable
         public String getInject() {
             return config.inject;
         }
@@ -1539,7 +1563,7 @@ public class MinecraftUserRepo extends BaseRepo {
             return wrapper.getConfig().getLibraries("joined");
         }
 
-        public File getStepOutput(String side, String step) throws IOException {
+        public File getStepOutput(String side, @Nullable String step) throws IOException {
             MCPRuntime runtime = wrapper.getRuntime(project, side);
             try {
                 return runtime.execute(log, step);

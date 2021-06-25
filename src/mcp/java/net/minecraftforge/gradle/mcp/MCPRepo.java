@@ -26,11 +26,8 @@ import net.minecraftforge.artifactural.api.repository.Repository;
 import net.minecraftforge.artifactural.base.repository.ArtifactProviderBuilder;
 import net.minecraftforge.artifactural.base.repository.SimpleRepository;
 import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
-import com.google.common.collect.Maps;
-
-import de.siegmar.fastcsv.writer.CsvWriter;
-import de.siegmar.fastcsv.writer.LineDelimiter;
 import net.minecraftforge.gradle.common.util.BaseRepo;
+import net.minecraftforge.gradle.common.util.DownloadUtils;
 import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.ManifestJson;
@@ -43,15 +40,18 @@ import net.minecraftforge.gradle.common.util.VersionJson;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import net.minecraftforge.gradle.mcp.util.MCPWrapper;
 import net.minecraftforge.srgutils.IMappingFile;
-import net.minecraftforge.srgutils.IRenamer;
 import net.minecraftforge.srgutils.IMappingFile.IClass;
 import net.minecraftforge.srgutils.IMappingFile.IField;
 import net.minecraftforge.srgutils.IMappingFile.IMethod;
+import net.minecraftforge.srgutils.IRenamer;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
+import com.google.common.collect.Maps;
+import de.siegmar.fastcsv.writer.CsvWriter;
+import de.siegmar.fastcsv.writer.LineDelimiter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -65,6 +65,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.zip.ZipOutputStream;
+
+import javax.annotation.Nullable;
 
 /**
  * Provides the following artifacts:
@@ -135,13 +137,13 @@ public class MCPRepo extends BaseRepo {
         return getInstance(project);
     }
 
-    private File cacheMC(String side, String version, String classifier, String ext) {
+    private File cacheMC(String side, String version, @Nullable String classifier, String ext) {
         if (classifier != null)
             return cache("net", "minecraft", side, version, side + '-' + version + '-' + classifier + '.' + ext);
         return cache("net", "minecraft", side, version, side + '-' + version + '.' + ext);
     }
 
-    private File cacheMCP(String version, String classifier, String ext) {
+    private File cacheMCP(String version, @Nullable String classifier, String ext) {
         if (classifier != null)
             return cache("de", "oceanlabs", "mcp", "mcp_config", version, "mcp_config-" + version + '-' + classifier + '.' + ext);
         return cache("de", "oceanlabs", "mcp", "mcp_config", version, "mcp_config-" + version + '.' + ext);
@@ -210,13 +212,15 @@ public class MCPRepo extends BaseRepo {
             .add("mcp", mcp);
     }
 
-    private File getMCP(String version) throws IOException {
+    @Nullable
+    private File getMCP(String version) {
         return MavenArtifactDownloader.manual(project, "de.oceanlabs.mcp:mcp_config:" + version + "@zip", false);
     }
 
+    @Nullable
     private File findVersion(String version) throws IOException {
         File manifest = cache("versions", "manifest.json");
-        if (!Utils.downloadEtag(new URL(MinecraftRepo.MANIFEST_URL), manifest, project.getGradle().getStartParameter().isOffline()))
+        if (!DownloadUtils.downloadEtag(new URL(MinecraftRepo.MANIFEST_URL), manifest, project.getGradle().getStartParameter().isOffline()))
             return null;
         Utils.updateHash(manifest);
         File json = cache("versions", version, "version.json");
@@ -225,12 +229,13 @@ public class MCPRepo extends BaseRepo {
         if (url == null)
             throw new RuntimeException("Missing version from manifest: " + version);
 
-        if (!Utils.downloadEtag(url, json, project.getGradle().getStartParameter().isOffline()))
+        if (!DownloadUtils.downloadEtag(url, json, project.getGradle().getStartParameter().isOffline()))
             return null;
         Utils.updateHash(json);
         return json;
     }
 
+    @Nullable
     private File findPom(String side, String version) throws IOException {
         File mcp = getMCP(version);
         if (mcp == null)
@@ -288,6 +293,7 @@ public class MCPRepo extends BaseRepo {
         return pom;
     }
 
+    @Nullable
     private File findRaw(String side, String version) throws IOException {
         if (!"joined".equals(side))
             return null; //MinecraftRepo provides these
@@ -295,11 +301,13 @@ public class MCPRepo extends BaseRepo {
         return findStepOutput(side, version, null, "jar", STEP_MERGE);
     }
 
+    @Nullable
     private File findSrg(String side, String version) throws IOException {
         return findStepOutput(side, version, "srg", "jar", STEP_RENAME);
     }
 
-    private File findStepOutput(String side, String version, String classifier, String ext, String step) throws IOException {
+    @Nullable
+    private File findStepOutput(String side, String version, @Nullable String classifier, String ext, String step) throws IOException {
         File mcp = getMCP(version);
         if (mcp == null)
             return null;
@@ -337,6 +345,7 @@ public class MCPRepo extends BaseRepo {
         return ret;
     }
 
+    @Nullable
     private File findRenames(String classifier, IMappingFile.Format format, String version, boolean toObf) throws IOException {
         String ext = format.name().toLowerCase();
         //File names = findNames(version));
@@ -360,6 +369,7 @@ public class MCPRepo extends BaseRepo {
         return file;
     }
 
+    @Nullable
     private File findNames(String mapping) throws IOException {
         int idx = mapping.lastIndexOf('_');
         if (idx == -1) return null; //Invalid format
@@ -388,6 +398,7 @@ public class MCPRepo extends BaseRepo {
     }
 
     @SuppressWarnings("unused")
+    @Nullable
     private File findRenames(String classifier, IMappingFile.Format format, String version, String mapping, boolean obf, boolean reverse) throws IOException {
         String ext = format.name().toLowerCase();
         File names = findNames(version);
@@ -427,6 +438,7 @@ public class MCPRepo extends BaseRepo {
         return file;
     }
 
+    @Nullable
     private File findExtra(String side, String version) throws IOException {
         File raw = findRaw(side, version);
         File mcp = getMCP(version);
@@ -449,6 +461,7 @@ public class MCPRepo extends BaseRepo {
         return extra;
     }
 
+    @Nullable
     private File findOfficialMapping(String version) throws IOException {
         String mcpversion = version;
         int idx = version.lastIndexOf('-');
@@ -558,13 +571,13 @@ public class MCPRepo extends BaseRepo {
                  ZipOutputStream out = new ZipOutputStream(fos)) {
 
                 out.putNextEntry(Utils.getStableEntry("fields.csv"));
-                try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWritter(out))) {
+                try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWriter(out))) {
                     fields.forEach(writer::writeRow);
                 }
                 out.closeEntry();
 
                 out.putNextEntry(Utils.getStableEntry("methods.csv"));
-                try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWritter(out))) {
+                try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWriter(out))) {
                     methods.forEach(writer::writeRow);
                 }
                 out.closeEntry();
@@ -578,8 +591,8 @@ public class MCPRepo extends BaseRepo {
         return mappings;
     }
 
-    private class UncloseableOutputStreamWritter extends OutputStreamWriter {
-        public UncloseableOutputStreamWritter(OutputStream out) {
+    private static class UncloseableOutputStreamWriter extends OutputStreamWriter {
+        public UncloseableOutputStreamWriter(OutputStream out) {
             super(out);
         }
 
@@ -589,6 +602,7 @@ public class MCPRepo extends BaseRepo {
         }
     }
 
+    @Nullable
     private File findEmptyPom(String side, String version) throws IOException {
         File pom = cacheMC(side, version, null, "pom");
         debug("    Finding pom: " + pom);

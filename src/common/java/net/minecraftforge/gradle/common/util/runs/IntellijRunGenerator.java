@@ -22,8 +22,9 @@ package net.minecraftforge.gradle.common.util.runs;
 
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
+
 import org.gradle.api.Project;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
@@ -32,13 +33,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -48,6 +42,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 
 public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBuilder
 {
@@ -215,7 +217,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
     private static Stream<String> mapModClassesToIdea(@Nonnull final Project project, @Nonnull final RunConfig runConfig) {
         final IdeaModel idea = project.getExtensions().findByType(IdeaModel.class);
 
-        JavaPluginConvention javaPlugin = project.getConvention().getPlugin(JavaPluginConvention.class);
+        JavaPluginExtension javaPlugin = project.getExtensions().getByType(JavaPluginExtension.class);
         SourceSetContainer sourceSets = javaPlugin.getSourceSets();
         final SourceSet main = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
         if (runConfig.getMods().isEmpty()) {

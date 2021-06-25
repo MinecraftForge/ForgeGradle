@@ -20,14 +20,14 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.Project;
+import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.tasks.SourceSet;
+
 import groovy.lang.Closure;
 import groovy.lang.GroovyObjectSupport;
 import groovy.util.MapEntry;
-import org.gradle.api.NamedDomainObjectContainer;
-import org.gradle.api.Project;
-import org.gradle.api.plugins.JavaPluginConvention;
-import org.gradle.api.tasks.SourceSet;
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -40,9 +40,11 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.annotation.Nullable;
+
 public class RunConfig extends GroovyObjectSupport implements Serializable {
 
-    public static final String RUNS_GROUP = "fg_runs";
+    public static final String RUNS_GROUP = "ForgeGradle runs";
 
     private static final String MCP_CLIENT_MAIN = "mcp.client.Start";
     private static final String MC_CLIENT_MAIN = "net.minecraft.client.main.Main";
@@ -542,7 +544,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         sources = sources.stream().distinct().collect(Collectors.toList());
 
         if (sources.isEmpty()) {
-            final JavaPluginConvention main = project.getConvention().getPlugin(JavaPluginConvention.class);
+            final JavaPluginExtension main = project.getExtensions().getByType(JavaPluginExtension.class);
 
             sources.add(main.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME));
         }

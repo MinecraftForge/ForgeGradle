@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
+
 public class HashStore {
     private final boolean INVALIDATE_CACHE = System.getProperty("FG_INVALIDATE_CACHE", "false").equals("true");
     private final int RAND_CACHE = new Random().nextInt();
@@ -113,7 +115,7 @@ public class HashStore {
         return this;
     }
 
-    public HashStore add(String key, File file) {
+    public HashStore add(@Nullable String key, File file) {
         try {
             newHashes.put(key == null ? getPath(file) : key, HashFunction.SHA1.hash(file));
         } catch (IOException e) {

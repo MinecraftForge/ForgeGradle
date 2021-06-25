@@ -20,17 +20,9 @@
 
 package net.minecraftforge.gradle.common.util;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonSyntaxException;
-
-import groovy.lang.Closure;
 import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
-import net.minecraftforge.gradle.common.task.ExtractNatives;
+import net.minecraftforge.gradle.common.tasks.ExtractNatives;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import net.minecraftforge.gradle.common.util.runs.RunConfigGenerator;
 
@@ -39,29 +31,26 @@ import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.TaskProvider;
-import org.gradle.util.GradleVersion;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLException;
-
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
+import groovy.lang.Closure;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -72,14 +61,12 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.Callable;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
@@ -91,23 +78,23 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 public class Utils {
-    private static final boolean ENABLE_TEST_CERTS = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_certs", "true"));
-    private static final boolean ENABLE_TEST_GRADLE = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_gradle", "true"));
-    private static final boolean ENABLE_TEST_JAVA  = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.test_java", "true"));
     private static final boolean ENABLE_FILTER_REPOS = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.filter_repos", "true"));
 
     public static final Gson GSON = new GsonBuilder()
         .registerTypeAdapter(MCPConfigV1.Step.class, new MCPConfigV1.Step.Deserializer())
         .registerTypeAdapter(VersionJson.Argument.class, new VersionJson.Argument.Deserializer())
         .setPrettyPrinting().create();
-    private static final int CACHE_TIMEOUT = 1000 * 60 * 60 * 1; //1 hour, Timeout used for version_manifest.json so we dont ping their server every request.
+    static final int CACHE_TIMEOUT = 1000 * 60 * 60; //1 hour, Timeout used for version_manifest.json so we dont ping their server every request.
                                                           //manifest doesn't include sha1's so we use this for the per-version json as well.
     public static final String FORGE_MAVEN = "https://maven.minecraftforge.net/";
     public static final String MOJANG_MAVEN = "https://libraries.minecraft.net/";
     public static final String BINPATCHER =  "net.minecraftforge:binarypatcher:1.+:fatjar";
     public static final String ACCESSTRANSFORMER = "net.minecraftforge:accesstransformers:3.0.+:fatjar";
-    public static final String SPECIALSOURCE = "net.md-5:SpecialSource:1.9.0:shaded";
+    public static final String SPECIALSOURCE = "net.md-5:SpecialSource:1.10.0:shaded";
     public static final String SRG2SOURCE =  "net.minecraftforge:Srg2Source:7.+:fatjar";
     public static final String SIDESTRIPPER = "net.minecraftforge:mergetool:1.1.3:fatjar";
     public static final String INSTALLERTOOLS = "net.minecraftforge:installertools:1.1.10:fatjar";
@@ -167,7 +154,7 @@ public class Utils {
     }
 
     public static File createEmpty(File file) throws IOException {
-        file = delete(file);
+        delete(file);
         file.createNewFile();
         return file;
     }
@@ -248,7 +235,7 @@ public class Utils {
             return GSON.fromJson(new InputStreamReader(in), clz);
         }
     }
-    public static <T> T loadJson(InputStream in, Class<T> clz) throws IOException {
+    public static <T> T loadJson(InputStream in, Class<T> clz) {
         return GSON.fromJson(new InputStreamReader(in), clz);
     }
 
@@ -273,8 +260,8 @@ public class Utils {
         }
     }
     @FunctionalInterface
-    public static interface IOConsumer<T> {
-        public void accept(T value) throws IOException;
+    public interface IOConsumer<T> {
+        void accept(T value) throws IOException;
     }
 
     /**
@@ -288,7 +275,8 @@ public class Utils {
      * @return resolved string
      */
     @SuppressWarnings("rawtypes")
-    public static String resolveString(Object obj) {
+    @Nullable
+    public static String resolveString(@Nullable Object obj) {
         if (obj == null)
             return null;
         else if (obj instanceof String) // stop early if its the right type. no need to do more expensive checks
@@ -346,265 +334,9 @@ public class Utils {
         return GSON.fromJson(new InputStreamReader(new ByteArrayInputStream(data)), classOfT);
     }
 
-    public static boolean downloadEtag(URL url, File output, boolean offline) throws IOException {
-        if (output.exists() && output.lastModified() > System.currentTimeMillis() - CACHE_TIMEOUT) {
-            return true;
-        }
-        if (output.exists() && offline) {
-            return true; //Use offline
-        }
-        File efile = new File(output.getAbsolutePath() + ".etag");
-        String etag = "";
-        if (efile.exists())
-            etag = new String(Files.readAllBytes(efile.toPath()), StandardCharsets.UTF_8);
-
-        final String initialEtagValue = etag;
-        HttpURLConnection con = connectHttpWithRedirects(url, (setupCon) -> {
-            if (output.exists())
-                setupCon.setIfModifiedSince(output.lastModified());
-            if (!initialEtagValue.isEmpty())
-                setupCon.setRequestProperty("If-None-Match", initialEtagValue);
-        });
-
-        if (con.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED) {
-            output.setLastModified(new Date().getTime());
-            return true;
-        } else if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
-            try {
-                InputStream stream = con.getInputStream();
-                int len = con.getContentLength();
-                int read = -1;
-                output.getParentFile().mkdirs();
-                try (FileOutputStream out = new FileOutputStream(output)) {
-                    read = IOUtils.copy(stream, out);
-                }
-
-                if (read != len) {
-                    output.delete();
-                    throw new IOException("Failed to read all of data from " + url + " got " + read + " expected " + len);
-                }
-
-                etag = con.getHeaderField("ETag");
-                if (etag == null || etag.isEmpty())
-                    Files.write(efile.toPath(), new byte[0]);
-                else
-                    Files.write(efile.toPath(), etag.getBytes(StandardCharsets.UTF_8));
-                return true;
-            } catch (IOException e) {
-                output.delete();
-                throw e;
-            }
-        }
-        return false;
-    }
-
-    public static boolean downloadFile(URL url, File output, boolean deleteOn404) {
-        String proto = url.getProtocol().toLowerCase();
-
-        try {
-            if ("http".equals(proto) || "https".equals(proto)) {
-                HttpURLConnection con = connectHttpWithRedirects(url);
-                int responseCode = con.getResponseCode();
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    return downloadFile(con, output);
-                } else if (responseCode == HttpURLConnection.HTTP_NOT_FOUND && deleteOn404 && output.exists()) {
-                    output.delete();
-                }
-            } else {
-                URLConnection con = url.openConnection();
-                con.connect();
-                return downloadFile(con, output);
-            }
-        } catch (FileNotFoundException e) {
-            if (deleteOn404 && output.exists())
-                output.delete();
-        } catch (IOException e) {
-            //Invalid URLs/File paths will cause FileNotFound or 404 errors.
-            //As well as any errors during download.
-            //So delete the output if it exists as it's invalid, and return false
-            if (output.exists())
-                output.delete();
-        }
-
-        return false;
-    }
-
-    private static boolean downloadFile(URLConnection con, File output) throws IOException {
-        try {
-            InputStream stream = con.getInputStream();
-            int len = con.getContentLength();
-            int read = -1;
-
-            output.getParentFile().mkdirs();
-
-            try (FileOutputStream out = new FileOutputStream(output)) {
-                read = IOUtils.copy(stream, out);
-            }
-
-            if (read != len) {
-                output.delete();
-                throw new IOException("Failed to read all of data from " + con.getURL() + " got " + read + " expected " + len);
-            }
-
-            return true;
-        } catch (IOException e) {
-            output.delete();
-            throw e;
-        }
-    }
-
-    public static String downloadString(URL url) throws IOException {
-        String proto = url.getProtocol().toLowerCase();
-
-        if ("http".equals(proto) || "https".equals(proto)) {
-            HttpURLConnection con = connectHttpWithRedirects(url);
-            if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                return downloadString(con);
-            }
-        } else {
-            URLConnection con = url.openConnection();
-            con.connect();
-            return downloadString(con);
-        }
-        return null;
-    }
-
-    private static String downloadString(URLConnection con) throws IOException {
-        InputStream stream = con.getInputStream();
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        int len = con.getContentLength();
-        int read = IOUtils.copy(stream, out);
-        if (read != len)
-            throw new IOException("Failed to read all of data from " + con.getURL() + " got " + read + " expected " + len);
-        return new String(out.toByteArray(), StandardCharsets.UTF_8); //Read encoding from header?
-    }
-
-    public static File downloadWithCache(URL url, File target, boolean changing, boolean bypassLocal) throws IOException {
-        File md5_file = new File(target.getAbsolutePath() + ".md5");
-        String actual = target.exists() ? HashFunction.MD5.hash(target) : null;
-
-        if (target.exists() && !(changing || bypassLocal)) {
-            String expected = md5_file.exists() ? new String(Files.readAllBytes(md5_file.toPath()), StandardCharsets.UTF_8) : null;
-            if (expected == null || expected.equals(actual))
-                return target;
-            target.delete();
-        }
-
-        String expected = null;
-        try {
-            expected = downloadString(new URL(url.toString() + ".md5"));
-        } catch (IOException e) {
-            //Eat it, some repos don't have a simple checksum.
-        }
-        if (expected == null && bypassLocal) return null; // Ignore local file if the remote doesn't have it.
-        if (expected == null && target.exists()) return target; //Assume we're good cuz they didn't have a MD5 on the server.
-        if (expected != null && expected.equals(actual)) return target;
-
-        if (target.exists())
-            target.delete(); //Invalid checksum, delete and grab new
-
-        if (!downloadFile(url, target, false)) {
-            target.delete();
-            return null;
-        }
-
-        updateHash(target, HashFunction.MD5);
-        return target;
-    }
-
     @Nonnull
-    public static final String capitalize(@Nonnull final String toCapitalize) {
+    public static String capitalize(@Nonnull final String toCapitalize) {
         return toCapitalize.length() > 1 ? toCapitalize.substring(0, 1).toUpperCase() + toCapitalize.substring(1) : toCapitalize;
-    }
-
-    public static void checkJavaRange(@Nullable JavaVersionParser.JavaVersion minVersionInclusive, @Nullable JavaVersionParser.JavaVersion maxVersionExclusive) {
-        checkRange("java", JavaVersionParser.getCurrentJavaVersion(), minVersionInclusive, maxVersionExclusive, "", "");
-    }
-
-    public static void checkGradleRange(@Nullable GradleVersion minVersionInclusive, @Nullable GradleVersion maxVersionExclusive) {
-        checkRange("Gradle", GradleVersion.current(), minVersionInclusive, maxVersionExclusive,
-                "\nNote: Upgrade your gradle version first before trying to switch to FG5.", "");
-    }
-
-    private static <T> void checkRange(String name, Comparable<T> current, @Nullable T minVersionInclusive, @Nullable T maxVersionExclusive, String additionalMin, String additionalMax) {
-        if (minVersionInclusive != null && current.compareTo(minVersionInclusive) < 0)
-            throw new RuntimeException(String.format("Found %s version %s. Minimum required is %s.%s", name, current, minVersionInclusive, additionalMin));
-
-        if (maxVersionExclusive != null && current.compareTo(maxVersionExclusive) >= 0)
-            throw new RuntimeException(String.format("Found %s version %s. Versions %s and newer are not supported yet.%s", name, current, maxVersionExclusive, additionalMax));
-    }
-
-    /**
-     * @deprecated To be removed in FG 4.2, see {@link #checkEnvironment()}
-     */
-    @Deprecated
-    public static void checkJavaVersion() {
-        checkEnvironment();
-    }
-
-    public static void checkEnvironment() {
-        if (ENABLE_TEST_JAVA) {
-            checkJavaRange(
-                // Minimum must be update 101 as it's the first one to include Let's Encrypt certificates.
-                JavaVersionParser.parseJavaVersion("1.8.0_101"),
-                null
-            );
-        }
-
-        if (ENABLE_TEST_GRADLE) {
-            checkGradleRange(
-                GradleVersion.version("7.0"),
-                null
-            );
-        }
-
-        if (ENABLE_TEST_CERTS) {
-            testServerConnection(FORGE_MAVEN);
-            testServerConnection(MOJANG_MAVEN);
-        }
-    }
-
-    private static void testServerConnection(String url) {
-        try {
-            HttpsURLConnection conn = (HttpsURLConnection)new URL(url).openConnection();
-            conn.setRequestMethod("HEAD");
-            conn.connect();
-            conn.getResponseCode();
-        } catch (SSLException e) {
-            throw new RuntimeException(String.format("Failed to validate certificate for %s, Most likely cause is an outdated JDK. Try updating at https://adoptopenjdk.net/ " +
-                    "To disable this check re-run with -Dnet.minecraftforge.gradle.test_certs=false", url), e);
-        } catch (IOException e) {
-            //Normal connection failed, not the point of this test so ignore
-        }
-    }
-
-    public static HttpURLConnection connectHttpWithRedirects(URL url) throws IOException {
-        return connectHttpWithRedirects(url, (setupCon) -> {});
-    }
-
-    public static HttpURLConnection connectHttpWithRedirects(URL url, Consumer<HttpURLConnection> setup) throws IOException {
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setInstanceFollowRedirects(true);
-        setup.accept(con);
-        con.connect();
-        if ("http".equalsIgnoreCase(url.getProtocol())) {
-            int responseCode = con.getResponseCode();
-            switch (responseCode) {
-                case HttpURLConnection.HTTP_MOVED_TEMP:
-                case HttpURLConnection.HTTP_MOVED_PERM:
-                case HttpURLConnection.HTTP_SEE_OTHER:
-                    String newLocation = con.getHeaderField("Location");
-                    URL newUrl = new URL(newLocation);
-                    if ("https".equalsIgnoreCase(newUrl.getProtocol())) {
-                        // Escalate from http to https.
-                        // This is not done automatically by HttpURLConnection.setInstanceFollowRedirects
-                        // See https://bugs.java.com/bugdatabase/view_bug.do?bug_id=4959149
-                        return connectHttpWithRedirects(newUrl, setup);
-                    }
-                    break;
-            }
-        }
-        return con;
     }
 
     public static Stream<String> lines(InputStream input) {
@@ -631,24 +363,22 @@ public class Utils {
         return ret;
     }
 
-    public static void createRunConfigTasks(final MinecraftExtension extension, final ExtractNatives extractNatives, final Task... setupTasks) {
-        List<Task> setupTasksLst = new ArrayList<>(Arrays.asList(setupTasks));
+    public static void createRunConfigTasks(final MinecraftExtension extension, final TaskProvider<ExtractNatives> extractNatives, final TaskProvider<?>... setupTasks) {
+        List<TaskProvider<?>> setupTasksLst = new ArrayList<>(Arrays.asList(setupTasks));
 
         final TaskProvider<Task> prepareRuns = extension.getProject().getTasks().register("prepareRuns", Task.class, task -> {
             task.setGroup(RunConfig.RUNS_GROUP);
-            task.dependsOn(extractNatives);
-            setupTasksLst.forEach(task::dependsOn);
+            task.dependsOn(extractNatives, setupTasksLst);
         });
 
-        final TaskProvider<Task> makeSrcDirs = extension.getProject().getTasks().register("makeSrcDirs", Task.class, task -> {
-            task.doFirst(t -> {
-                final JavaPluginConvention java = task.getProject().getConvention().getPlugin(JavaPluginConvention.class);
+        final TaskProvider<Task> makeSrcDirs = extension.getProject().getTasks().register("makeSrcDirs", Task.class, task ->
+                task.doFirst(t -> {
+                    final JavaPluginExtension java = task.getProject().getExtensions().getByType(JavaPluginExtension.class);
 
-                java.getSourceSets().forEach(s -> s.getAllSource()
-                        .getSrcDirs().stream().filter(f -> !f.exists()).forEach(File::mkdirs));
-            });
-        });
-        setupTasksLst.add(makeSrcDirs.get());
+                    java.getSourceSets().forEach(s -> s.getAllSource()
+                            .getSrcDirs().stream().filter(f -> !f.exists()).forEach(File::mkdirs));
+                }));
+        setupTasksLst.add(makeSrcDirs);
 
         extension.getRuns().forEach(RunConfig::mergeParents);
 
@@ -657,7 +387,7 @@ public class Utils {
             VersionJson json = null;
 
             try {
-                json = Utils.loadJson(extractNatives.getMeta(), VersionJson.class);
+                json = Utils.loadJson(extractNatives.get().getMeta().get().getAsFile(), VersionJson.class);
             } catch (IOException ignored) {
             }
 

@@ -20,6 +20,13 @@
 
 package net.minecraftforge.gradle.common.config;
 
+import net.minecraftforge.gradle.common.util.Utils;
+
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.lang.reflect.Type;
@@ -29,13 +36,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-
-import net.minecraftforge.gradle.common.util.Utils;
+import javax.annotation.Nullable;
 
 public class MCPConfigV1 extends Config {
     public static MCPConfigV1 get(InputStream stream) {
@@ -46,9 +47,13 @@ public class MCPConfigV1 extends Config {
     }
 
     protected String version; // Minecraft version
+    @Nullable
     protected Map<String, Object> data;
+    @Nullable
     protected Map<String, List<Step>> steps;
+    @Nullable
     protected Map<String, Function> functions;
+    @Nullable
     protected Map<String, List<String>> libraries;
 
     public String getVersion() {
@@ -60,6 +65,7 @@ public class MCPConfigV1 extends Config {
     }
 
     @SuppressWarnings("unchecked")
+    @Nullable
     public String getData(String... path) {
         if (data == null)
             return null;
@@ -81,6 +87,7 @@ public class MCPConfigV1 extends Config {
         return ret == null ? Collections.emptyList() : ret;
     }
 
+    @Nullable
     public Function getFunction(String name) {
         return functions == null ? null : functions.get(name);
     }
@@ -97,9 +104,10 @@ public class MCPConfigV1 extends Config {
     public static class Step {
         private final String type;
         private final String name;
+        @Nullable
         private final Map<String, String> values;
 
-        private Step(String type, String name, Map<String, String> values) {
+        private Step(String type, String name, @Nullable Map<String, String> values) {
             this.type = type;
             this.name = name;
             this.values = values;
@@ -117,6 +125,7 @@ public class MCPConfigV1 extends Config {
             return values == null ? Collections.emptyMap() : values;
         }
 
+        @Nullable
         public String getValue(String key) {
             return values == null ? null : values.get(key);
         }
@@ -139,8 +148,11 @@ public class MCPConfigV1 extends Config {
 
     public static class Function {
         protected String version; //Maven artifact for the jar to run
+        @Nullable
         protected String repo; //Maven repo to download the jar from
+        @Nullable
         protected List<String> args;
+        @Nullable
         protected List<String> jvmargs;
 
         public String getVersion() {

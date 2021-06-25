@@ -20,15 +20,6 @@
 
 package net.minecraftforge.gradle.common.util;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
-import org.gradle.api.Project;
-import org.gradle.api.logging.Logger;
-
 import net.minecraftforge.artifactural.api.artifact.Artifact;
 import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
 import net.minecraftforge.artifactural.api.artifact.ArtifactType;
@@ -37,6 +28,17 @@ import net.minecraftforge.artifactural.base.artifact.StreamableArtifact;
 import net.minecraftforge.artifactural.base.repository.ArtifactProviderBuilder;
 import net.minecraftforge.artifactural.base.repository.SimpleRepository;
 import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
+
+import org.gradle.api.Project;
+import org.gradle.api.logging.Logger;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+import javax.annotation.Nullable;
 
 public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
 
@@ -78,7 +80,7 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
             String[] pts  = artifact.getExtension().split("\\.");
 
             String desc = (artifact.getGroup() + ":" + artifact.getName() + ":" + artifact.getVersion() + ":" + artifact.getClassifier() + "@" + pts[0]).intern();
-            File ret = null;
+            File ret;
             synchronized (desc) {
                 if (pts.length == 1)
                     ret = findFile(artifact);
@@ -109,11 +111,12 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
         }
     }
 
+    @Nullable
     protected abstract File findFile(ArtifactIdentifier artifact) throws IOException;
 
     public static class Builder {
         private List<ArtifactProvider<ArtifactIdentifier>> repos = new ArrayList<>();
-        public Builder add(ArtifactProvider<ArtifactIdentifier> repo) {
+        public Builder add(@Nullable ArtifactProvider<ArtifactIdentifier> repo) {
             if (repo != null)
                 repos.add(repo);
             return this;
@@ -122,14 +125,15 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
         public void attach(Project project) {
             int random = new Random().nextInt();
             File cache = Utils.getCache(project, "bundeled_repo");
+            // Java 8's compiler doesn't allow the lambda to be a method reference, but Java 16 allows it
+            // noinspection Convert2MethodRef to prevent IDEA from warning us about it
             GradleRepositoryAdapter.add(project.getRepositories(), "BUNDELED_" + random, cache,
                     SimpleRepository.of(ArtifactProviderBuilder.begin(ArtifactIdentifier.class).provide(
-                            new ArtifactProvider<ArtifactIdentifier>() {
-                                @Override
-                                public Artifact getArtifact(ArtifactIdentifier artifact) {
-                                    return repos.stream().map(repo -> repo.getArtifact(artifact)).filter(Artifact::isPresent).findFirst().orElse(Artifact.none());
-                                }
-                            }
+                            artifact -> repos.stream()
+                                    .map(repo -> repo.getArtifact(artifact))
+                                    .filter(s -> s.isPresent())
+                                    .findFirst()
+                                    .orElse(Artifact.none())
                     ))
             );
         }

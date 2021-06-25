@@ -20,7 +20,11 @@
 
 package net.minecraftforge.gradle.userdev.util;
 
-import net.minecraftforge.gradle.common.util.*;
+import net.minecraftforge.gradle.common.util.HashFunction;
+import net.minecraftforge.gradle.common.util.HashStore;
+import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
+import net.minecraftforge.gradle.common.util.McpNames;
+import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarSrg2Mcp;
 
@@ -30,6 +34,17 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Random;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
+
+import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -43,23 +58,14 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Random;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 
 public class Deobfuscator {
     private final Project project;
-    private File cacheRoot;
+    private final File cacheRoot;
 
-    private DocumentBuilder xmlParser;
-    private XPath xPath;
-    private Transformer xmlTransformer;
+    private final DocumentBuilder xmlParser;
+    private final XPath xPath;
+    private final Transformer xmlTransformer;
 
     public Deobfuscator(Project project, File cacheRoot) {
         this.project = project;
@@ -106,7 +112,8 @@ public class Deobfuscator {
         return output;
     }
 
-    public File deobfBinary(File original, String mappings, String... cachePath) throws IOException {
+    @Nullable
+    public File deobfBinary(File original, @Nullable String mappings, String... cachePath) throws IOException {
         project.getLogger().debug("Deobfuscating binary file {} with mappings {}", original.getName(), mappings);
 
         File names = findMapping(mappings);
@@ -124,9 +131,9 @@ public class Deobfuscator {
 
         if (!cache.isSame() || !output.exists()) {
             RenameJarSrg2Mcp rename = project.getTasks().create("_RenameSrg2Mcp_" + new Random().nextInt(), RenameJarSrg2Mcp.class);
-            rename.setInput(original);
-            rename.setOutput(output);
-            rename.setMappings(names);
+            rename.getInput().set(original);
+            rename.getOutput().set(output);
+            rename.getMappings().set(names);
             rename.setSignatureRemoval(true);
             rename.apply();
             rename.setEnabled(false);
@@ -138,7 +145,8 @@ public class Deobfuscator {
         return output;
     }
 
-    public File deobfSources(File original, String mappings, String... cachePath) throws IOException {
+    @Nullable
+    public File deobfSources(File original, @Nullable String mappings, String... cachePath) throws IOException {
         project.getLogger().debug("Deobfuscating sources file {} with mappings {}", original.getName(), mappings);
 
         File names = findMapping(mappings);
@@ -186,7 +194,8 @@ public class Deobfuscator {
         return cacheFile;
     }
 
-    private File findMapping(String mapping) {
+    @Nullable
+    private File findMapping(@Nullable String mapping) {
         if (mapping == null)
             return null;
 

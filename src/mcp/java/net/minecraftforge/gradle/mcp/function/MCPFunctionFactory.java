@@ -20,12 +20,14 @@
 
 package net.minecraftforge.gradle.mcp.function;
 
+import org.gradle.api.Project;
+
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.gradle.api.Project;
+import javax.annotation.Nullable;
 
 /**
  * Internal Use Only
@@ -37,6 +39,7 @@ public class MCPFunctionFactory {
      * Non-Public API, Can be changed at any time.
      */
     @Deprecated
+    @Nullable
     public static MCPFunction createBuiltIn(String type, int spec) {
         switch (type) {
             case "downloadManifest":

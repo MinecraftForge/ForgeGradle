@@ -20,31 +20,22 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import org.gradle.api.Project;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Predicate;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 
-import org.gradle.api.Project;
+import javax.annotation.Nullable;
 
 public class MojangLicenseHelper {
 
     public static final String HIDE_LICENSE = "hideOfficialWarningUntilChanged";
     public static final String SHOW_LICENSE = "reshowOfficialWarning";
-
-    /**
-     * @see #displayWarning(Project, String, String) 
-     */
-    @Deprecated
-    public static void displayWarning(Project project, String channel) {
-        displayWarning(project, channel, null);
-    }
 
     public static void displayWarning(Project project, String channel, @Nullable String version, @Nullable String updateChannel, @Nullable String updateVersion) {
         displayWarning(project, channel, version);
@@ -103,7 +94,7 @@ public class MojangLicenseHelper {
         Utils.delete(accepted.toFile());
     }
 
-    private static String getWarning(String license) {
+    private static String getWarning(@Nullable String license) {
         String warning = "WARNING: "
             + "This project is configured to use the official obfuscation mappings provided by Mojang. "
             + "These mapping fall under their associated license, you should be fully aware of this license. "
