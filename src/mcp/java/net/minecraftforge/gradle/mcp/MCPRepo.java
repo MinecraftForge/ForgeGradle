@@ -123,7 +123,7 @@ public class MCPRepo extends BaseRepo {
     private static final String NAMES_MCP = "^(mcp_config)$";
     private static final String STEP_MERGE = "merge"; //TODO: Design better way to get steps output, for now hardcode
     private static final String STEP_RENAME = "rename";
-    private static final Pattern PARCHMENT_PATTERN = Pattern.compile("(?<mappingsversion>[\\w-]+)-(?<mcpversion>(?<mcversion>[\\d.]+)(?:-\\d{8}\\.\\d{6})?)");
+    private static final Pattern PARCHMENT_PATTERN = Pattern.compile("(?<mappingsversion>[\\w\\-.]+)-(?<mcpversion>(?<mcversion>[\\d.]+)(?:-\\d{8}\\.\\d{6})?)");
     private static final Gson GSON = new Gson();
 
     //This is the artifact we expose that is a zip containing SRG->Official fields and methods.
@@ -630,8 +630,12 @@ public class MCPRepo extends BaseRepo {
         if (mcp == null)
             return null;
 
-        String artifact = "org.parchmentmc.data:parchment-" + mcversion + ":" + mappingsversion + "@zip";
+        String artifact = "org.parchmentmc.data:parchment-" + mcversion + ":" + mappingsversion + ":checked@zip";
         File dep = MavenArtifactDownloader.manual(project, artifact, false);
+        if (dep == null) {
+            // TODO remove this later? or keep backwards-compatibility with older releases?
+            dep = MavenArtifactDownloader.manual(project, artifact.replace(":checked", ""), false);
+        }
         if (dep == null)
             throw new IllegalStateException("Could not find Parchment version of " + mappingsversion + '-' + mcversion + " with artifact " + artifact);
 
@@ -639,7 +643,7 @@ public class MCPRepo extends BaseRepo {
         HashStore cache = commonHash(mcp)
                 .load(cacheParchment(mcpversion, mappingsversion, "zip.input"))
                 .add("mcversion", version)
-                .add("mappingsversion", mappingsversion)
+                .add("mappings", dep)
                 .add("tsrg", tsrg)
                 .add("codever", "1");
 
