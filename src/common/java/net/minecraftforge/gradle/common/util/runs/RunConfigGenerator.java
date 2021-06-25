@@ -32,6 +32,8 @@ import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
+import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -199,6 +201,8 @@ public abstract class RunConfigGenerator
 
             task.setWorkingDir(workDir);
             task.getMainClass().set(runConfig.getMain());
+            JavaToolchainService service = project.getExtensions().getByType(JavaToolchainService.class);
+            task.getJavaLauncher().set(service.launcherFor(project.getExtensions().getByType(JavaPluginExtension.class).getToolchain()));
 
             task.args(getArgsStream(runConfig, updatedTokens, false).toArray());
             task.jvmArgs(runConfig.getJvmArgs());
