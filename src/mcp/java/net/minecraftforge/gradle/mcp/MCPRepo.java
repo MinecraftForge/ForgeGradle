@@ -800,7 +800,7 @@ public class MCPRepo extends BaseRepo {
         if (mappings.size() <= 1)
             return;
         out.putNextEntry(Utils.getStableEntry(name));
-        try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWritter(out))) {
+        try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWriter(out))) {
             mappings.forEach(writer::writeRow);
         }
         out.closeEntry();
