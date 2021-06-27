@@ -703,9 +703,14 @@ public class MCPRepo extends BaseRepo {
                         if (!official || jsonParams.size() == srgParams.size())
                             for (int i = 0; i < jsonParams.size(); i++) {
                                 JsonObject parameter = jsonParams.get(i).getAsJsonObject();
-                                String srgParam = official
-                                        ? srgParams.get(i).getMapped()
-                                        : String.format("p_%s_%s_", srgMethod.getMapped().split("_")[1], parameter.get("index").getAsString());
+                                boolean isConstructor = method.get("name").getAsString().equals("<init>");
+                                String srgParam;
+                                if (official) {
+                                    srgParam = srgParams.get(i).getMapped();
+                                } else {
+                                    srgParam = String.format(isConstructor ? "p_i%s_%s_" : "p_%s_%s_",
+                                            srgMethod.getMapped().split("_")[1], parameter.get("index").getAsString());
+                                }
                                 String paramName = parameter.has("name") ? parameter.get("name").getAsString() : null;
                                 if (paramName != null) {
                                     parameters.add(new String[]{srgParam, paramName, ""});
