@@ -618,9 +618,9 @@ public class PatcherPlugin implements Plugin<Project> {
                 TaskProvider<GenerateSRG> srg = extension.getNotchObf() ? createMcp2Obf : createMcp2Srg;
                 reobfJar.configure(t -> t.getSrg().set(srg.flatMap(GenerateSRG::getOutput)));
 
-                genJoinedBinPatches.configure(t -> t.getCleanJar().fileProvider(joinedJar));
-                genClientBinPatches.configure(t -> t.getCleanJar().fileProvider(clientJar));
-                genServerBinPatches.configure(t -> t.getCleanJar().fileProvider(serverJar));
+                genJoinedBinPatches.configure(t -> t.getCleanJar().convention(project.getLayout().file(joinedJar)));
+                genClientBinPatches.configure(t -> t.getCleanJar().convention(project.getLayout().file(clientJar)));
+                genServerBinPatches.configure(t -> t.getCleanJar().convention(project.getLayout().file(serverJar)));
                 for (TaskProvider<GenerateBinPatches> binPatchesTask : Lists.newArrayList(genJoinedBinPatches, genClientBinPatches, genServerBinPatches)) {
                     binPatchesTask.configure(task -> {
                         task.getSrg().set(srg.flatMap(GenerateSRG::getOutput));
