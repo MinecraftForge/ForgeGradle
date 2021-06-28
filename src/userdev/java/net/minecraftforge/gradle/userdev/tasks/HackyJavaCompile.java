@@ -22,7 +22,6 @@ package net.minecraftforge.gradle.userdev.tasks;
 
 import org.gradle.api.internal.tasks.compile.DefaultJavaCompileSpec;
 import org.gradle.api.internal.tasks.compile.JavaCompileSpec;
-import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.WorkResult;
 import org.gradle.api.tasks.compile.JavaCompile;
@@ -60,9 +59,8 @@ public class HackyJavaCompile extends JavaCompile {
     }
 
     private void setCompiler() {
-        JavaPluginExtension javaPlugin = getProject().getExtensions().getByType(JavaPluginExtension.class);
         JavaToolchainService service = getProject().getExtensions().getByType(JavaToolchainService.class);
-        Provider<JavaCompiler> compiler = service.compilerFor(javaPlugin.toolchain(s -> s.getLanguageVersion().set(JavaLanguageVersion.of(this.getSourceCompatibility()))));
+        Provider<JavaCompiler> compiler = service.compilerFor(s -> s.getLanguageVersion().set(JavaLanguageVersion.of(this.getSourceCompatibility())));
         this.getJavaCompiler().set(compiler);
     }
 
