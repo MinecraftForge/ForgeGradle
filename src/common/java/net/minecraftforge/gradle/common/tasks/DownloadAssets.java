@@ -36,8 +36,10 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -52,6 +54,8 @@ public abstract class DownloadAssets extends DefaultTask {
         AssetIndex index = Utils.loadJson(getIndex(), AssetIndex.class);
         List<String> keys = new ArrayList<>(index.objects.keySet());
         Collections.sort(keys);
+        removeDuplicateRemotePaths(keys, index);
+
         File assetsPath = new File(Utils.getMCDir(), "/assets/objects");
         ExecutorService executorService = Executors.newFixedThreadPool(8);
         CopyOnWriteArrayList<String> failedDownloads = new CopyOnWriteArrayList<>();
@@ -94,6 +98,13 @@ public abstract class DownloadAssets extends DefaultTask {
             errorMessage += "Some assets failed to download or validate, try running the task again.";
             throw new RuntimeException(errorMessage);
         }
+    }
+
+    // Some keys may reference the same remote file. Remove these duplicates to prevent two threads
+    // writing to the same file on disk.
+    private static void removeDuplicateRemotePaths(List<String> keys, AssetIndex index) {
+        Set<String> seen = new HashSet<>(keys.size());
+        keys.removeIf(key -> !seen.add(index.objects.get(key).getPath()));
     }
 
     private File getIndex() throws IOException {
