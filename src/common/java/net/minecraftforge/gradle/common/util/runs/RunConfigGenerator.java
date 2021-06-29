@@ -32,7 +32,6 @@ import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
-import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -157,12 +156,12 @@ public abstract class RunConfigGenerator
         }
     }
 
-    protected static Map<String,String> configureTokens(@Nonnull RunConfig runConfig, Stream<String> modClasses) {
+    protected static Map<String,String> configureTokens(@Nonnull RunConfig runConfig, final String runtimeClassPathList, Stream<String> modClasses) {
         Map<String, String> tokens = new HashMap<>(runConfig.getTokens());
         tokens.compute("source_roots", (key,sourceRoots) -> ((sourceRoots != null)
                 ? Stream.concat(Arrays.stream(sourceRoots.split(File.pathSeparator)), modClasses)
                 : modClasses).distinct().collect(Collectors.joining(File.pathSeparator)));
-
+        tokens.compute("runtime_classpath", (key,runtimeclasspath)->runtimeClassPathList);
         // *Grumbles about having to keep a workaround for a "dummy" hack that should have never existed*
         runConfig.getEnvironment().compute("MOD_CLASSES", (key,value) ->
                 Strings.isNullOrEmpty(value) || "dummy".equals(value) ? "{source_roots}" : value);
@@ -174,9 +173,12 @@ public abstract class RunConfigGenerator
         return createRunTask(runConfig, project, prepareRuns.get(), additionalClientArgs);
     }
 
+    protected static String createRuntimeClassPathList(final Project project) {
+        return project.getConfigurations().getByName("runtimeClasspath").getFiles().stream().map(File::getPath).collect(Collectors.joining(File.pathSeparator));
+    }
     public static TaskProvider<JavaExec> createRunTask(final RunConfig runConfig, final Project project, final Task prepareRuns, final List<String> additionalClientArgs) {
 
-        Map<String, String> updatedTokens = configureTokens(runConfig, mapModClassesToGradle(project, runConfig));
+        Map<String, String> updatedTokens = configureTokens(runConfig, createRuntimeClassPathList(project), mapModClassesToGradle(project, runConfig));
 
         TaskProvider<Task> prepareRun = project.getTasks().register("prepare" + Utils.capitalize(runConfig.getTaskName()), Task.class, task -> {
             task.setGroup(RunConfig.RUNS_GROUP);
