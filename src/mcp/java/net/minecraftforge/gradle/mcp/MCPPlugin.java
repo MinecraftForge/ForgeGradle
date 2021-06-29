@@ -28,6 +28,7 @@ import net.minecraftforge.gradle.mcp.tasks.SetupMCP;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository.MetadataSources;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.TaskProvider;
 
 import javax.annotation.Nonnull;
@@ -36,6 +37,9 @@ public class MCPPlugin implements Plugin<Project> {
 
     @Override
     public void apply(@Nonnull Project project) {
+        // Needed to gain access to the JavaToolchainService as an extension
+        project.getPluginManager().apply(JavaPlugin.class);
+
         MCPExtension extension = project.getExtensions().create("mcp", MCPExtension.class, project);
 
         TaskProvider<DownloadMCPConfig> downloadConfig = project.getTasks().register("downloadConfig", DownloadMCPConfig.class);
