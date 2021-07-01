@@ -24,6 +24,7 @@ import net.minecraftforge.gradle.common.util.Utils;
 
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
@@ -31,6 +32,8 @@ import org.gradle.api.tasks.OutputFile;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
+
 import java.util.List;
 
 public abstract class ExtractRangeMap extends JarExec {
@@ -43,7 +46,13 @@ public abstract class ExtractRangeMap extends JarExec {
         setMinimumRuntimeJavaVersion(11);
 
         getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.txt")));
-        getSourceCompatibility().convention("1.8");
+        final JavaPluginExtension extension = getProject().getExtensions().findByType(JavaPluginExtension.class);
+        if (extension != null && extension.getToolchain().getLanguageVersion().isPresent()) {
+            int version = extension.getToolchain().getLanguageVersion().get().asInt();
+            getSourceCompatibility().convention((version <= 8 ? "1." : "") + version);
+        } else {
+            getSourceCompatibility().convention("1.8");
+        }
     }
 
     @Override
