@@ -40,7 +40,7 @@ public abstract class ExtractRangeMap extends JarExec {
         getTool().set(Utils.SRG2SOURCE);
         getArgs().addAll("--extract", "--source-compatibility", "{compat}", "--output", "{output}", "--lib",
                 "{library}", "--input", "{input}", "--batch", "{batched}");
-        setRuntimeJavaVersion(11);
+        setMinimumRuntimeJavaVersion(11);
 
         getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.txt")));
         getSourceCompatibility().convention("1.8");

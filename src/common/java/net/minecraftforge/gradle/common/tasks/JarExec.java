@@ -232,6 +232,12 @@ public abstract class JarExec extends DefaultTask {
     @Optional
     public abstract Property<JavaLauncher> getJavaLauncher();
 
+    public void setMinimumRuntimeJavaVersion(int version) {
+        if (!getJavaLauncher().isPresent() || !getJavaLauncher().get().getMetadata().getLanguageVersion().canCompileOrRun(version)) {
+            setRuntimeJavaVersion(version);
+        }
+    }
+
     public void setRuntimeJavaVersion(int version) {
         setRuntimeJavaToolchain(tc -> tc.getLanguageVersion().set(JavaLanguageVersion.of(version)));
     }
