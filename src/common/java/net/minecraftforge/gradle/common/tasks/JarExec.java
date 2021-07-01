@@ -86,8 +86,10 @@ public abstract class JarExec extends DefaultTask {
         toolFile = getTool().map(toolStr -> MavenArtifactDownloader.gradle(getProject(), toolStr, false));
         resolvedVersion = getTool().map(toolStr -> MavenArtifactDownloader.getVersion(getProject(), toolStr));
 
-        final JavaToolchainSpec toolchain = getProject().getExtensions().getByType(JavaPluginExtension.class).getToolchain();
-        getJavaLauncher().convention(getJavaToolchainService().launcherFor(toolchain));
+        final JavaPluginExtension extension = getProject().getExtensions().findByType(JavaPluginExtension.class);
+        if (extension != null) {
+            getJavaLauncher().convention(getJavaToolchainService().launcherFor(extension.getToolchain()));
+        }
     }
 
     @Inject
