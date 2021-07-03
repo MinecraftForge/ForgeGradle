@@ -41,7 +41,7 @@ public abstract class RenameJar extends JarExec {
     }
 
     protected List<String> filterArgs(List<String> args) {
-        return replaceArgs(args, ImmutableMap.of(
+        return replaceArgsMulti(args, ImmutableMap.of(
                 "{input}", getInput().get().getAsFile(),
                 "{output}", getOutput().get().getAsFile()
                 ), ImmutableMultimap.<String, Object>builder()

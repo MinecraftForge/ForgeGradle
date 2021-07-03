@@ -52,7 +52,7 @@ public abstract class RenameJarInPlace extends JarExec {
 
     @Override
     protected List<String> filterArgs(List<String> args) {
-        return replaceArgs(args, ImmutableMap.of(
+        return replaceArgsMulti(args, ImmutableMap.of(
                 "{input}", getInput().get().getAsFile(),
                 "{output}", temp.get().getAsFile()
                 ), ImmutableMultimap.<String, Object>builder()
