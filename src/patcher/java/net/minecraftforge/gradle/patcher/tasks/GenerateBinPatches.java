@@ -33,7 +33,6 @@ import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
 import java.util.List;
 
 public abstract class GenerateBinPatches extends JarExec {
@@ -53,20 +52,10 @@ public abstract class GenerateBinPatches extends JarExec {
                 "{dirty}", getDirtyJar().get().getAsFile(),
                 "{output}", getOutput().get().getAsFile(),
                 "{srg}", getSrg().get().getAsFile()
-                ), ImmutableMultimap.<String, Object>builder()
-                        .putAll("{patches}", getPatchSets().getFiles()).build()
+                ), ImmutableMap.of(
+                "{patches}", getPatchSets().getFiles()
+                )
         );
-        if (getPatchSets().isEmpty()) { // Remove {patches} if there are no patch sets
-            for (int i = 0; i < newArgs.size(); i++) {
-                String newArg = newArgs.get(i);
-                if ("{patches}".equals(newArg)) {
-                    newArgs.remove(i); // {patches}
-                    newArgs.remove(i - 1); // --patches
-                    break;
-                }
-            }
-
-        }
         return newArgs;
     }
 

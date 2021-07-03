@@ -53,10 +53,11 @@ public abstract class ApplyRangeMap extends JarExec {
                 "{output}", getOutput().get().getAsFile(),
                 "{annotate}", annotate,
                 "{keepImports}", keepImports
-                ), ImmutableMultimap.<String, Object>builder()
-                        .putAll("{input}", getSources().getFiles())
-                        .putAll("{srg}", getSrgFiles().getFiles())
-                        .putAll("{exc}", getExcFiles().getFiles()).build()
+                ), ImmutableMap.of(
+                "{input}", getSources().getFiles(),
+                "{srg}", getSrgFiles().getFiles(),
+                "{exc}", getExcFiles().getFiles()
+                )
         );
     }
 

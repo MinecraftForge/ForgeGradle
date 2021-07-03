@@ -31,9 +31,6 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
-import org.gradle.jvm.toolchain.JavaLanguageVersion;
-
 import java.util.List;
 
 public abstract class ExtractRangeMap extends JarExec {
@@ -61,9 +58,10 @@ public abstract class ExtractRangeMap extends JarExec {
                 "{compat}", getSourceCompatibility().get(),
                 "{output}", getOutput().get().getAsFile(),
                 "{batched}", batch
-                ), ImmutableMultimap.<String, Object>builder()
-                        .putAll("{input}", getSources().getFiles())
-                        .putAll("{library}", getDependencies().getFiles()).build()
+                ), ImmutableMap.of(
+                "{input}", getSources().getFiles(),
+                "{library}", getDependencies().getFiles()
+                )
         );
     }
 

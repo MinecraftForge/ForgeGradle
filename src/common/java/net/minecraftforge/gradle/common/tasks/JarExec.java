@@ -56,6 +56,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -163,26 +164,39 @@ public abstract class JarExec extends DefaultTask {
     protected void postProcess(File log) {
     }
 
-    protected List<String> replaceArgs(List<String> args, @Nullable Map<String, Object> normalReplacements, @Nullable Multimap<String, Object> multiReplacements) {
+    // Should be used only if it can be guaranteed that there is at least one value for each key in the multiPrefixedReplacements
+    // Otherwise, use replaceArgs to ensure keys without any linked values still exist
+    protected List<String> replaceArgsMulti(List<String> args,
+                                       @Nullable Map<String, ?> normalReplacements,
+                                       @Nullable Multimap<String, ?> multiPrefixedReplacements) {
+        multiPrefixedReplacements = multiPrefixedReplacements != null ? multiPrefixedReplacements : ImmutableMultimap.of();
+        return replaceArgs(args, normalReplacements, multiPrefixedReplacements.asMap());
+    }
+
+    protected List<String> replaceArgs(List<String> args,
+                                       @Nullable Map<String, ?> normalReplacements,
+                                       @Nullable Map<String, ? extends Collection<?>> multiPrefixedReplacements) {
         // prevent nulls
         normalReplacements = normalReplacements != null ? normalReplacements : Collections.emptyMap();
-        multiReplacements = multiReplacements != null ? multiReplacements : ImmutableMultimap.of();
-        if (normalReplacements.isEmpty() && multiReplacements.isEmpty()) return args;
+        multiPrefixedReplacements = multiPrefixedReplacements != null ? multiPrefixedReplacements : Collections.emptyMap();
+        if (normalReplacements.isEmpty() && multiPrefixedReplacements.isEmpty()) return args;
 
         ArrayList<String> newArgs = new ArrayList<>(args.size());
 
         // normalReplacements, it is a normal token substitution
-        // multiReplacements, it will take the previous token and prepend that to each value for the token
+        // multiPrefixedReplacements, it will take the previous token and prepend that to each value for the token
 
         for (String arg : args) {
-            if (multiReplacements.containsKey(arg)) {
+            if (multiPrefixedReplacements.containsKey(arg)) {
                 String prefix = newArgs.isEmpty() ? null : newArgs.remove(newArgs.size() - 1);
-                for (Object value : multiReplacements.get(arg)) {
+                for (Object value : multiPrefixedReplacements.get(arg)) {
                     if (prefix != null) newArgs.add(prefix);
                     newArgs.add(toString(value));
                 }
+            } else if (normalReplacements.containsKey(arg)) {
+                newArgs.add(toString(normalReplacements.get(arg)));
             } else {
-                newArgs.add(toString(normalReplacements.getOrDefault(arg, arg)));
+                newArgs.add(arg);
             }
         }
 
