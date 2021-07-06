@@ -22,13 +22,15 @@ package net.minecraftforge.gradle.common.tasks;
 
 import net.minecraftforge.gradle.common.util.Utils;
 
-import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 
 import com.google.common.collect.ImmutableMap;
+
+import java.io.File;
 import java.util.List;
 
 public abstract class ExtractInheritance extends JarExec {
@@ -44,7 +46,7 @@ public abstract class ExtractInheritance extends JarExec {
         List<String> newArgs = replaceArgs(args, ImmutableMap.of(
                 "{input}", getInput().get().getAsFile(),
                 "{output}", getOutput().get().getAsFile()), null);
-        getLibraries().forEach(f -> {
+        getLibraries().get().forEach(f -> {
             newArgs.add("--lib");
             newArgs.add(f.getAbsolutePath());
         });
@@ -56,7 +58,7 @@ public abstract class ExtractInheritance extends JarExec {
     public abstract RegularFileProperty getInput();
 
     @InputFiles
-    public abstract ConfigurableFileCollection getLibraries();
+    public abstract ListProperty<File> getLibraries();
 
     @OutputFile
     public abstract RegularFileProperty getOutput();
