@@ -30,6 +30,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -198,11 +199,13 @@ public abstract class SignJar extends DefaultTask implements PatternFilterable {
         return patternSet.exclude(arg0);
     }
 
+    @Internal
     @Override
     public Set<String> getExcludes() {
         return patternSet.getExcludes();
     }
 
+    @Internal
     @Override
     public Set<String> getIncludes() {
         return patternSet.getIncludes();
