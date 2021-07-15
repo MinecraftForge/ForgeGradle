@@ -220,6 +220,7 @@ public class PatcherPlugin implements Plugin<Project> {
         createExc.configure(task -> task.getMappings().set(dlMappingsConfig.flatMap(DownloadMCPMappings::getOutput)));
 
         applyRangeConfig.configure(task -> {
+            task.setOnlyIf(t -> extension.getPatches().isPresent());
             task.getSources().from(mainSource.map(s -> s.getJava().getSourceDirectories().minus(project.files(extension.getPatchedSrc()))));
             task.getRangeMap().set(extractRangeConfig.flatMap(ExtractRangeMap::getOutput));
             task.getSrgFiles().from(createMcp2Srg.flatMap(GenerateSRG::getOutput));
@@ -240,6 +241,7 @@ public class PatcherPlugin implements Plugin<Project> {
         });
 
         bakePatches.configure(task -> {
+            task.setOnlyIf(t -> extension.getPatches().isPresent());
             task.dependsOn(genPatches);
             task.getInput().set(extension.getPatches());
             task.getOutput().set(new File(task.getTemporaryDir(), "output.zip"));
@@ -271,6 +273,7 @@ public class PatcherPlugin implements Plugin<Project> {
          * patches in /patches/
          */
         sourcesJar.configure(task -> {
+            task.setOnlyIf(t -> extension.getPatches().isPresent());
             task.dependsOn(applyRangeConfig);
             task.from(project.zipTree(applyRangeConfig.flatMap(ApplyRangeMap::getOutput)));
             task.getArchiveClassifier().set("sources");
@@ -299,7 +302,7 @@ public class PatcherPlugin implements Plugin<Project> {
          */
         userdevJar.configure(task -> {
             task.dependsOn(sourcesJar, bakePatches);
-            task.setOnlyIf(t -> extension.isSrgPatches());
+            task.setOnlyIf(t -> extension.isSrgPatches() && extension.getPatches().isPresent());
             task.from(userdevConfig.flatMap(GenerateUserdevConfig::getOutput), e -> e.rename(f -> "config.json"));
             task.from(genJoinedBinPatches.flatMap(GenerateBinPatches::getOutput), e -> e.rename(f -> "joined.lzma"));
             task.from(project.zipTree(bakePatches.flatMap(BakePatches::getOutput)), e -> e.into("patches/"));

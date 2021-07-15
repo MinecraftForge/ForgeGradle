@@ -257,7 +257,7 @@ public abstract class RunConfigGenerator
         final Stream<String> propStream = Stream.concat(
                 runConfig.getProperties().entrySet().stream()
                     .map(kv -> String.format("-D%s=%s", kv.getKey(), runConfig.replace(updatedTokens, kv.getValue()))),
-                runConfig.getJvmArgs().stream()).map(RunConfigGenerator::fixupArg);
+                runConfig.getJvmArgs().stream().map(value -> runConfig.replace(updatedTokens, value))).map(RunConfigGenerator::fixupArg);
         if (runConfig.isClient()) {
             return Stream.concat(propStream, additionalClientArgs.stream());
         }

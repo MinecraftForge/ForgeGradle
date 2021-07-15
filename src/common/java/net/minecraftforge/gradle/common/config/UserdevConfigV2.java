@@ -50,6 +50,8 @@ public class UserdevConfigV2 extends UserdevConfigV1 {
     private Boolean notchObf; //This is a Boolean so we can set to null and it won't be printed in the json.
     @Nullable
     private List<String> universalFilters;
+    @Nullable
+    public List<String> modules; // Modules passed to --module-path
     private String sourceFileCharset = StandardCharsets.UTF_8.name();
 
     public void setNotchObf(boolean value) {
@@ -79,6 +81,17 @@ public class UserdevConfigV2 extends UserdevConfigV1 {
 
     public List<String> getUniversalFilters() {
         return universalFilters == null ? Collections.emptyList() : universalFilters;
+    }
+
+    public void addModule(String value) {
+        if (modules == null)
+            modules = new ArrayList<>();
+        modules.add(value);
+    }
+
+    @Nullable
+    public List<String> getModules() {
+        return modules;
     }
 
     public static class DataFunction extends Function {

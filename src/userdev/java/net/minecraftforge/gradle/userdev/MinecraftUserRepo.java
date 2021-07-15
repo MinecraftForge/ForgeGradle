@@ -221,6 +221,12 @@ public class MinecraftUserRepo extends BaseRepo {
         tokens.put("mcp_version", mcp.getArtifact().getVersion());
         tokens.put("mcp_mappings", MAPPING);
         tokens.put("mcp_to_srg", createSrgToMcp.getOutput().get().getAsFile().getAbsolutePath());
+        if (parent != null && !parent.getModules().isEmpty()) {
+            Configuration modulesCfg = project.getConfigurations().create("modules_userdev_resolver");
+            modulesCfg.setCanBeResolved(true);
+            parent.getModules().forEach(m -> modulesCfg.getDependencies().add(project.getDependencies().create(m)));
+            tokens.put("modules", modulesCfg.resolve().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator)));
+        }
 
         if (parent != null && parent.getConfig().runs != null) {
             parent.getConfig().runs.forEach((name, dev) -> {
@@ -1401,6 +1407,10 @@ public class MinecraftUserRepo extends BaseRepo {
 
         public List<String> getLibraries() {
             return this.config.libraries == null ? Collections.emptyList() : this.config.libraries;
+        }
+
+        public List<String> getModules() {
+            return this.configv2 == null || this.configv2.modules == null ? Collections.emptyList() : this.configv2.modules;
         }
 
         @Nullable

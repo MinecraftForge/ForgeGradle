@@ -81,6 +81,7 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
         getPatchesModifiedPrefix().convention("b/");
         sourceFileEncoding = project.getObjects().property(String.class)
                 .convention(StandardCharsets.UTF_8.name());
+        getInject().convention("inject/");
 
         processorData = objects.mapProperty(String.class, File.class);
 
@@ -95,8 +96,11 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
         json.sources = getSource().get();
         json.universal = getUniversal().get();
         json.patches = "patches/";
-        json.inject = "inject/";
+        json.inject = getInject().get();
+        if (json.inject.isEmpty()) // Workaround since null in properties means use the convention, which we don't want.
+            json.inject = null;
         getLibraries().get().forEach(json::addLibrary);
+        getModules().get().forEach(json::addModule);
         getATs().forEach(at -> json.addAT("ats/" + at.getName()));
         getSASs().forEach(at -> json.addSAS("sas/" + at.getName()));
         getSRGs().forEach(srg -> json.addSRG("srgs/" + srg.getName()));
@@ -156,6 +160,9 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
     public abstract ListProperty<String> getLibraries();
 
     @Input
+    public abstract ListProperty<String> getModules();
+
+    @Input
     public abstract Property<String> getUniversal();
 
     @Input
@@ -189,7 +196,9 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
     }
 
     @Input
-    public abstract NamedDomainObjectContainer<RunConfig> getRuns();
+    public NamedDomainObjectContainer<RunConfig> getRuns() {
+        return runs;
+    }
 
     public void propertyMissing(String name, Object value) {
         if (!(value instanceof Closure)) {
