@@ -82,6 +82,7 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
         sourceFileEncoding = project.getObjects().property(String.class)
                 .convention(StandardCharsets.UTF_8.name());
         getInject().convention("inject/");
+        getPatches().convention("patches/");
 
         processorData = objects.mapProperty(String.class, File.class);
 
@@ -95,7 +96,7 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
         json.binpatches = "joined.lzma";
         json.sources = getSource().get();
         json.universal = getUniversal().get();
-        json.patches = "patches/";
+        json.patches = getPatches().get();
         json.inject = getInject().get();
         if (json.inject.isEmpty()) // Workaround since null in properties means use the convention, which we don't want.
             json.inject = null;
@@ -174,6 +175,10 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
     @Input
     @Optional
     public abstract Property<String> getInject();
+
+    @Input
+    @Optional
+    public abstract Property<String> getPatches();
 
     @Input
     public abstract ListProperty<String> getArguments();

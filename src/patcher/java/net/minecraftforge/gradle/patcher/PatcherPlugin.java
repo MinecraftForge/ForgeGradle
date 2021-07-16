@@ -62,6 +62,7 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository.MetadataSources;
 import org.gradle.api.file.Directory;
@@ -202,7 +203,6 @@ public class PatcherPlugin implements Plugin<Project> {
         });
 
         extractRangeConfig.configure(task -> {
-            task.setOnlyIf(t -> extension.getPatches().isPresent());
             task.getDependencies().from(jarTask.flatMap(AbstractArchiveTask::getArchiveFile));
 
             // Only add main source, as we inject the patchedSrc into it as a sourceset.
@@ -220,8 +220,8 @@ public class PatcherPlugin implements Plugin<Project> {
         createExc.configure(task -> task.getMappings().set(dlMappingsConfig.flatMap(DownloadMCPMappings::getOutput)));
 
         applyRangeConfig.configure(task -> {
-            task.setOnlyIf(t -> extension.getPatches().isPresent());
             task.getSources().from(mainSource.map(s -> s.getJava().getSourceDirectories().minus(project.files(extension.getPatchedSrc()))));
+            task.setOnlyIf(t -> !task.getSources().isEmpty());
             task.getRangeMap().set(extractRangeConfig.flatMap(ExtractRangeMap::getOutput));
             task.getSrgFiles().from(createMcp2Srg.flatMap(GenerateSRG::getOutput));
             task.getExcFiles().from(createExc.flatMap(CreateExc::getOutput), extension.getExcs());
@@ -241,7 +241,6 @@ public class PatcherPlugin implements Plugin<Project> {
         });
 
         bakePatches.configure(task -> {
-            task.setOnlyIf(t -> extension.getPatches().isPresent());
             task.dependsOn(genPatches);
             task.getInput().set(extension.getPatches());
             task.getOutput().set(new File(task.getTemporaryDir(), "output.zip"));
@@ -273,7 +272,7 @@ public class PatcherPlugin implements Plugin<Project> {
          * patches in /patches/
          */
         sourcesJar.configure(task -> {
-            task.setOnlyIf(t -> extension.getPatches().isPresent());
+            task.setOnlyIf(PatcherPlugin::noneSkipped);
             task.dependsOn(applyRangeConfig);
             task.from(project.zipTree(applyRangeConfig.flatMap(ApplyRangeMap::getOutput)));
             task.getArchiveClassifier().set("sources");
@@ -302,7 +301,7 @@ public class PatcherPlugin implements Plugin<Project> {
          */
         userdevJar.configure(task -> {
             task.dependsOn(sourcesJar, bakePatches);
-            task.setOnlyIf(t -> extension.isSrgPatches() && extension.getPatches().isPresent());
+            task.setOnlyIf(t -> extension.isSrgPatches());
             task.from(userdevConfig.flatMap(GenerateUserdevConfig::getOutput), e -> e.rename(f -> "config.json"));
             task.from(genJoinedBinPatches.flatMap(GenerateBinPatches::getOutput), e -> e.rename(f -> "joined.lzma"));
             task.from(project.zipTree(bakePatches.flatMap(BakePatches::getOutput)), e -> e.into("patches/"));
@@ -534,6 +533,7 @@ public class PatcherPlugin implements Plugin<Project> {
 
             //UserDev Config Default Values
             userdevConfig.configure(task -> {
+                task.setOnlyIf(PatcherPlugin::noneSkipped);
                 task.getTool().convention(genJoinedBinPatches.map(JarExec::getResolvedVersion)
                         .map(ver -> "net.minecraftforge:binarypatcher:" + ver + ":fatjar"));
                 task.getArguments().addAll("--clean", "{clean}", "--output", "{output}", "--apply", "{patch}");
@@ -683,4 +683,15 @@ public class PatcherPlugin implements Plugin<Project> {
         return null;
     }
 
+    @SuppressWarnings("unchecked")
+    private static boolean noneSkipped(Task task) {
+        return task.getDependsOn().stream().noneMatch(t -> {
+            if (t instanceof Task) {
+                return ((Task) t).getState().getSkipped();
+            } else if (t instanceof Provider && ((Provider<?>) t).get() instanceof Task) {
+                return ((Provider<Task>) t).get().getState().getSkipped();
+            }
+            return false;
+        });
+    }
 }
