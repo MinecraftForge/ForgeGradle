@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.userdev;
 
+import com.google.common.collect.ImmutableList;
 import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
 import net.minecraftforge.artifactural.api.repository.Repository;
 import net.minecraftforge.artifactural.base.repository.ArtifactProviderBuilder;
@@ -83,8 +84,11 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -92,6 +96,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -102,6 +107,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -1229,23 +1235,53 @@ public class MinecraftUserRepo extends BaseRepo {
 
             debug("    Injecting resources");
             Set<String> added = new HashSet<>();
-            try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(recomp))) {
-                //Add all compiled code
-                Files.walkFileTree(compiled.toPath(), new SimpleFileVisitor<Path>() {
-                    @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                        try (InputStream fin = Files.newInputStream(file)) {
-                            String name = compiled.toPath().relativize(file).toString().replace('\\', '/');
-                            zout.putNextEntry(Utils.getStableEntry(name));
-                            IOUtils.copy(fin, zout);
-                            zout.closeEntry();
-                            added.add(name);
-                        }
-                        return FileVisitResult.CONTINUE;
+            File recompTemp = cacheMapped(mapping, "recomp", "temp.jar");
+            // Add all compiled code
+            try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(recompTemp));
+                    Stream<Path> walk = Files.walk(compiled.toPath())) {
+                for (Path path : walk.filter(Files::isRegularFile).collect(Collectors.toList())) {
+                    try (InputStream fin = Files.newInputStream(path)) {
+                        String name = compiled.toPath().relativize(path).toString().replace('\\', '/');
+                        zout.putNextEntry(Utils.getStableEntry(name));
+                        IOUtils.copy(fin, zout);
+                        zout.closeEntry();
+                        added.add(name);
                     }
-                });
+                }
                 copyResources(zout, added, false);
             }
+            // Reorder
+            try (FileSystem zipFs = FileSystems.newFileSystem(URI.create("jar:" + recompTemp.toURI()), Maps.newHashMap());
+                    ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(recomp));
+                    Stream<Path> walk = Files.walk(zipFs.getPath("/"))) {
+                List<String> special = ImmutableList.of("/META-INF/MANIFEST.MF");
+                List<Path> paths = walk.sorted(Comparator.comparing(Path::toString, (left, right) -> {
+                    boolean containsLeft = special.contains(left);
+                    boolean containsRight = special.contains(right);
+                    if (containsLeft && containsRight) {
+                        return Integer.compare(special.indexOf(left), special.indexOf(right));
+                    }
+                    if (containsLeft)
+                        return -1;
+                    if (containsRight)
+                        return 1;
+                    return left.compareTo(right);
+                })).collect(Collectors.toList());
+                paths.remove(zipFs.getPath("/"));
+                for (Path path : paths) {
+                    String pathString = path.toString().substring(1).replace('\\', '/');
+                    boolean directory = Files.isDirectory(path);
+                    if (directory && !pathString.endsWith("/"))
+                        pathString += "/";
+                    ZipEntry zipEntry = new ZipEntry(pathString);
+                    zipEntry.setTime(628041600000L); //Java8 screws up on 0 time, so use another static time.
+                    zos.putNextEntry(zipEntry);
+                    if (Files.isRegularFile(path))
+                        Files.copy(path, zos);
+                    zos.closeEntry();
+                }
+            }
+            recompTemp.delete();
             Utils.updateHash(recomp, HashFunction.SHA1);
             cache.save();
         }
