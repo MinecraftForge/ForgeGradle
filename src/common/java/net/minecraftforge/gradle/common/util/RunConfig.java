@@ -155,7 +155,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     }
 
     public void setArgs(List<Object> values) {
-        values.forEach(value -> getArgs().add(value instanceof File ? ((File) value).getAbsolutePath() : (String) value));
+        values.forEach(value -> getArgs().add(value instanceof File ? ((File) value).getAbsolutePath() : Objects.toString(value)));
     }
 
     public List<String> getArgs() {
