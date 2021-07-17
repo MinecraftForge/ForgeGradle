@@ -454,16 +454,18 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         RunConfig first = overwrite ? other : this;
         RunConfig second = overwrite ? this : other;
 
-        args = new ArrayList<>();
+        List<String> args = new ArrayList<>();
         if (first.args != null)
             args.addAll(first.args);
         if (second.args != null)
             args.addAll(second.args);
-        jvmArgs = new ArrayList<>();
+        this.args = args;
+        List<String> jvmArgs = new ArrayList<>();
         if (first.jvmArgs != null)
             jvmArgs.addAll(first.jvmArgs);
         if (second.jvmArgs != null)
             jvmArgs.addAll(second.jvmArgs);
+        this.jvmArgs = jvmArgs;
         main = first.main == null ? second.main : first.main;
         mods = first.mods == null ? second.mods : first.mods;
         sources = first.sources == null ? second.sources : first.sources;
