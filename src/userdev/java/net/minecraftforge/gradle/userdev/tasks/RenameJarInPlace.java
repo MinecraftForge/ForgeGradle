@@ -38,11 +38,14 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public abstract class RenameJarInPlace extends JarExec {
     private final Provider<Directory> workDir = getProject().getLayout().getBuildDirectory().dir(getName());
     private final Provider<RegularFile> temp = workDir.map(s -> s.file("output.jar"));
+    private File extraMapping;
 
     public RenameJarInPlace() {
         getTool().set(Utils.SPECIALSOURCE);
@@ -52,12 +55,18 @@ public abstract class RenameJarInPlace extends JarExec {
 
     @Override
     protected List<String> filterArgs(List<String> args) {
+        // Merge the "new" property-based extra mappings with the compatibility field for Mixin Gradle
+        Set<File> extraMappings = new HashSet<>(getExtraMappings().getFiles());
+        if (extraMapping != null) {
+            extraMappings.add(extraMapping);
+        }
+
         return replaceArgsMulti(args, ImmutableMap.of(
                 "{input}", getInput().get().getAsFile(),
                 "{output}", temp.get().getAsFile()
                 ), ImmutableMultimap.<String, Object>builder()
                         .put("{mappings}", getMappings().get().getAsFile())
-                        .putAll("{mappings}", getExtraMappings().getFiles()).build()
+                        .putAll("{mappings}", extraMappings).build()
         );
     }
 
@@ -84,4 +93,14 @@ public abstract class RenameJarInPlace extends JarExec {
 
     @InputFile
     public abstract RegularFileProperty getInput();
+
+    /**
+     * Sets a file with additional mappings to use. This method is used by the Sponge Mixin Gradle plugin to
+     * add the necessary information for remapping of methods in Mixins.
+     */
+    @Deprecated
+    public void extraMapping(File value) {
+        this.extraMapping = value;
+    }
+
 }
