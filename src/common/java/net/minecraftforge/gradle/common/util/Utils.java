@@ -92,12 +92,13 @@ public class Utils {
                                                           //manifest doesn't include sha1's so we use this for the per-version json as well.
     public static final String FORGE_MAVEN = "https://maven.minecraftforge.net/";
     public static final String MOJANG_MAVEN = "https://libraries.minecraft.net/";
+    public static final String PARCHMENT_MAVEN = "https://maven.parchmentmc.org/";
     public static final String BINPATCHER =  "net.minecraftforge:binarypatcher:1.+:fatjar";
     public static final String ACCESSTRANSFORMER = "net.minecraftforge:accesstransformers:3.0.+:fatjar";
     public static final String SPECIALSOURCE = "net.md-5:SpecialSource:1.10.0:shaded";
     public static final String SRG2SOURCE =  "net.minecraftforge:Srg2Source:8.+:fatjar";
     public static final String SIDESTRIPPER = "net.minecraftforge:mergetool:1.1.3:fatjar";
-    public static final String INSTALLERTOOLS = "net.minecraftforge:installertools:1.1.10:fatjar";
+    public static final String INSTALLERTOOLS = "net.minecraftforge:installertools:1.2.0:fatjar";
     public static final long ZIPTIME = 628041600000L;
     public static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 
