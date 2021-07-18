@@ -53,6 +53,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 public class UserDevPlugin implements Plugin<Project> {
     private static String MINECRAFT = "minecraft";
@@ -181,9 +183,10 @@ public class UserDevPlugin implements Plugin<Project> {
         if (doingUpdate) {
             logger.lifecycle("This process uses Srg2Source for java source file renaming. Please forward relevant bug reports to https://github.com/MinecraftForge/Srg2Source/issues.");
 
+            final String[] updateSourceSets = project.hasProperty("UPDATE_SOURCESETS") ? ((String) project.property("UPDATE_SOURCESETS")).split(";") : new String[] { "main" };
             JavaCompile javaCompile = (JavaCompile) project.getTasks().getByName("compileJava");
             JavaPluginConvention javaConv = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
-            Set<File> srcDirs = javaConv.getSourceSets().getByName("main").getJava().getSrcDirs();
+            Set<File> srcDirs = Stream.of(updateSourceSets).flatMap(sourceSet -> javaConv.getSourceSets().getByName(sourceSet).getJava().getSrcDirs().stream()).collect(Collectors.toSet());
 
             TaskProvider<DownloadMCPMappingsTask> dlMappingsNew = project.getTasks().register("downloadMappingsNew", DownloadMCPMappingsTask.class);
             TaskProvider<TaskExtractRangeMap> extractRangeConfig = project.getTasks().register("extractRangeMap", TaskExtractRangeMap.class);
