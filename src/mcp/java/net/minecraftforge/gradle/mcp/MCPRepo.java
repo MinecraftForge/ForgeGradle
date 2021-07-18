@@ -708,8 +708,10 @@ public class MCPRepo extends BaseRepo {
                                 if (official) {
                                     srgParam = srgParams.get(i).getMapped();
                                 } else {
-                                    srgParam = String.format(isConstructor ? "p_i%s_%s_" : "p_%s_%s_",
-                                            srgMethod.getMapped().split("_")[1], parameter.get("index").getAsString());
+                                    String srgId = srgMethod.getMapped().indexOf('_') == -1
+                                            ? srgMethod.getMapped()
+                                            : srgMethod.getMapped().split("_")[1];
+                                    srgParam = String.format(isConstructor ? "p_i%s_%s_" : "p_%s_%s_", srgId, parameter.get("index").getAsString());
                                 }
                                 String paramName = parameter.has("name") ? parameter.get("name").getAsString() : null;
                                 if (paramName != null) {
