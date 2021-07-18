@@ -27,7 +27,9 @@ import net.minecraftforge.gradle.common.util.VersionJson;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
@@ -46,8 +48,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public abstract class DownloadAssets extends DefaultTask {
-    // TODO: convert this into a property?
-    private static final String RESOURCE_REPO = "https://resources.download.minecraft.net/";
+    public DownloadAssets() {
+        getAssetRepository().convention("https://resources.download.minecraft.net/");
+        getConcurrentDownloads().convention(8);
+    }
 
     @TaskAction
     public void run() throws IOException, InterruptedException {
@@ -57,13 +61,14 @@ public abstract class DownloadAssets extends DefaultTask {
         removeDuplicateRemotePaths(keys, index);
 
         File assetsPath = new File(Utils.getMCDir(), "/assets/objects");
-        ExecutorService executorService = Executors.newFixedThreadPool(8);
+        ExecutorService executorService = Executors.newFixedThreadPool(getConcurrentDownloads().get());
         CopyOnWriteArrayList<String> failedDownloads = new CopyOnWriteArrayList<>();
+        String assetRepo = getAssetRepository().get();
         for (String key : keys) {
             Asset asset = index.objects.get(key);
             File target = Utils.getCache(getProject(), "assets", "objects", asset.getPath());
             if (!target.exists() || !HashFunction.SHA1.hash(target).equals(asset.hash)) {
-                URL url = new URL(RESOURCE_REPO + asset.getPath());
+                URL url = new URL(assetRepo + asset.getPath());
                 Runnable copyURLtoFile = () -> {
                     try {
                         File localFile = FileUtils.getFile(assetsPath + File.separator + asset.getPath());
@@ -115,6 +120,19 @@ public abstract class DownloadAssets extends DefaultTask {
 
     @InputFile
     public abstract RegularFileProperty getMeta();
+
+    /**
+     * The Base URL that will be used to download Minecraft assets.
+     * A trailing slash is required.
+     */
+    @Internal
+    public abstract Property<String> getAssetRepository();
+
+    /**
+     * Defines how many threads will be used to download assets concurrently.
+     */
+    @Internal
+    public abstract Property<Integer> getConcurrentDownloads();
 
     @OutputDirectory
     public File getOutput() {
