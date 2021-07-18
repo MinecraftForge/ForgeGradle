@@ -23,6 +23,7 @@ package net.minecraftforge.gradle.mcp.util;
 import net.minecraftforge.srgutils.MinecraftVersion;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 import java.io.File;
 import java.util.Map;
@@ -34,12 +35,14 @@ public class MCPEnvironment {
     public final String side;
     public Logger logger;
     private final MinecraftVersion mcVersion;
+    private final JavaLanguageVersion javaVersion;
 
-    public MCPEnvironment(MCPRuntime runtime, String mcVersion, String side) {
+    public MCPEnvironment(MCPRuntime runtime, String mcVersion, int javaVersion, String side) {
         this.runtime = runtime;
         this.project = runtime.project;
         this.side = side;
         this.mcVersion = MinecraftVersion.from(mcVersion);
+        this.javaVersion = JavaLanguageVersion.of(javaVersion);
     }
 
     public Map<String, Object> getArguments() {
@@ -80,4 +83,10 @@ public class MCPEnvironment {
         return this.mcVersion;
     }
 
+    /**
+     * @return The Java version used to run the MCP steps (decompilation, etc.)
+     */
+    public JavaLanguageVersion getJavaVersion() {
+        return javaVersion;
+    }
 }

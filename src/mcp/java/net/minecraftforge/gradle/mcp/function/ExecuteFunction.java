@@ -23,6 +23,7 @@ package net.minecraftforge.gradle.mcp.function;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
+import org.gradle.jvm.toolchain.JavaToolchainService;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -117,17 +118,28 @@ class ExecuteFunction implements MCPFunction {
         String mainClass = jarFile.getManifest().getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
         jarFile.close();
 
+        // Do not implicitly use the Java version that Gradle itself is using.
+        // Instead use a launcher compatible with the version required by MCP.
+        JavaToolchainService toolchainService = environment.project.getExtensions().getByType(JavaToolchainService.class);
+        String launcher = toolchainService.launcherFor(spec -> spec.getLanguageVersion().set(environment.getJavaVersion()))
+                .get()
+                .getExecutablePath()
+                .getAsFile()
+                .getAbsolutePath();
+
         // Execute command
         try (BufferedOutputStream log_out = new BufferedOutputStream(new FileOutputStream(environment.getFile("console.log")))) {
             environment.project.javaexec(java -> {
                 PrintWriter writer = new PrintWriter(log_out);
                 Function<String, String> quote = s -> '"' + s + '"';
+                writer.println("JVM:         " + launcher);
                 writer.println("JVM Args:    " + jvmArgList.stream().map(quote).collect(Collectors.joining(", ")));
                 writer.println("Run Args:    " + runArgList.stream().map(quote).collect(Collectors.joining(", ")));
                 writer.println("Classpath:   " + jar.getAbsolutePath());
                 writer.println("Working Dir: " + workingDir.getAbsolutePath());
                 writer.println("Main Class:  " + mainClass);
                 writer.flush();
+                java.executable(launcher);
                 java.setJvmArgs(jvmArgList);
                 java.setArgs(runArgList);
                 java.setClasspath(environment.project.files(jar));
