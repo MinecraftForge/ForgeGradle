@@ -688,9 +688,9 @@ public class MCPRepo extends BaseRepo {
                 JsonObject cls = classMap.get(srgClass.getOriginal());
                 populateMappings(classes, srgClass, srgClass, cls);
 
-                Map<String, JsonObject> fieldMap = cls == null ? ImmutableMap.of() : getNamedJsonMap(cls.getAsJsonArray("fields"), true);
+                Map<String, JsonObject> fieldMap = cls == null ? ImmutableMap.of() : getNamedJsonMap(cls.getAsJsonArray("fields"), false);
                 for (IField srgField : srgClass.getFields()) {
-                    populateMappings(fields, srgClass, srgField, fieldMap.get(srgField.getOriginal() + srgField.getDescriptor()));
+                    populateMappings(fields, srgClass, srgField, fieldMap.get(srgField.getOriginal()));
                 }
 
                 Map<String, JsonObject> methodMap = cls == null ? ImmutableMap.of() : getNamedJsonMap(cls.getAsJsonArray("methods"), true);
