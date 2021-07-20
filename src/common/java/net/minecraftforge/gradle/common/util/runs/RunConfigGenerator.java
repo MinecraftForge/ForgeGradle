@@ -250,7 +250,7 @@ public abstract class RunConfigGenerator
         return wrapSpaces ? args.map(RunConfigGenerator::fixupArg) : args;
     }
 
-    protected static Stream<WrappedArgument> getArgsStream(RunConfig runConfig, Supplier<Map<String, String>> updatedTokens, boolean wrapSpaces)
+    private static Stream<WrappedArgument> getArgsStream(RunConfig runConfig, Supplier<Map<String, String>> updatedTokens, boolean wrapSpaces)
     {
         final Stream<WrappedArgument> args = runConfig.getArgs().stream()
                 .map((value) -> new WrappedArgument(() -> runConfig.replace(updatedTokens.get(), value)));
