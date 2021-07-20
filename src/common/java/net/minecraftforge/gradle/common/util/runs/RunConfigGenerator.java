@@ -37,6 +37,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import com.google.common.base.Strings;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
@@ -54,6 +55,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -178,7 +181,8 @@ public abstract class RunConfigGenerator
     }
     public static TaskProvider<JavaExec> createRunTask(final RunConfig runConfig, final Project project, final Task prepareRuns, final List<String> additionalClientArgs) {
 
-        Map<String, String> updatedTokens = configureTokens(runConfig, createRuntimeClassPathList(project), mapModClassesToGradle(project, runConfig));
+        final Supplier<Map<String, String>> updatedTokensSupplier = Suppliers.memoize(() ->
+                configureTokens(runConfig, createRuntimeClassPathList(project), mapModClassesToGradle(project, runConfig)));
 
         TaskProvider<Task> prepareRun = project.getTasks().register("prepare" + Utils.capitalize(runConfig.getTaskName()), Task.class, task -> {
             task.setGroup(RunConfig.RUNS_GROUP);
@@ -206,13 +210,13 @@ public abstract class RunConfigGenerator
             JavaToolchainService service = project.getExtensions().getByType(JavaToolchainService.class);
             task.getJavaLauncher().set(service.launcherFor(project.getExtensions().getByType(JavaPluginExtension.class).getToolchain()));
 
-            task.args(getArgsStream(runConfig, updatedTokens, false).toArray());
+            task.args(getArgsStream(runConfig, updatedTokensSupplier, false));
             task.jvmArgs(runConfig.getJvmArgs());
             if (runConfig.isClient()) {
                 task.jvmArgs(additionalClientArgs);
             }
-            runConfig.getEnvironment().forEach((key,value) -> task.environment(key, runConfig.replace(updatedTokens, value)));
-            runConfig.getProperties().forEach((key,value) -> task.systemProperty(key, runConfig.replace(updatedTokens, value)));
+            runConfig.getEnvironment().forEach((key,value) -> task.environment(key, new WrappedArgument(() -> runConfig.replace(updatedTokensSupplier.get(), value))));
+            runConfig.getProperties().forEach((key,value) -> task.systemProperty(key, new WrappedArgument(() -> runConfig.replace(updatedTokensSupplier.get(), value))));
 
             runConfig.getAllSources().stream().map(SourceSet::getRuntimeClasspath).forEach(task::classpath);
 
@@ -244,6 +248,13 @@ public abstract class RunConfigGenerator
     {
         Stream<String> args = runConfig.getArgs().stream().map((value) -> runConfig.replace(updatedTokens, value));
         return wrapSpaces ? args.map(RunConfigGenerator::fixupArg) : args;
+    }
+
+    protected static Stream<WrappedArgument> getArgsStream(RunConfig runConfig, Supplier<Map<String, String>> updatedTokens, boolean wrapSpaces)
+    {
+        final Stream<WrappedArgument> args = runConfig.getArgs().stream()
+                .map((value) -> new WrappedArgument(() -> runConfig.replace(updatedTokens.get(), value)));
+        return wrapSpaces ? args.map(value -> value.postProcess(RunConfigGenerator::fixupArg)) : args;
     }
 
     protected static String getJvmArgs(@Nonnull RunConfig runConfig, List<String> additionalClientArgs, Map<String, String> updatedTokens)
@@ -323,6 +334,42 @@ public abstract class RunConfigGenerator
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private static class WrappedArgument {
+        private final Supplier<String> original;
+        private final Function<String, String> postProcess;
+
+        private WrappedArgument(Supplier<String> original, Function<String, String> postProcess) {
+            this.original = original;
+            this.postProcess = postProcess;
+        }
+
+        private WrappedArgument(Supplier<String> original) {
+            this(original, Function.identity());
+        }
+
+        public WrappedArgument postProcess(Function<String, String> postProcess) {
+            return new WrappedArgument(original, postProcess);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            WrappedArgument that = (WrappedArgument) o;
+            return original.equals(that.original);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(original);
+        }
+
+        @Override
+        public String toString() {
+            return postProcess.apply(original.get());
         }
     }
 }
