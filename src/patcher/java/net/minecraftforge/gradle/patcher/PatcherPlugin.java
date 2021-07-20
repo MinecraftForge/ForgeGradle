@@ -189,6 +189,9 @@ public class PatcherPlugin implements Plugin<Project> {
                 task.getRejects().set(project.getLayout().getProjectDirectory().dir("rejects").getAsFile());
                 task.setFailOnError(false);
             }
+
+            // Force patch application to happen _after_ patch generation
+            task.mustRunAfter(genPatches);
         });
 
         toMCPConfig.configure(task -> {
@@ -201,6 +204,8 @@ public class PatcherPlugin implements Plugin<Project> {
             task.getZip().set(toMCPConfig.flatMap(ApplyMappings::getOutput));
             task.getOutput().set(extension.getPatchedSrc());
         });
+        // Forces compilation to happen _after_ the source is remapped
+        javaCompileTask.configure(task -> task.mustRunAfter(extractMapped));
 
         extractRangeConfig.configure(task -> {
             task.getDependencies().from(jarTask.flatMap(AbstractArchiveTask::getArchiveFile));
@@ -208,6 +213,9 @@ public class PatcherPlugin implements Plugin<Project> {
             // Only add main source, as we inject the patchedSrc into it as a sourceset.
             task.getSources().from(mainSource.map(s -> s.getJava().getSourceDirectories()));
             task.getDependencies().from(javaCompileTask.map(JavaCompile::getClasspath));
+
+            // Forces the range map extraction to happen _after_ the source is remapped
+            task.mustRunAfter(extractMapped);
         });
 
         createMcp2Srg.configure(task -> task.setReverse(true));
@@ -233,6 +241,9 @@ public class PatcherPlugin implements Plugin<Project> {
             task.getRangeMap().set(extractRangeConfig.flatMap(ExtractRangeMap::getOutput));
             task.getSrgFiles().from(createMcp2Srg.flatMap(GenerateSRG::getOutput));
             task.getExcFiles().from(createExc.flatMap(CreateExc::getOutput), extension.getExcs());
+
+            // Forces the base source range map application to happen _after_ the source is remapped
+            task.mustRunAfter(extractMapped);
         });
 
         genPatches.configure(task -> {
