@@ -272,7 +272,7 @@ public class PatcherPlugin implements Plugin<Project> {
          * patches in /patches/
          */
         sourcesJar.configure(task -> {
-            task.setOnlyIf(PatcherPlugin::noneSkipped);
+            task.setOnlyIf(t -> applyRangeConfig.flatMap(ApplyRangeMap::getOutput).map(rf -> rf.getAsFile().exists()).getOrElse(false));
             task.dependsOn(applyRangeConfig);
             task.from(project.zipTree(applyRangeConfig.flatMap(ApplyRangeMap::getOutput)));
             task.getArchiveClassifier().set("sources");
@@ -533,7 +533,6 @@ public class PatcherPlugin implements Plugin<Project> {
 
             //UserDev Config Default Values
             userdevConfig.configure(task -> {
-                task.setOnlyIf(PatcherPlugin::noneSkipped);
                 task.getTool().convention(genJoinedBinPatches.map(JarExec::getResolvedVersion)
                         .map(ver -> "net.minecraftforge:binarypatcher:" + ver + ":fatjar"));
                 task.getArguments().addAll("--clean", "{clean}", "--output", "{output}", "--apply", "{patch}");
@@ -681,17 +680,5 @@ public class PatcherPlugin implements Plugin<Project> {
             return getMcpParent(parent);
         }
         return null;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static boolean noneSkipped(Task task) {
-        return task.getDependsOn().stream().noneMatch(t -> {
-            if (t instanceof Task) {
-                return ((Task) t).getState().getSkipped();
-            } else if (t instanceof Provider && ((Provider<?>) t).get() instanceof Task) {
-                return ((Provider<Task>) t).get().getState().getSkipped();
-            }
-            return false;
-        });
     }
 }
