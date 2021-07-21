@@ -271,10 +271,10 @@ public class MavenArtifactDownloader {
                 meta.delete();
                 throw new IOException("Invalid maven-metadata.xml file", e);
             }
-        }/* else if (artifact.getVersion().contains("-SNAPSHOT")) {
+        } else if (artifact.getVersion().contains("-SNAPSHOT")) {
             return null; //TODO
             //throw new IllegalArgumentException("Snapshot versions are not supported, yet... " + artifact.getDescriptor());
-        }*/
+        }
 
         File ret = _downloadWithCache(project, maven, artifact.getPath(), changing, false);
         return ret == null ? null : ImmutablePair.of(artifact, ret);
