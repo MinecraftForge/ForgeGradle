@@ -184,7 +184,7 @@ public class MinecraftRepo extends BaseRepo {
         if (idx != -1 && MCP_CONFIG_VERSION.matcher(version.substring(idx + 1)).matches()) {
             return version.substring(version.lastIndexOf('-', idx - 1) + 1, idx);
         }
-        return version;
+        return version.substring(idx + 1);
     }
 
     @Nullable
