@@ -108,6 +108,10 @@ public class McpNames {
         String data = IOUtils.toString(stream, sourceFileCharset);
         List<String> input = IOUtils.readLines(new StringReader(data));
 
+        // Return early on emtpy files
+        if (data.isEmpty())
+            return "";
+
         //Reader doesn't give us the empty line if the file ends with a newline.. so add one.
         if (data.charAt(data.length() - 1) == '\r' || data.charAt(data.length() - 1) == '\n')
             input.add("");
