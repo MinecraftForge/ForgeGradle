@@ -64,6 +64,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     private List<RunConfig> parents, children;
     private List<String> args, jvmArgs;
     private boolean forceExit = true;
+    private Boolean client; // so we can have it null
 
     private Map<String, String> env, props, tokens;
 
@@ -541,10 +542,22 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         return resolved == null ? value : resolved;
     }
 
-    public boolean isClient() {
-        boolean isTargetClient = getEnvironment().getOrDefault("target", "").contains("client") || getName().contains("client");
+    public void client(boolean value) {
+        setClient(value);
+    }
 
-        return isTargetClient || MCP_CLIENT_MAIN.equals(getMain()) || MC_CLIENT_MAIN.equals(getMain());
+    public void setClient(boolean value) {
+        this.client = value;
+    }
+
+    public boolean isClient() {
+        if (client == null) {
+            boolean isTargetClient = getEnvironment().getOrDefault("target", "").contains("client") || getName().contains("client");
+
+            client = isTargetClient || MCP_CLIENT_MAIN.equals(getMain()) || MC_CLIENT_MAIN.equals(getMain());
+        }
+
+        return client;
     }
 
     public List<SourceSet> getAllSources() {
