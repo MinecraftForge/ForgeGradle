@@ -473,6 +473,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         workDir = first.workDir == null ? second.workDir : first.workDir;
         ideaModule = first.ideaModule == null ? second.ideaModule : first.ideaModule;
         singleInstance = first.singleInstance == null ? second.singleInstance : first.singleInstance;
+        this.client = first.client == null ? second.client : first.client;
 
         if (other.env != null) {
             other.env.forEach(overwrite
