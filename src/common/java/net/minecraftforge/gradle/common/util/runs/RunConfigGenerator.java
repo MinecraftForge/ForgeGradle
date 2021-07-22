@@ -207,9 +207,9 @@ public abstract class RunConfigGenerator
             task.getJavaLauncher().set(service.launcherFor(project.getExtensions().getByType(JavaPluginExtension.class).getToolchain()));
 
             task.args(getArgsStream(runConfig, updatedTokens, false).toArray());
-            task.jvmArgs(runConfig.getJvmArgs());
+            runConfig.getJvmArgs().forEach((arg) -> task.jvmArgs(runConfig.replace(updatedTokens, arg)));
             if (runConfig.isClient()) {
-                task.jvmArgs(additionalClientArgs);
+                additionalClientArgs.forEach((arg) -> task.jvmArgs(runConfig.replace(updatedTokens, arg)));
             }
             runConfig.getEnvironment().forEach((key,value) -> task.environment(key, runConfig.replace(updatedTokens, value)));
             runConfig.getProperties().forEach((key,value) -> task.systemProperty(key, runConfig.replace(updatedTokens, value)));

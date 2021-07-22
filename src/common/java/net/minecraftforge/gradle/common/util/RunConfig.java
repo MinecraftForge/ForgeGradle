@@ -542,7 +542,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     }
 
     public boolean isClient() {
-        boolean isTargetClient = getEnvironment().getOrDefault("target", "").contains("client");
+        boolean isTargetClient = getEnvironment().getOrDefault("target", "").contains("client") || getName().contains("client");
 
         return isTargetClient || MCP_CLIENT_MAIN.equals(getMain()) || MC_CLIENT_MAIN.equals(getMain());
     }
