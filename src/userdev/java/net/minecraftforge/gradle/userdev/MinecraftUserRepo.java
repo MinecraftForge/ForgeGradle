@@ -77,6 +77,10 @@ import codechicken.diffpatch.util.PatchMode;
 import codechicken.diffpatch.util.archiver.ArchiveFormat;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.provider.Property;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -193,6 +197,18 @@ public class MinecraftUserRepo extends BaseRepo {
         ExtraPropertiesExtension ext = project.getExtensions().getExtraProperties();
         ext.set("MC_VERSION", mcp.getMCVersion());
         ext.set("MCP_VERSION", mcp.getArtifact().getVersion());
+
+        // Validate the toolchain language version
+        Property<JavaLanguageVersion> languageVersion = project.getExtensions().getByType(JavaPluginExtension.class).getToolchain().getLanguageVersion();
+        int setVersion = languageVersion.map(JavaLanguageVersion::asInt).getOrElse(0);
+        int javaTarget = mcp.wrapper.getConfig().getJavaTarget();
+        if (setVersion < javaTarget) {
+            String s = setVersion == 0 ? "is not set" : "of " + setVersion + " is below the required minimum of " + javaTarget;
+            throw new IllegalArgumentException(
+                    "The java toolchain language version " + s + ".\n" +
+                    "You must have a line which looks like this in your buildscript:\n" +
+                    "    java.toolchain.languageVersion = JavaLanguageVersion.of(" + javaTarget + ")");
+        }
 
         //Maven POMs can't self-reference apparently, so we have to add any deps that are self referential.
         Patcher patcher = parent;
