@@ -202,10 +202,9 @@ public class MinecraftUserRepo extends BaseRepo {
         Property<JavaLanguageVersion> languageVersion = project.getExtensions().getByType(JavaPluginExtension.class).getToolchain().getLanguageVersion();
         int setVersion = languageVersion.map(JavaLanguageVersion::asInt).getOrElse(0);
         int javaTarget = mcp.wrapper.getConfig().getJavaTarget();
-        if (setVersion < javaTarget) {
-            String s = setVersion == 0 ? "is not set" : "of " + setVersion + " is below the required minimum of " + javaTarget;
+        if (setVersion != 0 && setVersion < javaTarget) {
             throw new IllegalArgumentException(
-                    "The java toolchain language version " + s + ".\n" +
+                    "The java toolchain language version of " + setVersion + " is below the required minimum of " + javaTarget + ".\n" +
                     "You must have a line which looks like this in your buildscript:\n" +
                     "    java.toolchain.languageVersion = JavaLanguageVersion.of(" + javaTarget + ")");
         }
