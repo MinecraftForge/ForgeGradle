@@ -28,6 +28,8 @@ import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
@@ -54,6 +56,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -173,9 +176,18 @@ public abstract class RunConfigGenerator
         return createRunTask(runConfig, project, prepareRuns.get(), additionalClientArgs);
     }
 
+    private static final Map<String, String> runtimeClasspathMap = new ConcurrentHashMap<>();
     protected static String createRuntimeClassPathList(final Project project) {
-        return project.getConfigurations().getByName("runtimeClasspath").getFiles().stream().map(File::getPath).collect(Collectors.joining(File.pathSeparator));
+        return runtimeClasspathMap.computeIfAbsent(project.getPath(), prjPath -> {
+            ConfigurationContainer configurations = project.getConfigurations();
+            Configuration runtimeClasspath = configurations.getByName("runtimeClasspath");
+            Configuration resolver = configurations.create("runtimeClasspath_resolver");
+            resolver.setCanBeResolved(true);
+            runtimeClasspath.getAllDependencies().forEach(resolver.getDependencies()::add);
+            return resolver.resolve().stream().map(File::getPath).collect(Collectors.joining(File.pathSeparator));
+        });
     }
+
     public static TaskProvider<JavaExec> createRunTask(final RunConfig runConfig, final Project project, final Task prepareRuns, final List<String> additionalClientArgs) {
 
         Map<String, String> updatedTokens = configureTokens(runConfig, createRuntimeClassPathList(project), mapModClassesToGradle(project, runConfig));
