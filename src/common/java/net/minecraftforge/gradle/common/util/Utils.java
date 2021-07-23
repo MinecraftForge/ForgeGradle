@@ -97,7 +97,7 @@ public class Utils {
     public static final String SPECIALSOURCE = "net.md-5:SpecialSource:1.10.0:shaded";
     public static final String SRG2SOURCE =  "net.minecraftforge:Srg2Source:8.+:fatjar";
     public static final String SIDESTRIPPER = "net.minecraftforge:mergetool:1.1.3:fatjar";
-    public static final String INSTALLERTOOLS = "net.minecraftforge:installertools:1.1.10:fatjar";
+    public static final String INSTALLERTOOLS = "net.minecraftforge:installertools:1.2.7:fatjar";
     public static final long ZIPTIME = 628041600000L;
     public static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 
