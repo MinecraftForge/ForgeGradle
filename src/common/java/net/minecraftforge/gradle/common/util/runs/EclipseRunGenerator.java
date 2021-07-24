@@ -48,7 +48,7 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
     protected Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs) {
         final Map<String, Document> documents = new LinkedHashMap<>();
 
-        Map<String, String> updatedTokens = configureTokens(runConfig, createRuntimeClassPathList(project), mapModClassesToEclipse(project, runConfig));
+        Map<String, String> updatedTokens = configureTokens(project, runConfig, mapModClassesToEclipse(project, runConfig));
 
         final File workingDirectory = new File(runConfig.getWorkingDirectory());
 

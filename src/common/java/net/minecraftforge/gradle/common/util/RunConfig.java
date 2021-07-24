@@ -533,14 +533,11 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     }
 
     public String replace(Map<String, String> vars, String value) {
-        if (value.length() <= 2 || value.charAt(0) != '{' || value.charAt(value.length() - 1) != '}') {
+        if (value.length() <= 2 || value.indexOf('{') == -1) {
             return value;
         }
 
-        String key = value.substring(1, value.length() - 1);
-        String resolved = vars.get(key);
-
-        return resolved == null ? value : resolved;
+        return Utils.replaceTokens(vars, value);
     }
 
     public void client(boolean value) {

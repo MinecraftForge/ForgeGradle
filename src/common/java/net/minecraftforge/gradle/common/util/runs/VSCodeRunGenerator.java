@@ -35,7 +35,7 @@ public class VSCodeRunGenerator extends RunConfigGenerator.JsonConfigurationBuil
     @Override
     protected JsonObject createRunConfiguration(@Nonnull Project project, @Nonnull RunConfig runConfig, List<String> additionalClientArgs)
     {
-        Map<String, String> updatedTokens = configureTokens(runConfig, createRuntimeClassPathList(project), mapModClassesToVSCode(project, runConfig));
+        Map<String, String> updatedTokens = configureTokens(project, runConfig, mapModClassesToVSCode(project, runConfig));
 
         JsonObject config = new JsonObject();
         config.addProperty("type", "java");

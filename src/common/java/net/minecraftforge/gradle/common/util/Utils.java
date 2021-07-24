@@ -64,6 +64,7 @@ import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.Callable;
@@ -433,5 +434,48 @@ public class Utils {
             default:
                 return new File(System.getProperty("user.home") + "/.minecraft");
         }
+    }
+
+    public static String replaceTokens(Map<String, String> tokens, String value) {
+        StringBuilder buf = new StringBuilder();
+
+        for (int x = 0; x < value.length(); x++) {
+            char c = value.charAt(x);
+            if (c == '\\') {
+                if (x == value.length() - 1)
+                    throw new IllegalArgumentException("Illegal pattern (Bad escape): " + value);
+                buf.append(value.charAt(++x));
+            } else if (c == '{' || c ==  '\'') {
+                StringBuilder key = new StringBuilder();
+                for (int y = x + 1; y <= value.length(); y++) {
+                    if (y == value.length())
+                        throw new IllegalArgumentException("Illegal pattern (Unclosed " + c + "): " + value);
+                    char d = value.charAt(y);
+                    if (d == '\\') {
+                        if (y == value.length() - 1)
+                            throw new IllegalArgumentException("Illegal pattern (Bad escape): " + value);
+                        key.append(value.charAt(++y));
+                    } else if (c == '{' && d == '}') {
+                        x = y;
+                        break;
+                    } else if (c == '\'' && d == '\'') {
+                        x = y;
+                        break;
+                    } else
+                        key.append(d);
+                }
+                if (c == '\'')
+                    buf.append(key);
+                else {
+                    if (!tokens.containsKey(key.toString()))
+                        throw new IllegalArgumentException("Illegal pattern: " + value + " Missing Key: " + key);
+                    buf.append(tokens.get(key.toString()));
+                }
+            } else {
+                buf.append(c);
+            }
+        }
+
+        return buf.toString();
     }
 }

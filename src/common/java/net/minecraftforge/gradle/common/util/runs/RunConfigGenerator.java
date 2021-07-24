@@ -159,12 +159,13 @@ public abstract class RunConfigGenerator
         }
     }
 
-    protected static Map<String,String> configureTokens(@Nonnull RunConfig runConfig, final String runtimeClassPathList, Stream<String> modClasses) {
+    protected static Map<String,String> configureTokens(final Project project, @Nonnull RunConfig runConfig, Stream<String> modClasses) {
         Map<String, String> tokens = new HashMap<>(runConfig.getTokens());
         tokens.compute("source_roots", (key,sourceRoots) -> ((sourceRoots != null)
                 ? Stream.concat(Arrays.stream(sourceRoots.split(File.pathSeparator)), modClasses)
                 : modClasses).distinct().collect(Collectors.joining(File.pathSeparator)));
-        tokens.compute("runtime_classpath", (key,runtimeclasspath)->runtimeClassPathList);
+        tokens.put("runtime_classpath", createRuntimeClassPathList(project));
+        tokens.put("minecraft_classpath", createMinecraftClassPath(project));
         // *Grumbles about having to keep a workaround for a "dummy" hack that should have never existed*
         runConfig.getEnvironment().compute("MOD_CLASSES", (key,value) ->
                 Strings.isNullOrEmpty(value) || "dummy".equals(value) ? "{source_roots}" : value);
@@ -184,13 +185,31 @@ public abstract class RunConfigGenerator
             Configuration resolver = configurations.create("runtimeClasspath_resolver");
             resolver.setCanBeResolved(true);
             runtimeClasspath.getAllDependencies().forEach(resolver.getDependencies()::add);
-            return resolver.resolve().stream().map(File::getPath).collect(Collectors.joining(File.pathSeparator));
+
+            return resolver.resolve().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator));
+        });
+    }
+
+    private static final Map<String, String> minecraftClasspathMap = new ConcurrentHashMap<>();
+    protected static String createMinecraftClassPath(final Project project) {
+        return minecraftClasspathMap.computeIfAbsent(project.getPath(), prjPath -> {
+            ConfigurationContainer configurations = project.getConfigurations();
+            Configuration minecraft = configurations.findByName("minecraft");
+            if (minecraft == null)
+                minecraft = configurations.findByName("minecraftImplementation");
+            if (minecraft == null)
+                throw new IllegalStateException("Could not find valid minecraft configuration!");
+            Configuration resolver = configurations.create("minecraftClasspathResolver");
+            resolver.setCanBeResolved(true);
+            minecraft.getAllDependencies().forEach(resolver.getDependencies()::add);
+
+            return resolver.resolve().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator));
         });
     }
 
     public static TaskProvider<JavaExec> createRunTask(final RunConfig runConfig, final Project project, final Task prepareRuns, final List<String> additionalClientArgs) {
 
-        Map<String, String> updatedTokens = configureTokens(runConfig, createRuntimeClassPathList(project), mapModClassesToGradle(project, runConfig));
+        Map<String, String> updatedTokens = configureTokens(project, runConfig, mapModClassesToGradle(project, runConfig));
 
         TaskProvider<Task> prepareRun = project.getTasks().register("prepare" + Utils.capitalize(runConfig.getTaskName()), Task.class, task -> {
             task.setGroup(RunConfig.RUNS_GROUP);

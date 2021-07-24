@@ -137,8 +137,8 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
     protected Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs) {
         final Map<String, Document> documents = new LinkedHashMap<>();
 
-        Map<String, String> updatedTokens = configureTokens(runConfig,
-                createRuntimeClassPathList(project), useGradlePaths
+        Map<String, String> updatedTokens = configureTokens(project, runConfig,
+                useGradlePaths
                     ? mapModClassesToGradle(project, runConfig)
                     : mapModClassesToIdea(project, runConfig)
         );
