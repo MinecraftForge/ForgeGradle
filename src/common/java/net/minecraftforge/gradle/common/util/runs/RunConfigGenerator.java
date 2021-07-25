@@ -177,34 +177,32 @@ public abstract class RunConfigGenerator
         return createRunTask(runConfig, project, prepareRuns.get(), additionalClientArgs);
     }
 
-    private static final Map<String, String> runtimeClasspathMap = new ConcurrentHashMap<>();
     protected static String createRuntimeClassPathList(final Project project) {
-        return runtimeClasspathMap.computeIfAbsent(project.getPath(), prjPath -> {
-            ConfigurationContainer configurations = project.getConfigurations();
-            Configuration runtimeClasspath = configurations.getByName("runtimeClasspath");
-            Configuration resolver = configurations.create("runtimeClasspath_resolver");
-            resolver.setCanBeResolved(true);
-            runtimeClasspath.getAllDependencies().forEach(resolver.getDependencies()::add);
+        ConfigurationContainer configurations = project.getConfigurations();
+        Configuration runtimeClasspath = configurations.getByName("runtimeClasspath");
+        Configuration resolver = configurations.create("runtimeClasspath_resolver");
+        resolver.setCanBeResolved(true);
+        runtimeClasspath.getAllDependencies().forEach(resolver.getDependencies()::add);
 
-            return resolver.resolve().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator));
-        });
+        String result = resolver.resolve().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator));
+        configurations.remove(resolver);
+        return result;
     }
 
-    private static final Map<String, String> minecraftClasspathMap = new ConcurrentHashMap<>();
     protected static String createMinecraftClassPath(final Project project) {
-        return minecraftClasspathMap.computeIfAbsent(project.getPath(), prjPath -> {
-            ConfigurationContainer configurations = project.getConfigurations();
-            Configuration minecraft = configurations.findByName("minecraft");
-            if (minecraft == null)
-                minecraft = configurations.findByName("minecraftImplementation");
-            if (minecraft == null)
-                throw new IllegalStateException("Could not find valid minecraft configuration!");
-            Configuration resolver = configurations.create("minecraftClasspathResolver");
-            resolver.setCanBeResolved(true);
-            minecraft.getAllDependencies().forEach(resolver.getDependencies()::add);
+        ConfigurationContainer configurations = project.getConfigurations();
+        Configuration minecraft = configurations.findByName("minecraft");
+        if (minecraft == null)
+            minecraft = configurations.findByName("minecraftImplementation");
+        if (minecraft == null)
+            throw new IllegalStateException("Could not find valid minecraft configuration!");
+        Configuration resolver = configurations.create("minecraftClasspathResolver");
+        resolver.setCanBeResolved(true);
+        minecraft.getAllDependencies().forEach(resolver.getDependencies()::add);
 
-            return resolver.resolve().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator));
-        });
+        String result = resolver.resolve().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator));
+        configurations.remove(resolver);
+        return result;
     }
 
     public static TaskProvider<JavaExec> createRunTask(final RunConfig runConfig, final Project project, final Task prepareRuns, final List<String> additionalClientArgs) {
