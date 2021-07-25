@@ -467,9 +467,7 @@ public class Utils {
                 if (c == '\'')
                     buf.append(key);
                 else {
-                    if (!tokens.containsKey(key.toString()))
-                        throw new IllegalArgumentException("Illegal pattern: " + value + " Missing Key: " + key);
-                    buf.append(tokens.get(key.toString()));
+                    buf.append(tokens.getOrDefault(key.toString(), "{" + key + "}"));
                 }
             } else {
                 buf.append(c);
