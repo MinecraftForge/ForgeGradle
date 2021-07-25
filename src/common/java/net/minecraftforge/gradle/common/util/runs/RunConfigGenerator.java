@@ -30,6 +30,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
@@ -177,16 +178,17 @@ public abstract class RunConfigGenerator
         return createRunTask(runConfig, project, prepareRuns.get(), additionalClientArgs);
     }
 
+    private static String getResolvedClasspath(ConfigurationContainer configurations, Configuration toResolve) {
+        Dependency[] dependencies = toResolve.getAllDependencies().toArray(new Dependency[0]);
+        return configurations.detachedConfiguration(dependencies).resolve().stream()
+                .map(File::getAbsolutePath)
+                .collect(Collectors.joining(File.pathSeparator));
+    }
+
     protected static String createRuntimeClassPathList(final Project project) {
         ConfigurationContainer configurations = project.getConfigurations();
         Configuration runtimeClasspath = configurations.getByName("runtimeClasspath");
-        Configuration resolver = configurations.create("runtimeClasspath_resolver");
-        resolver.setCanBeResolved(true);
-        runtimeClasspath.getAllDependencies().forEach(resolver.getDependencies()::add);
-
-        String result = resolver.resolve().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator));
-        configurations.remove(resolver);
-        return result;
+        return getResolvedClasspath(configurations, runtimeClasspath);
     }
 
     protected static String createMinecraftClassPath(final Project project) {
@@ -196,13 +198,7 @@ public abstract class RunConfigGenerator
             minecraft = configurations.findByName("minecraftImplementation");
         if (minecraft == null)
             throw new IllegalStateException("Could not find valid minecraft configuration!");
-        Configuration resolver = configurations.create("minecraftClasspathResolver");
-        resolver.setCanBeResolved(true);
-        minecraft.getAllDependencies().forEach(resolver.getDependencies()::add);
-
-        String result = resolver.resolve().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator));
-        configurations.remove(resolver);
-        return result;
+        return getResolvedClasspath(configurations, minecraft);
     }
 
     public static TaskProvider<JavaExec> createRunTask(final RunConfig runConfig, final Project project, final Task prepareRuns, final List<String> additionalClientArgs) {
