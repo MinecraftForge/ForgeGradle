@@ -24,6 +24,7 @@ import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.gradle.api.Project;
@@ -51,13 +52,14 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -165,8 +167,28 @@ public abstract class RunConfigGenerator
         tokens.compute("source_roots", (key,sourceRoots) -> ((sourceRoots != null)
                 ? Stream.concat(Arrays.stream(sourceRoots.split(File.pathSeparator)), modClasses)
                 : modClasses).distinct().collect(Collectors.joining(File.pathSeparator)));
-        tokens.put("runtime_classpath", createRuntimeClassPathList(project));
-        tokens.put("minecraft_classpath", createMinecraftClassPath(project));
+        String runtimeClasspath = createRuntimeClassPathList(project);
+        tokens.put("runtime_classpath", runtimeClasspath);
+        String minecraftClasspath = createMinecraftClassPath(project);
+        tokens.put("minecraft_classpath", minecraftClasspath);
+
+        File classpathFolder = new File(project.getBuildDir(), "classpath");
+        if (classpathFolder.isDirectory() || classpathFolder.mkdirs()) {
+            File runtimeFile = new File(classpathFolder, "runtimeClasspath.txt");
+            tokens.put("runtime_classpath_file", runtimeFile.getAbsolutePath());
+
+            File mcFile = new File(classpathFolder, "minecraftClasspath.txt");
+            tokens.put("minecraft_classpath_file", mcFile.getAbsolutePath());
+
+            try (Writer runtimeWriter = Files.newBufferedWriter(runtimeFile.toPath(), StandardCharsets.UTF_8);
+                    Writer mcWriter = Files.newBufferedWriter(mcFile.toPath(), StandardCharsets.UTF_8)) {
+                IOUtils.write(String.join(System.lineSeparator(), runtimeClasspath.split(File.pathSeparator)), runtimeWriter);
+                IOUtils.write(String.join(System.lineSeparator(), minecraftClasspath.split(File.pathSeparator)), mcWriter);
+            } catch (IOException e) {
+                project.getLogger().error("Exception when writing classpaths to file", e);
+            }
+        }
+
         // *Grumbles about having to keep a workaround for a "dummy" hack that should have never existed*
         runConfig.getEnvironment().compute("MOD_CLASSES", (key,value) ->
                 Strings.isNullOrEmpty(value) || "dummy".equals(value) ? "{source_roots}" : value);
