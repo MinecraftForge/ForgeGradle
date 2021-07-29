@@ -35,6 +35,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -48,7 +49,7 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
     protected Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs) {
         final Map<String, Document> documents = new LinkedHashMap<>();
 
-        Map<String, String> updatedTokens = configureTokens(project, runConfig, mapModClassesToEclipse(project, runConfig));
+        Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig, mapModClassesToEclipse(project, runConfig));
 
         final File workingDirectory = new File(runConfig.getWorkingDirectory());
 

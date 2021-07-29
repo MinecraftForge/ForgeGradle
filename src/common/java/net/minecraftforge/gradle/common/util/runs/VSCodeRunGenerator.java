@@ -27,6 +27,7 @@ import org.gradle.api.Project;
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class VSCodeRunGenerator extends RunConfigGenerator.JsonConfigurationBuilder
@@ -35,7 +36,7 @@ public class VSCodeRunGenerator extends RunConfigGenerator.JsonConfigurationBuil
     @Override
     protected JsonObject createRunConfiguration(@Nonnull Project project, @Nonnull RunConfig runConfig, List<String> additionalClientArgs)
     {
-        Map<String, String> updatedTokens = configureTokens(project, runConfig, mapModClassesToVSCode(project, runConfig));
+        Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig, mapModClassesToVSCode(project, runConfig));
 
         JsonObject config = new JsonObject();
         config.addProperty("type", "java");

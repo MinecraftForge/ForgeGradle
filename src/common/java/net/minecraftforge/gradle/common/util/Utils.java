@@ -71,6 +71,7 @@ import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -436,7 +437,7 @@ public class Utils {
         }
     }
 
-    public static String replaceTokens(Map<String, String> tokens, String value) {
+    public static String replaceTokens(Map<String, ?> tokens, String value) {
         StringBuilder buf = new StringBuilder();
 
         for (int x = 0; x < value.length(); x++) {
@@ -467,7 +468,11 @@ public class Utils {
                 if (c == '\'')
                     buf.append(key);
                 else {
-                    buf.append(tokens.getOrDefault(key.toString(), "{" + key + "}"));
+                    Object v = tokens.get(key.toString());
+                    if (v instanceof Supplier)
+                        v = ((Supplier<?>) v).get();
+
+                    buf.append(v == null ? "{" + key + "}" : v);
                 }
             } else {
                 buf.append(c);

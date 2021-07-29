@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.common.util.runs;
 
+import com.google.common.base.Suppliers;
 import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
@@ -31,7 +32,6 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
-import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
@@ -54,12 +54,18 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.AbstractMap;
+import java.util.AbstractSet;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -162,32 +168,51 @@ public abstract class RunConfigGenerator
         }
     }
 
-    protected static Map<String,String> configureTokens(final Project project, @Nonnull RunConfig runConfig, Stream<String> modClasses) {
-        Map<String, String> tokens = new HashMap<>(runConfig.getTokens());
-        tokens.compute("source_roots", (key,sourceRoots) -> ((sourceRoots != null)
-                ? Stream.concat(Arrays.stream(sourceRoots.split(File.pathSeparator)), modClasses)
-                : modClasses).distinct().collect(Collectors.joining(File.pathSeparator)));
-        String runtimeClasspath = createRuntimeClassPathList(project);
-        tokens.put("runtime_classpath", runtimeClasspath);
-        String minecraftClasspath = createMinecraftClassPath(project);
-        tokens.put("minecraft_classpath", minecraftClasspath);
+    /**
+     * @deprecated Use {@link #configureTokensLazy(Project, RunConfig, Stream)}
+     */
+    @Deprecated
+    // TODO: remove this when we can break compat
+    protected static Map<String, String> configureTokens(final Project project, @Nonnull RunConfig runConfig, Stream<String> modClasses) {
+        project.getLogger().warn("WARNING: RunConfigGenerator#configureTokens was called instead of the lazy variant, configureTokensLazy.");
+        project.getLogger().warn("This means longer evaluation times as all tokens are evaluated. Please use configureTokensLazy.");
+        return configureTokensLazy(project, runConfig, modClasses)
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get()));
+    }
+
+    protected static Map<String, Supplier<String>> configureTokensLazy(final Project project, @Nonnull RunConfig runConfig, Stream<String> modClasses) {
+        Map<String, Supplier<String>> tokens = new HashMap<>();
+        runConfig.getTokens().forEach((k, v) -> tokens.put(k, () -> v));
+        tokens.compute("source_roots", (key, sourceRoots) -> Suppliers.memoize(() -> ((sourceRoots != null)
+                ? Stream.concat(Arrays.stream(sourceRoots.get().split(File.pathSeparator)), modClasses)
+                : modClasses).distinct().collect(Collectors.joining(File.pathSeparator))));
+        BiFunction<Supplier<String>, String, String> classpathJoiner = (cp, evaluated) -> cp == null
+                ? evaluated
+                : String.join(File.pathSeparator, cp.get(), evaluated);
+        // Can't lazily evaluate these as they create tasks we have to do in the current context
+        String runtimeClasspath = classpathJoiner.apply(tokens.get("runtime_classpath"), createRuntimeClassPathList(project));
+        tokens.put("runtime_classpath", () -> runtimeClasspath);
+        String minecraftClasspath = classpathJoiner.apply(tokens.get("minecraft_classpath"), createMinecraftClassPath(project));
+        tokens.put("minecraft_classpath", () -> minecraftClasspath);
 
         File classpathFolder = new File(project.getBuildDir(), "classpath");
-        if (classpathFolder.isDirectory() || classpathFolder.mkdirs()) {
-            File runtimeFile = new File(classpathFolder, "runtimeClasspath.txt");
-            tokens.put("runtime_classpath_file", runtimeFile.getAbsolutePath());
-
-            File mcFile = new File(classpathFolder, "minecraftClasspath.txt");
-            tokens.put("minecraft_classpath_file", mcFile.getAbsolutePath());
-
-            try (Writer runtimeWriter = Files.newBufferedWriter(runtimeFile.toPath(), StandardCharsets.UTF_8);
-                    Writer mcWriter = Files.newBufferedWriter(mcFile.toPath(), StandardCharsets.UTF_8)) {
-                IOUtils.write(String.join(System.lineSeparator(), runtimeClasspath.split(File.pathSeparator)), runtimeWriter);
-                IOUtils.write(String.join(System.lineSeparator(), minecraftClasspath.split(File.pathSeparator)), mcWriter);
+        BinaryOperator<String> classpathFileWriter = (filename, classpath) -> {
+            if (!classpathFolder.isDirectory() && !classpathFolder.mkdirs())
+                throw new IllegalStateException("Could not create directory at " + classpathFolder.getAbsolutePath());
+            File outputFile = new File(classpathFolder, runConfig.getUniqueFileName() + "_" + filename + ".txt");
+            try (Writer classpathWriter = Files.newBufferedWriter(outputFile.toPath(), StandardCharsets.UTF_8)) {
+                IOUtils.write(String.join(System.lineSeparator(), classpath.split(File.pathSeparator)), classpathWriter);
             } catch (IOException e) {
-                project.getLogger().error("Exception when writing classpaths to file", e);
+                project.getLogger().error("Exception when writing classpath to file {}", outputFile, e);
             }
-        }
+            return outputFile.getAbsolutePath();
+        };
+        tokens.put("runtime_classpath_file",
+                Suppliers.memoize(() -> classpathFileWriter.apply("runtimeClasspath", runtimeClasspath)));
+        tokens.put("minecraft_classpath_file",
+                Suppliers.memoize(() -> classpathFileWriter.apply("minecraftClasspath", minecraftClasspath)));
 
         // *Grumbles about having to keep a workaround for a "dummy" hack that should have never existed*
         runConfig.getEnvironment().compute("MOD_CLASSES", (key,value) ->
@@ -224,7 +249,7 @@ public abstract class RunConfigGenerator
 
     public static TaskProvider<JavaExec> createRunTask(final RunConfig runConfig, final Project project, final Task prepareRuns, final List<String> additionalClientArgs) {
 
-        Map<String, String> updatedTokens = configureTokens(project, runConfig, mapModClassesToGradle(project, runConfig));
+        Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig, mapModClassesToGradle(project, runConfig));
 
         TaskProvider<Task> prepareRun = project.getTasks().register("prepare" + Utils.capitalize(runConfig.getTaskName()), Task.class, task -> {
             task.setGroup(RunConfig.RUNS_GROUP);
@@ -281,24 +306,24 @@ public abstract class RunConfigGenerator
         return '"' + replace + '"';
     }
 
-    protected static String getArgs(RunConfig runConfig, Map<String, String> updatedTokens)
+    protected static String getArgs(RunConfig runConfig, Map<String, ?> updatedTokens)
     {
         return getArgsStream(runConfig, updatedTokens, true).collect(Collectors.joining(" "));
     }
 
-    protected static Stream<String> getArgsStream(RunConfig runConfig, Map<String, String> updatedTokens, boolean wrapSpaces)
+    protected static Stream<String> getArgsStream(RunConfig runConfig, Map<String, ?> updatedTokens, boolean wrapSpaces)
     {
         Stream<String> args = runConfig.getArgs().stream().map((value) -> runConfig.replace(updatedTokens, value));
         return wrapSpaces ? args.map(RunConfigGenerator::fixupArg) : args;
     }
 
-    protected static String getJvmArgs(@Nonnull RunConfig runConfig, List<String> additionalClientArgs, Map<String, String> updatedTokens)
+    protected static String getJvmArgs(@Nonnull RunConfig runConfig, List<String> additionalClientArgs, Map<String, ?> updatedTokens)
     {
         return getJvmArgsStream(runConfig, additionalClientArgs, updatedTokens)
                 .collect(Collectors.joining(" "));
     }
 
-    private static Stream<String> getJvmArgsStream(@Nonnull RunConfig runConfig, List<String> additionalClientArgs, Map<String, String> updatedTokens)
+    private static Stream<String> getJvmArgsStream(@Nonnull RunConfig runConfig, List<String> additionalClientArgs, Map<String, ?> updatedTokens)
     {
         final Stream<String> propStream = Stream.concat(
                 runConfig.getProperties().entrySet().stream()

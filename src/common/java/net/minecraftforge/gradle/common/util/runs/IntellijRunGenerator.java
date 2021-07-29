@@ -41,6 +41,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import javax.annotation.Nonnull;
@@ -137,7 +138,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
     protected Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs) {
         final Map<String, Document> documents = new LinkedHashMap<>();
 
-        Map<String, String> updatedTokens = configureTokens(project, runConfig,
+        Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig,
                 useGradlePaths
                     ? mapModClassesToGradle(project, runConfig)
                     : mapModClassesToIdea(project, runConfig)
