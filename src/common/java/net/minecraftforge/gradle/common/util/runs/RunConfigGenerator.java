@@ -200,9 +200,8 @@ public abstract class RunConfigGenerator
         return createRunTask(runConfig, project, prepareRuns.get(), additionalClientArgs);
     }
 
-    private static String getResolvedClasspath(ConfigurationContainer configurations, Configuration toResolve) {
-        Dependency[] dependencies = toResolve.getAllDependencies().toArray(new Dependency[0]);
-        return configurations.detachedConfiguration(dependencies).resolve().stream()
+    private static String getResolvedClasspath(Configuration toResolve) {
+        return toResolve.copyRecursive().resolve().stream()
                 .map(File::getAbsolutePath)
                 .collect(Collectors.joining(File.pathSeparator));
     }
@@ -210,7 +209,7 @@ public abstract class RunConfigGenerator
     protected static String createRuntimeClassPathList(final Project project) {
         ConfigurationContainer configurations = project.getConfigurations();
         Configuration runtimeClasspath = configurations.getByName("runtimeClasspath");
-        return getResolvedClasspath(configurations, runtimeClasspath);
+        return getResolvedClasspath(runtimeClasspath);
     }
 
     protected static String createMinecraftClassPath(final Project project) {
@@ -220,7 +219,7 @@ public abstract class RunConfigGenerator
             minecraft = configurations.findByName("minecraftImplementation");
         if (minecraft == null)
             throw new IllegalStateException("Could not find valid minecraft configuration!");
-        return getResolvedClasspath(configurations, minecraft);
+        return getResolvedClasspath(minecraft);
     }
 
     public static TaskProvider<JavaExec> createRunTask(final RunConfig runConfig, final Project project, final Task prepareRuns, final List<String> additionalClientArgs) {
