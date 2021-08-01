@@ -185,12 +185,16 @@ public abstract class RunConfigGenerator
     protected static Map<String, Supplier<String>> configureTokensLazy(final Project project, @Nonnull RunConfig runConfig, Stream<String> modClasses) {
         Map<String, Supplier<String>> tokens = new HashMap<>();
         runConfig.getTokens().forEach((k, v) -> tokens.put(k, () -> v));
+        runConfig.getLazyTokens().forEach((k, v) -> tokens.put(k, Suppliers.memoize(v::get)));
         tokens.compute("source_roots", (key, sourceRoots) -> Suppliers.memoize(() -> ((sourceRoots != null)
                 ? Stream.concat(Arrays.stream(sourceRoots.get().split(File.pathSeparator)), modClasses)
                 : modClasses).distinct().collect(Collectors.joining(File.pathSeparator))));
-        BiFunction<Supplier<String>, String, String> classpathJoiner = (cp, evaluated) -> cp == null
-                ? evaluated
-                : String.join(File.pathSeparator, cp.get(), evaluated);
+        BiFunction<Supplier<String>, String, String> classpathJoiner = (supplier, evaluated) -> {
+            if (supplier == null)
+                return evaluated;
+            String oldCp = supplier.get();
+            return oldCp == null || oldCp.isEmpty() ? evaluated : String.join(File.pathSeparator, oldCp, evaluated);
+        };
         // Can't lazily evaluate these as they create tasks we have to do in the current context
         String runtimeClasspath = classpathJoiner.apply(tokens.get("runtime_classpath"), createRuntimeClassPathList(project));
         tokens.put("runtime_classpath", () -> runtimeClasspath);

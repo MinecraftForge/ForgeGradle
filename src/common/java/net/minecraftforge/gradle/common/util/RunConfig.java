@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -67,6 +68,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     private Boolean client; // so we can have it null
 
     private Map<String, String> env, props, tokens;
+    private Map<String, Supplier<String>> lazyTokens;
 
     public RunConfig(final Project project, final String name) {
         this.project = project;
@@ -530,6 +532,30 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         }
 
         return tokens;
+    }
+
+    public void setLazyTokens(Map<String, Supplier<String>> lazyTokens) {
+        this.lazyTokens = new HashMap<>(lazyTokens);
+    }
+
+    public void lazyToken(String key, Supplier<String> valueSupplier) {
+        getLazyTokens().put(key, valueSupplier);
+    }
+
+    public void lazyToken(String key, Closure<String> closure) {
+        lazyToken(key, closure::call);
+    }
+
+    public void lazyTokens(Map<String, Supplier<String>> lazyTokens) {
+        getLazyTokens().putAll(lazyTokens);
+    }
+
+    public Map<String, Supplier<String>> getLazyTokens() {
+        if (lazyTokens == null) {
+            lazyTokens = new HashMap<>();
+        }
+
+        return lazyTokens;
     }
 
     public String replace(Map<String, ?> vars, String value) {
