@@ -245,17 +245,9 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 "ext", "zip"
                 ));
 
-        // Check FG Version, unless its disabled
-        List<String> lines = Lists.newArrayListWithExpectedSize(5);
-        Object disableUpdateCheck = project.getProperties().get("net.minecraftforge.gradle.disableUpdateChecker");
-        if (!"true".equals(disableUpdateCheck) && !"yes".equals(disableUpdateCheck) && !new Boolean(true).equals(disableUpdateCheck))
-        {
-            doFGVersionCheck(lines);
-        }
-
         Logger logger = this.project.getLogger();
         logger.warn("WARNING: You are using an unsupported version of ForgeGradle.");
-        logger.warn("Please consider upgrading to ForgeGradle 4 and helping in the efforts to get old versions working on the modern toolchain.");
+        logger.warn("Please consider upgrading to ForgeGradle 5 and helping in the efforts to get old versions working on the modern toolchain.");
         logger.warn("See https://gist.github.com/TheCurle/fe7ad3ede188cbdd15c235cc75d52d4a for more info on contributing.");
 
         if (!displayBanner)
@@ -270,9 +262,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         logger.lifecycle("         by: Searge, ProfMobius, Fesh0r,         ");
         logger.lifecycle("         R4wk, ZeuX, IngisKahn, bspkrs           ");
         logger.lifecycle("#################################################");
-
-        for (String str : lines)
-            logger.lifecycle(str);
 
         displayBanner = false;
     }
