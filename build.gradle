@@ -107,6 +107,18 @@ dependencies {
         exclude group: 'cpw.mods',            module: 'modlauncher'
     }
 
+    // Because Eclipse is dumb and decided to use dynamic versions with J8 incompatibility
+    shade('org.eclipse.platform:org.eclipse.core.resources:3.14.0') { force = true }
+    shade('org.eclipse.platform:org.eclipse.core.runtime:3.20.100') { force = true }
+    shade('org.eclipse.platform:org.eclipse.text:3.11.0') { force = true }
+    shade('org.eclipse.platform:org.eclipse.core.filesystem:1.7.700') { force = true }
+    shade('org.eclipse.platform:org.eclipse.equinox.common:3.14.100') { force = true }
+    shade('org.eclipse.platform:org.eclipse.core.contenttype:3.7.900') { force = true }
+    shade('org.eclipse.platform:org.eclipse.core.jobs:3.10.1100') { force = true }
+    shade('org.eclipse.platform:org.eclipse.equinox.registry:3.10.100') { force = true }
+    shade('org.eclipse.platform:org.eclipse.osgi:3.16.200') { force = true }
+    shade('org.eclipse.platform:org.eclipse.core.commands:3.9.800') { force = true }
+
     //Stuff used in the GradleStart classes
     compileOnly 'com.mojang:authlib:1.5.16'
     compileOnly('net.minecraft:launchwrapper:1.11'){
