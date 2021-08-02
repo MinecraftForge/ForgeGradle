@@ -66,6 +66,8 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     private List<String> args, jvmArgs;
     private boolean forceExit = true;
     private Boolean client; // so we can have it null
+    private Boolean inheritArgs;
+    private Boolean inheritJvmArgs;
 
     private Map<String, String> env, props, tokens;
     private Map<String, Supplier<String>> lazyTokens;
@@ -143,6 +145,32 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
 
     public String getMain() {
         return this.main;
+    }
+
+    public void inheritArgs(boolean value) {
+        setInheritArgs(value);
+    }
+
+    public void setInheritArgs(boolean value) {
+        this.inheritArgs = value;
+    }
+
+    public boolean getInheritArgs() {
+        // Both null and true mean inherit the args
+        return inheritArgs != Boolean.FALSE;
+    }
+
+    public void inheritJvmArgs(boolean value) {
+        setInheritJvmArgs(value);
+    }
+
+    public void setInheritJvmArgs(boolean value) {
+        this.inheritJvmArgs = value;
+    }
+
+    public boolean getInheritJvmArgs() {
+        // Both null and true mean inherit the args
+        return inheritJvmArgs != Boolean.FALSE;
     }
 
     public void args(List<Object> values) {
@@ -458,16 +486,16 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         RunConfig second = overwrite ? this : other;
 
         List<String> args = new ArrayList<>();
-        if (first.args != null)
-            args.addAll(first.args);
-        if (second.args != null)
-            args.addAll(second.args);
+        if (this.getInheritArgs() && other.args != null)
+            args.addAll(other.args);
+        if (this.args != null)
+            args.addAll(this.args);
         this.args = args;
         List<String> jvmArgs = new ArrayList<>();
-        if (first.jvmArgs != null)
-            jvmArgs.addAll(first.jvmArgs);
-        if (second.jvmArgs != null)
-            jvmArgs.addAll(second.jvmArgs);
+        if (this.getInheritJvmArgs() && other.jvmArgs != null)
+            jvmArgs.addAll(other.jvmArgs);
+        if (this.jvmArgs != null)
+            jvmArgs.addAll(this.jvmArgs);
         this.jvmArgs = jvmArgs;
         main = first.main == null ? second.main : first.main;
         mods = first.mods == null ? second.mods : first.mods;
