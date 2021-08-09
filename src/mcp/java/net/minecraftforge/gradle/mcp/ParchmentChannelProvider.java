@@ -58,6 +58,7 @@ import java.util.zip.ZipOutputStream;
 public class ParchmentChannelProvider extends ChannelProvider {
     private static final Gson GSON = new Gson();
     private static final Pattern PARCHMENT_PATTERN = Pattern.compile("(?<mappingsversion>[\\w\\-.]+)-(?<mcpversion>(?<mcversion>[\\d.]+)(?:-\\d{8}\\.\\d{6})?)");
+    private static final Pattern LETTERS_ONLY_PATTERN = Pattern.compile("[a-zA-Z]+");
 
     public ParchmentChannelProvider() {
         super("parchment");
@@ -172,6 +173,8 @@ public class ParchmentChannelProvider extends ChannelProvider {
                                     String srgId = srgMethod.getMapped().indexOf('_') == -1
                                             ? srgMethod.getMapped()
                                             : srgMethod.getMapped().split("_")[1];
+                                    if (LETTERS_ONLY_PATTERN.matcher(srgId).matches())
+                                        continue; // This means it's a mapped parameter of a functional interface method and we can't use it.
                                     srgParam = String.format(isConstructor ? "p_i%s_%s_" : "p_%s_%s_", srgId, parameter.get("index").getAsString());
                                 }
                                 String paramName = parameter.has("name") ? parameter.get("name").getAsString() : null;
