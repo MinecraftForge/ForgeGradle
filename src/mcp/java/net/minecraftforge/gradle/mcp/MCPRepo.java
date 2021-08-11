@@ -117,7 +117,7 @@ public class MCPRepo extends BaseRepo {
         super(cache, log);
         this.project = project;
         this.repo = SimpleRepository.of(ArtifactProviderBuilder.begin(ArtifactIdentifier.class)
-            .provide(this)
+                .provide(this)
         );
     }
 
@@ -207,7 +207,7 @@ public class MCPRepo extends BaseRepo {
 
     private HashStore commonHash(File mcp) {
         return new HashStore(this.getCacheRoot())
-            .add("mcp", mcp);
+                .add("mcp", mcp);
     }
 
     private File getMCP(String version) throws IOException {
@@ -497,12 +497,12 @@ public class MCPRepo extends BaseRepo {
                     continue;
                 for (IField fld : cls.getFields()) {
                     String name = obf.remapField(fld.getMapped());
-                    if (name.startsWith("field_"))
+                    if (name.startsWith("field_") || name.startsWith("f_"))
                         cfields.put(name, fld.getOriginal());
                 }
                 for (IMethod mtd : cls.getMethods()) {
                     String name = obf.remapMethod(mtd.getMapped(), mtd.getMappedDescriptor());
-                    if (name.startsWith("func_"))
+                    if (name.startsWith("func_") || name.startsWith("m_"))
                         cmethods.put(name, mtd.getOriginal());
                 }
             }
@@ -512,12 +512,12 @@ public class MCPRepo extends BaseRepo {
                     continue;
                 for (IField fld : cls.getFields()) {
                     String name = obf.remapField(fld.getMapped());
-                    if (name.startsWith("field_"))
+                    if (name.startsWith("field_") || name.startsWith("f_"))
                         sfields.put(name, fld.getOriginal());
                 }
                 for (IMethod mtd : cls.getMethods()) {
                     String name = obf.remapMethod(mtd.getMapped(), mtd.getMappedDescriptor());
-                    if (name.startsWith("func_"))
+                    if (name.startsWith("func_") || name.startsWith("m_"))
                         smethods.put(name, mtd.getOriginal());
                 }
             }
@@ -555,7 +555,7 @@ public class MCPRepo extends BaseRepo {
                 mappings.getParentFile().mkdirs();
 
             try (FileOutputStream fos = new FileOutputStream(mappings);
-                 ZipOutputStream out = new ZipOutputStream(fos)) {
+                    ZipOutputStream out = new ZipOutputStream(fos)) {
 
                 out.putNextEntry(Utils.getStableEntry("fields.csv"));
                 try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWritter(out))) {
