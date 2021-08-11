@@ -488,7 +488,7 @@ public class MCPRepo extends BaseRepo {
                 .add("pg_client", client)
                 .add("pg_server", server)
                 .add("tsrg", tsrg)
-                .add("codever", "1");
+                .add("codever", "2");
 
         if (!cache.isSame() || !mappings.exists()) {
             IMappingFile pg_client = IMappingFile.load(client);
