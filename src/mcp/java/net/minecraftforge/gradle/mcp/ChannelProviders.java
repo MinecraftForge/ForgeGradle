@@ -22,11 +22,14 @@ package net.minecraftforge.gradle.mcp;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Holds all registered {@link ChannelProvider}s.
+ */
 public class ChannelProviders {
-    private static final Map<String, ChannelProvider> PROVIDERS = new HashMap<>();
+    private static final Map<String, ChannelProvider> PROVIDERS = new ConcurrentHashMap<>();
 
     static {
         // Add the default providers
@@ -35,15 +38,34 @@ public class ChannelProviders {
         addProvider(new MCPChannelProvider());
     }
 
-    public static Map<String, ChannelProvider> getProviders() {
+    private ChannelProviders() {}
+
+    /**
+     * Returns an unmodifiable view of the provider map.
+     *
+     * @return an unmodifiable view of the provider map
+     */
+    public static Map<String, ChannelProvider> getProviderMap() {
         return Collections.unmodifiableMap(PROVIDERS);
     }
 
+    /**
+     * Retrieves a possibly-null {@link ChannelProvider} from the provider map using the {@code channel} key.
+     *
+     * @param channel the channel key to use for querying
+     * @return a possibly-null {@link ChannelProvider} from the provider map
+     */
     @Nullable
     public static ChannelProvider getProvider(String channel) {
         return PROVIDERS.get(channel);
     }
 
+    /**
+     * Adds a {@link ChannelProvider} to the provider map using all of its defined channels in {@link ChannelProvider#getChannels()}.
+     * These channels will overwrite any previous channels.
+     *
+     * @param provider The provider to add to the channel provider map
+     */
     public static void addProvider(ChannelProvider provider) {
         for (String channel : provider.getChannels()) {
             PROVIDERS.put(channel, provider);

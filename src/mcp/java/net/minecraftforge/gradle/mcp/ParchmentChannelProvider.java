@@ -22,6 +22,7 @@ package net.minecraftforge.gradle.mcp;
 
 import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -39,6 +40,7 @@ import net.minecraftforge.srgutils.IMappingFile.INode;
 import net.minecraftforge.srgutils.IRenamer;
 import org.gradle.api.Project;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -47,6 +49,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -55,17 +58,15 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-public class ParchmentChannelProvider extends ChannelProvider {
+class ParchmentChannelProvider implements ChannelProvider {
     private static final Gson GSON = new Gson();
     private static final Pattern PARCHMENT_PATTERN = Pattern.compile("(?<mappingsversion>[\\w\\-.]+)-(?<mcpversion>(?<mcversion>[\\d.]+)(?:-\\d{8}\\.\\d{6})?)");
     private static final Pattern LETTERS_ONLY_PATTERN = Pattern.compile("[a-zA-Z]+");
 
-    public ParchmentChannelProvider() {
-        super("parchment");
-    }
-
-    private File cacheParchment(MCPRepo mcpRepo, String mcpversion, String mappingsVersion, String ext) {
-        return mcpRepo.cache("org", "parchmentmc", "data", "parchment-" + mcpversion, mappingsVersion, "parchment-" + mcpversion + '-' + mappingsVersion + '.' + ext);
+    @Nonnull
+    @Override
+    public Set<String> getChannels() {
+        return ImmutableSet.of("parchment");
     }
 
     @Nullable
@@ -195,11 +196,11 @@ public class ParchmentChannelProvider extends ChannelProvider {
 
             try (FileOutputStream fos = new FileOutputStream(mappings);
                     ZipOutputStream out = new ZipOutputStream(fos)) {
-                writeCsv("classes.csv", classes, out);
-                writeCsv("fields.csv", fields, out);
-                writeCsv("methods.csv", methods, out);
-                writeCsv("params.csv", parameters, out);
-                writeCsv("packages.csv", packages, out);
+                MCPRepo.writeCsv("classes.csv", classes, out);
+                MCPRepo.writeCsv("fields.csv", fields, out);
+                MCPRepo.writeCsv("methods.csv", methods, out);
+                MCPRepo.writeCsv("params.csv", parameters, out);
+                MCPRepo.writeCsv("packages.csv", packages, out);
             }
         }
 
@@ -207,6 +208,10 @@ public class ParchmentChannelProvider extends ChannelProvider {
         Utils.updateHash(mappings, HashFunction.SHA1);
 
         return mappings;
+    }
+
+    private File cacheParchment(MCPRepo mcpRepo, String mcpversion, String mappingsVersion, String ext) {
+        return mcpRepo.cache("org", "parchmentmc", "data", "parchment-" + mcpversion, mappingsVersion, "parchment-" + mcpversion + '-' + mappingsVersion + '.' + ext);
     }
 
     private Map<String, JsonObject> getNamedJsonMap(JsonArray array, boolean hasDescriptor) {

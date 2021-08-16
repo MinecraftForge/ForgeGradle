@@ -21,6 +21,8 @@
 package net.minecraftforge.gradle.mcp;
 
 import com.google.common.collect.Maps;
+import de.siegmar.fastcsv.writer.CsvWriter;
+import de.siegmar.fastcsv.writer.LineDelimiter;
 import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
 import net.minecraftforge.artifactural.api.repository.ArtifactProvider;
 import net.minecraftforge.artifactural.api.repository.Repository;
@@ -52,9 +54,13 @@ import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.zip.ZipOutputStream;
 
 /**
  * Provides the following artifacts:
@@ -371,9 +377,9 @@ public class MCPRepo extends BaseRepo {
         String version = mapping.substring(idx + 1);
 
         ChannelProvider provider = ChannelProviders.getProvider(channel);
-        if (provider != null)
-            return provider.getMappingsFile(this, project, channel, version);
-        throw new IllegalArgumentException("Unknown mapping provider: " + mapping);
+        if (provider == null)
+            throw new IllegalArgumentException("Unknown mapping provider: " + mapping + ", currently loaded: " + ChannelProviders.getProviderMap().keySet());
+        return provider.getMappingsFile(this, project, channel, version);
     }
 
     private McpNames loadMCPNames(String name, File data) throws IOException {
@@ -448,6 +454,27 @@ public class MCPRepo extends BaseRepo {
         }
 
         return extra;
+    }
+
+    protected static void writeCsv(String name, List<String[]> mappings, ZipOutputStream out) throws IOException {
+        if (mappings.size() <= 1)
+            return;
+        out.putNextEntry(Utils.getStableEntry(name));
+        try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWriter(out))) {
+            mappings.forEach(writer::writeRow);
+        }
+        out.closeEntry();
+    }
+
+    private static class UncloseableOutputStreamWriter extends OutputStreamWriter {
+        private UncloseableOutputStreamWriter(OutputStream out) {
+            super(out);
+        }
+
+        @Override
+        public void close() throws IOException {
+            super.flush();
+        }
     }
 
     @Nullable

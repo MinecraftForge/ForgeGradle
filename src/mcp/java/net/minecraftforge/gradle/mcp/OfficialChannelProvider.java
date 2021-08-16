@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.mcp;
 
+import com.google.common.collect.ImmutableSet;
 import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
@@ -28,6 +29,7 @@ import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.srgutils.IMappingFile;
 import org.gradle.api.Project;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -35,12 +37,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.zip.ZipOutputStream;
 
-public class OfficialChannelProvider extends ChannelProvider {
-    public OfficialChannelProvider() {
-        super("official");
+class OfficialChannelProvider implements ChannelProvider {
+    @Nonnull
+    @Override
+    public Set<String> getChannels() {
+        return ImmutableSet.of("official");
     }
 
     @Nullable
@@ -152,8 +157,8 @@ public class OfficialChannelProvider extends ChannelProvider {
 
             try (FileOutputStream fos = new FileOutputStream(mappings);
                     ZipOutputStream out = new ZipOutputStream(fos)) {
-                writeCsv("fields.csv", fields, out);
-                writeCsv("methods.csv", methods, out);
+                MCPRepo.writeCsv("fields.csv", fields, out);
+                MCPRepo.writeCsv("methods.csv", methods, out);
             }
 
             cache.save();

@@ -20,57 +20,37 @@
 
 package net.minecraftforge.gradle.mcp;
 
-import com.google.common.collect.ImmutableSet;
-import de.siegmar.fastcsv.writer.CsvWriter;
-import de.siegmar.fastcsv.writer.LineDelimiter;
-import net.minecraftforge.gradle.common.util.Utils;
 import org.gradle.api.Project;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.util.List;
 import java.util.Set;
-import java.util.zip.ZipOutputStream;
 
-public abstract class ChannelProvider {
-    private final Set<String> channels;
+/**
+ * A channel provider provides mapping files for its defined {@link #getChannels() channels} given a mapping channel and version.
+ */
+public interface ChannelProvider {
+    /**
+     * Returns an immutable set of the channels supported by this ChannelProvider.
+     *
+     * @return an immutable set of the channels supported by this ChannelProvider
+     */
+    @Nonnull
+    Set<String> getChannels();
 
-    protected ChannelProvider(String... channels) {
-        this.channels = ImmutableSet.copyOf(channels);
-    }
-
-    protected ChannelProvider(Set<String> channels) {
-        this.channels = ImmutableSet.copyOf(channels);
-    }
-
-    public Set<String> getChannels() {
-        return channels;
-    }
-
+    /**
+     * Attempts to generate a CSV zip mapping file based on the mapping channel and version.
+     * This will only be called if {@code channel} is contained in {@link #getChannels()}.
+     *
+     * @param mcpRepo the MCP Repo instance used for querying data and generating cache locations
+     * @param project the current project
+     * @param channel the mappings channel, must be contained in {@link #getChannels()}
+     * @param version the mappings version
+     * @return a possibly-null mapping file location
+     * @throws IOException if an I/O operation goes wrong
+     */
     @Nullable
-    public abstract File getMappingsFile(MCPRepo mcpRepo, Project project, String channel, String version) throws IOException;
-
-    protected void writeCsv(String name, List<String[]> mappings, ZipOutputStream out) throws IOException {
-        if (mappings.size() <= 1)
-            return;
-        out.putNextEntry(Utils.getStableEntry(name));
-        try (CsvWriter writer = CsvWriter.builder().lineDelimiter(LineDelimiter.LF).build(new UncloseableOutputStreamWriter(out))) {
-            mappings.forEach(writer::writeRow);
-        }
-        out.closeEntry();
-    }
-
-    private static class UncloseableOutputStreamWriter extends OutputStreamWriter {
-        private UncloseableOutputStreamWriter(OutputStream out) {
-            super(out);
-        }
-
-        @Override
-        public void close() throws IOException {
-            super.flush();
-        }
-    }
+    File getMappingsFile(MCPRepo mcpRepo, Project project, String channel, String version) throws IOException;
 }
