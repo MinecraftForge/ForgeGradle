@@ -86,7 +86,6 @@ import java.util.zip.ZipOutputStream;
  *         Current supported channels:
  *         'stable', 'snapshot': MCP's crowdsourced mappings.
  *         'official': Official mappings released by Mojang.
- *         'parchment': Parchment mappings released by ParchmentMC.
  *
  *   Note: It does NOT provide the Obfed named jars for server and client, as that is provided by MinecraftRepo.
  */

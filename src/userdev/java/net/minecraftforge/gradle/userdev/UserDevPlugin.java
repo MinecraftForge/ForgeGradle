@@ -233,10 +233,6 @@ public class UserDevPlugin implements Plugin<Project> {
                     m.artifact();
                 });
             });
-            project.getRepositories().maven(e -> { // Needed for parchment mappings
-                e.setUrl(Utils.PARCHMENT_MAVEN);
-                e.mavenContent(filter -> filter.includeGroupByRegex("org\\.parchmentmc.*"));
-            });
 
             if (!internalObfConfiguration.getDependencies().isEmpty()) {
                 deobfrepo = new DeobfuscatingRepo(project, internalObfConfiguration, deobfuscator);

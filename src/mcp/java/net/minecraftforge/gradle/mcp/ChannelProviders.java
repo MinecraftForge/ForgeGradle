@@ -34,7 +34,6 @@ public class ChannelProviders {
     static {
         // Add the default providers
         addProvider(new OfficialChannelProvider());
-        addProvider(new ParchmentChannelProvider());
         addProvider(new MCPChannelProvider());
     }
 
