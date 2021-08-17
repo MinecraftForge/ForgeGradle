@@ -375,9 +375,10 @@ public class MCPRepo extends BaseRepo {
         String channel = mapping.substring(0, idx);
         String version = mapping.substring(idx + 1);
 
-        ChannelProvider provider = ChannelProviders.getProvider(channel);
+        ChannelProvidersExtension channelProviders = project.getExtensions().getByType(ChannelProvidersExtension.class);
+        ChannelProvider provider = channelProviders.getProvider(channel);
         if (provider == null)
-            throw new IllegalArgumentException("Unknown mapping provider: " + mapping + ", currently loaded: " + ChannelProviders.getProviderMap().keySet());
+            throw new IllegalArgumentException("Unknown mapping provider: " + mapping + ", currently loaded: " + channelProviders.getProviderMap().keySet());
         return provider.getMappingsFile(this, project, channel, version);
     }
 

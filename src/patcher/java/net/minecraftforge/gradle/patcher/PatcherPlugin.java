@@ -39,6 +39,7 @@ import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.common.util.MojangLicenseHelper;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.common.util.VersionJson;
+import net.minecraftforge.gradle.mcp.ChannelProvidersExtension;
 import net.minecraftforge.gradle.mcp.MCPExtension;
 import net.minecraftforge.gradle.mcp.MCPPlugin;
 import net.minecraftforge.gradle.mcp.MCPRepo;
@@ -99,6 +100,7 @@ public class PatcherPlugin implements Plugin<Project> {
         EnvironmentChecks.checkEnvironment(project);
 
         final PatcherExtension extension = project.getExtensions().create(PatcherExtension.class, PatcherExtension.EXTENSION_NAME, PatcherExtension.class, project);
+        project.getExtensions().create(ChannelProvidersExtension.EXTENSION_NAME, ChannelProvidersExtension.class);
         project.getPluginManager().apply(JavaPlugin.class);
         final JavaPluginExtension javaConv = project.getExtensions().getByType(JavaPluginExtension.class);
 
