@@ -52,8 +52,9 @@ import javax.annotation.Nullable;
 public class McpNames {
     private static final String NEWLINE = System.getProperty("line.separator");
     private static final Pattern SRG_FINDER             = Pattern.compile("[fF]unc_\\d+_[a-zA-Z_]+|m_\\d+_|[fF]ield_\\d+_[a-zA-Z_]+|f_\\d+_|p_\\w+_\\d+_|p_\\d+_");
-    private static final Pattern METHOD_JAVADOC_PATTERN = Pattern.compile("^(?<indent>(?: {3})+|\\t+)(?!return)(?:\\w+\\s+)*(?<generic><[\\w\\W]*>\\s+)?(?<return>\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>(?:func_|m_)[0-9]+_[a-zA-Z_]+)\\(");
-    private static final Pattern FIELD_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: {3})+|\\t+)(?!return)(?:\\w+\\s+)*\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*\\s+(?<name>(?:field_|f_)[0-9]+_[a-zA-Z_]+) *[=;]");
+    private static final Pattern CONSTRUCTOR_JAVADOC_PATTERN = Pattern.compile("^(?<indent>(?: {3})+|\\t+)(public |private|protected |)(?<generic><[\\w\\W]*>\\s+)?(?<name>[\\w.]+)\\((?<parameters>.*)\\)\\s+(?:throws[\\w.,\\s]+)?\\{");
+    private static final Pattern METHOD_JAVADOC_PATTERN = Pattern.compile("^(?<indent>(?: {3})+|\\t+)(?!return)(?:\\w+\\s+)*(?<generic><[\\w\\W]*>\\s+)?(?<return>\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*)\\s+(?<name>(?:func_|m_)[0-9]+_[a-zA-Z_]*)\\(");
+    private static final Pattern FIELD_JAVADOC_PATTERN  = Pattern.compile("^(?<indent>(?: {3})+|\\t+)(?!return)(?:\\w+\\s+)*\\w+[\\w$.]*(?:<[\\w\\W]*>)?[\\[\\]]*\\s+(?<name>(?:field_|f_)[0-9]+_[a-zA-Z_]*) *[=;]");
     private static final Pattern CLASS_JAVADOC_PATTERN  = Pattern.compile("^(?<indent> *|\\t*)([\\w|@]*\\s)*(class|interface|@interface|enum) (?<name>[\\w]+)");
     private static final Pattern CLOSING_CURLY_BRACE    = Pattern.compile("^(?<indent> *|\\t*)}");
     private static final Pattern PACKAGE_DECL           = Pattern.compile("^[\\s]*package(\\s)*(?<name>[\\w|.]+);$");
@@ -158,10 +159,20 @@ public class McpNames {
      * @param innerClasses current position in inner class
      */
     private boolean injectJavadoc(List<String> lines, String line, String _package, Deque<Pair<String, Integer>> innerClasses) {
+        // constructors
+        Matcher matcher = CONSTRUCTOR_JAVADOC_PATTERN.matcher(line);
+        boolean isConstructor = matcher.find() && !innerClasses.isEmpty() && innerClasses.peek().getLeft().contains(matcher.group("name"));
         // methods
-        Matcher matcher = METHOD_JAVADOC_PATTERN.matcher(line);
-        if (matcher.find()) {
-            String javadoc = docs.get(matcher.group("name"));
+        if (!isConstructor)
+            matcher = METHOD_JAVADOC_PATTERN.matcher(line);
+
+        if (isConstructor || matcher.find()) {
+            String name = isConstructor ? "<init>" : matcher.group("name");
+            String javadoc = docs.get(name);
+            if (javadoc == null && !innerClasses.isEmpty() && !name.startsWith("func_") && !name.startsWith("m_")) {
+                String currentClass = innerClasses.peek().getLeft();
+                javadoc = docs.get(currentClass + '#' + name);
+            }
             if (javadoc != null)
                 insertAboveAnnotations(lines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, true));
 
@@ -172,7 +183,12 @@ public class McpNames {
         // fields
         matcher = FIELD_JAVADOC_PATTERN.matcher(line);
         if (matcher.find()) {
-            String javadoc = docs.get(matcher.group("name"));
+            String name = matcher.group("name");
+            String javadoc = docs.get(name);
+            if (javadoc == null && !innerClasses.isEmpty() && !name.startsWith("field_") && !name.startsWith("f_")) {
+                String currentClass = innerClasses.peek().getLeft();
+                javadoc = docs.get(currentClass + '#' + name);
+            }
             if (javadoc != null)
                 insertAboveAnnotations(lines, JavadocAdder.buildJavadoc(matcher.group("indent"), javadoc, false));
 

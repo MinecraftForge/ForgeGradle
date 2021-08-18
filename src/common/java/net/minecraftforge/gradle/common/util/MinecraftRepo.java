@@ -182,9 +182,9 @@ public class MinecraftRepo extends BaseRepo {
     public static String getMCVersion(String version) {
         int idx = version.lastIndexOf('-');
         if (idx != -1 && MCP_CONFIG_VERSION.matcher(version.substring(idx + 1)).matches()) {
-            return version.substring(0, idx);
+            return version.substring(version.lastIndexOf('-', idx - 1) + 1, idx);
         }
-        return version;
+        return version.substring(idx + 1);
     }
 
     @Nullable
