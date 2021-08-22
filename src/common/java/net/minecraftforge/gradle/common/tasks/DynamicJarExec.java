@@ -22,14 +22,17 @@ package net.minecraftforge.gradle.common.tasks;
 
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.MapProperty;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 
 public abstract class DynamicJarExec extends JarExec {
     public DynamicJarExec() {
@@ -48,6 +51,11 @@ public abstract class DynamicJarExec extends JarExec {
 
     @InputFiles
     @Optional
+    public Provider<Iterable<File>> getDataIterable() {
+        return getData().map(Map::values);
+    }
+
+    @Internal
     public abstract MapProperty<String, File> getData();
 
     @InputFile
