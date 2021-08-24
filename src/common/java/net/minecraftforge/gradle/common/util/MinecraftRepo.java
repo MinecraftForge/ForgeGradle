@@ -129,22 +129,21 @@ public class MinecraftRepo extends BaseRepo {
 
         debug("  " + REPO_NAME + " Request: " + artifact.getGroup() + ":" + side + ":" + version + ":" + classifier + "@" + ext);
 
-        /* MCP Repo will take care and add the extra libraries.
         if ("pom".equals(ext)) {
-            return findPom(side, version, json);
-        } else
-         */
-        if ("json".equals(ext)) {
+            return null; //findPom(side, version, json); //MCP Repo will take care and add the extra libraries.
+        } else if ("json".equals(ext)) {
             if ("".equals(classifier))
                 return findVersion(getMCVersion(version));
-        } else {
+        } else if ("jar".equals(ext)) {
             switch (classifier) {
                 case "":         return findRaw(side, version, json);
                 case "slim":     return findSlim(side, version, forceStable, json); //Deprecated - Use MCP Specific version
                 case "data":     return findData(side, version, forceStable, json); //Deprecated - Use extra
                 case "extra":    return findExtra(side, version, forceStable, json); //Deprecated - Use MCP Specific version
-                case "mappings": return findMappings(side, version, json);
             }
+        } else if ("txt".equals(ext)) {
+            if ("mappings".equals(classifier))
+                return findMappings(side, version, json);
         }
         return null;
     }

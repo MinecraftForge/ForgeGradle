@@ -180,7 +180,7 @@ public class MCPRepo extends BaseRepo {
                 }
             } else if ("pom".equals(ext)) {
                 return findPom(name, version);
-            } else {
+            } else if ("jar".equals(ext)) {
                 switch (classifier) {
                     case "":              return findRaw(name, version);
                     case "srg":           return findSrg(name, version);
