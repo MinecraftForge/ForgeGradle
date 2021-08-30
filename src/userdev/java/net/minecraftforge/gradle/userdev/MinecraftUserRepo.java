@@ -35,6 +35,7 @@ import net.minecraftforge.gradle.common.tasks.DownloadAssets;
 import net.minecraftforge.gradle.common.tasks.DynamicJarExec;
 import net.minecraftforge.gradle.common.tasks.ExtractMCPData;
 import net.minecraftforge.gradle.common.tasks.ExtractNatives;
+import net.minecraftforge.gradle.common.tasks.JarExec;
 import net.minecraftforge.gradle.common.util.Artifact;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.HashFunction;
@@ -573,7 +574,7 @@ public class MinecraftUserRepo extends BaseRepo {
     private File findRaw(@Nullable String mapping) throws IOException {
         File names = findMapping(mapping);
         HashStore cache = commonHash(names)
-            .add("codever", "2");
+            .add("codever", "3");
 
         if (mapping != null && names == null) {
             debug("  Finding Raw: Could not find names, exiting");
@@ -720,26 +721,18 @@ public class MinecraftUserRepo extends BaseRepo {
                 at.apply();
             }
 
-            if (mapping == null) { //They didn't ask for MCP names, so serve them SRG!
-                FileUtils.copyFile(injected, bin);
-            } else if (hasAts) {
-                debug("    Renaming ATed Jar in place");
-                //Remap library to MCP names, in place, sorta hacky with ATs but it should work.
-                RenameJarInPlace rename = createTask("renameJarInPlace", RenameJarInPlace.class);
-                rename.setHasLog(false);
-                rename.getInput().set(bin);
-                rename.getMappings().set(findSrgToMcp(mapping, names));
-                rename.apply();
-            } else {
-                debug("    Renaming injected jar");
-                //Remap library to MCP names
-                RenameJar rename = createTask("renameJar", RenameJar.class);
-                rename.setHasLog(false);
-                rename.getInput().set(injected);
-                rename.getOutput().set(bin);
-                rename.getMappings().set(findSrgToMcp(mapping, names));
-                rename.apply();
-            }
+            debug("    Renaming/Fixing " + (hasAts ? "ATed" : "injected") + " jar");
+            JarExec rename = createTask("renameJar", JarExec.class);
+            rename.setHasLog(false);
+            rename.getTool().set(Utils.FART);
+            rename.getArgs().empty();
+            rename.getArgs().addAll("--input", (hasAts ? bin : injected).getAbsolutePath());
+            if (!hasAts)
+                rename.getArgs().addAll("--output", bin.getAbsolutePath());
+            if (mapping != null)
+                rename.getArgs().addAll("--map", findSrgToMcp(mapping, names).getAbsolutePath());
+            rename.getArgs().add("--src-fix"); // Set SourceFile attribute so IDEs will link decomped code on first pass, Line numbers will be screwy, but that's a todo.
+            rename.apply();
 
             debug("    Finished: " + bin);
             Utils.updateHash(bin, HashFunction.SHA1);
