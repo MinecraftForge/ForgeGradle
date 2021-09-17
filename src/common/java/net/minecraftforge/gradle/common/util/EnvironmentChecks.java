@@ -121,7 +121,7 @@ public class EnvironmentChecks {
             conn.getResponseCode();
         } catch (SSLException e) {
             throw new EnvironmentCheckFailedException(String.format("Failed to validate certificate for host '%s'. "
-                    + "To disable this check, re-run with '-D%s=false'.", ENABLE_CERTIFICATE_CHECK_VARIABLE, url), e);
+                    + "To disable this check, re-run with '-D%s=false'.", url, ENABLE_CERTIFICATE_CHECK_VARIABLE), e);
         } catch (IOException e) {
             // Normal connection failed, not the point of this test so ignore
         }
