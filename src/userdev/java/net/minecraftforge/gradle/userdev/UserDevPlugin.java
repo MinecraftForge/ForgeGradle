@@ -148,54 +148,7 @@ public class UserDevPlugin implements Plugin<Project> {
         });
         downloadAssets.configure(task -> task.getMeta().set(downloadMCMeta.flatMap(DownloadMCMeta::getOutput)));
 
-        final boolean doingUpdate = project.hasProperty("UPDATE_MAPPINGS");
-        final String updateVersion = doingUpdate ? (String) project.property("UPDATE_MAPPINGS") : null;
-        final String updateChannel = doingUpdate
-                ? (project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String) project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot")
-                : null;
-        if (doingUpdate) {
-            logger.lifecycle("This process uses Srg2Source for java source file renaming. Please forward relevant bug reports to https://github.com/MinecraftForge/Srg2Source/issues.");
 
-            final String[] updateSourceSets = project.hasProperty("UPDATE_SOURCESETS") ? ((String) project.property("UPDATE_SOURCESETS")).split(";") : new String[] { SourceSet.MAIN_SOURCE_SET_NAME };
-            final TaskProvider<JavaCompile> javaCompile = tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, JavaCompile.class);
-            final JavaPluginExtension javaConv = project.getExtensions().getByType(JavaPluginExtension.class);
-            final Provider<FileCollection> mainJavaSources = Stream.of(updateSourceSets).map(sourceSet -> javaConv.getSourceSets().named(sourceSet).map(SourceSet::getJava).map(SourceDirectorySet::getSourceDirectories)).reduce((a, b) -> a.zip(b, FileCollection::plus)).get();
-
-            final TaskProvider<DownloadMCPMappings> dlMappingsNew = tasks.register("downloadMappingsNew", DownloadMCPMappings.class);
-            final TaskProvider<ExtractRangeMap> extractRangeConfig = tasks.register("extractRangeMap", ExtractRangeMap.class);
-            final TaskProvider<ApplyRangeMap> applyRangeConfig = tasks.register("applyRangeMap", ApplyRangeMap.class);
-            final TaskProvider<ApplyMappings> toMCPNew = tasks.register("srg2mcpNew", ApplyMappings.class);
-            final TaskProvider<ExtractExistingFiles> extractMappedNew = tasks.register("extractMappedNew", ExtractExistingFiles.class);
-            final TaskProvider<DefaultTask> updateMappings = tasks.register("updateMappings", DefaultTask.class);
-
-            extractRangeConfig.configure(task -> {
-                task.getSources().from(mainJavaSources);
-                task.getDependencies().from(javaCompile.map(JavaCompile::getClasspath));
-            });
-
-            applyRangeConfig.configure(task -> {
-                task.getRangeMap().set(extractRangeConfig.flatMap(ExtractRangeMap::getOutput));
-                task.getSrgFiles().from(createMcpToSrg.flatMap(GenerateSRG::getOutput));
-                task.getSources().from(mainJavaSources);
-            });
-
-            dlMappingsNew.configure(task -> {
-                task.getMappings().set(updateChannel + "_" + updateVersion);
-                task.getOutput().set(project.getLayout().getBuildDirectory().file("mappings_new.zip"));
-            });
-
-            toMCPNew.configure(task -> {
-                task.getInput().set(applyRangeConfig.flatMap(ApplyRangeMap::getOutput));
-                task.getMappings().set(dlMappingsNew.flatMap(DownloadMCPMappings::getOutput));
-            });
-
-            extractMappedNew.configure(task -> {
-                task.getArchive().set(toMCPNew.flatMap(ApplyMappings::getOutput));
-                task.getTargets().from(mainJavaSources);
-            });
-
-            updateMappings.configure(task -> task.dependsOn(extractMappedNew));
-        }
 
         project.afterEvaluate(p -> {
             MinecraftUserRepo mcrepo = null;
@@ -252,6 +205,12 @@ public class UserDevPlugin implements Plugin<Project> {
                     .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
                     .attach(project);
 
+            final boolean doingUpdate = project.hasProperty("UPDATE_MAPPINGS");
+            final String updateVersion = doingUpdate ? (String) project.property("UPDATE_MAPPINGS") : null;
+            final String updateChannel = doingUpdate
+                                           ? (project.hasProperty("UPDATE_MAPPINGS_CHANNEL") ? (String) project.property("UPDATE_MAPPINGS_CHANNEL") : "snapshot")
+                                           : null;
+
             MojangLicenseHelper.displayWarning(p, extension.getMappingChannel().get(), extension.getMappingVersion().get(), updateChannel, updateVersion);
 
             project.getRepositories().maven(e -> {
@@ -293,6 +252,50 @@ public class UserDevPlugin implements Plugin<Project> {
 
             extension.getRuns().forEach(runConfig -> runConfig.token("asset_index", finalAssetIndex));
             Utils.createRunConfigTasks(extension, extractNatives, downloadAssets, createSrgToMcp);
+
+            if (doingUpdate) {
+                logger.lifecycle("This process uses Srg2Source for java source file renaming. Please forward relevant bug reports to https://github.com/MinecraftForge/Srg2Source/issues.");
+
+                final String[] updateSourceSets = project.hasProperty("UPDATE_SOURCESETS") ? ((String) project.property("UPDATE_SOURCESETS")).split(";") : new String[] { SourceSet.MAIN_SOURCE_SET_NAME };
+                final TaskProvider<JavaCompile> javaCompile = tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, JavaCompile.class);
+                final JavaPluginExtension javaConv = project.getExtensions().getByType(JavaPluginExtension.class);
+                final Provider<FileCollection> mainJavaSources = Stream.of(updateSourceSets).map(sourceSet -> javaConv.getSourceSets().named(sourceSet).map(SourceSet::getJava).map(SourceDirectorySet::getSourceDirectories)).reduce((a, b) -> a.zip(b, FileCollection::plus)).get();
+
+                final TaskProvider<DownloadMCPMappings> dlMappingsNew = tasks.register("downloadMappingsNew", DownloadMCPMappings.class);
+                final TaskProvider<ExtractRangeMap> extractRangeConfig = tasks.register("extractRangeMap", ExtractRangeMap.class);
+                final TaskProvider<ApplyRangeMap> applyRangeConfig = tasks.register("applyRangeMap", ApplyRangeMap.class);
+                final TaskProvider<ApplyMappings> toMCPNew = tasks.register("srg2mcpNew", ApplyMappings.class);
+                final TaskProvider<ExtractExistingFiles> extractMappedNew = tasks.register("extractMappedNew", ExtractExistingFiles.class);
+                final TaskProvider<DefaultTask> updateMappings = tasks.register("updateMappings", DefaultTask.class);
+
+                extractRangeConfig.configure(task -> {
+                    task.getSources().from(mainJavaSources);
+                    task.getDependencies().from(javaCompile.map(JavaCompile::getClasspath));
+                });
+
+                applyRangeConfig.configure(task -> {
+                    task.getRangeMap().set(extractRangeConfig.flatMap(ExtractRangeMap::getOutput));
+                    task.getSrgFiles().from(createMcpToSrg.flatMap(GenerateSRG::getOutput));
+                    task.getSources().from(mainJavaSources);
+                });
+
+                dlMappingsNew.configure(task -> {
+                    task.getMappings().set(updateChannel + "_" + updateVersion);
+                    task.getOutput().set(project.getLayout().getBuildDirectory().file("mappings_new.zip"));
+                });
+
+                toMCPNew.configure(task -> {
+                    task.getInput().set(applyRangeConfig.flatMap(ApplyRangeMap::getOutput));
+                    task.getMappings().set(dlMappingsNew.flatMap(DownloadMCPMappings::getOutput));
+                });
+
+                extractMappedNew.configure(task -> {
+                    task.getArchive().set(toMCPNew.flatMap(ApplyMappings::getOutput));
+                    task.getTargets().from(mainJavaSources);
+                });
+
+                updateMappings.configure(task -> task.dependsOn(extractMappedNew));
+            }
         });
     }
 
