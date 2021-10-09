@@ -25,22 +25,24 @@ import net.minecraftforge.gradle.common.util.RunConfig;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.plugins.ide.eclipse.model.EclipseClasspath;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.eclipse.model.SourceFolder;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import javax.annotation.Nonnull;
+import javax.xml.parsers.DocumentBuilder;
 import java.io.File;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import javax.annotation.Nonnull;
-import javax.xml.parsers.DocumentBuilder;
 
 public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuilder
 {
@@ -96,33 +98,51 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
     }
 
     static Stream<String> mapModClassesToEclipse(@Nonnull final Project project, @Nonnull final RunConfig runConfig) {
-        final EclipseModel eclipse = project.getExtensions().findByType(EclipseModel.class);
+        final Map<String, String> allOutputs = new HashMap<>();
+        final Map<SourceSet, Map<String, String>> sourceSetsToOutputs = new IdentityHashMap<>();
 
-        final Map<String, String> outputs = eclipse.getClasspath().resolveDependencies().stream()
-                .filter(SourceFolder.class::isInstance)
-                .map(SourceFolder.class::cast)
-                .map(SourceFolder::getOutput)
-                .distinct()
-                .collect(Collectors.toMap(output -> output.split("/")[output.split("/").length - 1], output -> project.file(output).getAbsolutePath()));
+        project.getRootProject().getAllprojects().forEach(proj -> {
+            final EclipseModel eclipse = proj.getExtensions().findByType(EclipseModel.class);
+            if (eclipse == null) return;
+            final EclipseClasspath classpath = eclipse.getClasspath();
 
-        if (runConfig.getMods().isEmpty()) {
+            final Map<String, String> outputs = classpath.resolveDependencies().stream()
+                    .filter(SourceFolder.class::isInstance)
+                    .map(SourceFolder.class::cast)
+                    .map(SourceFolder::getOutput)
+                    .distinct()
+                    .collect(Collectors.toMap(output -> output.split("/")[output.split("/").length - 1], output -> proj.file(output).getAbsolutePath()));
+
+            allOutputs.putAll(outputs);
+
+            final JavaPluginExtension javaPlugin = proj.getExtensions().findByType(JavaPluginExtension.class);
+            if (javaPlugin != null)
+            {
+                for (SourceSet sourceSet : javaPlugin.getSourceSets())
+                {
+                    sourceSetsToOutputs.computeIfAbsent(sourceSet, a -> new HashMap<>()).putAll(outputs);
+                }
+            }
+        });
+
+        if (runConfig.getMods().isEmpty())
+        {
             return runConfig.getAllSources().stream()
-                    .map(SourceSet::getName)
-                    .filter(outputs::containsKey)
-                    .map(outputs::get)
+                    .map(sourceSet -> sourceSetsToOutputs.getOrDefault(sourceSet, allOutputs).get(sourceSet.getName()))
+                    .filter(Objects::nonNull)
                     .map(s -> String.join(File.pathSeparator, s, s)); // <resources>:<classes>
-        } else {
+        } else
+        {
             final SourceSet main = project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
             return runConfig.getMods().stream()
-                    .map(modConfig -> {
+                    .flatMap(modConfig -> {
                         return (modConfig.getSources().isEmpty() ? Stream.of(main) : modConfig.getSources().stream())
-                                .map(SourceSet::getName)
-                                .filter(outputs::containsKey)
-                                .map(outputs::get)
+                                .map(sourceSet -> sourceSetsToOutputs.getOrDefault(sourceSet, allOutputs).get(sourceSet.getName()))
+                                .filter(Objects::nonNull)
                                 .map(output -> modConfig.getName() + "%%" + output)
                                 .map(s -> String.join(File.pathSeparator, s, s)); // <resources>:<classes>
-                    }).flatMap(Function.identity());
+                    });
         }
     }
 }
