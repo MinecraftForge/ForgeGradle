@@ -408,7 +408,7 @@ public class Utils {
     public static void addRepoFilters(Project project) {
         if (!ENABLE_FILTER_REPOS) return;
 
-        if (project.getGradle().getStartParameter().getTaskNames().contains("DownloadSources")) {
+        if (project.getGradle().getStartParameter().getTaskNames().stream().anyMatch(t -> t.endsWith("DownloadSources"))) {
             // Only modify repos already present to fix issues with IntelliJ's download sources
             project.getRepositories().forEach(Utils::addMappedFilter);
         } else {
