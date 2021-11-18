@@ -61,7 +61,7 @@ public class Constants
 
     // MCP things
     public static final String CONFIG_MCP_DATA  = "mcpSnapshotDataConfig";
-    public static final String MCP_JSON_URL     = "http://export.mcpbot.bspk.rs/versions.json";
+    public static final String MCP_JSON_URL     = FORGE_MAVEN + "/de/oceanlabs/mcp/versions.json";
 
     // things in the cache dir.
     public static final String NATIVES_DIR      = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_natives/{MC_VERSION}";
