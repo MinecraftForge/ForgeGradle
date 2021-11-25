@@ -64,10 +64,12 @@ public class MinecraftRepo extends BaseRepo {
     private static final MinecraftVersion v1_14_4 = MinecraftVersion.from("1.14.4");
     public static final Pattern MCP_CONFIG_VERSION = Pattern.compile("\\d{8}\\.\\d{6}"); //Timestamp: YYYYMMDD.HHMMSS
 
+    private final Project project;
     private final Repository repo;
     private final boolean offline;
-    private MinecraftRepo(File cache, Logger log, boolean offline) {
+    private MinecraftRepo(Project project, File cache, Logger log, boolean offline) {
         super(cache, log);
+        this.project = project;
         this.repo = SimpleRepository.of(ArtifactProviderBuilder.begin(ArtifactIdentifier.class)
             .filter(ArtifactIdentifier.groupEquals(GROUP))
             .filter(ArtifactIdentifier.nameMatches("^(client|server)$"))
@@ -78,7 +80,7 @@ public class MinecraftRepo extends BaseRepo {
 
     private static MinecraftRepo getInstance(Project project) {
         if (INSTANCE == null)
-            INSTANCE = new MinecraftRepo(Utils.getCache(project, "minecraft_repo"), project.getLogger(), project.getGradle().getStartParameter().isOffline());
+            INSTANCE = new MinecraftRepo(project, Utils.getCache(project, "minecraft_repo"), project.getLogger(), project.getGradle().getStartParameter().isOffline());
         return INSTANCE;
     }
 
@@ -152,7 +154,7 @@ public class MinecraftRepo extends BaseRepo {
         Artifact mcp = Artifact.from("de.oceanlabs.mcp:mcp_config:" + version + "@zip");
         File zip = cache("versions", version, "mcp.zip");
         if (!zip.exists()) {
-            FileUtils.copyURLToFile(new URL(Utils.FORGE_MAVEN + mcp.getPath()), zip);
+            FileUtils.copyFile(MavenArtifactDownloader.gradle(project, mcp.getDescriptor(), false), zip);
             Utils.updateHash(zip);
         }
         return zip;
@@ -178,12 +180,16 @@ public class MinecraftRepo extends BaseRepo {
         return mappings;
     }
 
+    /**
+     * This should ONLY ever be passed "mcversion" or "mcversion-mcpconfigversion".
+     * Any other input is a MISTAKE and should NOT use this method.
+     */
     public static String getMCVersion(String version) {
         int idx = version.lastIndexOf('-');
         if (idx != -1 && MCP_CONFIG_VERSION.matcher(version.substring(idx + 1)).matches()) {
-            return version.substring(version.lastIndexOf('-', idx - 1) + 1, idx);
+            return version.substring(0, idx);
         }
-        return version.substring(idx + 1);
+        return version;
     }
 
     @Nullable
