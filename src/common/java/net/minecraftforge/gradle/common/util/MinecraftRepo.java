@@ -62,6 +62,7 @@ public class MinecraftRepo extends BaseRepo {
     public static final String CURRENT_OS = OS.getCurrent().getName();
     private static int CACHE_BUSTER = 1;
     private static final MinecraftVersion v1_14_4 = MinecraftVersion.from("1.14.4");
+    private static final MinecraftVersion v1_18 = MinecraftVersion.from("1.18");
     public static final Pattern MCP_CONFIG_VERSION = Pattern.compile("\\d{8}\\.\\d{6}"); //Timestamp: YYYYMMDD.HHMMSS
 
     private final Project project;
@@ -259,7 +260,22 @@ public class MinecraftRepo extends BaseRepo {
     }
 
     private File findRaw(String side, String version, File json_file) throws IOException {
-        return findDownloadEntry(side, cache("versions", getMCVersion(version), side + ".jar"), getMCVersion(version), json_file);
+        String mcver = getMCVersion(version);
+        File raw = findDownloadEntry(side, cache("versions", mcver, side + ".jar"), mcver, json_file);
+        if (!"server".equals(side) || v1_18.compareTo(MinecraftVersion.from(mcver)) > 0)
+            return raw;
+
+        File extracted = cache("versions", mcver, side + "-extracted.jar");
+        HashStore cache = commonCache(extracted)
+                .add("raw", raw)
+                .add("codever", "1");
+
+        if (!cache.isSame() || !extracted.exists()) {
+            BundlerUtils.extractMainJar(raw.toPath(), extracted.toPath());
+            cache.save();
+        }
+
+        return extracted;
     }
 
     private File findDownloadEntry(String key, File target, String version, File json_file) throws IOException {
