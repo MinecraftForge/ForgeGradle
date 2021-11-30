@@ -4,7 +4,7 @@ plugins {
     id 'maven-publish'
     id 'org.cadixdev.licenser' version '0.6.1'
     id 'net.minecraftforge.gradleutils' version '[2.0.10,)'
-    id 'com.github.ben-manes.versions' version '0.39.0'
+    id 'com.github.ben-manes.versions' version '0.46.0'
 }
 
 version = gradleutils.getTagOffsetBranchVersion('FG_6.0')
@@ -63,7 +63,7 @@ license {
 }
 
 tasks.named('wrapper', Wrapper).configure {
-    gradleVersion = '8.1'
+    gradleVersion = '8.1.1'
     distributionType = Wrapper.DistributionType.ALL
 }
 

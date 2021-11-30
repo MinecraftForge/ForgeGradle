@@ -21,8 +21,8 @@ import java.util.List;
 
 public abstract class RenameJar extends JarExec {
     public RenameJar() {
-        getTool().set(Utils.SPECIALSOURCE);
-        getArgs().addAll("--in-jar", "{input}", "--out-jar", "{output}", "--srg-in", "{mappings}");
+        getTool().set(Utils.FART);
+        getArgs().addAll("--input", "{input}", "--output", "{output}", "--names", "{mappings}", "--ann-fix", "--ids-fix", "--src-fix", "--record-fix");
     }
 
     protected List<String> filterArgs(List<String> args) {

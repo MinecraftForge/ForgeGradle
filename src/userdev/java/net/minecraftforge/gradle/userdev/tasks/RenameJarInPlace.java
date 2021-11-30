@@ -30,8 +30,8 @@ public abstract class RenameJarInPlace extends JarExec {
     private final Provider<RegularFile> temp = workDir.map(s -> s.file("output.jar"));
 
     public RenameJarInPlace() {
-        getTool().set(Utils.SPECIALSOURCE);
-        getArgs().addAll("--in-jar", "{input}", "--out-jar", "{output}", "--srg-in", "{mappings}", "--live");
+        getTool().set(Utils.FART);
+        getArgs().addAll("--input", "{input}", "--output", "{output}", "--names", "{mappings}", "--ann-fix", "--ids-fix", "--src-fix", "--record-fix");
         this.getOutputs().upToDateWhen(task -> false);
     }
 
