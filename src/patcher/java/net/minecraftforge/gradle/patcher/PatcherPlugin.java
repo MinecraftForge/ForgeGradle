@@ -486,8 +486,8 @@ public class PatcherPlugin implements Plugin<Project> {
                         new ArrayList<>(extension.getAccessTransformers().getFiles()), Collections.emptyList());
                 setupMCP.configure(task -> task.getPreDecompile().put(project.getName() + "AccessTransformer", function));
                 extension.getAccessTransformers().forEach(f -> {
-                    userdevJar.get().from(f, e -> e.into("ats/"));
-                    userdevConfig.get().getATs().from(f);
+                    userdevJar.configure(t -> t.from(f, e -> e.into("ats/")));
+                    userdevConfig.configure(t -> t.getATs().from(f));
                 });
             }
 
@@ -497,8 +497,8 @@ public class PatcherPlugin implements Plugin<Project> {
                 MCPFunction function = MCPFunctionFactory.createSAS(mcpParent, new ArrayList<>(extension.getSideAnnotationStrippers().getFiles()), Collections.emptyList());
                 setupMCP.configure(task -> task.getPreDecompile().put(project.getName() + "SideStripper", function));
                 extension.getSideAnnotationStrippers().forEach(f -> {
-                    userdevJar.get().from(f, e -> e.into("sas/"));
-                    userdevConfig.get().getSASs().from(f);
+                    userdevJar.configure(t -> t.from(f, e -> e.into("sas/")));
+                    userdevConfig.configure(t -> t.getSASs().from(f));
                 });
             }
 
@@ -526,11 +526,11 @@ public class PatcherPlugin implements Plugin<Project> {
 
             if (!extension.getExtraMappings().isEmpty()) {
                 extension.getExtraMappings().stream().filter(e -> e instanceof File).map(e -> (File) e).forEach(e -> {
-                    userdevJar.get().from(e, c -> c.into("srgs/"));
-                    userdevConfig.get().getSRGs().from(e);
+                    userdevJar.configure(t -> t.from(e, c -> c.into("srgs/")));
+                    userdevConfig.configure(t -> t.getSRGs().from(e));
                 });
                 extension.getExtraMappings().stream().filter(e -> e instanceof String)
-                        .map(e -> (String) e).forEach(e -> userdevConfig.get().getSRGLines().add(e));
+                        .map(e -> (String) e).forEach(e -> userdevConfig.configure(t -> t.getSRGLines().add(e)));
             }
 
             //UserDev Config Default Values

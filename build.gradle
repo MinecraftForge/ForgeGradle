@@ -20,7 +20,10 @@ sourceSets {
     userdev
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(8)
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(8)
+    withSourcesJar()
+}
 
 configurations {
     all {
@@ -32,19 +35,18 @@ configurations {
     implementation.extendsFrom mcpImplementation, patcherImplementation, userdevImplementation
 }
 
-jar {
+tasks.named('jar', Jar).configure {
     from sourceSets.common.output
     from sourceSets.mcp.output
     from sourceSets.patcher.output
     from sourceSets.userdev.output
 }
 
-task sourcesJar(type: Jar) {
+tasks.named('sourcesJar', Jar).configure {
     from sourceSets.common.allJava
     from sourceSets.mcp.allJava
     from sourceSets.patcher.allJava
     from sourceSets.userdev.allJava
-    archiveClassifier = 'sources'
 }
 
 repositories {
@@ -64,7 +66,7 @@ license {
     exclude 'net/minecraftforge/gradle/common/util/JavaVersionParser.java'
 }
 
-wrapper {
+tasks.named('wrapper', Wrapper).configure {
     gradleVersion = '7.1'
     distributionType = Wrapper.DistributionType.ALL
 }
@@ -150,7 +152,6 @@ publishing {
     publications {
         pluginMaven(MavenPublication) {
             from components.java
-            artifact sourcesJar
         }
     }
     repositories {
