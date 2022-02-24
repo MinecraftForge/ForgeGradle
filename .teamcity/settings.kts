@@ -73,7 +73,7 @@ object PullRequestsJava11 : BuildType({
     name = "Pull Requests (Java 11)"
     description = "Builds pull requests for the project using Java 11"
 
-    param {
+    params {
         text("docker_jdk_version", "11", label = "JDK version", description = "The version of the JDK to use during execution of tasks in a JDK.", display = ParameterDisplay.HIDDEN, allowEmpty = false)
     }
 })
@@ -84,7 +84,7 @@ object PullRequestsJava17 : BuildType({
     name = "Pull Requests (Java 17)"
     description = "Builds pull requests for the project using Java 17"
 
-    param {
+    params {
         text("docker_jdk_version", "17", label = "JDK version", description = "The version of the JDK to use during execution of tasks in a JDK.", display = ParameterDisplay.HIDDEN, allowEmpty = false)
     }
 })
