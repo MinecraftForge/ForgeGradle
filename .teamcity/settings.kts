@@ -69,7 +69,7 @@ object PullRequestsJava8 : BuildType({
 
 object PullRequestsJava11 : BuildType({
     templates(AbsoluteId("MinecraftForge_BuildPullRequests"), AbsoluteId("MinecraftForge_SetupGradleUtilsCiEnvironmen"), AbsoluteId("MinecraftForge_BuildWithDiscordNotifications"), AbsoluteId("MinecraftForge_BuildUsingGradle"))
-    id("ForgeGradle__PullRequests")
+    id("ForgeGradle__PullRequests__Java11")
     name = "Pull Requests (Java 11)"
     description = "Builds pull requests for the project using Java 11"
 
@@ -80,7 +80,7 @@ object PullRequestsJava11 : BuildType({
 
 object PullRequestsJava17 : BuildType({
     templates(AbsoluteId("MinecraftForge_BuildPullRequests"), AbsoluteId("MinecraftForge_SetupGradleUtilsCiEnvironmen"), AbsoluteId("MinecraftForge_BuildWithDiscordNotifications"), AbsoluteId("MinecraftForge_BuildUsingGradle"))
-    id("ForgeGradle__PullRequests")
+    id("ForgeGradle__PullRequests__Java17")
     name = "Pull Requests (Java 17)"
     description = "Builds pull requests for the project using Java 17"
 
