@@ -9,8 +9,8 @@ final class DevConstants
 
     }
 
-    static final String INSTALLER_URL       = "http://maven.minecraftforge.net/net/minecraftforge/installer/{INSTALLER_VERSION}/installer-{INSTALLER_VERSION}-shrunk.jar";
-    static final String LAUNCH4J_URL        = "http://files.minecraftforge.net/launch4j/launch4j-3.0.0-"+Constants.OPERATING_SYSTEM+"-"+Constants.SYSTEM_ARCH+".zip";
+    static final String INSTALLER_URL       = "https://maven.minecraftforge.net/net/minecraftforge/installer/{INSTALLER_VERSION}/installer-{INSTALLER_VERSION}-shrunk.jar";
+    static final String LAUNCH4J_URL        = "https://files.minecraftforge.net/launch4j/launch4j-3.0.0-"+Constants.OPERATING_SYSTEM+"-"+Constants.SYSTEM_ARCH+".zip";
 
     static final String DEOBF_DATA          = "{CACHE_DIR}/minecraft/net/minecraft/minecraft_srg/{MC_VERSION}/deobfuscation_data-{MC_VERSION}.lzma";
 

@@ -4,7 +4,7 @@ import org.gradle.api.Project;
 
 public class JenkinsExtension
 {
-    private String server = "http://ci.jenkins.minecraftforge.net/";
+    private String server = "https://jenkins.minecraftforge.net/";
     private String job;
     private String authName = "console_script";
     private String authPassword = "dc6d48ca20a474beeac280a9a16a926e";
