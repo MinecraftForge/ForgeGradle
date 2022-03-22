@@ -191,14 +191,9 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                     ));
         }
 
-        Logger logger = this.project.getLogger();
-        logger.warn("WARNING: You are using an unsupported version of ForgeGradle.");
-        logger.warn("Please consider upgrading to ForgeGradle 4 and helping in the efforts to get old versions working on the modern toolchain.");
-        logger.warn("See https://gist.github.com/TheCurle/fe7ad3ede188cbdd15c235cc75d52d4a for more info on contributing.");
-
         if (!displayBanner)
             return;
-
+		Logger logger = this.project.getLogger();
         logger.lifecycle("#################################################");
         logger.lifecycle("         ForgeGradle {}        ", this.getVersionString());
         logger.lifecycle("  https://github.com/MinecraftForge/ForgeGradle  ");

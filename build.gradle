@@ -1,35 +1,35 @@
-buildscript {
-    repositories {
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-    dependencies {
-        classpath 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
-    }
+plugins {
+    id "com.jfrog.bintray" version "1.8.4"
 }
 
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
 apply plugin: 'maven'
+apply plugin: 'maven-publish'
 
-project.ext {
-    GIT_INFO = gitInfo(rootProject.file('.'))
-    OLD_FORMAT = '1.2-SNAPSHOT'
+def customVersion = '1.5.2'
+group = 'net.minecraftforge.gradle'
+
+if (project.hasProperty("push_release")) {
+    version = '1.2-' + customVersion
+} else {
+    version = '1.2-' + customVersion + '-SNAPSHOT'
 }
 
-group = 'net.minecraftforge.gradle'
-version = "${project.ext.GIT_INFO.tag}.${project.ext.GIT_INFO.offset}"
 archivesBaseName = 'ForgeGradle'
-targetCompatibility = '1.6'
-sourceCompatibility = '1.6'
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
 
 repositories {
     mavenLocal()
     maven {
         name = "forge"
-        url = "https://maven.minecraftforge.net"
+        url = "https://maven.minecraftforge.net/"
+    }
+    maven {
+        name = "juanmuscaria"
+        url = "https://github.com/juanmuscaria/maven/raw/master"
     }
     maven {
         // because Srg2Source needs an eclipse dependency.
@@ -37,68 +37,74 @@ repositories {
         url = "https://repo.eclipse.org/content/groups/eclipse/"
     }
     maven {
-        name = "central"
-        url = "https://repo1.maven.org/maven2"
+        // because SpecialSource doesnt have a full release
+        name = "sonatype"
+        url = "https://oss.sonatype.org/content/repositories/snapshots/"
     }
+    mavenCentral()
     maven {
         name = "mojang"
         url = "https://libraries.minecraft.net/"
     }
 }
 
+jar {
+	outputs.upToDateWhen { false }
+    
+	manifest {
+        attributes 'version': project.version, 'javaCompliance': project.targetCompatibility
+        attributes 'group': project.group
+        attributes 'Implementation-Version': project.version + getGitHash()
+    }
+}
+
 configurations {
     deployerJars
-    shade
-    compileOnly.extendsFrom shade
+    compileOnly
 }
 
 dependencies {
     compile gradleApi()
-    
+
     // moved to the beginning to be the overrider
     compile 'org.ow2.asm:asm-debug-all:5.0.3'
     compile 'com.google.guava:guava:18.0'
 
     compile 'net.sf.opencsv:opencsv:2.3' // reading CSVs.. also used by SpecialSource
     compile 'com.cloudbees:diff4j:1.1' // for difing and patching
-    compile 'com.github.abrarsyed.jastyle:jAstyle:1.2' // formatting
+    compile 'com.github.abrarsyed.jastyle:jAstyle-Fixed:1.5' // formatting
     compile 'net.sf.trove4j:trove4j:2.1.0' // because its awesome.
-    
+
     compile 'com.github.jponge:lzma-java:1.3' // replaces the LZMA binary
     compile 'com.nothome:javaxdelta:2.0.1' // GDIFF implementation for BinPatches
     compile 'com.google.code.gson:gson:2.2.4' // Used instead of Argo for buuilding changelog.
     compile 'com.github.tony19:named-regexp:0.2.3' // 1.7 Named regexp features
-    
+
     compile 'net.md-5:SpecialSource:1.7.3' // deobf and reobs
-    
+
     // because curse
     compile 'org.apache.httpcomponents:httpclient:4.3.3'
     compile 'org.apache.httpcomponents:httpmime:4.3.3'
-    
+
     // mcp stuff
     compile 'de.oceanlabs.mcp:RetroGuard:3.6.6'
     compile 'de.oceanlabs.mcp:mcinjector:3.2-SNAPSHOT'
-    shade 'net.minecraftforge.srg2source:Srg2Source:3.2-SNAPSHOT'
-
-    // The old version used by S2S is gone, so we need to force the latest build of that minor release
-    shade('org.eclipse.jdt:org.eclipse.jdt.core:3.10.0.v20140604-1726') {
-        force = true
-    }
+    compile 'net.minecraftforge.srg2source:Srg2Source:3.2-SNAPSHOT'
 
     // stupid maven
     deployerJars "org.apache.maven.wagon:wagon-ssh:2.2"
-    
+
     //Stuff used in the GradleStart classes
     compileOnly 'com.mojang:authlib:1.5.16'
     compileOnly "net.minecraft:launchwrapper:1.11"
 
-    // Google FindBugs JSR305
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    testCompile 'junit:junit:4.+'
 }
 
 compileJava {
-	options.deprecation = true
-	//options.compilerArgs += ["-Werror", "-Xlint:unchecked"]
+	outputs.upToDateWhen { false }
+    options.deprecation = true
+    //options.compilerArgs += ["-Werror", "-Xlint:unchecked"]
 }
 
 javadoc {
@@ -117,146 +123,114 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 
 artifacts {
     archives jar
-    archives javadocJar
-}
-
-//These should add a compile time only dependancies to eclipse, ide, and javac, but NOT to the generated POM on maven.
-sourceSets {
-    main.compileClasspath += configurations.shade;
-    main.runtimeClasspath += configurations.shade;
-    test.compileClasspath += configurations.shade;
-    test.runtimeClasspath += configurations.shade;
-}
-
-jar {
-    configurations.shade.each { dep ->
-        from(project.zipTree(dep)){
-            exclude 'META-INF', 'META-INF/**'
-        }
-    }
-
-    manifest {
-        attributes 'version':project.version, 'javaCompliance': project.targetCompatibility
-        attributes 'group':project.group
-        attributes 'Implementation-Version': project.version + "-" + GIT_INFO.hash
-    }
 }
 
 test {
-    // These tests are outdated, and I can't be arsed to fix them
-    exclude "*"
-    // if (project.hasProperty("filesmaven")) // disable this test when on the forge jenkins
-    // {
-    //     exclude "**/ExtensionMcpMappingTest*"
-    //     exclude "**/ExtensionForgeVersionTest*"
-    // }
+    if (project.hasProperty("filesmaven")) // disable this test when on the forge jenkins
+    {
+        exclude "**/ExtensionMcpMappingTest*"
+        exclude "**/ExtensionForgeVersionTest*"
+    }
 }
 
-uploadArchives {
-    repositories.mavenDeployer {
+publishing {
+    publications {
+        bintray(MavenPublication) {
+            from components.java
 
-        dependsOn 'build'
-
-        if (System.env.MAVEN_USER)
-        {
-            repository(url: "https://maven.minecraftforge.net/") {
-                authentication(userName: System.env.MAVEN_USER, password: System.env.MAVEN_PASSWORD)
-            }
-        }
-        else
-        {
-            // local repo folder. Might wanna juset use  gradle install   if you wanans end it to maven-local
-            repository(url: 'file://localhost/' + project.file('repo').getAbsolutePath())
-        }
-
-
-        pom {
-            groupId = project.group
-            version = project.hasProperty('oldFormat') ? OLD_FORMAT : project.version
-            artifactId = project.archivesBaseName
-            project {
-                name project.archivesBaseName
-                packaging 'jar'
-                description 'Gradle plugin for Forge'
-                url 'https://github.com/MinecraftForge/ForgeGradle'
+            pom {
+                name = project.archivesBaseName
+                description = 'Gradle plugin for Forge'
+                url = 'https://github.com/MinecraftForge/ForgeGradle'
 
                 scm {
-                    url 'https://github.com/MinecraftForge/ForgeGradle'
-                    connection 'scm:git:git://github.com/MinecraftForge/ForgeGradle.git'
-                    developerConnection 'scm:git:git@github.com:MinecraftForge/ForgeGradle.git'
+                    url = 'https://github.com/juanmuscaria/ForgeGradle'
+                    connection = 'scm:git:git://github.com/juanmuscaria/ForgeGradle.git'
+                    developerConnection = 'scm:git:git@github.com:juanmuscaria/ForgeGradle.git'
                 }
 
                 issueManagement {
-                    system 'github'
-                    url 'https://github.com/MinecraftForge/ForgeGradle/issues'
+                    system = 'github'
+                    url = 'https://github.com/juanmuscaria/ForgeGradle/issues'
                 }
 
                 licenses {
                     license {
-                        name 'Lesser GNU Public License, Version 2.1'
-                        url 'https://www.gnu.org/licenses/lgpl-2.1.html'
-                        distribution 'repo'
+                        name = 'Lesser GNU Public License, Version 2.1'
+                        url = 'https://www.gnu.org/licenses/lgpl-2.1.html'
+                        distribution = 'repo'
                     }
                 }
 
                 developers {
                     developer {
-                        id 'AbrarSyed'
-                        name 'Abrar Syed'
-                        roles { role 'developer' }
+                        id = 'AbrarSyed'
+                        name = 'Abrar Syed'
+                        roles = ['developer']
                     }
+
                     developer {
-                        id 'LexManos'
-                        name 'Lex Manos'
-                        roles { role 'developer' }
+                        id = 'LexManos'
+                        name = 'Lex Manos'
+                        roles = ['developer']
+                    }
+
+                    developer {
+                        id = 'anatawa12'
+                        name = 'anatawa12'
+                        roles = ['developer']
                     }
                 }
             }
         }
     }
+    repositories {
+        maven {
+            // change URLs to point to your repos, e.g. http://my.org/repo
+            def releasesRepoUrl = "$buildDir/repos/releases"
+            def snapshotsRepoUrl = "$buildDir/repos/snapshots"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+        }
+    }
 }
+
+install {
+    repositories.mavenInstaller {
+        pom.groupId = project.group;
+        pom.version = project.version
+        pom.artifactId = project.name
+    }
+}
+
+if (project.hasProperty("push_release")) {
+    bintray {
+        user = project.hasProperty("BINTRAY_USER") ? BINTRAY_USER : ""
+        key = project.hasProperty("BINTRAY_KEY") ? BINTRAY_KEY : ""
+        publications = ["bintray"]
+
+        pkg {
+            repo = "maven"
+            name = group + "." + project.name
+            licenses = ["LGPL-2.1"]
+            websiteUrl = "https://github.com/juanmuscaria/ForgeGradle/"
+            issueTrackerUrl = "https://github.com/juanmuscaria/ForgeGradle/issues"
+            vcsUrl = "https://github.com/juanmuscaria/ForgeGradle.git"
+            publicDownloadNumbers = true
+            version {
+                name = project.version
+            }
+        }
+    }
+}
+
+bintrayUpload.dependsOn assemble
 
 // write out version so its convenient for doc deployment
 file('build').mkdirs()
 file('build/version.txt').text = version;
 
-def gitInfo(dir) {
-    String.metaClass.rsplit = { String del, int limit = -1 ->
-        def lst = new ArrayList()
-        def x = 0, idx
-        def tmp = delegate
-        while ((idx = tmp.lastIndexOf(del)) != -1 && (limit == -1 || x++ < limit)) {
-            lst.add(0, tmp.substring(idx + del.length(), tmp.length()))
-            tmp = tmp.substring(0, idx)
-        }
-        lst.add(0, tmp)
-        return lst
-    }
-
-    def git = null
-    try {
-        git = org.eclipse.jgit.api.Git.open(dir)
-    } catch (org.eclipse.jgit.errors.RepositoryNotFoundException e) {
-        return [
-                tag: '0.0',
-                offset: '0',
-                hash: '00000000',
-                branch: 'master',
-                commit: '0000000000000000000000',
-                abbreviatedId: '00000000'
-        ]
-    }
-    def desc = git.describe().setLong(true).setTags(true).call().rsplit('-', 2)
-    def head = git.repository.exactRef('HEAD')
-    def longBranch = head.symbolic ? head?.target?.name : null // matches Repository.getFullBranch() but returning null when on a detached HEAD
-
-    def ret = [:]
-    ret.tag = desc[0]
-    ret.offset = desc[1]
-    ret.hash = desc[2]
-    ret.branch = longBranch != null ? org.eclipse.jgit.lib.Repository.shortenRefName(longBranch) : null
-    ret.commit = org.eclipse.jgit.lib.ObjectId.toString(head.objectId)
-    ret.abbreviatedId = head.objectId.abbreviate(8).name()
-
-    return ret
+def getGitHash() {
+    def process = 'git rev-parse --short HEAD'.execute()
+    process.waitFor()
+    return '-' + (process.exitValue() ? 'unknown' : process.text.trim())
 }
