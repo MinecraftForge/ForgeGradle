@@ -49,7 +49,7 @@ public class MCPConfigV2 extends MCPConfigV1 {
 
             byte[] data = IOUtils.toByteArray(zip.getInputStream(entry));
             int spec = Config.getSpec(data);
-            if (spec == 2)
+            if (spec == 2 || spec == 3)
                 return MCPConfigV2.get(data);
             if (spec == 1)
                 return new MCPConfigV2(MCPConfigV1.get(data));
