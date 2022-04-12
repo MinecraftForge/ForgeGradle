@@ -34,6 +34,7 @@ import org.w3c.dom.Element;
 import javax.annotation.Nonnull;
 import javax.xml.parsers.DocumentBuilder;
 import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
@@ -98,7 +99,6 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
     }
 
     static Stream<String> mapModClassesToEclipse(@Nonnull final Project project, @Nonnull final RunConfig runConfig) {
-        final Map<String, String> allOutputs = new HashMap<>();
         final Map<SourceSet, Map<String, String>> sourceSetsToOutputs = new IdentityHashMap<>();
 
         project.getRootProject().getAllprojects().forEach(proj -> {
@@ -113,8 +113,6 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
                     .distinct()
                     .collect(Collectors.toMap(output -> output.split("/")[output.split("/").length - 1], output -> proj.file(output).getAbsolutePath()));
 
-            allOutputs.putAll(outputs);
-
             final JavaPluginExtension javaPlugin = proj.getExtensions().findByType(JavaPluginExtension.class);
             if (javaPlugin != null)
             {
@@ -128,7 +126,7 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
         if (runConfig.getMods().isEmpty())
         {
             return runConfig.getAllSources().stream()
-                    .map(sourceSet -> sourceSetsToOutputs.getOrDefault(sourceSet, allOutputs).get(sourceSet.getName()))
+                    .map(sourceSet -> sourceSetsToOutputs.getOrDefault(sourceSet, Collections.emptyMap()).get(sourceSet.getName()))
                     .filter(Objects::nonNull)
                     .map(s -> String.join(File.pathSeparator, s, s)); // <resources>:<classes>
         } else
@@ -138,7 +136,7 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
             return runConfig.getMods().stream()
                     .flatMap(modConfig -> {
                         return (modConfig.getSources().isEmpty() ? Stream.of(main) : modConfig.getSources().stream())
-                                .map(sourceSet -> sourceSetsToOutputs.getOrDefault(sourceSet, allOutputs).get(sourceSet.getName()))
+                                .map(sourceSet -> sourceSetsToOutputs.getOrDefault(sourceSet, Collections.emptyMap()).get(sourceSet.getName()))
                                 .filter(Objects::nonNull)
                                 .map(output -> modConfig.getName() + "%%" + output)
                                 .map(s -> String.join(File.pathSeparator, s, s)); // <resources>:<classes>
