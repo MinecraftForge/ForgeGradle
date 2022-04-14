@@ -39,18 +39,17 @@ import java.io.InputStreamReader;
 import java.net.URL;
 
 public abstract class DownloadMCMeta extends DefaultTask {
-    // TODO: convert this into a property?
-    private static final String MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
     private static final Gson GSON = new GsonBuilder().create();
 
     public DownloadMCMeta() {
+        getManifestUrl().convention("https://launchermeta.mojang.com/mc/game/version_manifest.json");
         getManifest().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(s -> s.file("manifest.json")));
         getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(s -> s.file("version.json")));
     }
 
     @TaskAction
     public void downloadMCMeta() throws IOException {
-        try (InputStream manin = new URL(MANIFEST_URL).openStream()) {
+        try (InputStream manin = new URL(getManifestUrl().get()).openStream()) {
             URL url = GSON.fromJson(new InputStreamReader(manin), ManifestJson.class).getUrl(getMCVersion().get());
             if (url != null) {
                 FileUtils.copyURLToFile(url, getOutput().get().getAsFile());
@@ -59,6 +58,9 @@ public abstract class DownloadMCMeta extends DefaultTask {
             }
         }
     }
+
+    @Input
+    public abstract Property<String> getManifestUrl();
 
     @Input
     public abstract Property<String> getMCVersion();
