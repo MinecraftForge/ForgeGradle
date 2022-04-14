@@ -38,16 +38,16 @@ import java.io.InputStreamReader;
 import java.net.URL;
 
 public class DownloadMCMeta extends DefaultTask {
-    private static final String MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
     private static final Gson GSON = new GsonBuilder().create();
 
+    private String manifestUrl = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
     private String mcVersion;
     private File manifest = getProject().file("build/" + getName() + "/manifest.json");
     private File output = getProject().file("build/" + getName() + "/version.json");
 
     @TaskAction
     public void downloadMCMeta() throws IOException {
-        try (InputStream manin = new URL(MANIFEST_URL).openStream()) {
+        try (InputStream manin = new URL(getManifestUrl()).openStream()) {
             URL url = GSON.fromJson(new InputStreamReader(manin), ManifestJson.class).getUrl(getMCVersion());
             if (url != null) {
                 FileUtils.copyURLToFile(url, getOutput());
@@ -55,6 +55,11 @@ public class DownloadMCMeta extends DefaultTask {
                 throw new RuntimeException("Missing version from manifest: " + getMCVersion());
             }
         }
+    }
+
+    @Input
+    public String getManifestUrl() {
+        return manifestUrl;
     }
 
     @Input
@@ -69,6 +74,10 @@ public class DownloadMCMeta extends DefaultTask {
     @OutputFile
     public File getOutput() {
         return output;
+    }
+
+    public void setManifestUrl(String manifestUrl) {
+        this.manifestUrl = manifestUrl;
     }
 
     public void setMCVersion(String mcVersion) {
