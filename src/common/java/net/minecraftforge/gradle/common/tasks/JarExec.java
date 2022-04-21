@@ -86,6 +86,7 @@ public abstract class JarExec extends DefaultTask {
     public JarExec() {
         toolFile = getTool().map(toolStr -> MavenArtifactDownloader.gradle(getProject(), toolStr, false));
         resolvedVersion = getTool().map(toolStr -> MavenArtifactDownloader.getVersion(getProject(), toolStr));
+        getDebug().convention(false);
 
         final JavaPluginExtension extension = getProject().getExtensions().findByType(JavaPluginExtension.class);
         if (extension != null) {
@@ -114,6 +115,7 @@ public abstract class JarExec extends DefaultTask {
             logger.warn("Could not create parent directory '{}' for log file", logFile.getParentFile().getAbsolutePath());
         }
 
+        final boolean debug = getDebug().get();
         final List<String> args = filterArgs(getArgs().get());
         final ConfigurableFileCollection classpath = getProject().files(getToolJar(), getClasspath());
         final File workingDirectory = workDir.get().getAsFile();
@@ -121,6 +123,7 @@ public abstract class JarExec extends DefaultTask {
         try (PrintWriter log = new PrintWriter(hasLog ? new FileWriter(logFile) : NullWriter.DEFAULT, true)) {
             getProject().javaexec(spec -> {
                 spec.setExecutable(getEffectiveExecutable());
+                spec.setDebug(debug);
                 spec.setArgs(args);
                 spec.setClasspath(classpath);
                 spec.setWorkingDir(workingDirectory);
@@ -236,6 +239,10 @@ public abstract class JarExec extends DefaultTask {
 
     @Input
     public abstract ListProperty<String> getArgs();
+
+    @Input
+    @Optional
+    public abstract Property<Boolean> getDebug();
 
     @Optional
     @InputFiles
