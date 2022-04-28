@@ -227,9 +227,8 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
             }
         });
 
-        final IdeaModel idea = project.getExtensions().findByType(IdeaModel.class);
-
         if (runConfig.getMods().isEmpty()) {
+            final IdeaModel idea = project.getExtensions().findByType(IdeaModel.class);
             return getIdeaPathsForSourceset(project, idea, "production", null);
         } else {
 
@@ -237,7 +236,9 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                     .map(modConfig -> {
                         return modConfig.getSources().stream().flatMap(source -> {
                             String outName = source.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) ? "production" : source.getName();
-                            return getIdeaPathsForSourceset(sourceSetsToProjects.getOrDefault(source, project), idea, outName, modConfig.getName());
+                            final Project sourceSetProject = sourceSetsToProjects.getOrDefault(source, project);
+                            final IdeaModel ideaModel = sourceSetProject.getExtensions().findByType(IdeaModel.class);
+                            return getIdeaPathsForSourceset(sourceSetProject, ideaModel, outName, modConfig.getName());
                         });
                     })
                     .flatMap(Function.identity());
@@ -250,7 +251,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
         try
         {
             String outputPath = idea != null
-                    ? idea.getProject().getPathFactory().path("$PROJECT_DIR$").getCanonicalUrl()
+                    ? idea.getModule().getPathFactory().path("$MODULE_DIR$").getCanonicalUrl()
                     : project.getProjectDir().getCanonicalPath();
 
             ideaResources = Paths.get(outputPath, "out", outName, "resources").toFile().getCanonicalPath();
