@@ -24,9 +24,7 @@ import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
 
 import org.gradle.api.Project;
-import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -218,9 +216,6 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
     private static Stream<String> mapModClassesToIdea(@Nonnull final Project project, @Nonnull final RunConfig runConfig) {
         final IdeaModel idea = project.getExtensions().findByType(IdeaModel.class);
 
-        JavaPluginExtension javaPlugin = project.getExtensions().getByType(JavaPluginExtension.class);
-        SourceSetContainer sourceSets = javaPlugin.getSourceSets();
-        final SourceSet main = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
         if (runConfig.getMods().isEmpty()) {
             return getIdeaPathsForSourceset(project, idea, "production", null);
         } else {
@@ -228,7 +223,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
             return runConfig.getMods().stream()
                     .map(modConfig -> {
                         return modConfig.getSources().stream().flatMap(source -> {
-                            String outName = source == main ? "production" : source.getName();
+                            String outName = source.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) ? "production" : source.getName();
                             return getIdeaPathsForSourceset(project, idea, outName, modConfig.getName());
                         });
                     })
