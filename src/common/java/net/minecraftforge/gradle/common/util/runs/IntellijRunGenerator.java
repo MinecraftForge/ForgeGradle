@@ -33,14 +33,14 @@ import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -69,11 +69,11 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
         File ideaGradleSettings = project.file(".idea/gradle.xml");
         if (ideaGradleSettings.exists() && ideaGradleSettings.isFile())
         {
-            try
+            try (InputStream in = Files.newInputStream(ideaGradleSettings.toPath()))
             {
                 Node value = (Node) xpath.evaluate(
                         "/project/component[@name='GradleSettings']/option[@name='linkedExternalProjectsSettings']/GradleProjectSettings/option[@name='delegatedBuild']/@value",
-                        new InputSource(new FileInputStream(ideaGradleSettings)),
+                        new InputSource(in),
                         XPathConstants.NODE);
                 if (value != null)
                 {
@@ -91,11 +91,11 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
         File ideaWorkspace = project.file(".idea/workspace.xml");
         if (ideaWorkspace.exists() && ideaWorkspace.isFile())
         {
-            try
+            try (InputStream in = Files.newInputStream(ideaWorkspace.toPath()))
             {
                 Node value = (Node) xpath.evaluate(
                         "/project/component[@name='DefaultGradleProjectSettings']/option[@name='delegatedBuild']/@value",
-                        new InputSource(new FileInputStream(ideaWorkspace)),
+                        new InputSource(in),
                         XPathConstants.NODE);
                 if (value != null)
                 {
@@ -114,16 +114,15 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
         File ideaFileProject = project.file(idea != null ? idea.getProject().getOutputFile() : (project.getName() + ".ipr"));
         if (ideaFileProject.exists() && ideaFileProject.isFile())
         {
-            try
+            try (InputStream in = Files.newInputStream(ideaFileProject.toPath()))
             {
                 Node value = (Node) xpath.evaluate(
                         "/project/component[@name='GradleSettings']/option[@name='linkedExternalProjectsSettings']/GradleProjectSettings/option[@name='delegatedBuild']/@value",
-                        new InputSource(new FileInputStream(ideaFileProject)),
+                        new InputSource(in),
                         XPathConstants.NODE);
                 if (value != null)
                 {
                     useGradlePaths = Boolean.parseBoolean(value.getTextContent());
-                    return;
                 }
             }
             catch (IOException | XPathExpressionException e)
@@ -233,15 +232,13 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
         } else {
 
             return runConfig.getMods().stream()
-                    .map(modConfig -> {
-                        return modConfig.getSources().stream().flatMap(source -> {
-                            String outName = source.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) ? "production" : source.getName();
-                            final Project sourceSetProject = sourceSetsToProjects.getOrDefault(source, project);
-                            final IdeaModel ideaModel = sourceSetProject.getExtensions().findByType(IdeaModel.class);
-                            return getIdeaPathsForSourceset(sourceSetProject, ideaModel, outName, modConfig.getName());
-                        });
-                    })
-                    .flatMap(Function.identity());
+                    .flatMap(modConfig -> modConfig.getSources().stream()
+                            .flatMap(source -> {
+                                String outName = source.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) ? "production" : source.getName();
+                                final Project sourceSetProject = sourceSetsToProjects.getOrDefault(source, project);
+                                final IdeaModel ideaModel = sourceSetProject.getExtensions().findByType(IdeaModel.class);
+                                return getIdeaPathsForSourceset(sourceSetProject, ideaModel, outName, modConfig.getName());
+                            }));
         }
     }
 
