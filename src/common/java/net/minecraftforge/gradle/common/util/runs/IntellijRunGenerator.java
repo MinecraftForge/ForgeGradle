@@ -24,6 +24,7 @@ import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
 
 import org.gradle.api.Project;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 import org.w3c.dom.Document;
@@ -35,6 +36,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -214,6 +216,17 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
     }
 
     private static Stream<String> mapModClassesToIdea(@Nonnull final Project project, @Nonnull final RunConfig runConfig) {
+        final Map<SourceSet, Project> sourceSetsToProjects = new IdentityHashMap<>();
+
+        project.getRootProject().getAllprojects().forEach(proj -> {
+            final JavaPluginExtension javaPlugin = proj.getExtensions().findByType(JavaPluginExtension.class);
+            if (javaPlugin != null) {
+                for (SourceSet sourceSet : javaPlugin.getSourceSets()) {
+                    sourceSetsToProjects.put(sourceSet, proj);
+                }
+            }
+        });
+
         final IdeaModel idea = project.getExtensions().findByType(IdeaModel.class);
 
         if (runConfig.getMods().isEmpty()) {
@@ -224,7 +237,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                     .map(modConfig -> {
                         return modConfig.getSources().stream().flatMap(source -> {
                             String outName = source.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) ? "production" : source.getName();
-                            return getIdeaPathsForSourceset(project, idea, outName, modConfig.getName());
+                            return getIdeaPathsForSourceset(sourceSetsToProjects.getOrDefault(source, project), idea, outName, modConfig.getName());
                         });
                     })
                     .flatMap(Function.identity());
