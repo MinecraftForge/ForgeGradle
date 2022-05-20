@@ -192,7 +192,11 @@ public class DownloadUtils {
             //Eat it, some repos don't have a simple checksum.
         }
         if (expected == null && bypassLocal) return null; // Ignore local file if the remote doesn't have a MD5 checksum.
-        if (expected != null && expected.equals(actual)) return target; // Require MD5 checksum to skip the download as it will be calculated after a successful download.
+        if (expected != null && expected.equals(actual)) {
+            // Require MD5 checksum to skip the download as it will be calculated after every successful download.
+            Files.write(md5_file.toPath(), expected.getBytes(StandardCharsets.UTF_8));
+            return target;
+        }
 
         if (target.exists())
             target.delete(); //Invalid checksum, delete and grab new
