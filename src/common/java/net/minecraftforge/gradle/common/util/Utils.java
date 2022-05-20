@@ -101,6 +101,7 @@ public class Utils {
     public static final String SRG2SOURCE =  "net.minecraftforge:Srg2Source:8.+:fatjar";
     public static final String SIDESTRIPPER = "net.minecraftforge:mergetool:1.1.3:fatjar";
     public static final String INSTALLERTOOLS = "net.minecraftforge:installertools:1.2.8:fatjar";
+    public static final String JARCOMPATIBILITYCHECKER = "net.minecraftforge:JarCompatibilityChecker:0.1.+:all";
     public static final long ZIPTIME = 628041600000L;
     public static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 
