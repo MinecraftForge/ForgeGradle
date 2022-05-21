@@ -3,7 +3,7 @@ plugins {
     id 'eclipse'
     id 'maven-publish'
     id 'org.cadixdev.licenser' version '0.6.1'
-    id 'net.minecraftforge.gradleutils' version '2.+'
+    id 'net.minecraftforge.gradleutils' version '[2.0.10,)'
     id 'com.github.ben-manes.versions' version '0.39.0'
 }
 
@@ -12,6 +12,7 @@ logger.lifecycle('Version: ' + version + ' Java: ' + System.getProperty('java.ve
 
 changelog {
     fromTag '3.0'
+    disableAutomaticPublicationRegistration()
 }
 sourceSets {
     common
@@ -128,29 +129,17 @@ gradlePlugin {
             id = 'net.minecraftforge.gradle'
             implementationClass = 'net.minecraftforge.gradle.userdev.UserDevPlugin'
         }
-
-        // legacy definitions
-        forgedev_mcp {
-            id = 'net.minecraftforge.gradle.forgedev.mcp'
-            implementationClass = 'net.minecraftforge.gradle.mcp.MCPPlugin'
-        }
-        forgedev_patcher {
-            id = 'net.minecraftforge.gradle.forgedev.patcher'
-            implementationClass = 'net.minecraftforge.gradle.patcher.PatcherPlugin'
-        }
-        forgedev {
-            id = 'net.minecraftforge.gradle.forgedev'
-            implementationClass = 'net.minecraftforge.gradle.patcher.PatcherPlugin'
-        }
     }
-    automatedPublishing = false
+    automatedPublishing = true
 }
 
 publishing {
     publications {
         pluginMaven(MavenPublication) {
-            from components.java
+            // Automated publishing declares the java component for us
             artifact sourcesJar
+
+            project.changelog.publish(it)
         }
     }
     repositories {
