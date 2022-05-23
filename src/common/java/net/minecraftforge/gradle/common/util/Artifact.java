@@ -149,6 +149,17 @@ public class Artifact implements ArtifactIdentifier, Comparable<Artifact>, Seria
         return getDescriptor();
     }
 
+    @Override
+    public int hashCode() {
+        return fullDescriptor.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof Artifact &&
+            this.fullDescriptor.equals(((Artifact)o).fullDescriptor);
+    }
+
     public Spec<Dependency> asDependencySpec() {
         return (dep) -> group.equals(dep.getGroup()) && name.equals(dep.getName()) && version.equals(dep.getVersion());
     }

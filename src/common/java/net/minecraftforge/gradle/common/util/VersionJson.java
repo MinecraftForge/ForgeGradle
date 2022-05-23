@@ -27,8 +27,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -51,16 +51,59 @@ public class VersionJson {
 
     public List<LibraryDownload> getNatives() {
         if (_natives == null) {
-            _natives = new ArrayList<>();
+            class Entry {
+                int priority;
+                LibraryDownload dl;
+                Entry(int priority, LibraryDownload dl) {
+                    this.priority = priority;
+                    this.dl = dl;
+                }
+            }
+            Map<String, Entry> natives = new HashMap<>();
+
             OS os = OS.getCurrent();
+            String arch = System.getProperty("os.arch");
             for (Library lib : libraries) {
+                if (!lib.isAllowed())
+                    continue;
+                String key = lib.getArtifact().getGroup() + ':' + lib.getArtifact().getName() + ':' + lib.getArtifact().getVersion();
+
                 if (lib.natives != null && lib.downloads.classifiers != null && lib.natives.containsKey(os.getName())) {
                     LibraryDownload l = lib.downloads.classifiers.get(lib.natives.get(os.getName()));
                     if (l != null) {
-                        _natives.add(l);
+                        natives.put(key, new Entry(2, l));
+                    }
+                // 1.19-pre1 removed the classifiers/natives marker in the json, so take a guess based on the classifier in the name
+                // I am assuming that the format is 'natives-{OS}[-{ARCH}]'
+                // Deduplicated based on artifact identifier without classifier. And prioritizing the ones that match the architecture.
+                } else if (lib.getArtifact().getClassifier() != null && lib.getArtifact().getClassifier().startsWith("natives-")) {
+                    if (lib.downloads.artifact == null)
+                        throw new IllegalArgumentException("Invalid artifact, no download entry: " + lib.name);
+
+                    String[] pts = lib.getArtifact().getClassifier().substring(8).split("-");
+                    if (pts.length == 0)
+                        throw new IllegalArgumentException("Invalid natives classifier found: " + lib.name);
+
+                    if (!os.getName().equals(pts[0]))
+                        continue;
+
+                    if (pts.length >= 2) {
+                        if (arch.equals(pts[1])) {
+                            Entry e = natives.get(key);
+                            if (e == null || e.priority < 1) {
+                                natives.put(key, new Entry(1, lib.downloads.artifact));
+                            }
+                        }
+                    } else {
+                        Entry e = natives.get(key);
+                        if (e == null || e.priority < 0) {
+                            natives.put(key, new Entry(0, lib.downloads.artifact));
+                        }
                     }
                 }
             }
+
+            _natives = natives.values().stream().map(e -> e.dl).collect(Collectors.toList());
         }
         return _natives;
     }

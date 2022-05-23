@@ -176,6 +176,10 @@ public class Utils {
     }
 
     public static void extractZip(File source, File target, boolean overwrite, boolean deleteExtras) throws IOException {
+        extractZip(source, target, overwrite, deleteExtras, name -> name);
+    }
+
+    public static void extractZip(File source, File target, boolean overwrite, boolean deleteExtras, Function<String, String> renamer) throws IOException {
         Set<File> extra = deleteExtras ? Files.walk(target.toPath()).filter(Files::isRegularFile).map(Path::toFile).collect(Collectors.toSet()) : new HashSet<>();
 
         try (ZipFile zip = new ZipFile(source)) {
@@ -183,7 +187,11 @@ public class Utils {
             while (enu.hasMoreElements()) {
                 ZipEntry e = enu.nextElement();
                 if (e.isDirectory()) continue;
-                File out = new File(target, e.getName());
+
+                String name = renamer.apply(e.getName());
+                if (name == null) continue;
+                File out = new File(target, name);
+
                 File parent = out.getParentFile();
                 if (!parent.exists()) {
                     parent.mkdirs();
