@@ -30,6 +30,7 @@ import org.gradle.api.specs.Spec;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Iterables;
+
 import java.io.File;
 import java.io.Serializable;
 import java.util.Comparator;
@@ -122,23 +123,48 @@ public class Artifact implements ArtifactIdentifier, Comparable<Artifact>, Seria
         return path.replace('/', File.separatorChar);
     }
 
-    public String getDescriptor(){ return fullDescriptor; }
-    public String getPath()      { return path;       }
-    @Override
-    public String getGroup()     { return group;      }
-    @Override
-    public String getName()      { return name;       }
-    @Override
-    public String getVersion()   { return version;    }
-    @Override
-    @Nullable
-    public String getClassifier(){ return classifier; }
-    @Override
-    @Nullable
-    public String getExtension() { return ext;        }
-    public String getFilename()  { return file;       }
+    public String getDescriptor() {
+        return fullDescriptor;
+    }
 
-    public boolean isSnapshot()  { return isSnapshot; }
+    public String getPath() {
+        return path;
+    }
+
+    @Override
+    public String getGroup() {
+        return group;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public String getVersion() {
+        return version;
+    }
+
+    @Override
+    @Nullable
+    public String getClassifier() {
+        return classifier;
+    }
+
+    @Override
+    @Nullable
+    public String getExtension() {
+        return ext;
+    }
+
+    public String getFilename() {
+        return file;
+    }
+
+    public boolean isSnapshot() {
+        return isSnapshot;
+    }
 
     public Artifact withVersion(String version) {
         return Artifact.from(group, name, version, classifier, ext);
@@ -157,7 +183,7 @@ public class Artifact implements ArtifactIdentifier, Comparable<Artifact>, Seria
     @Override
     public boolean equals(Object o) {
         return o instanceof Artifact &&
-            this.fullDescriptor.equals(((Artifact)o).fullDescriptor);
+                this.fullDescriptor.equals(((Artifact) o).fullDescriptor);
     }
 
     public Spec<Dependency> asDependencySpec() {
