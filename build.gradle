@@ -67,7 +67,7 @@ license {
     exclude 'net/minecraftforge/gradle/common/util/JavaVersionParser.java'
 }
 
-wrapper {
+tasks.named('wrapper', Wrapper).configure {
     gradleVersion = '7.4.2'
     distributionType = Wrapper.DistributionType.ALL
 }
@@ -139,7 +139,6 @@ publishing {
     publications {
         pluginMaven(MavenPublication) {
             // Automated publishing declares the java component for us
-            artifact sourcesJar
 
             project.changelog.publish(it)
         }
