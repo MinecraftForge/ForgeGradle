@@ -43,7 +43,7 @@ public class VSCodeRunGenerator extends RunConfigGenerator.JsonConfigurationBuil
         config.addProperty("name", runConfig.getTaskName());
         config.addProperty("request", "launch");
         config.addProperty("mainClass", runConfig.getMain());
-        config.addProperty("projectName", project.getName());
+        config.addProperty("projectName", EclipseRunGenerator.getEclipseProjectName(project));
         config.addProperty("cwd", replaceRootDirBy(project, runConfig.getWorkingDirectory(), "${workspaceFolder}"));
         config.addProperty("vmArgs", getJvmArgs(runConfig, additionalClientArgs, updatedTokens));
         config.addProperty("args", getArgs(runConfig, updatedTokens));

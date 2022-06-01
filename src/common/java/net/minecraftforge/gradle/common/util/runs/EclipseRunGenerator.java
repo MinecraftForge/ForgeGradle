@@ -68,7 +68,7 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
             {
                 rootElement.setAttribute("type", "org.eclipse.jdt.launching.localJavaApplication");
 
-                elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.PROJECT_ATTR", project.getName());
+                elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.PROJECT_ATTR", getEclipseProjectName(project));
                 elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.MAIN_TYPE", runConfig.getMain());
                 elementAttribute(javaDocument, rootElement, "string", "org.eclipse.jdt.launching.VM_ARGUMENTS",
                         getJvmArgs(runConfig, additionalClientArgs, updatedTokens));
@@ -96,6 +96,11 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
         documents.put(runConfig.getTaskName() + ".launch", javaDocument);
 
         return documents;
+    }
+
+    static String getEclipseProjectName(@Nonnull final Project project) {
+        final EclipseModel eclipse = project.getExtensions().findByType(EclipseModel.class);
+        return eclipse == null ? project.getName() : eclipse.getProject().getName();
     }
 
     static Stream<String> mapModClassesToEclipse(@Nonnull final Project project, @Nonnull final RunConfig runConfig) {
