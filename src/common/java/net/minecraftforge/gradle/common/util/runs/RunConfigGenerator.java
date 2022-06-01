@@ -90,13 +90,13 @@ public abstract class RunConfigGenerator
         final Project project = minecraft.getProject();
 
         final Map<String, Triple<List<Object>, File, Supplier<RunConfigGenerator>>> ideConfigurationGenerators = ImmutableMap.<String, Triple<List<Object>, File, Supplier<RunConfigGenerator>>>builder()
-                .put("genIntellijRuns", ImmutableTriple.of(Collections.singletonList(prepareRuns.get()),
+                .put("genIntellijRuns", ImmutableTriple.of(Collections.singletonList(prepareRuns),
                         new File(project.getRootProject().getRootDir(), ".idea/runConfigurations"),
                         () -> new IntellijRunGenerator(project.getRootProject())))
-                .put("genEclipseRuns", ImmutableTriple.of(ImmutableList.of(prepareRuns.get(), makeSourceDirs.get()),
+                .put("genEclipseRuns", ImmutableTriple.of(ImmutableList.of(prepareRuns, makeSourceDirs),
                         project.getProjectDir(),
                         EclipseRunGenerator::new))
-                .put("genVSCodeRuns", ImmutableTriple.of(ImmutableList.of(prepareRuns.get(), makeSourceDirs.get()),
+                .put("genVSCodeRuns", ImmutableTriple.of(ImmutableList.of(prepareRuns, makeSourceDirs),
                         new File(project.getProjectDir(), ".vscode"),
                         VSCodeRunGenerator::new))
                 .build();

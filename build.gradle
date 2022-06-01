@@ -7,7 +7,7 @@ plugins {
     id 'com.github.ben-manes.versions' version '0.39.0'
 }
 
-version = gradleutils.getTagOffsetVersion()
+version = gradleutils.getTagOffsetBranchVersion('FG_5.0')
 logger.lifecycle('Version: ' + version + ' Java: ' + System.getProperty('java.version') + ' JVM: ' + System.getProperty('java.vm.version') + '(' + System.getProperty('java.vendor') + ') Arch: ' + System.getProperty('os.arch'))
 
 changelog {
@@ -21,7 +21,10 @@ sourceSets {
     userdev
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(8)
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(8)
+    withSourcesJar()
+}
 
 configurations {
     all {
@@ -33,19 +36,18 @@ configurations {
     implementation.extendsFrom mcpImplementation, patcherImplementation, userdevImplementation
 }
 
-jar {
+tasks.named('jar', Jar).configure {
     from sourceSets.common.output
     from sourceSets.mcp.output
     from sourceSets.patcher.output
     from sourceSets.userdev.output
 }
 
-task sourcesJar(type: Jar) {
+tasks.named('sourcesJar', Jar).configure {
     from sourceSets.common.allJava
     from sourceSets.mcp.allJava
     from sourceSets.patcher.allJava
     from sourceSets.userdev.allJava
-    archiveClassifier = 'sources'
 }
 
 repositories {
@@ -65,7 +67,7 @@ license {
     exclude 'net/minecraftforge/gradle/common/util/JavaVersionParser.java'
 }
 
-wrapper {
+tasks.named('wrapper', Wrapper).configure {
     gradleVersion = '7.4.2'
     distributionType = Wrapper.DistributionType.ALL
 }
@@ -137,7 +139,6 @@ publishing {
     publications {
         pluginMaven(MavenPublication) {
             // Automated publishing declares the java component for us
-            artifact sourcesJar
 
             project.changelog.publish(it)
         }

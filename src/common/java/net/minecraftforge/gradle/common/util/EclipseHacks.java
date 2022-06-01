@@ -53,7 +53,7 @@ public class EclipseHacks {
 
         final String LIB_ATTR = "org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY";
 
-        project.getTasks().withType(GenerateEclipseClasspath.class, task -> {
+        project.getTasks().withType(GenerateEclipseClasspath.class).configureEach(task -> {
             task.dependsOn(nativesTask, setupTasks);
         });
 
