@@ -7,7 +7,7 @@ plugins {
     id 'com.github.ben-manes.versions' version '0.39.0'
 }
 
-version = gradleutils.getTagOffsetVersion()
+version = gradleutils.getTagOffsetBranchVersion('FG_5.0')
 logger.lifecycle('Version: ' + version + ' Java: ' + System.getProperty('java.version') + ' JVM: ' + System.getProperty('java.vm.version') + '(' + System.getProperty('java.vendor') + ') Arch: ' + System.getProperty('os.arch'))
 
 changelog {
