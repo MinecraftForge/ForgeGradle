@@ -331,6 +331,8 @@ public class UserDevPlugin implements Plugin<Project> {
     }
 
     protected void configureJarJarTask(Project project) {
+        project.getConfigurations().create(JAR_JAR_DEFAULT_CONFIGURATION_NAME);
+
         JavaPluginExtension extension = project.getExtensions().getByType(JavaPluginExtension.class);
         project.getTasks().register(JAR_JAR_TASK_NAME, JarJar.class, jarJar -> {
             jarJar.setGroup(JAR_JAR_GROUP);
