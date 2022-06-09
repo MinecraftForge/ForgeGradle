@@ -6,21 +6,17 @@ import net.minecraftforge.gradle.userdev.manifest.DefaultInheritManifest;
 import net.minecraftforge.gradle.userdev.manifest.InheritManifest;
 import org.gradle.api.Action;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.CopySpec;
 import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.file.FileResolver;
-import org.gradle.api.java.archives.Manifest;
 import org.gradle.api.tasks.*;
 import org.gradle.api.tasks.bundling.Jar;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 
 public abstract class JarJar extends Jar
@@ -40,6 +36,8 @@ public abstract class JarJar extends Jar
         }
     });
 
+    private final CopySpec jarJarCopySpec;
+
     public JarJar() {
         super();
         setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE); //As opposed to shadow, we do not filter out our entries early!, So we need to handle them accordingly.
@@ -48,6 +46,8 @@ public abstract class JarJar extends Jar
         configurations = new ArrayList<>();
 
         this.getInputs().property("minimize", (Callable<Boolean>) () -> minimizeJar);
+        this.jarJarCopySpec = this.getMainSpec().addChild();
+        this.jarJarCopySpec.into("META-INF/jarjar");
     }
 
     public JarJar minimize() {
@@ -79,7 +79,7 @@ public abstract class JarJar extends Jar
 
     @TaskAction
     protected void copy() {
-        from(getIncludedDependencies(), copySpec -> copySpec.into("META-INF/jarjar"));
+        this.jarJarCopySpec.from(getIncludedDependencies());
         super.copy();
     }
 
