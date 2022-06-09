@@ -94,13 +94,14 @@ dependencies {
     commonImplementation 'org.apache.httpcomponents:httpclient:4.5.13'
     commonImplementation 'net.minecraftforge:srgutils:0.4.3'
     commonImplementation 'net.minecraftforge:DiffPatch:2.0.7:all'
-    commonImplementation 'org.apache.ant:ant:1.10.11'
 
     mcpImplementation sourceSets.common.output
     patcherImplementation sourceSets.mcp.output
     patcherImplementation sourceSets.common.output
     userdevImplementation sourceSets.mcp.output
     userdevImplementation sourceSets.common.output
+
+    userdevImplementation 'net.minecraftforge:JarJar:0.2.20'
 }
 
 //Gradle doesn't add it's own source when doing the API. So lets hack it in!

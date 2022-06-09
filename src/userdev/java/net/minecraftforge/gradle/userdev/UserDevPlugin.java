@@ -336,40 +336,13 @@ public class UserDevPlugin implements Plugin<Project> {
         JavaPluginExtension extension = project.getExtensions().getByType(JavaPluginExtension.class);
         project.getTasks().register(JAR_JAR_TASK_NAME, JarJar.class, jarJar -> {
             jarJar.setGroup(JAR_JAR_GROUP);
-            jarJar.setDescription("Create a combined JAR of project and runtime dependencies");
-            jarJar.getConventionMapping().map("classifier", (Callable<String>) () -> "all");
+            jarJar.setDescription("Create a combined JAR of project and selected dependencies");
+            jarJar.getArchiveClassifier().convention("all");
 
             jarJar.getManifest().inheritFrom(((Jar) project.getTasks().getByName("jar")).getManifest());
-
-            final Provider<List<String>> libsProvider = project.provider(() -> {
-                final List<String> classPath = new ArrayList<>();
-                classPath.add((String) ((Jar) project.getTasks().getByName("jar")).getManifest().getAttributes().get("Class-Path"));
-                return classPath;
-            });
-            final FileCollection files = project.getObjects().fileCollection().from((Callable<Configuration>) () -> project.getConfigurations().maybeCreate(JAR_JAR_DEFAULT_CONFIGURATION_NAME));
-
-            jarJar.doFirst(task -> {
-                if (task instanceof JarJar) {
-                    final JarJar toConfigure = (JarJar) task;
-                    if (!files.isEmpty()) {
-                        final List<String> libs = libsProvider.get();
-                        libs.addAll(files.getFiles().stream().map(File::getName).collect(Collectors.toList()));
-
-                        toConfigure.getManifest().getAttributes().put("Class-Path", String.join(" ", libs));
-                    }
-                }
-            });
-
             jarJar.from(extension.getSourceSets().getByName("main").getOutput());
 
-            final List<Configuration> configurations = new ArrayList<>();
-            if (project.getConfigurations().findByName("runtimeClasspath") != null) {
-                configurations.add(project.getConfigurations().findByName("runtimeClasspath"));
-            }
-            else {
-                configurations.add(project.getConfigurations().findByName("runtime"));
-            }
-            jarJar.setConfigurations(configurations);
+            jarJar.configuration(project.getConfigurations().getByName(JAR_JAR_DEFAULT_CONFIGURATION_NAME));
             jarJar.exclude("META-INF/INDEX.LIST", "META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "module-info.class");
 
             jarJar.setEnabled(false);
