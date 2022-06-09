@@ -170,6 +170,10 @@ public abstract class JarJar extends Jar
     }
 
     private ContainedJarMetadata createDependencyMetadata(final Dependency dependency) {
+        if (!isValidVersionRange(dependency.getVersion())) {
+            throw new RuntimeException("The given version specification is invalid: " + dependency.getVersion() + " is you used gradle based range versioning like (2.+), convert this to a maven compatible format ([2.0,3.0)).");
+        }
+
         final ResolvedDependency resolvedDependency = getResolvedDependency(dependency);
         try
         {
@@ -199,5 +203,17 @@ public abstract class JarJar extends Jar
 
     private boolean isObfuscated(final Dependency dependency) {
         return false;
+    }
+
+    private boolean isValidVersionRange(final String range) {
+        try
+        {
+            final VersionRange data = VersionRange.createFromVersionSpec(range);
+            return data.hasRestrictions() && data.getRecommendedVersion() == null;
+        }
+        catch (InvalidVersionSpecificationException e)
+        {
+            return false;
+        }
     }
 }

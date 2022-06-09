@@ -92,6 +92,7 @@ public class UserDevPlugin implements Plugin<Project> {
     public static final String MINECRAFT = "minecraft";
     public static final String OBF = "__obfuscated";
 
+    @SuppressWarnings("unchecked")
     @Override
     public void apply(@Nonnull Project project) {
         EnvironmentChecks.checkEnvironment(project);
@@ -306,6 +307,15 @@ public class UserDevPlugin implements Plugin<Project> {
 
             extension.getRuns().forEach(runConfig -> runConfig.token("asset_index", finalAssetIndex));
             Utils.createRunConfigTasks(extension, extractNatives, downloadAssets, createSrgToMcp);
+        });
+
+        project.afterEvaluate(projectAfter -> {
+            final NamedDomainObjectContainer<RenameJarInPlace> reobfJars = (NamedDomainObjectContainer<RenameJarInPlace>) project.getExtensions().getByName("reobf");
+            projectAfter.getTasks().withType(JarJar.class).all(jarJar -> {
+                if (jarJar.isEnabled()) {
+                    reobfJars.create(jarJar.getName());
+                }
+            });
         });
     }
 
