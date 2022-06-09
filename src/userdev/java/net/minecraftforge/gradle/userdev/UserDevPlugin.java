@@ -20,6 +20,8 @@
 
 package net.minecraftforge.gradle.userdev;
 
+import com.google.common.collect.ImmutableList;
+import groovy.lang.Closure;
 import net.minecraftforge.gradle.common.tasks.ApplyMappings;
 import net.minecraftforge.gradle.common.tasks.ApplyRangeMap;
 import net.minecraftforge.gradle.common.tasks.DownloadAssets;
@@ -39,6 +41,8 @@ import net.minecraftforge.gradle.mcp.ChannelProvidersExtension;
 import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.mcp.tasks.DownloadMCPMappings;
 import net.minecraftforge.gradle.mcp.tasks.GenerateSRG;
+import net.minecraftforge.gradle.userdev.dependency.DependencyFilter;
+import net.minecraftforge.gradle.userdev.tasks.JarJar;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 import net.minecraftforge.gradle.userdev.util.DeobfuscatingRepo;
 import net.minecraftforge.gradle.userdev.util.Deobfuscator;
@@ -46,10 +50,7 @@ import net.minecraftforge.gradle.userdev.util.DependencyRemapper;
 import net.minecraftforge.srgutils.IMappingFile;
 
 import org.apache.commons.lang3.StringUtils;
-import org.gradle.api.DefaultTask;
-import org.gradle.api.NamedDomainObjectContainer;
-import org.gradle.api.Plugin;
-import org.gradle.api.Project;
+import org.gradle.api.*;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
@@ -59,6 +60,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
@@ -72,13 +74,22 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.annotation.Nonnull;
 
 public class UserDevPlugin implements Plugin<Project> {
-    private static final String MINECRAFT = "minecraft";
+
+    public static final String JAR_JAR_TASK_NAME = "jarJar";
+    public static final String JAR_JAR_GROUP = "JarJar";
+
+    public static final String JAR_JAR_DEFAULT_CONFIGURATION_NAME = "jarJar";
+
+    public static final String MINECRAFT = "minecraft";
     public static final String OBF = "__obfuscated";
 
     @Override
@@ -196,6 +207,8 @@ public class UserDevPlugin implements Plugin<Project> {
 
             updateMappings.configure(task -> task.dependsOn(extractMappedNew));
         }
+
+        configureJarJarTask(project);
 
         project.afterEvaluate(p -> {
             MinecraftUserRepo mcrepo = null;
@@ -315,5 +328,51 @@ public class UserDevPlugin implements Plugin<Project> {
         });
         project.getExtensions().add("reobf", reobfExtension);
         return reobfExtension;
+    }
+
+    protected void configureJarJarTask(Project project) {
+        JavaPluginExtension extension = project.getExtensions().getByType(JavaPluginExtension.class);
+        project.getTasks().register(JAR_JAR_TASK_NAME, JarJar.class, jarJar -> {
+            jarJar.setGroup(JAR_JAR_GROUP);
+            jarJar.setDescription("Create a combined JAR of project and runtime dependencies");
+            jarJar.getConventionMapping().map("classifier", (Callable<String>) () -> "all");
+
+            jarJar.getManifest().inheritFrom(((Jar) project.getTasks().getByName("jar")).getManifest());
+
+            final Provider<List<String>> libsProvider = project.provider(() -> {
+                final List<String> classPath = new ArrayList<>();
+                classPath.add((String) ((Jar) project.getTasks().getByName("jar")).getManifest().getAttributes().get("Class-Path"));
+                return classPath;
+            });
+            final FileCollection files = project.getObjects().fileCollection().from((Callable<Configuration>) () -> project.getConfigurations().maybeCreate(JAR_JAR_DEFAULT_CONFIGURATION_NAME));
+
+            jarJar.doFirst(task -> {
+                if (task instanceof JarJar) {
+                    final JarJar toConfigure = (JarJar) task;
+                    if (!files.isEmpty()) {
+                        final List<String> libs = libsProvider.get();
+                        libs.addAll(files.getFiles().stream().map(File::getName).collect(Collectors.toList()));
+
+                        toConfigure.getManifest().getAttributes().put("Class-Path", String.join(" ", libs));
+                    }
+                }
+            });
+
+            jarJar.from(extension.getSourceSets().getByName("main").getOutput());
+
+            final List<Configuration> configurations = new ArrayList<>();
+            if (project.getConfigurations().findByName("runtimeClasspath") != null) {
+                configurations.add(project.getConfigurations().findByName("runtimeClasspath"));
+            }
+            else {
+                configurations.add(project.getConfigurations().findByName("runtime"));
+            }
+            jarJar.setConfigurations(configurations);
+            jarJar.exclude("META-INF/INDEX.LIST", "META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "module-info.class");
+
+            jarJar.setEnabled(false);
+        });
+
+        project.getArtifacts().add(JAR_JAR_DEFAULT_CONFIGURATION_NAME, project.getTasks().named(JAR_JAR_TASK_NAME));
     }
 }

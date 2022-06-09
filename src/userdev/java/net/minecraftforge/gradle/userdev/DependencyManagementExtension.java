@@ -26,6 +26,8 @@ import net.minecraftforge.gradle.userdev.util.DependencyRemapper;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 
+import java.util.Objects;
+
 public class DependencyManagementExtension extends GroovyObjectSupport {
     public static final String EXTENSION_NAME = "fg";
     private final Project project;
@@ -46,5 +48,11 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
         project.getConfigurations().getByName(UserDevPlugin.OBF).getDependencies().add(baseDependency);
 
         return remapper.remap(baseDependency);
+    }
+
+    public void enableJarJar() {
+        if (project.getTasks().findByPath(UserDevPlugin.JAR_JAR_TASK_NAME) != null) {
+            Objects.requireNonNull(project.getTasks().findByPath(UserDevPlugin.JAR_JAR_TASK_NAME)).setEnabled(true);
+        }
     }
 }
