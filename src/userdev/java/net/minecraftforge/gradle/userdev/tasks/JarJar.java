@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
@@ -170,8 +171,8 @@ public abstract class JarJar extends Jar
     }
 
     private ContainedJarMetadata createDependencyMetadata(final Dependency dependency) {
-        if (!isValidVersionRange(dependency.getVersion())) {
-            throw new RuntimeException("The given version specification is invalid: " + dependency.getVersion() + " is you used gradle based range versioning like (2.+), convert this to a maven compatible format ([2.0,3.0)).");
+        if (!isValidVersionRange(Objects.requireNonNull(dependency.getVersion()))) {
+            throw new RuntimeException("The given version specification is invalid: " + dependency.getVersion() + " if you used gradle based range versioning like (2.+), convert this to a maven compatible format ([2.0,3.0)).");
         }
 
         final ResolvedDependency resolvedDependency = getResolvedDependency(dependency);
@@ -181,7 +182,7 @@ public abstract class JarJar extends Jar
               new ContainedJarIdentifier(dependency.getGroup(), dependency.getName()),
               new ContainedVersion(
                 VersionRange.createFromVersionSpec(dependency.getVersion()),
-                new DefaultArtifactVersion(resolvedDependency.getModuleVersion())
+                new DefaultArtifactVersion(potentiallyExtractVersionFromDeobfuscatedVersion(resolvedDependency))
               ),
               "META-INF/jarjar/" + resolvedDependency.getAllModuleArtifacts().iterator().next().getFile().getName(),
               isObfuscated(dependency)
@@ -189,20 +190,29 @@ public abstract class JarJar extends Jar
         }
         catch (InvalidVersionSpecificationException e)
         {
-            throw new RuntimeException("The given version specification is invalid: " + dependency.getVersion() + " is you used gradle based range versioning like (2.+), convert this to a maven compatible format ([2.0,3.0)).", e);
+            throw new RuntimeException("The given version specification is invalid: " + dependency.getVersion() + " if you used gradle based range versioning like (2.+), convert this to a maven compatible format ([2.0,3.0)).", e);
         }
+    }
+
+    private String potentiallyExtractVersionFromDeobfuscatedVersion(final ResolvedDependency resolvedDependency)
+    {
+        if (resolvedDependency.getModuleVersion().contains("_mapped_")) {
+            return resolvedDependency.getModuleVersion().split("_mapped_")[0];
+        }
+
+        return resolvedDependency.getModuleVersion();
     }
 
     private ResolvedDependency getResolvedDependency(final Dependency dependency) {
         final Set<ResolvedDependency> deps = getProject().getConfigurations().detachedConfiguration(dependency).getResolvedConfiguration().getLenientConfiguration().getFirstLevelModuleDependencies();
-        if (deps.isEmpty())
+        if (deps.isEmpty() && Objects.requireNonNull(dependency.getVersion()).contains("+"))
             throw new IllegalArgumentException(String.format("Failed to resolve: %s", dependency));
 
         return deps.iterator().next();
     }
 
     private boolean isObfuscated(final Dependency dependency) {
-        return false;
+        return Objects.requireNonNull(dependency.getVersion()).contains("_mapped_");
     }
 
     private boolean isValidVersionRange(final String range) {
