@@ -146,6 +146,7 @@ public abstract class JarJar extends Jar
 
         try
         {
+            metadataPath.toFile().getParentFile().mkdirs();
             Files.deleteIfExists(metadataPath);
             Files.write(metadataPath, MetadataIOHandler.toLines(createMetadata()), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
         }
