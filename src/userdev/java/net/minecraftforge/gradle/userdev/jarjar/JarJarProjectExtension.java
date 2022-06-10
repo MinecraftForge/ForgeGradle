@@ -12,6 +12,7 @@ import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.*;
 import org.gradle.api.attributes.Attribute;
+import org.gradle.api.publish.maven.MavenArtifact;
 import org.gradle.api.publish.maven.MavenPom;
 import org.gradle.api.publish.maven.MavenPublication;
 
@@ -62,38 +63,43 @@ public class JarJarProjectExtension  extends GroovyObjectSupport
 
     public MavenPublication component(MavenPublication mavenPublication)
     {
-        final MavenPublication cleaned = project.getExtensions().getByType(DependencyManagementExtension.class).component(mavenPublication);
+        project.afterEvaluate(p -> {
+            final MavenPublication cleaned = project.getExtensions().getByType(DependencyManagementExtension.class).component(mavenPublication);
 
-        final Set<JarJar> isEnabled = project.getTasks().withType(JarJar.class).stream().filter(JarJar::isEnabled).collect(Collectors.toSet());
-        if (isEnabled.isEmpty())
-        {
-            return mavenPublication;
-        }
+            final Set<JarJar> isEnabled = project.getTasks().withType(JarJar.class).stream().filter(JarJar::isEnabled).collect(Collectors.toSet());
+            if (isEnabled.isEmpty())
+            {
+                return;
+            }
 
-        isEnabled.forEach(cleaned::artifact);
-        final Set<ResolvedDependency> dependencies = isEnabled.stream().flatMap(jarJar -> jarJar.getResolvedDependencies().stream()).collect(Collectors.toSet());
+            isEnabled.forEach(jarJar -> cleaned.artifact(jarJar, mavenArtifact -> {
+                mavenArtifact.setClassifier(jarJar.getArchiveClassifier().get());
+                mavenArtifact.setExtension(jarJar.getArchiveExtension().get());
+            }));
+            final Set<ResolvedDependency> dependencies = isEnabled.stream().flatMap(jarJar -> jarJar.getResolvedDependencies().stream()).collect(Collectors.toSet());
 
-        cleaned.pom(pom -> {
-            pom.withXml(xml -> {
-                final NodeList potentialDependenciesList = xml.asNode().getAt(QName.valueOf("{http://maven.apache.org/POM/4.0.0}dependencies"));
-                Node dependenciesNode;
-                if (potentialDependenciesList.isEmpty()) {
-                    dependenciesNode = xml.asNode().appendNode("{http://maven.apache.org/POM/4.0.0}dependencies");
-                }
-                else {
-                    dependenciesNode = (Node) potentialDependenciesList.get(0);
-                }
+            cleaned.pom(pom -> {
+                pom.withXml(xml -> {
+                    final NodeList potentialDependenciesList = xml.asNode().getAt(QName.valueOf("{http://maven.apache.org/POM/4.0.0}dependencies"));
+                    Node dependenciesNode;
+                    if (potentialDependenciesList.isEmpty()) {
+                        dependenciesNode = xml.asNode().appendNode("{http://maven.apache.org/POM/4.0.0}dependencies");
+                    }
+                    else {
+                        dependenciesNode = (Node) potentialDependenciesList.get(0);
+                    }
 
-                dependencies.forEach(it -> {
-                    final Node dependencyNode = dependenciesNode.appendNode("{http://maven.apache.org/POM/4.0.0}dependency");
-                    dependencyNode.appendNode("{http://maven.apache.org/POM/4.0.0}groupId", it.getModuleGroup());
-                    dependencyNode.appendNode("{http://maven.apache.org/POM/4.0.0}artifactId", it.getName());
-                    dependencyNode.appendNode("{http://maven.apache.org/POM/4.0.0}version", it.getModuleVersion());
-                    dependencyNode.appendNode("{http://maven.apache.org/POM/4.0.0}scope", "runtime");
+                    dependencies.forEach(it -> {
+                        final Node dependencyNode = dependenciesNode.appendNode("{http://maven.apache.org/POM/4.0.0}dependency");
+                        dependencyNode.appendNode("{http://maven.apache.org/POM/4.0.0}groupId", it.getModuleGroup());
+                        dependencyNode.appendNode("{http://maven.apache.org/POM/4.0.0}artifactId", it.getName());
+                        dependencyNode.appendNode("{http://maven.apache.org/POM/4.0.0}version", it.getModuleVersion());
+                        dependencyNode.appendNode("{http://maven.apache.org/POM/4.0.0}scope", "runtime");
+                    });
                 });
             });
         });
 
-        return cleaned;
+        return mavenPublication;
     }
 }
