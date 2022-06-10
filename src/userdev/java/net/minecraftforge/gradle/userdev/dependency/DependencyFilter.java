@@ -23,6 +23,7 @@ package net.minecraftforge.gradle.userdev.dependency;
 import groovy.lang.Closure;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.specs.Spec;
@@ -53,7 +54,7 @@ public interface DependencyFilter {
      * @param spec
      * @return
      */
-    DependencyFilter exclude(Spec<? super ResolvedDependency> spec);
+    DependencyFilter exclude(Spec<? super ArtifactIdentifier> spec);
 
     /**
      * Include dependencies that match the provided spec.
@@ -61,14 +62,14 @@ public interface DependencyFilter {
      * @param spec
      * @return
      */
-    DependencyFilter include(Spec<? super ResolvedDependency> spec);
+    DependencyFilter include(Spec<? super ArtifactIdentifier> spec);
 
     /**
      * Create a spec that matches the provided project notation on group, name, and version
      * @param notation
      * @return
      */
-    Spec<? super ResolvedDependency> project(Map<String, ?> notation);
+    Spec<? super ArtifactIdentifier> project(Map<String, ?> notation);
 
     /**
      * Create a spec that matches the default configuration for the provided project path on group, name, and version
@@ -76,28 +77,59 @@ public interface DependencyFilter {
      * @param notation
      * @return
      */
-    Spec<? super ResolvedDependency> project(String notation);
+    Spec<? super ArtifactIdentifier> project(String notation);
 
     /**
      * Create a spec that matches dependencies using the provided notation on group, name, and version
      * @param notation
      * @return
      */
-    Spec<? super ResolvedDependency> dependency(Object notation);
+    Spec<? super ArtifactIdentifier> dependency(Object notation);
 
     /**
      * Create a spec that matches the provided dependency on group, name, and version
      * @param dependency
      * @return
      */
-    Spec<? super ResolvedDependency> dependency(Dependency dependency);
+    Spec<? super ArtifactIdentifier> dependency(Dependency dependency);
 
     /**
      * Create a spec that matches the provided closure
      * @param spec
      * @return
      */
-    Spec<? super ResolvedDependency> dependency(Closure<Boolean> spec);
+    Spec<? super ArtifactIdentifier> dependency(Closure<Boolean> spec);
 
     boolean isIncluded(ResolvedDependency dependency);
+
+    boolean isIncluded(ExternalModuleDependency dependency);
+
+    boolean isIncluded(ArtifactIdentifier dependency);
+
+    final class ArtifactIdentifier {
+        private final String group;
+        private final String name;
+        private final String version;
+
+        public ArtifactIdentifier(String group, String name, String version) {
+            this.group = group;
+            this.name = name;
+            this.version = version;
+        }
+
+        public String getGroup()
+        {
+            return group;
+        }
+
+        public String getName()
+        {
+            return name;
+        }
+
+        public String getVersion()
+        {
+            return version;
+        }
+    }
 }

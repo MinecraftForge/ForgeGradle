@@ -23,23 +23,21 @@ package net.minecraftforge.gradle.userdev.dependency;
 import com.google.common.collect.ImmutableMap;
 import groovy.lang.Closure;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.ResolvedArtifact;
-import org.gradle.api.artifacts.ResolvedDependency;
+import org.gradle.api.artifacts.*;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.specs.Specs;
 
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public abstract class AbstractDependencyFilter implements DependencyFilter
 {
     private final Project project;
 
-    protected final List<Spec<? super ResolvedDependency>> includeSpecs = new ArrayList<>();
-    protected final List<Spec<? super ResolvedDependency>> excludeSpecs = new ArrayList<>();
+    protected final List<Spec<? super ArtifactIdentifier>> includeSpecs = new ArrayList<>();
+    protected final List<Spec<? super ArtifactIdentifier>> excludeSpecs = new ArrayList<>();
 
     AbstractDependencyFilter(Project project) {
         this.project = project;
@@ -55,7 +53,10 @@ public abstract class AbstractDependencyFilter implements DependencyFilter
         Set<ResolvedDependency> excludedDeps = new HashSet<>();
         resolve(configuration.getResolvedConfiguration().getFirstLevelModuleDependencies(), includedDeps, excludedDeps);
 
-        return project.files(configuration.getFiles()).minus(project.files(excludedDeps.stream().flatMap(d -> d.getModuleArtifacts().stream().map(ResolvedArtifact::getFile)).toArray()));
+        return project.files(includedDeps.stream()
+                               .flatMap(dep -> dep.getAllModuleArtifacts().stream())
+                               .map(ResolvedArtifact::getFile)
+                               .collect(Collectors.toList()));
     }
 
     public FileCollection resolve(Collection<Configuration> configurations) {
@@ -68,7 +69,7 @@ public abstract class AbstractDependencyFilter implements DependencyFilter
      * @param spec
      * @return
      */
-    public DependencyFilter exclude(Spec<? super ResolvedDependency> spec) {
+    public DependencyFilter exclude(Spec<? super ArtifactIdentifier> spec) {
         excludeSpecs.add(spec);
         return this;
     }
@@ -79,7 +80,7 @@ public abstract class AbstractDependencyFilter implements DependencyFilter
      * @param spec
      * @return
      */
-    public DependencyFilter include(Spec<? super ResolvedDependency> spec) {
+    public DependencyFilter include(Spec<? super ArtifactIdentifier> spec) {
         includeSpecs.add(spec);
         return this;
     }
@@ -89,7 +90,7 @@ public abstract class AbstractDependencyFilter implements DependencyFilter
      * @param notation
      * @return
      */
-    public Spec<? super ResolvedDependency> project(Map<String, ?> notation) {
+    public Spec<? super ArtifactIdentifier> project(Map<String, ?> notation) {
         return dependency(project.getDependencies().project(notation));
     }
 
@@ -99,7 +100,7 @@ public abstract class AbstractDependencyFilter implements DependencyFilter
      * @param notation
      * @return
      */
-    public Spec<? super ResolvedDependency> project(String notation) {
+    public Spec<? super ArtifactIdentifier> project(String notation) {
         return dependency(project.getDependencies().project(ImmutableMap.of("path", notation, "configuration", "default")));
     }
 
@@ -108,7 +109,7 @@ public abstract class AbstractDependencyFilter implements DependencyFilter
      * @param notation
      * @return
      */
-    public Spec<? super ResolvedDependency> dependency(Object notation) {
+    public Spec<? super ArtifactIdentifier> dependency(Object notation) {
         return dependency(project.getDependencies().create(notation));
     }
 
@@ -117,18 +118,18 @@ public abstract class AbstractDependencyFilter implements DependencyFilter
      * @param dependency
      * @return
      */
-    public Spec<? super ResolvedDependency> dependency(Dependency dependency) {
+    public Spec<? super ArtifactIdentifier> dependency(Dependency dependency) {
         return this.dependency(new Closure<Boolean>(null) {
 
             @SuppressWarnings("ConstantConditions")
             @Override
             public Boolean call(final Object it)
             {
-                if (it instanceof ResolvedDependency) {
-                    final ResolvedDependency resolvedDependency = (ResolvedDependency) it;
-                    return (dependency.getGroup() == null || Pattern.matches(dependency.getGroup(), resolvedDependency.getModuleGroup())) &&
-                            (dependency.getName() == null || Pattern.matches(dependency.getName(), resolvedDependency.getModuleName())) &&
-                            (dependency.getVersion() == null || Pattern.matches(dependency.getVersion(), resolvedDependency.getModuleVersion()));
+                if (it instanceof ArtifactIdentifier) {
+                    final ArtifactIdentifier identifier = (ArtifactIdentifier) it;
+                    return (dependency.getGroup() == null || Pattern.matches(dependency.getGroup(), identifier.getGroup())) &&
+                            (dependency.getName() == null || Pattern.matches(dependency.getName(), identifier.getName())) &&
+                            (dependency.getVersion() == null || Pattern.matches(dependency.getVersion(), identifier.getVersion()));
                 }
 
                 return false;
@@ -141,14 +142,30 @@ public abstract class AbstractDependencyFilter implements DependencyFilter
      * @param spec
      * @return
      */
-    public Spec<? super ResolvedDependency> dependency(Closure<Boolean> spec) {
+    public Spec<? super ArtifactIdentifier> dependency(Closure<Boolean> spec) {
         return Specs.convertClosureToSpec(spec);
     }
 
     @Override
     public boolean isIncluded(ResolvedDependency dependency) {
+        return isIncluded(
+          new ArtifactIdentifier(dependency.getModuleGroup(), dependency.getModuleName(), dependency.getModuleVersion())
+        );
+    }
+
+    @Override
+    public boolean isIncluded(ExternalModuleDependency dependency) {
+        return isIncluded(
+          new ArtifactIdentifier(dependency.getGroup(), dependency.getName(), dependency.getVersion())
+        );
+    }
+
+    @Override
+    public boolean isIncluded(ArtifactIdentifier dependency) {
         boolean include = includeSpecs.isEmpty() || includeSpecs.stream().anyMatch(spec -> spec.isSatisfiedBy(dependency));
         boolean exclude = !excludeSpecs.isEmpty() && excludeSpecs.stream().anyMatch(spec -> spec.isSatisfiedBy(dependency));
         return include && !exclude;
     }
+
+
 }

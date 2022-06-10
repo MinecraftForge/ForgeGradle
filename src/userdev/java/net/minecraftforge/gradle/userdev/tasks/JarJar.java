@@ -210,6 +210,10 @@ public abstract class JarJar extends Jar
     }
 
     private Optional<ContainedJarMetadata> createDependencyMetadata(final ExternalModuleDependency dependency) {
+        if (!dependencyFilter.isIncluded(dependency)) {
+            return Optional.empty();
+        }
+
         if (!isValidVersionRange(Objects.requireNonNull(getVersionFrom(Objects.requireNonNull(dependency.getVersion()))))) {
             throw new RuntimeException("The given version specification is invalid: " + getVersionFrom(dependency.getVersion()) + " if you used gradle based range versioning like (2.+), convert this to a maven compatible format ([2.0,3.0)).");
         }
