@@ -97,6 +97,7 @@ public abstract class JarJar extends Jar
         return includedDependencies;
     }
 
+    @Classpath
     public Set<ResolvedDependency> getResolvedDependencies()
     {
         return this.configurations.stream().flatMap(config -> config.getDependencies().stream())

@@ -33,6 +33,7 @@ import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.attributes.Attribute;
 import org.gradle.api.attributes.AttributeContainer;
 import org.gradle.api.publish.maven.MavenPublication;
+import org.gradle.api.publish.tasks.GenerateModuleMetadata;
 
 import java.util.List;
 import java.util.Objects;
@@ -63,12 +64,21 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
 
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     public MavenPublication component(MavenPublication mavenPublication) {
+        project.getTasks().withType(GenerateModuleMetadata.class).forEach(generateModuleMetadata -> generateModuleMetadata.setEnabled(false));
+
         mavenPublication.suppressAllPomMetadataWarnings(); //We have weird handling of stuff and things when it comes to versions and other features. No need to spam the log when that happens.
 
         mavenPublication.pom(pom -> {
             pom.withXml(xml -> {
-                final Node dependenciesNode = xml.asNode().appendNode("dependencies");
-                final NodeList dependencies = dependenciesNode.getAt(QName.valueOf("*")); //grab all dependency nodes in a neat list;
+                final NodeList potentialDependenciesList = xml.asNode().getAt(QName.valueOf("{http://maven.apache.org/POM/4.0.0}dependencies"));
+                Node dependenciesNode;
+                if (potentialDependenciesList.isEmpty()) {
+                    dependenciesNode = xml.asNode().appendNode("{http://maven.apache.org/POM/4.0.0}dependencies");
+                }
+                else {
+                    dependenciesNode = (Node) potentialDependenciesList.get(0);
+                }
+                final NodeList dependencies = dependenciesNode.getAt(QName.valueOf("{http://maven.apache.org/POM/4.0.0}*")); //grab all dependency nodes in a neat list;
 
                 final List<Node> dependenciesNodeList = (List<Node>) dependencies.stream()
                                                                        .filter(Node.class::isInstance)
@@ -76,18 +86,59 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
                                                                        .collect(Collectors.toList());
 
                 dependenciesNodeList.stream()
-                  .filter(el -> el.attribute("artifactId") == "forge" && el.attribute("groupId") == "net.minecraftforge")
+                  .filter(el -> hasChildWithText(el, "{http://maven.apache.org/POM/4.0.0}artifactId", "forge") && hasChildWithText(el, "{http://maven.apache.org/POM/4.0.0}groupId", "net.minecraftforge"))
                   .forEach(el -> el.parent().remove(el));
 
 
                 dependenciesNodeList.stream()
-                  .filter(el -> el.attribute("version") instanceof String)
-                  .filter(el -> ((String) el.attribute("version")).contains("_mapped_"))
-                  .forEach(el -> el.attributes().put("version", getVersionFrom((String) el.attribute("version"))));
+                  .filter(el -> hasChildWithContainedText(el, "{http://maven.apache.org/POM/4.0.0}version", "_mapped_"))
+                  .forEach(el -> setChildText(el, "{http://maven.apache.org/POM/4.0.0}version", getVersionFrom(getChildText(el, "{http://maven.apache.org/POM/4.0.0}version"))));
             });
         });
 
         return mavenPublication;
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean hasChildWithText(final Node node, final String childKey, final String expectedValue) {
+        final NodeList children = node.getAt(QName.valueOf(childKey));
+        final List<Node> childList = (List<Node>) (children.stream()
+                                                   .map(Node.class::cast)
+                                                   .collect(Collectors.toList()));
+
+        return childList.stream()
+                        .anyMatch(el -> el.text().equals(expectedValue));
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean hasChildWithContainedText(final Node node, final String childKey, final String expectedValue) {
+        final NodeList children = node.getAt(QName.valueOf(childKey));
+        final List<Node> childList = (List<Node>) (children.stream()
+                                                     .map(Node.class::cast)
+                                                     .collect(Collectors.toList()));
+
+        return childList.stream()
+                 .anyMatch(el -> el.text().contains(expectedValue));
+    }
+
+    @SuppressWarnings("unchecked")
+    private String getChildText(final Node node, final String childKey) {
+        final NodeList children = node.getAt(QName.valueOf(childKey));
+        final List<Node> childList = (List<Node>) (children.stream()
+                                                     .map(Node.class::cast)
+                                                     .collect(Collectors.toList()));
+
+        return childList.stream().map(Node::text).findFirst().orElse("");
+    }
+
+    @SuppressWarnings("unchecked")
+    private void setChildText(final Node node, final String childKey, final String expectedValue) {
+        final NodeList children = node.getAt(QName.valueOf(childKey));
+        final List<Node> childList = (List<Node>) (children.stream()
+                                                     .map(Node.class::cast)
+                                                     .collect(Collectors.toList()));
+
+        childList.forEach(el -> el.setValue(expectedValue));
     }
 
     private String getVersionFrom(final String version)

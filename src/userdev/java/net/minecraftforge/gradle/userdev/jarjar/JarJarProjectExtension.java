@@ -1,7 +1,9 @@
 package net.minecraftforge.gradle.userdev.jarjar;
 
 import groovy.lang.GroovyObjectSupport;
+import groovy.namespace.QName;
 import groovy.util.Node;
+import groovy.util.NodeList;
 import net.minecraftforge.gradle.userdev.DependencyManagementExtension;
 import net.minecraftforge.gradle.userdev.UserDevPlugin;
 import net.minecraftforge.gradle.userdev.dependency.DependencyFilter;
@@ -73,13 +75,21 @@ public class JarJarProjectExtension  extends GroovyObjectSupport
 
         cleaned.pom(pom -> {
             pom.withXml(xml -> {
-                final Node dependenciesNode = xml.asNode().appendNode("dependencies");
+                final NodeList potentialDependenciesList = xml.asNode().getAt(QName.valueOf("{http://maven.apache.org/POM/4.0.0}dependencies"));
+                Node dependenciesNode;
+                if (potentialDependenciesList.isEmpty()) {
+                    dependenciesNode = xml.asNode().appendNode("{http://maven.apache.org/POM/4.0.0}dependencies");
+                }
+                else {
+                    dependenciesNode = (Node) potentialDependenciesList.get(0);
+                }
+
                 dependencies.forEach(it -> {
-                    final Node dependencyNode = dependenciesNode.appendNode("dependency");
-                    dependencyNode.appendNode("groupId", it.getModuleGroup());
-                    dependencyNode.appendNode("artifactId", it.getName());
-                    dependencyNode.appendNode("version", it.getModuleVersion());
-                    dependencyNode.appendNode("scope", "runtime");
+                    final Node dependencyNode = dependenciesNode.appendNode("{http://maven.apache.org/POM/4.0.0}dependency");
+                    dependencyNode.appendNode("{http://maven.apache.org/POM/4.0.0}groupId", it.getModuleGroup());
+                    dependencyNode.appendNode("{http://maven.apache.org/POM/4.0.0}artifactId", it.getName());
+                    dependencyNode.appendNode("{http://maven.apache.org/POM/4.0.0}version", it.getModuleVersion());
+                    dependencyNode.appendNode("{http://maven.apache.org/POM/4.0.0}scope", "runtime");
                 });
             });
         });
