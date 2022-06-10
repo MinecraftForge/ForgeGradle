@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.userdev.tasks;
 
+import net.minecraftforge.gradle.userdev.DependencyManagementExtension;
 import net.minecraftforge.gradle.userdev.dependency.DefaultDependencyFilter;
 import net.minecraftforge.gradle.userdev.dependency.DependencyFilter;
 import net.minecraftforge.gradle.userdev.manifest.DefaultInheritManifest;
@@ -11,6 +12,7 @@ import org.apache.maven.artifact.versioning.VersionRange;
 import org.gradle.api.Action;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.CopySpec;
@@ -20,15 +22,14 @@ import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.tasks.*;
 import org.gradle.api.tasks.bundling.Jar;
 
+import javax.swing.text.html.Option;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
@@ -118,7 +119,7 @@ public abstract class JarJar extends Jar
     }
 
     @Classpath
-    @Optional
+    @org.gradle.api.tasks.Optional
     public List<Configuration> getConfigurations() {
         return this.configurations;
     }
@@ -165,14 +166,16 @@ public abstract class JarJar extends Jar
     private Metadata createMetadata() {
         return new Metadata(
           this.configurations.stream().flatMap(config -> config.getDependencies().stream())
+            .filter(ExternalModuleDependency.class::isInstance)
+            .map(ExternalModuleDependency.class::cast)
             .map(this::createDependencyMetadata)
             .collect(Collectors.toList())
         );
     }
 
-    private ContainedJarMetadata createDependencyMetadata(final Dependency dependency) {
-        if (!isValidVersionRange(Objects.requireNonNull(dependency.getVersion()))) {
-            throw new RuntimeException("The given version specification is invalid: " + dependency.getVersion() + " if you used gradle based range versioning like (2.+), convert this to a maven compatible format ([2.0,3.0)).");
+    private ContainedJarMetadata createDependencyMetadata(final ExternalModuleDependency dependency) {
+        if (!isValidVersionRange(Objects.requireNonNull(getVersionFrom(dependency)))) {
+            throw new RuntimeException("The given version specification is invalid: " + getVersionFrom(dependency) + " if you used gradle based range versioning like (2.+), convert this to a maven compatible format ([2.0,3.0)).");
         }
 
         final ResolvedDependency resolvedDependency = getResolvedDependency(dependency);
@@ -181,8 +184,8 @@ public abstract class JarJar extends Jar
             return new ContainedJarMetadata(
               new ContainedJarIdentifier(dependency.getGroup(), dependency.getName()),
               new ContainedVersion(
-                VersionRange.createFromVersionSpec(dependency.getVersion()),
-                new DefaultArtifactVersion(potentiallyExtractVersionFromDeobfuscatedVersion(resolvedDependency))
+                VersionRange.createFromVersionSpec(getVersionFrom(dependency)),
+                new DefaultArtifactVersion(getVersionFrom(resolvedDependency.getModuleVersion()))
               ),
               "META-INF/jarjar/" + resolvedDependency.getAllModuleArtifacts().iterator().next().getFile().getName(),
               isObfuscated(dependency)
@@ -194,17 +197,26 @@ public abstract class JarJar extends Jar
         }
     }
 
-    private String potentiallyExtractVersionFromDeobfuscatedVersion(final ResolvedDependency resolvedDependency)
-    {
-        if (resolvedDependency.getModuleVersion().contains("_mapped_")) {
-            return resolvedDependency.getModuleVersion().split("_mapped_")[0];
-        }
+    private String getVersionFrom(final Dependency dependency) {
+        final Optional<String> attributeVersion = getProject().getExtensions().getByType(DependencyManagementExtension.class).getPinnedJarJarVersion(dependency);
 
-        return resolvedDependency.getModuleVersion();
+        return attributeVersion.map(this::getVersionFrom).orElseGet(() -> getVersionFrom(Objects.requireNonNull(dependency.getVersion())));
     }
 
-    private ResolvedDependency getResolvedDependency(final Dependency dependency) {
-        final Set<ResolvedDependency> deps = getProject().getConfigurations().detachedConfiguration(dependency).getResolvedConfiguration().getLenientConfiguration().getFirstLevelModuleDependencies();
+    private String getVersionFrom(final String version)
+    {
+        if (version.contains("_mapped_")) {
+            return version.split("_mapped_")[0];
+        }
+
+        return version;
+    }
+
+    private ResolvedDependency getResolvedDependency(final ExternalModuleDependency dependency) {
+        ExternalModuleDependency toResolve = dependency.copy();
+        toResolve.version(constraint -> constraint.strictly(getVersionFrom(dependency)));
+
+        final Set<ResolvedDependency> deps = getProject().getConfigurations().detachedConfiguration(toResolve).getResolvedConfiguration().getLenientConfiguration().getFirstLevelModuleDependencies();
         if (deps.isEmpty() && Objects.requireNonNull(dependency.getVersion()).contains("+"))
             throw new IllegalArgumentException(String.format("Failed to resolve: %s", dependency));
 
@@ -219,7 +231,7 @@ public abstract class JarJar extends Jar
         try
         {
             final VersionRange data = VersionRange.createFromVersionSpec(range);
-            return data.hasRestrictions() && data.getRecommendedVersion() == null;
+            return data.hasRestrictions() && data.getRecommendedVersion() == null && range.contains("+");
         }
         catch (InvalidVersionSpecificationException e)
         {

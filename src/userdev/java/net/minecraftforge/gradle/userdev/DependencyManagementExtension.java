@@ -23,16 +23,22 @@ package net.minecraftforge.gradle.userdev;
 import groovy.lang.Closure;
 import groovy.lang.GroovyObjectSupport;
 import net.minecraftforge.gradle.userdev.util.DependencyRemapper;
+import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.attributes.Attribute;
+import org.gradle.api.attributes.AttributeContainer;
 
 import java.util.Objects;
+import java.util.Optional;
 
 public class DependencyManagementExtension extends GroovyObjectSupport {
     public static final String EXTENSION_NAME = "fg";
     private final Project project;
     private final DependencyRemapper remapper;
 
+    private final Attribute<String> fixedJarJarVersionAttribute = Attribute.of("fixedJarJarVersion", String.class);
     public DependencyManagementExtension(Project project, DependencyRemapper remapper) {
         this.project = project;
         this.remapper = remapper;
@@ -54,5 +60,20 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
         if (project.getTasks().findByPath(UserDevPlugin.JAR_JAR_TASK_NAME) != null) {
             Objects.requireNonNull(project.getTasks().findByPath(UserDevPlugin.JAR_JAR_TASK_NAME)).setEnabled(true);
         }
+    }
+
+    public void withPinnedJarJarVersion(Dependency dependency, String version) {
+        if (dependency instanceof ModuleDependency) {
+            final ModuleDependency moduleDependency = (ModuleDependency) dependency;
+            moduleDependency.attributes(attributeContainer -> attributeContainer.attribute(fixedJarJarVersionAttribute, version));
+        }
+    }
+
+    public Optional<String> getPinnedJarJarVersion(Dependency dependency) {
+        if (dependency instanceof ModuleDependency) {
+            final ModuleDependency moduleDependency = (ModuleDependency) dependency;
+            return Optional.ofNullable(moduleDependency.getAttributes().getAttribute(fixedJarJarVersionAttribute));
+        }
+        return Optional.empty();
     }
 }
