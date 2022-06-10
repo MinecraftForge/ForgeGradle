@@ -157,19 +157,26 @@ public abstract class JarJar extends Jar
             .filter(ExternalModuleDependency.class::isInstance)
             .map(ExternalModuleDependency.class::cast)
             .map(this::createDependencyMetadata)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
             .collect(Collectors.toList())
         );
     }
 
-    private ContainedJarMetadata createDependencyMetadata(final ExternalModuleDependency dependency) {
+    private Optional<ContainedJarMetadata> createDependencyMetadata(final ExternalModuleDependency dependency) {
         if (!isValidVersionRange(Objects.requireNonNull(getVersionFrom(Objects.requireNonNull(dependency.getVersion()))))) {
             throw new RuntimeException("The given version specification is invalid: " + getVersionFrom(dependency.getVersion()) + " if you used gradle based range versioning like (2.+), convert this to a maven compatible format ([2.0,3.0)).");
         }
 
         final ResolvedDependency resolvedDependency = getResolvedDependency(dependency);
+        if (!dependencyFilter.isIncluded(resolvedDependency)) {
+            //Skipping this file since the dependency filter does not want this to be included at all!
+            return Optional.empty();
+        }
+
         try
         {
-            return new ContainedJarMetadata(
+            return Optional.of(new ContainedJarMetadata(
               new ContainedJarIdentifier(dependency.getGroup(), dependency.getName()),
               new ContainedVersion(
                 VersionRange.createFromVersionSpec(getVersionFrom(dependency.getVersion())),
@@ -177,7 +184,7 @@ public abstract class JarJar extends Jar
               ),
               "META-INF/jarjar/" + resolvedDependency.getAllModuleArtifacts().iterator().next().getFile().getName(),
               isObfuscated(dependency)
-            );
+            ));
         }
         catch (InvalidVersionSpecificationException e)
         {

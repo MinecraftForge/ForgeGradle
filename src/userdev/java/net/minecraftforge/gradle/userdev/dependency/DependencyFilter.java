@@ -78,4 +78,6 @@ public interface DependencyFilter {
      * @return
      */
     Spec<? super ResolvedDependency> dependency(Closure<Boolean> spec);
+
+    boolean isIncluded(ResolvedDependency dependency);
 }

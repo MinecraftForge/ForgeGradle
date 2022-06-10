@@ -125,7 +125,8 @@ public abstract class AbstractDependencyFilter implements DependencyFilter
         return Specs.convertClosureToSpec(spec);
     }
 
-    protected boolean isIncluded(ResolvedDependency dependency) {
+    @Override
+    public boolean isIncluded(ResolvedDependency dependency) {
         boolean include = includeSpecs.isEmpty() || includeSpecs.stream().anyMatch(spec -> spec.isSatisfiedBy(dependency));
         boolean exclude = !excludeSpecs.isEmpty() && excludeSpecs.stream().anyMatch(spec -> spec.isSatisfiedBy(dependency));
         return include && !exclude;
