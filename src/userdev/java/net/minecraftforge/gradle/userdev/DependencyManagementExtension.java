@@ -73,7 +73,7 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
                 final NodeList potentialDependenciesList = xml.asNode().getAt(QName.valueOf("{http://maven.apache.org/POM/4.0.0}dependencies"));
                 Node dependenciesNode;
                 if (potentialDependenciesList.isEmpty()) {
-                    dependenciesNode = xml.asNode().appendNode("{http://maven.apache.org/POM/4.0.0}dependencies");
+                    dependenciesNode = xml.asNode().appendNode("dependencies");
                 }
                 else {
                     dependenciesNode = (Node) potentialDependenciesList.get(0);

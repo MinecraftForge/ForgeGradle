@@ -83,18 +83,22 @@ public class JarJarProjectExtension  extends GroovyObjectSupport
                     final NodeList potentialDependenciesList = xml.asNode().getAt(QName.valueOf("{http://maven.apache.org/POM/4.0.0}dependencies"));
                     Node dependenciesNode;
                     if (potentialDependenciesList.isEmpty()) {
-                        dependenciesNode = xml.asNode().appendNode("{http://maven.apache.org/POM/4.0.0}dependencies");
+                        dependenciesNode = xml.asNode().appendNode("dependencies");
                     }
                     else {
                         dependenciesNode = (Node) potentialDependenciesList.get(0);
                     }
 
+                    //Yes this potentially can generate duplicate entries, but it should not really matter.
+                    //Two potential scenarios occur: The original dep which is used to compile is a range, no problem that should resolve.
+                    //The other is where JarJar is told to use a version which not compatible with the original dependency, nothing we can do developers
+                    //shooting themselves in the foot is not really something we can prevent.
                     dependencies.forEach(it -> {
-                        final Node dependencyNode = dependenciesNode.appendNode("{http://maven.apache.org/POM/4.0.0}dependency");
-                        dependencyNode.appendNode("{http://maven.apache.org/POM/4.0.0}groupId", it.getModuleGroup());
-                        dependencyNode.appendNode("{http://maven.apache.org/POM/4.0.0}artifactId", it.getName());
-                        dependencyNode.appendNode("{http://maven.apache.org/POM/4.0.0}version", it.getModuleVersion());
-                        dependencyNode.appendNode("{http://maven.apache.org/POM/4.0.0}scope", "runtime");
+                        final Node dependencyNode = dependenciesNode.appendNode("dependency");
+                        dependencyNode.appendNode("groupId", it.getModuleGroup());
+                        dependencyNode.appendNode("artifactId", it.getModuleName());
+                        dependencyNode.appendNode("version", it.getModuleVersion());
+                        dependencyNode.appendNode("scope", "runtime");
                     });
                 });
             });
