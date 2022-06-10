@@ -120,7 +120,7 @@ public abstract class JarJar extends Jar
     @Internal
     public Set<ResolvedDependency> getResolvedDependencies()
     {
-        return this.configurations.stream().flatMap(config -> config.getDependencies().stream())
+        return this.configurations.stream().flatMap(config -> config.getAllDependencies().stream())
                  .filter(ExternalModuleDependency.class::isInstance)
                  .map(ExternalModuleDependency.class::cast)
                  .map(this::getResolvedDependency)
@@ -199,7 +199,7 @@ public abstract class JarJar extends Jar
 
     private Metadata createMetadata() {
         return new Metadata(
-          this.configurations.stream().flatMap(config -> config.getDependencies().stream())
+          this.configurations.stream().flatMap(config -> config.getAllDependencies().stream())
             .filter(ExternalModuleDependency.class::isInstance)
             .map(ExternalModuleDependency.class::cast)
             .map(this::createDependencyMetadata)
