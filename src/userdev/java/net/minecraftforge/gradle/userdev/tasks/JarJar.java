@@ -22,30 +22,29 @@ import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.tasks.*;
 import org.gradle.api.tasks.bundling.Jar;
 
-import javax.swing.text.html.Option;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.*;
 import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("unused")
 public abstract class JarJar extends Jar
 {
-    private           List<Configuration> configurations;
+    private final     List<Configuration> configurations;
     private transient DependencyFilter    dependencyFilter;
-
-    private boolean minimizeJar;
 
     private FileCollection sourceSetsClassesDirs;
 
     private final ConfigurableFileCollection includedDependencies = getProject().files(new Callable<FileCollection>() {
 
         @Override
-        public FileCollection call() throws Exception {
+        public FileCollection call()
+        {
             return dependencyFilter.resolve(configurations);
         }
     });
@@ -64,14 +63,8 @@ public abstract class JarJar extends Jar
         setManifest(new DefaultInheritManifest(getServices().get(FileResolver.class)));
         configurations = new ArrayList<>();
 
-        this.getInputs().property("minimize", (Callable<Boolean>) () -> minimizeJar);
         this.jarJarCopySpec = this.getMainSpec().addChild();
         this.jarJarCopySpec.into("META-INF/jarjar");
-    }
-
-    public JarJar minimize() {
-        minimizeJar = true;
-        return this;
     }
 
     @InputFiles
@@ -79,12 +72,6 @@ public abstract class JarJar extends Jar
     FileCollection getSourceSetsClassesDirs() {
         if (sourceSetsClassesDirs == null) {
             ConfigurableFileCollection allClassesDirs = getProject().getObjects().fileCollection();
-            if (minimizeJar) {
-                for (SourceSet sourceSet : getProject().getExtensions().getByType(SourceSetContainer.class)) {
-                    FileCollection classesDirs = sourceSet.getOutput().getClassesDirs();
-                    allClassesDirs.from(classesDirs);
-                }
-            }
             sourceSetsClassesDirs = allClassesDirs.filter(File::isDirectory);
         }
         return sourceSetsClassesDirs;
@@ -143,6 +130,7 @@ public abstract class JarJar extends Jar
         this.configurations.add(configuration);
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     private void writeMetadata() {
         final Path metadataPath = getJarJarMetadataPath();
 
