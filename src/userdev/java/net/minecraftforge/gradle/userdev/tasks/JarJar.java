@@ -174,8 +174,8 @@ public abstract class JarJar extends Jar
     }
 
     private ContainedJarMetadata createDependencyMetadata(final ExternalModuleDependency dependency) {
-        if (!isValidVersionRange(Objects.requireNonNull(getVersionFrom(dependency)))) {
-            throw new RuntimeException("The given version specification is invalid: " + getVersionFrom(dependency) + " if you used gradle based range versioning like (2.+), convert this to a maven compatible format ([2.0,3.0)).");
+        if (!isValidVersionRange(Objects.requireNonNull(getVersionFrom(Objects.requireNonNull(dependency.getVersion()))))) {
+            throw new RuntimeException("The given version specification is invalid: " + getVersionFrom(dependency.getVersion()) + " if you used gradle based range versioning like (2.+), convert this to a maven compatible format ([2.0,3.0)).");
         }
 
         final ResolvedDependency resolvedDependency = getResolvedDependency(dependency);
@@ -184,7 +184,7 @@ public abstract class JarJar extends Jar
             return new ContainedJarMetadata(
               new ContainedJarIdentifier(dependency.getGroup(), dependency.getName()),
               new ContainedVersion(
-                VersionRange.createFromVersionSpec(getVersionFrom(dependency)),
+                VersionRange.createFromVersionSpec(getVersionFrom(dependency.getVersion())),
                 new DefaultArtifactVersion(getVersionFrom(resolvedDependency.getModuleVersion()))
               ),
               "META-INF/jarjar/" + resolvedDependency.getAllModuleArtifacts().iterator().next().getFile().getName(),
@@ -216,9 +216,9 @@ public abstract class JarJar extends Jar
         ExternalModuleDependency toResolve = dependency.copy();
         toResolve.version(constraint -> constraint.strictly(getVersionFrom(dependency)));
 
-        final Set<ResolvedDependency> deps = getProject().getConfigurations().detachedConfiguration(toResolve).getResolvedConfiguration().getLenientConfiguration().getFirstLevelModuleDependencies();
-        if (deps.isEmpty() && Objects.requireNonNull(dependency.getVersion()).contains("+"))
-            throw new IllegalArgumentException(String.format("Failed to resolve: %s", dependency));
+        final Set<ResolvedDependency> deps = getProject().getConfigurations().detachedConfiguration(toResolve).getResolvedConfiguration().getFirstLevelModuleDependencies();
+        if (deps.isEmpty())
+            throw new IllegalArgumentException(String.format("Failed to resolve: %s", toResolve));
 
         return deps.iterator().next();
     }
@@ -231,7 +231,7 @@ public abstract class JarJar extends Jar
         try
         {
             final VersionRange data = VersionRange.createFromVersionSpec(range);
-            return data.hasRestrictions() && data.getRecommendedVersion() == null && range.contains("+");
+            return data.hasRestrictions() && data.getRecommendedVersion() == null && !range.contains("+");
         }
         catch (InvalidVersionSpecificationException e)
         {
