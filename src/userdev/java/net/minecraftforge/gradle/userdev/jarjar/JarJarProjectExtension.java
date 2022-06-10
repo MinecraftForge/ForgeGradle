@@ -63,22 +63,38 @@ public class JarJarProjectExtension  extends GroovyObjectSupport
 
     public MavenPublication component(MavenPublication mavenPublication)
     {
-        project.afterEvaluate(p -> {
-            final MavenPublication cleaned = project.getExtensions().getByType(DependencyManagementExtension.class).component(mavenPublication);
+        project.getExtensions().getByType(DependencyManagementExtension.class).component(mavenPublication);
+        project.getTasks().withType(JarJar.class).all(task -> component(mavenPublication, task, false));
 
-            final Set<JarJar> isEnabled = project.getTasks().withType(JarJar.class).stream().filter(JarJar::isEnabled).collect(Collectors.toSet());
-            if (isEnabled.isEmpty())
+        return mavenPublication;
+    }
+
+    public MavenPublication component(MavenPublication mavenPublication, JarJar task)
+    {
+        return component(mavenPublication, task, true);
+    }
+
+    private MavenPublication component(MavenPublication mavenPublication, JarJar task, boolean handleCleaning)
+    {
+        project.afterEvaluate(p -> {
+            if (!task.isEnabled())
             {
                 return;
             }
 
-            isEnabled.forEach(jarJar -> cleaned.artifact(jarJar, mavenArtifact -> {
-                mavenArtifact.setClassifier(jarJar.getArchiveClassifier().get());
-                mavenArtifact.setExtension(jarJar.getArchiveExtension().get());
-            }));
-            final Set<ResolvedDependency> dependencies = isEnabled.stream().flatMap(jarJar -> jarJar.getResolvedDependencies().stream()).collect(Collectors.toSet());
+            if (handleCleaning)
+                project.getExtensions().getByType(DependencyManagementExtension.class).component(mavenPublication);
 
-            cleaned.pom(pom -> {
+
+            mavenPublication.artifact(task, mavenArtifact -> {
+                mavenArtifact.setClassifier(task.getArchiveClassifier().get());
+                mavenArtifact.setExtension(task.getArchiveExtension().get());
+            });
+
+
+            final Set<ResolvedDependency> dependencies = task.getResolvedDependencies();
+
+            mavenPublication.pom(pom -> {
                 pom.withXml(xml -> {
                     final NodeList potentialDependenciesList = xml.asNode().getAt(QName.valueOf("{http://maven.apache.org/POM/4.0.0}dependencies"));
                     Node dependenciesNode;
