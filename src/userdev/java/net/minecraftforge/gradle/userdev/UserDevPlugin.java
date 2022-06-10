@@ -42,6 +42,7 @@ import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.mcp.tasks.DownloadMCPMappings;
 import net.minecraftforge.gradle.mcp.tasks.GenerateSRG;
 import net.minecraftforge.gradle.userdev.dependency.DependencyFilter;
+import net.minecraftforge.gradle.userdev.jarjar.JarJarProjectExtension;
 import net.minecraftforge.gradle.userdev.tasks.JarJar;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 import net.minecraftforge.gradle.userdev.util.DeobfuscatingRepo;
@@ -119,6 +120,7 @@ public class UserDevPlugin implements Plugin<Project> {
         final Deobfuscator deobfuscator = new Deobfuscator(project, Utils.getCache(project, "deobf_dependencies"));
         final DependencyRemapper remapper = new DependencyRemapper(project, deobfuscator);
         project.getExtensions().create(DependencyManagementExtension.EXTENSION_NAME, DependencyManagementExtension.class, project, remapper);
+        project.getExtensions().create(JarJarProjectExtension.EXTENSION_NAME, JarJarProjectExtension.class, project);
 
         final TaskContainer tasks = project.getTasks();
         final TaskProvider<DownloadMavenArtifact> downloadMcpConfig = tasks.register("downloadMcpConfig", DownloadMavenArtifact.class);

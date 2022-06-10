@@ -3,6 +3,7 @@ package net.minecraftforge.gradle.userdev.tasks;
 import net.minecraftforge.gradle.userdev.DependencyManagementExtension;
 import net.minecraftforge.gradle.userdev.dependency.DefaultDependencyFilter;
 import net.minecraftforge.gradle.userdev.dependency.DependencyFilter;
+import net.minecraftforge.gradle.userdev.jarjar.JarJarProjectExtension;
 import net.minecraftforge.gradle.userdev.manifest.DefaultInheritManifest;
 import net.minecraftforge.gradle.userdev.manifest.InheritManifest;
 import net.minecraftforge.jarjar.metadata.*;
@@ -22,6 +23,7 @@ import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.tasks.*;
 import org.gradle.api.tasks.bundling.Jar;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -95,6 +97,16 @@ public abstract class JarJar extends Jar
         return includedDependencies;
     }
 
+    public Set<ResolvedDependency> getResolvedDependencies()
+    {
+        return this.configurations.stream().flatMap(config -> config.getDependencies().stream())
+                 .filter(ExternalModuleDependency.class::isInstance)
+                 .map(ExternalModuleDependency.class::cast)
+                 .map(this::getResolvedDependency)
+                 .filter(this.dependencyFilter::isIncluded)
+                 .collect(Collectors.toSet());
+    }
+
     @Classpath
     public FileCollection getMetadata() {
         return metadata;
@@ -125,9 +137,22 @@ public abstract class JarJar extends Jar
         this.dependencyFilter = filter;
     }
 
-    public void configuration(final Configuration configuration)
+    public void configuration(@Nullable final Configuration configuration)
     {
+        if(configuration == null)
+            return;
+
         this.configurations.add(configuration);
+    }
+
+    public void fromRuntimeConfiguration() {
+        final Configuration runtimeConfiguration = getProject().getConfigurations().findByName("runtimeClasspath");
+        if (runtimeConfiguration != null) {
+            this.configuration(runtimeConfiguration);
+        }
+        else {
+            this.configuration(getProject().getConfigurations().findByName("runtime"));
+        }
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -193,7 +218,7 @@ public abstract class JarJar extends Jar
     }
 
     private String getVersionFrom(final Dependency dependency) {
-        final Optional<String> attributeVersion = getProject().getExtensions().getByType(DependencyManagementExtension.class).getPinnedJarJarVersion(dependency);
+        final Optional<String> attributeVersion = getProject().getExtensions().getByType(JarJarProjectExtension.class).getPin(dependency);
 
         return attributeVersion.map(this::getVersionFrom).orElseGet(() -> getVersionFrom(Objects.requireNonNull(dependency.getVersion())));
     }
