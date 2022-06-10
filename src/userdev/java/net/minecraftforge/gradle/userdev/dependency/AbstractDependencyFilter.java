@@ -106,8 +106,8 @@ public abstract class AbstractDependencyFilter implements DependencyFilter
             {
                 if (it instanceof ResolvedDependency) {
                     final ResolvedDependency resolvedDependency = (ResolvedDependency) it;
-                    return (dependency.getGroup() == null || Pattern.matches(dependency.getGroup(), resolvedDependency.getModuleGroup())) ||
-                            (dependency.getName() == null || Pattern.matches(dependency.getName(), resolvedDependency.getModuleName())) ||
+                    return (dependency.getGroup() == null || Pattern.matches(dependency.getGroup(), resolvedDependency.getModuleGroup())) &&
+                            (dependency.getName() == null || Pattern.matches(dependency.getName(), resolvedDependency.getModuleName())) &&
                             (dependency.getVersion() == null || Pattern.matches(dependency.getVersion(), resolvedDependency.getModuleVersion()));
                 }
 
