@@ -43,6 +43,7 @@ import java.util.stream.Stream;
 
 public class DependencyManagementExtension extends GroovyObjectSupport {
     public static final String EXTENSION_NAME = "fg";
+    private static final String MAVEN_POM_NAMESPACE = "{http://maven.apache.org/POM/4.0.0}";
     private final Project project;
     private final DependencyRemapper remapper;
     public DependencyManagementExtension(Project project, DependencyRemapper remapper) {
@@ -70,7 +71,7 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
 
         mavenPublication.pom(pom -> {
             pom.withXml(xml -> {
-                final NodeList potentialDependenciesList = xml.asNode().getAt(QName.valueOf("{http://maven.apache.org/POM/4.0.0}dependencies"));
+                final NodeList potentialDependenciesList = xml.asNode().getAt(QName.valueOf(MAVEN_POM_NAMESPACE + "dependencies"));
                 Node dependenciesNode;
                 if (potentialDependenciesList.isEmpty()) {
                     dependenciesNode = xml.asNode().appendNode("dependencies");
@@ -78,7 +79,7 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
                 else {
                     dependenciesNode = (Node) potentialDependenciesList.get(0);
                 }
-                final NodeList dependencies = dependenciesNode.getAt(QName.valueOf("{http://maven.apache.org/POM/4.0.0}*")); //grab all dependency nodes in a neat list;
+                final NodeList dependencies = dependenciesNode.getAt(QName.valueOf(MAVEN_POM_NAMESPACE + "*")); //grab all dependency nodes in a neat list;
 
                 final List<Node> dependenciesNodeList = (List<Node>) dependencies.stream()
                                                                        .filter(Node.class::isInstance)
@@ -86,13 +87,13 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
                                                                        .collect(Collectors.toList());
 
                 dependenciesNodeList.stream()
-                  .filter(el -> hasChildWithText(el, "{http://maven.apache.org/POM/4.0.0}artifactId", "forge") && hasChildWithText(el, "{http://maven.apache.org/POM/4.0.0}groupId", "net.minecraftforge"))
+                  .filter(el -> hasChildWithText(el, MAVEN_POM_NAMESPACE + "artifactId", "forge") && hasChildWithText(el, MAVEN_POM_NAMESPACE + "groupId", "net.minecraftforge"))
                   .forEach(el -> el.parent().remove(el));
 
 
                 dependenciesNodeList.stream()
-                  .filter(el -> hasChildWithContainedText(el, "{http://maven.apache.org/POM/4.0.0}version", "_mapped_"))
-                  .forEach(el -> setChildText(el, "{http://maven.apache.org/POM/4.0.0}version", getVersionFrom(getChildText(el, "{http://maven.apache.org/POM/4.0.0}version"))));
+                  .filter(el -> hasChildWithContainedText(el, MAVEN_POM_NAMESPACE + "version", "_mapped_"))
+                  .forEach(el -> setChildText(el, MAVEN_POM_NAMESPACE + "version", getVersionFrom(getChildText(el, MAVEN_POM_NAMESPACE + "version"))));
             });
         });
 

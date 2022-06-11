@@ -44,8 +44,10 @@ import java.util.stream.Collectors;
 public class JarJarProjectExtension  extends GroovyObjectSupport
 {
     public static final String EXTENSION_NAME = "jarJar";
+    private static final String MAVEN_POM_NAMESPACE = "{http://maven.apache.org/POM/4.0.0}";
 
     private final Attribute<String> fixedJarJarVersionAttribute = Attribute.of("fixedJarJarVersion", String.class);
+    private final Attribute<String> jarJarRangeAttribute = Attribute.of("jarJarRange", String.class);
 
     private final Project project;
 
@@ -58,10 +60,12 @@ public class JarJarProjectExtension  extends GroovyObjectSupport
     }
 
     public void fromRuntimeConfiguration() {
+        enable();
         project.getTasks().withType(JarJar.class).all(JarJar::fromRuntimeConfiguration);
     }
 
     public void pin(Dependency dependency, String version) {
+        enable();
         if (dependency instanceof ModuleDependency) {
             final ModuleDependency moduleDependency = (ModuleDependency) dependency;
             moduleDependency.attributes(attributeContainer -> attributeContainer.attribute(fixedJarJarVersionAttribute, version));
@@ -76,13 +80,31 @@ public class JarJarProjectExtension  extends GroovyObjectSupport
         return Optional.empty();
     }
 
+    public void ranged(Dependency dependency, String range) {
+        enable();
+        if (dependency instanceof ModuleDependency) {
+            final ModuleDependency moduleDependency = (ModuleDependency) dependency;
+            moduleDependency.attributes(attributeContainer -> attributeContainer.attribute(jarJarRangeAttribute, range));
+        }
+    }
+
+    public Optional<String> getRange(Dependency dependency) {
+        if (dependency instanceof ModuleDependency) {
+            final ModuleDependency moduleDependency = (ModuleDependency) dependency;
+            return Optional.ofNullable(moduleDependency.getAttributes().getAttribute(jarJarRangeAttribute));
+        }
+        return Optional.empty();
+    }
+
     public JarJarProjectExtension dependencies(Action<DependencyFilter> c) {
+        enable();
         project.getTasks().withType(JarJar.class).all(jarJar -> jarJar.dependencies(c));
         return this;
     }
 
     public MavenPublication component(MavenPublication mavenPublication)
     {
+        enable();
         project.getExtensions().getByType(DependencyManagementExtension.class).component(mavenPublication);
         project.getTasks().withType(JarJar.class).all(task -> component(mavenPublication, task, false));
 
@@ -91,6 +113,7 @@ public class JarJarProjectExtension  extends GroovyObjectSupport
 
     public MavenPublication component(MavenPublication mavenPublication, JarJar task)
     {
+        enable();
         return component(mavenPublication, task, true);
     }
 
@@ -116,7 +139,7 @@ public class JarJarProjectExtension  extends GroovyObjectSupport
 
             mavenPublication.pom(pom -> {
                 pom.withXml(xml -> {
-                    final NodeList potentialDependenciesList = xml.asNode().getAt(QName.valueOf("{http://maven.apache.org/POM/4.0.0}dependencies"));
+                    final NodeList potentialDependenciesList = xml.asNode().getAt(QName.valueOf(MAVEN_POM_NAMESPACE + "dependencies"));
                     Node dependenciesNode;
                     if (potentialDependenciesList.isEmpty()) {
                         dependenciesNode = xml.asNode().appendNode("dependencies");
