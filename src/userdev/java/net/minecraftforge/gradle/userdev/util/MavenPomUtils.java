@@ -97,4 +97,13 @@ public class MavenPomUtils {
         }
         return dependenciesNode;
     }
+
+    @SuppressWarnings("unchecked")
+    public static List<Node> getDependencyNodes(final XmlProvider xml) {
+        final NodeList existingDependencies = getDependenciesNodeList(xml);
+
+        return (List<Node>) existingDependencies.stream()
+                .map(Node.class::cast)
+                .collect(Collectors.toList());
+    }
 }

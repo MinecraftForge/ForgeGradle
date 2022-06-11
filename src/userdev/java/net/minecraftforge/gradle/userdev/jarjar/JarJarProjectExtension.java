@@ -21,7 +21,6 @@
 package net.minecraftforge.gradle.userdev.jarjar;
 
 import groovy.lang.GroovyObjectSupport;
-import groovy.namespace.QName;
 import groovy.util.Node;
 import groovy.util.NodeList;
 import net.minecraftforge.gradle.userdev.DependencyManagementExtension;
@@ -36,7 +35,7 @@ import org.gradle.api.artifacts.*;
 import org.gradle.api.attributes.Attribute;
 import org.gradle.api.publish.maven.MavenPublication;
 
-import java.util.Objects;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -137,18 +136,28 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
             mavenPublication.pom(pom -> {
                 pom.withXml(xml -> {
                     Node dependenciesNode = MavenPomUtils.getDependenciesNode(xml);
+                    final List<Node> dependenciesNodeList = MavenPomUtils.getDependencyNodes(xml);
 
-                    //Yes this potentially can generate duplicate entries, but it should not really matter.
-                    //Two potential scenarios occur: The original dep which is used to compile is a range, no problem that should resolve.
-                    //The other is where JarJar is told to use a version which not compatible with the original dependency, nothing we can do developers
-                    //shooting themselves in the foot is not really something we can prevent.
-                    dependencies.forEach(it -> {
-                        final Node dependencyNode = dependenciesNode.appendNode("dependency");
-                        dependencyNode.appendNode("groupId", it.getModuleGroup());
-                        dependencyNode.appendNode("artifactId", it.getModuleName());
-                        dependencyNode.appendNode("version", it.getModuleVersion());
-                        dependencyNode.appendNode("scope", "runtime");
-                    });
+                    // From all dependencies
+                    dependencies.forEach(dependency ->
+                            dependenciesNodeList.stream()
+                                    .filter(el -> MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "artifactId", dependency.getModuleName())
+                                            && MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "groupId", dependency.getModuleGroup()))
+                                    .forEach(el -> MavenPomUtils.setChildText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "version", dependency.getModuleVersion()))
+                    );
+
+
+                    dependencies.stream()
+                            .filter(dependency -> dependenciesNodeList.stream()
+                                    .noneMatch(el -> MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "artifactId", dependency.getModuleName())
+                                            && MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "groupId", dependency.getModuleGroup())))
+                            .forEach(it -> {
+                                final Node dependencyNode = dependenciesNode.appendNode("dependency");
+                                dependencyNode.appendNode("groupId", it.getModuleGroup());
+                                dependencyNode.appendNode("artifactId", it.getModuleName());
+                                dependencyNode.appendNode("version", it.getModuleVersion());
+                                dependencyNode.appendNode("scope", "runtime");
+                            });
                 });
             });
         });
