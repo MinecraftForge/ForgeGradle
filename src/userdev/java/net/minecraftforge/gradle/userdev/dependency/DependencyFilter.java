@@ -32,8 +32,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-public interface DependencyFilter
-{
+public interface DependencyFilter {
     /**
      * Exclude dependencies that match the provided spec.
      *
@@ -96,31 +95,26 @@ public interface DependencyFilter
 
     boolean isIncluded(ArtifactIdentifier dependency);
 
-    final class ArtifactIdentifier
-    {
+    final class ArtifactIdentifier {
         private final String group;
         private final String name;
         private final String version;
 
-        public ArtifactIdentifier(String group, String name, String version)
-        {
+        public ArtifactIdentifier(String group, String name, String version) {
             this.group = group;
             this.name = name;
             this.version = version;
         }
 
-        public String getGroup()
-        {
+        public String getGroup() {
             return group;
         }
 
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
-        public String getVersion()
-        {
+        public String getVersion() {
             return version;
         }
     }

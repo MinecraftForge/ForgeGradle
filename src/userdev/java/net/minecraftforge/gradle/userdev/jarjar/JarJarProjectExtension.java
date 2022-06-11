@@ -41,81 +41,69 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class JarJarProjectExtension extends GroovyObjectSupport
-{
-    public static final  String EXTENSION_NAME      = "jarJar";
+public class JarJarProjectExtension extends GroovyObjectSupport {
+    public static final String EXTENSION_NAME = "jarJar";
     private static final String MAVEN_POM_NAMESPACE = "{http://maven.apache.org/POM/4.0.0}";
 
     private final Attribute<String> fixedJarJarVersionAttribute = Attribute.of("fixedJarJarVersion", String.class);
-    private final Attribute<String> jarJarRangeAttribute        = Attribute.of("jarJarRange", String.class);
+    private final Attribute<String> jarJarRangeAttribute = Attribute.of("jarJarRange", String.class);
 
     private final Project project;
 
-    public JarJarProjectExtension(final Project project) {this.project = project;}
+    public JarJarProjectExtension(final Project project) {
+        this.project = project;
+    }
 
-    public void enable()
-    {
-        if (project.getTasks().findByPath(UserDevPlugin.JAR_JAR_TASK_NAME) != null)
-        {
+    public void enable() {
+        if (project.getTasks().findByPath(UserDevPlugin.JAR_JAR_TASK_NAME) != null) {
             Objects.requireNonNull(project.getTasks().findByPath(UserDevPlugin.JAR_JAR_TASK_NAME)).setEnabled(true);
         }
     }
 
-    public void fromRuntimeConfiguration()
-    {
+    public void fromRuntimeConfiguration() {
         enable();
         project.getTasks().withType(JarJar.class).all(JarJar::fromRuntimeConfiguration);
     }
 
-    public void pin(Dependency dependency, String version)
-    {
+    public void pin(Dependency dependency, String version) {
         enable();
-        if (dependency instanceof ModuleDependency)
-        {
+        if (dependency instanceof ModuleDependency) {
             final ModuleDependency moduleDependency = (ModuleDependency) dependency;
             moduleDependency.attributes(attributeContainer -> attributeContainer.attribute(fixedJarJarVersionAttribute, version));
         }
     }
 
-    public Optional<String> getPin(Dependency dependency)
-    {
-        if (dependency instanceof ModuleDependency)
-        {
+    public Optional<String> getPin(Dependency dependency) {
+        if (dependency instanceof ModuleDependency) {
             final ModuleDependency moduleDependency = (ModuleDependency) dependency;
             return Optional.ofNullable(moduleDependency.getAttributes().getAttribute(fixedJarJarVersionAttribute));
         }
         return Optional.empty();
     }
 
-    public void ranged(Dependency dependency, String range)
-    {
+    public void ranged(Dependency dependency, String range) {
         enable();
-        if (dependency instanceof ModuleDependency)
-        {
+        if (dependency instanceof ModuleDependency) {
             final ModuleDependency moduleDependency = (ModuleDependency) dependency;
             moduleDependency.attributes(attributeContainer -> attributeContainer.attribute(jarJarRangeAttribute, range));
         }
     }
 
-    public Optional<String> getRange(Dependency dependency)
-    {
-        if (dependency instanceof ModuleDependency)
-        {
+    public Optional<String> getRange(Dependency dependency) {
+        if (dependency instanceof ModuleDependency) {
             final ModuleDependency moduleDependency = (ModuleDependency) dependency;
             return Optional.ofNullable(moduleDependency.getAttributes().getAttribute(jarJarRangeAttribute));
         }
         return Optional.empty();
     }
 
-    public JarJarProjectExtension dependencies(Action<DependencyFilter> c)
-    {
+    public JarJarProjectExtension dependencies(Action<DependencyFilter> c) {
         enable();
         project.getTasks().withType(JarJar.class).all(jarJar -> jarJar.dependencies(c));
         return this;
     }
 
-    public MavenPublication component(MavenPublication mavenPublication)
-    {
+    public MavenPublication component(MavenPublication mavenPublication) {
         enable();
         project.getExtensions().getByType(DependencyManagementExtension.class).component(mavenPublication);
         project.getTasks().withType(JarJar.class).all(task -> component(mavenPublication, task, false));
@@ -123,22 +111,18 @@ public class JarJarProjectExtension extends GroovyObjectSupport
         return mavenPublication;
     }
 
-    public MavenPublication component(MavenPublication mavenPublication, JarJar task)
-    {
+    public MavenPublication component(MavenPublication mavenPublication, JarJar task) {
         enable();
         return component(mavenPublication, task, true);
     }
 
-    private MavenPublication component(MavenPublication mavenPublication, JarJar task, boolean handleCleaning)
-    {
+    private MavenPublication component(MavenPublication mavenPublication, JarJar task, boolean handleCleaning) {
         project.afterEvaluate(p -> {
-            if (!task.isEnabled())
-            {
+            if (!task.isEnabled()) {
                 return;
             }
 
-            if (handleCleaning)
-            {
+            if (handleCleaning) {
                 project.getExtensions().getByType(DependencyManagementExtension.class).component(mavenPublication);
             }
 
@@ -155,12 +139,9 @@ public class JarJarProjectExtension extends GroovyObjectSupport
                 pom.withXml(xml -> {
                     final NodeList potentialDependenciesList = xml.asNode().getAt(QName.valueOf(MAVEN_POM_NAMESPACE + "dependencies"));
                     Node dependenciesNode;
-                    if (potentialDependenciesList.isEmpty())
-                    {
+                    if (potentialDependenciesList.isEmpty()) {
                         dependenciesNode = xml.asNode().appendNode("dependencies");
-                    }
-                    else
-                    {
+                    } else {
                         dependenciesNode = (Node) potentialDependenciesList.get(0);
                     }
 
