@@ -33,39 +33,31 @@ import java.util.regex.Pattern;
 
 public class DefaultDependencyFilter implements DependencyFilter {
     private final Project project;
-
-    private final JarJar ownerTask;
-
     protected final List<Spec<? super ArtifactIdentifier>> includeSpecs = new ArrayList<>();
     protected final List<Spec<? super ArtifactIdentifier>> excludeSpecs = new ArrayList<>();
 
-    public DefaultDependencyFilter(Project project, final JarJar ownerTask) {
+    public DefaultDependencyFilter(Project project) {
         this.project = project;
-        this.ownerTask = ownerTask;
     }
 
+    @Override
     public DependencyFilter exclude(Spec<? super ArtifactIdentifier> spec) {
         excludeSpecs.add(spec);
         return this;
     }
 
+    @Override
     public DependencyFilter include(Spec<? super ArtifactIdentifier> spec) {
         includeSpecs.add(spec);
         return this;
     }
 
-    public Spec<? super ArtifactIdentifier> project(Map<String, ?> notation) {
-        return dependency(project.getDependencies().project(notation));
-    }
-
-    public Spec<? super ArtifactIdentifier> project(String notation) {
-        return dependency(project.getDependencies().project(ImmutableMap.of("path", notation, "configuration", "default")));
-    }
-
+    @Override
     public Spec<? super ArtifactIdentifier> dependency(Object notation) {
         return dependency(project.getDependencies().create(notation));
     }
 
+    @Override
     public Spec<? super ArtifactIdentifier> dependency(Dependency dependency) {
         return this.dependency(new Closure<Boolean>(null) {
 
@@ -84,6 +76,7 @@ public class DefaultDependencyFilter implements DependencyFilter {
         });
     }
 
+    @Override
     public Spec<? super ArtifactIdentifier> dependency(Closure<Boolean> spec) {
         return Specs.convertClosureToSpec(spec);
     }

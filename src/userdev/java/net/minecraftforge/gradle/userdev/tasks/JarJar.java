@@ -78,7 +78,7 @@ public abstract class JarJar extends Jar {
     public JarJar() {
         super();
         setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE); //As opposed to shadow, we do not filter out our entries early!, So we need to handle them accordingly.
-        dependencyFilter = new DefaultDependencyFilter(getProject(), this);
+        dependencyFilter = new DefaultDependencyFilter(getProject());
         setManifest(new DefaultInheritManifest(getServices().get(FileResolver.class)));
         configurations = new ArrayList<>();
 
