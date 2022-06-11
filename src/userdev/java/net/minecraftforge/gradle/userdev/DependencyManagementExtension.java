@@ -22,28 +22,21 @@ package net.minecraftforge.gradle.userdev;
 
 import groovy.lang.Closure;
 import groovy.lang.GroovyObjectSupport;
-import groovy.namespace.QName;
 import groovy.util.Node;
 import groovy.util.NodeList;
+import net.minecraftforge.gradle.userdev.util.DeobfuscatingVersionUtils;
 import net.minecraftforge.gradle.userdev.util.DependencyRemapper;
-import org.gradle.api.Action;
+import net.minecraftforge.gradle.userdev.util.MavenPomUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.ModuleDependency;
-import org.gradle.api.attributes.Attribute;
-import org.gradle.api.attributes.AttributeContainer;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.publish.tasks.GenerateModuleMetadata;
 
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class DependencyManagementExtension extends GroovyObjectSupport {
     public static final String EXTENSION_NAME = "fg";
-    private static final String MAVEN_POM_NAMESPACE = "{http://maven.apache.org/POM/4.0.0}";
     private final Project project;
     private final DependencyRemapper remapper;
 
@@ -72,14 +65,7 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
 
         mavenPublication.pom(pom -> {
             pom.withXml(xml -> {
-                final NodeList potentialDependenciesList = xml.asNode().getAt(QName.valueOf(MAVEN_POM_NAMESPACE + "dependencies"));
-                Node dependenciesNode;
-                if (potentialDependenciesList.isEmpty()) {
-                    dependenciesNode = xml.asNode().appendNode("dependencies");
-                } else {
-                    dependenciesNode = (Node) potentialDependenciesList.get(0);
-                }
-                final NodeList dependencies = dependenciesNode.getAt(QName.valueOf(MAVEN_POM_NAMESPACE + "*")); //grab all dependency nodes in a neat list;
+                final NodeList dependencies = MavenPomUtils.getDependenciesNodeList(xml);
 
                 final List<Node> dependenciesNodeList = (List<Node>) dependencies.stream()
                         .filter(Node.class::isInstance)
@@ -87,66 +73,17 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
                         .collect(Collectors.toList());
 
                 dependenciesNodeList.stream()
-                        .filter(el -> hasChildWithText(el, MAVEN_POM_NAMESPACE + "artifactId", "forge") && hasChildWithText(el, MAVEN_POM_NAMESPACE + "groupId", "net.minecraftforge"))
+                        .filter(el -> MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "artifactId", "forge") && MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "groupId", "net.minecraftforge"))
+                        .filter(el -> MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "artifactId", "fmlonly") && MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "groupId", "net.minecraftforge"))
                         .forEach(el -> el.parent().remove(el));
 
 
                 dependenciesNodeList.stream()
-                        .filter(el -> hasChildWithContainedText(el, MAVEN_POM_NAMESPACE + "version", "_mapped_"))
-                        .forEach(el -> setChildText(el, MAVEN_POM_NAMESPACE + "version", getVersionFrom(getChildText(el, MAVEN_POM_NAMESPACE + "version"))));
+                        .filter(el -> MavenPomUtils.hasChildWithContainedText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "version", "_mapped_"))
+                        .forEach(el -> MavenPomUtils.setChildText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "version", DeobfuscatingVersionUtils.adaptDeobfuscatedVersion(MavenPomUtils.getChildText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "version"))));
             });
         });
 
         return mavenPublication;
-    }
-
-    @SuppressWarnings("unchecked")
-    private boolean hasChildWithText(final Node node, final String childKey, final String expectedValue) {
-        final NodeList children = node.getAt(QName.valueOf(childKey));
-        final List<Node> childList = (List<Node>) (children.stream()
-                .map(Node.class::cast)
-                .collect(Collectors.toList()));
-
-        return childList.stream()
-                .anyMatch(el -> el.text().equals(expectedValue));
-    }
-
-    @SuppressWarnings("unchecked")
-    private boolean hasChildWithContainedText(final Node node, final String childKey, final String expectedValue) {
-        final NodeList children = node.getAt(QName.valueOf(childKey));
-        final List<Node> childList = (List<Node>) (children.stream()
-                .map(Node.class::cast)
-                .collect(Collectors.toList()));
-
-        return childList.stream()
-                .anyMatch(el -> el.text().contains(expectedValue));
-    }
-
-    @SuppressWarnings("unchecked")
-    private String getChildText(final Node node, final String childKey) {
-        final NodeList children = node.getAt(QName.valueOf(childKey));
-        final List<Node> childList = (List<Node>) (children.stream()
-                .map(Node.class::cast)
-                .collect(Collectors.toList()));
-
-        return childList.stream().map(Node::text).findFirst().orElse("");
-    }
-
-    @SuppressWarnings("unchecked")
-    private void setChildText(final Node node, final String childKey, final String expectedValue) {
-        final NodeList children = node.getAt(QName.valueOf(childKey));
-        final List<Node> childList = (List<Node>) (children.stream()
-                .map(Node.class::cast)
-                .collect(Collectors.toList()));
-
-        childList.forEach(el -> el.setValue(expectedValue));
-    }
-
-    private String getVersionFrom(final String version) {
-        if (version.contains("_mapped_")) {
-            return version.split("_mapped_")[0];
-        }
-
-        return version;
     }
 }

@@ -86,7 +86,7 @@ import javax.annotation.Nonnull;
 public class UserDevPlugin implements Plugin<Project> {
 
     public static final String JAR_JAR_TASK_NAME = "jarJar";
-    public static final String JAR_JAR_GROUP = "JarJar";
+    public static final String JAR_JAR_GROUP = "jarjar";
 
     public static final String JAR_JAR_DEFAULT_CONFIGURATION_NAME = "jarJar";
 
@@ -312,10 +312,9 @@ public class UserDevPlugin implements Plugin<Project> {
         });
 
         project.afterEvaluate(projectAfter -> {
-            final NamedDomainObjectContainer<RenameJarInPlace> reobfJars = (NamedDomainObjectContainer<RenameJarInPlace>) project.getExtensions().getByName("reobf");
             projectAfter.getTasks().withType(JarJar.class).all(jarJar -> {
                 if (jarJar.isEnabled()) {
-                    reobfJars.create(jarJar.getName());
+                    reobfExtension.create(jarJar.getName());
                 }
             });
         });
@@ -343,7 +342,7 @@ public class UserDevPlugin implements Plugin<Project> {
     }
 
     protected void configureJarJarTask(Project project) {
-        project.getConfigurations().create(JAR_JAR_DEFAULT_CONFIGURATION_NAME);
+        final Configuration configuration = project.getConfigurations().create(JAR_JAR_DEFAULT_CONFIGURATION_NAME);
 
         JavaPluginExtension extension = project.getExtensions().getByType(JavaPluginExtension.class);
         project.getTasks().register(JAR_JAR_TASK_NAME, JarJar.class, jarJar -> {
@@ -354,8 +353,7 @@ public class UserDevPlugin implements Plugin<Project> {
             jarJar.getManifest().inheritFrom(((Jar) project.getTasks().getByName("jar")).getManifest());
             jarJar.from(extension.getSourceSets().getByName("main").getOutput());
 
-            jarJar.configuration(project.getConfigurations().getByName(JAR_JAR_DEFAULT_CONFIGURATION_NAME));
-            jarJar.exclude("META-INF/INDEX.LIST", "META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "module-info.class");
+            jarJar.configuration(configuration);
 
             jarJar.setEnabled(false);
         });

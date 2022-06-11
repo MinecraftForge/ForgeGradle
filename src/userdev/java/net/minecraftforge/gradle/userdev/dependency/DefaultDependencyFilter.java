@@ -44,64 +44,28 @@ public class DefaultDependencyFilter implements DependencyFilter {
         this.ownerTask = ownerTask;
     }
 
-    /**
-     * Exclude dependencies that match the provided spec.
-     *
-     * @param spec
-     * @return
-     */
     public DependencyFilter exclude(Spec<? super ArtifactIdentifier> spec) {
         excludeSpecs.add(spec);
         return this;
     }
 
-    /**
-     * Include dependencies that match the provided spec.
-     *
-     * @param spec
-     * @return
-     */
     public DependencyFilter include(Spec<? super ArtifactIdentifier> spec) {
         includeSpecs.add(spec);
         return this;
     }
 
-    /**
-     * Create a spec that matches the provided project notation on group, name, and version
-     *
-     * @param notation
-     * @return
-     */
     public Spec<? super ArtifactIdentifier> project(Map<String, ?> notation) {
         return dependency(project.getDependencies().project(notation));
     }
 
-    /**
-     * Create a spec that matches the default configuration for the provided project path on group, name, and version
-     *
-     * @param notation
-     * @return
-     */
     public Spec<? super ArtifactIdentifier> project(String notation) {
         return dependency(project.getDependencies().project(ImmutableMap.of("path", notation, "configuration", "default")));
     }
 
-    /**
-     * Create a spec that matches dependencies using the provided notation on group, name, and version
-     *
-     * @param notation
-     * @return
-     */
     public Spec<? super ArtifactIdentifier> dependency(Object notation) {
         return dependency(project.getDependencies().create(notation));
     }
 
-    /**
-     * Create a spec that matches the provided dependency on group, name, and version
-     *
-     * @param dependency
-     * @return
-     */
     public Spec<? super ArtifactIdentifier> dependency(Dependency dependency) {
         return this.dependency(new Closure<Boolean>(null) {
 
@@ -120,12 +84,6 @@ public class DefaultDependencyFilter implements DependencyFilter {
         });
     }
 
-    /**
-     * Create a spec that matches the provided closure
-     *
-     * @param spec
-     * @return
-     */
     public Spec<? super ArtifactIdentifier> dependency(Closure<Boolean> spec) {
         return Specs.convertClosureToSpec(spec);
     }

@@ -25,6 +25,7 @@ import net.minecraftforge.gradle.userdev.dependency.DependencyFilter;
 import net.minecraftforge.gradle.userdev.jarjar.JarJarProjectExtension;
 import net.minecraftforge.gradle.userdev.manifest.DefaultInheritManifest;
 import net.minecraftforge.gradle.userdev.manifest.InheritManifest;
+import net.minecraftforge.gradle.userdev.util.DeobfuscatingVersionUtils;
 import net.minecraftforge.jarjar.metadata.*;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException;
@@ -219,7 +220,7 @@ public abstract class JarJar extends Jar {
                     new ContainedJarIdentifier(dependency.getGroup(), dependency.getName()),
                     new ContainedVersion(
                             VersionRange.createFromVersionSpec(getVersionRangeFrom(dependency)),
-                            new DefaultArtifactVersion(adaptDeobfuscatedVersion(resolvedDependency.getModuleVersion()))
+                            new DefaultArtifactVersion(DeobfuscatingVersionUtils.adaptDeobfuscatedVersion(resolvedDependency.getModuleVersion()))
                     ),
                     "META-INF/jarjar/" + resolvedDependency.getAllModuleArtifacts().iterator().next().getFile().getName(),
                     isObfuscated(dependency)
@@ -233,27 +234,19 @@ public abstract class JarJar extends Jar {
     private String getVersionRangeFrom(final Dependency dependency) {
         final Optional<String> attributeVersion = getProject().getExtensions().getByType(JarJarProjectExtension.class).getRange(dependency);
 
-        return attributeVersion.map(this::adaptDeobfuscatedVersion).orElseGet(() -> adaptDeobfuscatedVersion(Objects.requireNonNull(dependency.getVersion())));
+        return attributeVersion.map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersion).orElseGet(() -> DeobfuscatingVersionUtils.adaptDeobfuscatedVersion(Objects.requireNonNull(dependency.getVersion())));
     }
 
     private String getVersionFrom(final Dependency dependency, final ResolvedDependency resolvedDependency) {
         final Optional<String> attributeVersion = getProject().getExtensions().getByType(JarJarProjectExtension.class).getPin(dependency);
 
-        return attributeVersion.map(this::adaptDeobfuscatedVersion).orElseGet(() -> adaptDeobfuscatedVersion(Objects.requireNonNull(resolvedDependency.getModuleVersion())));
+        return attributeVersion.map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersion).orElseGet(() -> DeobfuscatingVersionUtils.adaptDeobfuscatedVersion(Objects.requireNonNull(resolvedDependency.getModuleVersion())));
     }
 
     private String getVersionFrom(final Dependency dependency) {
         final Optional<String> attributeVersion = getProject().getExtensions().getByType(JarJarProjectExtension.class).getPin(dependency);
 
-        return attributeVersion.map(this::adaptDeobfuscatedVersion).orElseGet(() -> adaptDeobfuscatedVersion(Objects.requireNonNull(dependency.getVersion())));
-    }
-
-    private String adaptDeobfuscatedVersion(final String version) {
-        if (version.contains("_mapped_")) {
-            return version.split("_mapped_")[0];
-        }
-
-        return version;
+        return attributeVersion.map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersion).orElseGet(() -> DeobfuscatingVersionUtils.adaptDeobfuscatedVersion(Objects.requireNonNull(dependency.getVersion())));
     }
 
     private ResolvedDependency getResolvedDependency(final ExternalModuleDependency dependency) {

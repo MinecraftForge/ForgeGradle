@@ -28,22 +28,19 @@ import net.minecraftforge.gradle.userdev.DependencyManagementExtension;
 import net.minecraftforge.gradle.userdev.UserDevPlugin;
 import net.minecraftforge.gradle.userdev.dependency.DependencyFilter;
 import net.minecraftforge.gradle.userdev.tasks.JarJar;
+import net.minecraftforge.gradle.userdev.util.MavenPomUtils;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.*;
 import org.gradle.api.attributes.Attribute;
-import org.gradle.api.publish.maven.MavenArtifact;
-import org.gradle.api.publish.maven.MavenPom;
 import org.gradle.api.publish.maven.MavenPublication;
 
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class JarJarProjectExtension extends GroovyObjectSupport {
     public static final String EXTENSION_NAME = "jarJar";
-    private static final String MAVEN_POM_NAMESPACE = "{http://maven.apache.org/POM/4.0.0}";
 
     private final Attribute<String> fixedJarJarVersionAttribute = Attribute.of("fixedJarJarVersion", String.class);
     private final Attribute<String> jarJarRangeAttribute = Attribute.of("jarJarRange", String.class);
@@ -137,13 +134,7 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
 
             mavenPublication.pom(pom -> {
                 pom.withXml(xml -> {
-                    final NodeList potentialDependenciesList = xml.asNode().getAt(QName.valueOf(MAVEN_POM_NAMESPACE + "dependencies"));
-                    Node dependenciesNode;
-                    if (potentialDependenciesList.isEmpty()) {
-                        dependenciesNode = xml.asNode().appendNode("dependencies");
-                    } else {
-                        dependenciesNode = (Node) potentialDependenciesList.get(0);
-                    }
+                    Node dependenciesNode = MavenPomUtils.getDependenciesNode(xml);
 
                     //Yes this potentially can generate duplicate entries, but it should not really matter.
                     //Two potential scenarios occur: The original dep which is used to compile is a range, no problem that should resolve.
