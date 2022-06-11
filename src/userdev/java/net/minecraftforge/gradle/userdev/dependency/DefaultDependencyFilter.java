@@ -40,7 +40,8 @@ public class DefaultDependencyFilter implements DependencyFilter
     protected final List<Spec<? super ArtifactIdentifier>> includeSpecs = new ArrayList<>();
     protected final List<Spec<? super ArtifactIdentifier>> excludeSpecs = new ArrayList<>();
 
-    public DefaultDependencyFilter(Project project, final JarJar ownerTask) {
+    public DefaultDependencyFilter(Project project, final JarJar ownerTask)
+    {
         this.project = project;
         this.ownerTask = ownerTask;
     }
@@ -51,7 +52,8 @@ public class DefaultDependencyFilter implements DependencyFilter
      * @param spec
      * @return
      */
-    public DependencyFilter exclude(Spec<? super ArtifactIdentifier> spec) {
+    public DependencyFilter exclude(Spec<? super ArtifactIdentifier> spec)
+    {
         excludeSpecs.add(spec);
         return this;
     }
@@ -62,17 +64,20 @@ public class DefaultDependencyFilter implements DependencyFilter
      * @param spec
      * @return
      */
-    public DependencyFilter include(Spec<? super ArtifactIdentifier> spec) {
+    public DependencyFilter include(Spec<? super ArtifactIdentifier> spec)
+    {
         includeSpecs.add(spec);
         return this;
     }
 
     /**
      * Create a spec that matches the provided project notation on group, name, and version
+     *
      * @param notation
      * @return
      */
-    public Spec<? super ArtifactIdentifier> project(Map<String, ?> notation) {
+    public Spec<? super ArtifactIdentifier> project(Map<String, ?> notation)
+    {
         return dependency(project.getDependencies().project(notation));
     }
 
@@ -82,36 +87,43 @@ public class DefaultDependencyFilter implements DependencyFilter
      * @param notation
      * @return
      */
-    public Spec<? super ArtifactIdentifier> project(String notation) {
+    public Spec<? super ArtifactIdentifier> project(String notation)
+    {
         return dependency(project.getDependencies().project(ImmutableMap.of("path", notation, "configuration", "default")));
     }
 
     /**
      * Create a spec that matches dependencies using the provided notation on group, name, and version
+     *
      * @param notation
      * @return
      */
-    public Spec<? super ArtifactIdentifier> dependency(Object notation) {
+    public Spec<? super ArtifactIdentifier> dependency(Object notation)
+    {
         return dependency(project.getDependencies().create(notation));
     }
 
     /**
      * Create a spec that matches the provided dependency on group, name, and version
+     *
      * @param dependency
      * @return
      */
-    public Spec<? super ArtifactIdentifier> dependency(Dependency dependency) {
-        return this.dependency(new Closure<Boolean>(null) {
+    public Spec<? super ArtifactIdentifier> dependency(Dependency dependency)
+    {
+        return this.dependency(new Closure<Boolean>(null)
+        {
 
             @SuppressWarnings("ConstantConditions")
             @Override
             public Boolean call(final Object it)
             {
-                if (it instanceof ArtifactIdentifier) {
+                if (it instanceof ArtifactIdentifier)
+                {
                     final ArtifactIdentifier identifier = (ArtifactIdentifier) it;
                     return (dependency.getGroup() == null || Pattern.matches(dependency.getGroup(), identifier.getGroup())) &&
-                            (dependency.getName() == null || Pattern.matches(dependency.getName(), identifier.getName())) &&
-                            (dependency.getVersion() == null || Pattern.matches(dependency.getVersion(), identifier.getVersion()));
+                             (dependency.getName() == null || Pattern.matches(dependency.getName(), identifier.getName())) &&
+                             (dependency.getVersion() == null || Pattern.matches(dependency.getVersion(), identifier.getVersion()));
                 }
 
                 return false;
@@ -121,33 +133,36 @@ public class DefaultDependencyFilter implements DependencyFilter
 
     /**
      * Create a spec that matches the provided closure
+     *
      * @param spec
      * @return
      */
-    public Spec<? super ArtifactIdentifier> dependency(Closure<Boolean> spec) {
+    public Spec<? super ArtifactIdentifier> dependency(Closure<Boolean> spec)
+    {
         return Specs.convertClosureToSpec(spec);
     }
 
     @Override
-    public boolean isIncluded(ResolvedDependency dependency) {
+    public boolean isIncluded(ResolvedDependency dependency)
+    {
         return isIncluded(
           new ArtifactIdentifier(dependency.getModuleGroup(), dependency.getModuleName(), dependency.getModuleVersion())
         );
     }
 
     @Override
-    public boolean isIncluded(ExternalModuleDependency dependency) {
+    public boolean isIncluded(ExternalModuleDependency dependency)
+    {
         return isIncluded(
           new ArtifactIdentifier(dependency.getGroup(), dependency.getName(), dependency.getVersion())
         );
     }
 
     @Override
-    public boolean isIncluded(ArtifactIdentifier dependency) {
+    public boolean isIncluded(ArtifactIdentifier dependency)
+    {
         boolean include = includeSpecs.isEmpty() || includeSpecs.stream().anyMatch(spec -> spec.isSatisfiedBy(dependency));
         boolean exclude = !excludeSpecs.isEmpty() && excludeSpecs.stream().anyMatch(spec -> spec.isSatisfiedBy(dependency));
         return include && !exclude;
     }
-
-
 }

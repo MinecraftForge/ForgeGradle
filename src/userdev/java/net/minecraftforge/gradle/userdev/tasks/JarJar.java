@@ -58,7 +58,8 @@ public abstract class JarJar extends Jar
 
     private FileCollection sourceSetsClassesDirs;
 
-    private final ConfigurableFileCollection includedDependencies = getProject().files(new Callable<FileCollection>() {
+    private final ConfigurableFileCollection includedDependencies = getProject().files(new Callable<FileCollection>()
+    {
 
         @Override
         public FileCollection call()
@@ -76,7 +77,8 @@ public abstract class JarJar extends Jar
 
     private final CopySpec jarJarCopySpec;
 
-    public JarJar() {
+    public JarJar()
+    {
         super();
         setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE); //As opposed to shadow, we do not filter out our entries early!, So we need to handle them accordingly.
         dependencyFilter = new DefaultDependencyFilter(getProject(), this);
@@ -89,8 +91,10 @@ public abstract class JarJar extends Jar
 
     @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
-    FileCollection getSourceSetsClassesDirs() {
-        if (sourceSetsClassesDirs == null) {
+    FileCollection getSourceSetsClassesDirs()
+    {
+        if (sourceSetsClassesDirs == null)
+        {
             ConfigurableFileCollection allClassesDirs = getProject().getObjects().fileCollection();
             sourceSetsClassesDirs = allClassesDirs.filter(File::isDirectory);
         }
@@ -104,14 +108,16 @@ public abstract class JarJar extends Jar
     }
 
     @TaskAction
-    protected void copy() {
+    protected void copy()
+    {
         this.jarJarCopySpec.from(getIncludedDependencies());
         this.jarJarCopySpec.from(getMetadata());
         super.copy();
     }
 
     @Classpath
-    public FileCollection getIncludedDependencies() {
+    public FileCollection getIncludedDependencies()
+    {
         return includedDependencies;
     }
 
@@ -127,55 +133,67 @@ public abstract class JarJar extends Jar
     }
 
     @Classpath
-    public FileCollection getMetadata() {
+    public FileCollection getMetadata()
+    {
         return metadata;
     }
 
-    public JarJar dependencies(Action<DependencyFilter> c) {
+    public JarJar dependencies(Action<DependencyFilter> c)
+    {
         c.execute(dependencyFilter);
         return this;
     }
 
     @Classpath
     @org.gradle.api.tasks.Optional
-    public List<Configuration> getConfigurations() {
+    public List<Configuration> getConfigurations()
+    {
         return this.configurations;
     }
 
-    public void setConfigurations(List<Configuration> configurations) {
+    public void setConfigurations(List<Configuration> configurations)
+    {
         this.configurations.clear();
         this.configurations.addAll(configurations);
     }
 
     @Internal
-    public DependencyFilter getDependencyFilter() {
+    public DependencyFilter getDependencyFilter()
+    {
         return this.dependencyFilter;
     }
 
-    public void setDependencyFilter(DependencyFilter filter) {
+    public void setDependencyFilter(DependencyFilter filter)
+    {
         this.dependencyFilter = filter;
     }
 
     public void configuration(@Nullable final Configuration configuration)
     {
-        if(configuration == null)
+        if (configuration == null)
+        {
             return;
+        }
 
         this.configurations.add(configuration);
     }
 
-    public void fromRuntimeConfiguration() {
+    public void fromRuntimeConfiguration()
+    {
         final Configuration runtimeConfiguration = getProject().getConfigurations().findByName("runtimeClasspath");
-        if (runtimeConfiguration != null) {
+        if (runtimeConfiguration != null)
+        {
             this.configuration(runtimeConfiguration);
         }
-        else {
+        else
+        {
             this.configuration(getProject().getConfigurations().findByName("runtime"));
         }
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    private void writeMetadata() {
+    private void writeMetadata()
+    {
         final Path metadataPath = getJarJarMetadataPath();
 
         try
@@ -195,7 +213,8 @@ public abstract class JarJar extends Jar
         return getProject().getBuildDir().toPath().resolve("jarjar").resolve(getName()).resolve("metadata.json");
     }
 
-    private Metadata createMetadata() {
+    private Metadata createMetadata()
+    {
         return new Metadata(
           this.configurations.stream().flatMap(config -> config.getAllDependencies().stream())
             .filter(ExternalModuleDependency.class::isInstance)
@@ -207,17 +226,22 @@ public abstract class JarJar extends Jar
         );
     }
 
-    private Optional<ContainedJarMetadata> createDependencyMetadata(final ExternalModuleDependency dependency) {
-        if (!dependencyFilter.isIncluded(dependency)) {
+    private Optional<ContainedJarMetadata> createDependencyMetadata(final ExternalModuleDependency dependency)
+    {
+        if (!dependencyFilter.isIncluded(dependency))
+        {
             return Optional.empty();
         }
 
-        if (!isValidVersionRange(Objects.requireNonNull(getVersionRangeFrom(dependency)))) {
-            throw new RuntimeException("The given version specification is invalid: " + getVersionRangeFrom(dependency) + " if you used gradle based range versioning like (2.+), convert this to a maven compatible format ([2.0,3.0)).");
+        if (!isValidVersionRange(Objects.requireNonNull(getVersionRangeFrom(dependency))))
+        {
+            throw new RuntimeException("The given version specification is invalid: " + getVersionRangeFrom(dependency)
+                                         + " if you used gradle based range versioning like (2.+), convert this to a maven compatible format ([2.0,3.0)).");
         }
 
         final ResolvedDependency resolvedDependency = getResolvedDependency(dependency);
-        if (!dependencyFilter.isIncluded(resolvedDependency)) {
+        if (!dependencyFilter.isIncluded(resolvedDependency))
+        {
             //Skipping this file since the dependency filter does not want this to be included at all!
             return Optional.empty();
         }
@@ -236,54 +260,63 @@ public abstract class JarJar extends Jar
         }
         catch (InvalidVersionSpecificationException e)
         {
-            throw new RuntimeException("The given version specification is invalid: " + dependency.getVersion() + " if you used gradle based range versioning like (2.+), convert this to a maven compatible format ([2.0,3.0)).", e);
+            throw new RuntimeException("The given version specification is invalid: " + dependency.getVersion()
+                                         + " if you used gradle based range versioning like (2.+), convert this to a maven compatible format ([2.0,3.0)).", e);
         }
     }
 
-    private String getVersionRangeFrom(final Dependency dependency) {
+    private String getVersionRangeFrom(final Dependency dependency)
+    {
         final Optional<String> attributeVersion = getProject().getExtensions().getByType(JarJarProjectExtension.class).getRange(dependency);
 
         return attributeVersion.map(this::adaptDeobfuscatedVersion).orElseGet(() -> adaptDeobfuscatedVersion(Objects.requireNonNull(dependency.getVersion())));
     }
 
-    private String getVersionFrom(final Dependency dependency, final ResolvedDependency resolvedDependency) {
+    private String getVersionFrom(final Dependency dependency, final ResolvedDependency resolvedDependency)
+    {
         final Optional<String> attributeVersion = getProject().getExtensions().getByType(JarJarProjectExtension.class).getPin(dependency);
 
         return attributeVersion.map(this::adaptDeobfuscatedVersion).orElseGet(() -> adaptDeobfuscatedVersion(Objects.requireNonNull(resolvedDependency.getModuleVersion())));
     }
 
-    private String getVersionFrom(final Dependency dependency) {
+    private String getVersionFrom(final Dependency dependency)
+    {
         final Optional<String> attributeVersion = getProject().getExtensions().getByType(JarJarProjectExtension.class).getPin(dependency);
 
         return attributeVersion.map(this::adaptDeobfuscatedVersion).orElseGet(() -> adaptDeobfuscatedVersion(Objects.requireNonNull(dependency.getVersion())));
     }
 
-
     private String adaptDeobfuscatedVersion(final String version)
     {
-        if (version.contains("_mapped_")) {
+        if (version.contains("_mapped_"))
+        {
             return version.split("_mapped_")[0];
         }
 
         return version;
     }
 
-    private ResolvedDependency getResolvedDependency(final ExternalModuleDependency dependency) {
+    private ResolvedDependency getResolvedDependency(final ExternalModuleDependency dependency)
+    {
         ExternalModuleDependency toResolve = dependency.copy();
         toResolve.version(constraint -> constraint.strictly(getVersionFrom(dependency)));
 
         final Set<ResolvedDependency> deps = getProject().getConfigurations().detachedConfiguration(toResolve).getResolvedConfiguration().getFirstLevelModuleDependencies();
         if (deps.isEmpty())
+        {
             throw new IllegalArgumentException(String.format("Failed to resolve: %s", toResolve));
+        }
 
         return deps.iterator().next();
     }
 
-    private boolean isObfuscated(final Dependency dependency) {
+    private boolean isObfuscated(final Dependency dependency)
+    {
         return Objects.requireNonNull(dependency.getVersion()).contains("_mapped_");
     }
 
-    private boolean isValidVersionRange(final String range) {
+    private boolean isValidVersionRange(final String range)
+    {
         try
         {
             final VersionRange data = VersionRange.createFromVersionSpec(range);

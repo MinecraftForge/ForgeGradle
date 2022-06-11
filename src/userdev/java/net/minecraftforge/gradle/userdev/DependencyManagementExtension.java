@@ -41,22 +41,27 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class DependencyManagementExtension extends GroovyObjectSupport {
-    public static final String EXTENSION_NAME = "fg";
-    private static final String MAVEN_POM_NAMESPACE = "{http://maven.apache.org/POM/4.0.0}";
-    private final Project project;
-    private final DependencyRemapper remapper;
-    public DependencyManagementExtension(Project project, DependencyRemapper remapper) {
+public class DependencyManagementExtension extends GroovyObjectSupport
+{
+    public static final  String             EXTENSION_NAME      = "fg";
+    private static final String             MAVEN_POM_NAMESPACE = "{http://maven.apache.org/POM/4.0.0}";
+    private final        Project            project;
+    private final        DependencyRemapper remapper;
+
+    public DependencyManagementExtension(Project project, DependencyRemapper remapper)
+    {
         this.project = project;
         this.remapper = remapper;
     }
 
     @SuppressWarnings("unused")
-    public Dependency deobf(Object dependency) {
+    public Dependency deobf(Object dependency)
+    {
         return deobf(dependency, null);
     }
 
-    public Dependency deobf(Object dependency, Closure<?> configure){
+    public Dependency deobf(Object dependency, Closure<?> configure)
+    {
         Dependency baseDependency = project.getDependencies().create(dependency, configure);
         project.getConfigurations().getByName(UserDevPlugin.OBF).getDependencies().add(baseDependency);
 
@@ -64,7 +69,8 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
     }
 
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    public MavenPublication component(MavenPublication mavenPublication) {
+    public MavenPublication component(MavenPublication mavenPublication)
+    {
         project.getTasks().withType(GenerateModuleMetadata.class).forEach(generateModuleMetadata -> generateModuleMetadata.setEnabled(false));
 
         mavenPublication.suppressAllPomMetadataWarnings(); //We have weird handling of stuff and things when it comes to versions and other features. No need to spam the log when that happens.
@@ -73,10 +79,12 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
             pom.withXml(xml -> {
                 final NodeList potentialDependenciesList = xml.asNode().getAt(QName.valueOf(MAVEN_POM_NAMESPACE + "dependencies"));
                 Node dependenciesNode;
-                if (potentialDependenciesList.isEmpty()) {
+                if (potentialDependenciesList.isEmpty())
+                {
                     dependenciesNode = xml.asNode().appendNode("dependencies");
                 }
-                else {
+                else
+                {
                     dependenciesNode = (Node) potentialDependenciesList.get(0);
                 }
                 final NodeList dependencies = dependenciesNode.getAt(QName.valueOf(MAVEN_POM_NAMESPACE + "*")); //grab all dependency nodes in a neat list;
@@ -101,18 +109,20 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
     }
 
     @SuppressWarnings("unchecked")
-    private boolean hasChildWithText(final Node node, final String childKey, final String expectedValue) {
+    private boolean hasChildWithText(final Node node, final String childKey, final String expectedValue)
+    {
         final NodeList children = node.getAt(QName.valueOf(childKey));
         final List<Node> childList = (List<Node>) (children.stream()
-                                                   .map(Node.class::cast)
-                                                   .collect(Collectors.toList()));
+                                                     .map(Node.class::cast)
+                                                     .collect(Collectors.toList()));
 
         return childList.stream()
-                        .anyMatch(el -> el.text().equals(expectedValue));
+                 .anyMatch(el -> el.text().equals(expectedValue));
     }
 
     @SuppressWarnings("unchecked")
-    private boolean hasChildWithContainedText(final Node node, final String childKey, final String expectedValue) {
+    private boolean hasChildWithContainedText(final Node node, final String childKey, final String expectedValue)
+    {
         final NodeList children = node.getAt(QName.valueOf(childKey));
         final List<Node> childList = (List<Node>) (children.stream()
                                                      .map(Node.class::cast)
@@ -123,7 +133,8 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
     }
 
     @SuppressWarnings("unchecked")
-    private String getChildText(final Node node, final String childKey) {
+    private String getChildText(final Node node, final String childKey)
+    {
         final NodeList children = node.getAt(QName.valueOf(childKey));
         final List<Node> childList = (List<Node>) (children.stream()
                                                      .map(Node.class::cast)
@@ -133,7 +144,8 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
     }
 
     @SuppressWarnings("unchecked")
-    private void setChildText(final Node node, final String childKey, final String expectedValue) {
+    private void setChildText(final Node node, final String childKey, final String expectedValue)
+    {
         final NodeList children = node.getAt(QName.valueOf(childKey));
         final List<Node> childList = (List<Node>) (children.stream()
                                                      .map(Node.class::cast)
@@ -144,7 +156,8 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
 
     private String getVersionFrom(final String version)
     {
-        if (version.contains("_mapped_")) {
+        if (version.contains("_mapped_"))
+        {
             return version.split("_mapped_")[0];
         }
 

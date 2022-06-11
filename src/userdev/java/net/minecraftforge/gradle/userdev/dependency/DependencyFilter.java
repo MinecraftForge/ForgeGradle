@@ -32,7 +32,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-public interface DependencyFilter {
+public interface DependencyFilter
+{
     /**
      * Exclude dependencies that match the provided spec.
      *
@@ -51,6 +52,7 @@ public interface DependencyFilter {
 
     /**
      * Create a spec that matches the provided project notation on group, name, and version
+     *
      * @param notation
      * @return
      */
@@ -66,6 +68,7 @@ public interface DependencyFilter {
 
     /**
      * Create a spec that matches dependencies using the provided notation on group, name, and version
+     *
      * @param notation
      * @return
      */
@@ -73,6 +76,7 @@ public interface DependencyFilter {
 
     /**
      * Create a spec that matches the provided dependency on group, name, and version
+     *
      * @param dependency
      * @return
      */
@@ -80,6 +84,7 @@ public interface DependencyFilter {
 
     /**
      * Create a spec that matches the provided closure
+     *
      * @param spec
      * @return
      */
@@ -91,12 +96,14 @@ public interface DependencyFilter {
 
     boolean isIncluded(ArtifactIdentifier dependency);
 
-    final class ArtifactIdentifier {
+    final class ArtifactIdentifier
+    {
         private final String group;
         private final String name;
         private final String version;
 
-        public ArtifactIdentifier(String group, String name, String version) {
+        public ArtifactIdentifier(String group, String name, String version)
+        {
             this.group = group;
             this.name = name;
             this.version = version;
