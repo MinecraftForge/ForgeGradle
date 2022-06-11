@@ -30,10 +30,7 @@ import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.gradle.api.Action;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.ExternalModuleDependency;
-import org.gradle.api.artifacts.ResolvedDependency;
+import org.gradle.api.artifacts.*;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.CopySpec;
 import org.gradle.api.file.DuplicatesStrategy;
@@ -66,7 +63,9 @@ public abstract class JarJar extends Jar
         @Override
         public FileCollection call()
         {
-            return dependencyFilter.resolve(configurations);
+            return getProject().files(
+              getResolvedDependencies().stream().flatMap(d -> d.getAllModuleArtifacts().stream()).map(ResolvedArtifact::getFile).toArray()
+            );
         }
     });
 
@@ -80,7 +79,7 @@ public abstract class JarJar extends Jar
     public JarJar() {
         super();
         setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE); //As opposed to shadow, we do not filter out our entries early!, So we need to handle them accordingly.
-        dependencyFilter = new DefaultDependencyFilter(getProject());
+        dependencyFilter = new DefaultDependencyFilter(getProject(), this);
         setManifest(new DefaultInheritManifest(getServices().get(FileResolver.class)));
         configurations = new ArrayList<>();
 

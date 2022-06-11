@@ -33,21 +33,6 @@ import java.util.Map;
 import java.util.Set;
 
 public interface DependencyFilter {
-
-    /**
-     * Resolve a FileCollection against the include/exclude rules in the filter
-     * @param configuration
-     * @return
-     */
-    FileCollection resolve(Configuration configuration);
-
-    /**
-     * Resolve all FileCollections against the include/exclude ruels in the filter and combine the results
-     * @param configurations
-     * @return
-     */
-    FileCollection resolve(Collection<Configuration> configurations);
-
     /**
      * Exclude dependencies that match the provided spec.
      *

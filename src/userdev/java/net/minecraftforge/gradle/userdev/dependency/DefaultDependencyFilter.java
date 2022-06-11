@@ -20,29 +20,134 @@
 
 package net.minecraftforge.gradle.userdev.dependency;
 
+import com.google.common.collect.ImmutableMap;
+import groovy.lang.Closure;
+import net.minecraftforge.gradle.userdev.tasks.JarJar;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.ResolvedDependency;
+import org.gradle.api.artifacts.*;
+import org.gradle.api.specs.Spec;
+import org.gradle.api.specs.Specs;
 
-import java.util.Set;
+import java.util.*;
+import java.util.regex.Pattern;
 
-public class DefaultDependencyFilter extends AbstractDependencyFilter
+public class DefaultDependencyFilter implements DependencyFilter
 {
-    public DefaultDependencyFilter(final Project project)
-    {
-        super(project);
+    private final Project project;
+
+    private final JarJar ownerTask;
+
+    protected final List<Spec<? super ArtifactIdentifier>> includeSpecs = new ArrayList<>();
+    protected final List<Spec<? super ArtifactIdentifier>> excludeSpecs = new ArrayList<>();
+
+    public DefaultDependencyFilter(Project project, final JarJar ownerTask) {
+        this.project = project;
+        this.ownerTask = ownerTask;
+    }
+
+    /**
+     * Exclude dependencies that match the provided spec.
+     *
+     * @param spec
+     * @return
+     */
+    public DependencyFilter exclude(Spec<? super ArtifactIdentifier> spec) {
+        excludeSpecs.add(spec);
+        return this;
+    }
+
+    /**
+     * Include dependencies that match the provided spec.
+     *
+     * @param spec
+     * @return
+     */
+    public DependencyFilter include(Spec<? super ArtifactIdentifier> spec) {
+        includeSpecs.add(spec);
+        return this;
+    }
+
+    /**
+     * Create a spec that matches the provided project notation on group, name, and version
+     * @param notation
+     * @return
+     */
+    public Spec<? super ArtifactIdentifier> project(Map<String, ?> notation) {
+        return dependency(project.getDependencies().project(notation));
+    }
+
+    /**
+     * Create a spec that matches the default configuration for the provided project path on group, name, and version
+     *
+     * @param notation
+     * @return
+     */
+    public Spec<? super ArtifactIdentifier> project(String notation) {
+        return dependency(project.getDependencies().project(ImmutableMap.of("path", notation, "configuration", "default")));
+    }
+
+    /**
+     * Create a spec that matches dependencies using the provided notation on group, name, and version
+     * @param notation
+     * @return
+     */
+    public Spec<? super ArtifactIdentifier> dependency(Object notation) {
+        return dependency(project.getDependencies().create(notation));
+    }
+
+    /**
+     * Create a spec that matches the provided dependency on group, name, and version
+     * @param dependency
+     * @return
+     */
+    public Spec<? super ArtifactIdentifier> dependency(Dependency dependency) {
+        return this.dependency(new Closure<Boolean>(null) {
+
+            @SuppressWarnings("ConstantConditions")
+            @Override
+            public Boolean call(final Object it)
+            {
+                if (it instanceof ArtifactIdentifier) {
+                    final ArtifactIdentifier identifier = (ArtifactIdentifier) it;
+                    return (dependency.getGroup() == null || Pattern.matches(dependency.getGroup(), identifier.getGroup())) &&
+                            (dependency.getName() == null || Pattern.matches(dependency.getName(), identifier.getName())) &&
+                            (dependency.getVersion() == null || Pattern.matches(dependency.getVersion(), identifier.getVersion()));
+                }
+
+                return false;
+            }
+        });
+    }
+
+    /**
+     * Create a spec that matches the provided closure
+     * @param spec
+     * @return
+     */
+    public Spec<? super ArtifactIdentifier> dependency(Closure<Boolean> spec) {
+        return Specs.convertClosureToSpec(spec);
     }
 
     @Override
-    protected void resolve(final Set<ResolvedDependency> dependencies, final Set<ResolvedDependency> includedDependencies, final Set<ResolvedDependency> excludedDependencies)
-    {
-        dependencies.forEach(resolvedDependency -> {
-            if (isIncluded(resolvedDependency)) {
-                includedDependencies.add(resolvedDependency);
-            } else {
-                excludedDependencies.add(resolvedDependency);
-            }
-
-            resolve(resolvedDependency.getChildren(), includedDependencies, excludedDependencies);
-        });
+    public boolean isIncluded(ResolvedDependency dependency) {
+        return isIncluded(
+          new ArtifactIdentifier(dependency.getModuleGroup(), dependency.getModuleName(), dependency.getModuleVersion())
+        );
     }
+
+    @Override
+    public boolean isIncluded(ExternalModuleDependency dependency) {
+        return isIncluded(
+          new ArtifactIdentifier(dependency.getGroup(), dependency.getName(), dependency.getVersion())
+        );
+    }
+
+    @Override
+    public boolean isIncluded(ArtifactIdentifier dependency) {
+        boolean include = includeSpecs.isEmpty() || includeSpecs.stream().anyMatch(spec -> spec.isSatisfiedBy(dependency));
+        boolean exclude = !excludeSpecs.isEmpty() && excludeSpecs.stream().anyMatch(spec -> spec.isSatisfiedBy(dependency));
+        return include && !exclude;
+    }
+
+
 }
