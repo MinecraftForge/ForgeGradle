@@ -25,6 +25,7 @@ import groovy.util.Node;
 import groovy.util.NodeList;
 import org.gradle.api.XmlProvider;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,14 +41,14 @@ public class MavenPomUtils {
     }
 
     @SuppressWarnings("unchecked")
-    public static boolean hasChildWithText(final Node node, final String childKey, final String expectedValue) {
+    public static boolean hasChildWithText(final Node node, final String childKey, final String... candidateValues) {
         final NodeList children = node.getAt(QName.valueOf(childKey));
         final List<Node> childList = (List<Node>) (children.stream()
                 .map(Node.class::cast)
                 .collect(Collectors.toList()));
 
         return childList.stream()
-                .anyMatch(el -> el.text().equals(expectedValue));
+                .anyMatch(el -> Arrays.stream(candidateValues).anyMatch(value -> value.equals(el.text())));
     }
 
     @SuppressWarnings("unchecked")
