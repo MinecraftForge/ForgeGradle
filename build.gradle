@@ -100,6 +100,8 @@ dependencies {
     patcherImplementation sourceSets.common.output
     userdevImplementation sourceSets.mcp.output
     userdevImplementation sourceSets.common.output
+
+    userdevImplementation 'net.minecraftforge:JarJar:0.2.21'
 }
 
 //Gradle doesn't add it's own source when doing the API. So lets hack it in!
