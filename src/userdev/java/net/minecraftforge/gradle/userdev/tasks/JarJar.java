@@ -165,8 +165,6 @@ public abstract class JarJar extends Jar {
         final Configuration runtimeConfiguration = getProject().getConfigurations().findByName("runtimeClasspath");
         if (runtimeConfiguration != null) {
             this.configuration(runtimeConfiguration);
-        } else {
-            this.configuration(getProject().getConfigurations().findByName("runtime"));
         }
     }
 
@@ -205,8 +203,7 @@ public abstract class JarJar extends Jar {
         }
 
         if (!isValidVersionRange(Objects.requireNonNull(getVersionRangeFrom(dependency)))) {
-            throw new RuntimeException("The given version specification is invalid: " + getVersionRangeFrom(dependency)
-                    + " if you used gradle based range versioning like (2.+), convert this to a maven compatible format ([2.0,3.0)).");
+            throw createInvalidVersionRangeException(dependency, null);
         }
 
         final ResolvedDependency resolvedDependency = getResolvedDependency(dependency);
@@ -226,9 +223,17 @@ public abstract class JarJar extends Jar {
                     isObfuscated(dependency)
             ));
         } catch (InvalidVersionSpecificationException e) {
-            throw new RuntimeException("The given version specification is invalid: " + dependency.getVersion()
-                    + " if you used gradle based range versioning like (2.+), convert this to a maven compatible format ([2.0,3.0)).", e);
+            throw createInvalidVersionRangeException(dependency, e);
         }
+    }
+
+    private RuntimeException createInvalidVersionRangeException(final ExternalModuleDependency dependency, final Throwable cause) {
+        final RuntimeException exception = new RuntimeException("The given version specification is invalid: " + getVersionRangeFrom(dependency)
+                + ". If you used gradle based range versioning like 2.+, convert this to a maven compatible format: [2.0,3.0).");
+
+        exception.initCause(cause);
+
+        return exception;
     }
 
     private String getVersionRangeFrom(final Dependency dependency) {
