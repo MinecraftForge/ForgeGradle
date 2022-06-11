@@ -228,12 +228,8 @@ public abstract class JarJar extends Jar {
     }
 
     private RuntimeException createInvalidVersionRangeException(final ExternalModuleDependency dependency, final Throwable cause) {
-        final RuntimeException exception = new RuntimeException("The given version specification is invalid: " + getVersionRangeFrom(dependency)
-                + ". If you used gradle based range versioning like 2.+, convert this to a maven compatible format: [2.0,3.0).");
-
-        exception.initCause(cause);
-
-        return exception;
+        return new RuntimeException("The given version specification is invalid: " + getVersionRangeFrom(dependency)
+                + ". If you used gradle based range versioning like 2.+, convert this to a maven compatible format: [2.0,3.0).", cause);
     }
 
     private String getVersionRangeFrom(final Dependency dependency) {
