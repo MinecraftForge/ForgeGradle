@@ -31,6 +31,7 @@ import net.minecraftforge.gradle.userdev.tasks.JarJar;
 import net.minecraftforge.gradle.userdev.util.MavenPomUtils;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.artifacts.*;
 import org.gradle.api.attributes.Attribute;
 import org.gradle.api.publish.maven.MavenPublication;
@@ -52,8 +53,9 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
     }
 
     public void enable() {
-        if (project.getTasks().findByPath(UserDevPlugin.JAR_JAR_TASK_NAME) != null) {
-            Objects.requireNonNull(project.getTasks().findByPath(UserDevPlugin.JAR_JAR_TASK_NAME)).setEnabled(true);
+        final Task task = project.getTasks().findByPath(UserDevPlugin.JAR_JAR_TASK_NAME);
+        if (task != null) {
+            task.setEnabled(true);
         }
     }
 
