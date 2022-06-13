@@ -47,6 +47,7 @@ import net.minecraftforge.gradle.userdev.tasks.JarJar;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 import net.minecraftforge.gradle.userdev.util.DeobfuscatingRepo;
 import net.minecraftforge.gradle.userdev.util.Deobfuscator;
+import net.minecraftforge.gradle.userdev.util.DeobfuscatorTransformer;
 import net.minecraftforge.gradle.userdev.util.DependencyRemapper;
 import net.minecraftforge.srgutils.IMappingFile;
 
@@ -57,6 +58,8 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository.MetadataSources;
+import org.gradle.api.artifacts.type.ArtifactTypeDefinition;
+import org.gradle.api.attributes.Attribute;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.logging.Logger;
@@ -89,6 +92,8 @@ public class UserDevPlugin implements Plugin<Project> {
     public static final String JAR_JAR_GROUP = "jarjar";
 
     public static final String JAR_JAR_DEFAULT_CONFIGURATION_NAME = "jarJar";
+
+    public static final String FORGE_DEOBF_CONFIGURATION_NAME = "forgeDeobf";
 
     public static final String MINECRAFT = "minecraft";
     public static final String OBF = "__obfuscated";
@@ -212,6 +217,8 @@ public class UserDevPlugin implements Plugin<Project> {
         }
 
         configureJarJarTask(project);
+
+        addForgeDeobfConfiguration(project, deobfuscator, extension.getMappings());
 
         project.afterEvaluate(p -> {
             MinecraftUserRepo mcrepo = null;
@@ -359,5 +366,32 @@ public class UserDevPlugin implements Plugin<Project> {
         });
 
         project.getArtifacts().add(JAR_JAR_DEFAULT_CONFIGURATION_NAME, project.getTasks().named(JAR_JAR_TASK_NAME));
+    }
+
+    private void addForgeDeobfConfiguration(final Project project, final Deobfuscator deobfuscator, final Provider<String> mappings) {
+        final Attribute<Boolean> forgeDeobfuscated = Attribute.of("forgeDeobfuscated", Boolean.class);
+
+        final Configuration configuration = project.getConfigurations().create(FORGE_DEOBF_CONFIGURATION_NAME);
+        configuration.getAttributes().attribute(forgeDeobfuscated, true);
+
+        DeobfuscatorTransformer.setDeobfuscator(deobfuscator);
+
+        project.getDependencies().getAttributesSchema().attribute(forgeDeobfuscated);
+        project.getDependencies()
+                .getArtifactTypes()
+                .getByName(ArtifactTypeDefinition.JAR_TYPE)
+                .getAttributes()
+                .attribute(forgeDeobfuscated, false);
+
+        project.getDependencies().registerTransform(DeobfuscatorTransformer.class, spec -> {
+            spec.getFrom().attribute(forgeDeobfuscated, false);
+            spec.getTo().attribute(forgeDeobfuscated, true);
+
+            spec.getParameters().setMappings(mappings);
+        });
+
+        project.getDependencies()
+                .addProvider(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME,
+                        project.provider(() -> project.files(configuration.resolve())));
     }
 }
