@@ -180,11 +180,9 @@ public class DownloadUtils {
         File md5_file = new File(target.getAbsolutePath() + ".md5");
         String actual = target.exists() ? HashFunction.MD5.hash(target) : null;
 
-        if (target.exists() && !(changing || bypassLocal)) {
-            String expected = md5_file.exists() ? new String(Files.readAllBytes(md5_file.toPath()), StandardCharsets.UTF_8) : null;
-            if (expected == null || expected.equals(actual))
-                return target;
-            target.delete();
+        if (md5_file.exists() && target.exists() && !(changing || bypassLocal)) {
+            String expected = new String(Files.readAllBytes(md5_file.toPath()), StandardCharsets.UTF_8);
+            if (expected.equals(actual)) return target; // Skip all downloads if the local MD5 matches the local file.
         }
 
         String expected = null;
@@ -193,9 +191,12 @@ public class DownloadUtils {
         } catch (IOException e) {
             //Eat it, some repos don't have a simple checksum.
         }
-        if (expected == null && bypassLocal) return null; // Ignore local file if the remote doesn't have it.
-        if (expected == null && target.exists()) return target; //Assume we're good cuz they didn't have a MD5 on the server.
-        if (expected != null && expected.equals(actual)) return target;
+        if (expected == null && bypassLocal) return null; // Ignore local file if the remote doesn't have a MD5 checksum.
+        if (expected != null && expected.equals(actual)) {
+            // Require MD5 checksum to skip the download as it will be calculated after every successful download.
+            Files.write(md5_file.toPath(), expected.getBytes(StandardCharsets.UTF_8));
+            return target;
+        }
 
         if (target.exists())
             target.delete(); //Invalid checksum, delete and grab new
