@@ -54,7 +54,7 @@ public class DependencyRemapper {
         }
 
         if (dependency instanceof FileCollectionDependency) {
-            project.getLogger().warn("files(...) dependencies are not deobfuscated. Use a flatDir repository instead: https://docs.gradle.org/current/userguide/repository_types.html#sec:flat_dir_resolver");
+            project.getLogger().warn("files(...) dependencies are not deobfuscated. Use a flatDir repository instead: https://docs.gradle.org/current/userguide/declaring_repositories.html#sub:flat_dir_resolver");
         }
 
         project.getLogger().warn("Cannot deobfuscate dependency of type {}, using obfuscated version!", dependency.getClass().getSimpleName());
