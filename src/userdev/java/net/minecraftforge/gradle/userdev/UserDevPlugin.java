@@ -63,6 +63,7 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
@@ -170,10 +171,18 @@ public class UserDevPlugin implements Plugin<Project> {
         if (doingUpdate) {
             logger.lifecycle("This process uses Srg2Source for java source file renaming. Please forward relevant bug reports to https://github.com/MinecraftForge/Srg2Source/issues.");
 
-            final String[] updateSourceSets = project.hasProperty("UPDATE_SOURCESETS") ? ((String) project.property("UPDATE_SOURCESETS")).split(";") : new String[] { SourceSet.MAIN_SOURCE_SET_NAME };
             final TaskProvider<JavaCompile> javaCompile = tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, JavaCompile.class);
             final JavaPluginExtension javaConv = project.getExtensions().getByType(JavaPluginExtension.class);
-            final Provider<FileCollection> mainJavaSources = Stream.of(updateSourceSets).map(sourceSet -> javaConv.getSourceSets().named(SourceSet.MAIN_SOURCE_SET_NAME).map(SourceSet::getJava).map(SourceDirectorySet::getSourceDirectories)).reduce((a, b) -> a.zip(b, FileCollection::plus)).get();
+            final Property<FileCollection> mainJavaSources = project.getObjects().property(FileCollection.class);
+            mainJavaSources.finalizeValueOnRead();
+            mainJavaSources.set(project.getProviders().gradleProperty("UPDATE_SOURCESETS")
+                    .orElse(SourceSet.MAIN_SOURCE_SET_NAME)
+                    .map(s -> s.split(";"))
+                    .flatMap(sourceSets -> Stream.of(sourceSets)
+                            .map(sourceSet -> javaConv.getSourceSets().named(sourceSet)
+                                    .map(SourceSet::getJava)
+                                    .map(SourceDirectorySet::getSourceDirectories))
+                            .reduce((a, b) -> a.zip(b, FileCollection::plus)).get()));
 
             final TaskProvider<DownloadMCPMappings> dlMappingsNew = tasks.register("downloadMappingsNew", DownloadMCPMappings.class);
             final TaskProvider<ExtractRangeMap> extractRangeConfig = tasks.register("extractRangeMap", ExtractRangeMap.class);
