@@ -54,16 +54,12 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.AbstractMap;
-import java.util.AbstractSet;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.function.Supplier;
@@ -251,8 +247,6 @@ public abstract class RunConfigGenerator
         return getResolvedClasspath(minecraft);
     }
 
-    public static final String IDE_PROPERTY = "fg.ide";
-
     public static TaskProvider<JavaExec> createRunTask(final RunConfig runConfig, final Project project, final Task prepareRuns, final List<String> additionalClientArgs) {
 
         Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig, mapModClassesToGradle(project, runConfig));
@@ -261,8 +255,8 @@ public abstract class RunConfigGenerator
             task.setGroup(RunConfig.RUNS_GROUP);
             task.dependsOn(prepareRuns, runConfig.getAllSources().stream().map(SourceSet::getClassesTaskName).toArray());
 
-            if (project.getProperties().containsKey(IDE_PROPERTY)) {
-                final String ide = project.getProperties().get(IDE_PROPERTY).toString();
+            if (project.getProperties().containsKey(Utils.IDE_PROPERTY)) {
+                final String ide = project.getProperties().get(Utils.IDE_PROPERTY).toString();
                 final Task copyResourcesTask = project.getTasks().findByName("copy" + Utils.capitalize(ide) + "Resources");
                 if (copyResourcesTask != null)
                     task.dependsOn(copyResourcesTask);
