@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -132,13 +133,17 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
             {
                 final Element rootElement = groupDocument.createElement("launchConfiguration");
                 rootElement.setAttribute("type", "org.eclipse.debug.core.groups.GroupLaunchConfigurationType");
-                final List<String> configurations = ImmutableList.of(launchConfigName, gradleConfigName);
+                final List<SubTaskConfiguration> configurations = ImmutableList.of(
+                        new SubTaskConfiguration(gradleConfigName, SubTaskConfiguration.Mode.RUN),
+                        new SubTaskConfiguration(launchConfigName, SubTaskConfiguration.Mode.INHERIT)
+                );
                 for (int i = 0; i < configurations.size(); i++) {
+                    final SubTaskConfiguration config = configurations.get(i);
                     elementAttribute(groupDocument, rootElement, "string", "org.eclipse.debug.core.launchGroup." + i + ".action", "NONE");
                     elementAttribute(groupDocument, rootElement, "boolean", "org.eclipse.debug.core.launchGroup." + i + ".adoptIfRunning", false);
                     elementAttribute(groupDocument, rootElement, "boolean", "org.eclipse.debug.core.launchGroup." + i + ".enabled", true);
-                    elementAttribute(groupDocument, rootElement, "string", "org.eclipse.debug.core.launchGroup." + i + ".mode", "inherit");
-                    elementAttribute(groupDocument, rootElement, "string", "org.eclipse.debug.core.launchGroup." + i + ".name", configurations.get(i));
+                    elementAttribute(groupDocument, rootElement, "string", "org.eclipse.debug.core.launchGroup." + i + ".mode", config.mode);
+                    elementAttribute(groupDocument, rootElement, "string", "org.eclipse.debug.core.launchGroup." + i + ".name", config.name);
                 }
                 groupDocument.appendChild(rootElement);
             }
@@ -197,6 +202,29 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
                                 .map(output -> modConfig.getName() + "%%" + output)
                                 .map(s -> String.join(File.pathSeparator, s, s)); // <resources>:<classes>
                     });
+        }
+    }
+
+    private static final class SubTaskConfiguration {
+        public final String name;
+        public final Mode mode;
+
+        private SubTaskConfiguration(String name, Mode mode) {
+            this.name = name;
+            this.mode = mode;
+        }
+
+        private enum Mode {
+            PROFILE,
+            INHERIT,
+            DEBUG,
+            RUN,
+            COVERAGE;
+
+            @Override
+            public String toString() {
+                return super.toString().toLowerCase(Locale.ROOT);
+            }
         }
     }
 }
