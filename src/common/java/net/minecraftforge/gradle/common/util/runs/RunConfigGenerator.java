@@ -338,7 +338,7 @@ public abstract class RunConfigGenerator
     static abstract class XMLConfigurationBuilder extends RunConfigGenerator {
 
         @Nonnull
-        protected abstract Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs);
+        protected abstract Map<String, Document> createRunConfiguration(@Nonnull final MinecraftExtension minecraft, @Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs);
 
         @Override
         public final void createRunConfiguration(@Nonnull final MinecraftExtension minecraft, @Nonnull final File runConfigurationsDir, @Nonnull final Project project, List<String> additionalClientArgs) {
@@ -352,7 +352,7 @@ public abstract class RunConfigGenerator
                 transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 
                 minecraft.getRuns().forEach(runConfig -> {
-                    final Map<String, Document> documents = createRunConfiguration(project, runConfig, docBuilder, additionalClientArgs);
+                    final Map<String, Document> documents = createRunConfiguration(minecraft, project, runConfig, docBuilder, additionalClientArgs);
 
                     documents.forEach((fileName, document) -> {
                         final DOMSource source = new DOMSource(document);

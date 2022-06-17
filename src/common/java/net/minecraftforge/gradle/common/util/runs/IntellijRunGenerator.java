@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.common.util.runs;
 
+import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
 
@@ -37,6 +38,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -134,7 +136,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
 
     @Override
     @Nonnull
-    protected Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs) {
+    protected Map<String, Document> createRunConfiguration(@Nonnull final MinecraftExtension mc, @Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs) {
         final Map<String, Document> documents = new LinkedHashMap<>();
 
         Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig,
@@ -198,7 +200,11 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                         {
                             gradleTask.setAttribute("name", "Gradle.BeforeRunTask");
                             gradleTask.setAttribute("enabled", "true");
-                            gradleTask.setAttribute("tasks", project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName())).getPath());
+                            final List<String> tasks = new ArrayList<>();
+                            tasks.add(project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName())).getPath());
+                            if (!useGradlePaths && mc.copiesIDEResources())
+                                tasks.add(project.getTasks().getByName("copyIdeaResources").getPath());
+                            gradleTask.setAttribute("tasks", String.join(" ", tasks));
                             gradleTask.setAttribute("externalProjectPath", "$PROJECT_DIR$");
                         }
                         methods.appendChild(gradleTask);

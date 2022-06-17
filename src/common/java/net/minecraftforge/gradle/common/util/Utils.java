@@ -503,7 +503,8 @@ public class Utils {
             final IdeaPlugin idea = project.getPlugins().getPlugin(IdeaPlugin.class);
             project.getTasks().create("copyIdeaResources", CopyIDEAResources.class, task -> task.configure(idea.getModel()));
         } else {
-            project.getLogger().info("'idea' plugin is not found! IDEA resources will not be copied.");
+            project.getLogger().warn("'idea' plugin is not found! IDEA resources will not be copied.");
+            project.getTasks().create("copyIdeaResources", Task.class); // Create dummy class
         }
 
         if (project.getPlugins().hasPlugin(EclipsePlugin.class)) {
@@ -515,7 +516,8 @@ public class Utils {
                 }));
             });
         } else {
-            project.getLogger().info("'eclipse' plugin is not found! Eclipse resources will not be copied.");
+            project.getLogger().warn("'eclipse' plugin is not found! Eclipse resources will not be copied.");
+            project.getTasks().create("copyEclipseResources", Task.class); // Create dummy class
         }
     }
 }

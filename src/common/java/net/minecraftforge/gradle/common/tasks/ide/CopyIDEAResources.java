@@ -12,15 +12,18 @@ import java.nio.file.Path;
 public abstract class CopyIDEAResources extends Copy {
 
     public void configure(IdeaModel model) {
+        final Path outDir;
         if (model.getModule().getOutputDir() == null)
-            return;
-        final Path outDir = model.getModule().getOutputDir().toPath();
+            outDir = model.getProject().getProject().file("out").toPath();
+        else
+            outDir = model.getModule().getOutputDir().toPath();
         for (final SourceSet sourceSet : model.getProject().getProject().getExtensions().getByType(JavaPluginExtension.class).getSourceSets()) {
             dependsOn(sourceSet.getProcessResourcesTaskName());
             model.getProject().getProject().getTasks().named(sourceSet.getProcessResourcesTaskName(), ProcessResources.class)
                     .configure(processResources -> {
+                        final String outName = sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) ? "production" : sourceSet.getName();
                         for (final File out : processResources.getOutputs().getFiles())
-                            into(outDir.resolve(sourceSet.getName()).resolve("resources")).from(out);
+                            into(outDir.resolve(outName).resolve("resources")).from(out);
                     });
         }
     }

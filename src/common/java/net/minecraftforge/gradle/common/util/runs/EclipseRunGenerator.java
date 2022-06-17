@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.common.util.runs;
 
+import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.common.util.RunConfig;
 
 import org.gradle.api.Project;
@@ -45,11 +46,13 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+// TODO when #866 is merged, add the copyEclipseResources task in the launch group as well
+// Also, when that PR is merged, force launch group mode if copying IDE resources
 public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuilder
 {
     @Override
     @Nonnull
-    protected Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs) {
+    protected Map<String, Document> createRunConfiguration(@Nonnull final MinecraftExtension mc, @Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs) {
         final Map<String, Document> documents = new LinkedHashMap<>();
 
         Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig, mapModClassesToEclipse(project, runConfig));
