@@ -199,7 +199,6 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                             gradleTask.setAttribute("name", "Gradle.BeforeRunTask");
                             gradleTask.setAttribute("enabled", "true");
                             gradleTask.setAttribute("tasks", project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName())).getPath());
-                            gradleTask.setAttribute("scriptParameters", "-P" + Utils.IDE_PROPERTY + "=idea");
                             gradleTask.setAttribute("externalProjectPath", "$PROJECT_DIR$");
                         }
                         methods.appendChild(gradleTask);

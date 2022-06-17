@@ -255,13 +255,6 @@ public abstract class RunConfigGenerator
             task.setGroup(RunConfig.RUNS_GROUP);
             task.dependsOn(prepareRuns, runConfig.getAllSources().stream().map(SourceSet::getClassesTaskName).toArray());
 
-            if (project.getProperties().containsKey(Utils.IDE_PROPERTY)) {
-                final String ide = project.getProperties().get(Utils.IDE_PROPERTY).toString();
-                final Task copyResourcesTask = project.getTasks().findByName("copy" + Utils.capitalize(ide) + "Resources");
-                if (copyResourcesTask != null)
-                    task.dependsOn(copyResourcesTask);
-            }
-
             File workDir = new File(runConfig.getWorkingDirectory());
 
             if (!workDir.exists()) {
