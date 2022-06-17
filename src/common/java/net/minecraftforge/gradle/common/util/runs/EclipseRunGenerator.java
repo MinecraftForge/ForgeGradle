@@ -20,8 +20,11 @@
 
 package net.minecraftforge.gradle.common.util.runs;
 
+import com.google.common.collect.ImmutableList;
+import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.common.util.RunConfig;
 
+import net.minecraftforge.gradle.common.util.Utils;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
@@ -49,7 +52,7 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
 {
     @Override
     @Nonnull
-    protected Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs) {
+    protected Map<String, Document> createRunConfiguration(@Nonnull final MinecraftExtension mc, @Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs) {
         final Map<String, Document> documents = new LinkedHashMap<>();
 
         Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig, mapModClassesToEclipse(project, runConfig));
@@ -93,7 +96,55 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
             }
             javaDocument.appendChild(rootElement);
         }
-        documents.put(runConfig.getTaskName() + ".launch", javaDocument);
+
+        if (mc.generatesLaunchGroups()) {
+            final String launchConfigName = project.getName() + " - " + runConfig.getTaskName();
+            documents.put(".eclipse/configurations/" + launchConfigName + ".launch", javaDocument);
+
+            // Create a gradle document
+            final Document gradleDocument = documentBuilder.newDocument();
+            {
+                final Element rootElement = gradleDocument.createElement("launchConfiguration");
+                {
+                    rootElement.setAttribute("type", "org.eclipse.buildship.core.launch.runconfiguration");
+
+                    elementAttribute(gradleDocument, rootElement, "string", "gradle_distribution", "GRADLE_DISTRIBUTION(WRAPPER)");
+                    elementAttribute(gradleDocument, rootElement, "boolean", "offline_mode", project.getGradle().getStartParameter().isOffline());
+                    elementAttribute(gradleDocument, rootElement, "boolean", "show_console_view", "true");
+                    elementAttribute(gradleDocument, rootElement, "boolean", "show_execution_view", "true");
+                    elementAttribute(gradleDocument, rootElement, "string", "working_dir", project.getRootDir());
+                }
+
+                final Element tasks = gradleDocument.createElement("listAttribute");
+                {
+                    tasks.setAttribute("key", "tasks");
+                    final Element taskEntry = gradleDocument.createElement("listEntry");
+                    taskEntry.setAttribute("value", project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName())).getPath());
+                    tasks.appendChild(taskEntry);
+                }
+                rootElement.appendChild(tasks);
+                gradleDocument.appendChild(rootElement);
+            }
+            final String gradleConfigName = project.getName() + " - prepare" + Utils.capitalize(runConfig.getTaskName());
+            documents.put(".eclipse/configurations/" + gradleConfigName + ".launch", gradleDocument);
+
+            final Document groupDocument = documentBuilder.newDocument();
+            {
+                final Element rootElement = groupDocument.createElement("launchConfiguration");
+                rootElement.setAttribute("type", "org.eclipse.debug.core.groups.GroupLaunchConfigurationType");
+                final List<String> configurations = ImmutableList.of(launchConfigName, gradleConfigName);
+                for (int i = 0; i < configurations.size(); i++) {
+                    elementAttribute(groupDocument, rootElement, "string", "org.eclipse.debug.core.launchGroup." + i + ".action", "NONE");
+                    elementAttribute(groupDocument, rootElement, "boolean", "org.eclipse.debug.core.launchGroup." + i + ".adoptIfRunning", false);
+                    elementAttribute(groupDocument, rootElement, "boolean", "org.eclipse.debug.core.launchGroup." + i + ".enabled", true);
+                    elementAttribute(groupDocument, rootElement, "string", "org.eclipse.debug.core.launchGroup." + i + ".mode", "inherit");
+                    elementAttribute(groupDocument, rootElement, "string", "org.eclipse.debug.core.launchGroup." + i + ".name", configurations.get(i));
+                }
+                groupDocument.appendChild(rootElement);
+            }
+            documents.put(runConfig.getTaskName() + ".launch", groupDocument);
+        } else
+            documents.put(runConfig.getTaskName() + ".launch", javaDocument);
 
         return documents;
     }
