@@ -123,11 +123,11 @@ public abstract class RunConfigGenerator
         parent.appendChild(option);
     }
 
-    protected static void elementAttribute(@Nonnull Document document, @Nonnull final Element parent, @Nonnull final String attributeType, @Nonnull final String key, @Nonnull final String value) {
+    protected static void elementAttribute(@Nonnull Document document, @Nonnull final Element parent, @Nonnull final String attributeType, @Nonnull final String key, @Nonnull final Object value) {
         final Element attribute = document.createElement(attributeType + "Attribute");
         {
             attribute.setAttribute("key", key);
-            attribute.setAttribute("value", value);
+            attribute.setAttribute("value", value.toString());
         }
         parent.appendChild(attribute);
     }
@@ -356,7 +356,10 @@ public abstract class RunConfigGenerator
 
                     documents.forEach((fileName, document) -> {
                         final DOMSource source = new DOMSource(document);
-                        final StreamResult result = new StreamResult(new File(runConfigurationsDir, fileName));
+                        final File location = new File(runConfigurationsDir, fileName);
+                        if (!location.getParentFile().exists())
+                            location.getParentFile().mkdirs();
+                        final StreamResult result = new StreamResult(location);
 
                         try {
                             transformer.transform(source, result);
