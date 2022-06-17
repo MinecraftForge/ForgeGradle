@@ -85,6 +85,7 @@ public abstract class JarExec extends DefaultTask {
     protected final Provider<RegularFile> logFile = workDir.map(d -> d.file("log.txt"));
 
     public JarExec() {
+        notCompatibleWithConfigurationCache("MAD");
         toolFile = getTool().map(toolStr -> MavenArtifactDownloader.gradle(getProject(), toolStr, false));
         resolvedVersion = getTool().map(toolStr -> MavenArtifactDownloader.getVersion(getProject(), toolStr));
         getDebug().convention(false);

@@ -35,6 +35,11 @@ import java.io.File;
 import java.io.IOException;
 
 public abstract class ExtractNatives extends DefaultTask {
+
+    public ExtractNatives() {
+        notCompatibleWithConfigurationCache("Utils needing getProject()");
+    }
+
     @TaskAction
     public void run() throws IOException {
         VersionJson json = Utils.loadJson(getMeta().get().getAsFile(), VersionJson.class);

@@ -38,6 +38,7 @@ import java.io.IOException;
 
 public abstract class DownloadMCPMappings extends DefaultTask {
     public DownloadMCPMappings() {
+        notCompatibleWithConfigurationCache("MAD");
         getOutput().convention(getProjectLayout().getBuildDirectory().file("mappings.zip"));
     }
 

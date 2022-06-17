@@ -26,6 +26,7 @@ import net.minecraftforge.gradle.common.util.VersionJson;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.InputFile;
@@ -33,6 +34,7 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -49,6 +51,7 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class DownloadAssets extends DefaultTask {
     public DownloadAssets() {
+        notCompatibleWithConfigurationCache("MAD");
         getAssetRepository().convention("https://resources.download.minecraft.net/");
         getConcurrentDownloads().convention(8);
     }

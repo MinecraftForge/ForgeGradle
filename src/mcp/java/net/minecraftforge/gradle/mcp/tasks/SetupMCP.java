@@ -43,6 +43,7 @@ import java.io.IOException;
 
 public abstract class SetupMCP extends DefaultTask {
     public SetupMCP() {
+        notCompatibleWithConfigurationCache("MCPRuntime needs getProject()");
         getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.zip")));
 
         this.getOutputs().upToDateWhen(task -> {

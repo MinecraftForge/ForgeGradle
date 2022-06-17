@@ -37,6 +37,7 @@ import java.io.IOException;
 public abstract class DownloadMCPConfig extends DefaultTask {
     @TaskAction
     public void downloadMCPConfig() throws IOException {
+        notCompatibleWithConfigurationCache("MAD");
         File file = getConfigFile();
         File output = getOutput().get().getAsFile();
 

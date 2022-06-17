@@ -48,6 +48,7 @@ public abstract class GenerateSRG extends DefaultTask {
     private boolean reverse = false;
 
     public GenerateSRG() {
+        notCompatibleWithConfigurationCache("MAD");
         this.format = getProjectObjects().property(IMappingFile.Format.class)
                 .convention(IMappingFile.Format.TSRG2);
         getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(f -> f.file("output.tsrg")));

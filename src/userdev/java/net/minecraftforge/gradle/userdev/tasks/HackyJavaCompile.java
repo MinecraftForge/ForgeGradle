@@ -44,6 +44,7 @@ import java.lang.reflect.Method;
 public class HackyJavaCompile extends JavaCompile {
 
     public void doHackyCompile() {
+        notCompatibleWithConfigurationCache("");
 
         // What follows is a horrible hack to allow us to call JavaCompile
         // from our dependency resolver.

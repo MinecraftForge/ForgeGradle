@@ -75,6 +75,7 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
 
     @Inject
     public GenerateUserdevConfig(@Nonnull final Project project) {
+        notCompatibleWithConfigurationCache("");
         this.runs = project.container(RunConfig.class, name -> new RunConfig(project, name));
 
         ObjectFactory objects = project.getObjects();
