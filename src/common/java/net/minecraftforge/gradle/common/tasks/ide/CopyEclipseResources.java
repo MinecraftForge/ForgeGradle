@@ -2,6 +2,7 @@ package net.minecraftforge.gradle.common.tasks.ide;
 
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.language.jvm.tasks.ProcessResources;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
@@ -13,7 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public abstract class CopyEclipseResources extends BaseCopyResourcesTask {
+public abstract class CopyEclipseResources extends Copy {
 
     public void configure(EclipseModel model, Project project) {
         final Map<SourceSet, SourceFolder> srcToOut = model.getClasspath().resolveDependencies().stream()
@@ -28,7 +29,7 @@ public abstract class CopyEclipseResources extends BaseCopyResourcesTask {
             project.getTasks().named(src.getProcessResourcesTaskName(), ProcessResources.class)
                     .configure(processResources -> {
                         for (final File out1 : processResources.getOutputs().getFiles())
-                            toCopy.put(out1, project.file(out.getOutput()));
+                            into(project.file(out.getOutput())).from(out1);
                     });
         });
     }
