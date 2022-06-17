@@ -23,6 +23,8 @@ package net.minecraftforge.gradle.common.util;
 import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
 import net.minecraftforge.gradle.common.tasks.ExtractNatives;
+import net.minecraftforge.gradle.common.tasks.ide.CopyEclipseResources;
+import net.minecraftforge.gradle.common.tasks.ide.CopyIDEAResources;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import net.minecraftforge.gradle.common.util.runs.RunConfigGenerator;
 
@@ -41,6 +43,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 import groovy.lang.Closure;
+import org.gradle.plugins.ide.eclipse.EclipsePlugin;
+import org.gradle.plugins.ide.eclipse.model.EclipseModel;
+import org.gradle.plugins.ide.idea.IdeaPlugin;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -490,5 +496,26 @@ public class Utils {
         }
 
         return buf.toString();
+    }
+
+    public static void setupIDEResourceCopy(@Nonnull final Project project) {
+        if (project.getPlugins().hasPlugin(IdeaPlugin.class)) {
+            final IdeaPlugin idea = project.getPlugins().getPlugin(IdeaPlugin.class);
+            project.getTasks().create("copyIdeaResources", CopyIDEAResources.class, task -> task.configure(idea.getModel()));
+        } else {
+            project.getLogger().info("'idea' plugin is not found! IDEA resources will not be copied.");
+        }
+
+        if (project.getPlugins().hasPlugin(EclipsePlugin.class)) {
+            project.getTasks().create("copyEclipseResources", CopyEclipseResources.class, task -> {
+                task.dependsOn("eclipse");
+                project.getTasks().named("eclipse").configure($ -> $.doLast($$ -> {
+                    final EclipseModel eclipse = project.getExtensions().findByType(EclipseModel.class);
+                    task.configure(eclipse, project);
+                }));
+            });
+        } else {
+            project.getLogger().info("'eclipse' plugin is not found! Eclipse resources will not be copied.");
+        }
     }
 }

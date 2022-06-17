@@ -40,6 +40,7 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
     protected final ConfigurableFileCollection accessTransformers;
 
     private final Provider<String> mapping;
+    protected final Property<Boolean> copyIDEResources;
 
     @Inject
     public MinecraftExtension(final Project project) {
@@ -47,6 +48,7 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         this.mapping = getMappingChannel().zip(getMappingVersion(), (ch, ver) -> ch + '_' + ver);
         this.runs = project.getObjects().domainObjectContainer(RunConfig.class, name -> new RunConfig(project, name));
         this.accessTransformers = project.getObjects().fileCollection();
+        this.copyIDEResources = project.getObjects().property(Boolean.class).convention(false);
     }
 
     public Project getProject() {
@@ -127,4 +129,11 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
     }
 
     public abstract ConfigurableFileCollection getSideAnnotationStrippers();
+
+    public void copyIDEResources() {
+        copyIDEResources.set(true);
+    }
+    public boolean copiesIDEResources() {
+        return copyIDEResources.get();
+    }
 }

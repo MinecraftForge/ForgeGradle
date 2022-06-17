@@ -251,6 +251,8 @@ public abstract class RunConfigGenerator
         return getResolvedClasspath(minecraft);
     }
 
+    public static final String IDE_PROPERTY = "fg.ide";
+
     public static TaskProvider<JavaExec> createRunTask(final RunConfig runConfig, final Project project, final Task prepareRuns, final List<String> additionalClientArgs) {
 
         Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig, mapModClassesToGradle(project, runConfig));
@@ -258,6 +260,13 @@ public abstract class RunConfigGenerator
         TaskProvider<Task> prepareRun = project.getTasks().register("prepare" + Utils.capitalize(runConfig.getTaskName()), Task.class, task -> {
             task.setGroup(RunConfig.RUNS_GROUP);
             task.dependsOn(prepareRuns, runConfig.getAllSources().stream().map(SourceSet::getClassesTaskName).toArray());
+
+            if (project.getProperties().containsKey(IDE_PROPERTY)) {
+                final String ide = project.getProperties().get(IDE_PROPERTY).toString();
+                final Task copyResourcesTask = project.getTasks().findByName("copy" + Utils.capitalize(ide) + "Resources");
+                if (copyResourcesTask != null)
+                    task.dependsOn(copyResourcesTask);
+            }
 
             File workDir = new File(runConfig.getWorkingDirectory());
 
