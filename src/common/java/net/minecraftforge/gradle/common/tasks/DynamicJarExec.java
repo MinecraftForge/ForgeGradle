@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.common.tasks;
 
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.tasks.InputFile;
@@ -28,12 +29,14 @@ import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 
 import com.google.common.collect.ImmutableMap;
+
+import javax.inject.Inject;
 import java.io.File;
 import java.util.List;
 
 public abstract class DynamicJarExec extends JarExec {
     public DynamicJarExec() {
-        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.jar")));
+        getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.jar")));
     }
 
     @Override
@@ -45,6 +48,9 @@ public abstract class DynamicJarExec extends JarExec {
 
         return replaceArgs(args, replace.build(), null);
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     @InputFiles
     @Optional

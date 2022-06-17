@@ -22,11 +22,14 @@ package net.minecraftforge.gradle.common.tasks;
 
 import net.minecraftforge.gradle.common.util.Utils;
 
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 
 import com.google.common.collect.ImmutableMap;
+
+import javax.inject.Inject;
 import java.util.List;
 
 public abstract class ApplyBinPatches extends JarExec {
@@ -34,7 +37,7 @@ public abstract class ApplyBinPatches extends JarExec {
         getTool().set(Utils.BINPATCHER);
         getArgs().addAll("--clean", "{clean}", "--output", "{output}", "--apply", "{patch}");
 
-        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.jar")));
+        getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.jar")));
     }
 
     @Override
@@ -44,6 +47,9 @@ public abstract class ApplyBinPatches extends JarExec {
                 "{output}", getOutput().get().getAsFile(),
                 "{patch}", getPatch().get().getAsFile()), null);
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     @InputFile
     public abstract RegularFileProperty getClean();

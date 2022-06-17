@@ -26,12 +26,14 @@ import net.minecraftforge.srgutils.IMappingFile;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -43,7 +45,7 @@ import java.util.zip.ZipOutputStream;
 
 public abstract class FilterNewJar extends DefaultTask { //TODO: Copy task?
     public FilterNewJar() {
-        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.jar")));
+        getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.jar")));
     }
 
     @TaskAction
@@ -82,6 +84,9 @@ public abstract class FilterNewJar extends DefaultTask { //TODO: Copy task?
         }
         return classes.contains(cls);
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     @InputFile
     public abstract RegularFileProperty getInput();

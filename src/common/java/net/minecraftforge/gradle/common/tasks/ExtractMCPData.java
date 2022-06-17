@@ -28,6 +28,7 @@ import net.minecraftforge.srgutils.IRenamer;
 
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.Project;
@@ -36,6 +37,7 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -47,7 +49,7 @@ public abstract class ExtractMCPData extends DefaultTask {
     private boolean allowEmpty = false;
 
     public ExtractMCPData() {
-        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(s -> s.file("output.srg")));
+        getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(s -> s.file("output.srg")));
         getKey().convention("mappings");
     }
 
@@ -108,6 +110,9 @@ public abstract class ExtractMCPData extends DefaultTask {
 
         outputFile.createNewFile();
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     @Input
     public abstract Property<String> getKey();

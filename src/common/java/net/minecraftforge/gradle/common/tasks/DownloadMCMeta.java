@@ -24,6 +24,7 @@ import net.minecraftforge.gradle.common.util.ManifestJson;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
@@ -33,6 +34,8 @@ import org.gradle.api.tasks.TaskAction;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
+import javax.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -44,8 +47,8 @@ public abstract class DownloadMCMeta extends DefaultTask {
     private static final Gson GSON = new GsonBuilder().create();
 
     public DownloadMCMeta() {
-        getManifest().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(s -> s.file("manifest.json")));
-        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(s -> s.file("version.json")));
+        getManifest().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(s -> s.file("manifest.json")));
+        getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(s -> s.file("version.json")));
     }
 
     @TaskAction
@@ -59,6 +62,9 @@ public abstract class DownloadMCMeta extends DefaultTask {
             }
         }
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     @Input
     public abstract Property<String> getMCVersion();

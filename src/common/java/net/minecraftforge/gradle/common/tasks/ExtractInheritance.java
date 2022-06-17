@@ -22,6 +22,7 @@ package net.minecraftforge.gradle.common.tasks;
 
 import net.minecraftforge.gradle.common.util.Utils;
 
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.InputFile;
@@ -30,6 +31,7 @@ import org.gradle.api.tasks.OutputFile;
 
 import com.google.common.collect.ImmutableMap;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.util.List;
 
@@ -38,7 +40,7 @@ public abstract class ExtractInheritance extends JarExec {
         getTool().set(Utils.INSTALLERTOOLS);
         getArgs().addAll("--task", "extract_inheritance", "--input", "{input}", "--output", "{output}");
 
-        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.json")));
+        getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.json")));
     }
 
     @Override
@@ -53,6 +55,8 @@ public abstract class ExtractInheritance extends JarExec {
         return newArgs;
     }
 
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     @InputFile
     public abstract RegularFileProperty getInput();

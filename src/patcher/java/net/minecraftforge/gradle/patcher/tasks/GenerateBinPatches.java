@@ -24,6 +24,7 @@ import net.minecraftforge.gradle.common.tasks.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
 
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
@@ -33,6 +34,8 @@ import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 
 import com.google.common.collect.ImmutableMap;
+
+import javax.inject.Inject;
 import java.util.List;
 
 public abstract class GenerateBinPatches extends JarExec {
@@ -41,7 +44,7 @@ public abstract class GenerateBinPatches extends JarExec {
         getArgs().addAll("--clean", "{clean}", "--create", "{dirty}", "--output", "{output}",
                 "--patches", "{patches}", "--srg", "{srg}");
 
-        getOutput().convention(getProject().getLayout().getBuildDirectory()
+        getOutput().convention(getProjectLayout().getBuildDirectory()
                 .dir(getName()).map(d -> d.file(getSide().getOrElse("output") + ".lzma")));
     }
 
@@ -58,6 +61,9 @@ public abstract class GenerateBinPatches extends JarExec {
         );
         return newArgs;
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     @InputFile
     public abstract RegularFileProperty getCleanJar();

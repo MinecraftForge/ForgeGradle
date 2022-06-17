@@ -29,13 +29,16 @@ import net.minecraftforge.srgutils.IMappingFile.IMethod;
 import net.minecraftforge.srgutils.IRenamer;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 
@@ -45,9 +48,9 @@ public abstract class GenerateSRG extends DefaultTask {
     private boolean reverse = false;
 
     public GenerateSRG() {
-        this.format = getProject().getObjects().property(IMappingFile.Format.class)
+        this.format = getProjectObjects().property(IMappingFile.Format.class)
                 .convention(IMappingFile.Format.TSRG2);
-        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(f -> f.file("output.tsrg")));
+        getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(f -> f.file("output.tsrg")));
     }
 
     @TaskAction
@@ -84,6 +87,12 @@ public abstract class GenerateSRG extends DefaultTask {
         String desc = MCPRepo.getMappingDep(channel, version);
         return MavenArtifactDownloader.generate(getProject(), desc, false);
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
+
+    @Inject
+    protected abstract ObjectFactory getProjectObjects();
 
     @InputFile
     public abstract RegularFileProperty getSrg();

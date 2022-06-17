@@ -23,6 +23,7 @@ package net.minecraftforge.gradle.common.tasks;
 import net.minecraftforge.gradle.common.util.Utils;
 
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
@@ -31,6 +32,8 @@ import org.gradle.api.tasks.OutputFile;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
+
+import javax.inject.Inject;
 import java.util.List;
 
 public abstract class ApplyRangeMap extends JarExec {
@@ -43,7 +46,7 @@ public abstract class ApplyRangeMap extends JarExec {
                 "--output", "{output}", "--keepImports", "{keepImports}");
         setMinimumRuntimeJavaVersion(11);
 
-        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.zip")));
+        getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.zip")));
     }
 
     @Override
@@ -60,6 +63,9 @@ public abstract class ApplyRangeMap extends JarExec {
                 )
         );
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     @InputFiles
     public abstract ConfigurableFileCollection getSrgFiles();

@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.userdev.tasks;
 
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.internal.tasks.compile.DefaultJavaCompileSpec;
 import org.gradle.api.internal.tasks.compile.JavaCompileSpec;
 import org.gradle.api.provider.Provider;
@@ -29,6 +30,8 @@ import org.gradle.jvm.toolchain.JavaCompiler;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.language.base.internal.compile.Compiler;
+
+import javax.inject.Inject;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -59,8 +62,7 @@ public class HackyJavaCompile extends JavaCompile {
     }
 
     private void setCompiler() {
-        JavaToolchainService service = getProject().getExtensions().getByType(JavaToolchainService.class);
-        Provider<JavaCompiler> compiler = service.compilerFor(s -> s.getLanguageVersion().set(JavaLanguageVersion.of(this.getSourceCompatibility())));
+        Provider<JavaCompiler> compiler = getJavaToolchainService().compilerFor(s -> s.getLanguageVersion().set(JavaLanguageVersion.of(this.getSourceCompatibility())));
         this.getJavaCompiler().set(compiler);
     }
 
@@ -87,6 +89,11 @@ public class HackyJavaCompile extends JavaCompile {
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException("Exception while invoking JavaCompile#createCompiler", e);
         }
+    }
+
+    @Inject
+    protected JavaToolchainService getJavaToolchainService() {
+        throw new UnsupportedOperationException("Decorated instance, this should never be thrown unless shenanigans");
     }
 
 }

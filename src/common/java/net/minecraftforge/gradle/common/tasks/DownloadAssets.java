@@ -73,20 +73,20 @@ public abstract class DownloadAssets extends DefaultTask {
                     try {
                         File localFile = FileUtils.getFile(assetsPath + File.separator + asset.getPath());
                         if (localFile.exists()) {
-                            getProject().getLogger().lifecycle("Copying local object: " + asset.getPath() + " Asset: " + key);
+                            getLogger().lifecycle("Copying local object: " + asset.getPath() + " Asset: " + key);
                             FileUtils.copyFile(localFile, target);
                         } else {
-                            getProject().getLogger().lifecycle("Downloading: " + url + " Asset: " + key);
+                            getLogger().lifecycle("Downloading: " + url + " Asset: " + key);
                             FileUtils.copyURLToFile(url, target, 10_000, 5_000);
                         }
                         if (!HashFunction.SHA1.hash(target).equals(asset.hash)) {
                             failedDownloads.add(key);
                             Utils.delete(target);
-                            getProject().getLogger().error("{} Hash failed.", key);
+                            getLogger().error("{} Hash failed.", key);
                         }
                     } catch (IOException e) {
                         failedDownloads.add(key);
-                        getProject().getLogger().error("{} Failed.", key);
+                        getLogger().error("{} Failed.", key);
                         e.printStackTrace();
                     }
                 };

@@ -25,6 +25,7 @@ import net.minecraftforge.gradle.common.config.MCPConfigV2;
 import net.minecraftforge.gradle.common.tasks.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
 
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
@@ -32,6 +33,7 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -44,7 +46,7 @@ public abstract class ApplyMCPFunction extends JarExec {
     private final Map<String, Object> replacements = new HashMap<>();
 
     public ApplyMCPFunction() {
-        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.jar")));
+        getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.jar")));
     }
 
     @TaskAction
@@ -98,6 +100,9 @@ public abstract class ApplyMCPFunction extends JarExec {
 
         super.apply();
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     @Override
     protected List<String> filterArgs(List<String> args) {
