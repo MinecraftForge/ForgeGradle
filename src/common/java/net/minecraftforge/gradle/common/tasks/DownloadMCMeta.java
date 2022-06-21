@@ -22,6 +22,7 @@ package net.minecraftforge.gradle.common.tasks;
 
 import net.minecraftforge.gradle.common.util.ManifestJson;
 
+import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.RegularFileProperty;
@@ -40,7 +41,7 @@ import java.net.URL;
 
 public abstract class DownloadMCMeta extends DefaultTask {
     // TODO: convert this into a property?
-    private static final String MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
+    private static final String MANIFEST_URL = MinecraftRepo.MANIFEST_URL;
     private static final Gson GSON = new GsonBuilder().create();
 
     public DownloadMCMeta() {
