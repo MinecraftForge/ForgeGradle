@@ -76,7 +76,7 @@ public class VersionJson {
                 // 1.19-pre1 removed the classifiers/natives marker in the json, so take a guess based on the classifier in the name
                 // I am assuming that the format is 'natives-{OS}[-{ARCH}]'
                 // Deduplicated based on artifact identifier without classifier. And prioritizing the ones that match the architecture.
-                } else if (lib.getArtifact().getClassifier() != null && lib.getArtifact().getClassifier().startsWith("natives-")) {
+                }/* else if (lib.getArtifact().getClassifier() != null && lib.getArtifact().getClassifier().startsWith("natives-")) {
                     if (lib.downloads.artifact == null)
                         throw new IllegalArgumentException("Invalid artifact, no download entry: " + lib.name);
 
@@ -100,7 +100,7 @@ public class VersionJson {
                             natives.put(key, new Entry(0, lib.downloads.artifact));
                         }
                     }
-                }
+                }*/
             }
 
             _natives = natives.values().stream().map(e -> e.dl).collect(Collectors.toList());
