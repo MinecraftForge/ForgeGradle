@@ -98,6 +98,8 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
             javaDocument.appendChild(rootElement);
         }
 
+        final String configName = (mc.generatesRunFolders() ? runConfig.getFolderName() + " - " : "") + runConfig.getTaskName() + ".launch";
+
         if (mc.enablesEclipsePrepareRuns()) {
             final String launchConfigName = project.getName() + " - " + runConfig.getTaskName() + "Slim";
             documents.put(".eclipse/configurations/" + launchConfigName + ".launch", javaDocument);
@@ -153,9 +155,10 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
                 }
                 groupDocument.appendChild(rootElement);
             }
-            documents.put(runConfig.getTaskName() + ".launch", groupDocument);
-        } else
-            documents.put(runConfig.getTaskName() + ".launch", javaDocument);
+            documents.put(configName, groupDocument);
+        } else {
+            documents.put(configName, javaDocument);
+        }
 
         return documents;
     }
