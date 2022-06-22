@@ -104,7 +104,8 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     }
 
     public final String getUniqueFileName() {
-        return project.getPath().length() > 1 ? String.join("_", String.join("_", project.getPath().substring(1).split(":")), getTaskName()) : getTaskName();
+        String prefix = Utils.getCompositePath(project);
+        return prefix.length() > 1 ? prefix.substring(1).replace(':', '_') + "_" + getTaskName() : getTaskName();
     }
 
     public final String getUniqueName() {

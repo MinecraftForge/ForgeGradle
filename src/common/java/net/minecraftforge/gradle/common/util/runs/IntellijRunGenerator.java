@@ -22,7 +22,6 @@ package net.minecraftforge.gradle.common.util.runs;
 
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
-
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
@@ -196,9 +195,12 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
 
                         final Element gradleTask = javaDocument.createElement("option");
                         {
+                            String prefix = Utils.getCompositePath(project);
+                            if (prefix.length() == 1) prefix = "";
+
                             gradleTask.setAttribute("name", "Gradle.BeforeRunTask");
                             gradleTask.setAttribute("enabled", "true");
-                            gradleTask.setAttribute("tasks", project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName())).getPath());
+                            gradleTask.setAttribute("tasks", prefix + ":prepare" + Utils.capitalize(runConfig.getTaskName()));
                             gradleTask.setAttribute("externalProjectPath", "$PROJECT_DIR$");
                         }
                         methods.appendChild(gradleTask);
