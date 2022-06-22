@@ -21,7 +21,6 @@
 package net.minecraftforge.gradle.common.util.runs;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.common.util.RunConfig;
 
@@ -99,8 +98,8 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
             javaDocument.appendChild(rootElement);
         }
 
-        if (mc.generatesLaunchGroups()) {
-            final String launchConfigName = project.getName() + " - " + runConfig.getTaskName();
+        if (mc.enablesEclipsePrepareRuns()) {
+            final String launchConfigName = project.getName() + " - " + runConfig.getTaskName() + "Slim";
             documents.put(".eclipse/configurations/" + launchConfigName + ".launch", javaDocument);
 
             // Create a gradle document
