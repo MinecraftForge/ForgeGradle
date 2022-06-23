@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.mcp.function;
 
+import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import org.gradle.api.Project;
 
 import java.io.File;
@@ -43,7 +44,7 @@ public class MCPFunctionFactory {
     public static MCPFunction createBuiltIn(String type, int spec) {
         switch (type) {
             case "downloadManifest":
-                return new DownloadFileFunction("manifest.json", "https://launchermeta.mojang.com/mc/game/version_manifest.json");
+                return new DownloadFileFunction("manifest.json", MinecraftRepo.MANIFEST_URL);
             case "downloadJson":
                 return new DownloadVersionJSONFunction();
             case "downloadClient":
