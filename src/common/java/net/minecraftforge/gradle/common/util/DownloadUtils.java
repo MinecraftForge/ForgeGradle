@@ -34,6 +34,7 @@ import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Date;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
@@ -94,11 +95,21 @@ public class DownloadUtils {
     }
 
     public static boolean downloadFile(URL url, File output, boolean deleteOn404) {
+        return downloadFile(url, output, null, deleteOn404);
+    }
+
+    public static boolean downloadFile(URL url, File output, @Nullable Map<String, String> headers, boolean deleteOn404) {
         String proto = url.getProtocol().toLowerCase();
 
         try {
             if ("http".equals(proto) || "https".equals(proto)) {
-                HttpURLConnection con = connectHttpWithRedirects(url);
+                HttpURLConnection con = connectHttpWithRedirects(url, urlCon -> {
+                    if (headers != null) {
+                        for (Map.Entry<String, String> entry : headers.entrySet()) {
+                            urlCon.setRequestProperty(entry.getKey(), entry.getValue());
+                        }
+                    }
+                });
                 int responseCode = con.getResponseCode();
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     return downloadFile(con, output);
@@ -177,6 +188,11 @@ public class DownloadUtils {
 
     @Nullable
     public static File downloadWithCache(URL url, File target, boolean changing, boolean bypassLocal) throws IOException {
+        return downloadWithCache(url, target, null, changing, bypassLocal);
+    }
+
+    @Nullable
+    public static File downloadWithCache(URL url, File target, @Nullable Map<String, String> headers, boolean changing, boolean bypassLocal) throws IOException {
         File md5_file = new File(target.getAbsolutePath() + ".md5");
         String actual = target.exists() ? HashFunction.MD5.hash(target) : null;
 
@@ -201,7 +217,7 @@ public class DownloadUtils {
         if (target.exists())
             target.delete(); //Invalid checksum, delete and grab new
 
-        if (!downloadFile(url, target, false)) {
+        if (!downloadFile(url, target, headers, false)) {
             target.delete();
             return null;
         }

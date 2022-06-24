@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import com.google.common.collect.ImmutableMap;
 import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -32,7 +33,11 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
+import org.gradle.api.artifacts.repositories.AuthenticationSupported;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.credentials.Credentials;
+import org.gradle.api.credentials.PasswordCredentials;
+import org.gradle.authentication.http.BasicAuthentication;
 import org.xml.sax.SAXException;
 
 import com.google.common.cache.Cache;
@@ -44,7 +49,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -200,7 +207,7 @@ public class MavenArtifactDownloader {
     private static File _manual(Project project, List<MavenArtifactRepository> repos, Artifact artifact, boolean changing) throws IOException, URISyntaxException {
         if (!artifact.getVersion().endsWith("+") && !artifact.isSnapshot()) {
             for (MavenArtifactRepository repo : repos) {
-                Pair<Artifact, File> pair = _manualMaven(project, repo.getUrl(), artifact, changing);
+                Pair<Artifact, File> pair = _manualMaven(project, repo, repo.getUrl(), artifact, changing);
                 if (pair != null && pair.getValue().exists())
                     return pair.getValue();
             }
@@ -211,7 +218,7 @@ public class MavenArtifactDownloader {
 
         // Gather list of all versions from all repos.
         for (MavenArtifactRepository repo : repos) {
-            Pair<Artifact, File> pair = _manualMaven(project, repo.getUrl(), artifact, changing);
+            Pair<Artifact, File> pair = _manualMaven(project, repo, repo.getUrl(), artifact, changing);
             if (pair != null && pair.getValue().exists())
                 versions.add(pair);
         }
@@ -235,11 +242,11 @@ public class MavenArtifactDownloader {
 
     @SuppressWarnings("unchecked")
     @Nullable
-    private static Pair<Artifact, File> _manualMaven(Project project, URI maven, Artifact artifact, boolean changing) throws IOException, URISyntaxException {
+    private static Pair<Artifact, File> _manualMaven(Project project, @Nullable AuthenticationSupported auth, URI maven, Artifact artifact, boolean changing) throws IOException, URISyntaxException {
         if (artifact.getVersion().endsWith("+")) {
             //I THINK +'s are only valid in the end version, So 1.+ and not 1.+.4 as that'd make no sense.
             //It also appears you can't do something like 1.5+ to NOT get 1.4/1.3. So.. mimic that.
-            File meta = _downloadWithCache(project, maven, artifact.getGroup().replace('.', '/') + '/' + artifact.getName() + "/maven-metadata.xml", true, true);
+            File meta = _downloadWithCache(project, auth, maven, artifact.getGroup().replace('.', '/') + '/' + artifact.getName() + "/maven-metadata.xml", true, true);
             if (meta == null)
                 return null; //Don't error, other repos might have it.
             try {
@@ -276,7 +283,7 @@ public class MavenArtifactDownloader {
             //throw new IllegalArgumentException("Snapshot versions are not supported, yet... " + artifact.getDescriptor());
         }
 
-        File ret = _downloadWithCache(project, maven, artifact.getPath(), changing, false);
+        File ret = _downloadWithCache(project, auth, maven, artifact.getPath(), changing, false);
         return ret == null ? null : ImmutablePair.of(artifact, ret);
     }
 
@@ -342,14 +349,27 @@ public class MavenArtifactDownloader {
     }
 
     @Nullable
-    private static File _downloadWithCache(Project project, URI maven, String path, boolean changing, boolean bypassLocal) throws IOException, URISyntaxException {
+    private static File _downloadWithCache(Project project, @Nullable AuthenticationSupported auth, URI maven, String path, boolean changing, boolean bypassLocal) throws IOException, URISyntaxException {
         URL url = new URIBuilder(maven)
             .setPath(maven.getPath() + '/' + path)
             .build()
             .normalize()
             .toURL();
         File target = Utils.getCache(project, "maven_downloader", path);
-        return DownloadUtils.downloadWithCache(url, target, changing, bypassLocal);
+
+        Map<String, String> headers = null;
+        if (auth != null && !auth.getAuthentication().isEmpty() && auth.getAuthentication().stream().anyMatch(a -> a instanceof BasicAuthentication)) {
+            // We use this to prevent an IllegalStateException with getCredentials() if non-password credentials are used.
+            Credentials credentials = auth.getCredentials(Credentials.class);
+            if (credentials instanceof PasswordCredentials) {
+                PasswordCredentials passwordCredentials = (PasswordCredentials) credentials;
+                headers = ImmutableMap.of(
+                        "Authorization", "Basic " + Base64.getEncoder().encodeToString((passwordCredentials.getUsername() + ":" + passwordCredentials.getPassword()).getBytes(StandardCharsets.UTF_8))
+                );
+            }
+        }
+
+        return DownloadUtils.downloadWithCache(url, target, headers, changing, bypassLocal);
     }
 
     /**
