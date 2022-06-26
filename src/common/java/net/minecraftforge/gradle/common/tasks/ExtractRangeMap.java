@@ -23,6 +23,7 @@ package net.minecraftforge.gradle.common.tasks;
 import net.minecraftforge.gradle.common.util.Utils;
 
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Property;
@@ -31,6 +32,8 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 
 import com.google.common.collect.ImmutableMap;
+
+import javax.inject.Inject;
 import java.util.List;
 
 public abstract class ExtractRangeMap extends JarExec {
@@ -42,7 +45,7 @@ public abstract class ExtractRangeMap extends JarExec {
                 "{library}", "--input", "{input}", "--batch", "{batched}");
         setMinimumRuntimeJavaVersion(11);
 
-        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.txt")));
+        getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.txt")));
         final JavaPluginExtension extension = getProject().getExtensions().findByType(JavaPluginExtension.class);
         if (extension != null && extension.getToolchain().getLanguageVersion().isPresent()) {
             int version = extension.getToolchain().getLanguageVersion().get().asInt();
@@ -64,6 +67,9 @@ public abstract class ExtractRangeMap extends JarExec {
                 )
         );
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     @InputFiles
     public abstract ConfigurableFileCollection getSources();

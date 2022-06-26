@@ -21,6 +21,7 @@
 package net.minecraftforge.gradle.common.tasks;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
@@ -29,6 +30,8 @@ import org.gradle.api.tasks.TaskAction;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashingInputStream;
+
+import javax.inject.Inject;
 import java.io.BufferedWriter;
 import java.io.FileInputStream;
 import java.io.FileWriter;
@@ -44,7 +47,7 @@ public abstract class ArchiveChecksum extends DefaultTask {
     //TODO: Filters of some kind?
 
     public ArchiveChecksum() {
-        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(s -> s.file("output.sha256")));
+        getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(s -> s.file("output.sha256")));
     }
 
     @TaskAction
@@ -70,6 +73,9 @@ public abstract class ArchiveChecksum extends DefaultTask {
             });
         }
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     @InputFile
     public abstract RegularFileProperty getInput();

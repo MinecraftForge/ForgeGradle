@@ -25,6 +25,7 @@ import net.minecraftforge.gradle.common.config.MCPConfigV2;
 import net.minecraftforge.srgutils.IMappingFile;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
@@ -33,6 +34,8 @@ import org.gradle.api.tasks.TaskAction;
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
 import de.siegmar.fastcsv.reader.NamedCsvReader;
+
+import javax.inject.Inject;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -52,7 +55,7 @@ public abstract class CreateExc extends DefaultTask {
     private static final Pattern CLS_ENTRY = Pattern.compile("L([^;]+);");
 
     public CreateExc() {
-        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.exc")));
+        getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.exc")));
     }
 
     @TaskAction
@@ -179,6 +182,9 @@ public abstract class CreateExc extends DefaultTask {
         }
         return names;
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     @InputFile
     public abstract RegularFileProperty getConfig();

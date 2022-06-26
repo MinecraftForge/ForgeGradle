@@ -24,10 +24,7 @@ import net.minecraftforge.gradle.common.tasks.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
 
 import org.apache.commons.io.FileUtils;
-import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.file.Directory;
-import org.gradle.api.file.RegularFile;
-import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.file.*;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
@@ -36,12 +33,14 @@ import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
+
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
 public abstract class RenameJarInPlace extends JarExec {
-    private final Provider<Directory> workDir = getProject().getLayout().getBuildDirectory().dir(getName());
+    private final Provider<Directory> workDir = getProjectLayout().getBuildDirectory().dir(getName());
     private final Provider<RegularFile> temp = workDir.map(s -> s.file("output.jar"));
 
     public RenameJarInPlace() {
@@ -66,13 +65,16 @@ public abstract class RenameJarInPlace extends JarExec {
     public void apply() throws IOException {
         File temp = this.temp.get().getAsFile();
         if (temp.getParentFile() != null && !temp.getParentFile().exists() && !temp.getParentFile().mkdirs()) {
-            getProject().getLogger().warn("Could not create parent directories for temp dir '{}'", temp.getAbsolutePath());
+            getLogger().warn("Could not create parent directories for temp dir '{}'", temp.getAbsolutePath());
         }
 
         super.apply();
 
         FileUtils.copyFile(temp, getInput().get().getAsFile());
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     // TODO: Make this a ConfigurableFileCollection? (then remove getExtraMappings())
     @InputFile

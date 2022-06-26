@@ -27,6 +27,7 @@ import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.Directory;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginExtension;
@@ -80,10 +81,11 @@ public abstract class JarExec extends DefaultTask {
     private final Provider<File> toolFile;
     private final Provider<String> resolvedVersion;
 
-    protected final Provider<Directory> workDir = getProject().getLayout().getBuildDirectory().dir(getName());
+    protected final Provider<Directory> workDir = getProjectLayout().getBuildDirectory().dir(getName());
     protected final Provider<RegularFile> logFile = workDir.map(d -> d.file("log.txt"));
 
     public JarExec() {
+        notCompatibleWithConfigurationCache("MAD");
         toolFile = getTool().map(toolStr -> MavenArtifactDownloader.gradle(getProject(), toolStr, false));
         resolvedVersion = getTool().map(toolStr -> MavenArtifactDownloader.getVersion(getProject(), toolStr));
         getDebug().convention(false);
@@ -93,6 +95,9 @@ public abstract class JarExec extends DefaultTask {
             getJavaLauncher().convention(getJavaToolchainService().launcherFor(extension.getToolchain()));
         }
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     @Inject
     protected JavaToolchainService getJavaToolchainService() {
@@ -110,7 +115,7 @@ public abstract class JarExec extends DefaultTask {
         jarFile.close();
 
         // Create parent directory for log file
-        Logger logger = getProject().getLogger();
+        Logger logger = getLogger();
         if (logFile.getParentFile() != null && !logFile.getParentFile().exists() && !logFile.getParentFile().mkdirs()) {
             logger.warn("Could not create parent directory '{}' for log file", logFile.getParentFile().getAbsolutePath());
         }

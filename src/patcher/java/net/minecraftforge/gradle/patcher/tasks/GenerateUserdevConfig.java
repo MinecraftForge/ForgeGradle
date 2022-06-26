@@ -33,6 +33,7 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
@@ -74,6 +75,7 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
 
     @Inject
     public GenerateUserdevConfig(@Nonnull final Project project) {
+        notCompatibleWithConfigurationCache("");
         this.runs = project.container(RunConfig.class, name -> new RunConfig(project, name));
 
         ObjectFactory objects = project.getObjects();
@@ -86,7 +88,7 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
 
         processorData = objects.mapProperty(String.class, File.class);
 
-        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.json")));
+        getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.json")));
     }
 
     @TaskAction
@@ -156,6 +158,9 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
                 !"a/".equals(getPatchesOriginalPrefix().get()) ||
                 !"b/".equals(getPatchesModifiedPrefix().get());
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     @Input
     public abstract ListProperty<String> getLibraries();

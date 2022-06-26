@@ -25,13 +25,16 @@ import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 
@@ -40,11 +43,12 @@ public abstract class DownloadMavenArtifact extends DefaultTask {
     private boolean changing = false;
 
     public DownloadMavenArtifact() {
+        notCompatibleWithConfigurationCache("MAD");
         // We need to always ask, in case the file on the remote maven/local fake repo has changed.
         getOutputs().upToDateWhen(task -> false);
 
-        this.artifact = getProject().getObjects().property(Artifact.class);
-        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName())
+        this.artifact = getProjectObjects().property(Artifact.class);
+        getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName())
                         .zip(getArtifact(), (d, a) -> d.file("output." + a.getExtension())));
     }
 
@@ -85,4 +89,10 @@ public abstract class DownloadMavenArtifact extends DefaultTask {
         if (!output.getParentFile().exists()) output.getParentFile().mkdirs();
         FileUtils.copyFile(out, output);
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
+
+    @Inject
+    protected abstract ObjectFactory getProjectObjects();
 }

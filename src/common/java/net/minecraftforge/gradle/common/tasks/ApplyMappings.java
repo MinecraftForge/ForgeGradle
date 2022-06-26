@@ -25,12 +25,14 @@ import net.minecraftforge.gradle.common.util.Utils;
 
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import javax.inject.Inject;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -42,7 +44,7 @@ public abstract class ApplyMappings extends DefaultTask {
     private boolean lambdas = true;
 
     public ApplyMappings() {
-        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(s -> s.file("output.zip")));
+        getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(s -> s.file("output.zip")));
     }
 
     @TaskAction
@@ -68,6 +70,9 @@ public abstract class ApplyMappings extends DefaultTask {
             }
         }
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     @InputFile
     public abstract RegularFileProperty getInput();

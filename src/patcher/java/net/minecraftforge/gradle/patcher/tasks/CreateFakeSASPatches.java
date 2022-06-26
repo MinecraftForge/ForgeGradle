@@ -24,18 +24,23 @@ import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 public abstract class CreateFakeSASPatches extends DefaultTask {
     public CreateFakeSASPatches() {
-        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.dir("patches")));
+        getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(d -> d.dir("patches")));
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     @InputFiles
     public abstract ConfigurableFileCollection getFiles();

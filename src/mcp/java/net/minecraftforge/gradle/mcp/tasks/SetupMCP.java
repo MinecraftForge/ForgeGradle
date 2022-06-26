@@ -28,6 +28,7 @@ import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
@@ -36,12 +37,14 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 
 public abstract class SetupMCP extends DefaultTask {
     public SetupMCP() {
-        getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.zip")));
+        notCompatibleWithConfigurationCache("MCPRuntime needs getProject()");
+        getOutput().convention(getProjectLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.zip")));
 
         this.getOutputs().upToDateWhen(task -> {
             HashStore cache = new HashStore(getProject());
@@ -57,6 +60,9 @@ public abstract class SetupMCP extends DefaultTask {
             }
         });
     }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     @InputFile
     public abstract RegularFileProperty getConfig();
