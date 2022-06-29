@@ -98,9 +98,10 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
             javaDocument.appendChild(rootElement);
         }
 
-        final String configName = (mc.generatesRunFolders() ? runConfig.getFolderName() + " - " : "") + runConfig.getTaskName() + ".launch";
+        final String configName = (mc.getGenerateRunFolders().getOrElse(false) ? runConfig.getFolderName() + " - " : "") + runConfig.getTaskName() + ".launch";
+        final boolean copyResources = mc.getCopyIDEResources().getOrElse(false);
 
-        if (mc.enablesEclipsePrepareRuns()) {
+        if (mc.getEnableEclipsePrepareRuns().getOrElse(false) || copyResources) {
             final String launchConfigName = project.getName() + " - " + runConfig.getTaskName() + "Slim";
             documents.put(".eclipse/configurations/" + launchConfigName + ".launch", javaDocument);
 
@@ -125,7 +126,7 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
                     taskEntry.setAttribute("value", project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName())).getPath());
                     tasks.appendChild(taskEntry);
 
-                    if (mc.copiesIDEResources()) {
+                    if (copyResources) {
                         final Element copyIde = gradleDocument.createElement("listEntry");
                         copyIde.setAttribute("value", project.getTasks().getByName("copyEclipseResources").getPath());
                         tasks.appendChild(copyIde);

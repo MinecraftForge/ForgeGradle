@@ -664,7 +664,7 @@ public class PatcherPlugin implements Plugin<Project> {
 
             extension.getRuns().forEach(runConfig -> runConfig.tokens(tokens));
             Utils.createRunConfigTasks(extension, extractNatives, downloadAssets, createSrg2Mcp);
-            if (extension.copiesIDEResources())
+            if (extension.getCopyIDEResources().getOrElse(false))
                 Utils.setupIDEResourceCopy(project);
         });
     }

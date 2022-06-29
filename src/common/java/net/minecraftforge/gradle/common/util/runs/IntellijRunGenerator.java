@@ -158,7 +158,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                     configuration.setAttribute("factoryName", "Application");
                     configuration.setAttribute("singleton", runConfig.isSingleInstance() ? "true" : "false");
 
-                    if (mc.generatesRunFolders())
+                    if (mc.getGenerateRunFolders().getOrElse(false))
                         configuration.setAttribute("folderName", runConfig.getFolderName());
 
                     elementOption(javaDocument, configuration, "MAIN_CLASS_NAME", runConfig.getMain());
@@ -204,9 +204,10 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                             gradleTask.setAttribute("name", "Gradle.BeforeRunTask");
                             gradleTask.setAttribute("enabled", "true");
                             final List<String> tasks = new ArrayList<>();
-                            if (mc.enablesIdeaPrepareRuns())
+                            final boolean copyResources = mc.getCopyIDEResources().getOrElse(false);
+                            if (mc.getEnableIdeaPrepareRuns().getOrElse(true) || copyResources)
                                 tasks.add(project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName())).getPath());
-                            if (!useGradlePaths && mc.copiesIDEResources())
+                            if (!useGradlePaths && copyResources)
                                 tasks.add(project.getTasks().getByName("copyIdeaResources").getPath());
                             gradleTask.setAttribute("tasks", String.join(" ", tasks));
                             gradleTask.setAttribute("externalProjectPath", "$PROJECT_DIR$");

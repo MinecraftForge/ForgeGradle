@@ -40,10 +40,6 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
     protected final ConfigurableFileCollection accessTransformers;
 
     private final Provider<String> mapping;
-    protected final Property<Boolean> enableEclipsePrepareRuns;
-    protected final Property<Boolean> enableIdeaPrepareRuns;
-    protected final Property<Boolean> copyIDEResources;
-    protected final Property<Boolean> generateRunFolders;
 
     @Inject
     public MinecraftExtension(final Project project) {
@@ -51,11 +47,6 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         this.mapping = getMappingChannel().zip(getMappingVersion(), (ch, ver) -> ch + '_' + ver);
         this.runs = project.getObjects().domainObjectContainer(RunConfig.class, name -> new RunConfig(project, name));
         this.accessTransformers = project.getObjects().fileCollection();
-
-        this.enableEclipsePrepareRuns = project.getObjects().property(Boolean.class).convention(false);
-        this.enableIdeaPrepareRuns = project.getObjects().property(Boolean.class).convention(true);
-        this.copyIDEResources = project.getObjects().property(Boolean.class).convention(false);
-        this.generateRunFolders = project.getObjects().property(Boolean.class).convention(false);
     }
 
     public Project getProject() {
@@ -137,33 +128,8 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
 
     public abstract ConfigurableFileCollection getSideAnnotationStrippers();
 
-    public void enableEclipsePrepareRuns() {
-        this.enableEclipsePrepareRuns.set(true);
-    }
-    public boolean enablesEclipsePrepareRuns() {
-        return enableEclipsePrepareRuns.get();
-    }
-    public void enableIdeaPrepareRuns() {
-        this.enableIdeaPrepareRuns.set(true);
-    }
-    public boolean enablesIdeaPrepareRuns() {
-        return enableIdeaPrepareRuns.get();
-    }
-
-    public void generateRunFolders() {
-        this.generateRunFolders.set(true);
-    }
-    public boolean generatesRunFolders() {
-        return generateRunFolders.get();
-    }
-
-    public void copyIDEResources() {
-        copyIDEResources.set(true);
-        // Prepare runs need to be forced in this scenario
-        enableEclipsePrepareRuns();
-        enableIdeaPrepareRuns();
-    }
-    public boolean copiesIDEResources() {
-        return copyIDEResources.get();
-    }
+    public abstract Property<Boolean> getEnableEclipsePrepareRuns();
+    public abstract Property<Boolean> getEnableIdeaPrepareRuns();
+    public abstract Property<Boolean> getCopyIDEResources();
+    public abstract Property<Boolean> getGenerateRunFolders();
 }
