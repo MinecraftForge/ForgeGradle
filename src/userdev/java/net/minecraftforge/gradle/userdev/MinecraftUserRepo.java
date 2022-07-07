@@ -633,6 +633,11 @@ public class MinecraftUserRepo extends BaseRepo {
             debug("    Creating MCP Inject Sources");
             //Build and inject MCP injected sources
             File inject_src = cacheRaw("inject_src", "jar");
+            if (!inject_src.exists()) {
+                inject_src.getParentFile().mkdirs();
+                inject_src.createNewFile();
+            }
+
             try (ZipInputStream zin = new ZipInputStream(new FileInputStream(mcp.getZip()));
                  ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(inject_src)) ) {
                 String prefix = mcp.wrapper.getConfig().getData("inject");
