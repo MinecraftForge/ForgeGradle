@@ -116,8 +116,8 @@ public abstract class JarJar extends Jar {
     @Internal
     public Set<ResolvedDependency> getResolvedDependencies() {
         return this.configurations.stream().flatMap(config -> config.getAllDependencies().stream())
-                .filter(ExternalModuleDependency.class::isInstance)
-                .map(ExternalModuleDependency.class::cast)
+                .filter(ModuleDependency.class::isInstance)
+                .map(ModuleDependency.class::cast)
                 .map(this::getResolvedDependency)
                 .filter(this.dependencyFilter::isIncluded)
                 .collect(Collectors.toSet());
@@ -188,8 +188,6 @@ public abstract class JarJar extends Jar {
     private Metadata createMetadata() {
         return new Metadata(
                 this.configurations.stream().flatMap(config -> config.getAllDependencies().stream())
-                        .filter(ExternalModuleDependency.class::isInstance)
-                        .map(ExternalModuleDependency.class::cast)
                         .map(this::createDependencyMetadata)
                         .filter(Optional::isPresent)
                         .map(Optional::get)
@@ -197,7 +195,7 @@ public abstract class JarJar extends Jar {
         );
     }
 
-    private Optional<ContainedJarMetadata> createDependencyMetadata(final ExternalModuleDependency dependency) {
+    private Optional<ContainedJarMetadata> createDependencyMetadata(final Dependency dependency) {
         if (!dependencyFilter.isIncluded(dependency)) {
             return Optional.empty();
         }
@@ -227,7 +225,7 @@ public abstract class JarJar extends Jar {
         }
     }
 
-    private RuntimeException createInvalidVersionRangeException(final ExternalModuleDependency dependency, final Throwable cause) {
+    private RuntimeException createInvalidVersionRangeException(final Dependency dependency, final Throwable cause) {
         return new RuntimeException("The given version specification is invalid: " + getVersionRangeFrom(dependency)
                 + ". If you used gradle based range versioning like 2.+, convert this to a maven compatible format: [2.0,3.0).", cause);
     }
@@ -250,9 +248,10 @@ public abstract class JarJar extends Jar {
         return attributeVersion.map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersion).orElseGet(() -> DeobfuscatingVersionUtils.adaptDeobfuscatedVersion(Objects.requireNonNull(dependency.getVersion())));
     }
 
-    private ResolvedDependency getResolvedDependency(final ExternalModuleDependency dependency) {
-        ExternalModuleDependency toResolve = dependency.copy();
-        toResolve.version(constraint -> constraint.strictly(getVersionFrom(dependency)));
+    private ResolvedDependency getResolvedDependency(final Dependency dependency) {
+        Dependency toResolve = dependency.copy();
+        if (toResolve instanceof ExternalModuleDependency)
+            ((ExternalModuleDependency) toResolve).version(constraint -> constraint.strictly(getVersionFrom(dependency)));
 
         final Set<ResolvedDependency> deps = getProject().getConfigurations().detachedConfiguration(toResolve).getResolvedConfiguration().getFirstLevelModuleDependencies();
         if (deps.isEmpty()) {
