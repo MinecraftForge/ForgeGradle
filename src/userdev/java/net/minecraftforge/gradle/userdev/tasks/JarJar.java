@@ -116,8 +116,6 @@ public abstract class JarJar extends Jar {
     @Internal
     public Set<ResolvedDependency> getResolvedDependencies() {
         return this.configurations.stream().flatMap(config -> config.getAllDependencies().stream())
-                .filter(ModuleDependency.class::isInstance)
-                .map(ModuleDependency.class::cast)
                 .map(this::getResolvedDependency)
                 .filter(this.dependencyFilter::isIncluded)
                 .collect(Collectors.toSet());
