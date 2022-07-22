@@ -158,7 +158,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                     configuration.setAttribute("factoryName", "Application");
                     configuration.setAttribute("singleton", runConfig.isSingleInstance() ? "true" : "false");
 
-                    if (mc.getGenerateRunFolders().getOrElse(false))
+                    if (mc.getGenerateRunFolders().get())
                         configuration.setAttribute("folderName", runConfig.getFolderName());
 
                     elementOption(javaDocument, configuration, "MAIN_CLASS_NAME", runConfig.getMain());
@@ -204,8 +204,8 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                             gradleTask.setAttribute("name", "Gradle.BeforeRunTask");
                             gradleTask.setAttribute("enabled", "true");
                             final List<String> tasks = new ArrayList<>();
-                            final boolean copyResources = mc.getCopyIDEResources().getOrElse(false);
-                            if (mc.getEnableIdeaPrepareRuns().getOrElse(true) || copyResources)
+                            final boolean copyResources = mc.getCopyIDEResources().get();
+                            if (mc.getEnableIdeaPrepareRuns().get() || copyResources)
                                 tasks.add(project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName())).getPath());
                             if (!useGradlePaths && copyResources)
                                 tasks.add(project.getTasks().getByName("copyIdeaResources").getPath());

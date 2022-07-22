@@ -54,6 +54,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -269,7 +270,9 @@ public abstract class RunConfigGenerator
             File workDir = new File(runConfig.getWorkingDirectory());
 
             if (!workDir.exists()) {
-                workDir.mkdirs();
+                if (!workDir.mkdirs()) {
+                    throw new IllegalArgumentException("Could not create configuration directory " + workDir);
+                }
             }
 
             task.setWorkingDir(workDir);

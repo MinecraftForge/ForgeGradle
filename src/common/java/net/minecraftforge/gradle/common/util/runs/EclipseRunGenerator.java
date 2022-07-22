@@ -98,10 +98,10 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
             javaDocument.appendChild(rootElement);
         }
 
-        final String configName = (mc.getGenerateRunFolders().getOrElse(false) ? runConfig.getFolderName() + " - " : "") + runConfig.getTaskName() + ".launch";
-        final boolean copyResources = mc.getCopyIDEResources().getOrElse(false);
+        final String configName = (mc.getGenerateRunFolders().get() ? runConfig.getFolderName() + " - " : "") + runConfig.getTaskName() + ".launch";
+        final boolean copyResources = mc.getCopyIDEResources().get();
 
-        if (mc.getEnableEclipsePrepareRuns().getOrElse(false) || copyResources) {
+        if (mc.getEnableEclipsePrepareRuns().get() || copyResources) {
             final String launchConfigName = project.getName() + " - " + runConfig.getTaskName() + "Slim";
             documents.put(".eclipse/configurations/" + launchConfigName + ".launch", javaDocument);
 

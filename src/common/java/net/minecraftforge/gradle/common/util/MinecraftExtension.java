@@ -47,6 +47,11 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         this.mapping = getMappingChannel().zip(getMappingVersion(), (ch, ver) -> ch + '_' + ver);
         this.runs = project.getObjects().domainObjectContainer(RunConfig.class, name -> new RunConfig(project, name));
         this.accessTransformers = project.getObjects().fileCollection();
+
+        getCopyIDEResources().convention(false);
+        getEnableIdeaPrepareRuns().convention(true);
+        getEnableEclipsePrepareRuns().convention(false);
+        getGenerateRunFolders().convention(false);
     }
 
     public Project getProject() {

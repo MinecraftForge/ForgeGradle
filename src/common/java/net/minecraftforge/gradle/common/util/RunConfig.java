@@ -69,7 +69,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     private Boolean client; // so we can have it null
     private Boolean inheritArgs;
     private Boolean inheritJvmArgs;
-    private final Property<String> folderName;
+    private String folderName;
 
     private Map<String, String> env, props, tokens;
     private Map<String, Supplier<String>> lazyTokens;
@@ -79,7 +79,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         this.name = name;
 
         this.mods = project.container(ModConfig.class, modName -> new ModConfig(project, modName));
-        this.folderName = project.getObjects().property(String.class).convention(project.getName());
+        this.folderName = project.getName();
     }
 
     public final String getName() {
@@ -632,11 +632,11 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     }
 
     public void folderName(String folderName) {
-        this.folderName.set(folderName);
+        this.folderName = folderName;
     }
 
     public String getFolderName() {
-        return folderName.get();
+        return folderName;
     }
 
     @Override
