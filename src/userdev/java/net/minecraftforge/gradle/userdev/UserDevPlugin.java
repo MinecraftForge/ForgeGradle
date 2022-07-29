@@ -248,6 +248,9 @@ public class UserDevPlugin implements Plugin<Project> {
                 minecraft.getDependencies().add(ext);
             }
             if (mcrepo == null) {
+                if (project.getState().getFailure() != null)
+                    return; // If we throw another exception, it just becomes more confusing
+
                 throw new IllegalStateException("Missing '" + minecraft.getName() + "' dependency.");
             }
 
