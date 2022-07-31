@@ -20,8 +20,6 @@
 
 package net.minecraftforge.gradle.userdev;
 
-import com.google.common.collect.ImmutableList;
-import groovy.lang.Closure;
 import net.minecraftforge.gradle.common.tasks.ApplyMappings;
 import net.minecraftforge.gradle.common.tasks.ApplyRangeMap;
 import net.minecraftforge.gradle.common.tasks.DownloadAssets;
@@ -41,7 +39,6 @@ import net.minecraftforge.gradle.mcp.ChannelProvidersExtension;
 import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.mcp.tasks.DownloadMCPMappings;
 import net.minecraftforge.gradle.mcp.tasks.GenerateSRG;
-import net.minecraftforge.gradle.userdev.dependency.DependencyFilter;
 import net.minecraftforge.gradle.userdev.jarjar.JarJarProjectExtension;
 import net.minecraftforge.gradle.userdev.tasks.JarJar;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
@@ -61,10 +58,8 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
@@ -76,8 +71,6 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -85,7 +78,6 @@ import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
 public class UserDevPlugin implements Plugin<Project> {
-
     public static final String JAR_JAR_TASK_NAME = "jarJar";
     public static final String JAR_JAR_GROUP = "jarjar";
 
@@ -93,6 +85,8 @@ public class UserDevPlugin implements Plugin<Project> {
 
     public static final String MINECRAFT = "minecraft";
     public static final String OBF = "__obfuscated";
+    public static final String MINECRAFT_LIBRARY_CONFIGURATION_NAME = "minecraftLibrary";
+    public static final String MINECRAFT_EMBED_CONFIGURATION_NAME = "minecraftEmbed";
 
     @SuppressWarnings("unchecked")
     @Override
@@ -109,8 +103,19 @@ public class UserDevPlugin implements Plugin<Project> {
         final NamedDomainObjectContainer<RenameJarInPlace> reobfExtension = createReobfExtension(project);
 
         final Configuration minecraft = project.getConfigurations().create(MINECRAFT);
+        final Configuration minecraftLibrary = project.getConfigurations().create(MINECRAFT_LIBRARY_CONFIGURATION_NAME);
+        final Configuration minecraftEmbed = project.getConfigurations().create(MINECRAFT_EMBED_CONFIGURATION_NAME);
+
         project.getConfigurations().named(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
-                .configure(c -> c.extendsFrom(minecraft));
+                .configure(c -> c.extendsFrom(minecraft, minecraftLibrary, minecraftEmbed));
+
+        project.getConfigurations().named(JAR_JAR_DEFAULT_CONFIGURATION_NAME)
+                .configure(c -> c.extendsFrom(minecraftEmbed));
+
+        extension.getRuns().configureEach(runConfig -> runConfig.lazyToken("minecraft_classpath",
+                () -> minecraftLibrary.copyRecursive().resolve().stream()
+                        .map(File::getAbsolutePath)
+                        .collect(Collectors.joining(File.pathSeparator))));
 
         // Let gradle handle the downloading by giving it a configuration to dl. We'll focus on applying mappings to it.
         final Configuration internalObfConfiguration = project.getConfigurations().create(OBF);
@@ -121,7 +126,7 @@ public class UserDevPlugin implements Plugin<Project> {
         final Deobfuscator deobfuscator = new Deobfuscator(project, Utils.getCache(project, "deobf_dependencies"));
         final DependencyRemapper remapper = new DependencyRemapper(project, deobfuscator);
         project.getExtensions().create(DependencyManagementExtension.EXTENSION_NAME, DependencyManagementExtension.class, project, remapper);
-        project.getExtensions().create(JarJarProjectExtension.EXTENSION_NAME, JarJarProjectExtension.class, project);
+        JarJarProjectExtension jarJarExtension = project.getExtensions().create(JarJarProjectExtension.EXTENSION_NAME, JarJarProjectExtension.class, project);
 
         final TaskContainer tasks = project.getTasks();
         final TaskProvider<DownloadMavenArtifact> downloadMcpConfig = tasks.register("downloadMcpConfig", DownloadMavenArtifact.class);
@@ -220,7 +225,7 @@ public class UserDevPlugin implements Plugin<Project> {
             updateMappings.configure(task -> task.dependsOn(extractMappedNew));
         }
 
-        configureJarJarTask(project);
+        configureJarJarTask(project, jarJarExtension);
 
         project.afterEvaluate(p -> {
             MinecraftUserRepo mcrepo = null;
@@ -320,13 +325,11 @@ public class UserDevPlugin implements Plugin<Project> {
             Utils.createRunConfigTasks(extension, extractNatives, downloadAssets, createSrgToMcp);
         });
 
-        project.afterEvaluate(projectAfter -> {
-            projectAfter.getTasks().withType(JarJar.class).all(jarJar -> {
-                if (jarJar.isEnabled()) {
-                    reobfExtension.create(jarJar.getName());
-                }
-            });
-        });
+        project.afterEvaluate(projectAfter -> projectAfter.getTasks().withType(JarJar.class).configureEach(jarJar -> {
+            if (jarJar.isEnabled()) {
+                reobfExtension.create(jarJar.getName());
+            }
+        }));
     }
 
     private NamedDomainObjectContainer<RenameJarInPlace> createReobfExtension(Project project) {
@@ -350,17 +353,20 @@ public class UserDevPlugin implements Plugin<Project> {
         return reobfExtension;
     }
 
-    protected void configureJarJarTask(Project project) {
+    protected void configureJarJarTask(Project project, JarJarProjectExtension jarJarExtension) {
         final Configuration configuration = project.getConfigurations().create(JAR_JAR_DEFAULT_CONFIGURATION_NAME);
 
-        JavaPluginExtension extension = project.getExtensions().getByType(JavaPluginExtension.class);
+        JavaPluginExtension javaPluginExtension = project.getExtensions().getByType(JavaPluginExtension.class);
+
         project.getTasks().register(JAR_JAR_TASK_NAME, JarJar.class, jarJar -> {
             jarJar.setGroup(JAR_JAR_GROUP);
             jarJar.setDescription("Create a combined JAR of project and selected dependencies");
             jarJar.getArchiveClassifier().convention("all");
 
-            jarJar.getManifest().inheritFrom(((Jar) project.getTasks().getByName("jar")).getManifest());
-            jarJar.from(extension.getSourceSets().getByName("main").getOutput());
+            if (!jarJarExtension.getDefaultSourcesDisabled()) {
+                jarJar.getManifest().inheritFrom(((Jar) project.getTasks().getByName("jar")).getManifest());
+                jarJar.from(javaPluginExtension.getSourceSets().getByName("main").getOutput());
+            }
 
             jarJar.configuration(configuration);
 
