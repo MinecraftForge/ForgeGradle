@@ -72,7 +72,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.annotation.Nonnull;
@@ -87,6 +86,8 @@ public class UserDevPlugin implements Plugin<Project> {
     public static final String OBF = "__obfuscated";
     public static final String MINECRAFT_LIBRARY_CONFIGURATION_NAME = "minecraftLibrary";
     public static final String MINECRAFT_EMBED_CONFIGURATION_NAME = "minecraftEmbed";
+
+    private static final String DISABLE_DEFAULT_CONFIGS_PROP = "net.minecraftforge.gradle.disableDefaultMinecraftConfigurations";
 
     @SuppressWarnings("unchecked")
     @Override
@@ -103,19 +104,9 @@ public class UserDevPlugin implements Plugin<Project> {
         final NamedDomainObjectContainer<RenameJarInPlace> reobfExtension = createReobfExtension(project);
 
         final Configuration minecraft = project.getConfigurations().create(MINECRAFT);
-        final Configuration minecraftLibrary = project.getConfigurations().create(MINECRAFT_LIBRARY_CONFIGURATION_NAME);
-        final Configuration minecraftEmbed = project.getConfigurations().create(MINECRAFT_EMBED_CONFIGURATION_NAME);
 
         project.getConfigurations().named(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
-                .configure(c -> c.extendsFrom(minecraft, minecraftLibrary, minecraftEmbed));
-
-        project.getConfigurations().named(JAR_JAR_DEFAULT_CONFIGURATION_NAME)
-                .configure(c -> c.extendsFrom(minecraftEmbed));
-
-        extension.getRuns().configureEach(runConfig -> runConfig.lazyToken("minecraft_classpath",
-                () -> minecraftLibrary.copyRecursive().resolve().stream()
-                        .map(File::getAbsolutePath)
-                        .collect(Collectors.joining(File.pathSeparator))));
+                .configure(c -> c.extendsFrom(minecraft));
 
         // Let gradle handle the downloading by giving it a configuration to dl. We'll focus on applying mappings to it.
         final Configuration internalObfConfiguration = project.getConfigurations().create(OBF);
@@ -125,7 +116,7 @@ public class UserDevPlugin implements Plugin<Project> {
         // Can't create at top-level or put in `minecraft` ext due to configuration name conflict
         final Deobfuscator deobfuscator = new Deobfuscator(project, Utils.getCache(project, "deobf_dependencies"));
         final DependencyRemapper remapper = new DependencyRemapper(project, deobfuscator);
-        project.getExtensions().create(DependencyManagementExtension.EXTENSION_NAME, DependencyManagementExtension.class, project, remapper);
+        DependencyManagementExtension fgExtension = project.getExtensions().create(DependencyManagementExtension.EXTENSION_NAME, DependencyManagementExtension.class, project, remapper);
         JarJarProjectExtension jarJarExtension = project.getExtensions().create(JarJarProjectExtension.EXTENSION_NAME, JarJarProjectExtension.class, project);
 
         final TaskContainer tasks = project.getTasks();
@@ -226,6 +217,19 @@ public class UserDevPlugin implements Plugin<Project> {
         }
 
         configureJarJarTask(project, jarJarExtension);
+
+        if (!project.hasProperty(DISABLE_DEFAULT_CONFIGS_PROP) || !Boolean.parseBoolean((String) project.property(DISABLE_DEFAULT_CONFIGS_PROP))) {
+            final Configuration minecraftLibrary = project.getConfigurations().create(MINECRAFT_LIBRARY_CONFIGURATION_NAME);
+            final Configuration minecraftEmbed = project.getConfigurations().create(MINECRAFT_EMBED_CONFIGURATION_NAME);
+
+            project.getConfigurations().named(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
+                    .configure(c -> c.extendsFrom(minecraft, minecraftLibrary, minecraftEmbed));
+
+            project.getConfigurations().named(JAR_JAR_DEFAULT_CONFIGURATION_NAME)
+                    .configure(c -> c.extendsFrom(minecraftEmbed));
+
+            fgExtension.configureMinecraftLibraryConfiguration(minecraftLibrary);
+        }
 
         project.afterEvaluate(p -> {
             MinecraftUserRepo mcrepo = null;

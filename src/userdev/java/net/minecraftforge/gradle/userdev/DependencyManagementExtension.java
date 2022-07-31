@@ -24,15 +24,19 @@ import groovy.lang.Closure;
 import groovy.lang.GroovyObjectSupport;
 import groovy.util.Node;
 import groovy.util.NodeList;
+import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.userdev.util.DeobfuscatingVersionUtils;
 import net.minecraftforge.gradle.userdev.util.DependencyRemapper;
 import net.minecraftforge.gradle.userdev.util.MavenPomUtils;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.publish.tasks.GenerateModuleMetadata;
 
+import java.io.File;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class DependencyManagementExtension extends GroovyObjectSupport {
@@ -85,5 +89,23 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
         });
 
         return mavenPublication;
+    }
+
+    public void configureMinecraftLibraryConfiguration(Configuration configuration) {
+        MinecraftExtension minecraftExtension = this.project.getExtensions().findByType(MinecraftExtension.class);
+        if (minecraftExtension == null)
+            return;
+
+        minecraftExtension.getRuns().configureEach(runConfig -> {
+            Supplier<String> librariesSupplier = () -> configuration.copyRecursive().resolve().stream()
+                    .map(File::getAbsolutePath)
+                    .collect(Collectors.joining(File.pathSeparator));
+            Supplier<String> oldToken = runConfig.getLazyTokens().get("minecraft_classpath");
+            if (oldToken == null) {
+                runConfig.lazyToken("minecraft_classpath", librariesSupplier);
+            } else {
+                runConfig.lazyToken("minecraft_classpath", () -> oldToken.get() + File.pathSeparator + librariesSupplier.get());
+            }
+        });
     }
 }
