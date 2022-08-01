@@ -68,6 +68,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     private Boolean client; // so we can have it null
     private Boolean inheritArgs;
     private Boolean inheritJvmArgs;
+    private boolean buildAllProjects;
 
     private Map<String, String> env, props, tokens;
     private Map<String, Supplier<String>> lazyTokens;
@@ -171,6 +172,18 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     public boolean getInheritJvmArgs() {
         // Both null and true mean inherit the args
         return inheritJvmArgs != Boolean.FALSE;
+    }
+
+    public void buildAllProjects(boolean value) {
+        setBuildAllProjects(value);
+    }
+
+    public void setBuildAllProjects(boolean value) {
+        this.buildAllProjects = value;
+    }
+
+    public boolean getBuildAllProjects() {
+        return buildAllProjects;
     }
 
     public void args(List<Object> values) {
@@ -504,6 +517,9 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         ideaModule = first.ideaModule == null ? second.ideaModule : first.ideaModule;
         singleInstance = first.singleInstance == null ? second.singleInstance : first.singleInstance;
         this.client = first.client == null ? second.client : first.client;
+        if (overwrite) {
+            this.buildAllProjects = other.buildAllProjects;
+        }
 
         if (other.env != null) {
             other.env.forEach(overwrite

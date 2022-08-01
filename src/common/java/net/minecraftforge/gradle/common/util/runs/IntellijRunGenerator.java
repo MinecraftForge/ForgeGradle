@@ -189,7 +189,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
 
                         final Element makeTask = javaDocument.createElement("option");
                         {
-                            makeTask.setAttribute("name", "Make");
+                            makeTask.setAttribute("name", runConfig.getBuildAllProjects() ? "MakeProject" : "Make");
                             makeTask.setAttribute("enabled", "true");
                         }
                         methods.appendChild(makeTask);
