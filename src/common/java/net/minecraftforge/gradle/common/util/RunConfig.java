@@ -522,6 +522,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         this.client = first.client == null ? second.client : first.client;
         if (overwrite) {
             this.buildAllProjects = other.buildAllProjects;
+            this.folderName = other.folderName;
         }
 
         if (other.env != null) {
