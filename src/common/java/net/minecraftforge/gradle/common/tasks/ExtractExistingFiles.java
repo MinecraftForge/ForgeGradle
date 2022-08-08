@@ -46,6 +46,9 @@ public abstract class ExtractExistingFiles extends DefaultTask {
 
                 for (File target : getTargets()) {
                     File out = new File(target, e.getName());
+                    if (!out.toPath().normalize().startsWith(target.toPath().normalize())) {
+                        throw new RuntimeException("Bad zip entry");
+                    }
                     if (!out.exists()) continue;
                     try (FileOutputStream fos = new FileOutputStream(out)) {
                         IOUtils.copy(zip.getInputStream(e), fos);
