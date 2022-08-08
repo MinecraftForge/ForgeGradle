@@ -155,7 +155,7 @@ public class MinecraftRepo extends BaseRepo {
         Artifact mcp = Artifact.from("de.oceanlabs.mcp:mcp_config:" + version + "@zip");
         File zip = cache("versions", version, "mcp.zip");
         if (!zip.exists()) {
-            FileUtils.copyFile(MavenArtifactDownloader.gradle(project, mcp.getDescriptor(), false), zip);
+            FileUtils.copyFile(MavenArtifactDownloader.manual(project, mcp.getDescriptor(), false), zip);
             Utils.updateHash(zip);
         }
         return zip;
