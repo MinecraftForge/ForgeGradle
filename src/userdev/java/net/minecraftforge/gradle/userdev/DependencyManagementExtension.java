@@ -81,6 +81,10 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
                                 && MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "groupId", "net.minecraftforge"))
                         .forEach(el -> el.parent().remove(el));
 
+                dependenciesNodeList.stream()
+                        .filter(el -> MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "artifactId", "client", "server", "joined")
+                                && MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "groupId", "net.minecraft"))
+                        .forEach(el -> el.parent().remove(el));
 
                 dependenciesNodeList.stream()
                         .filter(el -> MavenPomUtils.hasChildWithContainedText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "version", "_mapped_"))
