@@ -48,7 +48,10 @@ import net.minecraftforge.gradle.userdev.util.DependencyRemapper;
 import net.minecraftforge.srgutils.IMappingFile;
 
 import org.apache.commons.lang3.StringUtils;
-import org.gradle.api.*;
+import org.gradle.api.DefaultTask;
+import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.Plugin;
+import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
@@ -329,11 +332,12 @@ public class UserDevPlugin implements Plugin<Project> {
             Utils.createRunConfigTasks(extension, extractNatives, downloadAssets, createSrgToMcp);
         });
 
-        project.afterEvaluate(projectAfter -> projectAfter.getTasks().withType(JarJar.class).configureEach(jarJar -> {
+        project.getTasks().withType(JarJar.class).configureEach(jarJar -> {
             if (jarJar.isEnabled()) {
+                logger.info("Creating reobfuscation task for JarJar task: {}", jarJar.getName());
                 reobfExtension.create(jarJar.getName());
             }
-        }));
+        });
     }
 
     private NamedDomainObjectContainer<RenameJarInPlace> createReobfExtension(Project project) {
