@@ -35,6 +35,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public abstract class CopyEclipseResources extends Copy {
+    public static final String NAME = "copyEclipseResources";
 
     public void configure(EclipseModel model, Project project) {
         final Map<SourceSet, SourceFolder> srcToOut = model.getClasspath().resolveDependencies().stream()
@@ -48,8 +49,8 @@ public abstract class CopyEclipseResources extends Copy {
             dependsOn(src.getProcessResourcesTaskName());
             project.getTasks().named(src.getProcessResourcesTaskName(), ProcessResources.class)
                     .configure(processResources -> {
-                        for (final File out1 : processResources.getOutputs().getFiles())
-                            into(project.file(out.getOutput())).from(out1);
+                        for (final File gradleOutput : processResources.getOutputs().getFiles())
+                            into(project.file(out.getOutput())).from(gradleOutput);
                     });
         });
     }

@@ -21,11 +21,13 @@
 package net.minecraftforge.gradle.common.util.runs;
 
 import com.google.common.collect.ImmutableList;
+import net.minecraftforge.gradle.common.tasks.ide.CopyEclipseResources;
 import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.common.util.RunConfig;
 
 import net.minecraftforge.gradle.common.util.Utils;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.plugins.ide.eclipse.model.EclipseClasspath;
@@ -101,7 +103,7 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
         final String configName = (mc.getGenerateRunFolders().get() ? runConfig.getFolderName() + " - " : "") + runConfig.getTaskName() + ".launch";
         final boolean copyResources = mc.getCopyIDEResources().get();
 
-        if (mc.getEnableEclipsePrepareRuns().get() || copyResources) {
+        if (copyResources || mc.getEnableEclipsePrepareRuns().get()) {
             final String launchConfigName = project.getName() + " - " + runConfig.getTaskName() + "Slim";
             documents.put(".eclipse/configurations/" + launchConfigName + ".launch", javaDocument);
 
@@ -127,9 +129,12 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
                     tasks.appendChild(taskEntry);
 
                     if (copyResources) {
-                        final Element copyIde = gradleDocument.createElement("listEntry");
-                        copyIde.setAttribute("value", project.getTasks().getByName("copyEclipseResources").getPath());
-                        tasks.appendChild(copyIde);
+                        final Task copyTask = project.getTasks().findByName(CopyEclipseResources.NAME);
+                        if (copyTask != null) {
+                            final Element copyIde = gradleDocument.createElement("listEntry");
+                            copyIde.setAttribute("value", copyTask.getPath());
+                            tasks.appendChild(copyIde);
+                        }
                     }
                 }
                 rootElement.appendChild(tasks);

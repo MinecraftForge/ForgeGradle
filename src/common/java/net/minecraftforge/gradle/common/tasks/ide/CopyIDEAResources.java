@@ -30,6 +30,7 @@ import java.io.File;
 import java.nio.file.Path;
 
 public abstract class CopyIDEAResources extends Copy {
+    public static final String NAME = "copyIdeaResources";
 
     public void configure(IdeaModel model) {
         final Path outDir;

@@ -20,11 +20,13 @@
 
 package net.minecraftforge.gradle.common.util.runs;
 
+import net.minecraftforge.gradle.common.tasks.ide.CopyIDEAResources;
 import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
 
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
@@ -207,8 +209,12 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                             final boolean copyResources = mc.getCopyIDEResources().get();
                             if (copyResources || mc.getEnableIdeaPrepareRuns().get())
                                 tasks.add(project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName())).getPath());
-                            if (!useGradlePaths && copyResources)
-                                tasks.add(project.getTasks().getByName("copyIdeaResources").getPath());
+                            if (!useGradlePaths && copyResources) {
+                                final Task copyTask = project.getTasks().findByName(CopyIDEAResources.NAME);
+                                if (copyTask != null) {
+                                    tasks.add(copyTask.getPath());
+                                }
+                            }
                             gradleTask.setAttribute("tasks", String.join(" ", tasks));
                             gradleTask.setAttribute("externalProjectPath", "$PROJECT_DIR$");
                         }

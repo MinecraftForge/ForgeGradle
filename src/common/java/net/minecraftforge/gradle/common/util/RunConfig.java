@@ -649,6 +649,10 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     }
 
     public void folderName(String folderName) {
+        setFolderName(folderName);
+    }
+
+    public void setFolderName(String folderName) {
         this.folderName = folderName;
     }
 

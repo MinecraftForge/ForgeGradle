@@ -317,9 +317,9 @@ public class UserDevPlugin implements Plugin<Project> {
             final String finalAssetIndex = assetIndex;
 
             extension.getRuns().forEach(runConfig -> runConfig.token("asset_index", finalAssetIndex));
-            Utils.createRunConfigTasks(extension, extractNatives, downloadAssets, createSrgToMcp);
             if (extension.getCopyIDEResources().get())
-                Utils.setupIDEResourceCopy(project);
+                Utils.setupIDEResourceCopy(project); // We need to have the copy resources task BEFORE the run config ones so we can detect them
+            Utils.createRunConfigTasks(extension, extractNatives, downloadAssets, createSrgToMcp);
         });
 
         project.afterEvaluate(projectAfter -> {
