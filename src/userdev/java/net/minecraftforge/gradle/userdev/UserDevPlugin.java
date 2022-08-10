@@ -77,6 +77,8 @@ import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
 public class UserDevPlugin implements Plugin<Project> {
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(UserDevPlugin.class);
+
     public static final String JAR_JAR_TASK_NAME = "jarJar";
     public static final String JAR_JAR_GROUP = "jarjar";
 
@@ -329,11 +331,12 @@ public class UserDevPlugin implements Plugin<Project> {
             Utils.createRunConfigTasks(extension, extractNatives, downloadAssets, createSrgToMcp);
         });
 
-        project.afterEvaluate(projectAfter -> projectAfter.getTasks().withType(JarJar.class).configureEach(jarJar -> {
+        project.getTasks().withType(JarJar.class).configureEach(jarJar -> {
             if (jarJar.isEnabled()) {
+                LOGGER.info("Creating reobfuscation task for JarJar task: " + jarJar.getName());
                 reobfExtension.create(jarJar.getName());
             }
-        }));
+        });
     }
 
     private NamedDomainObjectContainer<RenameJarInPlace> createReobfExtension(Project project) {
