@@ -84,15 +84,9 @@ dependencies {
     commonImplementation('net.minecraftforge:unsafe:0.2.0') {
         transitive = false
     }
-    commonImplementation('org.apache.logging.log4j:log4j-api:2.11.2') {
-        force = true
-    }
-    commonImplementation('org.apache.logging.log4j:log4j-core:2.11.2') {
-        force = true
-    }
     commonImplementation 'org.apache.maven:maven-artifact:3.6.3'
     commonImplementation 'org.apache.httpcomponents:httpclient:4.5.13'
-    commonImplementation 'net.minecraftforge:srgutils:0.4.3'
+    commonImplementation 'net.minecraftforge:srgutils:0.4.13'
     commonImplementation 'net.minecraftforge:DiffPatch:2.0.7:all'
 
     mcpImplementation sourceSets.common.output
@@ -101,7 +95,7 @@ dependencies {
     userdevImplementation sourceSets.mcp.output
     userdevImplementation sourceSets.common.output
 
-    userdevImplementation 'net.minecraftforge:JarJar:0.2.21'
+    userdevImplementation 'net.minecraftforge:JarJar:0.3.10'
 }
 
 //Gradle doesn't add it's own source when doing the API. So lets hack it in!

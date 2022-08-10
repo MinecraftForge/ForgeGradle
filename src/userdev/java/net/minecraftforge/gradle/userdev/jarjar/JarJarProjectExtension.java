@@ -22,7 +22,6 @@ package net.minecraftforge.gradle.userdev.jarjar;
 
 import groovy.lang.GroovyObjectSupport;
 import groovy.util.Node;
-import groovy.util.NodeList;
 import net.minecraftforge.gradle.userdev.DependencyManagementExtension;
 import net.minecraftforge.gradle.userdev.UserDevPlugin;
 import net.minecraftforge.gradle.userdev.dependency.DependencyFilter;
@@ -46,21 +45,51 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
     private final Attribute<String> jarJarRangeAttribute = Attribute.of("jarJarRange", String.class);
 
     private final Project project;
+    private boolean disabled;
+    private boolean disableDefaultSources;
 
     public JarJarProjectExtension(final Project project) {
         this.project = project;
     }
 
     public void enable() {
+        if (!this.disabled)
+            enable(true);
+    }
+
+    private void enable(boolean enabled) {
         final Task task = project.getTasks().findByPath(UserDevPlugin.JAR_JAR_TASK_NAME);
         if (task != null) {
-            task.setEnabled(true);
+            task.setEnabled(enabled);
         }
+    }
+
+    public void disable() {
+        disable(true);
+    }
+
+    public void disable(boolean disable) {
+        this.disabled = disable;
+        if (disable) {
+            enable(false);
+        }
+    }
+
+    public boolean getDefaultSourcesDisabled() {
+        return this.disableDefaultSources;
+    }
+
+    public void disableDefaultSources() {
+        disableDefaultSources(true);
+    }
+
+    public void disableDefaultSources(boolean value) {
+        this.disableDefaultSources = value;
     }
 
     public void fromRuntimeConfiguration() {
         enable();
-        project.getTasks().withType(JarJar.class).all(JarJar::fromRuntimeConfiguration);
+        project.getTasks().withType(JarJar.class).configureEach(JarJar::fromRuntimeConfiguration);
     }
 
     public void pin(Dependency dependency, String version) {
@@ -97,14 +126,14 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
 
     public JarJarProjectExtension dependencies(Action<DependencyFilter> c) {
         enable();
-        project.getTasks().withType(JarJar.class).all(jarJar -> jarJar.dependencies(c));
+        project.getTasks().withType(JarJar.class).configureEach(jarJar -> jarJar.dependencies(c));
         return this;
     }
 
     public MavenPublication component(MavenPublication mavenPublication) {
         enable();
         project.getExtensions().getByType(DependencyManagementExtension.class).component(mavenPublication);
-        project.getTasks().withType(JarJar.class).all(task -> component(mavenPublication, task, false));
+        project.getTasks().withType(JarJar.class).configureEach(task -> component(mavenPublication, task, false));
 
         return mavenPublication;
     }
