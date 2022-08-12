@@ -138,12 +138,29 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
         return mavenPublication;
     }
 
+    public MavenPublication component(MavenPublication mavenPublication, boolean handleDependencies) {
+        enable();
+        project.getExtensions().getByType(DependencyManagementExtension.class).component(mavenPublication);
+        project.getTasks().withType(JarJar.class).configureEach(task -> component(mavenPublication, task, false));
+
+        return mavenPublication;
+    }
+
     public MavenPublication component(MavenPublication mavenPublication, JarJar task) {
         enable();
-        return component(mavenPublication, task, true);
+        return component(mavenPublication, task, true, true);
+    }
+
+    public MavenPublication cleanedComponent(MavenPublication mavenPublication, JarJar task, boolean handleDependencies) {
+        enable();
+        return component(mavenPublication, task, true, handleDependencies);
     }
 
     private MavenPublication component(MavenPublication mavenPublication, JarJar task, boolean handleCleaning) {
+        return component(mavenPublication, task, handleCleaning, true);
+    }
+
+    private MavenPublication component(MavenPublication mavenPublication, JarJar task, boolean handleCleaning, boolean handleDependencies) {
         if (!task.isEnabled()) {
             return mavenPublication;
         }
@@ -152,42 +169,42 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
             project.getExtensions().getByType(DependencyManagementExtension.class).component(mavenPublication);
         }
 
-
         mavenPublication.artifact(task, mavenArtifact -> {
             mavenArtifact.setClassifier(task.getArchiveClassifier().get());
             mavenArtifact.setExtension(task.getArchiveExtension().get());
         });
 
+        if (handleDependencies) {
+            final Set<ResolvedDependency> dependencies = task.getResolvedDependencies();
 
-        final Set<ResolvedDependency> dependencies = task.getResolvedDependencies();
+            mavenPublication.pom(pom -> {
+                pom.withXml(xml -> {
+                    Node dependenciesNode = MavenPomUtils.getDependenciesNode(xml);
+                    final List<Node> dependenciesNodeList = MavenPomUtils.getDependencyNodes(xml);
 
-        mavenPublication.pom(pom -> {
-            pom.withXml(xml -> {
-                Node dependenciesNode = MavenPomUtils.getDependenciesNode(xml);
-                final List<Node> dependenciesNodeList = MavenPomUtils.getDependencyNodes(xml);
+                    // From all dependencies
+                    dependencies.forEach(dependency ->
+                            dependenciesNodeList.stream()
+                                    .filter(el -> MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "artifactId", dependency.getModuleName())
+                                            && MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "groupId", dependency.getModuleGroup()))
+                                    .forEach(el -> MavenPomUtils.setChildText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "version", dependency.getModuleVersion()))
+                    );
 
-                // From all dependencies
-                dependencies.forEach(dependency ->
-                        dependenciesNodeList.stream()
-                                .filter(el -> MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "artifactId", dependency.getModuleName())
-                                        && MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "groupId", dependency.getModuleGroup()))
-                                .forEach(el -> MavenPomUtils.setChildText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "version", dependency.getModuleVersion()))
-                );
-
-
-                dependencies.stream()
-                        .filter(dependency -> dependenciesNodeList.stream()
-                                .noneMatch(el -> MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "artifactId", dependency.getModuleName())
-                                        && MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "groupId", dependency.getModuleGroup())))
-                        .forEach(it -> {
-                            final Node dependencyNode = dependenciesNode.appendNode("dependency");
-                            dependencyNode.appendNode("groupId", it.getModuleGroup());
-                            dependencyNode.appendNode("artifactId", it.getModuleName());
-                            dependencyNode.appendNode("version", it.getModuleVersion());
-                            dependencyNode.appendNode("scope", "runtime");
-                        });
+                    dependencies.stream()
+                            .filter(dependency -> dependenciesNodeList.stream()
+                                    .noneMatch(el -> MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "artifactId", dependency.getModuleName())
+                                            && MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "groupId", dependency.getModuleGroup())))
+                            .forEach(it -> {
+                                final Node dependencyNode = dependenciesNode.appendNode("dependency");
+                                dependencyNode.appendNode("groupId", it.getModuleGroup());
+                                dependencyNode.appendNode("artifactId", it.getModuleName());
+                                dependencyNode.appendNode("version", it.getModuleVersion());
+                                dependencyNode.appendNode("scope", "runtime");
+                            });
+                });
             });
-        });
+        }
+
 
         return mavenPublication;
     }
