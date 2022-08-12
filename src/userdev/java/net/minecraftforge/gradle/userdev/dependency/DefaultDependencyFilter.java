@@ -89,7 +89,7 @@ public class DefaultDependencyFilter implements DependencyFilter {
     }
 
     @Override
-    public boolean isIncluded(ExternalModuleDependency dependency) {
+    public boolean isIncluded(ModuleDependency dependency) {
         return isIncluded(
                 new ArtifactIdentifier(dependency.getGroup(), dependency.getName(), dependency.getVersion())
         );

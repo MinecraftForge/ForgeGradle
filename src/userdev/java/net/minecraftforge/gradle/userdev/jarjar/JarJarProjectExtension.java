@@ -144,50 +144,48 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
     }
 
     private MavenPublication component(MavenPublication mavenPublication, JarJar task, boolean handleCleaning) {
-        project.afterEvaluate(p -> {
-            if (!task.isEnabled()) {
-                return;
-            }
+        if (!task.isEnabled()) {
+            return mavenPublication;
+        }
 
-            if (handleCleaning) {
-                project.getExtensions().getByType(DependencyManagementExtension.class).component(mavenPublication);
-            }
-
-
-            mavenPublication.artifact(task, mavenArtifact -> {
-                mavenArtifact.setClassifier(task.getArchiveClassifier().get());
-                mavenArtifact.setExtension(task.getArchiveExtension().get());
-            });
+        if (handleCleaning) {
+            project.getExtensions().getByType(DependencyManagementExtension.class).component(mavenPublication);
+        }
 
 
-            final Set<ResolvedDependency> dependencies = task.getResolvedDependencies();
-
-            mavenPublication.pom(pom -> {
-                pom.withXml(xml -> {
-                    Node dependenciesNode = MavenPomUtils.getDependenciesNode(xml);
-                    final List<Node> dependenciesNodeList = MavenPomUtils.getDependencyNodes(xml);
-
-                    // From all dependencies
-                    dependencies.forEach(dependency ->
-                            dependenciesNodeList.stream()
-                                    .filter(el -> MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "artifactId", dependency.getModuleName())
-                                            && MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "groupId", dependency.getModuleGroup()))
-                                    .forEach(el -> MavenPomUtils.setChildText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "version", dependency.getModuleVersion()))
-                    );
+        mavenPublication.artifact(task, mavenArtifact -> {
+            mavenArtifact.setClassifier(task.getArchiveClassifier().get());
+            mavenArtifact.setExtension(task.getArchiveExtension().get());
+        });
 
 
-                    dependencies.stream()
-                            .filter(dependency -> dependenciesNodeList.stream()
-                                    .noneMatch(el -> MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "artifactId", dependency.getModuleName())
-                                            && MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "groupId", dependency.getModuleGroup())))
-                            .forEach(it -> {
-                                final Node dependencyNode = dependenciesNode.appendNode("dependency");
-                                dependencyNode.appendNode("groupId", it.getModuleGroup());
-                                dependencyNode.appendNode("artifactId", it.getModuleName());
-                                dependencyNode.appendNode("version", it.getModuleVersion());
-                                dependencyNode.appendNode("scope", "runtime");
-                            });
-                });
+        final Set<ResolvedDependency> dependencies = task.getResolvedDependencies();
+
+        mavenPublication.pom(pom -> {
+            pom.withXml(xml -> {
+                Node dependenciesNode = MavenPomUtils.getDependenciesNode(xml);
+                final List<Node> dependenciesNodeList = MavenPomUtils.getDependencyNodes(xml);
+
+                // From all dependencies
+                dependencies.forEach(dependency ->
+                        dependenciesNodeList.stream()
+                                .filter(el -> MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "artifactId", dependency.getModuleName())
+                                        && MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "groupId", dependency.getModuleGroup()))
+                                .forEach(el -> MavenPomUtils.setChildText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "version", dependency.getModuleVersion()))
+                );
+
+
+                dependencies.stream()
+                        .filter(dependency -> dependenciesNodeList.stream()
+                                .noneMatch(el -> MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "artifactId", dependency.getModuleName())
+                                        && MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "groupId", dependency.getModuleGroup())))
+                        .forEach(it -> {
+                            final Node dependencyNode = dependenciesNode.appendNode("dependency");
+                            dependencyNode.appendNode("groupId", it.getModuleGroup());
+                            dependencyNode.appendNode("artifactId", it.getModuleName());
+                            dependencyNode.appendNode("version", it.getModuleVersion());
+                            dependencyNode.appendNode("scope", "runtime");
+                        });
             });
         });
 
