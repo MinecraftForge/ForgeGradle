@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.userdev.tasks;
 
+import net.minecraftforge.gradle.userdev.UserDevPlugin;
 import net.minecraftforge.gradle.userdev.dependency.DefaultDependencyFilter;
 import net.minecraftforge.gradle.userdev.dependency.DependencyFilter;
 import net.minecraftforge.gradle.userdev.jarjar.JarJarProjectExtension;
@@ -116,8 +117,8 @@ public abstract class JarJar extends Jar {
     @Internal
     public Set<ResolvedDependency> getResolvedDependencies() {
         return this.configurations.stream().flatMap(config -> config.getAllDependencies().stream())
-                .filter(ExternalModuleDependency.class::isInstance)
-                .map(ExternalModuleDependency.class::cast)
+                .filter(ModuleDependency.class::isInstance)
+                .map(ModuleDependency.class::cast)
                 .map(this::getResolvedDependency)
                 .filter(this.dependencyFilter::isIncluded)
                 .collect(Collectors.toSet());
@@ -188,8 +189,8 @@ public abstract class JarJar extends Jar {
     private Metadata createMetadata() {
         return new Metadata(
                 this.configurations.stream().flatMap(config -> config.getAllDependencies().stream())
-                        .filter(ExternalModuleDependency.class::isInstance)
-                        .map(ExternalModuleDependency.class::cast)
+                        .filter(ModuleDependency.class::isInstance)
+                        .map(ModuleDependency.class::cast)
                         .map(this::createDependencyMetadata)
                         .filter(Optional::isPresent)
                         .map(Optional::get)
@@ -197,7 +198,7 @@ public abstract class JarJar extends Jar {
         );
     }
 
-    private Optional<ContainedJarMetadata> createDependencyMetadata(final ExternalModuleDependency dependency) {
+    private Optional<ContainedJarMetadata> createDependencyMetadata(final ModuleDependency dependency) {
         if (!dependencyFilter.isIncluded(dependency)) {
             return Optional.empty();
         }
@@ -227,7 +228,7 @@ public abstract class JarJar extends Jar {
         }
     }
 
-    private RuntimeException createInvalidVersionRangeException(final ExternalModuleDependency dependency, final Throwable cause) {
+    private RuntimeException createInvalidVersionRangeException(final ModuleDependency dependency, final Throwable cause) {
         return new RuntimeException("The given version specification is invalid: " + getVersionRangeFrom(dependency)
                 + ". If you used gradle based range versioning like 2.+, convert this to a maven compatible format: [2.0,3.0).", cause);
     }
@@ -250,9 +251,12 @@ public abstract class JarJar extends Jar {
         return attributeVersion.map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersion).orElseGet(() -> DeobfuscatingVersionUtils.adaptDeobfuscatedVersion(Objects.requireNonNull(dependency.getVersion())));
     }
 
-    private ResolvedDependency getResolvedDependency(final ExternalModuleDependency dependency) {
-        ExternalModuleDependency toResolve = dependency.copy();
-        toResolve.version(constraint -> constraint.strictly(getVersionFrom(dependency)));
+    private ResolvedDependency getResolvedDependency(final ModuleDependency dependency) {
+        ModuleDependency toResolve = dependency.copy();
+        if (toResolve instanceof ExternalModuleDependency) {
+            final ExternalModuleDependency externalDependency = (ExternalModuleDependency) toResolve;
+            externalDependency.version(constraint -> constraint.strictly(getVersionFrom(dependency)));
+        }
 
         final Set<ResolvedDependency> deps = getProject().getConfigurations().detachedConfiguration(toResolve).getResolvedConfiguration().getFirstLevelModuleDependencies();
         if (deps.isEmpty()) {
@@ -263,6 +267,11 @@ public abstract class JarJar extends Jar {
     }
 
     private boolean isObfuscated(final Dependency dependency) {
+        if (dependency instanceof ProjectDependency) {
+            final ProjectDependency projectDependency = (ProjectDependency) dependency;
+            return projectDependency.getDependencyProject().getPlugins().hasPlugin(UserDevPlugin.class);
+        }
+
         return Objects.requireNonNull(dependency.getVersion()).contains("_mapped_");
     }
 

@@ -95,7 +95,8 @@ dependencies {
     userdevImplementation sourceSets.mcp.output
     userdevImplementation sourceSets.common.output
 
-    userdevImplementation 'net.minecraftforge:JarJar:0.3.10'
+    userdevImplementation 'net.minecraftforge:JarJarMetadata:0.3.17'
+    userdevImplementation 'net.minecraftforge:JarJarSelector:0.3.17'
 }
 
 //Gradle doesn't add it's own source when doing the API. So lets hack it in!

@@ -138,28 +138,43 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
         return mavenPublication;
     }
 
+    public MavenPublication component(MavenPublication mavenPublication, boolean handleDependencies) {
+        enable();
+        project.getExtensions().getByType(DependencyManagementExtension.class).component(mavenPublication);
+        project.getTasks().withType(JarJar.class).configureEach(task -> component(mavenPublication, task, false));
+
+        return mavenPublication;
+    }
+
     public MavenPublication component(MavenPublication mavenPublication, JarJar task) {
         enable();
-        return component(mavenPublication, task, true);
+        return component(mavenPublication, task, true, true);
+    }
+
+    public MavenPublication cleanedComponent(MavenPublication mavenPublication, JarJar task, boolean handleDependencies) {
+        enable();
+        return component(mavenPublication, task, true, handleDependencies);
     }
 
     private MavenPublication component(MavenPublication mavenPublication, JarJar task, boolean handleCleaning) {
-        project.afterEvaluate(p -> {
-            if (!task.isEnabled()) {
-                return;
-            }
+        return component(mavenPublication, task, handleCleaning, true);
+    }
 
-            if (handleCleaning) {
-                project.getExtensions().getByType(DependencyManagementExtension.class).component(mavenPublication);
-            }
+    private MavenPublication component(MavenPublication mavenPublication, JarJar task, boolean handleCleaning, boolean handleDependencies) {
+        if (!task.isEnabled()) {
+            return mavenPublication;
+        }
 
+        if (handleCleaning) {
+            project.getExtensions().getByType(DependencyManagementExtension.class).component(mavenPublication);
+        }
 
-            mavenPublication.artifact(task, mavenArtifact -> {
-                mavenArtifact.setClassifier(task.getArchiveClassifier().get());
-                mavenArtifact.setExtension(task.getArchiveExtension().get());
-            });
+        mavenPublication.artifact(task, mavenArtifact -> {
+            mavenArtifact.setClassifier(task.getArchiveClassifier().get());
+            mavenArtifact.setExtension(task.getArchiveExtension().get());
+        });
 
-
+        if (handleDependencies) {
             final Set<ResolvedDependency> dependencies = task.getResolvedDependencies();
 
             mavenPublication.pom(pom -> {
@@ -175,7 +190,6 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
                                     .forEach(el -> MavenPomUtils.setChildText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "version", dependency.getModuleVersion()))
                     );
 
-
                     dependencies.stream()
                             .filter(dependency -> dependenciesNodeList.stream()
                                     .noneMatch(el -> MavenPomUtils.hasChildWithText(el, MavenPomUtils.MAVEN_POM_NAMESPACE + "artifactId", dependency.getModuleName())
@@ -189,7 +203,8 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
                             });
                 });
             });
-        });
+        }
+
 
         return mavenPublication;
     }

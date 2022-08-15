@@ -25,6 +25,7 @@ import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.specs.Spec;
@@ -95,7 +96,7 @@ public interface DependencyFilter {
      * @param dependency The dependency to check.
      * @return The result of the filter.
      */
-    boolean isIncluded(ExternalModuleDependency dependency);
+    boolean isIncluded(ModuleDependency dependency);
 
     /**
      * Checks if the given artifact identifier matches the dependency.
