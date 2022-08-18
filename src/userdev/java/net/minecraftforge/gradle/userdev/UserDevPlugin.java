@@ -219,6 +219,13 @@ public class UserDevPlugin implements Plugin<Project> {
             updateMappings.configure(task -> task.dependsOn(extractMappedNew));
         }
 
+        project.getTasks().withType(JarJar.class).whenTaskAdded(jarJar -> {
+            if (jarJar.isEnabled()) {
+                logger.info("Creating reobfuscation task for JarJar task: {}", jarJar.getName());
+                reobfExtension.create(jarJar.getName());
+            }
+        });
+
         configureJarJarTask(project, jarJarExtension);
 
         if (!project.hasProperty(DISABLE_DEFAULT_CONFIGS_PROP) || !Boolean.parseBoolean((String) project.property(DISABLE_DEFAULT_CONFIGS_PROP))) {
@@ -330,13 +337,6 @@ public class UserDevPlugin implements Plugin<Project> {
 
             extension.getRuns().forEach(runConfig -> runConfig.token("asset_index", finalAssetIndex));
             Utils.createRunConfigTasks(extension, extractNatives, downloadAssets, createSrgToMcp);
-        });
-
-        project.getTasks().withType(JarJar.class).configureEach(jarJar -> {
-            if (jarJar.isEnabled()) {
-                logger.info("Creating reobfuscation task for JarJar task: {}", jarJar.getName());
-                reobfExtension.create(jarJar.getName());
-            }
         });
     }
 
