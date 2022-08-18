@@ -219,8 +219,6 @@ public class UserDevPlugin implements Plugin<Project> {
             updateMappings.configure(task -> task.dependsOn(extractMappedNew));
         }
 
-        configureJarJarTask(project, jarJarExtension);
-
         if (!project.hasProperty(DISABLE_DEFAULT_CONFIGS_PROP) || !Boolean.parseBoolean((String) project.property(DISABLE_DEFAULT_CONFIGS_PROP))) {
             final Configuration minecraftLibrary = project.getConfigurations().create(MINECRAFT_LIBRARY_CONFIGURATION_NAME);
             final Configuration minecraftEmbed = project.getConfigurations().create(MINECRAFT_EMBED_CONFIGURATION_NAME);
@@ -359,28 +357,5 @@ public class UserDevPlugin implements Plugin<Project> {
         });
         project.getExtensions().add("reobf", reobfExtension);
         return reobfExtension;
-    }
-
-    protected void configureJarJarTask(Project project, JarJarProjectExtension jarJarExtension) {
-        final Configuration configuration = project.getConfigurations().create(JAR_JAR_DEFAULT_CONFIGURATION_NAME);
-
-        JavaPluginExtension javaPluginExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-
-        project.getTasks().register(JAR_JAR_TASK_NAME, JarJar.class, jarJar -> {
-            jarJar.setGroup(JAR_JAR_GROUP);
-            jarJar.setDescription("Create a combined JAR of project and selected dependencies");
-            jarJar.getArchiveClassifier().convention("all");
-
-            if (!jarJarExtension.getDefaultSourcesDisabled()) {
-                jarJar.getManifest().inheritFrom(((Jar) project.getTasks().getByName("jar")).getManifest());
-                jarJar.from(javaPluginExtension.getSourceSets().getByName("main").getOutput());
-            }
-
-            jarJar.configuration(configuration);
-
-            jarJar.setEnabled(false);
-        });
-
-        project.getArtifacts().add(JAR_JAR_DEFAULT_CONFIGURATION_NAME, project.getTasks().named(JAR_JAR_TASK_NAME));
     }
 }

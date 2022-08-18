@@ -32,7 +32,9 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.*;
 import org.gradle.api.attributes.Attribute;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.publish.maven.MavenPublication;
+import org.gradle.api.tasks.bundling.Jar;
 
 import java.util.List;
 import java.util.Optional;
@@ -58,10 +60,7 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
     }
 
     private void enable(boolean enabled) {
-        final Task task = project.getTasks().findByPath(UserDevPlugin.JAR_JAR_TASK_NAME);
-        if (task != null) {
-            task.setEnabled(enabled);
-        }
+        this.getJarJarTask().setEnabled(enabled);
     }
 
     public void disable() {
@@ -73,6 +72,34 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
         if (disable) {
             enable(false);
         }
+    }
+
+    protected Task getJarJarTask() {
+        final Task task = this.project.getTasks().findByPath(UserDevPlugin.JAR_JAR_TASK_NAME);
+        if (task != null) {
+            return task;
+        }
+
+        final Configuration configuration = this.project.getConfigurations().create(UserDevPlugin.JAR_JAR_DEFAULT_CONFIGURATION_NAME);
+
+        JavaPluginExtension javaPluginExtension = this.project.getExtensions().getByType(JavaPluginExtension.class);
+
+        this.project.getTasks().register(UserDevPlugin.JAR_JAR_TASK_NAME, JarJar.class, jarJar -> {
+            jarJar.setGroup(UserDevPlugin.JAR_JAR_GROUP);
+            jarJar.setDescription("Create a combined JAR of project and selected dependencies");
+            jarJar.getArchiveClassifier().convention("all");
+
+            if (!this.getDefaultSourcesDisabled()) {
+                jarJar.getManifest().inheritFrom(((Jar) this.project.getTasks().getByName("jar")).getManifest());
+                jarJar.from(javaPluginExtension.getSourceSets().getByName("main").getOutput());
+            }
+
+            jarJar.configuration(configuration);
+        });
+
+        this.project.getArtifacts().add(UserDevPlugin.JAR_JAR_DEFAULT_CONFIGURATION_NAME, this.project.getTasks().named(UserDevPlugin.JAR_JAR_TASK_NAME));
+
+        return project.getTasks().findByPath(UserDevPlugin.JAR_JAR_TASK_NAME);
     }
 
     public boolean getDefaultSourcesDisabled() {
