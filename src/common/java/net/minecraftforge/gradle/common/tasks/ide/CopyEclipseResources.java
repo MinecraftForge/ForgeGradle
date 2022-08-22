@@ -21,6 +21,8 @@
 package net.minecraftforge.gradle.common.tasks.ide;
 
 import org.gradle.api.Project;
+import org.gradle.api.file.CopySpec;
+import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.SourceSet;
@@ -30,6 +32,7 @@ import org.gradle.plugins.ide.eclipse.model.SourceFolder;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -38,6 +41,10 @@ public abstract class CopyEclipseResources extends Copy {
     public static final String NAME = "copyEclipseResources";
 
     public void configure(EclipseModel model, Project project) {
+        // We don't need the destination, but it's not optional
+        setDestinationDir(new File(project.getBuildDir(), getName()));
+        final Path destination = getDestinationDir().toPath();
+
         final Map<SourceSet, SourceFolder> srcToOut = model.getClasspath().resolveDependencies().stream()
                 .filter(SourceFolder.class::isInstance)
                 .map(SourceFolder.class::cast)
@@ -47,11 +54,14 @@ public abstract class CopyEclipseResources extends Copy {
                 .collect(Collectors.toMap(f -> f.srcSet, f -> f.source));
         srcToOut.forEach((src, out) -> {
             dependsOn(src.getProcessResourcesTaskName());
-            project.getTasks().named(src.getProcessResourcesTaskName(), ProcessResources.class)
-                    .configure(processResources -> {
-                        for (final File gradleOutput : processResources.getOutputs().getFiles())
-                            into(project.file(out.getOutput())).from(gradleOutput);
-                    });
+            final ProcessResources processResources = project.getTasks().named(src.getProcessResourcesTaskName(), ProcessResources.class).get();
+            for (final File gradleOutput : processResources.getOutputs().getFiles()) {
+                final CopySpec spec = getMainSpec().addChild();
+                spec.into(destination.relativize(project.file(out.getOutput()).toPath()).toString());
+                spec.from(gradleOutput);
+                // Eclipse MAY have multiple sourcesets have the same output, and a sourceset may include resources from another (datagen sourcesets)
+                spec.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
+            }
         });
     }
 

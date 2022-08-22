@@ -504,7 +504,7 @@ public class Utils {
         boolean ideaFound = true;
         if (project.getPlugins().hasPlugin(IdeaPlugin.class)) {
             final IdeaPlugin idea = project.getPlugins().getPlugin(IdeaPlugin.class);
-            project.getTasks().create(CopyIDEAResources.NAME, CopyIDEAResources.class, task -> task.configure(idea.getModel()));
+            project.getTasks().register(CopyIDEAResources.NAME, CopyIDEAResources.class, task -> task.configure(idea.getModel(), project));
         } else {
             ideaFound = false;
         }
@@ -514,7 +514,7 @@ public class Utils {
             project.getTasks().named("eclipse").configure(eclipseTask -> eclipseTask.doLast(eclTask -> {
                 final EclipseModel eclipse = project.getExtensions().findByType(EclipseModel.class);
                 // The `eclipse` task has been run, the only way the model would be null is if something has gone seriously wrong
-                taskProvider.configure(it -> it.configure(Objects.requireNonNull(eclipse), project));
+                taskProvider.get().configure(Objects.requireNonNull(eclipse), project);
             }));
         } else if (!ideaFound) {
             project.getLogger().warn("Neither the 'eclipse' nor the 'idea' plugins were found, but IDE resource copy has been enabled.");
