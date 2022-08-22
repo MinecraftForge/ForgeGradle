@@ -34,6 +34,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 
 import com.google.gson.Gson;
@@ -500,24 +501,27 @@ public class Utils {
     }
 
     public static void setupIDEResourceCopy(@Nonnull final Project project) {
+        boolean ideaFound = true;
         if (project.getPlugins().hasPlugin(IdeaPlugin.class)) {
             final IdeaPlugin idea = project.getPlugins().getPlugin(IdeaPlugin.class);
             project.getTasks().create(CopyIDEAResources.NAME, CopyIDEAResources.class, task -> task.configure(idea.getModel()));
         } else {
-            project.getLogger().warn("'idea' plugin is not found! IDEA resources will not be copied.");
+            ideaFound = false;
         }
 
         if (project.getPlugins().hasPlugin(EclipsePlugin.class)) {
-            project.getTasks().create(CopyEclipseResources.NAME, CopyEclipseResources.class, task -> {
-                task.dependsOn("eclipse");
-                project.getTasks().named("eclipse").configure(eclipseTask -> eclipseTask.doLast(eclTask -> {
-                    final EclipseModel eclipse = project.getExtensions().findByType(EclipseModel.class);
-                    // The `eclipse` task has been run, the only way the model would be null is if something has gone seriously wrong
-                    task.configure(Objects.requireNonNull(eclipse), project);
-                }));
-            });
-        } else {
-            project.getLogger().warn("'eclipse' plugin is not found! Eclipse resources will not be copied.");
+            final TaskProvider<CopyEclipseResources> taskProvider = project.getTasks().register(CopyEclipseResources.NAME, CopyEclipseResources.class, task -> task.dependsOn("eclipse"));
+            project.getTasks().named("eclipse").configure(eclipseTask -> eclipseTask.doLast(eclTask -> {
+                final EclipseModel eclipse = project.getExtensions().findByType(EclipseModel.class);
+                // The `eclipse` task has been run, the only way the model would be null is if something has gone seriously wrong
+                taskProvider.configure(it -> it.configure(Objects.requireNonNull(eclipse), project));
+            }));
+        } else if (!ideaFound) {
+            project.getLogger().warn("Neither the 'eclipse' nor the 'idea' plugins were found, but IDE resource copy has been enabled.");
         }
+    }
+
+    public static String getIDEAOutName(@Nonnull final SourceSet sourceSet) {
+        return sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) ? "production" : sourceSet.getName();
     }
 }

@@ -251,7 +251,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
             return runConfig.getMods().stream()
                     .flatMap(modConfig -> modConfig.getSources().stream()
                             .flatMap(source -> {
-                                String outName = source.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) ? "production" : source.getName();
+                                String outName = Utils.getIDEAOutName(source);
                                 final Project sourceSetProject = sourceSetsToProjects.getOrDefault(source, project);
                                 final IdeaModel ideaModel = sourceSetProject.getExtensions().findByType(IdeaModel.class);
                                 return getIdeaPathsForSourceset(sourceSetProject, ideaModel, outName, modConfig.getName());
@@ -259,7 +259,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
         }
     }
 
-    private static Stream<String> getIdeaPathsForSourceset(@Nonnull Project project, @Nullable IdeaModel idea, String outName, @Nullable String modName)
+    public static Stream<String> getIdeaPathsForSourceset(@Nonnull Project project, @Nullable IdeaModel idea, String outName, @Nullable String modName)
     {
         String ideaResources, ideaClasses;
         try
