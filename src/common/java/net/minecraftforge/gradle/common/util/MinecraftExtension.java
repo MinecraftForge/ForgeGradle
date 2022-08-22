@@ -133,8 +133,26 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
 
     public abstract ConfigurableFileCollection getSideAnnotationStrippers();
 
+    /**
+     * If the Eclipse configurations should run the prepareX task. <br>
+     * Default: false
+     */
     public abstract Property<Boolean> getEnableEclipsePrepareRuns();
+    
+    /**
+     * If the IDEA configurations should run the prepareX task. <br>
+     * TODO, change default to false (to match Eclipse behavior) when we can afford breaking changes
+     * Default: true
+     */
     public abstract Property<Boolean> getEnableIdeaPrepareRuns();
+
+    /**
+     * If Gradle resources should be copied to the respective IDE output folders.
+     */
     public abstract Property<Boolean> getCopyIDEResources();
+
+    /**
+     * If run configurations should be grouped in folders.
+     */
     public abstract Property<Boolean> getGenerateRunFolders();
 }
