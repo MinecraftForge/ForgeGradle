@@ -330,13 +330,13 @@ public class UserDevPlugin implements Plugin<Project> {
 
             extension.getRuns().forEach(runConfig -> runConfig.token("asset_index", finalAssetIndex));
             Utils.createRunConfigTasks(extension, extractNatives, downloadAssets, createSrgToMcp);
-        });
 
-        project.getTasks().withType(JarJar.class).configureEach(jarJar -> {
-            if (jarJar.isEnabled()) {
-                logger.info("Creating reobfuscation task for JarJar task: {}", jarJar.getName());
-                reobfExtension.create(jarJar.getName());
-            }
+            project.getTasks().withType(JarJar.class).configureEach(jarJar -> {
+                if (jarJar.isEnabled()) {
+                    logger.info("Creating reobfuscation task for JarJar task: {}", jarJar.getName());
+                    reobfExtension.create(jarJar.getName());
+                }
+            });
         });
     }
 

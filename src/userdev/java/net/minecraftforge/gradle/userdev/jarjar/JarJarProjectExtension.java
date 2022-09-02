@@ -58,10 +58,7 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
     }
 
     private void enable(boolean enabled) {
-        final Task task = project.getTasks().findByPath(UserDevPlugin.JAR_JAR_TASK_NAME);
-        if (task != null) {
-            task.setEnabled(enabled);
-        }
+        this.project.getTasks().named(UserDevPlugin.JAR_JAR_TASK_NAME).configure(task -> task.setEnabled(enabled));
     }
 
     public void disable() {
