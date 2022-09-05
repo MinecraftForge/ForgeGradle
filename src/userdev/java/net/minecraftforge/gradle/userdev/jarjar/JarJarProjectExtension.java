@@ -25,6 +25,7 @@ import groovy.util.Node;
 import net.minecraftforge.gradle.userdev.DependencyManagementExtension;
 import net.minecraftforge.gradle.userdev.UserDevPlugin;
 import net.minecraftforge.gradle.userdev.dependency.DependencyFilter;
+import net.minecraftforge.gradle.userdev.dependency.DependencyVersionInformationHandler;
 import net.minecraftforge.gradle.userdev.tasks.JarJar;
 import net.minecraftforge.gradle.userdev.util.MavenPomUtils;
 import org.gradle.api.Action;
@@ -127,6 +128,12 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
     public JarJarProjectExtension dependencies(Action<DependencyFilter> c) {
         enable();
         project.getTasks().withType(JarJar.class).configureEach(jarJar -> jarJar.dependencies(c));
+        return this;
+    }
+
+    public JarJarProjectExtension versionInformation(Action<DependencyVersionInformationHandler> c) {
+        enable();
+        project.getTasks().withType(JarJar.class).configureEach(jarJar -> jarJar.versionInformation(c));
         return this;
     }
 
