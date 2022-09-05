@@ -69,13 +69,18 @@ public class DeobfuscatingVersionUtils {
         StringBuilder buf = new StringBuilder();
 
         buf.append(restriction.isLowerBoundInclusive() ? '[' : '(');
-        if (restriction.getLowerBound() != null) {
+        if (restriction.getLowerBound() != restriction.getUpperBound()) {
+            if (restriction.getLowerBound() != null) {
+                buf.append(adaptDeobfuscatedVersion(restriction.getLowerBound().toString()));
+            }
+            buf.append(',');
+            if (restriction.getUpperBound() != null) {
+                buf.append(adaptDeobfuscatedVersion(restriction.getUpperBound().toString()));
+            }
+        } else {
             buf.append(adaptDeobfuscatedVersion(restriction.getLowerBound().toString()));
         }
-        buf.append(',');
-        if (restriction.getUpperBound() != null) {
-            buf.append(adaptDeobfuscatedVersion(restriction.getUpperBound().toString()));
-        }
+
         buf.append(restriction.isUpperBoundInclusive() ? ']' : ')');
 
         return buf.toString();
