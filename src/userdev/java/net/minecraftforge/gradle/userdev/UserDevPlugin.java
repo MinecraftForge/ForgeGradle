@@ -5,15 +5,7 @@
 
 package net.minecraftforge.gradle.userdev;
 
-import net.minecraftforge.gradle.common.tasks.ApplyMappings;
-import net.minecraftforge.gradle.common.tasks.ApplyRangeMap;
-import net.minecraftforge.gradle.common.tasks.DownloadAssets;
-import net.minecraftforge.gradle.common.tasks.DownloadMCMeta;
-import net.minecraftforge.gradle.common.tasks.DownloadMavenArtifact;
-import net.minecraftforge.gradle.common.tasks.ExtractExistingFiles;
-import net.minecraftforge.gradle.common.tasks.ExtractMCPData;
-import net.minecraftforge.gradle.common.tasks.ExtractNatives;
-import net.minecraftforge.gradle.common.tasks.ExtractRangeMap;
+import net.minecraftforge.gradle.common.tasks.*;
 import net.minecraftforge.gradle.common.util.*;
 import net.minecraftforge.gradle.mcp.ChannelProvidersExtension;
 import net.minecraftforge.gradle.mcp.MCPRepo;
@@ -38,15 +30,12 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository.MetadataSources;
-import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.Provider;
-import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
@@ -372,34 +361,27 @@ public class UserDevPlugin implements Plugin<Project> {
      * Each quirk is documented and accounted for in this function.
      *  - Classpath / Resources; FG2 Userdev puts all classes and resources into a single jar file for FML to consume.
      *      FG3+ puts classes and resources into separate folders, which breaks on older versions.
-     *      We replicate the FG2 behavior by forcing the classes and resources to go to the same build folder.
+     *      We replicate the FG2 behavior by replacing these folders by the jar artifact on the runtime classpath.
      *
      * In other words, it's a containment zone for version-specific hacks.
      * For issues you think are caused by this function, contact Curle or any other Retrogradle maintainer.
      */
     private void runRetrogradleFixes(Project project) {
         final LegacyExtension config = (LegacyExtension) project.getExtensions().getByName(LegacyExtension.EXTENSION_NAME);
-        final boolean shouldFixClasspath = config.getFixClasspath();
-
+        final boolean shouldFixClasspath = config.getFixClasspath().get();
+        
         if(shouldFixClasspath) {
-            // Find the output jar file
-            final Jar jarTask = (Jar) project.getTasks().getByName("jar");
-            // Get the classpath and create a composite with the found jar file
-            final ConfigurableFileCollection classpath = project.files(
-                    project.getConfigurations().getByName("runtimeClasspath"),
-                    jarTask.getArchiveFile().get().getAsFile());
-            // Get the Userdev plugin for the run configs
-            final MinecraftExtension minecraftExtension = (MinecraftExtension) project.getExtensions().getByName(UserDevExtension.EXTENSION_NAME);
-
-            // For all defined run configurations..
-            minecraftExtension.getRuns().stream()
-                    // Get the Task created by it
-                    .map(run -> project.getTasks().getByName(run.getTaskName()))
-                    // Filter for those that define a JavaExec run
-                    .filter(task -> task instanceof JavaExec)
-                    // Set the run's classpath to the composite we made
-                    .forEach(task -> ((JavaExec) task).setClasspath(classpath));
+            // get the minecraft extension
+            final MinecraftExtension minecraft = project.getExtensions().getByType(MinecraftExtension.class);
+            // create a singleton collection from the jar task's output 
+            final FileCollection jar = project.files(project.getTasks().named("jar"));
+            
+            minecraft.getRuns().stream()
+                // get all RunConfig SourceSets
+                .flatMap(runConfig -> runConfig.getAllSources().stream())
+                .distinct()
+                // replace output directories with the jar artifact on each SourceSet's classpath
+                .forEach(sourceSet -> sourceSet.setRuntimeClasspath(sourceSet.getRuntimeClasspath().minus(sourceSet.getOutput()).plus(jar)));
         }
-
     }
 }
