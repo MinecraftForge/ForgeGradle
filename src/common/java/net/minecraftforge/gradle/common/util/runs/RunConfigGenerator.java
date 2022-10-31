@@ -279,7 +279,7 @@ public abstract class RunConfigGenerator
             task.setWorkingDir(workDir);
             task.getMainClass().set(runConfig.getMain());
             JavaToolchainService service = project.getExtensions().getByType(JavaToolchainService.class);
-            task.getJavaLauncher().set(service.launcherFor(project.getExtensions().getByType(JavaPluginExtension.class).getToolchain()));
+            task.getJavaLauncher().convention(service.launcherFor(project.getExtensions().getByType(JavaPluginExtension.class).getToolchain()));
 
             task.args(getArgsStream(runConfig, updatedTokens, false).toArray());
             runConfig.getJvmArgs().forEach((arg) -> task.jvmArgs(runConfig.replace(updatedTokens, arg)));
