@@ -362,36 +362,59 @@ public class UserDevPlugin implements Plugin<Project> {
      * In the process, some quirks with the older versions of ForgeGradle were discovered that need to be replicated here.
      *
      * Each quirk is documented and accounted for in this function.
-     *  - Classpath / Resources; FG2 Userdev puts all classes and resources into a single jar file for FML to consume.
+     *  - Classpath / Resources;
+     *      FG2 Userdev puts all classes and resources into a single jar file for FML to consume.
      *      FG3+ puts classes and resources into separate folders, which breaks on older versions.
-     *      We replicate the FG2 behavior by forcing the classes and resources to go to the same build folder.
+     *      We replicate the FG2 behavior by replacing these folders by the jar artifact on the runtime classpath.
+     *  - Dependency AccessTransformers / Coremods;
+     *      FG2 GradleStart exposes a <code>net.minecraftforge.gradle.GradleStart.csvDir</code> property
+     *      that points to a directory containing CSV mappings files. This is used by LegacyDev to remap dependencies' AT modifiers.
+     *      We replicate the FG2 behavior by extracting the mappings to a folder in the build directory
+     *      and setting the property to point to it.
      *
      * In other words, it's a containment zone for version-specific hacks.
      * For issues you think are caused by this function, contact Curle or any other Retrogradle maintainer.
      */
     private void runRetrogradleFixes(Project project) {
         final LegacyExtension config = (LegacyExtension) project.getExtensions().getByName(LegacyExtension.EXTENSION_NAME);
-        final boolean shouldFixClasspath = config.getFixClasspath();
+        // Get the Userdev extension for the run configs
+        final MinecraftExtension minecraft = project.getExtensions().getByType(MinecraftExtension.class);
+        final boolean shouldFixClasspath = config.getFixClasspath().get();
+        final boolean shouldExtractMappings = config.getExtractMappings().get();
 
         if(shouldFixClasspath) {
-            // Find the output jar file
-            final Jar jarTask = (Jar) project.getTasks().getByName("jar");
-            // Get the classpath and create a composite with the found jar file
-            final ConfigurableFileCollection classpath = project.files(
-                    project.getConfigurations().getByName("runtimeClasspath"),
-                    jarTask.getArchiveFile().get().getAsFile());
-            // Get the Userdev plugin for the run configs
-            final MinecraftExtension minecraftExtension = (MinecraftExtension) project.getExtensions().getByName(UserDevExtension.EXTENSION_NAME);
-
-            // For all defined run configurations..
-            minecraftExtension.getRuns().stream()
-                    // Get the Task created by it
-                    .map(run -> project.getTasks().getByName(run.getTaskName()))
-                    // Filter for those that define a JavaExec run
-                    .filter(task -> task instanceof JavaExec)
-                    // Set the run's classpath to the composite we made
-                    .forEach(task -> ((JavaExec) task).setClasspath(classpath));
+            // create a singleton collection from the jar task's output 
+            final FileCollection jar = project.files(project.getTasks().named("jar"));
+            
+            minecraft.getRuns().stream()
+                // get all RunConfig SourceSets
+                .flatMap(runConfig -> runConfig.getAllSources().stream())
+                .distinct()
+                // replace output directories with the jar artifact on each SourceSet's classpath
+                .forEach(sourceSet -> sourceSet.setRuntimeClasspath(sourceSet.getRuntimeClasspath().minus(sourceSet.getOutput()).plus(jar)));
         }
 
+        if (shouldExtractMappings) {
+            // Extracts CSV mapping files to a folder in the build directory for further use
+            // by the <code>net.minecraftforge.gradle.GradleStart.csvDir</code> property.
+            final ExtractZip extractMappingsTask = project.getTasks().create("extractMappings", ExtractZip.class, t -> {
+                t.getZip().fileProvider(project.provider(() -> {
+                    // create maven dependency for mappings
+                    String coordinates = MCPRepo.getMappingDep(minecraft.getMappingChannel().get(), minecraft.getMappingVersion().get());
+                    Dependency dep = project.getDependencies().create(coordinates);
+                    // download and cache the mappings
+                    return project.getConfigurations().detachedConfiguration(dep).getSingleFile();
+                }));
+                // mappings are extracted to <root>/build/<taskName> by default
+                t.getOutput().convention(project.getLayout().getBuildDirectory().dir(t.getName()));
+            });
+            final File csvDir = extractMappingsTask.getOutput().get().getAsFile();
+
+            // attach the csvDir location property to each run configuration
+            minecraft.getRuns().configureEach(run -> run.property("net.minecraftforge.gradle.GradleStart.csvDir", csvDir));
+
+            // execute extractMappings before each run task
+            project.getTasks().getByName("prepareRuns").dependsOn(extractMappingsTask);
+        }
     }
 }
