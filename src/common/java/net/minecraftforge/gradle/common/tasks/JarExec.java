@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradle.common.tasks;
 
+import com.google.common.collect.ImmutableList;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 
 import org.codehaus.groovy.control.io.NullWriter;
@@ -28,6 +29,7 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.RegularFile;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.ListProperty;
@@ -81,12 +83,13 @@ public abstract class JarExec extends DefaultTask {
     private final Provider<String> resolvedVersion;
 
     protected final Provider<Directory> workDir = getProject().getLayout().getBuildDirectory().dir(getName());
-    protected final Provider<RegularFile> logFile = workDir.map(d -> d.file("log.txt"));
+    protected final Provider<RegularFile> logFile = getLogOutput();
 
     public JarExec() {
         toolFile = getTool().map(toolStr -> MavenArtifactDownloader.gradle(getProject(), toolStr, false));
         resolvedVersion = getTool().map(toolStr -> MavenArtifactDownloader.getVersion(getProject(), toolStr));
         getDebug().convention(false);
+        getLogOutput().convention(this.workDir.map(d -> d.file("log.txt")));
 
         final JavaPluginExtension extension = getProject().getExtensions().findByType(JavaPluginExtension.class);
         if (extension != null) {
@@ -102,7 +105,7 @@ public abstract class JarExec extends DefaultTask {
     @TaskAction
     public void apply() throws IOException {
         File jar = getToolJar().get();
-        File logFile = this.logFile.get().getAsFile();
+        File logFile = this.getLogOutput().get().getAsFile();
 
         // Locate main class in jar file
         JarFile jarFile = new JarFile(jar);
@@ -117,6 +120,7 @@ public abstract class JarExec extends DefaultTask {
 
         final boolean debug = getDebug().get();
         final List<String> args = filterArgs(getArgs().get());
+        final List<String> jvmArgs = getJvmArgs().isPresent() ? filterJvmArgs(getJvmArgs().get()) : ImmutableList.of();
         final ConfigurableFileCollection classpath = getProject().files(getToolJar(), getClasspath());
         final File workingDirectory = workDir.get().getAsFile();
 
@@ -125,6 +129,7 @@ public abstract class JarExec extends DefaultTask {
                 spec.setExecutable(getEffectiveExecutable());
                 spec.setDebug(debug);
                 spec.setArgs(args);
+                spec.setJvmArgs(jvmArgs);
                 spec.setClasspath(classpath);
                 spec.setWorkingDir(workingDirectory);
                 spec.getMainClass().set(mainClass);
@@ -161,6 +166,10 @@ public abstract class JarExec extends DefaultTask {
 
     protected List<String> filterArgs(List<String> args) {
         return args;
+    }
+
+    protected List<String> filterJvmArgs(List<String> jvmArgs) {
+        return jvmArgs;
     }
 
     // TODO: remove this? as this isn't used anywhere
@@ -242,6 +251,10 @@ public abstract class JarExec extends DefaultTask {
 
     @Input
     @Optional
+    public abstract ListProperty<String> getJvmArgs();
+
+    @Input
+    @Optional
     public abstract Property<Boolean> getDebug();
 
     @Optional
@@ -252,6 +265,9 @@ public abstract class JarExec extends DefaultTask {
     @Nested
     @Optional
     public abstract Property<JavaLauncher> getJavaLauncher();
+
+    @Internal
+    public abstract RegularFileProperty getLogOutput();
 
     public void setMinimumRuntimeJavaVersion(int version) {
         if (!getJavaLauncher().isPresent() || !getJavaLauncher().get().getMetadata().getLanguageVersion().canCompileOrRun(version)) {
