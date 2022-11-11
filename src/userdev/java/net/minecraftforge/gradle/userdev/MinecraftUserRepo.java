@@ -522,7 +522,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 int idx = mapping.lastIndexOf('_');
                 String channel = mapping.substring(0, idx);
                 String version = mapping.substring(idx + 1);
-                builder.dependencies().add(MCPRepo.getMappingDep(channel, version), "compile"); //Runtime?
+                builder.dependencies().add(MCPRepo.getMappingDep(channel, version), "runtime");
             }
 
             Patcher patcher = parent;
