@@ -102,7 +102,7 @@ public class MCPRuntime {
                     throw new IllegalArgumentException("Could not download MCP Config dependency: " + custom.getVersion());
 
                 @SuppressWarnings("deprecation")
-                MCPFunction tmp = MCPFunctionFactory.createExecute(jar, custom.getJvmArgs(), custom.getArgs());
+                MCPFunction tmp = MCPFunctionFactory.createExecute(jar, custom.getJvmArgs(), custom.getArgs(), custom.getJavaVersion());
                 function = tmp;
             }
 
