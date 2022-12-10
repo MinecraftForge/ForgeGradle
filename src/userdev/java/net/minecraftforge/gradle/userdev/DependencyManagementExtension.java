@@ -108,7 +108,14 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
             if (oldToken == null) {
                 runConfig.lazyToken("minecraft_classpath", librariesSupplier);
             } else {
-                runConfig.lazyToken("minecraft_classpath", () -> oldToken.get() + File.pathSeparator + librariesSupplier.get());
+                runConfig.lazyToken("minecraft_classpath", () -> {
+                    String existing = oldToken.get();
+                    String candidate = librariesSupplier.get();
+
+                    return candidate.trim().isEmpty()
+                            ? existing
+                            : existing + File.pathSeparator + candidate;
+                });
             }
         });
     }
