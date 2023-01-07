@@ -22,7 +22,9 @@ package net.minecraftforge.gradle.userdev.tasks;
 
 import net.minecraftforge.gradle.userdev.UserDevPlugin;
 import net.minecraftforge.gradle.userdev.dependency.DefaultDependencyFilter;
+import net.minecraftforge.gradle.userdev.dependency.DefaultDependencyVersionInformationHandler;
 import net.minecraftforge.gradle.userdev.dependency.DependencyFilter;
+import net.minecraftforge.gradle.userdev.dependency.DependencyVersionInformationHandler;
 import net.minecraftforge.gradle.userdev.jarjar.JarJarProjectExtension;
 import net.minecraftforge.gradle.userdev.manifest.DefaultInheritManifest;
 import net.minecraftforge.gradle.userdev.manifest.InheritManifest;
@@ -56,18 +58,13 @@ import java.util.stream.Collectors;
 public abstract class JarJar extends Jar {
     private final List<Configuration> configurations;
     private transient DependencyFilter dependencyFilter;
+    private transient DependencyVersionInformationHandler dependencyVersionInformationHandler;
 
     private FileCollection sourceSetsClassesDirs;
 
-    private final ConfigurableFileCollection includedDependencies = getProject().files(new Callable<FileCollection>() {
-
-        @Override
-        public FileCollection call() {
-            return getProject().files(
-                    getResolvedDependencies().stream().flatMap(d -> d.getAllModuleArtifacts().stream()).map(ResolvedArtifact::getFile).toArray()
-            );
-        }
-    });
+    private final ConfigurableFileCollection includedDependencies = getProject().files((Callable<FileCollection>) () -> getProject().files(
+            getResolvedDependencies().stream().flatMap(d -> d.getAllModuleArtifacts().stream()).map(ResolvedArtifact::getFile).toArray()
+    ));
 
     private final ConfigurableFileCollection metadata = getProject().files((Callable<FileCollection>) () -> {
         writeMetadata();
@@ -80,6 +77,7 @@ public abstract class JarJar extends Jar {
         super();
         setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE); //As opposed to shadow, we do not filter out our entries early!, So we need to handle them accordingly.
         dependencyFilter = new DefaultDependencyFilter(getProject());
+        dependencyVersionInformationHandler = new DefaultDependencyVersionInformationHandler(getProject());
         setManifest(new DefaultInheritManifest(getServices().get(FileResolver.class)));
         configurations = new ArrayList<>();
 
@@ -131,6 +129,11 @@ public abstract class JarJar extends Jar {
 
     public JarJar dependencies(Action<DependencyFilter> c) {
         c.execute(dependencyFilter);
+        return this;
+    }
+
+    public JarJar versionInformation(Action<DependencyVersionInformationHandler> c) {
+        c.execute(dependencyVersionInformationHandler);
         return this;
     }
 
@@ -233,19 +236,23 @@ public abstract class JarJar extends Jar {
                 + ". If you used gradle based range versioning like 2.+, convert this to a maven compatible format: [2.0,3.0).", cause);
     }
 
-    private String getVersionRangeFrom(final Dependency dependency) {
+    private String getVersionRangeFrom(final ModuleDependency dependency) {
+        final Optional<String> versionRange = dependencyVersionInformationHandler.getVersionRange(dependency)
+                .map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersionRange);
+        if (versionRange.isPresent()) {
+            return versionRange.get();
+        }
         final Optional<String> attributeVersion = getProject().getExtensions().getByType(JarJarProjectExtension.class).getRange(dependency);
 
-        return attributeVersion.map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersion).orElseGet(() -> DeobfuscatingVersionUtils.adaptDeobfuscatedVersion(Objects.requireNonNull(dependency.getVersion())));
+        return attributeVersion.map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersionRange).orElseGet(() -> DeobfuscatingVersionUtils.adaptDeobfuscatedVersion(Objects.requireNonNull(dependency.getVersion())));
     }
 
-    private String getVersionFrom(final Dependency dependency, final ResolvedDependency resolvedDependency) {
-        final Optional<String> attributeVersion = getProject().getExtensions().getByType(JarJarProjectExtension.class).getPin(dependency);
-
-        return attributeVersion.map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersion).orElseGet(() -> DeobfuscatingVersionUtils.adaptDeobfuscatedVersion(Objects.requireNonNull(resolvedDependency.getModuleVersion())));
-    }
-
-    private String getVersionFrom(final Dependency dependency) {
+    private String getVersionFrom(final ModuleDependency dependency) {
+        final Optional<String> version = dependencyVersionInformationHandler.getVersion(dependency)
+                .map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersion);
+        if (version.isPresent()) {
+            return version.get();
+        }
         final Optional<String> attributeVersion = getProject().getExtensions().getByType(JarJarProjectExtension.class).getPin(dependency);
 
         return attributeVersion.map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersion).orElseGet(() -> DeobfuscatingVersionUtils.adaptDeobfuscatedVersion(Objects.requireNonNull(dependency.getVersion())));

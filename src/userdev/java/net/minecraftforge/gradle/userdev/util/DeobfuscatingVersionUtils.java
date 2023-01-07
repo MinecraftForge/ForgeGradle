@@ -20,6 +20,12 @@
 
 package net.minecraftforge.gradle.userdev.util;
 
+import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException;
+import org.apache.maven.artifact.versioning.Restriction;
+import org.apache.maven.artifact.versioning.VersionRange;
+
+import java.util.Iterator;
+
 public class DeobfuscatingVersionUtils {
 
     private DeobfuscatingVersionUtils() {
@@ -32,5 +38,51 @@ public class DeobfuscatingVersionUtils {
         }
 
         return version;
+    }
+
+    public static String adaptDeobfuscatedVersionRange(final String version) {
+        final VersionRange range;
+        try {
+            range = VersionRange.createFromVersionSpec(version);
+        } catch (InvalidVersionSpecificationException e) {
+            throw new IllegalArgumentException("Invalid version range: " + version, e);
+        }
+
+        if (range.getRecommendedVersion() != null) {
+            return adaptDeobfuscatedVersion(range.getRecommendedVersion().toString());
+        }
+
+        StringBuilder buf = new StringBuilder();
+        for (Iterator<Restriction> i = range.getRestrictions().iterator(); i.hasNext(); ) {
+            Restriction r = i.next();
+
+            buf.append(adaptDeobfuscatedVersionRangeRestriction(r));
+
+            if (i.hasNext()) {
+                buf.append(',');
+            }
+        }
+        return buf.toString();
+    }
+
+    public static String adaptDeobfuscatedVersionRangeRestriction(final Restriction restriction) {
+        StringBuilder buf = new StringBuilder();
+
+        buf.append(restriction.isLowerBoundInclusive() ? '[' : '(');
+        if (restriction.getLowerBound() != restriction.getUpperBound()) {
+            if (restriction.getLowerBound() != null) {
+                buf.append(adaptDeobfuscatedVersion(restriction.getLowerBound().toString()));
+            }
+            buf.append(',');
+            if (restriction.getUpperBound() != null) {
+                buf.append(adaptDeobfuscatedVersion(restriction.getUpperBound().toString()));
+            }
+        } else {
+            buf.append(adaptDeobfuscatedVersion(restriction.getLowerBound().toString()));
+        }
+
+        buf.append(restriction.isUpperBoundInclusive() ? ']' : ')');
+
+        return buf.toString();
     }
 }
