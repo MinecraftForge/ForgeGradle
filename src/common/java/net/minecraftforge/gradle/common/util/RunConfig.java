@@ -66,6 +66,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     private List<String> args, jvmArgs;
     private boolean forceExit = true;
     private Boolean client; // so we can have it null
+    private Boolean authenticated;
     private Boolean inheritArgs;
     private Boolean inheritJvmArgs;
     private boolean buildAllProjects;
@@ -145,6 +146,9 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     }
 
     public String getMain() {
+        if(isAuthenticated()) {
+            return "net.covers1624.devlogin.DevLogin";
+        }
         return this.main;
     }
 
@@ -205,6 +209,11 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     public List<String> getArgs() {
         if (args == null) {
             args = new ArrayList<>();
+        }
+
+        if(isAuthenticated() && !args.contains("--launch_target")) {
+            args.add("--launch_target");
+            args.add(main);
         }
 
         return args;
@@ -517,6 +526,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         ideaModule = first.ideaModule == null ? second.ideaModule : first.ideaModule;
         singleInstance = first.singleInstance == null ? second.singleInstance : first.singleInstance;
         this.client = first.client == null ? second.client : first.client;
+        authenticated = first.authenticated == null ? second.authenticated : first.authenticated;
         if (overwrite) {
             this.buildAllProjects = other.buildAllProjects;
         }
@@ -610,6 +620,26 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         return Utils.replaceTokens(vars, value);
     }
 
+    /**
+     * @see #setAuthenticated(boolean)
+     */
+    public void authenticated() {
+        setAuthenticated(true);
+    }
+
+    /**
+     * Marks as being an authenticated client
+     * @param authenticated If true will use <a href="https://github.com/covers1624/DevLogin#devlogin">DevLogin</a> and attempt to authenticate against Mojang account servers.
+     * @implNote Has no use when used on server configs
+     */
+    public void setAuthenticated(boolean authenticated) {
+        this.authenticated = authenticated;
+    }
+
+    public boolean isAuthenticated() {
+        return isClient() && authenticated != null && authenticated;
+    }
+
     public void client(boolean value) {
         setClient(value);
     }
@@ -622,7 +652,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         if (client == null) {
             boolean isTargetClient = getEnvironment().getOrDefault("target", "").contains("client") || getName().contains("client");
 
-            client = isTargetClient || MCP_CLIENT_MAIN.equals(getMain()) || MC_CLIENT_MAIN.equals(getMain());
+            client = isTargetClient || MCP_CLIENT_MAIN.equals(main) || MC_CLIENT_MAIN.equals(main);
         }
 
         return client;

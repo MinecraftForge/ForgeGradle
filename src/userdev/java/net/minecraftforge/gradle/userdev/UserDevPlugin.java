@@ -296,6 +296,13 @@ public class UserDevPlugin implements Plugin<Project> {
                 e.metadataSources(MetadataSources::artifact);
             });
             project.getRepositories().mavenCentral(); //Needed for MCP Deps
+            // Attach covers1624 repo for DevLogin
+            project.getRepositories().maven(repo -> {
+                repo.setName("Covers1624");
+                repo.setUrl("https://maven.covers1624.net");
+                repo.mavenContent(content -> content.includeGroup("net.covers1624"));
+            });
+            project.getDependencies().add(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, "net.covers1624:DevLogin:0.1.0.2");
             mcrepo.validate(minecraft, extension.getRuns().getAsMap(), extractNatives.get(), downloadAssets.get(), createSrgToMcp.get()); //This will set the MC_VERSION property.
 
             String mcVer = (String) project.getExtensions().getExtraProperties().get("MC_VERSION");
