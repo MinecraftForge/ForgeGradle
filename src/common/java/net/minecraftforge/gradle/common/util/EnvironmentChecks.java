@@ -74,6 +74,7 @@ public class EnvironmentChecks {
      * <ul>
      *     <li>Java version is <em>1.8.0_101</em> or above (first JDK version to include Let's Encrypt certificates)</li>
      *     <li>Gradle version is <em>7.1</em> or above (minimum version required by ForgeGradle)</li>
+     *     <li>Gradle version is below <em>8.0</em> (ForgeGradle 5 only supports the Gradle 7.x series)</li>
      *     <li>Certificates for {@link Utils#FORGE_MAVEN} and {@link Utils#MOJANG_MAVEN} are valid (required repositories)</li>
      * </ul>
      *
@@ -98,7 +99,7 @@ public class EnvironmentChecks {
             logger.debug(ENV_CHECK, "Checking Gradle version");
             checkGradleRange(
                     GradleVersion.version("7.1"),
-                    null
+                    GradleVersion.version("8.0")
             );
         } else {
             logger.debug(ENV_CHECK, "Gradle version check disabled by system property");
