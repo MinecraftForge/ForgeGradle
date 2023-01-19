@@ -373,6 +373,9 @@ public class PatcherPlugin implements Plugin<Project> {
                             task.getInput().set(setupMCP.flatMap(SetupMCP::getOutput));
                             task.getTool().set(extension.getProcessor().getVersion());
                             task.getArgs().set(extension.getProcessor().getArgs());
+                            Integer javaVersion = extension.getProcessor().getJavaVersion();
+                            if (javaVersion != null)
+                                task.setRuntimeJavaVersion(javaVersion);
                             task.getData().set(extension.getProcessorData());
                         });
                         setupOutput = procConfig.flatMap(DynamicJarExec::getOutput);

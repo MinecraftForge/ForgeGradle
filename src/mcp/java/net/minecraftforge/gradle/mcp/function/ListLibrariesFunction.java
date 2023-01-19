@@ -25,6 +25,7 @@ import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.apache.tools.ant.types.FileList;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -48,11 +49,19 @@ import java.util.jar.Manifest;
 
 class ListLibrariesFunction implements MCPFunction {
     private static final Attributes.Name FORMAT = new Attributes.Name("Bundler-Format");
+    private final int spec;
+
+    ListLibrariesFunction(int spec) {
+        this.spec = spec;
+    }
 
     @Override
     public File execute(MCPEnvironment environment) {
         File output = (File)environment.getArguments().computeIfAbsent("output", (key) -> environment.getFile("libraries.txt"));
         File bundle = (File) environment.getArguments().get("bundle");
+        if (bundle != null && this.spec < 3) {
+            throw new IllegalArgumentException("Invalid MCP Config: Listing bundle libraries is only supported for MCPConfig spec 3 or higher, found spec: " + this.spec);
+        }
 
         try (FileSystem bundleFs = bundle == null ? null : FileSystems.newFileSystem(bundle.toPath(), null)) {
             Set<String> artifacts;

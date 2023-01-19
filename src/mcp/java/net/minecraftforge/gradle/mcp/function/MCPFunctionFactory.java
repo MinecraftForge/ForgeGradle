@@ -54,7 +54,7 @@ public class MCPFunctionFactory {
             case "strip":
                 return new StripJarFunction();
             case "listLibraries":
-                return new ListLibrariesFunction();
+                return new ListLibrariesFunction(spec);
             case "inject":
                 return new InjectFunction();
             case "patch":
@@ -98,10 +98,11 @@ public class MCPFunctionFactory {
      * Non-Public API, Can be changed at any time.
      */
     @Deprecated
-    public static MCPFunction createExecute(File jar, List<String> jvmArgs, List<String> runArgs) {
+    public static MCPFunction createExecute(File jar, List<String> jvmArgs, List<String> runArgs, @Nullable Integer javaVersion) {
         return new ExecuteFunction(jar,
             jvmArgs.toArray(new String[jvmArgs.size()]),
             runArgs.toArray(new String[runArgs.size()]),
-            Collections.emptyMap());
+            Collections.emptyMap(),
+            javaVersion);
     }
 }

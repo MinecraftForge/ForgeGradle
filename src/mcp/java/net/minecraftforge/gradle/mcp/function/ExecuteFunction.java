@@ -23,8 +23,10 @@ package net.minecraftforge.gradle.mcp.function;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 
+import javax.annotation.Nullable;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -53,13 +55,20 @@ class ExecuteFunction implements MCPFunction {
     protected String[] runArgs;
     protected final Map<String, String> envVars;
 
+    @Nullable
+    private Integer javaVersion;
     private Map<String, String> data;
 
     public ExecuteFunction(File jar, String[] jvmArgs, String[] runArgs, Map<String, String> envVars) {
+        this(jar, jvmArgs, runArgs, envVars, null);
+    }
+
+    public ExecuteFunction(File jar, String[] jvmArgs, String[] runArgs, Map<String, String> envVars, @Nullable Integer javaVersion) {
         this.jar = jar;
         this.jvmArgs = jvmArgs;
         this.runArgs = runArgs;
         this.envVars = envVars;
+        this.javaVersion = javaVersion;
     }
 
     @Override
@@ -121,7 +130,8 @@ class ExecuteFunction implements MCPFunction {
         // Do not implicitly use the Java version that Gradle itself is using.
         // Instead use a launcher compatible with the version required by MCP.
         JavaToolchainService toolchainService = environment.project.getExtensions().getByType(JavaToolchainService.class);
-        String launcher = toolchainService.launcherFor(spec -> spec.getLanguageVersion().set(environment.getJavaVersion()))
+        JavaLanguageVersion toolchainVersion = this.javaVersion != null ? JavaLanguageVersion.of(this.javaVersion) : environment.getJavaVersion();
+        String launcher = toolchainService.launcherFor(spec -> spec.getLanguageVersion().set(toolchainVersion))
                 .get()
                 .getExecutablePath()
                 .getAsFile()

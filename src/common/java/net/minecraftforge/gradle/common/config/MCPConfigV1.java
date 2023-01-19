@@ -154,6 +154,8 @@ public class MCPConfigV1 extends Config {
         protected List<String> args;
         @Nullable
         protected List<String> jvmargs;
+        @Nullable
+        private Integer java_version;
 
         public String getVersion() {
             return version;
@@ -181,6 +183,14 @@ public class MCPConfigV1 extends Config {
         }
         public void setJvmArgs(List<String> value) {
             this.jvmargs = value;
+        }
+
+        @Nullable
+        public Integer getJavaVersion() {
+            return this.java_version;
+        }
+        public void setJavaVersion(Integer javaVersion) {
+            this.java_version = javaVersion;
         }
     }
 }
