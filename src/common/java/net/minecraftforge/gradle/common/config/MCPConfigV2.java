@@ -49,12 +49,25 @@ public class MCPConfigV2 extends MCPConfigV1 {
 
             byte[] data = IOUtils.toByteArray(zip.getInputStream(entry));
             int spec = Config.getSpec(data);
-            if (spec == 2 || spec == 3)
-                return MCPConfigV2.get(data);
+            MCPConfigV2 config = null;
+            if (spec == 2 || spec == 3 || spec == 4)
+                config = MCPConfigV2.get(data);
             if (spec == 1)
-                return new MCPConfigV2(MCPConfigV1.get(data));
+                config = new MCPConfigV2(MCPConfigV1.get(data));
 
-            throw new IllegalStateException("Invalid MCP Config: " + path.getAbsolutePath() + " Unknown spec: " + spec);
+            if (config == null)
+                throw new IllegalStateException("Invalid MCP Config: " + path.getAbsolutePath() + " Unknown spec: " + spec);
+
+            // Verify that java_version is only used on spec 4 or higher
+            if (spec < 4 && config.functions != null) {
+                for (Function func : config.functions.values()) {
+                    if (func.getJavaVersion() != null) {
+                        throw new IllegalStateException("Invalid MCP Config: Function \"java_version\" property is only supported on spec 4 or higher, found spec: " + spec);
+                    }
+                }
+            }
+
+            return config;
         }
     }
 

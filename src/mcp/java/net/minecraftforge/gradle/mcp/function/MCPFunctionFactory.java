@@ -54,7 +54,7 @@ public class MCPFunctionFactory {
             case "strip":
                 return new StripJarFunction();
             case "listLibraries":
-                return new ListLibrariesFunction();
+                return new ListLibrariesFunction(spec);
             case "inject":
                 return new InjectFunction();
             case "patch":
