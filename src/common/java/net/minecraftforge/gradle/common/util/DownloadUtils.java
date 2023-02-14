@@ -169,7 +169,7 @@ public class DownloadUtils {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         final int read = IOUtils.copy(is, out);
         if (len != -1 && read != len) {
-            throw new IOException("Failed to read all of data from " + con.getURL() + "; got " + read + " expected " + len);
+            throw new IOException("Failed to read all data from " + con.getURL() + "; got " + read + " expected " + len);
         }
 
         Charset charset = StandardCharsets.UTF_8;
@@ -259,7 +259,7 @@ public class DownloadUtils {
         try (final FileOutputStream fos = new FileOutputStream(output)) {
             final int read = IOUtils.copy(in, fos);
             if (len != -1 && read != len) {
-                throw new IOException("Failed to read all of data from " + connection.getURL() + "; got " + read + " expected " + len);
+                throw new IOException("Failed to read all data from " + connection.getURL() + "; got " + read + " expected " + len);
             }
         }
     }
