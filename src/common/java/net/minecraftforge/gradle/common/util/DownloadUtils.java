@@ -20,8 +20,11 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.net.MediaType;
 import org.apache.commons.io.IOUtils;
 
+import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -31,15 +34,23 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Date;
 import java.util.Map;
 import java.util.function.Consumer;
-
-import javax.annotation.Nullable;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.InflaterInputStream;
 
 public class DownloadUtils {
+    private static final Map<String, DecompressionStrategy> DECOMPRESSION_STRATEGIES = ImmutableMap.of(
+            "identity", stream -> stream,
+            "gzip", GZIPInputStream::new,
+            "deflate", InflaterInputStream::new
+    );
+    private static final String ACCEPT_ENCODING = String.join(", ", DECOMPRESSION_STRATEGIES.keySet());
+
     private DownloadUtils() {} // Prevent instantiation
 
     public static boolean downloadEtag(URL url, File output, boolean offline) throws IOException {
@@ -67,18 +78,7 @@ public class DownloadUtils {
             return true;
         } else if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
             try {
-                InputStream stream = con.getInputStream();
-                int len = con.getContentLength();
-                int read;
-                output.getParentFile().mkdirs();
-                try (FileOutputStream out = new FileOutputStream(output)) {
-                    read = IOUtils.copy(stream, out);
-                }
-
-                if (read != len) {
-                    output.delete();
-                    throw new IOException("Failed to read all of data from " + url + " got " + read + " expected " + len);
-                }
+                downloadFileConsideringCompression(con, output);
 
                 etag = con.getHeaderField("ETag");
                 if (etag == null || etag.isEmpty())
@@ -137,24 +137,11 @@ public class DownloadUtils {
 
     private static boolean downloadFile(URLConnection con, File output) throws IOException {
         try {
-            InputStream stream = con.getInputStream();
-            int len = con.getContentLength();
-            int read;
-
-            output.getParentFile().mkdirs();
-
-            try (FileOutputStream out = new FileOutputStream(output)) {
-                read = IOUtils.copy(stream, out);
-            }
-
-            if (read != len) {
-                output.delete();
-                throw new IOException("Failed to read all of data from " + con.getURL() + " got " + read + " expected " + len);
-            }
-
+            downloadFileConsideringCompression(con, output);
             return true;
         } catch (IOException e) {
-            output.delete();
+            if (output.exists())
+                output.delete();
             throw e;
         }
     }
@@ -177,13 +164,21 @@ public class DownloadUtils {
     }
 
     private static String downloadString(URLConnection con) throws IOException {
-        InputStream stream = con.getInputStream();
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        int len = con.getContentLength();
-        int read = IOUtils.copy(stream, out);
-        if (read != len)
-            throw new IOException("Failed to read all of data from " + con.getURL() + " got " + read + " expected " + len);
-        return new String(out.toByteArray(), StandardCharsets.UTF_8); //Read encoding from header?
+        final int len = con.getContentLength();
+        final InputStream is = getInputStream(con);
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        final int read = IOUtils.copy(is, out);
+        if (len != -1 && read != len) {
+            throw new IOException("Failed to read all of data from " + con.getURL() + "; got " + read + " expected " + len);
+        }
+
+        Charset charset = StandardCharsets.UTF_8;
+        if (con.getContentType() != null) {
+            try {
+                charset = MediaType.parse(con.getContentType()).charset().or(StandardCharsets.UTF_8);
+            } catch (IllegalArgumentException ignored) {}
+        }
+        return new String(out.toByteArray(), charset);
     }
 
     @Nullable
@@ -233,6 +228,7 @@ public class DownloadUtils {
     public static HttpURLConnection connectHttpWithRedirects(URL url, Consumer<HttpURLConnection> setup) throws IOException {
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setInstanceFollowRedirects(true);
+        con.addRequestProperty("Accept-Encoding", ACCEPT_ENCODING);
         setup.accept(con);
         con.connect();
         if ("http".equalsIgnoreCase(url.getProtocol())) {
@@ -253,5 +249,38 @@ public class DownloadUtils {
             }
         }
         return con;
+    }
+
+    private static void downloadFileConsideringCompression(URLConnection connection, File output) throws IOException {
+        final int len = connection.getContentLength();
+        final InputStream in = getInputStream(connection);
+        final File parent = output.getParentFile();
+        if (parent != null) parent.mkdirs();
+        try (final FileOutputStream fos = new FileOutputStream(output)) {
+            final int read = IOUtils.copy(in, fos);
+            if (len != -1 && read != len) {
+                throw new IOException("Failed to read all of data from " + connection.getURL() + "; got " + read + " expected " + len);
+            }
+        }
+    }
+
+    private static InputStream getInputStream(URLConnection connection) throws IOException {
+        final String encoding = connection.getContentEncoding();
+        if (encoding == null || encoding.isEmpty()) return connection.getInputStream();
+        InputStream is = connection.getInputStream();
+        final String[] encodings = encoding.split(",");
+        for (final String enc : encodings) {
+            final DecompressionStrategy strategy = DECOMPRESSION_STRATEGIES.get(enc.trim());
+            if (strategy == null) {
+                throw new IOException("Unknown content-encoding \"" + enc + "\"!");
+            }
+            is = strategy.wrap(is);
+        }
+        return is;
+    }
+
+    @FunctionalInterface
+    public interface DecompressionStrategy {
+        InputStream wrap(InputStream stream) throws IOException;
     }
 }
