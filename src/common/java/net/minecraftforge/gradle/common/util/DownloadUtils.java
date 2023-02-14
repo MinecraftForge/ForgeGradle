@@ -168,7 +168,7 @@ public class DownloadUtils {
         final InputStream is = getInputStream(con);
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         final int read = IOUtils.copy(is, out);
-        if (len != -1 && read != len) {
+        if (isEncoded(con) && len != -1 && read != len) {
             throw new IOException("Failed to read all data from " + con.getURL() + "; got " + read + " expected " + len);
         }
 
@@ -258,7 +258,8 @@ public class DownloadUtils {
         if (parent != null) parent.mkdirs();
         try (final FileOutputStream fos = new FileOutputStream(output)) {
             final int read = IOUtils.copy(in, fos);
-            if (len != -1 && read != len) {
+            // There will be a discrepancy between the bytes expected and read when we are sent a compressed response
+            if (isEncoded(connection) && len != -1 && read != len) {
                 throw new IOException("Failed to read all data from " + connection.getURL() + "; got " + read + " expected " + len);
             }
         }
@@ -277,6 +278,11 @@ public class DownloadUtils {
             is = strategy.wrap(is);
         }
         return is;
+    }
+
+    private static boolean isEncoded(URLConnection connection) {
+        final String enc = connection.getContentEncoding();
+        return enc == null || enc.equals("identity");
     }
 
     @FunctionalInterface
