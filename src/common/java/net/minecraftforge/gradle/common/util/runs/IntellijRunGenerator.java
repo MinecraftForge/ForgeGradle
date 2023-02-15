@@ -155,6 +155,9 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                     configuration.setAttribute("type", "Application");
                     configuration.setAttribute("factoryName", "Application");
                     configuration.setAttribute("singleton", runConfig.isSingleInstance() ? "true" : "false");
+                    if (runConfig.getIdeaFolder() != null) {
+                        configuration.setAttribute("folderName", runConfig.getIdeaFolder());
+                    }
 
                     elementOption(javaDocument, configuration, "MAIN_CLASS_NAME", runConfig.getMain());
                     elementOption(javaDocument, configuration, "VM_PARAMETERS",

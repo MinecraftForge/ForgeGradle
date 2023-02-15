@@ -59,7 +59,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
 
     private Boolean singleInstance = null;
 
-    private String taskName, main, ideaModule, workDir;
+    private String taskName, main, ideaModule, ideaFolder, workDir;
 
     private List<SourceSet> sources;
     private List<RunConfig> parents, children;
@@ -284,6 +284,19 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         }
 
         return ideaModule;
+    }
+
+    public void ideaFolder(@Nullable String value) {
+        this.setIdeaFolder(value);
+    }
+
+    public void setIdeaFolder(@Nullable String value) {
+        this.ideaFolder = value;
+    }
+
+    @Nullable
+    public final String getIdeaFolder() {
+        return ideaFolder;
     }
 
     public void workingDirectory(String value) {
