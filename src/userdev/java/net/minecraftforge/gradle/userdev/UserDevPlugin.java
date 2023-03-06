@@ -318,9 +318,7 @@ public class UserDevPlugin implements Plugin<Project> {
         });
         project.getTasks().withType(JarJar.class).all(jarJar -> {
             logger.info("Creating reobfuscation task for JarJar task: {}", jarJar.getName());
-            final RenameJarInPlace reobf = reobfExtension.create(jarJar.getName());
-            reobf.setOnlyIf(task -> jarJar.isEnabled());
-            jarJar.finalizedBy(reobf);
+            reobfExtension.create(jarJar.getName()).setOnlyIf(task -> jarJar.isEnabled());
         });
     }
 
