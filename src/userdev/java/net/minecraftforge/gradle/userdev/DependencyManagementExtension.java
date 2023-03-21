@@ -9,13 +9,16 @@ import groovy.lang.Closure;
 import groovy.lang.GroovyObjectSupport;
 import groovy.util.Node;
 import groovy.util.NodeList;
+import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.MinecraftExtension;
+import net.minecraftforge.gradle.userdev.util.DeobfuscatingRepo;
 import net.minecraftforge.gradle.userdev.util.DeobfuscatingVersionUtils;
 import net.minecraftforge.gradle.userdev.util.DependencyRemapper;
 import net.minecraftforge.gradle.userdev.util.MavenPomUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.repositories.ArtifactRepository;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.publish.tasks.GenerateModuleMetadata;
 
@@ -28,10 +31,24 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
     public static final String EXTENSION_NAME = "fg";
     private final Project project;
     private final DependencyRemapper remapper;
+    private final DeobfuscatingRepo deobfuscatingRepo;
+    private final ArtifactRepository repository;
 
-    public DependencyManagementExtension(Project project, DependencyRemapper remapper) {
+    public DependencyManagementExtension(Project project, DependencyRemapper remapper, DeobfuscatingRepo deobfuscatingRepo) {
         this.project = project;
         this.remapper = remapper;
+        this.deobfuscatingRepo = deobfuscatingRepo;
+        this.repository = new BaseRepo.Builder()
+                .add(deobfuscatingRepo)
+                .attach(project, "bundled_deobf_repo");
+    }
+
+    public DeobfuscatingRepo getDeobfuscatingRepo() {
+        return deobfuscatingRepo;
+    }
+
+    public ArtifactRepository getRepository() {
+        return repository;
     }
 
     @SuppressWarnings("unused")

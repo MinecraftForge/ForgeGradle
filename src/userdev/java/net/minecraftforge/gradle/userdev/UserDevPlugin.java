@@ -104,7 +104,7 @@ public class UserDevPlugin implements Plugin<Project> {
         // Can't create at top-level or put in `minecraft` ext due to configuration name conflict
         final Deobfuscator deobfuscator = new Deobfuscator(project, Utils.getCache(project, "deobf_dependencies"));
         final DependencyRemapper remapper = new DependencyRemapper(project, deobfuscator);
-        DependencyManagementExtension fgExtension = project.getExtensions().create(DependencyManagementExtension.EXTENSION_NAME, DependencyManagementExtension.class, project, remapper);
+        DependencyManagementExtension fgExtension = project.getExtensions().create(DependencyManagementExtension.EXTENSION_NAME, DependencyManagementExtension.class, project, remapper, new DeobfuscatingRepo(project, internalObfConfiguration, deobfuscator));
         JarJarProjectExtension jarJarExtension = project.getExtensions().create(JarJarProjectExtension.EXTENSION_NAME, JarJarProjectExtension.class, project);
 
         final TaskContainer tasks = project.getTasks();
@@ -221,7 +221,6 @@ public class UserDevPlugin implements Plugin<Project> {
 
         project.afterEvaluate(p -> {
             MinecraftUserRepo mcrepo = null;
-            DeobfuscatingRepo deobfrepo = null;
 
             DependencySet mcDependencies = minecraft.getDependencies();
             for (Dependency dep : new ArrayList<>(mcDependencies)) { // Copied to new list to avoid ConcurrentModificationException
@@ -234,6 +233,7 @@ public class UserDevPlugin implements Plugin<Project> {
                 mcDependencies.remove(dep);
 
                 mcrepo = new MinecraftUserRepo(p, dep.getGroup(), dep.getName(), dep.getVersion(), new ArrayList<>(extension.getAccessTransformers().getFiles()), extension.getMappings().get());
+                fgExtension.getRepository().content(content -> content.excludeModule(dep.getGroup(), dep.getName())); // This is annoying but the content filter of the deobf repo does match the MC dependency
                 String newDep = mcrepo.getDependencyString();
                 //p.getLogger().lifecycle("New Dep: " + newDep);
                 ExternalModuleDependency ext = (ExternalModuleDependency) p.getDependencies().create(newDep);
@@ -259,18 +259,15 @@ public class UserDevPlugin implements Plugin<Project> {
                 extension.applyContentFilter(e);
             });
 
-            if (!internalObfConfiguration.getDependencies().isEmpty()) {
-                deobfrepo = new DeobfuscatingRepo(project, internalObfConfiguration, deobfuscator);
-                if (deobfrepo.getResolvedOrigin() == null) {
-                    project.getLogger().error("DeobfRepo attempted to resolve an origin repo early but failed, this may cause issues with some IDEs");
-                }
-            }
             remapper.attachMappings(extension.getMappings().get());
+
+            if (fgExtension.getDeobfuscatingRepo().getResolvedOrigin() == null) {
+                project.getLogger().error("DeobfRepo attempted to resolve an origin repo early but failed, this may cause issues with some IDEs");
+            }
 
             // We have to add these AFTER our repo so that we get called first, this is annoying...
             new BaseRepo.Builder()
                     .add(mcrepo)
-                    .add(deobfrepo)
                     .add(MCPRepo.create(project))
                     .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
                     .attach(project);
