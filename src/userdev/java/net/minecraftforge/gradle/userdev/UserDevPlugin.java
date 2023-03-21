@@ -256,6 +256,7 @@ public class UserDevPlugin implements Plugin<Project> {
                     m.mavenPom();
                     m.artifact();
                 });
+                extension.applyContentFilter(e);
             });
 
             if (!internalObfConfiguration.getDependencies().isEmpty()) {
@@ -279,8 +280,9 @@ public class UserDevPlugin implements Plugin<Project> {
             project.getRepositories().maven(e -> {
                 e.setUrl(Utils.MOJANG_MAVEN);
                 e.metadataSources(MetadataSources::artifact);
+                extension.applyContentFilter(e);
             });
-            project.getRepositories().mavenCentral(); //Needed for MCP Deps
+            project.getRepositories().mavenCentral(e -> e.content(ct -> ct.excludeGroup("net.minecraftforge"))); //Needed for MCP Deps; exclude net.minecraftforge because we don't host anything on central
             mcrepo.validate(minecraft, extension.getRuns().getAsMap(), extractNatives.get(), downloadAssets.get(), createSrgToMcp.get()); //This will set the MC_VERSION property.
 
             String mcVer = (String) project.getExtensions().getExtraProperties().get("MC_VERSION");
