@@ -15,7 +15,6 @@ import net.minecraftforge.artifactural.base.repository.SimpleRepository;
 import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.artifacts.repositories.RepositoryContentDescriptor;
 import org.gradle.api.logging.Logger;
 
@@ -24,7 +23,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 

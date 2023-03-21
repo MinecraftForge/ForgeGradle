@@ -277,7 +277,7 @@ public class UserDevPlugin implements Plugin<Project> {
                 e.setUrl(Utils.MOJANG_MAVEN);
                 e.metadataSources(MetadataSources::artifact);
             });
-            project.getRepositories().mavenCentral(); //Needed for MCP Deps
+            project.getRepositories().mavenCentral(e -> e.mavenContent(c -> c.excludeGroup("net.minecraftforge"))); //Needed for MCP Deps; we do not publish any artufacts to maven central
             mcrepo.validate(minecraft, extension.getRuns().getAsMap(), extractNatives.get(), downloadAssets.get(), createSrgToMcp.get()); //This will set the MC_VERSION property.
 
             String mcVer = (String) project.getExtensions().getExtraProperties().get("MC_VERSION");
