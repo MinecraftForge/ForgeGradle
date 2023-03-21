@@ -15,6 +15,8 @@ import net.minecraftforge.artifactural.base.repository.SimpleRepository;
 import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.artifacts.repositories.RepositoryContentDescriptor;
 import org.gradle.api.logging.Logger;
 
 import java.io.File;
@@ -22,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
@@ -96,6 +99,8 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
         }
     }
 
+    protected void configureFilter(RepositoryContentDescriptor filter) {}
+
     @Nullable
     protected abstract File findFile(ArtifactIdentifier artifact) throws IOException;
 
@@ -112,7 +117,7 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
             File cache = Utils.getCache(project, "bundeled_repo");
             // Java 8's compiler doesn't allow the lambda to be a method reference, but Java 16 allows it
             // noinspection Convert2MethodRef to prevent IDEA from warning us about it
-            GradleRepositoryAdapter.add(project.getRepositories(), "BUNDELED_" + random, cache,
+            final GradleRepositoryAdapter adapter = GradleRepositoryAdapter.add(project.getRepositories(), "BUNDELED_" + random, cache,
                     SimpleRepository.of(ArtifactProviderBuilder.begin(ArtifactIdentifier.class).provide(
                             artifact -> repos.stream()
                                     .map(repo -> repo.getArtifact(artifact))
@@ -121,6 +126,8 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
                                     .orElse(Artifact.none())
                     ))
             );
+            adapter.content(content -> repos.stream().filter(repo -> repo instanceof BaseRepo)
+                    .forEach(repo -> ((BaseRepo) repo).configureFilter(content)));
         }
     }
 

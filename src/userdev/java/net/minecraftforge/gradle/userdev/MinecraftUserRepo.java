@@ -53,6 +53,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.artifacts.repositories.RepositoryContentDescriptor;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
 
@@ -393,6 +394,11 @@ public class MinecraftUserRepo extends BaseRepo {
             loadedParents = mcp != null;
         }
         return parent;
+    }
+
+    @Override
+    protected void configureFilter(RepositoryContentDescriptor filter) {
+        filter.includeVersionByRegex(GROUP.replace(".", "\\."), NAME.replace(".", "\\."), ".*" + VERSION + ".*");
     }
 
     @Override

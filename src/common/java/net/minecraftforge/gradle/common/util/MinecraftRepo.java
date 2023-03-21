@@ -21,6 +21,7 @@ import net.minecraftforge.srgutils.MinecraftVersion;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.repositories.RepositoryContentDescriptor;
 import org.gradle.api.logging.Logger;
 
 import com.google.common.base.Joiner;
@@ -91,6 +92,12 @@ public class MinecraftRepo extends BaseRepo {
         HashStore ret = new HashStore(this.getCacheRoot()).load(new File(file.getAbsolutePath() + ".input"));
         ret.bust(CACHE_BUSTER);
         return ret;
+    }
+
+    @Override
+    protected void configureFilter(RepositoryContentDescriptor filter) {
+        filter.includeModule(GROUP, "client");
+        filter.includeModule(GROUP, "server");
     }
 
     @Override
