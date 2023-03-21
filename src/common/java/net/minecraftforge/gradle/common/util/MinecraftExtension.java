@@ -5,11 +5,8 @@
 
 package net.minecraftforge.gradle.common.util;
 
-import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
-import org.gradle.api.artifacts.repositories.MavenRepositoryContentDescriptor;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
@@ -17,10 +14,7 @@ import org.gradle.api.provider.Provider;
 import groovy.lang.Closure;
 import groovy.lang.GroovyObjectSupport;
 import groovy.lang.MissingPropertyException;
-import org.gradle.api.provider.SetProperty;
-
 import java.util.Map;
-import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -69,18 +63,8 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
 
     public abstract Property<String> getMappingVersion();
 
-    public abstract SetProperty<Action<? super MavenRepositoryContentDescriptor>> getMavenContentFilters();
-
     public Provider<String> getMappings() {
         return mapping;
-    }
-
-    public void mavenContentFilter(Action<? super MavenRepositoryContentDescriptor> filter) {
-        this.getMavenContentFilters().add(filter);
-    }
-
-    public void applyContentFilter(MavenArtifactRepository repository) {
-        getMavenContentFilters().get().forEach(repository::mavenContent);
     }
 
     public void mappings(Provider<String> channel, Provider<String> version) {

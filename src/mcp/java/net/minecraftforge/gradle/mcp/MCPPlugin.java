@@ -53,7 +53,7 @@ public class MCPPlugin implements Plugin<Project> {
                     m.artifact();
                 });
             });
-            project.getRepositories().mavenCentral(e -> e.content(ct -> ct.excludeGroup("net.minecraftforge"))); //Needed for MCP Deps; exclude net.minecraftforge because we don't host anything on central
+            project.getRepositories().mavenCentral(); //Needed for MCP Deps
         });
     }
 }

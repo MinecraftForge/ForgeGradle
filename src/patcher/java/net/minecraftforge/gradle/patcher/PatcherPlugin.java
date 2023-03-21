@@ -137,7 +137,6 @@ public class PatcherPlugin implements Plugin<Project> {
                 m.mavenPom();
                 m.artifact();
             });
-            extension.applyContentFilter(e);
         });
 
         new BaseRepo.Builder()
@@ -147,7 +146,6 @@ public class PatcherPlugin implements Plugin<Project> {
         project.getRepositories().maven(e -> {
             e.setUrl(Utils.MOJANG_MAVEN);
             e.metadataSources(MetadataSources::artifact);
-            extension.applyContentFilter(e);
         });
 
         hideLicense.configure(task -> task.doLast(_task ->
