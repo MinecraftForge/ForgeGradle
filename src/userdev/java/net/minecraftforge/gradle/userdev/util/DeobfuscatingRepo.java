@@ -16,6 +16,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.artifacts.ResolvedDependency;
+import org.gradle.api.artifacts.repositories.RepositoryContentDescriptor;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,6 +49,11 @@ public class DeobfuscatingRepo extends BaseRepo {
         if (!version.contains("_mapped_"))
             return null;
         return version.split("_mapped_")[1];
+    }
+
+    @Override
+    protected void configureFilter(RepositoryContentDescriptor filter) {
+        filter.includeVersionByRegex(".*", ".*", ".*_mapped_.*"); // Any group, any module BUT version must contain _mapped_
     }
 
     @Override

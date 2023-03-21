@@ -33,6 +33,7 @@ import net.minecraftforge.srgutils.IMappingFile.IMethod;
 import net.minecraftforge.srgutils.IRenamer;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.repositories.RepositoryContentDescriptor;
 import org.gradle.api.logging.Logger;
 
 import javax.annotation.Nullable;
@@ -134,6 +135,13 @@ public class MCPRepo extends BaseRepo {
     }
     private File cacheMCP(String version) {
         return cache("de", "oceanlabs", "mcp", "mcp_config", version);
+    }
+
+    @Override
+    protected void configureFilter(RepositoryContentDescriptor filter) {
+        // Escape the dots in the group because byRegex versions are completely regex, not just the module
+        filter.includeModuleByRegex(GROUP_MCP.replace(".", "\\."), NAMES_MCP);
+        filter.includeModuleByRegex(GROUP_MINECRAFT.replace(".", "\\."), NAMES_MINECRAFT);
     }
 
     @Override
