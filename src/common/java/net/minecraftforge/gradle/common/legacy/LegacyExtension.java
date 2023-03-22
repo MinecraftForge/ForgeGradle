@@ -103,7 +103,7 @@ public abstract class LegacyExtension extends GroovyObjectSupport {
 
     public LegacyExtension(Project project) {
         Provider<Boolean> isLegacy = project.provider(() -> {
-            final MinecraftVersion version = MinecraftVersion.from((String) project.getExtensions().getExtraProperties().get("MC_VERSION"));
+            final MinecraftVersion version = MinecraftVersion.from((String) (project.getParent() != null ? project.getParent() : project).getExtensions().getExtraProperties().get("MC_VERSION"));
             
             // enable patches by default if version is below FG 3
             return version.compareTo(FG3) < 0;
