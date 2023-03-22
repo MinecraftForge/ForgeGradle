@@ -7,6 +7,7 @@ package net.minecraftforge.gradle.common.util;
 
 import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
+import net.minecraftforge.gradle.common.legacy.LegacyExtension;
 import net.minecraftforge.gradle.common.tasks.ExtractNatives;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import net.minecraftforge.gradle.common.util.runs.RunConfigGenerator;
@@ -394,6 +395,7 @@ public class Utils {
             extension.getRuns().forEach(run -> RunConfigGenerator.createRunTask(run, extension.getProject(), prepareRuns, additionalClientArgs));
 
             EclipseHacks.doEclipseFixes(extension, extractNatives, setupTasksLst);
+            LegacyExtension.runRetrogradleFixes(extension.getProject());
 
             RunConfigGenerator.createIDEGenRunsTasks(extension, prepareRuns, makeSrcDirs, additionalClientArgs);
         });
