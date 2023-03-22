@@ -4,6 +4,8 @@ import groovy.lang.GroovyObjectSupport;
 import net.minecraftforge.gradle.common.tasks.ExtractZip;
 import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.srgutils.MinecraftVersion;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.FileCollection;
@@ -28,6 +30,7 @@ import java.io.File;
  * @author Curle
  */
 public abstract class LegacyExtension extends GroovyObjectSupport {
+    private static final Logger LOGGER = LogManager.getLogger(LegacyExtension.class);
     public static final String EXTENSION_NAME = "legacy";
     private static final MinecraftVersion FG3 = MinecraftVersion.from("1.13");
 
@@ -59,6 +62,7 @@ public abstract class LegacyExtension extends GroovyObjectSupport {
         final boolean shouldExtractMappings = config.getExtractMappings().get();
 
         if(shouldFixClasspath) {
+            LOGGER.info("LegacyExtension: Fixing classpath");
             // create a singleton collection from the jar task's output
             final FileCollection jar = project.files(project.getTasks().named("jar"));
 
@@ -71,6 +75,7 @@ public abstract class LegacyExtension extends GroovyObjectSupport {
         }
 
         if (shouldExtractMappings) {
+            LOGGER.info("LegacyExtension: Extracting Mappings");
             // Extracts CSV mapping files to a folder in the build directory for further use
             // by the <code>net.minecraftforge.gradle.GradleStart.csvDir</code> property.
             final ExtractZip extractMappingsTask = project.getTasks().create("extractMappings", ExtractZip.class, t -> {

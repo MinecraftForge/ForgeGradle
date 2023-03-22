@@ -5,6 +5,7 @@
 
 package net.minecraftforge.gradle.patcher;
 
+import net.minecraftforge.gradle.common.legacy.LegacyExtension;
 import net.minecraftforge.gradle.common.tasks.ApplyMappings;
 import net.minecraftforge.gradle.common.tasks.ApplyRangeMap;
 import net.minecraftforge.gradle.common.tasks.DownloadAssets;
@@ -85,6 +86,7 @@ public class PatcherPlugin implements Plugin<Project> {
         EnvironmentChecks.checkEnvironment(project);
 
         final PatcherExtension extension = project.getExtensions().create(PatcherExtension.class, PatcherExtension.EXTENSION_NAME, PatcherExtension.class, project);
+        project.getExtensions().create(LegacyExtension.EXTENSION_NAME, LegacyExtension.class);
         project.getExtensions().create(ChannelProvidersExtension.EXTENSION_NAME, ChannelProvidersExtension.class);
         project.getPluginManager().apply(JavaPlugin.class);
         final JavaPluginExtension javaConv = project.getExtensions().getByType(JavaPluginExtension.class);
