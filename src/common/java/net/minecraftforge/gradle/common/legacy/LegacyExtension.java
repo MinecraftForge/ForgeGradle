@@ -9,8 +9,6 @@ import groovy.lang.GroovyObjectSupport;
 import net.minecraftforge.gradle.common.tasks.ExtractZip;
 import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.srgutils.MinecraftVersion;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.FileCollection;
@@ -23,19 +21,14 @@ import java.io.File;
 /**
  * Provides an extension block named "legacy".
  *
- * <code>
- * legacy {
- *     flag = set;
- * }</code>
- *
  * It allows for configuring RetroGradle patches and fixes, which are otherwise set by version.
  * Each fix is documented in this class and in the application function.
- * {@link LegacyExtension#runRetrogradleFixes}
+ *
+ * @see LegacyExtension#runRetrogradleFixes
  *
  * @author Curle
  */
 public abstract class LegacyExtension extends GroovyObjectSupport {
-    private static final Logger LOGGER = LogManager.getLogger(LegacyExtension.class);
     public static final String EXTENSION_NAME = "legacy";
     private static final MinecraftVersion FG3 = MinecraftVersion.from("1.13");
 
@@ -54,7 +47,7 @@ public abstract class LegacyExtension extends GroovyObjectSupport {
      *      We replicate the FG2 behavior by extracting the mappings to a folder in the build directory
      *      and setting the property to point to it.
      *
-     * This is called from Utils.
+     * This is called from {@link Utils.createRunConfigTasks)}
      *
      * In other words, it's a containment zone for version-specific hacks.
      * For issues you think are caused by this function, contact Curle or any other Retrogradle maintainer.
@@ -66,8 +59,8 @@ public abstract class LegacyExtension extends GroovyObjectSupport {
         final boolean shouldFixClasspath = config.getFixClasspath().get();
         final boolean shouldExtractMappings = config.getExtractMappings().get();
 
-        if(shouldFixClasspath) {
-            LOGGER.info("LegacyExtension: Fixing classpath");
+        if (shouldFixClasspath) {
+            project.getLogger().info("LegacyExtension: Fixing classpath");
             // create a singleton collection from the jar task's output
             final FileCollection jar = project.files(project.getTasks().named("jar"));
 
@@ -80,7 +73,7 @@ public abstract class LegacyExtension extends GroovyObjectSupport {
         }
 
         if (shouldExtractMappings) {
-            LOGGER.info("LegacyExtension: Extracting Mappings");
+            project.getLogger().info("LegacyExtension: Extracting Mappings");
             // Extracts CSV mapping files to a folder in the build directory for further use
             // by the <code>net.minecraftforge.gradle.GradleStart.csvDir</code> property.
             final ExtractZip extractMappingsTask = project.getTasks().create("extractMappings", ExtractZip.class, t -> {
