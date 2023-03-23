@@ -102,13 +102,23 @@ public abstract class LegacyExtension extends GroovyObjectSupport {
             minecraft.getRuns().configureEach(run -> run.property("net.minecraftforge.gradle.GradleStart.csvDir", csvDir));
 
             // execute extractMappings before each run task
-            project.getTasks().getByName("prepareRuns").dependsOn(extractMappingsTask);
+            project.getTasks().named("prepareRuns").configure(t -> t.dependsOn(extractMappingsTask));
         }
     }
 
     public LegacyExtension(Project project) {
         Provider<Boolean> isLegacy = project.provider(() -> {
-            final MinecraftVersion version = MinecraftVersion.from((String) (project.getParent() != null ? project.getParent() : project).getExtensions().getExtraProperties().get("MC_VERSION"));
+            String ver = "";
+            Project proj = project;
+            // Search upwards for the extension property
+            while (proj != null) {
+                if (proj.getExtensions().getExtraProperties().has("MC_VERSION"))
+                    ver = (String) proj.getExtensions().getExtraProperties().get("MC_VERSION");
+
+                proj = proj.getParent();
+            }
+
+            final MinecraftVersion version = MinecraftVersion.from(ver);
             
             // enable patches by default if version is below FG 3
             return version.compareTo(FG3) < 0;
