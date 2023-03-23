@@ -111,6 +111,9 @@ public abstract class LegacyExtension extends GroovyObjectSupport {
                 proj = proj.getParent();
             }
 
+            // Short-circuit if the string is null (from getExtraProperties.get()) or empty (no property found).
+            if (ver == null || ver.isEmpty()) return false;
+
             final MinecraftVersion version = MinecraftVersion.from(ver);
             
             // enable patches by default if version is below FG 3
