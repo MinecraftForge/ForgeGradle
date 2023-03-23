@@ -5,8 +5,21 @@
 
 package net.minecraftforge.gradle.userdev;
 
-import net.minecraftforge.gradle.common.tasks.*;
-import net.minecraftforge.gradle.common.util.*;
+import net.minecraftforge.gradle.common.tasks.ApplyMappings;
+import net.minecraftforge.gradle.common.tasks.ApplyRangeMap;
+import net.minecraftforge.gradle.common.tasks.DownloadAssets;
+import net.minecraftforge.gradle.common.tasks.DownloadMCMeta;
+import net.minecraftforge.gradle.common.tasks.DownloadMavenArtifact;
+import net.minecraftforge.gradle.common.tasks.ExtractExistingFiles;
+import net.minecraftforge.gradle.common.tasks.ExtractMCPData;
+import net.minecraftforge.gradle.common.tasks.ExtractNatives;
+import net.minecraftforge.gradle.common.tasks.ExtractRangeMap;
+import net.minecraftforge.gradle.common.util.BaseRepo;
+import net.minecraftforge.gradle.common.util.EnvironmentChecks;
+import net.minecraftforge.gradle.common.util.MinecraftRepo;
+import net.minecraftforge.gradle.common.util.MojangLicenseHelper;
+import net.minecraftforge.gradle.common.util.Utils;
+import net.minecraftforge.gradle.common.util.VersionJson;
 import net.minecraftforge.gradle.mcp.ChannelProvidersExtension;
 import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.mcp.tasks.DownloadMCPMappings;
