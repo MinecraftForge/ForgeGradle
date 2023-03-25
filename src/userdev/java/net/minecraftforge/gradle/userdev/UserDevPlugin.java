@@ -25,6 +25,7 @@ import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.mcp.tasks.DownloadMCPMappings;
 import net.minecraftforge.gradle.mcp.tasks.GenerateSRG;
 import net.minecraftforge.gradle.userdev.jarjar.JarJarProjectExtension;
+import net.minecraftforge.gradle.common.legacy.LegacyExtension;
 import net.minecraftforge.gradle.userdev.tasks.JarJar;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 import net.minecraftforge.gradle.userdev.util.DeobfuscatingRepo;
@@ -86,6 +87,7 @@ public class UserDevPlugin implements Plugin<Project> {
         final Logger logger = project.getLogger();
         final UserDevExtension extension = project.getExtensions().create(UserDevExtension.EXTENSION_NAME, UserDevExtension.class, project);
         project.getExtensions().create(ChannelProvidersExtension.EXTENSION_NAME, ChannelProvidersExtension.class);
+        project.getExtensions().create(LegacyExtension.EXTENSION_NAME, LegacyExtension.class);
         project.getPluginManager().apply(JavaPlugin.class);
         final File nativesFolder = project.file("build/natives/");
 
@@ -362,4 +364,5 @@ public class UserDevPlugin implements Plugin<Project> {
 
         project.getArtifacts().add(JAR_JAR_DEFAULT_CONFIGURATION_NAME, project.getTasks().named(JAR_JAR_TASK_NAME));
     }
+
 }
