@@ -123,17 +123,13 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
     }
 
     public MavenPublication component(MavenPublication mavenPublication) {
-        enable();
-        project.getExtensions().getByType(DependencyManagementExtension.class).component(mavenPublication);
-        project.getTasks().withType(JarJar.class).configureEach(task -> component(mavenPublication, task, false));
-
-        return mavenPublication;
+        return component(mavenPublication, true);
     }
 
     public MavenPublication component(MavenPublication mavenPublication, boolean handleDependencies) {
         enable();
         project.getExtensions().getByType(DependencyManagementExtension.class).component(mavenPublication);
-        project.getTasks().withType(JarJar.class).configureEach(task -> component(mavenPublication, task, false));
+        project.getTasks().withType(JarJar.class).configureEach(task -> component(mavenPublication, task, false, handleDependencies));
 
         return mavenPublication;
     }
@@ -167,10 +163,10 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
         });
 
         if (handleDependencies) {
-            final Set<ResolvedDependency> dependencies = task.getResolvedDependencies();
-
             mavenPublication.pom(pom -> {
                 pom.withXml(xml -> {
+                    final Set<ResolvedDependency> dependencies = task.getResolvedDependencies();
+
                     Node dependenciesNode = MavenPomUtils.getDependenciesNode(xml);
                     final List<Node> dependenciesNodeList = MavenPomUtils.getDependencyNodes(xml);
 
