@@ -17,6 +17,7 @@ import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
+import org.gradle.api.invocation.Gradle;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.TaskProvider;
 
@@ -477,5 +478,53 @@ public class Utils {
         }
 
         return buf.toString();
+    }
+
+    /**
+     * Get the root project of this composite build.
+     *
+     * @param project The current project.
+     * @return The <em>very</em> root project.
+     * @see Project#getRootProject()
+     */
+    public static Project getCompositeRoot(Project project) {
+        Gradle gradle = project.getGradle();
+        while (gradle.getParent() != null) gradle = gradle.getParent();
+        return gradle.getRootProject();
+    }
+
+    /**
+     * Get the path to the current project relative to the composite root.
+     *
+     * @param project The current project.
+     * @return The root
+     * @see Project#getPath()
+     */
+    public static String getCompositePath(Project project) {
+        Gradle gradle = project.getGradle();
+        if (gradle.getParent() == null) return project.getPath();
+
+        // Build up a list of paths. We start off with the current sub-project (we do nothing if we're the root
+        // project).
+        List<String> paths = new ArrayList<>();
+        if (project.getPath().length() > 1) paths.add(project.getPath().substring(1));
+
+        while (gradle.getParent() != null) {
+            // Then for each composite build parent, find the matching IncludedBuild in the parent and add its name to
+            // the path.
+            Project thisProject = gradle.getRootProject();
+            String projectName = gradle
+                .getParent().getIncludedBuilds().stream()
+                .filter(child -> child.getProjectDir().equals(thisProject.getRootDir()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Cannot find valid matching parent"))
+                .getName();
+            paths.add(projectName);
+
+            gradle = gradle.getParent();
+        }
+
+        Collections.reverse(paths);
+        return ":" + String.join(":", paths);
     }
 }

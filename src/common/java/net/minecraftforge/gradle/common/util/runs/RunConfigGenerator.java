@@ -73,16 +73,17 @@ public abstract class RunConfigGenerator
 
     public static void createIDEGenRunsTasks(@Nonnull final MinecraftExtension minecraft, @Nonnull final TaskProvider<Task> prepareRuns, @Nonnull final TaskProvider<Task> makeSourceDirs, List<String> additionalClientArgs) {
         final Project project = minecraft.getProject();
+        Project rootProject = Utils.getCompositeRoot(project);
 
         final Map<String, Triple<List<Object>, File, Supplier<RunConfigGenerator>>> ideConfigurationGenerators = ImmutableMap.<String, Triple<List<Object>, File, Supplier<RunConfigGenerator>>>builder()
                 .put("genIntellijRuns", ImmutableTriple.of(Collections.singletonList(prepareRuns),
-                        new File(project.getRootProject().getRootDir(), ".idea/runConfigurations"),
-                        () -> new IntellijRunGenerator(project.getRootProject())))
+                        new File(rootProject.getRootDir(), ".idea/runConfigurations"),
+                        () -> new IntellijRunGenerator(rootProject)))
                 .put("genEclipseRuns", ImmutableTriple.of(ImmutableList.of(prepareRuns, makeSourceDirs),
-                        project.getProjectDir(),
+                        rootProject.getProjectDir(),
                         EclipseRunGenerator::new))
                 .put("genVSCodeRuns", ImmutableTriple.of(ImmutableList.of(prepareRuns, makeSourceDirs),
-                        new File(project.getProjectDir(), ".vscode"),
+                        new File(rootProject.getProjectDir(), ".vscode"),
                         VSCodeRunGenerator::new))
                 .build();
 
@@ -125,7 +126,7 @@ public abstract class RunConfigGenerator
         if (value == null || value.isEmpty()) {
             return value;
         }
-        return value.replace(project.getRootDir().toString(), replacement);
+        return value.replace(Utils.getCompositeRoot(project).getRootDir().toString(), replacement);
     }
 
     protected static Stream<String> mapModClassesToGradle(Project project, RunConfig runConfig)
