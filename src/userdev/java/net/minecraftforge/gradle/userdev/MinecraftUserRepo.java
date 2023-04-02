@@ -467,7 +467,7 @@ public class MinecraftUserRepo extends BaseRepo {
             return null;
         }
 
-        int idx = mapping.lastIndexOf('_');
+        int idx = Utils.getMappingSeparatorIdx(mapping);
         String channel = mapping.substring(0, idx);
         String version = mapping.substring(idx + 1);
         String desc = MCPRepo.getMappingDep(channel, version);
@@ -510,7 +510,7 @@ public class MinecraftUserRepo extends BaseRepo {
             mcp.getLibraries().forEach(e -> builder.dependencies().add(e, "compile"));
 
             if (mapping != null) {
-                int idx = mapping.lastIndexOf('_');
+                int idx = Utils.getMappingSeparatorIdx(mapping);
                 String channel = mapping.substring(0, idx);
                 String version = mapping.substring(idx + 1);
                 builder.dependencies().add(MCPRepo.getMappingDep(channel, version), "runtime");

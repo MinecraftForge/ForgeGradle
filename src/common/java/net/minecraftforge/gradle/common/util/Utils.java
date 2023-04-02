@@ -85,7 +85,7 @@ public class Utils {
     public static final String SPECIALSOURCE = "net.md-5:SpecialSource:1.11.0:shaded";
     public static final String FART = "net.minecraftforge:ForgeAutoRenamingTool:0.1.+:all";
     public static final String SRG2SOURCE =  "net.minecraftforge:Srg2Source:8.+:fatjar";
-    public static final String SIDESTRIPPER = "net.minecraftforge:mergetool:1.1.5:fatjar";
+    public static final String SIDESTRIPPER = "net.minecraftforge:mergetool:1.1.6:fatjar";
     public static final String INSTALLERTOOLS = "net.minecraftforge:installertools:1.3.2:fatjar";
     public static final String JARCOMPATIBILITYCHECKER = "net.minecraftforge:JarCompatibilityChecker:0.1.+:all";
     public static final long ZIPTIME = 628041600000L;
@@ -477,5 +477,13 @@ public class Utils {
         }
 
         return buf.toString();
+    }
+
+    public static int getMappingSeparatorIdx(String mapping) {
+        if (!mapping.contains("23w13a_or_b"))
+            return mapping.lastIndexOf('_');
+
+        // Just assume we will never have a mapping channel that has an underscore along with "23w13a_or_b"
+        return mapping.indexOf('_');
     }
 }

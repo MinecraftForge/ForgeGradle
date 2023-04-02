@@ -184,7 +184,7 @@ public class Deobfuscator {
         if (mapping == null)
             return null;
 
-        int idx = mapping.lastIndexOf('_');
+        int idx = Utils.getMappingSeparatorIdx(mapping);
         String channel = mapping.substring(0, idx);
         String version = mapping.substring(idx + 1);
         String desc = MCPRepo.getMappingDep(channel, version);

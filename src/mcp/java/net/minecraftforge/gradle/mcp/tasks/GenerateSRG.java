@@ -7,6 +7,7 @@ package net.minecraftforge.gradle.mcp.tasks;
 
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.McpNames;
+import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.srgutils.IMappingFile;
 import net.minecraftforge.srgutils.IMappingFile.IField;
@@ -62,7 +63,7 @@ public abstract class GenerateSRG extends DefaultTask {
     }
 
     private File findNames(String mapping) {
-        int idx = mapping.lastIndexOf('_');
+        int idx = Utils.getMappingSeparatorIdx(mapping);
         if (idx == -1) return null; //Invalid format
         String channel = mapping.substring(0, idx);
         String version = mapping.substring(idx + 1);

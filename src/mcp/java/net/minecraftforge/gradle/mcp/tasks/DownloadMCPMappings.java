@@ -6,6 +6,7 @@
 package net.minecraftforge.gradle.mcp.tasks;
 
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
+import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPRepo;
 
 import org.apache.commons.io.FileUtils;
@@ -37,7 +38,7 @@ public abstract class DownloadMCPMappings extends DefaultTask {
 
     private File getMappingFile() {
         String mappings = getMappings().get();
-        int idx = mappings.lastIndexOf('_');
+        int idx = Utils.getMappingSeparatorIdx(mappings);
         if (idx == -1)
             throw new IllegalArgumentException("Invalid mapping string format, must be {channel}_{version}.");
         String channel = mappings.substring(0, idx);

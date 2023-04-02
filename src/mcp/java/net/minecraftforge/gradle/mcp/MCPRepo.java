@@ -363,7 +363,7 @@ public class MCPRepo extends BaseRepo {
 
     @Nullable
     private File findNames(String mapping) throws IOException {
-        int idx = mapping.lastIndexOf('_');
+        int idx = Utils.getMappingSeparatorIdx(mapping);
         if (idx == -1) return null; //Invalid format
         String channel = mapping.substring(0, idx);
         String version = mapping.substring(idx + 1);
