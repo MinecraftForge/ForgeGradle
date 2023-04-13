@@ -516,7 +516,7 @@ public class Utils {
         }
     }
 
-    public static String getIDEAOutName(@Nonnull final SourceSet sourceSet) {
+    public static String getIntellijOutName(@Nonnull final SourceSet sourceSet) {
         return sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) ? "production" : sourceSet.getName();
     }
 }

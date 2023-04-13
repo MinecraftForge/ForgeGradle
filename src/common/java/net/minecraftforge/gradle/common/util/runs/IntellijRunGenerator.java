@@ -236,7 +236,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
             return runConfig.getMods().stream()
                     .flatMap(modConfig -> modConfig.getSources().stream()
                             .flatMap(source -> {
-                                String outName = Utils.getIDEAOutName(source);
+                                String outName = Utils.getIntellijOutName(source);
                                 final Project sourceSetProject = sourceSetsToProjects.getOrDefault(source, project);
                                 final IdeaModel ideaModel = sourceSetProject.getExtensions().findByType(IdeaModel.class);
                                 return getIdeaPathsForSourceset(sourceSetProject, ideaModel, outName, modConfig.getName());

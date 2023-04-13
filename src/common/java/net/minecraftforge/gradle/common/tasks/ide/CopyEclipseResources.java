@@ -32,7 +32,6 @@ import org.gradle.plugins.ide.eclipse.model.SourceFolder;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;

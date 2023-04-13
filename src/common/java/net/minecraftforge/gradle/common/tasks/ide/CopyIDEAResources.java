@@ -45,7 +45,7 @@ public abstract class CopyIDEAResources extends Copy {
         for (final SourceSet sourceSet : project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets()) {
             dependsOn(sourceSet.getProcessResourcesTaskName());
             final ProcessResources processResources = project.getTasks().named(sourceSet.getProcessResourcesTaskName(), ProcessResources.class).get();
-            final String outName = Utils.getIDEAOutName(sourceSet);
+            final String outName = Utils.getIntellijOutName(sourceSet);
             final String outPath = IntellijRunGenerator.getIdeaPathsForSourceset(project, model, outName, null)
                     // Resources are first
                     .findFirst().orElseGet(() -> new File(model.getModule().getOutputDir(), outName + "/resources").getAbsolutePath());

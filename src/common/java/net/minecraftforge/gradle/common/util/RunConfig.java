@@ -8,7 +8,6 @@ package net.minecraftforge.gradle.common.util;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginExtension;
-import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
 
 import groovy.lang.Closure;
