@@ -1,21 +1,6 @@
 /*
- * ForgeGradle
- * Copyright (C) 2018 Forge Development LLC
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
- * USA
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 
 package net.minecraftforge.gradle.mcp.function;
@@ -25,6 +10,7 @@ import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.apache.tools.ant.types.FileList;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -48,11 +34,19 @@ import java.util.jar.Manifest;
 
 class ListLibrariesFunction implements MCPFunction {
     private static final Attributes.Name FORMAT = new Attributes.Name("Bundler-Format");
+    private final int spec;
+
+    ListLibrariesFunction(int spec) {
+        this.spec = spec;
+    }
 
     @Override
     public File execute(MCPEnvironment environment) {
         File output = (File)environment.getArguments().computeIfAbsent("output", (key) -> environment.getFile("libraries.txt"));
         File bundle = (File) environment.getArguments().get("bundle");
+        if (bundle != null && this.spec < 3) {
+            throw new IllegalArgumentException("Invalid MCP Config: Listing bundle libraries is only supported for MCPConfig spec 3 or higher, found spec: " + this.spec);
+        }
 
         try (FileSystem bundleFs = bundle == null ? null : FileSystems.newFileSystem(bundle.toPath(), null)) {
             Set<String> artifacts;

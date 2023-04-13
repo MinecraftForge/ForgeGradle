@@ -1,21 +1,6 @@
 /*
- * ForgeGradle
- * Copyright (C) 2018 Forge Development LLC
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
- * USA
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 
 package net.minecraftforge.gradle.mcp;
@@ -48,6 +33,7 @@ import net.minecraftforge.srgutils.IMappingFile.IMethod;
 import net.minecraftforge.srgutils.IRenamer;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.repositories.RepositoryContentDescriptor;
 import org.gradle.api.logging.Logger;
 
 import javax.annotation.Nullable;
@@ -149,6 +135,13 @@ public class MCPRepo extends BaseRepo {
     }
     private File cacheMCP(String version) {
         return cache("de", "oceanlabs", "mcp", "mcp_config", version);
+    }
+
+    @Override
+    protected void configureFilter(RepositoryContentDescriptor filter) {
+        // Escape the dots in the group because byRegex versions are completely regex, not just the module
+        filter.includeModuleByRegex(GROUP_MCP.replace(".", "\\."), NAMES_MCP);
+        filter.includeModuleByRegex(GROUP_MINECRAFT.replace(".", "\\."), NAMES_MINECRAFT);
     }
 
     @Override
@@ -370,7 +363,7 @@ public class MCPRepo extends BaseRepo {
 
     @Nullable
     private File findNames(String mapping) throws IOException {
-        int idx = mapping.lastIndexOf('_');
+        int idx = Utils.getMappingSeparatorIdx(mapping);
         if (idx == -1) return null; //Invalid format
         String channel = mapping.substring(0, idx);
         String version = mapping.substring(idx + 1);

@@ -1,27 +1,10 @@
 /*
- * ForgeGradle
- * Copyright (C) 2018 Forge Development LLC
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
- * USA
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 
 package net.minecraftforge.gradle.userdev;
 
-import com.google.common.collect.ImmutableList;
-import groovy.lang.Closure;
 import net.minecraftforge.gradle.common.tasks.ApplyMappings;
 import net.minecraftforge.gradle.common.tasks.ApplyRangeMap;
 import net.minecraftforge.gradle.common.tasks.DownloadAssets;
@@ -41,8 +24,8 @@ import net.minecraftforge.gradle.mcp.ChannelProvidersExtension;
 import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.mcp.tasks.DownloadMCPMappings;
 import net.minecraftforge.gradle.mcp.tasks.GenerateSRG;
-import net.minecraftforge.gradle.userdev.dependency.DependencyFilter;
 import net.minecraftforge.gradle.userdev.jarjar.JarJarProjectExtension;
+import net.minecraftforge.gradle.common.legacy.LegacyExtension;
 import net.minecraftforge.gradle.userdev.tasks.JarJar;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 import net.minecraftforge.gradle.userdev.util.DeobfuscatingRepo;
@@ -51,7 +34,10 @@ import net.minecraftforge.gradle.userdev.util.DependencyRemapper;
 import net.minecraftforge.srgutils.IMappingFile;
 
 import org.apache.commons.lang3.StringUtils;
-import org.gradle.api.*;
+import org.gradle.api.DefaultTask;
+import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.Plugin;
+import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
@@ -61,10 +47,8 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
@@ -76,16 +60,12 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.annotation.Nonnull;
 
 public class UserDevPlugin implements Plugin<Project> {
-
     public static final String JAR_JAR_TASK_NAME = "jarJar";
     public static final String JAR_JAR_GROUP = "jarjar";
 
@@ -93,6 +73,10 @@ public class UserDevPlugin implements Plugin<Project> {
 
     public static final String MINECRAFT = "minecraft";
     public static final String OBF = "__obfuscated";
+    public static final String MINECRAFT_LIBRARY_CONFIGURATION_NAME = "minecraftLibrary";
+    public static final String MINECRAFT_EMBED_CONFIGURATION_NAME = "minecraftEmbed";
+
+    private static final String DISABLE_DEFAULT_CONFIGS_PROP = "net.minecraftforge.gradle.disableDefaultMinecraftConfigurations";
 
     @SuppressWarnings("unchecked")
     @Override
@@ -103,12 +87,14 @@ public class UserDevPlugin implements Plugin<Project> {
         final Logger logger = project.getLogger();
         final UserDevExtension extension = project.getExtensions().create(UserDevExtension.EXTENSION_NAME, UserDevExtension.class, project);
         project.getExtensions().create(ChannelProvidersExtension.EXTENSION_NAME, ChannelProvidersExtension.class);
+        project.getExtensions().create(LegacyExtension.EXTENSION_NAME, LegacyExtension.class);
         project.getPluginManager().apply(JavaPlugin.class);
         final File nativesFolder = project.file("build/natives/");
 
         final NamedDomainObjectContainer<RenameJarInPlace> reobfExtension = createReobfExtension(project);
 
         final Configuration minecraft = project.getConfigurations().create(MINECRAFT);
+
         project.getConfigurations().named(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
                 .configure(c -> c.extendsFrom(minecraft));
 
@@ -120,8 +106,8 @@ public class UserDevPlugin implements Plugin<Project> {
         // Can't create at top-level or put in `minecraft` ext due to configuration name conflict
         final Deobfuscator deobfuscator = new Deobfuscator(project, Utils.getCache(project, "deobf_dependencies"));
         final DependencyRemapper remapper = new DependencyRemapper(project, deobfuscator);
-        project.getExtensions().create(DependencyManagementExtension.EXTENSION_NAME, DependencyManagementExtension.class, project, remapper);
-        project.getExtensions().create(JarJarProjectExtension.EXTENSION_NAME, JarJarProjectExtension.class, project);
+        DependencyManagementExtension fgExtension = project.getExtensions().create(DependencyManagementExtension.EXTENSION_NAME, DependencyManagementExtension.class, project, remapper, new DeobfuscatingRepo(project, internalObfConfiguration, deobfuscator));
+        JarJarProjectExtension jarJarExtension = project.getExtensions().create(JarJarProjectExtension.EXTENSION_NAME, JarJarProjectExtension.class, project);
 
         final TaskContainer tasks = project.getTasks();
         final TaskProvider<DownloadMavenArtifact> downloadMcpConfig = tasks.register("downloadMcpConfig", DownloadMavenArtifact.class);
@@ -220,11 +206,23 @@ public class UserDevPlugin implements Plugin<Project> {
             updateMappings.configure(task -> task.dependsOn(extractMappedNew));
         }
 
-        configureJarJarTask(project);
+        configureJarJarTask(project, jarJarExtension);
+
+        if (!project.hasProperty(DISABLE_DEFAULT_CONFIGS_PROP) || !Boolean.parseBoolean((String) project.property(DISABLE_DEFAULT_CONFIGS_PROP))) {
+            final Configuration minecraftLibrary = project.getConfigurations().create(MINECRAFT_LIBRARY_CONFIGURATION_NAME);
+            final Configuration minecraftEmbed = project.getConfigurations().create(MINECRAFT_EMBED_CONFIGURATION_NAME);
+
+            project.getConfigurations().named(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
+                    .configure(c -> c.extendsFrom(minecraft, minecraftLibrary, minecraftEmbed));
+
+            project.getConfigurations().named(JAR_JAR_DEFAULT_CONFIGURATION_NAME)
+                    .configure(c -> c.extendsFrom(minecraftEmbed));
+
+            fgExtension.configureMinecraftLibraryConfiguration(minecraftLibrary);
+        }
 
         project.afterEvaluate(p -> {
             MinecraftUserRepo mcrepo = null;
-            DeobfuscatingRepo deobfrepo = null;
 
             DependencySet mcDependencies = minecraft.getDependencies();
             for (Dependency dep : new ArrayList<>(mcDependencies)) { // Copied to new list to avoid ConcurrentModificationException
@@ -237,6 +235,7 @@ public class UserDevPlugin implements Plugin<Project> {
                 mcDependencies.remove(dep);
 
                 mcrepo = new MinecraftUserRepo(p, dep.getGroup(), dep.getName(), dep.getVersion(), new ArrayList<>(extension.getAccessTransformers().getFiles()), extension.getMappings().get());
+                fgExtension.getRepository().content(content -> content.excludeModule(dep.getGroup(), dep.getName())); // This is annoying but the content filter of the deobf repo does match the MC dependency
                 String newDep = mcrepo.getDependencyString();
                 //p.getLogger().lifecycle("New Dep: " + newDep);
                 ExternalModuleDependency ext = (ExternalModuleDependency) p.getDependencies().create(newDep);
@@ -261,18 +260,15 @@ public class UserDevPlugin implements Plugin<Project> {
                 });
             });
 
-            if (!internalObfConfiguration.getDependencies().isEmpty()) {
-                deobfrepo = new DeobfuscatingRepo(project, internalObfConfiguration, deobfuscator);
-                if (deobfrepo.getResolvedOrigin() == null) {
-                    project.getLogger().error("DeobfRepo attempted to resolve an origin repo early but failed, this may cause issues with some IDEs");
-                }
-            }
             remapper.attachMappings(extension.getMappings().get());
+
+            if (fgExtension.getDeobfuscatingRepo().getResolvedOrigin() == null) {
+                project.getLogger().error("DeobfRepo attempted to resolve an origin repo early but failed, this may cause issues with some IDEs");
+            }
 
             // We have to add these AFTER our repo so that we get called first, this is annoying...
             new BaseRepo.Builder()
                     .add(mcrepo)
-                    .add(deobfrepo)
                     .add(MCPRepo.create(project))
                     .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
                     .attach(project);
@@ -283,7 +279,7 @@ public class UserDevPlugin implements Plugin<Project> {
                 e.setUrl(Utils.MOJANG_MAVEN);
                 e.metadataSources(MetadataSources::artifact);
             });
-            project.getRepositories().mavenCentral(); //Needed for MCP Deps
+            project.getRepositories().mavenCentral(e -> e.mavenContent(c -> c.excludeGroup("net.minecraftforge"))); //Needed for MCP Deps; we do not publish any artufacts to maven central
             mcrepo.validate(minecraft, extension.getRuns().getAsMap(), extractNatives.get(), downloadAssets.get(), createSrgToMcp.get()); //This will set the MC_VERSION property.
 
             String mcVer = (String) project.getExtensions().getExtraProperties().get("MC_VERSION");
@@ -321,13 +317,9 @@ public class UserDevPlugin implements Plugin<Project> {
                 Utils.setupIDEResourceCopy(project); // We need to have the copy resources task BEFORE the run config ones so we can detect them
             Utils.createRunConfigTasks(extension, extractNatives, downloadAssets, createSrgToMcp);
         });
-
-        project.afterEvaluate(projectAfter -> {
-            projectAfter.getTasks().withType(JarJar.class).all(jarJar -> {
-                if (jarJar.isEnabled()) {
-                    reobfExtension.create(jarJar.getName());
-                }
-            });
+        project.getTasks().withType(JarJar.class).all(jarJar -> {
+            logger.info("Creating reobfuscation task for JarJar task: {}", jarJar.getName());
+            reobfExtension.create(jarJar.getName()).setOnlyIf(task -> jarJar.isEnabled());
         });
     }
 
@@ -352,17 +344,20 @@ public class UserDevPlugin implements Plugin<Project> {
         return reobfExtension;
     }
 
-    protected void configureJarJarTask(Project project) {
+    protected void configureJarJarTask(Project project, JarJarProjectExtension jarJarExtension) {
         final Configuration configuration = project.getConfigurations().create(JAR_JAR_DEFAULT_CONFIGURATION_NAME);
 
-        JavaPluginExtension extension = project.getExtensions().getByType(JavaPluginExtension.class);
+        JavaPluginExtension javaPluginExtension = project.getExtensions().getByType(JavaPluginExtension.class);
+
         project.getTasks().register(JAR_JAR_TASK_NAME, JarJar.class, jarJar -> {
             jarJar.setGroup(JAR_JAR_GROUP);
             jarJar.setDescription("Create a combined JAR of project and selected dependencies");
             jarJar.getArchiveClassifier().convention("all");
 
-            jarJar.getManifest().inheritFrom(((Jar) project.getTasks().getByName("jar")).getManifest());
-            jarJar.from(extension.getSourceSets().getByName("main").getOutput());
+            if (!jarJarExtension.getDefaultSourcesDisabled()) {
+                jarJar.getManifest().inheritFrom(((Jar) project.getTasks().getByName("jar")).getManifest());
+                jarJar.from(javaPluginExtension.getSourceSets().getByName("main").getOutput());
+            }
 
             jarJar.configuration(configuration);
 
@@ -371,4 +366,5 @@ public class UserDevPlugin implements Plugin<Project> {
 
         project.getArtifacts().add(JAR_JAR_DEFAULT_CONFIGURATION_NAME, project.getTasks().named(JAR_JAR_TASK_NAME));
     }
+
 }

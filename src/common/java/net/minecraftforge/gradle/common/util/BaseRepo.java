@@ -1,21 +1,6 @@
 /*
- * ForgeGradle
- * Copyright (C) 2018 Forge Development LLC
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
- * USA
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 
 package net.minecraftforge.gradle.common.util;
@@ -30,6 +15,7 @@ import net.minecraftforge.artifactural.base.repository.SimpleRepository;
 import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.repositories.RepositoryContentDescriptor;
 import org.gradle.api.logging.Logger;
 
 import java.io.File;
@@ -111,6 +97,8 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
         }
     }
 
+    protected void configureFilter(RepositoryContentDescriptor filter) {}
+
     @Nullable
     protected abstract File findFile(ArtifactIdentifier artifact) throws IOException;
 
@@ -122,12 +110,16 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
             return this;
         }
 
-        public void attach(Project project) {
+        public GradleRepositoryAdapter attach(Project project) {
+            return attach(project, "bundeled_repo");
+        }
+
+        public GradleRepositoryAdapter attach(Project project, String cacheName) {
             int random = new Random().nextInt();
-            File cache = Utils.getCache(project, "bundeled_repo");
+            File cache = Utils.getCache(project, cacheName);
             // Java 8's compiler doesn't allow the lambda to be a method reference, but Java 16 allows it
             // noinspection Convert2MethodRef to prevent IDEA from warning us about it
-            GradleRepositoryAdapter.add(project.getRepositories(), "BUNDELED_" + random, cache,
+            final GradleRepositoryAdapter adapter = GradleRepositoryAdapter.add(project.getRepositories(), "BUNDELED_" + random, cache,
                     SimpleRepository.of(ArtifactProviderBuilder.begin(ArtifactIdentifier.class).provide(
                             artifact -> repos.stream()
                                     .map(repo -> repo.getArtifact(artifact))
@@ -136,6 +128,9 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
                                     .orElse(Artifact.none())
                     ))
             );
+            adapter.content(content -> repos.stream().filter(repo -> repo instanceof BaseRepo)
+                    .forEach(repo -> ((BaseRepo) repo).configureFilter(content)));
+            return adapter;
         }
     }
 

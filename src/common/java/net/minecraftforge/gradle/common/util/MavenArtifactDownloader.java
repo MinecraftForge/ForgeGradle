@@ -1,21 +1,6 @@
 /*
- * ForgeGradle
- * Copyright (C) 2018 Forge Development LLC
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
- * USA
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 
 package net.minecraftforge.gradle.common.util;
@@ -23,6 +8,7 @@ package net.minecraftforge.gradle.common.util;
 import com.google.common.collect.ImmutableMap;
 import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 
+import net.minecraftforge.artifactural.gradle.RepositoryContentUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.client.utils.URIBuilder;
@@ -207,7 +193,7 @@ public class MavenArtifactDownloader {
     private static File _manual(Project project, List<MavenArtifactRepository> repos, Artifact artifact, boolean changing) throws IOException, URISyntaxException {
         if (!artifact.getVersion().endsWith("+") && !artifact.isSnapshot()) {
             for (MavenArtifactRepository repo : repos) {
-                Pair<Artifact, File> pair = _manualMaven(project, repo, repo.getUrl(), artifact, changing);
+                Pair<Artifact, File> pair = _manualMaven(project, repo, repo, artifact, changing);
                 if (pair != null && pair.getValue().exists())
                     return pair.getValue();
             }
@@ -218,7 +204,7 @@ public class MavenArtifactDownloader {
 
         // Gather list of all versions from all repos.
         for (MavenArtifactRepository repo : repos) {
-            Pair<Artifact, File> pair = _manualMaven(project, repo, repo.getUrl(), artifact, changing);
+            Pair<Artifact, File> pair = _manualMaven(project, repo, repo, artifact, changing);
             if (pair != null && pair.getValue().exists())
                 versions.add(pair);
         }
@@ -242,7 +228,12 @@ public class MavenArtifactDownloader {
 
     @SuppressWarnings("unchecked")
     @Nullable
-    private static Pair<Artifact, File> _manualMaven(Project project, @Nullable AuthenticationSupported auth, URI maven, Artifact artifact, boolean changing) throws IOException, URISyntaxException {
+    private static Pair<Artifact, File> _manualMaven(Project project, @Nullable AuthenticationSupported auth, MavenArtifactRepository mavenRepo, Artifact artifact, boolean changing) throws IOException, URISyntaxException {
+        if (RepositoryContentUtils.contentFilterExcludes(mavenRepo, artifact)) {
+            //The repo can never provide the artifact
+            return null;
+        }
+        URI maven = mavenRepo.getUrl();
         if (artifact.getVersion().endsWith("+")) {
             //I THINK +'s are only valid in the end version, So 1.+ and not 1.+.4 as that'd make no sense.
             //It also appears you can't do something like 1.5+ to NOT get 1.4/1.3. So.. mimic that.

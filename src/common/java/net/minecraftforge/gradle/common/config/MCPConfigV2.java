@@ -1,21 +1,6 @@
 /*
- * ForgeGradle
- * Copyright (C) 2018 Forge Development LLC
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
- * USA
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 
 package net.minecraftforge.gradle.common.config;
@@ -49,12 +34,25 @@ public class MCPConfigV2 extends MCPConfigV1 {
 
             byte[] data = IOUtils.toByteArray(zip.getInputStream(entry));
             int spec = Config.getSpec(data);
-            if (spec == 2 || spec == 3)
-                return MCPConfigV2.get(data);
+            MCPConfigV2 config = null;
+            if (spec == 2 || spec == 3 || spec == 4)
+                config = MCPConfigV2.get(data);
             if (spec == 1)
-                return new MCPConfigV2(MCPConfigV1.get(data));
+                config = new MCPConfigV2(MCPConfigV1.get(data));
 
-            throw new IllegalStateException("Invalid MCP Config: " + path.getAbsolutePath() + " Unknown spec: " + spec);
+            if (config == null)
+                throw new IllegalStateException("Invalid MCP Config: " + path.getAbsolutePath() + " Unknown spec: " + spec);
+
+            // Verify that java_version is only used on spec 4 or higher
+            if (spec < 4 && config.functions != null) {
+                for (Function func : config.functions.values()) {
+                    if (func.getJavaVersion() != null) {
+                        throw new IllegalStateException("Invalid MCP Config: Function \"java_version\" property is only supported on spec 4 or higher, found spec: " + spec);
+                    }
+                }
+            }
+
+            return config;
         }
     }
 

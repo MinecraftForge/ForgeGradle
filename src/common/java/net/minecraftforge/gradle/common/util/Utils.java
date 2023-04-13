@@ -1,27 +1,13 @@
 /*
- * ForgeGradle
- * Copyright (C) 2018 Forge Development LLC
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
- * USA
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 
 package net.minecraftforge.gradle.common.util;
 
 import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
+import net.minecraftforge.gradle.common.legacy.LegacyExtension;
 import net.minecraftforge.gradle.common.tasks.ExtractNatives;
 import net.minecraftforge.gradle.common.tasks.ide.CopyEclipseResources;
 import net.minecraftforge.gradle.common.tasks.ide.CopyIDEAResources;
@@ -107,8 +93,8 @@ public class Utils {
     public static final String SPECIALSOURCE = "net.md-5:SpecialSource:1.11.0:shaded";
     public static final String FART = "net.minecraftforge:ForgeAutoRenamingTool:0.1.+:all";
     public static final String SRG2SOURCE =  "net.minecraftforge:Srg2Source:8.+:fatjar";
-    public static final String SIDESTRIPPER = "net.minecraftforge:mergetool:1.1.5:fatjar";
-    public static final String INSTALLERTOOLS = "net.minecraftforge:installertools:1.3.0:fatjar";
+    public static final String SIDESTRIPPER = "net.minecraftforge:mergetool:1.1.6:fatjar";
+    public static final String INSTALLERTOOLS = "net.minecraftforge:installertools:1.3.2:fatjar";
     public static final String JARCOMPATIBILITYCHECKER = "net.minecraftforge:JarCompatibilityChecker:0.1.+:all";
     public static final long ZIPTIME = 628041600000L;
     public static final TimeZone GMT = TimeZone.getTimeZone("GMT");
@@ -417,6 +403,7 @@ public class Utils {
             extension.getRuns().forEach(run -> RunConfigGenerator.createRunTask(run, extension.getProject(), prepareRuns, additionalClientArgs));
 
             EclipseHacks.doEclipseFixes(extension, extractNatives, setupTasksLst);
+            LegacyExtension.runRetrogradleFixes(extension.getProject());
 
             RunConfigGenerator.createIDEGenRunsTasks(extension, prepareRuns, makeSrcDirs, additionalClientArgs);
         });
@@ -498,6 +485,14 @@ public class Utils {
         }
 
         return buf.toString();
+    }
+
+    public static int getMappingSeparatorIdx(String mapping) {
+        if (!mapping.contains("23w13a_or_b"))
+            return mapping.lastIndexOf('_');
+
+        // Just assume we will never have a mapping channel that has an underscore along with "23w13a_or_b"
+        return mapping.indexOf('_');
     }
 
     public static void setupIDEResourceCopy(@Nonnull final Project project) {

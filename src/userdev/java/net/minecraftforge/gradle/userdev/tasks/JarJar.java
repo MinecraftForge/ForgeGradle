@@ -1,27 +1,15 @@
 /*
- * ForgeGradle
- * Copyright (C) 2018 Forge Development LLC
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
- * USA
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 
 package net.minecraftforge.gradle.userdev.tasks;
 
+import net.minecraftforge.gradle.userdev.UserDevPlugin;
 import net.minecraftforge.gradle.userdev.dependency.DefaultDependencyFilter;
+import net.minecraftforge.gradle.userdev.dependency.DefaultDependencyVersionInformationHandler;
 import net.minecraftforge.gradle.userdev.dependency.DependencyFilter;
+import net.minecraftforge.gradle.userdev.dependency.DependencyVersionInformationHandler;
 import net.minecraftforge.gradle.userdev.jarjar.JarJarProjectExtension;
 import net.minecraftforge.gradle.userdev.manifest.DefaultInheritManifest;
 import net.minecraftforge.gradle.userdev.manifest.InheritManifest;
@@ -55,18 +43,13 @@ import java.util.stream.Collectors;
 public abstract class JarJar extends Jar {
     private final List<Configuration> configurations;
     private transient DependencyFilter dependencyFilter;
+    private transient DependencyVersionInformationHandler dependencyVersionInformationHandler;
 
     private FileCollection sourceSetsClassesDirs;
 
-    private final ConfigurableFileCollection includedDependencies = getProject().files(new Callable<FileCollection>() {
-
-        @Override
-        public FileCollection call() {
-            return getProject().files(
-                    getResolvedDependencies().stream().flatMap(d -> d.getAllModuleArtifacts().stream()).map(ResolvedArtifact::getFile).toArray()
-            );
-        }
-    });
+    private final ConfigurableFileCollection includedDependencies = getProject().files((Callable<FileCollection>) () -> getProject().files(
+            getResolvedDependencies().stream().flatMap(d -> d.getAllModuleArtifacts().stream()).map(ResolvedArtifact::getFile).toArray()
+    ));
 
     private final ConfigurableFileCollection metadata = getProject().files((Callable<FileCollection>) () -> {
         writeMetadata();
@@ -79,6 +62,7 @@ public abstract class JarJar extends Jar {
         super();
         setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE); //As opposed to shadow, we do not filter out our entries early!, So we need to handle them accordingly.
         dependencyFilter = new DefaultDependencyFilter(getProject());
+        dependencyVersionInformationHandler = new DefaultDependencyVersionInformationHandler(getProject());
         setManifest(new DefaultInheritManifest(getServices().get(FileResolver.class)));
         configurations = new ArrayList<>();
 
@@ -116,8 +100,8 @@ public abstract class JarJar extends Jar {
     @Internal
     public Set<ResolvedDependency> getResolvedDependencies() {
         return this.configurations.stream().flatMap(config -> config.getAllDependencies().stream())
-                .filter(ExternalModuleDependency.class::isInstance)
-                .map(ExternalModuleDependency.class::cast)
+                .filter(ModuleDependency.class::isInstance)
+                .map(ModuleDependency.class::cast)
                 .map(this::getResolvedDependency)
                 .filter(this.dependencyFilter::isIncluded)
                 .collect(Collectors.toSet());
@@ -130,6 +114,11 @@ public abstract class JarJar extends Jar {
 
     public JarJar dependencies(Action<DependencyFilter> c) {
         c.execute(dependencyFilter);
+        return this;
+    }
+
+    public JarJar versionInformation(Action<DependencyVersionInformationHandler> c) {
+        c.execute(dependencyVersionInformationHandler);
         return this;
     }
 
@@ -188,8 +177,8 @@ public abstract class JarJar extends Jar {
     private Metadata createMetadata() {
         return new Metadata(
                 this.configurations.stream().flatMap(config -> config.getAllDependencies().stream())
-                        .filter(ExternalModuleDependency.class::isInstance)
-                        .map(ExternalModuleDependency.class::cast)
+                        .filter(ModuleDependency.class::isInstance)
+                        .map(ModuleDependency.class::cast)
                         .map(this::createDependencyMetadata)
                         .filter(Optional::isPresent)
                         .map(Optional::get)
@@ -197,7 +186,7 @@ public abstract class JarJar extends Jar {
         );
     }
 
-    private Optional<ContainedJarMetadata> createDependencyMetadata(final ExternalModuleDependency dependency) {
+    private Optional<ContainedJarMetadata> createDependencyMetadata(final ModuleDependency dependency) {
         if (!dependencyFilter.isIncluded(dependency)) {
             return Optional.empty();
         }
@@ -227,32 +216,39 @@ public abstract class JarJar extends Jar {
         }
     }
 
-    private RuntimeException createInvalidVersionRangeException(final ExternalModuleDependency dependency, final Throwable cause) {
+    private RuntimeException createInvalidVersionRangeException(final ModuleDependency dependency, final Throwable cause) {
         return new RuntimeException("The given version specification is invalid: " + getVersionRangeFrom(dependency)
                 + ". If you used gradle based range versioning like 2.+, convert this to a maven compatible format: [2.0,3.0).", cause);
     }
 
-    private String getVersionRangeFrom(final Dependency dependency) {
+    private String getVersionRangeFrom(final ModuleDependency dependency) {
+        final Optional<String> versionRange = dependencyVersionInformationHandler.getVersionRange(dependency)
+                .map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersionRange);
+        if (versionRange.isPresent()) {
+            return versionRange.get();
+        }
         final Optional<String> attributeVersion = getProject().getExtensions().getByType(JarJarProjectExtension.class).getRange(dependency);
 
+        return attributeVersion.map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersionRange).orElseGet(() -> DeobfuscatingVersionUtils.adaptDeobfuscatedVersion(Objects.requireNonNull(dependency.getVersion())));
+    }
+
+    private String getVersionFrom(final ModuleDependency dependency) {
+        final Optional<String> version = dependencyVersionInformationHandler.getVersion(dependency)
+                .map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersion);
+        if (version.isPresent()) {
+            return version.get();
+        }
+        final Optional<String> attributeVersion = getProject().getExtensions().getByType(JarJarProjectExtension.class).getPin(dependency);
+
         return attributeVersion.map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersion).orElseGet(() -> DeobfuscatingVersionUtils.adaptDeobfuscatedVersion(Objects.requireNonNull(dependency.getVersion())));
     }
 
-    private String getVersionFrom(final Dependency dependency, final ResolvedDependency resolvedDependency) {
-        final Optional<String> attributeVersion = getProject().getExtensions().getByType(JarJarProjectExtension.class).getPin(dependency);
-
-        return attributeVersion.map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersion).orElseGet(() -> DeobfuscatingVersionUtils.adaptDeobfuscatedVersion(Objects.requireNonNull(resolvedDependency.getModuleVersion())));
-    }
-
-    private String getVersionFrom(final Dependency dependency) {
-        final Optional<String> attributeVersion = getProject().getExtensions().getByType(JarJarProjectExtension.class).getPin(dependency);
-
-        return attributeVersion.map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersion).orElseGet(() -> DeobfuscatingVersionUtils.adaptDeobfuscatedVersion(Objects.requireNonNull(dependency.getVersion())));
-    }
-
-    private ResolvedDependency getResolvedDependency(final ExternalModuleDependency dependency) {
-        ExternalModuleDependency toResolve = dependency.copy();
-        toResolve.version(constraint -> constraint.strictly(getVersionFrom(dependency)));
+    private ResolvedDependency getResolvedDependency(final ModuleDependency dependency) {
+        ModuleDependency toResolve = dependency.copy();
+        if (toResolve instanceof ExternalModuleDependency) {
+            final ExternalModuleDependency externalDependency = (ExternalModuleDependency) toResolve;
+            externalDependency.version(constraint -> constraint.strictly(getVersionFrom(dependency)));
+        }
 
         final Set<ResolvedDependency> deps = getProject().getConfigurations().detachedConfiguration(toResolve).getResolvedConfiguration().getFirstLevelModuleDependencies();
         if (deps.isEmpty()) {
@@ -263,6 +259,11 @@ public abstract class JarJar extends Jar {
     }
 
     private boolean isObfuscated(final Dependency dependency) {
+        if (dependency instanceof ProjectDependency) {
+            final ProjectDependency projectDependency = (ProjectDependency) dependency;
+            return projectDependency.getDependencyProject().getPlugins().hasPlugin(UserDevPlugin.class);
+        }
+
         return Objects.requireNonNull(dependency.getVersion()).contains("_mapped_");
     }
 

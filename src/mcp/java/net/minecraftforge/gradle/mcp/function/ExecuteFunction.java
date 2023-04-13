@@ -1,21 +1,6 @@
 /*
- * ForgeGradle
- * Copyright (C) 2018 Forge Development LLC
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
- * USA
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 
 package net.minecraftforge.gradle.mcp.function;
@@ -23,8 +8,10 @@ package net.minecraftforge.gradle.mcp.function;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 
+import javax.annotation.Nullable;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -53,13 +40,20 @@ class ExecuteFunction implements MCPFunction {
     protected String[] runArgs;
     protected final Map<String, String> envVars;
 
+    @Nullable
+    private Integer javaVersion;
     private Map<String, String> data;
 
     public ExecuteFunction(File jar, String[] jvmArgs, String[] runArgs, Map<String, String> envVars) {
+        this(jar, jvmArgs, runArgs, envVars, null);
+    }
+
+    public ExecuteFunction(File jar, String[] jvmArgs, String[] runArgs, Map<String, String> envVars, @Nullable Integer javaVersion) {
         this.jar = jar;
         this.jvmArgs = jvmArgs;
         this.runArgs = runArgs;
         this.envVars = envVars;
+        this.javaVersion = javaVersion;
     }
 
     @Override
@@ -121,7 +115,8 @@ class ExecuteFunction implements MCPFunction {
         // Do not implicitly use the Java version that Gradle itself is using.
         // Instead use a launcher compatible with the version required by MCP.
         JavaToolchainService toolchainService = environment.project.getExtensions().getByType(JavaToolchainService.class);
-        String launcher = toolchainService.launcherFor(spec -> spec.getLanguageVersion().set(environment.getJavaVersion()))
+        JavaLanguageVersion toolchainVersion = this.javaVersion != null ? JavaLanguageVersion.of(this.javaVersion) : environment.getJavaVersion();
+        String launcher = toolchainService.launcherFor(spec -> spec.getLanguageVersion().set(toolchainVersion))
                 .get()
                 .getExecutablePath()
                 .getAsFile()

@@ -1,21 +1,6 @@
 /*
- * ForgeGradle
- * Copyright (C) 2018 Forge Development LLC
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
- * USA
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 
 package net.minecraftforge.gradle.userdev;
@@ -68,6 +53,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.artifacts.repositories.RepositoryContentDescriptor;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
 
@@ -411,6 +397,11 @@ public class MinecraftUserRepo extends BaseRepo {
     }
 
     @Override
+    protected void configureFilter(RepositoryContentDescriptor filter) {
+        filter.includeVersionByRegex(GROUP.replace(".", "\\."), NAME.replace(".", "\\."), ".*" + VERSION + ".*");
+    }
+
+    @Override
     public File findFile(ArtifactIdentifier artifact) throws IOException {
         String group = artifact.getGroup();
         String rand = "";
@@ -476,7 +467,7 @@ public class MinecraftUserRepo extends BaseRepo {
             return null;
         }
 
-        int idx = mapping.lastIndexOf('_');
+        int idx = Utils.getMappingSeparatorIdx(mapping);
         String channel = mapping.substring(0, idx);
         String version = mapping.substring(idx + 1);
         String desc = MCPRepo.getMappingDep(channel, version);
@@ -519,10 +510,10 @@ public class MinecraftUserRepo extends BaseRepo {
             mcp.getLibraries().forEach(e -> builder.dependencies().add(e, "compile"));
 
             if (mapping != null) {
-                int idx = mapping.lastIndexOf('_');
+                int idx = Utils.getMappingSeparatorIdx(mapping);
                 String channel = mapping.substring(0, idx);
                 String version = mapping.substring(idx + 1);
-                builder.dependencies().add(MCPRepo.getMappingDep(channel, version), "compile"); //Runtime?
+                builder.dependencies().add(MCPRepo.getMappingDep(channel, version), "runtime");
             }
 
             Patcher patcher = parent;

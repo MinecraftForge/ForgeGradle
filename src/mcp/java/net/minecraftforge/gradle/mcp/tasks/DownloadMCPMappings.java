@@ -1,26 +1,12 @@
 /*
- * ForgeGradle
- * Copyright (C) 2018 Forge Development LLC
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
- * USA
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 
 package net.minecraftforge.gradle.mcp.tasks;
 
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
+import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPRepo;
 
 import org.apache.commons.io.FileUtils;
@@ -52,7 +38,7 @@ public abstract class DownloadMCPMappings extends DefaultTask {
 
     private File getMappingFile() {
         String mappings = getMappings().get();
-        int idx = mappings.lastIndexOf('_');
+        int idx = Utils.getMappingSeparatorIdx(mappings);
         if (idx == -1)
             throw new IllegalArgumentException("Invalid mapping string format, must be {channel}_{version}.");
         String channel = mappings.substring(0, idx);

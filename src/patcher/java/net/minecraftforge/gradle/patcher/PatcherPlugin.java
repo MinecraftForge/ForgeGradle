@@ -1,25 +1,11 @@
 /*
- * ForgeGradle
- * Copyright (C) 2018 Forge Development LLC
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
- * USA
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 
 package net.minecraftforge.gradle.patcher;
 
+import net.minecraftforge.gradle.common.legacy.LegacyExtension;
 import net.minecraftforge.gradle.common.tasks.ApplyMappings;
 import net.minecraftforge.gradle.common.tasks.ApplyRangeMap;
 import net.minecraftforge.gradle.common.tasks.DownloadAssets;
@@ -101,6 +87,7 @@ public class PatcherPlugin implements Plugin<Project> {
 
         final PatcherExtension extension = project.getExtensions().create(PatcherExtension.class, PatcherExtension.EXTENSION_NAME, PatcherExtension.class, project);
         project.getExtensions().create(ChannelProvidersExtension.EXTENSION_NAME, ChannelProvidersExtension.class);
+        project.getExtensions().create(LegacyExtension.EXTENSION_NAME, LegacyExtension.class);
         project.getPluginManager().apply(JavaPlugin.class);
         final JavaPluginExtension javaConv = project.getExtensions().getByType(JavaPluginExtension.class);
 
@@ -373,6 +360,9 @@ public class PatcherPlugin implements Plugin<Project> {
                             task.getInput().set(setupMCP.flatMap(SetupMCP::getOutput));
                             task.getTool().set(extension.getProcessor().getVersion());
                             task.getArgs().set(extension.getProcessor().getArgs());
+                            Integer javaVersion = extension.getProcessor().getJavaVersion();
+                            if (javaVersion != null)
+                                task.setRuntimeJavaVersion(javaVersion);
                             task.getData().set(extension.getProcessorData());
                         });
                         setupOutput = procConfig.flatMap(DynamicJarExec::getOutput);

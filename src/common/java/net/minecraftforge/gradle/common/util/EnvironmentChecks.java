@@ -1,21 +1,6 @@
 /*
- * ForgeGradle
- * Copyright (C) 2018 Forge Development LLC
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
- * USA
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 
 package net.minecraftforge.gradle.common.util;
@@ -74,6 +59,7 @@ public class EnvironmentChecks {
      * <ul>
      *     <li>Java version is <em>1.8.0_101</em> or above (first JDK version to include Let's Encrypt certificates)</li>
      *     <li>Gradle version is <em>7.1</em> or above (minimum version required by ForgeGradle)</li>
+     *     <li>Gradle version is below <em>8.0</em> (ForgeGradle 5 only supports the Gradle 7.x series)</li>
      *     <li>Certificates for {@link Utils#FORGE_MAVEN} and {@link Utils#MOJANG_MAVEN} are valid (required repositories)</li>
      * </ul>
      *
@@ -98,7 +84,7 @@ public class EnvironmentChecks {
             logger.debug(ENV_CHECK, "Checking Gradle version");
             checkGradleRange(
                     GradleVersion.version("7.1"),
-                    null
+                    GradleVersion.version("8.0")
             );
         } else {
             logger.debug(ENV_CHECK, "Gradle version check disabled by system property");

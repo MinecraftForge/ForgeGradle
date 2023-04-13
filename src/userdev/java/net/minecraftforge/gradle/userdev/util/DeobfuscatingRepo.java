@@ -1,21 +1,6 @@
 /*
- * ForgeGradle
- * Copyright (C) 2018 Forge Development LLC
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
- * USA
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 
 package net.minecraftforge.gradle.userdev.util;
@@ -31,6 +16,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.artifacts.ResolvedDependency;
+import org.gradle.api.artifacts.repositories.RepositoryContentDescriptor;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,6 +49,11 @@ public class DeobfuscatingRepo extends BaseRepo {
         if (!version.contains("_mapped_"))
             return null;
         return version.split("_mapped_")[1];
+    }
+
+    @Override
+    protected void configureFilter(RepositoryContentDescriptor filter) {
+        filter.includeVersionByRegex(".*", ".*", ".*_mapped_.*"); // Any group, any module BUT version must contain _mapped_
     }
 
     @Override
