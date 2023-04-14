@@ -86,7 +86,7 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
         }
 
         final String configName = (mc.getGenerateRunFolders().get() ? runConfig.getFolderName() + " - " : "") + runConfig.getTaskName() + ".launch";
-        final boolean copyResources = mc.getCopyIDEResources().get();
+        final boolean copyResources = mc.getCopyIdeResources().get();
 
         if (copyResources || mc.getEnableEclipsePrepareRuns().get()) {
             final String launchConfigName = project.getName() + " - " + runConfig.getTaskName() + "Slim";

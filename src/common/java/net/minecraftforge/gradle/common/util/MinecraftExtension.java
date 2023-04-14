@@ -33,7 +33,7 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         this.runs = project.getObjects().domainObjectContainer(RunConfig.class, name -> new RunConfig(project, name));
         this.accessTransformers = project.getObjects().fileCollection();
 
-        getCopyIDEResources().convention(false);
+        getCopyIdeResources().convention(false);
         getEnableIdeaPrepareRuns().convention(true);
         getEnableEclipsePrepareRuns().convention(false);
         getGenerateRunFolders().convention(false);
@@ -119,25 +119,31 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
     public abstract ConfigurableFileCollection getSideAnnotationStrippers();
 
     /**
-     * If the Eclipse configurations should run the prepareX task. <br>
-     * Default: false
+     * If the Eclipse configurations should run the {@code prepareX} task before starting the game.
+     * <p>
+     * Default: {@code false}
      */
     public abstract Property<Boolean> getEnableEclipsePrepareRuns();
     
     /**
-     * If the IDEA configurations should run the prepareX task. <br>
-     * TODO, change default to false (to match Eclipse behavior) when we can afford breaking changes
-     * Default: true
+     * If the IDEA configurations should run the {@code prepareX} task before starting the game.
+     * <p>
+     * Default: {@code true}
      */
+    // TODO: change default to false (to match Eclipse behavior) when we can afford breaking changes
     public abstract Property<Boolean> getEnableIdeaPrepareRuns();
 
     /**
-     * If Gradle resources should be copied to the respective IDE output folders.
+     * If Gradle resources should be copied to the respective IDE output folders before starting the game.
+     * <p>
+     * Default: {@code false}
      */
-    public abstract Property<Boolean> getCopyIDEResources();
+    public abstract Property<Boolean> getCopyIdeResources();
 
     /**
      * If run configurations should be grouped in folders.
+     * <p>
+     * Default: {@code false}
      */
     public abstract Property<Boolean> getGenerateRunFolders();
 }

@@ -191,7 +191,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                             gradleTask.setAttribute("name", "Gradle.BeforeRunTask");
                             gradleTask.setAttribute("enabled", "true");
                             final List<String> tasks = new ArrayList<>();
-                            final boolean copyResources = mc.getCopyIDEResources().get();
+                            final boolean copyResources = mc.getCopyIdeResources().get();
                             if (copyResources || mc.getEnableIdeaPrepareRuns().get())
                                 tasks.add(project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName())).getPath());
                             if (!useGradlePaths && copyResources) {
