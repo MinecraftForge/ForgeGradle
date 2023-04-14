@@ -19,8 +19,8 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public abstract class CopyIDEAResources extends Copy {
-    public static final String NAME = "copyIdeaResources";
+public abstract class CopyIntelliJResources extends Copy {
+    public static final String NAME = "copyIntellijResources";
 
     public void configure(IdeaModel model, Project project) {
         // We don't need the destination, but it's not optional

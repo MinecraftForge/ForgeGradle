@@ -10,7 +10,7 @@ import net.minecraftforge.gradle.common.config.MCPConfigV1;
 import net.minecraftforge.gradle.common.legacy.LegacyExtension;
 import net.minecraftforge.gradle.common.tasks.ExtractNatives;
 import net.minecraftforge.gradle.common.tasks.ide.CopyEclipseResources;
-import net.minecraftforge.gradle.common.tasks.ide.CopyIDEAResources;
+import net.minecraftforge.gradle.common.tasks.ide.CopyIntelliJResources;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import net.minecraftforge.gradle.common.util.runs.RunConfigGenerator;
 
@@ -499,7 +499,7 @@ public class Utils {
         boolean ideaFound = true;
         if (project.getPlugins().hasPlugin(IdeaPlugin.class)) {
             final IdeaPlugin idea = project.getPlugins().getPlugin(IdeaPlugin.class);
-            project.getTasks().register(CopyIDEAResources.NAME, CopyIDEAResources.class, task -> task.configure(idea.getModel(), project));
+            project.getTasks().register(CopyIntelliJResources.NAME, CopyIntelliJResources.class, task -> task.configure(idea.getModel(), project));
         } else {
             ideaFound = false;
         }

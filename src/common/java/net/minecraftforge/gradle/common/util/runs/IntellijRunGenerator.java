@@ -5,7 +5,7 @@
 
 package net.minecraftforge.gradle.common.util.runs;
 
-import net.minecraftforge.gradle.common.tasks.ide.CopyIDEAResources;
+import net.minecraftforge.gradle.common.tasks.ide.CopyIntelliJResources;
 import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
@@ -195,7 +195,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                             if (copyResources || mc.getEnableIdeaPrepareRuns().get())
                                 tasks.add(project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName())).getPath());
                             if (!useGradlePaths && copyResources) {
-                                final Task copyTask = project.getTasks().findByName(CopyIDEAResources.NAME);
+                                final Task copyTask = project.getTasks().findByName(CopyIntelliJResources.NAME);
                                 if (copyTask != null) {
                                     tasks.add(copyTask.getPath());
                                 }
