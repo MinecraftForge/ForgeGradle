@@ -53,7 +53,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     private Boolean client; // so we can have it null
     private Boolean inheritArgs;
     private Boolean inheritJvmArgs;
-    private String folderName;
+    private transient String folderName;
     private boolean buildAllProjects;
 
     private Map<String, String> env, props, tokens;

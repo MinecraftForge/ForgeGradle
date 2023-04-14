@@ -24,6 +24,10 @@ import java.util.stream.Collectors;
 public abstract class CopyEclipseResources extends Copy {
     public static final String NAME = "copyEclipseResources";
 
+    public CopyEclipseResources() {
+        this.getOutputs().upToDateWhen(task -> false);
+    }
+
     public void configure(EclipseModel model, Project project) {
         // We don't need the destination, but it's not optional
         setDestinationDir(new File(project.getBuildDir(), getName()));

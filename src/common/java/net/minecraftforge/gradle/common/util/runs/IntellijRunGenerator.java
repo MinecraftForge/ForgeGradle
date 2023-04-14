@@ -5,7 +5,7 @@
 
 package net.minecraftforge.gradle.common.util.runs;
 
-import net.minecraftforge.gradle.common.tasks.ide.CopyIntelliJResources;
+import net.minecraftforge.gradle.common.tasks.ide.CopyIntellijResources;
 import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
@@ -192,10 +192,12 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                             gradleTask.setAttribute("enabled", "true");
                             final List<String> tasks = new ArrayList<>();
                             final boolean copyResources = mc.getCopyIdeResources().get();
-                            if (copyResources || mc.getEnableIdeaPrepareRuns().get())
+                            if (copyResources || mc.getEnableIdeaPrepareRuns().get() == Boolean.TRUE)
                                 tasks.add(project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName())).getPath());
-                            if (!useGradlePaths && copyResources) {
-                                final Task copyTask = project.getTasks().findByName(CopyIntelliJResources.NAME);
+                            if (this.useGradlePaths)
+                                tasks.add(project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName()) + "Compile").getPath());
+                            if (!this.useGradlePaths && copyResources) {
+                                final Task copyTask = project.getTasks().findByName(CopyIntellijResources.NAME);
                                 if (copyTask != null) {
                                     tasks.add(copyTask.getPath());
                                 }

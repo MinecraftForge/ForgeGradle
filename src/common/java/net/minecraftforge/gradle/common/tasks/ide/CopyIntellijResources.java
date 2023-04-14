@@ -19,8 +19,12 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public abstract class CopyIntelliJResources extends Copy {
+public abstract class CopyIntellijResources extends Copy {
     public static final String NAME = "copyIntellijResources";
+
+    public CopyIntellijResources() {
+        this.getOutputs().upToDateWhen(task -> false);
+    }
 
     public void configure(IdeaModel model, Project project) {
         // We don't need the destination, but it's not optional
@@ -34,11 +38,9 @@ public abstract class CopyIntelliJResources extends Copy {
             final String outPath = IntellijRunGenerator.getIdeaPathsForSourceset(project, model, outName, null)
                     // Resources are first
                     .findFirst().orElseGet(() -> new File(model.getModule().getOutputDir(), outName + "/resources").getAbsolutePath());
-            for (final File out : processResources.getOutputs().getFiles()) {
-                final CopySpec spec = getMainSpec().addChild();
-                spec.into(destination.relativize(Paths.get(outPath)).toString());
-                spec.from(out);
-            }
+            final CopySpec spec = getMainSpec().addChild();
+            spec.into(destination.relativize(Paths.get(outPath)).toString());
+            spec.with(processResources.getRootSpec());
         }
     }
 }
