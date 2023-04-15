@@ -17,6 +17,7 @@ import org.gradle.plugins.ide.eclipse.model.SourceFolder;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -43,13 +44,11 @@ public abstract class CopyEclipseResources extends Copy {
         srcToOut.forEach((src, out) -> {
             dependsOn(src.getProcessResourcesTaskName());
             final ProcessResources processResources = project.getTasks().named(src.getProcessResourcesTaskName(), ProcessResources.class).get();
-            for (final File gradleOutput : processResources.getOutputs().getFiles()) {
-                final CopySpec spec = getMainSpec().addChild();
-                spec.into(destination.relativize(project.file(out.getOutput()).toPath()).toString());
-                spec.from(gradleOutput);
-                // Eclipse MAY have multiple sourcesets have the same output, and a sourceset may include resources from another (datagen sourcesets)
-                spec.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
-            }
+            final CopySpec spec = getMainSpec().addChild();
+            spec.into(destination.relativize(Paths.get(out.getOutput())).toString());
+            spec.with(processResources.getRootSpec());
+            // Eclipse MAY have multiple sourcesets have the same output, and a sourceset may include resources from another (datagen sourcesets)
+            spec.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
         });
     }
 
