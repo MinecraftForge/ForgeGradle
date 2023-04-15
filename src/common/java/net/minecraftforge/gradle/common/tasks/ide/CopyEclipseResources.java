@@ -45,7 +45,7 @@ public abstract class CopyEclipseResources extends Copy {
             dependsOn(src.getProcessResourcesTaskName());
             final ProcessResources processResources = project.getTasks().named(src.getProcessResourcesTaskName(), ProcessResources.class).get();
             final CopySpec spec = getMainSpec().addChild();
-            spec.into(destination.relativize(Paths.get(out.getOutput())).toString());
+            spec.into(destination.relativize(project.file(out.getOutput()).toPath()).toString());
             spec.with(processResources.getRootSpec());
             // Eclipse MAY have multiple sourcesets have the same output, and a sourceset may include resources from another (datagen sourcesets)
             spec.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
