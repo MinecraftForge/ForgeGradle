@@ -121,16 +121,15 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
     /**
      * If the Eclipse configurations should run the {@code prepareX} task before starting the game.
      * <p>
-     * Default: {@code true}
+     * Default: {@code false}
      */
     public abstract Property<Boolean> getEnableEclipsePrepareRuns();
 
     /**
      * If the IntelliJ IDEA configurations should run the {@code prepareX} task before starting the game.
      * <p>
-     * Default: {@code true}
+     * Default: {@code false}
      */
-    // TODO: change default to false (to match Eclipse behavior) when we can afford breaking changes
     public abstract Property<Boolean> getEnableIdeaPrepareRuns();
 
     /**
