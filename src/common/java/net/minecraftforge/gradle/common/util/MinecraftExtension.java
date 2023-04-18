@@ -34,7 +34,7 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         this.accessTransformers = project.getObjects().fileCollection();
 
         getCopyIdeResources().convention(false);
-        getEnableIdeaPrepareRuns().convention(true);
+        getEnableIdeaPrepareRuns().convention(false);
         getEnableEclipsePrepareRuns().convention(false);
         getGenerateRunFolders().convention(false);
     }
@@ -121,12 +121,12 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
     /**
      * If the Eclipse configurations should run the {@code prepareX} task before starting the game.
      * <p>
-     * Default: {@code false}
+     * Default: {@code true}
      */
     public abstract Property<Boolean> getEnableEclipsePrepareRuns();
-    
+
     /**
-     * If the IDEA configurations should run the {@code prepareX} task before starting the game.
+     * If the IntelliJ IDEA configurations should run the {@code prepareX} task before starting the game.
      * <p>
      * Default: {@code true}
      */
