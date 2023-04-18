@@ -33,6 +33,7 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         this.runs = project.getObjects().domainObjectContainer(RunConfig.class, name -> new RunConfig(project, name));
         this.accessTransformers = project.getObjects().fileCollection();
 
+        // If you update these conventions, make sure to update the property documentation as well
         getCopyIdeResources().convention(false);
         getEnableIdeaPrepareRuns().convention(false);
         getEnableEclipsePrepareRuns().convention(false);
