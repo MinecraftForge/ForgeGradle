@@ -39,7 +39,7 @@ public class EnvironmentChecks {
 
     public static void checkGradleRange(@Nullable GradleVersion minVersionInclusive, @Nullable GradleVersion maxVersionExclusive) {
         checkRange("Gradle", GradleVersion.current(), minVersionInclusive, maxVersionExclusive,
-                "\nNote: Upgrade your gradle version first before trying to switch to FG5.", "");
+                "\nNote: Upgrade your gradle version first before trying to switch to FG6.", "");
     }
 
     private static <T> void checkRange(String name, Comparable<T> current, @Nullable T minVersionInclusive, @Nullable T maxVersionExclusive, String additionalMin, String additionalMax) {
@@ -58,8 +58,8 @@ public class EnvironmentChecks {
      * Current environment checks:
      * <ul>
      *     <li>Java version is <em>1.8.0_101</em> or above (first JDK version to include Let's Encrypt certificates)</li>
-     *     <li>Gradle version is <em>7.1</em> or above (minimum version required by ForgeGradle)</li>
-     *     <li>Gradle version is below <em>8.0</em> (ForgeGradle 5 only supports the Gradle 7.x series)</li>
+     *     <li>Gradle version is <em>8.1</em> or above (minimum version required by ForgeGradle)</li>
+     *     <li>Gradle version is below <em>9.0</em> (ForgeGradle 6 only supports the Gradle 8.x series)</li>
      *     <li>Certificates for {@link Utils#FORGE_MAVEN} and {@link Utils#MOJANG_MAVEN} are valid (required repositories)</li>
      * </ul>
      *
@@ -83,8 +83,8 @@ public class EnvironmentChecks {
         if (ENABLE_GRADLE_CHECK) {
             logger.debug(ENV_CHECK, "Checking Gradle version");
             checkGradleRange(
-                    GradleVersion.version("7.1"),
-                    GradleVersion.version("8.0")
+                    GradleVersion.version("8.1"),
+                    GradleVersion.version("9.0")
             );
         } else {
             logger.debug(ENV_CHECK, "Gradle version check disabled by system property");
