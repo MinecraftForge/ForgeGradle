@@ -5,10 +5,13 @@
 
 package net.minecraftforge.gradle.common.util.runs;
 
+import net.minecraftforge.gradle.common.tasks.ide.CopyIntellijResources;
+import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
 
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
@@ -22,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -119,7 +123,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
 
     @Override
     @Nonnull
-    protected Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs) {
+    protected Map<String, Document> createRunConfiguration(@Nonnull final MinecraftExtension mc, @Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs) {
         final Map<String, Document> documents = new LinkedHashMap<>();
 
         Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig,
@@ -140,6 +144,9 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                     configuration.setAttribute("type", "Application");
                     configuration.setAttribute("factoryName", "Application");
                     configuration.setAttribute("singleton", runConfig.isSingleInstance() ? "true" : "false");
+
+                    if (mc.getGenerateRunFolders().get())
+                        configuration.setAttribute("folderName", runConfig.getFolderName());
 
                     elementOption(javaDocument, configuration, "MAIN_CLASS_NAME", runConfig.getMain());
                     elementOption(javaDocument, configuration, "VM_PARAMETERS",
@@ -183,7 +190,19 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                         {
                             gradleTask.setAttribute("name", "Gradle.BeforeRunTask");
                             gradleTask.setAttribute("enabled", "true");
-                            gradleTask.setAttribute("tasks", project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName())).getPath());
+                            final List<String> tasks = new ArrayList<>();
+                            final boolean copyResources = mc.getCopyIdeResources().get();
+                            if (copyResources || mc.getEnableIdeaPrepareRuns().get() == Boolean.TRUE)
+                                tasks.add(project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName())).getPath());
+                            if (this.useGradlePaths)
+                                tasks.add(project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName()) + "Compile").getPath());
+                            if (!this.useGradlePaths && copyResources) {
+                                final Task copyTask = project.getTasks().findByName(CopyIntellijResources.NAME);
+                                if (copyTask != null) {
+                                    tasks.add(copyTask.getPath());
+                                }
+                            }
+                            gradleTask.setAttribute("tasks", String.join(" ", tasks));
                             gradleTask.setAttribute("externalProjectPath", "$PROJECT_DIR$");
                         }
                         methods.appendChild(gradleTask);
@@ -219,7 +238,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
             return runConfig.getMods().stream()
                     .flatMap(modConfig -> modConfig.getSources().stream()
                             .flatMap(source -> {
-                                String outName = source.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) ? "production" : source.getName();
+                                String outName = Utils.getIntellijOutName(source);
                                 final Project sourceSetProject = sourceSetsToProjects.getOrDefault(source, project);
                                 final IdeaModel ideaModel = sourceSetProject.getExtensions().findByType(IdeaModel.class);
                                 return getIdeaPathsForSourceset(sourceSetProject, ideaModel, outName, modConfig.getName());
@@ -227,7 +246,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
         }
     }
 
-    private static Stream<String> getIdeaPathsForSourceset(@Nonnull Project project, @Nullable IdeaModel idea, String outName, @Nullable String modName)
+    public static Stream<String> getIdeaPathsForSourceset(@Nonnull Project project, @Nullable IdeaModel idea, String outName, @Nullable String modName)
     {
         String ideaResources, ideaClasses;
         try

@@ -9,6 +9,8 @@ import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
 import net.minecraftforge.gradle.common.legacy.LegacyExtension;
 import net.minecraftforge.gradle.common.tasks.ExtractNatives;
+import net.minecraftforge.gradle.common.tasks.ide.CopyEclipseResources;
+import net.minecraftforge.gradle.common.tasks.ide.CopyIntellijResources;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import net.minecraftforge.gradle.common.util.runs.RunConfigGenerator;
 
@@ -18,6 +20,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 
 import com.google.gson.Gson;
@@ -27,6 +30,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 import groovy.lang.Closure;
+import org.gradle.plugins.ide.eclipse.EclipsePlugin;
+import org.gradle.plugins.ide.eclipse.model.EclipseModel;
+import org.gradle.plugins.ide.idea.IdeaPlugin;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -51,6 +58,7 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.Callable;
@@ -485,5 +493,30 @@ public class Utils {
 
         // Just assume we will never have a mapping channel that has an underscore along with "23w13a_or_b"
         return mapping.indexOf('_');
+    }
+
+    public static void setupIDEResourceCopy(@Nonnull final Project project) {
+        boolean ideaFound = true;
+        if (project.getPlugins().hasPlugin(IdeaPlugin.class)) {
+            final IdeaPlugin idea = project.getPlugins().getPlugin(IdeaPlugin.class);
+            project.getTasks().register(CopyIntellijResources.NAME, CopyIntellijResources.class, task -> task.configure(idea.getModel(), project));
+        } else {
+            ideaFound = false;
+        }
+
+        if (project.getPlugins().hasPlugin(EclipsePlugin.class)) {
+            final TaskProvider<CopyEclipseResources> taskProvider = project.getTasks().register(CopyEclipseResources.NAME, CopyEclipseResources.class, task -> task.dependsOn("eclipse"));
+            project.getTasks().named("eclipse").configure(eclipseTask -> eclipseTask.doLast(eclTask -> {
+                final EclipseModel eclipse = project.getExtensions().findByType(EclipseModel.class);
+                // The `eclipse` task has been run, the only way the model would be null is if something has gone seriously wrong
+                taskProvider.get().configure(Objects.requireNonNull(eclipse), project);
+            }));
+        } else if (!ideaFound) {
+            project.getLogger().warn("Neither the 'eclipse' nor the 'idea' plugins were found, but IDE resource copy has been enabled.");
+        }
+    }
+
+    public static String getIntellijOutName(@Nonnull final SourceSet sourceSet) {
+        return sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) ? "production" : sourceSet.getName();
     }
 }

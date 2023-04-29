@@ -32,6 +32,12 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         this.mapping = getMappingChannel().zip(getMappingVersion(), (ch, ver) -> ch + '_' + ver);
         this.runs = project.getObjects().domainObjectContainer(RunConfig.class, name -> new RunConfig(project, name));
         this.accessTransformers = project.getObjects().fileCollection();
+
+        // If you update these conventions, make sure to update the property documentation as well
+        getCopyIdeResources().convention(false);
+        getEnableIdeaPrepareRuns().convention(false);
+        getEnableEclipsePrepareRuns().convention(false);
+        getGenerateRunFolders().convention(false);
     }
 
     public Project getProject() {
@@ -112,4 +118,32 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
     }
 
     public abstract ConfigurableFileCollection getSideAnnotationStrippers();
+
+    /**
+     * If the Eclipse configurations should run the {@code prepareX} task before starting the game.
+     * <p>
+     * Default: {@code false}
+     */
+    public abstract Property<Boolean> getEnableEclipsePrepareRuns();
+
+    /**
+     * If the IntelliJ IDEA configurations should run the {@code prepareX} task before starting the game.
+     * <p>
+     * Default: {@code false}
+     */
+    public abstract Property<Boolean> getEnableIdeaPrepareRuns();
+
+    /**
+     * If Gradle resources should be copied to the respective IDE output folders before starting the game.
+     * <p>
+     * Default: {@code false}
+     */
+    public abstract Property<Boolean> getCopyIdeResources();
+
+    /**
+     * If run configurations should be grouped in folders.
+     * <p>
+     * Default: {@code false}
+     */
+    public abstract Property<Boolean> getGenerateRunFolders();
 }

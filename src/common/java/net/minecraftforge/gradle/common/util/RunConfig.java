@@ -53,6 +53,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     private Boolean client; // so we can have it null
     private Boolean inheritArgs;
     private Boolean inheritJvmArgs;
+    private transient String folderName;
     private boolean buildAllProjects;
 
     private Map<String, String> env, props, tokens;
@@ -63,6 +64,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         this.name = name;
 
         this.mods = project.container(ModConfig.class, modName -> new ModConfig(project, modName));
+        this.folderName = project.getName();
     }
 
     public final String getName() {
@@ -504,6 +506,7 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         this.client = first.client == null ? second.client : first.client;
         if (overwrite) {
             this.buildAllProjects = other.buildAllProjects;
+            this.folderName = other.folderName;
         }
 
         if (other.env != null) {
@@ -627,6 +630,18 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         }
 
         return sources;
+    }
+
+    public void folderName(String folderName) {
+        setFolderName(folderName);
+    }
+
+    public void setFolderName(String folderName) {
+        this.folderName = folderName;
+    }
+
+    public String getFolderName() {
+        return folderName;
     }
 
     @Override

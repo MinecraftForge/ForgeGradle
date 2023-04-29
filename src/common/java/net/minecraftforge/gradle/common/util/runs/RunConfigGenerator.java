@@ -39,16 +39,12 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.AbstractMap;
-import java.util.AbstractSet;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.function.Supplier;
@@ -112,11 +108,11 @@ public abstract class RunConfigGenerator
         parent.appendChild(option);
     }
 
-    protected static void elementAttribute(@Nonnull Document document, @Nonnull final Element parent, @Nonnull final String attributeType, @Nonnull final String key, @Nonnull final String value) {
+    protected static void elementAttribute(@Nonnull Document document, @Nonnull final Element parent, @Nonnull final String attributeType, @Nonnull final String key, @Nonnull final Object value) {
         final Element attribute = document.createElement(attributeType + "Attribute");
         {
             attribute.setAttribute("key", key);
-            attribute.setAttribute("value", value);
+            attribute.setAttribute("value", value.toString());
         }
         parent.appendChild(attribute);
     }
@@ -242,7 +238,7 @@ public abstract class RunConfigGenerator
 
         TaskProvider<Task> prepareRun = project.getTasks().register("prepare" + Utils.capitalize(runConfig.getTaskName()), Task.class, task -> {
             task.setGroup(RunConfig.RUNS_GROUP);
-            task.dependsOn(prepareRuns, runConfig.getAllSources().stream().map(SourceSet::getClassesTaskName).toArray());
+            task.dependsOn(prepareRuns);
 
             File workDir = new File(runConfig.getWorkingDirectory());
 
@@ -251,14 +247,19 @@ public abstract class RunConfigGenerator
             }
         });
 
+        TaskProvider<Task> prepareRunCompile = project.getTasks().register("prepare" + Utils.capitalize(runConfig.getTaskName()) + "Compile", Task.class,
+                task -> task.dependsOn(runConfig.getAllSources().stream().map(SourceSet::getClassesTaskName).toArray()));
+
         return project.getTasks().register(runConfig.getTaskName(), JavaExec.class, task -> {
             task.setGroup(RunConfig.RUNS_GROUP);
-            task.dependsOn(prepareRun.get());
+            task.dependsOn(prepareRun, prepareRunCompile);
 
             File workDir = new File(runConfig.getWorkingDirectory());
 
             if (!workDir.exists()) {
-                workDir.mkdirs();
+                if (!workDir.mkdirs()) {
+                    throw new IllegalArgumentException("Could not create configuration directory " + workDir);
+                }
             }
 
             task.setWorkingDir(workDir);
@@ -327,7 +328,7 @@ public abstract class RunConfigGenerator
     static abstract class XMLConfigurationBuilder extends RunConfigGenerator {
 
         @Nonnull
-        protected abstract Map<String, Document> createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs);
+        protected abstract Map<String, Document> createRunConfiguration(@Nonnull final MinecraftExtension minecraft, @Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs);
 
         @Override
         public final void createRunConfiguration(@Nonnull final MinecraftExtension minecraft, @Nonnull final File runConfigurationsDir, @Nonnull final Project project, List<String> additionalClientArgs) {
@@ -341,11 +342,14 @@ public abstract class RunConfigGenerator
                 transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 
                 minecraft.getRuns().forEach(runConfig -> {
-                    final Map<String, Document> documents = createRunConfiguration(project, runConfig, docBuilder, additionalClientArgs);
+                    final Map<String, Document> documents = createRunConfiguration(minecraft, project, runConfig, docBuilder, additionalClientArgs);
 
                     documents.forEach((fileName, document) -> {
                         final DOMSource source = new DOMSource(document);
-                        final StreamResult result = new StreamResult(new File(runConfigurationsDir, fileName));
+                        final File location = new File(runConfigurationsDir, fileName);
+                        if (!location.getParentFile().exists())
+                            location.getParentFile().mkdirs();
+                        final StreamResult result = new StreamResult(location);
 
                         try {
                             transformer.transform(source, result);

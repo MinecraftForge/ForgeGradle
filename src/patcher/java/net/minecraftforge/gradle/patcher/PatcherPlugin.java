@@ -49,7 +49,6 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository.MetadataSources;
 import org.gradle.api.file.Directory;
@@ -653,6 +652,8 @@ public class PatcherPlugin implements Plugin<Project> {
             }
 
             extension.getRuns().forEach(runConfig -> runConfig.tokens(tokens));
+            if (extension.getCopyIdeResources().get())
+                Utils.setupIDEResourceCopy(project);  // We need to have the copy resources task BEFORE the run config ones so we can detect them
             Utils.createRunConfigTasks(extension, extractNatives, downloadAssets, createSrg2Mcp);
         });
     }
