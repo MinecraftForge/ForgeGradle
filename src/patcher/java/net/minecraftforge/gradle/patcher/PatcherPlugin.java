@@ -652,7 +652,7 @@ public class PatcherPlugin implements Plugin<Project> {
             }
 
             extension.getRuns().forEach(runConfig -> runConfig.tokens(tokens));
-            if (extension.getCopyIdeResources().get())
+            if (extension.getCopyIdeResources().get() == Boolean.TRUE)
                 Utils.setupIDEResourceCopy(project);  // We need to have the copy resources task BEFORE the run config ones so we can detect them
             Utils.createRunConfigTasks(extension, extractNatives, downloadAssets, createSrg2Mcp);
         });

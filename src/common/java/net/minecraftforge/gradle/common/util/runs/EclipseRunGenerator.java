@@ -78,10 +78,11 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
             javaDocument.appendChild(rootElement);
         }
 
-        final String configName = (mc.getGenerateRunFolders().get() ? runConfig.getFolderName() + " - " : "") + runConfig.getTaskName() + ".launch";
-        final boolean copyResources = mc.getCopyIdeResources().get();
+        final String configName = (mc.getGenerateRunFolders().get() == Boolean.TRUE ? runConfig.getFolderName() + " - " : "") + runConfig.getTaskName() + ".launch";
+        final boolean copyResources = mc.getCopyIdeResources().get() == Boolean.TRUE;
+        final boolean prepareRun = mc.getEnableEclipsePrepareRuns().get() == Boolean.TRUE;
 
-        if (copyResources || mc.getEnableEclipsePrepareRuns().get()) {
+        if (copyResources || prepareRun) {
             final String launchConfigName = project.getName() + " - " + runConfig.getTaskName() + "Slim";
             documents.put(".eclipse/configurations/" + launchConfigName + ".launch", javaDocument);
 
@@ -102,16 +103,18 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
                 final Element tasks = gradleDocument.createElement("listAttribute");
                 tasks.setAttribute("key", "tasks");
                 {
-                    final Element taskEntry = gradleDocument.createElement("listEntry");
-                    taskEntry.setAttribute("value", project.getTasks().getByName(runConfig.getPrepareTaskName()).getPath());
-                    tasks.appendChild(taskEntry);
+                    if (prepareRun) {
+                        final Element prepareRunTaskEntry = gradleDocument.createElement("listEntry");
+                        prepareRunTaskEntry.setAttribute("value", project.getTasks().getByName(runConfig.getPrepareTaskName()).getPath());
+                        tasks.appendChild(prepareRunTaskEntry);
+                    }
 
                     if (copyResources) {
                         final Task copyTask = project.getTasks().findByName(CopyEclipseResources.NAME);
                         if (copyTask != null) {
-                            final Element copyIde = gradleDocument.createElement("listEntry");
-                            copyIde.setAttribute("value", copyTask.getPath());
-                            tasks.appendChild(copyIde);
+                            final Element copyResourcesTaskEntry = gradleDocument.createElement("listEntry");
+                            copyResourcesTaskEntry.setAttribute("value", copyTask.getPath());
+                            tasks.appendChild(copyResourcesTaskEntry);
                         }
                     }
                 }
