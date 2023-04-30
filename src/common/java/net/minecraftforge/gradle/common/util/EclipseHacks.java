@@ -20,12 +20,10 @@ import org.gradle.plugins.ide.eclipse.model.SourceFolder;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
 public class EclipseHacks {
-
-    public static void doEclipseFixes(final MinecraftExtension minecraft, final TaskProvider<ExtractNatives> nativesTask, final List<? extends TaskProvider<?>> setupTasks) {
+    public static void doEclipseFixes(final MinecraftExtension minecraft, final TaskProvider<ExtractNatives> nativesTask, final TaskProvider<?> prepareRuns) {
         final Project project = minecraft.getProject();
         final Provider<File> natives = nativesTask.flatMap(s -> s.getOutput().getAsFile());
 
@@ -38,9 +36,7 @@ public class EclipseHacks {
 
         final String LIB_ATTR = "org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY";
 
-        project.getTasks().withType(GenerateEclipseClasspath.class).configureEach(task -> {
-            task.dependsOn(nativesTask, setupTasks);
-        });
+        project.getTasks().withType(GenerateEclipseClasspath.class).configureEach(task -> task.dependsOn(nativesTask, prepareRuns));
 
         classpathMerger.whenMerged(obj -> {
             Classpath classpath = (Classpath)obj;

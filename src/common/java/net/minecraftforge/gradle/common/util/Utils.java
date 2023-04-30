@@ -49,7 +49,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
@@ -370,13 +369,6 @@ public class Utils {
     }
 
     public static void createRunConfigTasks(final MinecraftExtension extension, final TaskProvider<ExtractNatives> extractNatives, final TaskProvider<?>... setupTasks) {
-        List<TaskProvider<?>> setupTasksLst = new ArrayList<>(Arrays.asList(setupTasks));
-
-        final TaskProvider<Task> prepareRuns = extension.getProject().getTasks().register("prepareRuns", Task.class, task -> {
-            task.setGroup(RunConfig.RUNS_GROUP);
-            task.dependsOn(extractNatives, setupTasksLst);
-        });
-
         final TaskProvider<Task> makeSrcDirs = extension.getProject().getTasks().register("makeSrcDirs", Task.class, task ->
                 task.doFirst(t -> {
                     final JavaPluginExtension java = task.getProject().getExtensions().getByType(JavaPluginExtension.class);
@@ -384,7 +376,11 @@ public class Utils {
                     java.getSourceSets().forEach(s -> s.getAllSource()
                             .getSrcDirs().stream().filter(f -> !f.exists()).forEach(File::mkdirs));
                 }));
-        setupTasksLst.add(makeSrcDirs);
+
+        final TaskProvider<Task> prepareRuns = extension.getProject().getTasks().register("prepareRuns", Task.class, task -> {
+            task.setGroup(RunConfig.RUNS_GROUP);
+            task.dependsOn(extractNatives, setupTasks, makeSrcDirs);
+        });
 
         extension.getRuns().forEach(RunConfig::mergeParents);
 
@@ -402,10 +398,10 @@ public class Utils {
             extension.getRuns().forEach(RunConfig::mergeChildren);
             extension.getRuns().forEach(run -> RunConfigGenerator.createRunTask(run, extension.getProject(), prepareRuns, additionalClientArgs));
 
-            EclipseHacks.doEclipseFixes(extension, extractNatives, setupTasksLst);
+            EclipseHacks.doEclipseFixes(extension, extractNatives, prepareRuns);
             LegacyExtension.runRetrogradleFixes(extension.getProject());
 
-            RunConfigGenerator.createIDEGenRunsTasks(extension, prepareRuns, makeSrcDirs, additionalClientArgs);
+            RunConfigGenerator.createIDEGenRunsTasks(extension, prepareRuns, additionalClientArgs);
         });
     }
 

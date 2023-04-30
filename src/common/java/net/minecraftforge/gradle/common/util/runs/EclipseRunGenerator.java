@@ -21,7 +21,6 @@ import org.gradle.plugins.ide.eclipse.model.SourceFolder;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import javax.annotation.Nonnull;
 import javax.xml.parsers.DocumentBuilder;
 import java.io.File;
 import java.util.Collections;
@@ -32,25 +31,19 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuilder
-{
+public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuilder {
     @Override
-    @Nonnull
-    protected Map<String, Document> createRunConfiguration(@Nonnull final MinecraftExtension mc, @Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs) {
+    protected Map<String, Document> createRunConfiguration(final MinecraftExtension mc, final Project project, final RunConfig runConfig, final DocumentBuilder documentBuilder,
+            List<String> additionalClientArgs, Set<File> minecraftArtifacts, Set<File> runtimeClasspathArtifacts) {
         final Map<String, Document> documents = new LinkedHashMap<>();
 
-        Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig, mapModClassesToEclipse(project, runConfig));
-
-        final File workingDirectory = new File(runConfig.getWorkingDirectory());
-
-        // Eclipse requires working directory to exist
-        if (!workingDirectory.exists()) {
-            workingDirectory.mkdirs();
-        }
+        Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig, mapModClassesToEclipse(project, runConfig),
+                minecraftArtifacts, runtimeClasspathArtifacts);
 
         // Java run config
         final Document javaDocument = documentBuilder.newDocument();
@@ -110,7 +103,7 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
                 tasks.setAttribute("key", "tasks");
                 {
                     final Element taskEntry = gradleDocument.createElement("listEntry");
-                    taskEntry.setAttribute("value", project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName())).getPath());
+                    taskEntry.setAttribute("value", project.getTasks().getByName(runConfig.getPrepareTaskName()).getPath());
                     tasks.appendChild(taskEntry);
 
                     if (copyResources) {
@@ -154,17 +147,18 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
         return documents;
     }
 
-    static String getEclipseProjectName(@Nonnull final Project project) {
+    static String getEclipseProjectName(final Project project) {
         final EclipseModel eclipse = project.getExtensions().findByType(EclipseModel.class);
         return eclipse == null ? project.getName() : eclipse.getProject().getName();
     }
 
-    static Stream<String> mapModClassesToEclipse(@Nonnull final Project project, @Nonnull final RunConfig runConfig) {
+    static Stream<String> mapModClassesToEclipse(final Project project, final RunConfig runConfig) {
         final Map<SourceSet, Map<String, String>> sourceSetsToOutputs = new IdentityHashMap<>();
 
         project.getRootProject().getAllprojects().forEach(proj -> {
             final EclipseModel eclipse = proj.getExtensions().findByType(EclipseModel.class);
-            if (eclipse == null) return;
+            if (eclipse == null)
+                return;
             final EclipseClasspath classpath = eclipse.getClasspath();
 
             final Map<String, String> outputs = classpath.resolveDependencies().stream()
@@ -175,23 +169,19 @@ public class EclipseRunGenerator extends RunConfigGenerator.XMLConfigurationBuil
                     .collect(Collectors.toMap(output -> output.split("/")[output.split("/").length - 1], output -> proj.file(output).getAbsolutePath()));
 
             final JavaPluginExtension javaPlugin = proj.getExtensions().findByType(JavaPluginExtension.class);
-            if (javaPlugin != null)
-            {
-                for (SourceSet sourceSet : javaPlugin.getSourceSets())
-                {
+            if (javaPlugin != null) {
+                for (SourceSet sourceSet : javaPlugin.getSourceSets()) {
                     sourceSetsToOutputs.computeIfAbsent(sourceSet, a -> new HashMap<>()).putAll(outputs);
                 }
             }
         });
 
-        if (runConfig.getMods().isEmpty())
-        {
+        if (runConfig.getMods().isEmpty()) {
             return runConfig.getAllSources().stream()
                     .map(sourceSet -> sourceSetsToOutputs.getOrDefault(sourceSet, Collections.emptyMap()).get(sourceSet.getName()))
                     .filter(Objects::nonNull)
                     .map(s -> String.join(File.pathSeparator, s, s)); // <resources>:<classes>
-        } else
-        {
+        } else {
             final SourceSet main = project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
             return runConfig.getMods().stream()

@@ -9,19 +9,19 @@ import com.google.gson.JsonObject;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import org.gradle.api.Project;
 
-import javax.annotation.Nonnull;
+import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public class VSCodeRunGenerator extends RunConfigGenerator.JsonConfigurationBuilder
-{
-    @Nonnull
+public class VSCodeRunGenerator extends RunConfigGenerator.JsonConfigurationBuilder {
     @Override
-    protected JsonObject createRunConfiguration(@Nonnull Project project, @Nonnull RunConfig runConfig, List<String> additionalClientArgs)
-    {
-        Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig, mapModClassesToVSCode(project, runConfig));
+    protected JsonObject createRunConfiguration(Project project, RunConfig runConfig, List<String> additionalClientArgs,
+            Set<File> minecraftArtifacts, Set<File> runtimeClasspathArtifacts) {
+        Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig, mapModClassesToVSCode(project, runConfig),
+                minecraftArtifacts, runtimeClasspathArtifacts);
 
         JsonObject config = new JsonObject();
         config.addProperty("type", "java");
@@ -33,7 +33,7 @@ public class VSCodeRunGenerator extends RunConfigGenerator.JsonConfigurationBuil
         config.addProperty("vmArgs", getJvmArgs(runConfig, additionalClientArgs, updatedTokens));
         config.addProperty("args", getArgs(runConfig, updatedTokens));
         JsonObject env = new JsonObject();
-        runConfig.getEnvironment().forEach((key,value) -> {
+        runConfig.getEnvironment().forEach((key, value) -> {
             value = runConfig.replace(updatedTokens, value);
             if (key.equals("nativesDirectory"))
                 value = replaceRootDirBy(project, value, "${workspaceFolder}");
@@ -43,9 +43,8 @@ public class VSCodeRunGenerator extends RunConfigGenerator.JsonConfigurationBuil
         return config;
     }
 
-    private Stream<String> mapModClassesToVSCode(@Nonnull Project project, @Nonnull RunConfig runConfig)
-    {
+    private Stream<String> mapModClassesToVSCode(Project project, RunConfig runConfig) {
         return EclipseRunGenerator.mapModClassesToEclipse(project, runConfig)
-            .map((value) -> replaceRootDirBy(project, value, "${workspaceFolder}"));
+                .map((value) -> replaceRootDirBy(project, value, "${workspaceFolder}"));
     }
 }

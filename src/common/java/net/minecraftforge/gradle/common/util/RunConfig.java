@@ -49,7 +49,6 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
     private List<SourceSet> sources;
     private List<RunConfig> parents, children;
     private List<String> args, jvmArgs;
-    private boolean forceExit = true;
     private Boolean client; // so we can have it null
     private Boolean inheritArgs;
     private Boolean inheritJvmArgs;
@@ -89,6 +88,14 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         }
 
         return taskName;
+    }
+
+    public final String getPrepareTaskName() {
+        return "prepare" + Utils.capitalize(this.getTaskName());
+    }
+
+    public final String getPrepareCompileTaskName() {
+        return "prepare" + Utils.capitalize(this.getTaskName()) + "Compile";
     }
 
     public final String getUniqueFileName() {
@@ -291,18 +298,6 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         }
 
         return workDir;
-    }
-
-    public void forceExit(boolean forceExit) {
-        this.setForceExit(forceExit);
-    }
-
-    public void setForceExit(boolean forceExit) {
-        this.forceExit = forceExit;
-    }
-
-    public boolean getForceExit() {
-        return this.forceExit;
     }
 
     public NamedDomainObjectContainer<ModConfig> mods(@SuppressWarnings("rawtypes") Closure closure) {

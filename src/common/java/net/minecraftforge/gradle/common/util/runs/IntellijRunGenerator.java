@@ -30,6 +30,7 @@ import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -41,59 +42,46 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBuilder
-{
+public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBuilder {
     boolean useGradlePaths = true;
 
-    public IntellijRunGenerator(@Nonnull final Project project)
-    {
+    public IntellijRunGenerator(final Project project) {
         detectGradleDelegation(project);
     }
 
-    private void detectGradleDelegation(Project project)
-    {
+    private void detectGradleDelegation(Project project) {
         XPath xpath = XPathFactory.newInstance().newXPath();
 
         // This file contains the current gradle import settings.
         File ideaGradleSettings = project.file(".idea/gradle.xml");
-        if (ideaGradleSettings.exists() && ideaGradleSettings.isFile())
-        {
-            try (InputStream in = Files.newInputStream(ideaGradleSettings.toPath()))
-            {
+        if (ideaGradleSettings.exists() && ideaGradleSettings.isFile()) {
+            try (InputStream in = Files.newInputStream(ideaGradleSettings.toPath())) {
                 Node value = (Node) xpath.evaluate(
                         "/project/component[@name='GradleSettings']/option[@name='linkedExternalProjectsSettings']/GradleProjectSettings/option[@name='delegatedBuild']/@value",
                         new InputSource(in),
                         XPathConstants.NODE);
-                if (value != null)
-                {
+                if (value != null) {
                     useGradlePaths = Boolean.parseBoolean(value.getTextContent());
                     return;
                 }
-            }
-            catch (IOException | XPathExpressionException e)
-            {
+            } catch (IOException | XPathExpressionException e) {
                 e.printStackTrace();
             }
         }
 
         // This value is normally true, and won't be used unless the project's gradle.xml is missing.
         File ideaWorkspace = project.file(".idea/workspace.xml");
-        if (ideaWorkspace.exists() && ideaWorkspace.isFile())
-        {
-            try (InputStream in = Files.newInputStream(ideaWorkspace.toPath()))
-            {
+        if (ideaWorkspace.exists() && ideaWorkspace.isFile()) {
+            try (InputStream in = Files.newInputStream(ideaWorkspace.toPath())) {
                 Node value = (Node) xpath.evaluate(
                         "/project/component[@name='DefaultGradleProjectSettings']/option[@name='delegatedBuild']/@value",
                         new InputSource(in),
                         XPathConstants.NODE);
-                if (value != null)
-                {
+                if (value != null) {
                     useGradlePaths = Boolean.parseBoolean(value.getTextContent());
                     return;
                 }
-            }
-            catch (IOException | XPathExpressionException e)
-            {
+            } catch (IOException | XPathExpressionException e) {
                 e.printStackTrace();
             }
         }
@@ -101,35 +89,31 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
         // Fallback, in case someone has a file-based project instead of a directory-based project.
         final IdeaModel idea = project.getExtensions().findByType(IdeaModel.class);
         File ideaFileProject = project.file(idea != null ? idea.getProject().getOutputFile() : (project.getName() + ".ipr"));
-        if (ideaFileProject.exists() && ideaFileProject.isFile())
-        {
-            try (InputStream in = Files.newInputStream(ideaFileProject.toPath()))
-            {
+        if (ideaFileProject.exists() && ideaFileProject.isFile()) {
+            try (InputStream in = Files.newInputStream(ideaFileProject.toPath())) {
                 Node value = (Node) xpath.evaluate(
                         "/project/component[@name='GradleSettings']/option[@name='linkedExternalProjectsSettings']/GradleProjectSettings/option[@name='delegatedBuild']/@value",
                         new InputSource(in),
                         XPathConstants.NODE);
-                if (value != null)
-                {
+                if (value != null) {
                     useGradlePaths = Boolean.parseBoolean(value.getTextContent());
                 }
-            }
-            catch (IOException | XPathExpressionException e)
-            {
+            } catch (IOException | XPathExpressionException e) {
                 e.printStackTrace();
             }
         }
     }
 
     @Override
-    @Nonnull
-    protected Map<String, Document> createRunConfiguration(@Nonnull final MinecraftExtension mc, @Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs) {
+    protected Map<String, Document> createRunConfiguration(final MinecraftExtension mc, @Nonnull final Project project, final RunConfig runConfig, final DocumentBuilder documentBuilder, List<String> additionalClientArgs,
+            Set<File> minecraftArtifacts, Set<File> runtimeClasspathArtifacts) {
         final Map<String, Document> documents = new LinkedHashMap<>();
 
         Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig,
                 useGradlePaths
-                    ? mapModClassesToGradle(project, runConfig)
-                    : mapModClassesToIdea(project, runConfig)
+                        ? mapModClassesToGradle(project, runConfig)
+                        : mapModClassesToIdea(project, runConfig),
+                minecraftArtifacts, runtimeClasspathArtifacts
         );
 
         // Java run config
@@ -193,9 +177,9 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
                             final List<String> tasks = new ArrayList<>();
                             final boolean copyResources = mc.getCopyIdeResources().get();
                             if (copyResources || mc.getEnableIdeaPrepareRuns().get() == Boolean.TRUE)
-                                tasks.add(project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName())).getPath());
+                                tasks.add(project.getTasks().getByName(runConfig.getPrepareTaskName()).getPath());
                             if (this.useGradlePaths)
-                                tasks.add(project.getTasks().getByName("prepare" + Utils.capitalize(runConfig.getTaskName()) + "Compile").getPath());
+                                tasks.add(project.getTasks().getByName(runConfig.getPrepareCompileTaskName()).getPath());
                             if (!this.useGradlePaths && copyResources) {
                                 final Task copyTask = project.getTasks().findByName(CopyIntellijResources.NAME);
                                 if (copyTask != null) {
@@ -218,7 +202,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
         return documents;
     }
 
-    private static Stream<String> mapModClassesToIdea(@Nonnull final Project project, @Nonnull final RunConfig runConfig) {
+    private static Stream<String> mapModClassesToIdea(final Project project, final RunConfig runConfig) {
         final Map<SourceSet, Project> sourceSetsToProjects = new IdentityHashMap<>();
 
         project.getRootProject().getAllprojects().forEach(proj -> {
@@ -246,25 +230,20 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
         }
     }
 
-    public static Stream<String> getIdeaPathsForSourceset(@Nonnull Project project, @Nullable IdeaModel idea, String outName, @Nullable String modName)
-    {
+    public static Stream<String> getIdeaPathsForSourceset(Project project, @Nullable IdeaModel idea, String outName, @Nullable String modName) {
         String ideaResources, ideaClasses;
-        try
-        {
+        try {
             String outputPath = idea != null
                     ? idea.getModule().getPathFactory().path("$MODULE_DIR$").getCanonicalUrl()
                     : project.getProjectDir().getCanonicalPath();
 
             ideaResources = Paths.get(outputPath, "out", outName, "resources").toFile().getCanonicalPath();
             ideaClasses = Paths.get(outputPath, "out", outName, "classes").toFile().getCanonicalPath();
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new RuntimeException("Error getting paths for idea run configs", e);
         }
 
-        if (modName != null)
-        {
+        if (modName != null) {
             ideaResources = modName + "%%" + ideaResources;
             ideaClasses = modName + "%%" + ideaClasses;
         }

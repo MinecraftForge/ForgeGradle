@@ -8,25 +8,20 @@ package net.minecraftforge.gradle.common.util.runs;
 import com.google.common.base.Suppliers;
 import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.common.util.RunConfig;
-import net.minecraftforge.gradle.common.util.Utils;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.apache.commons.lang3.tuple.Triple;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPluginExtension;
-import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
-import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
 import com.google.gson.Gson;
@@ -41,17 +36,17 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -63,69 +58,63 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-public abstract class RunConfigGenerator
-{
-    public abstract void createRunConfiguration(@Nonnull final MinecraftExtension minecraft, @Nonnull final File runConfigurationsDir, @Nonnull final Project project, List<String> additionalClientArgs);
+public abstract class RunConfigGenerator {
+    public abstract void createRunConfiguration(final MinecraftExtension minecraft, final File runConfigurationsDir, final Project project,
+            List<String> additionalClientArgs, Set<File> minecraftArtifacts, Set<File> runtimeClasspathArtifacts);
 
-    public static void createIDEGenRunsTasks(@Nonnull final MinecraftExtension minecraft, @Nonnull final TaskProvider<Task> prepareRuns, @Nonnull final TaskProvider<Task> makeSourceDirs, List<String> additionalClientArgs) {
+    public static void createIDEGenRunsTasks(final MinecraftExtension minecraft, final TaskProvider<Task> prepareRuns, List<String> additionalClientArgs) {
         final Project project = minecraft.getProject();
 
-        final Map<String, Triple<List<Object>, File, Supplier<RunConfigGenerator>>> ideConfigurationGenerators = ImmutableMap.<String, Triple<List<Object>, File, Supplier<RunConfigGenerator>>>builder()
-                .put("genIntellijRuns", ImmutableTriple.of(Collections.singletonList(prepareRuns),
-                        new File(project.getRootProject().getRootDir(), ".idea/runConfigurations"),
+        final Map<String, GeneratorData> ideConfigurationGenerators =
+                ImmutableMap.<String, GeneratorData>builder()
+                .put("genIntellijRuns", new GeneratorData(new File(project.getRootProject().getRootDir(), ".idea/runConfigurations"),
                         () -> new IntellijRunGenerator(project.getRootProject())))
-                .put("genEclipseRuns", ImmutableTriple.of(ImmutableList.of(prepareRuns, makeSourceDirs),
-                        project.getProjectDir(),
+                .put("genEclipseRuns", new GeneratorData(project.getProjectDir(),
                         EclipseRunGenerator::new))
-                .put("genVSCodeRuns", ImmutableTriple.of(ImmutableList.of(prepareRuns, makeSourceDirs),
-                        new File(project.getProjectDir(), ".vscode"),
+                .put("genVSCodeRuns", new GeneratorData(new File(project.getProjectDir(), ".vscode"),
                         VSCodeRunGenerator::new))
                 .build();
 
         ideConfigurationGenerators.forEach((taskName, configurationGenerator) -> {
-            project.getTasks().register(taskName, Task.class, task -> {
-                task.setGroup(RunConfig.RUNS_GROUP);
-                task.dependsOn(configurationGenerator.getLeft());
+            project.getTasks().register(taskName, GenIDERunsTask.class, task -> {
+                task.dependsOn(prepareRuns);
 
-                task.doLast(t -> {
-                    final File runConfigurationsDir = configurationGenerator.getMiddle();
-
-                    if (!runConfigurationsDir.exists()) {
-                        runConfigurationsDir.mkdirs();
-                    }
-                    configurationGenerator.getRight().get().createRunConfiguration(minecraft, runConfigurationsDir, project, additionalClientArgs);
-                });
+                task.getRunConfigurationsFolder().set(configurationGenerator.outputFolder);
+                task.getRunConfigGenerator().set(project.provider(configurationGenerator.generatorFactory::get));
+                task.getMinecraftExtension().set(minecraft);
+                task.getAdditionalClientArgs().set(additionalClientArgs);
+                task.getMinecraftArtifacts().from(getMinecraftArtifacts(project));
+                task.getRuntimeClasspathArtifacts().from(getRuntimeClasspathArtifacts(project));
             });
         });
     }
 
-    protected static void elementOption(@Nonnull Document document, @Nonnull final Element parent, @Nonnull final String name, @Nonnull final String value) {
+    protected static void elementOption(Document document, final Element parent, final String name, final String value) {
         final Element option = document.createElement("option");
-        {
-            option.setAttribute("name", name);
-            option.setAttribute("value", value);
-        }
+
+        option.setAttribute("name", name);
+        option.setAttribute("value", value);
+
         parent.appendChild(option);
     }
 
-    protected static void elementAttribute(@Nonnull Document document, @Nonnull final Element parent, @Nonnull final String attributeType, @Nonnull final String key, @Nonnull final Object value) {
+    protected static void elementAttribute(Document document, final Element parent, final String attributeType, final String key, final Object value) {
         final Element attribute = document.createElement(attributeType + "Attribute");
-        {
-            attribute.setAttribute("key", key);
-            attribute.setAttribute("value", value.toString());
-        }
+
+        attribute.setAttribute("key", key);
+        attribute.setAttribute("value", value.toString());
         parent.appendChild(attribute);
     }
 
-    protected static String replaceRootDirBy(@Nonnull final Project project, String value, @Nonnull final String replacement) {
-        if (value == null || value.isEmpty()) {
+    @Nullable
+    protected static String replaceRootDirBy(final Project project, @Nullable String value, final String replacement) {
+        if (value == null || value.isEmpty())
             return value;
-        }
+
         return value.replace(project.getRootDir().toString(), replacement);
     }
 
-    protected static Stream<String> mapModClassesToGradle(Project project, RunConfig runConfig)
-    {
+    protected static Stream<String> mapModClassesToGradle(Project project, RunConfig runConfig) {
         if (runConfig.getMods().isEmpty()) {
             List<SourceSet> sources = runConfig.getAllSources();
             return Stream.concat(
@@ -149,21 +138,8 @@ public abstract class RunConfigGenerator
         }
     }
 
-    /**
-     * @deprecated Use {@link #configureTokensLazy(Project, RunConfig, Stream)}
-     */
-    @Deprecated
-    // TODO: remove this when we can break compat
-    protected static Map<String, String> configureTokens(final Project project, @Nonnull RunConfig runConfig, Stream<String> modClasses) {
-        project.getLogger().warn("WARNING: RunConfigGenerator#configureTokens was called instead of the lazy variant, configureTokensLazy.");
-        project.getLogger().warn("This means longer evaluation times as all tokens are evaluated. Please use configureTokensLazy.");
-        return configureTokensLazy(project, runConfig, modClasses)
-                .entrySet()
-                .stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get()));
-    }
-
-    protected static Map<String, Supplier<String>> configureTokensLazy(final Project project, @Nonnull RunConfig runConfig, Stream<String> modClasses) {
+    protected static Map<String, Supplier<String>> configureTokensLazy(final Project project, RunConfig runConfig, Stream<String> modClasses,
+            Set<File> minecraftArtifacts, Set<File> runtimeClasspathArtifacts) {
         Map<String, Supplier<String>> tokens = new HashMap<>();
         runConfig.getTokens().forEach((k, v) -> tokens.put(k, () -> v));
         runConfig.getLazyTokens().forEach((k, v) -> tokens.put(k, Suppliers.memoize(v::get)));
@@ -176,10 +152,9 @@ public abstract class RunConfigGenerator
             String oldCp = supplier.get();
             return oldCp == null || oldCp.isEmpty() ? evaluated : String.join(File.pathSeparator, oldCp, evaluated);
         };
-        // Can't lazily evaluate these as they create tasks we have to do in the current context
-        String runtimeClasspath = classpathJoiner.apply(tokens.get("runtime_classpath"), createRuntimeClassPathList(project));
+        String runtimeClasspath = classpathJoiner.apply(tokens.get("runtime_classpath"), getResolvedClasspath(runtimeClasspathArtifacts));
         tokens.put("runtime_classpath", () -> runtimeClasspath);
-        String minecraftClasspath = classpathJoiner.apply(tokens.get("minecraft_classpath"), createMinecraftClassPath(project));
+        String minecraftClasspath = classpathJoiner.apply(tokens.get("minecraft_classpath"), getResolvedClasspath(minecraftArtifacts));
         tokens.put("minecraft_classpath", () -> minecraftClasspath);
 
         File classpathFolder = new File(project.getBuildDir(), "classpath");
@@ -200,93 +175,60 @@ public abstract class RunConfigGenerator
                 Suppliers.memoize(() -> classpathFileWriter.apply("minecraftClasspath", minecraftClasspath)));
 
         // *Grumbles about having to keep a workaround for a "dummy" hack that should have never existed*
-        runConfig.getEnvironment().compute("MOD_CLASSES", (key,value) ->
+        runConfig.getEnvironment().compute("MOD_CLASSES", (key, value) ->
                 Strings.isNullOrEmpty(value) || "dummy".equals(value) ? "{source_roots}" : value);
 
         return tokens;
     }
 
-    public static TaskProvider<JavaExec> createRunTask(final RunConfig runConfig, final Project project, final TaskProvider<Task> prepareRuns, final List<String> additionalClientArgs) {
-        return createRunTask(runConfig, project, prepareRuns.get(), additionalClientArgs);
-    }
-
-    private static String getResolvedClasspath(Configuration toResolve) {
-        return toResolve.copyRecursive().resolve().stream()
+    private static String getResolvedClasspath(Set<File> artifacts) {
+        return artifacts.stream()
                 .map(File::getAbsolutePath)
                 .collect(Collectors.joining(File.pathSeparator));
     }
 
-    protected static String createRuntimeClassPathList(final Project project) {
-        ConfigurationContainer configurations = project.getConfigurations();
-        Configuration runtimeClasspath = configurations.getByName("runtimeClasspath");
-        return getResolvedClasspath(runtimeClasspath);
+    private static FileCollection getArtifactFiles(Configuration runtimeClasspath) {
+        return runtimeClasspath.copyRecursive().getIncoming().getArtifacts().getArtifactFiles();
     }
 
-    protected static String createMinecraftClassPath(final Project project) {
+    protected static FileCollection getMinecraftArtifacts(final Project project) {
         ConfigurationContainer configurations = project.getConfigurations();
         Configuration minecraft = configurations.findByName("minecraft");
         if (minecraft == null)
             minecraft = configurations.findByName("minecraftImplementation");
         if (minecraft == null)
             throw new IllegalStateException("Could not find valid minecraft configuration!");
-        return getResolvedClasspath(minecraft);
+
+        return getArtifactFiles(minecraft);
     }
 
-    public static TaskProvider<JavaExec> createRunTask(final RunConfig runConfig, final Project project, final Task prepareRuns, final List<String> additionalClientArgs) {
+    protected static FileCollection getRuntimeClasspathArtifacts(final Project project) {
+        return getArtifactFiles(project.getConfigurations().getByName("runtimeClasspath"));
+    }
 
-        Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig, mapModClassesToGradle(project, runConfig));
+    public static TaskProvider<MinecraftRunTask> createRunTask(final RunConfig runConfig, final Project project, final TaskProvider<Task> prepareRuns, final List<String> additionalClientArgs) {
+        TaskProvider<MinecraftPrepareRunTask> prepareRun = project.getTasks().register(runConfig.getPrepareTaskName(), MinecraftPrepareRunTask.class, task ->
+            task.dependsOn(prepareRuns));
 
-        TaskProvider<Task> prepareRun = project.getTasks().register("prepare" + Utils.capitalize(runConfig.getTaskName()), Task.class, task -> {
-            task.setGroup(RunConfig.RUNS_GROUP);
-            task.dependsOn(prepareRuns);
-
-            File workDir = new File(runConfig.getWorkingDirectory());
-
-            if (!workDir.exists()) {
-                workDir.mkdirs();
-            }
-        });
-
-        TaskProvider<Task> prepareRunCompile = project.getTasks().register("prepare" + Utils.capitalize(runConfig.getTaskName()) + "Compile", Task.class,
+        TaskProvider<MinecraftPrepareRunTask> prepareRunCompile = project.getTasks().register(runConfig.getPrepareCompileTaskName(), MinecraftPrepareRunTask.class,
                 task -> task.dependsOn(runConfig.getAllSources().stream().map(SourceSet::getClassesTaskName).toArray()));
 
-        return project.getTasks().register(runConfig.getTaskName(), JavaExec.class, task -> {
+        return project.getTasks().register(runConfig.getTaskName(), MinecraftRunTask.class, task -> {
             task.setGroup(RunConfig.RUNS_GROUP);
             task.dependsOn(prepareRun, prepareRunCompile);
+            // The actual run task should always build sources regardless of if prepareRunXXX does
+            task.dependsOn(runConfig.getAllSources().stream().map(SourceSet::getClassesTaskName).toArray());
 
-            File workDir = new File(runConfig.getWorkingDirectory());
-
-            if (!workDir.exists()) {
-                if (!workDir.mkdirs()) {
-                    throw new IllegalArgumentException("Could not create configuration directory " + workDir);
-                }
-            }
-
-            task.setWorkingDir(workDir);
+            task.getRunConfig().set(runConfig);
             task.getMainClass().set(runConfig.getMain());
-            JavaToolchainService service = project.getExtensions().getByType(JavaToolchainService.class);
-            task.getJavaLauncher().convention(service.launcherFor(project.getExtensions().getByType(JavaPluginExtension.class).getToolchain()));
-
-            task.args(getArgsStream(runConfig, updatedTokens, false).toArray());
-            runConfig.getJvmArgs().forEach((arg) -> task.jvmArgs(runConfig.replace(updatedTokens, arg)));
-            if (runConfig.isClient()) {
-                additionalClientArgs.forEach((arg) -> task.jvmArgs(runConfig.replace(updatedTokens, arg)));
-            }
-            runConfig.getEnvironment().forEach((key,value) -> task.environment(key, runConfig.replace(updatedTokens, value)));
-            runConfig.getProperties().forEach((key,value) -> task.systemProperty(key, runConfig.replace(updatedTokens, value)));
-
-            runConfig.getAllSources().stream().map(SourceSet::getRuntimeClasspath).forEach(task::classpath);
-
-            // Stop after this run task so it doesn't try to execute the run tasks, and their dependencies, of sub projects
-            if (runConfig.getForceExit()) {
-                task.doLast(t -> System.exit(0)); // TODO: Find better way to stop gracefully
-            }
+            task.getAdditionalClientArgs().set(additionalClientArgs);
+            task.getMinecraftArtifacts().from(getMinecraftArtifacts(project));
+            task.getRuntimeClasspathArtifacts().from(getRuntimeClasspathArtifacts(project));
         });
     }
 
     // Workaround for the issue where file paths with spaces are improperly split into multiple args.
-    protected static String fixupArg(String replace)
-    {
+    protected static String fixupArg(String replace) {
         if (replace.startsWith("\""))
             return replace;
 
@@ -296,28 +238,24 @@ public abstract class RunConfigGenerator
         return '"' + replace + '"';
     }
 
-    protected static String getArgs(RunConfig runConfig, Map<String, ?> updatedTokens)
-    {
+    protected static String getArgs(RunConfig runConfig, Map<String, ?> updatedTokens) {
         return getArgsStream(runConfig, updatedTokens, true).collect(Collectors.joining(" "));
     }
 
-    protected static Stream<String> getArgsStream(RunConfig runConfig, Map<String, ?> updatedTokens, boolean wrapSpaces)
-    {
+    protected static Stream<String> getArgsStream(RunConfig runConfig, Map<String, ?> updatedTokens, boolean wrapSpaces) {
         Stream<String> args = runConfig.getArgs().stream().map((value) -> runConfig.replace(updatedTokens, value));
         return wrapSpaces ? args.map(RunConfigGenerator::fixupArg) : args;
     }
 
-    protected static String getJvmArgs(@Nonnull RunConfig runConfig, List<String> additionalClientArgs, Map<String, ?> updatedTokens)
-    {
+    protected static String getJvmArgs(RunConfig runConfig, List<String> additionalClientArgs, Map<String, ?> updatedTokens) {
         return getJvmArgsStream(runConfig, additionalClientArgs, updatedTokens)
                 .collect(Collectors.joining(" "));
     }
 
-    private static Stream<String> getJvmArgsStream(@Nonnull RunConfig runConfig, List<String> additionalClientArgs, Map<String, ?> updatedTokens)
-    {
+    private static Stream<String> getJvmArgsStream(RunConfig runConfig, List<String> additionalClientArgs, Map<String, ?> updatedTokens) {
         final Stream<String> propStream = Stream.concat(
                 runConfig.getProperties().entrySet().stream()
-                    .map(kv -> String.format("-D%s=%s", kv.getKey(), runConfig.replace(updatedTokens, kv.getValue()))),
+                        .map(kv -> String.format("-D%s=%s", kv.getKey(), runConfig.replace(updatedTokens, kv.getValue()))),
                 runConfig.getJvmArgs().stream().map(value -> runConfig.replace(updatedTokens, value))).map(RunConfigGenerator::fixupArg);
         if (runConfig.isClient()) {
             return Stream.concat(propStream, additionalClientArgs.stream());
@@ -325,13 +263,13 @@ public abstract class RunConfigGenerator
         return propStream;
     }
 
-    static abstract class XMLConfigurationBuilder extends RunConfigGenerator {
-
-        @Nonnull
-        protected abstract Map<String, Document> createRunConfiguration(@Nonnull final MinecraftExtension minecraft, @Nonnull final Project project, @Nonnull final RunConfig runConfig, @Nonnull final DocumentBuilder documentBuilder, List<String> additionalClientArgs);
+    abstract static class XMLConfigurationBuilder extends RunConfigGenerator {
+        protected abstract Map<String, Document> createRunConfiguration(final MinecraftExtension minecraft, final Project project, final RunConfig runConfig, final DocumentBuilder documentBuilder,
+                List<String> additionalClientArgs, Set<File> minecraftArtifacts, Set<File> runtimeClasspathArtifacts);
 
         @Override
-        public final void createRunConfiguration(@Nonnull final MinecraftExtension minecraft, @Nonnull final File runConfigurationsDir, @Nonnull final Project project, List<String> additionalClientArgs) {
+        public final void createRunConfiguration(final MinecraftExtension minecraft, final File runConfigurationsDir, final Project project, List<String> additionalClientArgs,
+                Set<File> minecraftArtifacts, Set<File> runtimeClasspathArtifacts) {
             try {
                 final DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
                 final DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
@@ -342,7 +280,9 @@ public abstract class RunConfigGenerator
                 transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 
                 minecraft.getRuns().forEach(runConfig -> {
-                    final Map<String, Document> documents = createRunConfiguration(minecraft, project, runConfig, docBuilder, additionalClientArgs);
+                    MinecraftRunTask.prepareWorkingDirectory(runConfig);
+
+                    final Map<String, Document> documents = createRunConfiguration(minecraft, project, runConfig, docBuilder, additionalClientArgs, minecraftArtifacts, runtimeClasspathArtifacts);
 
                     documents.forEach((fileName, document) -> {
                         final DOMSource source = new DOMSource(document);
@@ -364,29 +304,39 @@ public abstract class RunConfigGenerator
         }
     }
 
-    static abstract class JsonConfigurationBuilder extends RunConfigGenerator {
-
-        @Nonnull
-        protected abstract JsonObject createRunConfiguration(@Nonnull final Project project, @Nonnull final RunConfig runConfig, List<String> additionalClientArgs);
+    abstract static class JsonConfigurationBuilder extends RunConfigGenerator {
+        protected abstract JsonObject createRunConfiguration(final Project project, final RunConfig runConfig, List<String> additionalClientArgs,
+                Set<File> minecraftArtifacts, Set<File> runtimeClasspathArtifacts);
 
         @Override
-        public final void createRunConfiguration(@Nonnull final MinecraftExtension minecraft, @Nonnull final File runConfigurationsDir, @Nonnull final Project project, List<String> additionalClientArgs) {
+        public final void createRunConfiguration(final MinecraftExtension minecraft, final File runConfigurationsDir, final Project project,
+                List<String> additionalClientArgs, Set<File> minecraftArtifacts, Set<File> runtimeClasspathArtifacts) {
             final JsonObject rootObject = new JsonObject();
             rootObject.addProperty("version", "0.2.0");
             JsonArray runConfigs = new JsonArray();
             minecraft.getRuns().forEach(runConfig -> {
-                runConfigs.add(createRunConfiguration(project, runConfig, additionalClientArgs));
+                MinecraftRunTask.prepareWorkingDirectory(runConfig);
+
+                runConfigs.add(createRunConfiguration(project, runConfig, additionalClientArgs, minecraftArtifacts, runtimeClasspathArtifacts));
             });
             rootObject.add("configurations", runConfigs);
-            Writer writer;
-            try {
-                writer = new FileWriter(new File(runConfigurationsDir, "launch.json"));
+
+            try (Writer writer = new FileWriter(new File(runConfigurationsDir, "launch.json"))) {
                 Gson gson = new GsonBuilder().setPrettyPrinting().create();
                 writer.write(gson.toJson(rootObject));
-                writer.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    protected static class GeneratorData {
+        protected final File outputFolder;
+        protected final Supplier<RunConfigGenerator> generatorFactory;
+
+        public GeneratorData(File outputFolder, Supplier<RunConfigGenerator> generatorFactory) {
+            this.outputFolder = outputFolder;
+            this.generatorFactory = generatorFactory;
         }
     }
 }
