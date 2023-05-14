@@ -14,9 +14,7 @@ import org.gradle.api.java.archives.ManifestException;
 import org.gradle.api.java.archives.ManifestMergeSpec;
 import org.gradle.api.java.archives.internal.DefaultManifest;
 import org.gradle.api.java.archives.internal.DefaultManifestMergeSpec;
-import org.gradle.util.ConfigureUtil;
 
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,13 +36,13 @@ public class DefaultInheritManifest implements InheritManifest {
         return this;
     }
 
-    @SuppressWarnings("deprecation") //That is the only exposed method for now.....
     @Override
-    public InheritManifest inheritFrom(Object inheritPaths, Closure closure) {
+    public InheritManifest inheritFrom(Object inheritPaths, Action<ManifestMergeSpec> action) {
         DefaultManifestMergeSpec mergeSpec = new DefaultManifestMergeSpec();
         mergeSpec.from(inheritPaths);
         inheritMergeSpecs.add(mergeSpec);
-        ConfigureUtil.configure(closure, mergeSpec);
+        if (action != null)
+            action.execute(mergeSpec);
         return this;
     }
 

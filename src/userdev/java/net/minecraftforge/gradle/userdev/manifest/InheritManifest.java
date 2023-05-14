@@ -5,11 +5,12 @@
 
 package net.minecraftforge.gradle.userdev.manifest;
 
-import groovy.lang.Closure;
+import org.gradle.api.Action;
 import org.gradle.api.java.archives.Manifest;
+import org.gradle.api.java.archives.ManifestMergeSpec;
 
 public interface InheritManifest extends Manifest {
     InheritManifest inheritFrom(Object... inheritPaths);
 
-    InheritManifest inheritFrom(Object inheritPaths, Closure closure);
+    InheritManifest inheritFrom(Object inheritPaths, Action<ManifestMergeSpec> action);
 }
