@@ -111,6 +111,11 @@ public class MavenArtifactDownloader {
                 // Some other thread is already working downloading this exact artifact, wait for it to finish
                 try {
                     project.getLogger().info("Waiting for download of {} on other thread", artifact);
+                    while (!activeDownload.isDone()) {
+                        // Release the monitor of ACTIVE_DOWNLOADS while waiting on the download;
+                        // when a new download finishes, we'll get notified and we can check whether the download is complete again. 
+                        ACTIVE_DOWNLOADS.wait();
+                    }
                     return activeDownload.get();
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -174,6 +179,7 @@ public class MavenArtifactDownloader {
         } finally {
             synchronized (ACTIVE_DOWNLOADS) {
                 ACTIVE_DOWNLOADS.remove(downloadKey);
+                ACTIVE_DOWNLOADS.notifyAll();
             }
         }
         return ret;
