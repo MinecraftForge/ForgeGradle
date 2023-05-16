@@ -6,14 +6,17 @@
 package net.minecraftforge.gradle.common.legacy;
 
 import groovy.lang.GroovyObjectSupport;
+import net.minecraftforge.gradle.common.tasks.ExtractMCPData;
 import net.minecraftforge.gradle.common.tasks.ExtractZip;
 import net.minecraftforge.gradle.common.util.MinecraftExtension;
+import net.minecraftforge.srgutils.IMappingFile;
 import net.minecraftforge.srgutils.MinecraftVersion;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.TaskProvider;
 
 import java.io.File;
 
@@ -46,8 +49,13 @@ public abstract class LegacyExtension extends GroovyObjectSupport {
      *      that points to a directory containing CSV mappings files. This is used by LegacyDev to remap dependencies' AT modifiers.
      *      We replicate the FG2 behavior by extracting the mappings to a folder in the build directory
      *      and setting the property to point to it.
+     *  - SRG Mappings Runtime Property;
+     *      FG2 GradleStart exposes a <code>net.minecraftforge.gradle.GradleStart.srg.notch-srg</code> property
+     *      that points to a NOTCH -> SRG mapping file. This can be consumed by mods to access obfuscation mappings at runtime.
+     *      We replicate the FG2 behavior by attaching the property to each run configuration and pointing it to
+     *      the output of the extractSrg task, which is the srg mapping file extracted from mcp config.
      *
-     * This is called from {@link Utils.createRunConfigTasks)}
+     * This is called from {@link net.minecraftforge.gradle.common.util.Utils#createRunConfigTasks}
      *
      * In other words, it's a containment zone for version-specific hacks.
      * For issues you think are caused by this function, contact Curle or any other Retrogradle maintainer.
@@ -58,6 +66,7 @@ public abstract class LegacyExtension extends GroovyObjectSupport {
         final MinecraftExtension minecraft = project.getExtensions().getByType(MinecraftExtension.class);
         final boolean shouldFixClasspath = config.getFixClasspath().get();
         final boolean shouldExtractMappings = config.getExtractMappings().get();
+        final boolean shouldAttachMappings = config.getAttachMappings().get();
 
         if (shouldFixClasspath) {
             project.getLogger().info("LegacyExtension: Fixing classpath");
@@ -97,6 +106,26 @@ public abstract class LegacyExtension extends GroovyObjectSupport {
             // execute extractMappings before each run task
             project.getTasks().named("prepareRuns").configure(t -> t.dependsOn(extractMappingsTask));
         }
+
+        if (shouldAttachMappings) {
+            project.getLogger().info("LegacyExtension: Attaching mappings path to runs");
+            // Get the existing extractSrg task
+            final TaskProvider<ExtractMCPData> extractSrg = project.getTasks().named("extractSrg", ExtractMCPData.class);
+            // Convert the mappings file to the desired format
+            final TaskProvider<FormatSRG> createLegacyObf2Srg = project.getTasks().register("createLegacyObf2Srg", FormatSRG.class, t -> {
+                // Set the input SRG to the extract task's output
+                t.getSrg().set(extractSrg.flatMap(ExtractMCPData::getOutput));
+                // Mods expect the classic SRG format
+                t.getFormat().set(IMappingFile.Format.SRG);
+            });
+            // Get the task's output file as a provider
+            final Provider<File> mappingsFile = createLegacyObf2Srg.flatMap(t -> t.getOutput().getAsFile());
+            // Attach the property along with the file path to each run configuration 
+            minecraft.getRuns().configureEach(run -> run.property("net.minecraftforge.gradle.GradleStart.srg.notch-srg", mappingsFile.get()));
+
+            // execute attachMappings before each run task
+            project.getTasks().named("prepareRuns").configure(t -> t.dependsOn(createLegacyObf2Srg));
+        }
     }
 
     public LegacyExtension(Project project) {
@@ -122,6 +151,7 @@ public abstract class LegacyExtension extends GroovyObjectSupport {
         
         getFixClasspath().convention(isLegacy);
         getExtractMappings().convention(isLegacy);
+        getAttachMappings().convention(isLegacy);
     }
 
     /**
@@ -140,8 +170,19 @@ public abstract class LegacyExtension extends GroovyObjectSupport {
      * that points to a directory containing CSV mappings files. This is used by LegacyDev to remap dependencies' AT modifiers.
      * We replicate the FG2 behavior by extracting the mappings to a folder in the build directory
      * and setting the property to point to it.
-     * <p>
+     * 
      * Takes a boolean - true for apply fix, false for no fix.
      */
     public abstract Property<Boolean> getExtractMappings();
+
+    /**
+     * attachMappings;
+     * FG2 GradleStart exposes a <code>net.minecraftforge.gradle.GradleStart.srg.notch-srg</code> property
+     * that points to a NOTCH -> SRG mapping file. This can be consumed by mods to access obfuscation mappings at runtime.
+     * We replicate the FG2 behavior by attaching the property to each run configuration and pointing it to
+     * the output of the extractSrg task, which is the srg mapping file extracted from mcp config.
+     * 
+     * Takes a boolean - true for apply fix, false for no fix.
+     */
+    public abstract Property<Boolean> getAttachMappings();
 }
