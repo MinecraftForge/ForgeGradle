@@ -378,7 +378,7 @@ public class Utils {
                 }));
 
         final TaskProvider<Task> prepareRuns = extension.getProject().getTasks().register("prepareRuns", Task.class, task -> {
-            task.setGroup(RunConfig.RUNS_GROUP);
+            task.setGroup(RunConfig.PREPARE_RUNS_GROUP);
             task.dependsOn(extractNatives, setupTasks, makeSrcDirs);
         });
 

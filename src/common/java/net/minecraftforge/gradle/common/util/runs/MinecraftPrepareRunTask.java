@@ -10,7 +10,7 @@ import org.gradle.api.DefaultTask;
 
 abstract class MinecraftPrepareRunTask extends DefaultTask {
     public MinecraftPrepareRunTask() {
-        this.setGroup(RunConfig.RUNS_GROUP);
+        this.setGroup(RunConfig.PREPARE_RUNS_GROUP);
         this.setImpliesSubProjects(true); // Preparing the game in the current project and child projects is a bad idea
     }
 }

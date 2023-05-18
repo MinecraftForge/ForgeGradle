@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
 public class RunConfig extends GroovyObjectSupport implements Serializable {
 
     public static final String RUNS_GROUP = "ForgeGradle runs";
+    public static final String PREPARE_RUNS_GROUP = "ForgeGradle prepare runs";
 
     private static final String MCP_CLIENT_MAIN = "mcp.client.Start";
     private static final String MC_CLIENT_MAIN = "net.minecraft.client.main.Main";
