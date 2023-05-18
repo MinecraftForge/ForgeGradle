@@ -831,6 +831,10 @@ public class MinecraftUserRepo extends BaseRepo {
                 debug("    Renaming injected jar");
                 //Remap to SRG names
                 RenameJar rename = createTask("renameJar", RenameJar.class);
+                // TODO: Switch away from SpecialSource when we properly pass in the libraries from the Minecraft jar/pom
+                // rename.getLibraries().from(minecraftLibs);
+                rename.getTool().set(Utils.SPECIALSOURCE);
+                rename.getArgs().addAll("--in-jar", "{input}", "--out-jar", "{output}", "--srg-in", "{mappings}");
                 rename.setHasLog(false);
                 rename.getInput().set(merged);
                 rename.getOutput().set(srged);

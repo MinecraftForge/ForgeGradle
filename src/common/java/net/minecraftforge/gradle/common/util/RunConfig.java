@@ -13,6 +13,8 @@ import org.gradle.api.tasks.SourceSet;
 import groovy.lang.Closure;
 import groovy.lang.GroovyObjectSupport;
 import groovy.util.MapEntry;
+import org.jetbrains.annotations.ApiStatus;
+
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -91,10 +93,12 @@ public class RunConfig extends GroovyObjectSupport implements Serializable {
         return taskName;
     }
 
+    @ApiStatus.Internal
     public final String getPrepareTaskName() {
         return "prepare" + Utils.capitalize(this.getTaskName());
     }
 
+    @ApiStatus.Internal
     public final String getPrepareCompileTaskName() {
         return "prepare" + Utils.capitalize(this.getTaskName()) + "Compile";
     }
