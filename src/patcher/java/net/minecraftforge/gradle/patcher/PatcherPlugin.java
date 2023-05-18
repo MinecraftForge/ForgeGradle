@@ -236,7 +236,7 @@ public class PatcherPlugin implements Plugin<Project> {
 
         reobfJar.configure(task -> {
             task.getInput().set(jarTask.flatMap(AbstractArchiveTask::getArchiveFile));
-            task.getClasspath().from(project.getConfigurations().named(MC_DEP_CONFIG));
+            task.getLibraries().from(project.getConfigurations().named(MC_DEP_CONFIG));
         });
 
         genJoinedBinPatches.configure(task -> {

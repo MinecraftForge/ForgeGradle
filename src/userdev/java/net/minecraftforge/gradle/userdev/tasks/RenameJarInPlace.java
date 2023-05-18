@@ -31,18 +31,20 @@ public abstract class RenameJarInPlace extends JarExec {
 
     public RenameJarInPlace() {
         getTool().set(Utils.FART);
-        getArgs().addAll("--input", "{input}", "--output", "{output}", "--names", "{mappings}", "--ann-fix", "--ids-fix", "--src-fix", "--record-fix");
+        getArgs().addAll("--input", "{input}", "--output", "{output}", "--names", "{mappings}", "--lib", "{libraries}", "--ann-fix", "--ids-fix", "--src-fix", "--record-fix");
         this.getOutputs().upToDateWhen(task -> false);
     }
 
     @Override
     protected List<String> filterArgs(List<String> args) {
         return replaceArgsMulti(args, ImmutableMap.of(
-                "{input}", getInput().get().getAsFile(),
-                "{output}", temp.get().getAsFile()
-                ), ImmutableMultimap.<String, Object>builder()
+                        "{input}", getInput().get().getAsFile(),
+                        "{output}", temp.get().getAsFile()),
+                ImmutableMultimap.<String, Object>builder()
                         .put("{mappings}", getMappings().get().getAsFile())
-                        .putAll("{mappings}", getExtraMappings().getFiles()).build()
+                        .putAll("{mappings}", getExtraMappings().getFiles())
+                        .putAll("{libraries}", getLibraries().getFiles())
+                        .build()
         );
     }
 
@@ -66,6 +68,13 @@ public abstract class RenameJarInPlace extends JarExec {
     @Optional
     @InputFiles
     public abstract ConfigurableFileCollection getExtraMappings();
+
+    /**
+     * The libraries to use for inheritance data during the renaming process.
+     */
+    @Optional
+    @InputFiles
+    public abstract ConfigurableFileCollection getLibraries();
 
     @InputFile
     public abstract RegularFileProperty getInput();

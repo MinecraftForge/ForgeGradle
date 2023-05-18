@@ -5,16 +5,20 @@
 
 package net.minecraftforge.gradle.patcher.tasks;
 
+import com.google.common.collect.ImmutableMultimap;
 import net.minecraftforge.gradle.common.tasks.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
 
 import net.minecraftforge.srgutils.IMappingFile;
 import org.apache.commons.io.IOUtils;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -40,7 +44,7 @@ public abstract class ReobfuscateJar extends JarExec {
 
     public ReobfuscateJar() {
         getTool().set(Utils.FART);
-        getArgs().addAll("--input", "{input}", "--output", "{output}", "--names", "{srg}", "--ann-fix", "--ids-fix", "--src-fix", "--record-fix");
+        getArgs().addAll("--input", "{input}", "--output", "{output}", "--names", "{srg}", "--lib", "{libraries}", "--ann-fix", "--ids-fix", "--src-fix", "--record-fix");
         getOutput().convention(workDir.map(d -> d.file("output.jar")));
     }
 
@@ -83,10 +87,13 @@ public abstract class ReobfuscateJar extends JarExec {
 
     @Override
     protected List<String> filterArgs(List<String> args) {
-        return replaceArgs(args, ImmutableMap.of(
-                "{input}", getInput().get().getAsFile(),
-                "{output}", outputTemp.get().getAsFile(),
-                "{srg}", getSrg().get().getAsFile()), null);
+        return replaceArgsMulti(args, ImmutableMap.of(
+                        "{input}", getInput().get().getAsFile(),
+                        "{output}", outputTemp.get().getAsFile(),
+                        "{srg}", getSrg().get().getAsFile()),
+                ImmutableMultimap.<String, Object>builder()
+                        .putAll("{libraries}", getLibraries().getFiles())
+                        .build());
     }
 
     @InputFile
@@ -97,6 +104,13 @@ public abstract class ReobfuscateJar extends JarExec {
 
     @OutputFile
     public abstract RegularFileProperty getOutput();
+
+    /**
+     * The libraries to use for inheritance data during the renaming process.
+     */
+    @Optional
+    @InputFiles
+    public abstract ConfigurableFileCollection getLibraries();
 
     @Input
     public boolean getKeepPackages() {

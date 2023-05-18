@@ -333,7 +333,7 @@ public class UserDevPlugin implements Plugin<Project> {
 
             final RenameJarInPlace task = project.getTasks().maybeCreate("reobf" + name, RenameJarInPlace.class);
 
-            task.getClasspath().from(javaConv.getSourceSets().named(SourceSet.MAIN_SOURCE_SET_NAME).map(SourceSet::getCompileClasspath));
+            task.getLibraries().from(javaConv.getSourceSets().named(SourceSet.MAIN_SOURCE_SET_NAME).map(SourceSet::getCompileClasspath));
             task.getMappings().set(project.getTasks().named("createMcpToSrg", GenerateSRG.class).flatMap(GenerateSRG::getOutput));
 
             project.getTasks().named(LifecycleBasePlugin.ASSEMBLE_TASK_NAME).configure(t -> t.dependsOn(task));
