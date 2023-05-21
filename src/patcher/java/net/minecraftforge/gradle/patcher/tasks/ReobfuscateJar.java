@@ -28,6 +28,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
@@ -52,7 +54,7 @@ public abstract class ReobfuscateJar extends JarExec {
     public void apply() throws IOException {
         super.apply();
 
-        try (OutputStream log = new BufferedOutputStream(new FileOutputStream(logFile.get().getAsFile()))) {
+        try (OutputStream log = new BufferedOutputStream(Files.newOutputStream(logFile.get().getAsFile().toPath(), StandardOpenOption.WRITE, StandardOpenOption.APPEND))) {
             Set<String> packages = new HashSet<>();
             IMappingFile srgMappings = IMappingFile.load(getSrg().get().getAsFile());
             for (IMappingFile.IClass srgClass : srgMappings.getClasses()) {
