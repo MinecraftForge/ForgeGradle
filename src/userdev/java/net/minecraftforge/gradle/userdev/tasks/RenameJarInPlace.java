@@ -31,7 +31,7 @@ public abstract class RenameJarInPlace extends JarExec {
 
     public RenameJarInPlace() {
         getTool().set(Utils.FART);
-        getArgs().addAll("--input", "{input}", "--output", "{output}", "--names", "{mappings}", "--lib", "{libraries}", "--ann-fix", "--ids-fix", "--src-fix", "--record-fix");
+        getArgs().addAll("--input", "{input}", "--output", "{output}", "--names", "{mappings}", "--lib", "{libraries}");
         this.getOutputs().upToDateWhen(task -> false);
     }
 

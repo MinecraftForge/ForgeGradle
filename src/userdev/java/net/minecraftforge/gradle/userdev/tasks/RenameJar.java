@@ -22,7 +22,7 @@ import java.util.List;
 public abstract class RenameJar extends JarExec {
     public RenameJar() {
         getTool().set(Utils.FART);
-        getArgs().addAll("--input", "{input}", "--output", "{output}", "--names", "{mappings}", "--lib", "{libraries}", "--ann-fix", "--ids-fix", "--src-fix", "--record-fix");
+        getArgs().addAll("--input", "{input}", "--output", "{output}", "--names", "{mappings}", "--lib", "{libraries}");
     }
 
     @Override

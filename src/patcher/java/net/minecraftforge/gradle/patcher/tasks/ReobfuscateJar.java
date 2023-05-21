@@ -46,7 +46,7 @@ public abstract class ReobfuscateJar extends JarExec {
 
     public ReobfuscateJar() {
         getTool().set(Utils.FART);
-        getArgs().addAll("--input", "{input}", "--output", "{output}", "--names", "{srg}", "--lib", "{libraries}", "--ann-fix", "--ids-fix", "--src-fix", "--record-fix");
+        getArgs().addAll("--input", "{input}", "--output", "{output}", "--names", "{srg}", "--lib", "{libraries}");
         getOutput().convention(workDir.map(d -> d.file("output.jar")));
     }
 
