@@ -65,6 +65,10 @@ object PullRequestsJava8 : BuildType({
     id("ForgeGradle__PullRequests")
     name = "Pull Requests (Java 8)"
     description = "Builds pull requests for the project using Java 8"
+        
+    params {
+        text("git_branch_spec", "", label = "The branch specification of the repository", description = "By default all main branches are build by the configuration. Modify this value to adapt the branches build.", display = ParameterDisplay.HIDDEN, allowEmpty = true)
+    }
 })
 
 object PullRequestsJava11 : BuildType({
@@ -75,6 +79,7 @@ object PullRequestsJava11 : BuildType({
 
     params {
         text("docker_jdk_version", "11", label = "JDK version", description = "The version of the JDK to use during execution of tasks in a JDK.", display = ParameterDisplay.HIDDEN, allowEmpty = false)
+        text("git_branch_spec", "", label = "The branch specification of the repository", description = "By default all main branches are build by the configuration. Modify this value to adapt the branches build.", display = ParameterDisplay.HIDDEN, allowEmpty = true)
     }
 })
 
@@ -86,5 +91,6 @@ object PullRequestsJava17 : BuildType({
 
     params {
         text("docker_jdk_version", "17", label = "JDK version", description = "The version of the JDK to use during execution of tasks in a JDK.", display = ParameterDisplay.HIDDEN, allowEmpty = false)
+        text("git_branch_spec", "", label = "The branch specification of the repository", description = "By default all main branches are build by the configuration. Modify this value to adapt the branches build.", display = ParameterDisplay.HIDDEN, allowEmpty = true)
     }
 })
