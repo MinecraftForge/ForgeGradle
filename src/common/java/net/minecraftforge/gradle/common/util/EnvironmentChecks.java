@@ -39,7 +39,7 @@ public class EnvironmentChecks {
 
     public static void checkGradleRange(@Nullable GradleVersion minVersionInclusive, @Nullable GradleVersion maxVersionExclusive) {
         checkRange("Gradle", GradleVersion.current(), minVersionInclusive, maxVersionExclusive,
-                "\nNote: Upgrade your gradle version first before trying to switch to FG5.", "");
+                "\nNote: Upgrade your gradle version first before trying to switch to FG5.", "\nUse ForgeGradle 6 or newer for Gradle 8.0+ support.");
     }
 
     private static <T> void checkRange(String name, Comparable<T> current, @Nullable T minVersionInclusive, @Nullable T maxVersionExclusive, String additionalMin, String additionalMax) {
@@ -48,7 +48,7 @@ public class EnvironmentChecks {
         }
 
         if (maxVersionExclusive != null && current.compareTo(maxVersionExclusive) >= 0) {
-            throw new EnvironmentCheckFailedException(String.format("Found %s version %s. Versions %s and newer are not supported yet.%s", name, current, maxVersionExclusive, additionalMax));
+            throw new EnvironmentCheckFailedException(String.format("Found %s version %s. Versions %s and newer are not supported.%s", name, current, maxVersionExclusive, additionalMax));
         }
     }
 

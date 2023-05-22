@@ -33,7 +33,7 @@ project {
     buildType(PullRequestsJava17)
 
     params {
-        text("git_main_branch", "FG_5.0", label = "Git Main Branch", description = "The git main or default branch to use in VCS operations.", display = ParameterDisplay.HIDDEN, allowEmpty = false)
+        text("git_main_branch", "FG_6.0", label = "Git Main Branch", description = "The git main or default branch to use in VCS operations.", display = ParameterDisplay.HIDDEN, allowEmpty = false)
         text("github_repository_name", "ForgeGradle", label = "The github repository name. Used to connect to it in VCS Roots.", description = "This is the repository slug on github. So for example `ForgeGradle` or `MinecraftForge`. It is interpolated into the global VCS Roots.", display = ParameterDisplay.HIDDEN, allowEmpty = false)
         text("env.PUBLISHED_JAVA_ARTIFACT_ID", "ForgeGradle", label = "Published artifact id", description = "The maven coordinate artifact id that has been published by this build. Can not be empty.", allowEmpty = false)
         text("env.PUBLISHED_JAVA_GROUP", "net.minecraftforge.gradle", label = "Published group", description = "The maven coordinate group that has been published by this build. Can not be empty.", allowEmpty = false)
