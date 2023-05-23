@@ -8,9 +8,9 @@ package net.minecraftforge.gradle.userdev.tasks;
 import net.minecraftforge.gradle.common.tasks.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
 
+import net.minecraftforge.srgutils.IMappingFile;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.file.Directory;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Provider;
@@ -26,8 +26,8 @@ import java.io.IOException;
 import java.util.List;
 
 public abstract class RenameJarInPlace extends JarExec {
-    private final Provider<Directory> workDir = getProject().getLayout().getBuildDirectory().dir(getName());
-    private final Provider<RegularFile> temp = workDir.map(s -> s.file("output.jar"));
+    private final Provider<RegularFile> tempOutput = this.workDir.map(s -> s.file("output.jar"));
+    private final Provider<RegularFile> tempMappings = this.workDir.map(s -> s.file("mappings.tsrg"));
 
     public RenameJarInPlace() {
         getTool().set(Utils.FART);
@@ -39,10 +39,9 @@ public abstract class RenameJarInPlace extends JarExec {
     protected List<String> filterArgs(List<String> args) {
         return replaceArgsMulti(args, ImmutableMap.of(
                         "{input}", getInput().get().getAsFile(),
-                        "{output}", temp.get().getAsFile()),
+                        "{output}", tempOutput.get().getAsFile(),
+                        "{mappings}", this.tempMappings.get().getAsFile()),
                 ImmutableMultimap.<String, Object>builder()
-                        .put("{mappings}", getMappings().get().getAsFile())
-                        .putAll("{mappings}", getExtraMappings().getFiles())
                         .putAll("{libraries}", getLibraries().getFiles())
                         .build()
         );
@@ -51,14 +50,27 @@ public abstract class RenameJarInPlace extends JarExec {
     @Override
     @TaskAction
     public void apply() throws IOException {
-        File temp = this.temp.get().getAsFile();
-        if (temp.getParentFile() != null && !temp.getParentFile().exists() && !temp.getParentFile().mkdirs()) {
-            getProject().getLogger().warn("Could not create parent directories for temp dir '{}'", temp.getAbsolutePath());
+        File tempJar = this.tempOutput.get().getAsFile();
+        File tempMappings = this.tempMappings.get().getAsFile();
+
+        if (tempJar.getParentFile() != null && !tempJar.getParentFile().exists() && !tempJar.getParentFile().mkdirs()) {
+            getProject().getLogger().warn("Could not create parent directories for temp dir '{}'", tempJar.getAbsolutePath());
         }
+
+        if (tempMappings.exists() && !tempMappings.delete())
+            throw new IllegalStateException("Could not delete temp mappings file: " + tempMappings.getAbsolutePath());
+
+        IMappingFile mappings = IMappingFile.load(getMappings().get().getAsFile());
+
+        for (File file : getExtraMappings().getFiles()) {
+            mappings = mappings.merge(IMappingFile.load(file));
+        }
+
+        mappings.write(tempMappings.toPath(), IMappingFile.Format.TSRG2, false);
 
         super.apply();
 
-        FileUtils.copyFile(temp, getInput().get().getAsFile());
+        FileUtils.copyFile(tempJar, getInput().get().getAsFile());
     }
 
     // TODO: Make this a ConfigurableFileCollection? (then remove getExtraMappings())
