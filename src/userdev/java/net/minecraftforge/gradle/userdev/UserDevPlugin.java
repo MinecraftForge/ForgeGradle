@@ -341,6 +341,8 @@ public class UserDevPlugin implements Plugin<Project> {
             final TaskProvider<Jar> jarTask = project.getTasks().named(jarName, Jar.class);
             task.getInput().set(jarTask.flatMap(AbstractArchiveTask::getArchiveFile));
 
+            task.getArgs().add("--disable-abstract-param"); // Mods don't need the FF file
+
             return task;
         });
         project.getExtensions().add("reobf", reobfExtension);
