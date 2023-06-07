@@ -14,7 +14,6 @@ import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.TaskAction;
@@ -28,6 +27,7 @@ import java.util.Set;
 abstract class GenIDERunsTask extends DefaultTask {
     public GenIDERunsTask() {
         this.setGroup(RunConfig.RUNS_GROUP);
+        this.getRunConfigurationsFolderName().set(this.getRunConfigurationsFolder().map(dir -> dir.getAsFile().getAbsolutePath()));
     }
 
     @TaskAction
@@ -48,8 +48,13 @@ abstract class GenIDERunsTask extends DefaultTask {
                 additionalClientArgs, minecraftArtifacts, runtimeClasspathArtifacts);
     }
 
-    @InputDirectory
+    @Internal
     public abstract DirectoryProperty getRunConfigurationsFolder();
+
+    // Gradle doesn't seem to have a good way to declare an input on the location of a path without caring about its contents (or whether it exists).
+    // This serves as a workaround to still support up-to-date checking (although this task should always re-run anyways!)
+    @Input
+    protected abstract Property<String> getRunConfigurationsFolderName();
 
     @Internal
     public abstract Property<RunConfigGenerator> getRunConfigGenerator();
