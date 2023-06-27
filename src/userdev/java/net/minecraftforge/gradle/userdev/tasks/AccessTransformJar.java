@@ -15,8 +15,15 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 
 import com.google.common.collect.ImmutableMap;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
+import org.gradle.api.tasks.SkipWhenEmpty;
+import org.gradle.api.tasks.CacheableTask;
+import org.gradle.work.NormalizeLineEndings;
+
 import java.util.List;
 
+@CacheableTask
 public abstract class AccessTransformJar extends JarExec {
     public AccessTransformJar() {
         getTool().set(Utils.ACCESSTRANSFORMER);
@@ -36,9 +43,13 @@ public abstract class AccessTransformJar extends JarExec {
     }
 
     @InputFiles
+    @SkipWhenEmpty
+    @NormalizeLineEndings
+    @PathSensitive(PathSensitivity.RELATIVE)
     public abstract ConfigurableFileCollection getAccessTransformers();
 
     @InputFile
+    @PathSensitive(PathSensitivity.RELATIVE)
     public abstract RegularFileProperty getInput();
 
     @OutputFile

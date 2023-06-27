@@ -8,6 +8,7 @@ package net.minecraftforge.gradle.userdev.tasks;
 import org.gradle.api.internal.tasks.compile.DefaultJavaCompileSpec;
 import org.gradle.api.internal.tasks.compile.JavaCompileSpec;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.WorkResult;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.jvm.toolchain.JavaCompiler;
@@ -23,6 +24,7 @@ import java.lang.reflect.Method;
  *  This is internal API Modders DO NOT reference this.
  *  It can and will be removed if we get a better way to do this.
  */
+@CacheableTask
 public class HackyJavaCompile extends JavaCompile {
 
     public void doHackyCompile() {
