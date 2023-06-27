@@ -9,6 +9,7 @@ import com.google.common.base.Suppliers;
 import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.common.util.RunConfig;
 
+import net.minecraftforge.gradle.common.util.Utils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -16,8 +17,10 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -206,24 +209,45 @@ public abstract class RunConfigGenerator {
         return getArtifactFiles(project.getConfigurations().getByName("runtimeClasspath"));
     }
 
-    public static TaskProvider<MinecraftRunTask> createRunTask(final RunConfig runConfig, final Project project, final TaskProvider<Task> prepareRuns, final List<String> additionalClientArgs) {
+    public static TaskProvider<JavaExec> createRunTask(final RunConfig runConfig, final Project project, final TaskProvider<Task> prepareRuns, final List<String> additionalClientArgs) {
         TaskProvider<MinecraftPrepareRunTask> prepareRun = project.getTasks().register(runConfig.getPrepareTaskName(), MinecraftPrepareRunTask.class, task ->
             task.dependsOn(prepareRuns));
 
         TaskProvider<MinecraftPrepareRunTask> prepareRunCompile = project.getTasks().register(runConfig.getPrepareCompileTaskName(), MinecraftPrepareRunTask.class,
                 task -> task.dependsOn(runConfig.getAllSources().stream().map(SourceSet::getClassesTaskName).toArray()));
 
-        return project.getTasks().register(runConfig.getTaskName(), MinecraftRunTask.class, task -> {
+        return project.getTasks().register(runConfig.getTaskName(), JavaExec.class, task -> {
             task.setGroup(RunConfig.RUNS_GROUP);
+            task.setImpliesSubProjects(true); // Running the game in the current project and child projects is a bad idea
             task.dependsOn(prepareRun, prepareRunCompile);
             // The actual run task should always build sources regardless of if prepareRunXXX does
             task.dependsOn(runConfig.getAllSources().stream().map(SourceSet::getClassesTaskName).toArray());
 
-            task.getRunConfig().set(runConfig);
+            // Use the same Java launcher as the project
+            task.getJavaLauncher().convention(
+                project.getExtensions().getByType(JavaToolchainService.class).launcherFor(
+                    project.getExtensions().getByType(JavaPluginExtension.class).getToolchain()
+                )
+            );
+
+            task.setWorkingDir(runConfig.getWorkingDirectory());
+            task.doFirst("Create working directory", t -> Utils.mkdirs(task.getWorkingDir()));
+
             task.getMainClass().set(runConfig.getMain());
-            task.getAdditionalClientArgs().set(additionalClientArgs);
-            task.getMinecraftArtifacts().from(getMinecraftArtifacts(project));
-            task.getRuntimeClasspathArtifacts().from(getRuntimeClasspathArtifacts(project));
+
+            Map<String, Supplier<String>> updatedTokens = RunConfigGenerator.configureTokensLazy(project, runConfig,
+                RunConfigGenerator.mapModClassesToGradle(project, runConfig),
+                getMinecraftArtifacts(project).getFiles(), getRuntimeClasspathArtifacts(project).getFiles());
+
+            task.args(RunConfigGenerator.getArgsStream(runConfig, updatedTokens, false).toArray());
+            runConfig.getJvmArgs().forEach(arg -> task.jvmArgs(runConfig.replace(updatedTokens, arg)));
+            if (runConfig.isClient()) {
+                additionalClientArgs.forEach(arg -> task.jvmArgs(runConfig.replace(updatedTokens, arg)));
+            }
+            runConfig.getEnvironment().forEach((key, value) -> task.environment(key, runConfig.replace(updatedTokens, value)));
+            runConfig.getProperties().forEach((key, value) -> task.systemProperty(key, runConfig.replace(updatedTokens, value)));
+
+            runConfig.getAllSources().stream().map(SourceSet::getRuntimeClasspath).forEach(task::classpath);
         });
     }
 
@@ -280,7 +304,7 @@ public abstract class RunConfigGenerator {
                 transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 
                 minecraft.getRuns().forEach(runConfig -> {
-                    MinecraftRunTask.prepareWorkingDirectory(runConfig);
+                    Utils.mkdirs(new File(runConfig.getWorkingDirectory()));
 
                     final Map<String, Document> documents = createRunConfiguration(minecraft, project, runConfig, docBuilder, additionalClientArgs, minecraftArtifacts, runtimeClasspathArtifacts);
 
@@ -315,7 +339,7 @@ public abstract class RunConfigGenerator {
             rootObject.addProperty("version", "0.2.0");
             JsonArray runConfigs = new JsonArray();
             minecraft.getRuns().forEach(runConfig -> {
-                MinecraftRunTask.prepareWorkingDirectory(runConfig);
+                Utils.mkdirs(new File(runConfig.getWorkingDirectory()));
 
                 runConfigs.add(createRunConfiguration(project, runConfig, additionalClientArgs, minecraftArtifacts, runtimeClasspathArtifacts));
             });

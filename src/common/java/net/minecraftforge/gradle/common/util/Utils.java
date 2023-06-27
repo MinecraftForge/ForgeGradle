@@ -144,6 +144,12 @@ public class Utils {
         return bos.toByteArray();
     }
 
+    public static void mkdirs(File file) {
+        if (!file.exists() && !file.mkdirs()) {
+            throw new RuntimeException("Could not create directory: " + file.getAbsolutePath());
+        }
+    }
+
     public static File delete(File file) {
         if (!file.getParentFile().exists()) file.getParentFile().mkdirs();
         if (file.exists()) file.delete();
