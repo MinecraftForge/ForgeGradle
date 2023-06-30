@@ -12,6 +12,7 @@ import net.minecraftforge.gradle.common.util.Utils;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
@@ -30,7 +31,6 @@ import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -106,7 +106,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
 
     @Override
     protected Map<String, Document> createRunConfiguration(final MinecraftExtension mc, @Nonnull final Project project, final RunConfig runConfig, final DocumentBuilder documentBuilder, List<String> additionalClientArgs,
-            Set<File> minecraftArtifacts, Set<File> runtimeClasspathArtifacts) {
+            FileCollection minecraftArtifacts, FileCollection runtimeClasspathArtifacts) {
         final Map<String, Document> documents = new LinkedHashMap<>();
 
         Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig,
