@@ -179,7 +179,9 @@ public abstract class RunConfigGenerator {
             String resolvedClasspath = getResolvedClasspath(classpath.getFiles());
             if (supplier == null) return resolvedClasspath;
             String oldCp = supplier.get();
-            return oldCp == null || oldCp.isEmpty() ? resolvedClasspath : String.join(File.pathSeparator, oldCp, resolvedClasspath);
+            if (Strings.isNullOrEmpty(oldCp)) return resolvedClasspath;
+            if (Strings.isNullOrEmpty(resolvedClasspath)) return oldCp;
+            return String.join(File.pathSeparator, oldCp, resolvedClasspath);
         });
     }
 

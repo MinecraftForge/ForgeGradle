@@ -42,7 +42,7 @@ abstract class GenIDERunsTask extends DefaultTask {
         List<String> additionalClientArgs = this.getAdditionalClientArgs().get();
 
         runConfigGenerator.createRunConfiguration(minecraft, runConfigurationsDir, project,
-                additionalClientArgs, getMinecraftArtifacts(), getRuntimeClasspathArtifacts());
+                additionalClientArgs, this.getMinecraftArtifacts(), this.getRuntimeClasspathArtifacts());
     }
 
     @Internal
