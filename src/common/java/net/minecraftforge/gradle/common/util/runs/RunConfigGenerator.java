@@ -46,6 +46,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -185,6 +186,7 @@ public abstract class RunConfigGenerator {
         });
     }
 
+    @Nonnull
     private static String getResolvedClasspath(Set<File> artifacts) {
         return artifacts.stream()
                 .map(File::getAbsolutePath)
