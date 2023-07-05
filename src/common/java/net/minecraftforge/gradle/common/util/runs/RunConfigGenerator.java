@@ -46,6 +46,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -60,7 +61,7 @@ import javax.xml.transform.stream.StreamResult;
 
 public abstract class RunConfigGenerator {
     public abstract void createRunConfiguration(final MinecraftExtension minecraft, final File runConfigurationsDir, final Project project,
-            List<String> additionalClientArgs, Set<File> minecraftArtifacts, Set<File> runtimeClasspathArtifacts);
+            List<String> additionalClientArgs, FileCollection minecraftArtifacts, FileCollection runtimeClasspathArtifacts);
 
     public static void createIDEGenRunsTasks(final MinecraftExtension minecraft, final TaskProvider<Task> prepareRuns, List<String> additionalClientArgs) {
         final Project project = minecraft.getProject();
@@ -139,23 +140,16 @@ public abstract class RunConfigGenerator {
     }
 
     protected static Map<String, Supplier<String>> configureTokensLazy(final Project project, RunConfig runConfig, Stream<String> modClasses,
-            Set<File> minecraftArtifacts, Set<File> runtimeClasspathArtifacts) {
+            FileCollection minecraftArtifacts, FileCollection runtimeClasspathArtifacts) {
         Map<String, Supplier<String>> tokens = new HashMap<>();
         runConfig.getTokens().forEach((k, v) -> tokens.put(k, () -> v));
         runConfig.getLazyTokens().forEach((k, v) -> tokens.put(k, Suppliers.memoize(v::get)));
         tokens.compute("source_roots", (key, sourceRoots) -> Suppliers.memoize(() -> ((sourceRoots != null)
                 ? Stream.concat(Arrays.stream(sourceRoots.get().split(File.pathSeparator)), modClasses)
                 : modClasses).distinct().collect(Collectors.joining(File.pathSeparator))));
-        BiFunction<Supplier<String>, String, String> classpathJoiner = (supplier, evaluated) -> {
-            if (supplier == null)
-                return evaluated;
-            String oldCp = supplier.get();
-            return oldCp == null || oldCp.isEmpty() ? evaluated : String.join(File.pathSeparator, oldCp, evaluated);
-        };
-        String runtimeClasspath = classpathJoiner.apply(tokens.get("runtime_classpath"), getResolvedClasspath(runtimeClasspathArtifacts));
-        tokens.put("runtime_classpath", () -> runtimeClasspath);
-        String minecraftClasspath = classpathJoiner.apply(tokens.get("minecraft_classpath"), getResolvedClasspath(minecraftArtifacts));
-        tokens.put("minecraft_classpath", () -> minecraftClasspath);
+
+        Supplier<String> runtimeClasspath = tokens.compute("runtime_classpath", makeClasspathToken(runtimeClasspathArtifacts));
+        Supplier<String> minecraftClasspath = tokens.compute("minecraft_classpath", makeClasspathToken(minecraftArtifacts));
 
         File classpathFolder = new File(project.getBuildDir(), "classpath");
         BinaryOperator<String> classpathFileWriter = (filename, classpath) -> {
@@ -170,9 +164,9 @@ public abstract class RunConfigGenerator {
             return outputFile.getAbsolutePath();
         };
         tokens.put("runtime_classpath_file",
-                Suppliers.memoize(() -> classpathFileWriter.apply("runtimeClasspath", runtimeClasspath)));
+                Suppliers.memoize(() -> classpathFileWriter.apply("runtimeClasspath", runtimeClasspath.get())));
         tokens.put("minecraft_classpath_file",
-                Suppliers.memoize(() -> classpathFileWriter.apply("minecraftClasspath", minecraftClasspath)));
+                Suppliers.memoize(() -> classpathFileWriter.apply("minecraftClasspath", minecraftClasspath.get())));
 
         // *Grumbles about having to keep a workaround for a "dummy" hack that should have never existed*
         runConfig.getEnvironment().compute("MOD_CLASSES", (key, value) ->
@@ -181,6 +175,18 @@ public abstract class RunConfigGenerator {
         return tokens;
     }
 
+    private static BiFunction<String, Supplier<String>, Supplier<String>> makeClasspathToken(FileCollection classpath) {
+        return (key, supplier) -> Suppliers.memoize(() -> {
+            String resolvedClasspath = getResolvedClasspath(classpath.getFiles());
+            if (supplier == null) return resolvedClasspath;
+            String oldCp = supplier.get();
+            if (Strings.isNullOrEmpty(oldCp)) return resolvedClasspath;
+            if (Strings.isNullOrEmpty(resolvedClasspath)) return oldCp;
+            return String.join(File.pathSeparator, oldCp, resolvedClasspath);
+        });
+    }
+
+    @Nonnull
     private static String getResolvedClasspath(Set<File> artifacts) {
         return artifacts.stream()
                 .map(File::getAbsolutePath)
@@ -265,11 +271,11 @@ public abstract class RunConfigGenerator {
 
     abstract static class XMLConfigurationBuilder extends RunConfigGenerator {
         protected abstract Map<String, Document> createRunConfiguration(final MinecraftExtension minecraft, final Project project, final RunConfig runConfig, final DocumentBuilder documentBuilder,
-                List<String> additionalClientArgs, Set<File> minecraftArtifacts, Set<File> runtimeClasspathArtifacts);
+                List<String> additionalClientArgs, FileCollection minecraftArtifacts, FileCollection runtimeClasspathArtifacts);
 
         @Override
         public final void createRunConfiguration(final MinecraftExtension minecraft, final File runConfigurationsDir, final Project project, List<String> additionalClientArgs,
-                Set<File> minecraftArtifacts, Set<File> runtimeClasspathArtifacts) {
+                FileCollection minecraftArtifacts, FileCollection runtimeClasspathArtifacts) {
             try {
                 final DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
                 final DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
@@ -306,11 +312,11 @@ public abstract class RunConfigGenerator {
 
     abstract static class JsonConfigurationBuilder extends RunConfigGenerator {
         protected abstract JsonObject createRunConfiguration(final Project project, final RunConfig runConfig, List<String> additionalClientArgs,
-                Set<File> minecraftArtifacts, Set<File> runtimeClasspathArtifacts);
+                FileCollection minecraftArtifacts, FileCollection runtimeClasspathArtifacts);
 
         @Override
         public final void createRunConfiguration(final MinecraftExtension minecraft, final File runConfigurationsDir, final Project project,
-                List<String> additionalClientArgs, Set<File> minecraftArtifacts, Set<File> runtimeClasspathArtifacts) {
+                List<String> additionalClientArgs, FileCollection minecraftArtifacts, FileCollection runtimeClasspathArtifacts) {
             final JsonObject rootObject = new JsonObject();
             rootObject.addProperty("version", "0.2.0");
             JsonArray runConfigs = new JsonArray();

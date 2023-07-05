@@ -40,7 +40,7 @@ abstract class MinecraftRunTask extends JavaExec {
 
         Map<String, Supplier<String>> updatedTokens = RunConfigGenerator.configureTokensLazy(project, runConfig,
                 RunConfigGenerator.mapModClassesToGradle(project, runConfig),
-                this.getMinecraftArtifacts().getFiles(), this.getRuntimeClasspathArtifacts().getFiles());
+                this.getMinecraftArtifacts(), this.getRuntimeClasspathArtifacts());
 
         this.setWorkingDir(workDir);
         this.args(RunConfigGenerator.getArgsStream(runConfig, updatedTokens, false).toArray());

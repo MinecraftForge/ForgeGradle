@@ -21,7 +21,6 @@ import org.gradle.work.DisableCachingByDefault;
 
 import java.io.File;
 import java.util.List;
-import java.util.Set;
 
 @DisableCachingByDefault(because = "IDE runs should always be regenerated")
 abstract class GenIDERunsTask extends DefaultTask {
@@ -41,11 +40,9 @@ abstract class GenIDERunsTask extends DefaultTask {
         MinecraftExtension minecraft = this.getMinecraftExtension().get();
         Project project = this.getProject();
         List<String> additionalClientArgs = this.getAdditionalClientArgs().get();
-        Set<File> minecraftArtifacts = this.getMinecraftArtifacts().getFiles();
-        Set<File> runtimeClasspathArtifacts = this.getRuntimeClasspathArtifacts().getFiles();
 
         runConfigGenerator.createRunConfiguration(minecraft, runConfigurationsDir, project,
-                additionalClientArgs, minecraftArtifacts, runtimeClasspathArtifacts);
+                additionalClientArgs, this.getMinecraftArtifacts(), this.getRuntimeClasspathArtifacts());
     }
 
     @Internal

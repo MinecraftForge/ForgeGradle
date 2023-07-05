@@ -8,18 +8,17 @@ package net.minecraftforge.gradle.common.util.runs;
 import com.google.gson.JsonObject;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import org.gradle.api.Project;
+import org.gradle.api.file.FileCollection;
 
-import java.io.File;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class VSCodeRunGenerator extends RunConfigGenerator.JsonConfigurationBuilder {
     @Override
     protected JsonObject createRunConfiguration(Project project, RunConfig runConfig, List<String> additionalClientArgs,
-            Set<File> minecraftArtifacts, Set<File> runtimeClasspathArtifacts) {
+            FileCollection minecraftArtifacts, FileCollection runtimeClasspathArtifacts) {
         Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig, mapModClassesToVSCode(project, runConfig),
                 minecraftArtifacts, runtimeClasspathArtifacts);
 
