@@ -86,6 +86,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -834,7 +835,7 @@ public class MinecraftUserRepo extends BaseRepo {
                 // TODO: Switch away from SpecialSource when we properly pass in the libraries from the Minecraft jar/pom
                 // rename.getLibraries().from(minecraftLibs);
                 rename.getTool().set(Utils.SPECIALSOURCE);
-                rename.getArgs().addAll("--in-jar", "{input}", "--out-jar", "{output}", "--srg-in", "{mappings}");
+                rename.getArgs().set(Arrays.asList("--in-jar", "{input}", "--out-jar", "{output}", "--srg-in", "{mappings}"));
                 rename.setHasLog(false);
                 rename.getInput().set(merged);
                 rename.getOutput().set(srged);
