@@ -27,11 +27,12 @@ import codechicken.diffpatch.util.PatchMode;
 import codechicken.diffpatch.util.archiver.ArchiveFormat;
 import java.io.File;
 import java.nio.file.Path;
+import java.util.logging.Level;
 
 public abstract class ApplyPatches extends DefaultTask {
     private float minFuzzQuality = -1;
     private int maxFuzzOffset = -1;
-    private boolean verbose = false;
+    private Level level = Level.WARNING;
     private boolean printSummary = false;
     private boolean failOnError = true;
 
@@ -67,7 +68,7 @@ public abstract class ApplyPatches extends DefaultTask {
                 .patchesPath(getPatches().get().getAsFile().toPath())
                 .outputPath(outputPath, outputFormat)
                 .rejectsPath(rejectsPath, rejectsFormat)
-                .verbose(verbose)
+                .level(level)
                 .summary(printSummary)
                 .mode(getPatchMode().get())
                 .aPrefix(getOriginalPrefix().get())
@@ -149,11 +150,24 @@ public abstract class ApplyPatches extends DefaultTask {
 
     @Console
     public boolean isVerbose() {
-        return verbose;
+        return this.level == Level.ALL;
     }
 
     public void setVerbose(boolean verbose) {
-        this.verbose = verbose;
+        this.level = verbose ? Level.ALL : Level.WARNING;
+    }
+
+    @Console
+    public Level getLevel() {
+        return this.level;
+    }
+
+    public void setLevel(Level level) {
+        this.level = level;
+    }
+
+    public void setLevel(String level) {
+        this.setLevel(Level.parse(level));
     }
 
     @Console
