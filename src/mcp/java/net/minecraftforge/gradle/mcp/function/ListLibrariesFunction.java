@@ -48,7 +48,7 @@ class ListLibrariesFunction implements MCPFunction {
             throw new IllegalArgumentException("Invalid MCP Config: Listing bundle libraries is only supported for MCPConfig spec 3 or higher, found spec: " + this.spec);
         }
 
-        try (FileSystem bundleFs = bundle == null ? null : FileSystems.newFileSystem(bundle.toPath(), null)) {
+        try (FileSystem bundleFs = bundle == null ? null : FileSystems.newFileSystem(bundle.toPath(), (ClassLoader)null)) {
             Set<String> artifacts;
             if (bundleFs == null) {
                 artifacts = listDownloadJsonLibraries(environment, output);

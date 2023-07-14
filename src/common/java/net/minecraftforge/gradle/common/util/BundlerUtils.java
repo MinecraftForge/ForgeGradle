@@ -23,7 +23,7 @@ class BundlerUtils {
 
     static Path extractMainJar(Path raw, Path target) throws IOException {
 
-        try (FileSystem fs = FileSystems.newFileSystem(raw, null)) {
+        try (FileSystem fs = FileSystems.newFileSystem(raw, (ClassLoader)null)) {
             String format = getBundlerVersion(fs.getPath("META-INF", "MANIFEST.MF"));
             if (format == null) {
                 Files.copy(raw, target);
