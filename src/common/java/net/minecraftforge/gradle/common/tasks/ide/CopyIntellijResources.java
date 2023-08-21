@@ -28,7 +28,7 @@ public abstract class CopyIntellijResources extends Copy {
 
     public void configure(IdeaModel model, Project project) {
         // We don't need the destination, but it's not optional
-        setDestinationDir(new File(project.getBuildDir(), getName()));
+        setDestinationDir(new File(project.getLayout().getBuildDirectory().getAsFile().get(), getName()));
         final Path destination = getDestinationDir().toPath();
 
         for (final SourceSet sourceSet : project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets()) {

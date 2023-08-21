@@ -171,7 +171,7 @@ public abstract class JarJar extends Jar {
     }
 
     private Path getJarJarMetadataPath() {
-        return getProject().getBuildDir().toPath().resolve("jarjar").resolve(getName()).resolve("metadata.json");
+        return getProject().getLayout().getBuildDirectory().getAsFile().get().toPath().resolve("jarjar").resolve(getName()).resolve("metadata.json");
     }
 
     private Metadata createMetadata() {
