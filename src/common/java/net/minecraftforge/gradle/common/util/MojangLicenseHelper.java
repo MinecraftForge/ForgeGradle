@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -105,9 +106,16 @@ public class MojangLicenseHelper {
         if (client == null) return Optional.empty();
 
         try {
+            List<String> license = Files.readAllLines(client.toPath());
+            for (int x = 0; x < license.size(); x++) {
+                if (!license.get(x).startsWith("#") && x != 0) {
+                    license = license.subList(0, x - 1);
+                    break;
+                }
+            }
+
             return Optional.of(
-                Files.lines(client.toPath())
-                    .filter(line -> line.startsWith("#"))        // Only Comments
+                license.stream()
                     .map(l -> l.substring(1).trim())             // Remove initial #
                     .collect(Collectors.joining("\n"))   // Join via \n
             );
