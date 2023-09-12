@@ -22,7 +22,6 @@ import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.EnvironmentChecks;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
-import net.minecraftforge.gradle.common.util.MojangLicenseHelper;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.common.util.VersionJson;
 import net.minecraftforge.gradle.mcp.ChannelProvidersExtension;
@@ -127,8 +126,6 @@ public class PatcherPlugin implements Plugin<Project> {
         final TaskProvider<Jar> userdevJar = tasks.register("userdevJar", Jar.class);
         final TaskProvider<GenerateUserdevConfig> userdevConfig = tasks.register("userdevConfig", GenerateUserdevConfig.class, project);
         final TaskProvider<DefaultTask> release = tasks.register("release", DefaultTask.class);
-        final TaskProvider<DefaultTask> hideLicense = tasks.register(MojangLicenseHelper.HIDE_LICENSE, DefaultTask.class);
-        final TaskProvider<DefaultTask> showLicense = tasks.register(MojangLicenseHelper.SHOW_LICENSE, DefaultTask.class);
 
         //Add Known repos
         project.getRepositories().maven(e -> {
@@ -148,12 +145,6 @@ public class PatcherPlugin implements Plugin<Project> {
             e.setUrl(Utils.MOJANG_MAVEN);
             e.metadataSources(MetadataSources::artifact);
         });
-
-        hideLicense.configure(task -> task.doLast(_task ->
-                MojangLicenseHelper.hide(project, extension.getMappingChannel().get(), extension.getMappingVersion().get())));
-
-        showLicense.configure(task -> task.doLast(_task ->
-                MojangLicenseHelper.show(project, extension.getMappingChannel().get(), extension.getMappingVersion().get())));
 
         release.configure(task -> task.dependsOn(sourcesJar, universalJar, userdevJar));
 
@@ -350,7 +341,6 @@ public class PatcherPlugin implements Plugin<Project> {
                 final PatcherPlugin parentPatcherPlugin = parent.getPlugins().findPlugin(PatcherPlugin.class);
 
                 if (parentMCPPlugin != null) {
-                    MojangLicenseHelper.displayWarning(p, extension.getMappingChannel().get(), extension.getMappingVersion().get(), updateChannel, updateVersion);
                     final TaskProvider<SetupMCP> setupMCP = parentTasks.named("setupMCP", SetupMCP.class);
 
                     Provider<RegularFile> setupOutput = setupMCP.flatMap(SetupMCP::getOutput);
