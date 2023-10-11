@@ -17,7 +17,6 @@ import net.minecraftforge.gradle.common.tasks.ExtractRangeMap;
 import net.minecraftforge.gradle.common.util.BaseRepo;
 import net.minecraftforge.gradle.common.util.EnvironmentChecks;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
-import net.minecraftforge.gradle.common.util.MojangLicenseHelper;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.common.util.VersionJson;
 import net.minecraftforge.gradle.mcp.ChannelProvidersExtension;
@@ -117,14 +116,6 @@ public class UserDevPlugin implements Plugin<Project> {
         final TaskProvider<DownloadMCMeta> downloadMCMeta = tasks.register("downloadMCMeta", DownloadMCMeta.class);
         final TaskProvider<ExtractNatives> extractNatives = tasks.register("extractNatives", ExtractNatives.class);
         final TaskProvider<DownloadAssets> downloadAssets = tasks.register("downloadAssets", DownloadAssets.class);
-        final TaskProvider<DefaultTask> hideLicense = tasks.register(MojangLicenseHelper.HIDE_LICENSE, DefaultTask.class);
-        final TaskProvider<DefaultTask> showLicense = tasks.register(MojangLicenseHelper.SHOW_LICENSE, DefaultTask.class);
-
-        hideLicense.configure(task -> task.doLast(_task ->
-                MojangLicenseHelper.hide(project, extension.getMappingChannel().get(), extension.getMappingVersion().get())));
-
-        showLicense.configure(task -> task.doLast(_t ->
-                MojangLicenseHelper.show(project, extension.getMappingChannel().get(), extension.getMappingVersion().get())));
 
         extractSrg.configure(task -> task.getConfig().set(downloadMcpConfig.flatMap(DownloadMavenArtifact::getOutput)));
 
@@ -275,8 +266,6 @@ public class UserDevPlugin implements Plugin<Project> {
                     .add(MCPRepo.create(project))
                     .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
                     .attach(project);
-
-            MojangLicenseHelper.displayWarning(p, extension.getMappingChannel().get(), extension.getMappingVersion().get(), updateChannel, updateVersion);
 
             project.getRepositories().maven(e -> {
                 e.setUrl(Utils.MOJANG_MAVEN);

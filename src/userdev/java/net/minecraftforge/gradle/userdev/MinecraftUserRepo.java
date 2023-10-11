@@ -233,6 +233,7 @@ public class MinecraftUserRepo extends BaseRepo {
         if (parent != null && !parent.getModules().isEmpty()) {
             Configuration modulesCfg = project.getConfigurations().create("modules_userdev_resolver");
             modulesCfg.setCanBeResolved(true);
+            modulesCfg.setTransitive(false);
             parent.getModules().forEach(m -> modulesCfg.getDependencies().add(project.getDependencies().create(m)));
             tokens.put("modules", modulesCfg.resolve().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator)));
         }
