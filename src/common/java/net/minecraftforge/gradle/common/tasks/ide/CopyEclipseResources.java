@@ -30,7 +30,7 @@ public abstract class CopyEclipseResources extends Copy {
 
     public void configure(EclipseModel model, Project project) {
         // We don't need the destination, but it's not optional
-        setDestinationDir(new File(project.getBuildDir(), getName()));
+        setDestinationDir(new File(project.getLayout().getBuildDirectory().getAsFile().get(), getName()));
         final Path destination = getDestinationDir().toPath();
 
         final Map<SourceSet, SourceFolder> srcToOut = model.getClasspath().resolveDependencies().stream()

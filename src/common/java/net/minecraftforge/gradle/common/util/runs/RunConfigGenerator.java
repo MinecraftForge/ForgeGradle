@@ -151,7 +151,7 @@ public abstract class RunConfigGenerator {
         Supplier<String> runtimeClasspath = tokens.compute("runtime_classpath", makeClasspathToken(runtimeClasspathArtifacts));
         Supplier<String> minecraftClasspath = tokens.compute("minecraft_classpath", makeClasspathToken(minecraftArtifacts));
 
-        File classpathFolder = new File(project.getBuildDir(), "classpath");
+        File classpathFolder = new File(project.getLayout().getBuildDirectory().getAsFile().get(), "classpath");
         BinaryOperator<String> classpathFileWriter = (filename, classpath) -> {
             if (!classpathFolder.isDirectory() && !classpathFolder.mkdirs())
                 throw new IllegalStateException("Could not create directory at " + classpathFolder.getAbsolutePath());
