@@ -27,7 +27,7 @@ java {
 }
 
 configurations {
-    all {
+    configureEach {
         exclude group: 'org.ow2.asm'
     }
     mcpImplementation.extendsFrom commonImplementation
@@ -63,7 +63,7 @@ license {
 }
 
 tasks.named('wrapper', Wrapper).configure {
-    gradleVersion = '8.1.1'
+    gradleVersion = '8.4'
     distributionType = Wrapper.DistributionType.ALL
 }
 
@@ -73,7 +73,7 @@ dependencies {
     commonImplementation 'com.google.code.gson:gson:2.10.1'
     commonImplementation 'com.google.guava:guava:31.1-jre'
     commonImplementation 'de.siegmar:fastcsv:2.2.1'
-    commonImplementation('net.minecraftforge:artifactural:3.0.14') {
+    commonImplementation('net.minecraftforge:artifactural:3.0.16') {
         transitive = false
     }
     commonImplementation('net.minecraftforge:unsafe:0.2.0') {
