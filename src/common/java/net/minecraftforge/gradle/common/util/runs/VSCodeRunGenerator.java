@@ -19,7 +19,9 @@ public class VSCodeRunGenerator extends RunConfigGenerator.JsonConfigurationBuil
     @Override
     protected JsonObject createRunConfiguration(Project project, RunConfig runConfig, List<String> additionalClientArgs,
             FileCollection minecraftArtifacts, FileCollection runtimeClasspathArtifacts) {
-        Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project, runConfig, mapModClassesToVSCode(project, runConfig),
+        Map<String, Supplier<String>> updatedTokens = configureTokensLazy(project,
+                runConfig,
+                mapModClassesToVSCode(project, runConfig),
                 minecraftArtifacts, runtimeClasspathArtifacts);
 
         JsonObject config = new JsonObject();
@@ -39,11 +41,24 @@ public class VSCodeRunGenerator extends RunConfigGenerator.JsonConfigurationBuil
             env.addProperty(key, value);
         });
         config.add("env", env);
+        config.addProperty("preLaunchTask", runConfig.getPrepareCompileTaskName());
+        return config;
+    }
+
+    @Override
+    protected JsonObject createPrepareTaskConfiguration(Project project, RunConfig runConfig) {
+        JsonObject config = new JsonObject();
+        config.addProperty("label", runConfig.getPrepareCompileTaskName());
+        config.addProperty("type", "shell");
+        config.addProperty("command", "./gradlew " + runConfig.getPrepareCompileTaskName());
+        JsonObject options = new JsonObject();
+        options.addProperty("cwd", "${workspaceFolder}");
+        config.add("options", options);
         return config;
     }
 
     private Stream<String> mapModClassesToVSCode(Project project, RunConfig runConfig) {
-        return EclipseRunGenerator.mapModClassesToEclipse(project, runConfig)
+        return IntellijRunGenerator.mapModClassesToGradle(project, runConfig)
                 .map((value) -> replaceRootDirBy(project, value, "${workspaceFolder}"));
     }
 }

@@ -314,22 +314,48 @@ public abstract class RunConfigGenerator {
         protected abstract JsonObject createRunConfiguration(final Project project, final RunConfig runConfig, List<String> additionalClientArgs,
                 FileCollection minecraftArtifacts, FileCollection runtimeClasspathArtifacts);
 
+        protected abstract JsonObject createPrepareTaskConfiguration(final Project project, final RunConfig runConfig);
+
         @Override
-        public final void createRunConfiguration(final MinecraftExtension minecraft, final File runConfigurationsDir, final Project project,
-                List<String> additionalClientArgs, FileCollection minecraftArtifacts, FileCollection runtimeClasspathArtifacts) {
-            final JsonObject rootObject = new JsonObject();
-            rootObject.addProperty("version", "0.2.0");
+        public final void createRunConfiguration(final MinecraftExtension minecraft, final File runConfigurationsDir,
+                final Project project,
+                List<String> additionalClientArgs, FileCollection minecraftArtifacts,
+                FileCollection runtimeClasspathArtifacts) {
+
+            final JsonObject runObject = new JsonObject();
+            runObject.addProperty("version", "0.2.0");
             JsonArray runConfigs = new JsonArray();
             minecraft.getRuns().forEach(runConfig -> {
                 MinecraftRunTask.prepareWorkingDirectory(runConfig);
 
-                runConfigs.add(createRunConfiguration(project, runConfig, additionalClientArgs, minecraftArtifacts, runtimeClasspathArtifacts));
+                runConfigs.add(createRunConfiguration(project, runConfig,
+                        additionalClientArgs, minecraftArtifacts,
+                        runtimeClasspathArtifacts));
             });
-            rootObject.add("configurations", runConfigs);
+            runObject.add("configurations", runConfigs);
 
-            try (Writer writer = new FileWriter(new File(runConfigurationsDir, "launch.json"))) {
+            try (Writer writer = new FileWriter(new File(runConfigurationsDir,
+                    "launch.json"))) {
                 Gson gson = new GsonBuilder().setPrettyPrinting().create();
-                writer.write(gson.toJson(rootObject));
+                writer.write(gson.toJson(runObject));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            final JsonObject prepareObject = new JsonObject();
+            prepareObject.addProperty("version", "2.0.0");
+            JsonArray prepareConfigs = new JsonArray();
+            minecraft.getRuns().forEach(runConfig -> {
+                MinecraftRunTask.prepareWorkingDirectory(runConfig);
+
+                prepareConfigs.add(createPrepareTaskConfiguration(project, runConfig));
+            });
+            prepareObject.add("tasks", prepareConfigs);
+
+            try (Writer writer = new FileWriter(new File(runConfigurationsDir,
+                    "tasks.json"))) {
+                Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                writer.write(gson.toJson(prepareObject));
             } catch (IOException e) {
                 e.printStackTrace();
             }
