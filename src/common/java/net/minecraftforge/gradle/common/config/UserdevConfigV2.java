@@ -24,6 +24,7 @@ public class UserdevConfigV2 extends UserdevConfigV1 {
     public static UserdevConfigV2 get(InputStream stream) {
         return Utils.fromJson(stream, UserdevConfigV2.class);
     }
+
     public static UserdevConfigV2 get(byte[] data) {
         return get(new ByteArrayInputStream(data));
     }

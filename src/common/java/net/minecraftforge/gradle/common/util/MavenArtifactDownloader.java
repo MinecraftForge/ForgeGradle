@@ -113,7 +113,7 @@ public class MavenArtifactDownloader {
                     project.getLogger().info("Waiting for download of {} on other thread", artifact);
                     while (!activeDownload.isDone()) {
                         // Release the monitor of ACTIVE_DOWNLOADS while waiting on the download;
-                        // when a new download finishes, we'll get notified and we can check whether the download is complete again. 
+                        // when a new download finishes, we'll get notified and we can check whether the download is complete again.
                         ACTIVE_DOWNLOADS.wait();
                     }
                     return activeDownload.get();

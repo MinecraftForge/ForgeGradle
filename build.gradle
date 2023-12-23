@@ -2,8 +2,8 @@ plugins {
     id 'java-gradle-plugin'
     id 'eclipse'
     id 'maven-publish'
-    id 'org.cadixdev.licenser' version '0.6.1'
-    id 'net.minecraftforge.gradleutils' version '[2.0.10,)'
+    id 'net.minecraftforge.licenser' version '1.0.1'
+    id 'net.minecraftforge.gradleutils' version '[2.3,2.4)'
     id 'com.github.ben-manes.versions' version '0.46.0'
 }
 
@@ -11,8 +11,8 @@ version = gradleutils.getTagOffsetBranchVersion('FG_6.0')
 logger.lifecycle('Version: ' + version + ' Java: ' + System.getProperty('java.version') + ' JVM: ' + System.getProperty('java.vm.version') + '(' + System.getProperty('java.vendor') + ') Arch: ' + System.getProperty('os.arch'))
 
 changelog {
-    fromTag '6.0'
-    disableAutomaticPublicationRegistration()
+    from '6.0'
+    publishAll = false
 }
 sourceSets {
     common
@@ -52,7 +52,7 @@ tasks.named('sourcesJar', Jar).configure {
 
 repositories {
     mavenLocal()
-    maven { url = 'https://maven.minecraftforge.net/' }
+    maven gradleutils.forgeMaven
 }
 
 license {
@@ -92,21 +92,6 @@ dependencies {
 
     userdevImplementation 'net.minecraftforge:JarJarMetadata:0.3.19'
     userdevImplementation 'net.minecraftforge:JarJarSelector:0.3.19'
-}
-
-//Gradle doesn't add it's own source when doing the API. So lets hack it in!
-import org.gradle.plugins.ide.eclipse.model.*
-import org.gradle.plugins.ide.eclipse.model.internal.*
-project.extensions.eclipse.classpath.file.whenMerged { Classpath cp ->
-    def gradleSrc = gradle.gradleHomeDir.absolutePath.replace(File.separator, '/') + '/src/'
-    cp.entries.each { entry ->
-        if ((entry in AbstractLibrary) && entry.library.file.name.startsWith('gradle-')) {
-            def type = (entry.library.file.name =~ "^gradle(-(.*))?-(${gradle.gradleVersion})")[0][2]
-            if (type == 'api') type = 'core-api' //Gradle name is different for cores
-            if (type == '') type = 'core'
-            entry.sourcePath = new FileReferenceFactory().fromPath(gradleSrc + type)
-        }
-    }
 }
 
 gradlePlugin {
