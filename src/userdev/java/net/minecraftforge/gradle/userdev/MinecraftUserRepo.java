@@ -412,6 +412,9 @@ public class MinecraftUserRepo extends BaseRepo {
             group = group.substring(group.indexOf('.', 4) + 1);
         }
         String version = artifact.getVersion();
+        String athash = getATHash(version);  // Just extract the hash from the version string
+        if (athash != null)
+            version = version.substring(0, version.length() - (athash.length() + "_at_".length()));
 
         String mappings = getMappings(version);
         if (mappings != null)
