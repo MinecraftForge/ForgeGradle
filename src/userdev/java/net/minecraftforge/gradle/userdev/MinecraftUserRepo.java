@@ -412,18 +412,12 @@ public class MinecraftUserRepo extends BaseRepo {
             group = group.substring(group.indexOf('.', 4) + 1);
         }
         String version = artifact.getVersion();
-        String athash = getATHash(version); //There is no way to reverse the ATs from the hash, so this is just to make Gradle request a new file if they change.
-        if (athash != null)
-            version = version.substring(0, version.length() - (athash.length() + "_at_".length()));
 
         String mappings = getMappings(version);
         if (mappings != null)
             version = version.substring(0, version.length() - (mappings.length() + "_mapped_".length()));
 
         if (!group.equals(GROUP) || !artifact.getName().equals(NAME) || !version.equals(VERSION))
-            return null;
-
-        if ((AT_HASH == null && athash != null) || (AT_HASH != null && !AT_HASH.equals(athash)))
             return null;
 
         if (!isPatcher && mappings == null) //net.minecraft in obf names. We don't do that.
