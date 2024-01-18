@@ -130,8 +130,22 @@ public class DeobfuscatingRepo extends BaseRepo {
 
     @Nullable
     private File findSource(Artifact artifact, String mapping) throws IOException {
+        // Check if we have previously failed to retrieve sources for the artifact.
+        // If so, don't attempt the download again.
+        File noSourceFlag = cache(getArtifactPath(artifact, mapping) + ".nosources");
+        if(noSourceFlag.exists()) return null;
+
         File origFile = MavenArtifactDownloader.manual(project, artifact.getDescriptor(), false);
-        if (origFile == null) return null;
+        if (origFile == null) {
+            // Flag that downloading has failed so we don't repeat it
+            try {
+                noSourceFlag.getParentFile().mkdirs();
+                noSourceFlag.createNewFile();
+            } catch(IOException e) {
+                // Ignore it, not important
+            }
+            return null;
+        }
 
         return deobfuscator.deobfSources(origFile, mapping, getArtifactPath(artifact, mapping));
     }
