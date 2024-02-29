@@ -144,9 +144,17 @@ public abstract class RunConfigGenerator {
         Map<String, Supplier<String>> tokens = new HashMap<>();
         runConfig.getTokens().forEach((k, v) -> tokens.put(k, () -> v));
         runConfig.getLazyTokens().forEach((k, v) -> tokens.put(k, Suppliers.memoize(v::get)));
-        tokens.compute("source_roots", (key, sourceRoots) -> Suppliers.memoize(() -> ((sourceRoots != null)
-                ? Stream.concat(Arrays.stream(sourceRoots.get().split(File.pathSeparator)), modClasses)
-                : modClasses).distinct().collect(Collectors.joining(File.pathSeparator))));
+        tokens.compute("source_roots", (k, v) -> {
+        	Stream<String> paths;
+        	if (v == null)
+        		paths = modClasses;
+        	else {
+        		String[] existing = v.get().split(File.pathSeparator);
+        		paths = Stream.concat(Arrays.stream(existing), modClasses);
+        	}
+
+        	return Suppliers.memoize(() -> paths.distinct().collect(Collectors.joining(File.pathSeparator)));
+        });
 
         Supplier<String> runtimeClasspath = tokens.compute("runtime_classpath", makeClasspathToken(runtimeClasspathArtifacts));
         Supplier<String> minecraftClasspath = tokens.compute("minecraft_classpath", makeClasspathToken(minecraftArtifacts));

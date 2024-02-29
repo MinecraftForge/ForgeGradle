@@ -73,7 +73,7 @@ dependencies {
     commonImplementation 'com.google.code.gson:gson:2.10.1'
     commonImplementation 'com.google.guava:guava:31.1-jre'
     commonImplementation 'de.siegmar:fastcsv:2.2.1'
-    commonImplementation('net.minecraftforge:artifactural:3.0.16') {
+    commonImplementation('net.minecraftforge:artifactural:3.0.18') {
         transitive = false
     }
     commonImplementation('net.minecraftforge:unsafe:0.2.0') {
