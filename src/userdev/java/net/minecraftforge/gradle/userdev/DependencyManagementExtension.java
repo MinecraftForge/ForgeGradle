@@ -18,7 +18,9 @@ import net.minecraftforge.gradle.userdev.util.MavenPomUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.MinimalExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.publish.tasks.GenerateModuleMetadata;
 
@@ -61,6 +63,11 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
         project.getConfigurations().getByName(UserDevPlugin.OBF).getDependencies().add(baseDependency);
 
         return remapper.remap(baseDependency);
+    }
+
+    @SuppressWarnings("unused")
+    public Dependency deobf(Provider<MinimalExternalModuleDependency> dependency) {
+        return remapper.remap(dependency.get());
     }
 
     @SuppressWarnings({"ConstantConditions", "unchecked"})
