@@ -19,7 +19,9 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.MinimalExternalModuleDependency;
+import org.gradle.api.artifacts.ModuleIdentifier;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
+import org.gradle.api.internal.artifacts.dependencies.DependencyVariant;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.publish.tasks.GenerateModuleMetadata;
@@ -68,7 +70,12 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
         MinimalExternalModuleDependency dependency = provider.get();
         project.getConfigurations().getByName(UserDevPlugin.OBF).getDependencies().add(dependency);
 
-        return remapper.remap(dependency);
+        ModuleIdentifier module = dependency.getModule();
+        if(dependency instanceof DependencyVariant) {
+            DependencyVariant variant = (DependencyVariant) dependency;
+            return deobf(String.format("%s:%s:%s:%s", module.getGroup(), module.getName(), dependency.getVersion(), variant.getClassifier()));
+        }
+        return deobf(String.format("%s:%s:%s", module.getGroup(), module.getName(), dependency.getVersion()));
     }
 
     @SuppressWarnings({"ConstantConditions", "unchecked"})
