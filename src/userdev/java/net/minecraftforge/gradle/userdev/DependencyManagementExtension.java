@@ -53,7 +53,6 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
         return repository;
     }
 
-    @SuppressWarnings("unused")
     public Dependency deobf(Object dependency) {
         return deobf(dependency, null);
     }
@@ -65,9 +64,11 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
         return remapper.remap(baseDependency);
     }
 
-    @SuppressWarnings("unused")
-    public Dependency deobf(Provider<MinimalExternalModuleDependency> dependency) {
-        return remapper.remap(dependency.get());
+    public Dependency deobf(Provider<MinimalExternalModuleDependency> provider) {
+        MinimalExternalModuleDependency dependency = provider.get();
+        project.getConfigurations().getByName(UserDevPlugin.OBF).getDependencies().add(dependency);
+
+        return remapper.remap(dependency);
     }
 
     @SuppressWarnings({"ConstantConditions", "unchecked"})
