@@ -229,7 +229,7 @@ public abstract class JarJar extends Jar {
         }
         final Optional<String> attributeVersion = getProject().getExtensions().getByType(JarJarProjectExtension.class).getRange(dependency);
 
-        return attributeVersion.map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersionRange).orElseGet(() -> DeobfuscatingVersionUtils.adaptDeobfuscatedVersion(Objects.requireNonNull(dependency.getVersion())));
+        return attributeVersion.map(DeobfuscatingVersionUtils::adaptDeobfuscatedVersionRange).orElseGet(() -> DeobfuscatingVersionUtils.adaptDeobfuscatedVersionRange(Objects.requireNonNull(dependency.getVersion())));
     }
 
     private String getVersionFrom(final ModuleDependency dependency) {
