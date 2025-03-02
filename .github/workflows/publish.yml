@@ -14,7 +14,6 @@ jobs:
       java: 11
       gradle_tasks: "publish"
       artifact_group: "net.minecraftforge.gradle"
-      artifact_groups: "net.minecraftforge.gradle"
       artifact_name: "ForgeGradle"
     secrets:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
