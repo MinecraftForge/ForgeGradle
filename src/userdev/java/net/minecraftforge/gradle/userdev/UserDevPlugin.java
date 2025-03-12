@@ -245,14 +245,8 @@ public class UserDevPlugin implements Plugin<Project> {
                 throw new IllegalStateException("Missing '" + minecraft.getName() + "' dependency.");
             }
 
-            project.getRepositories().maven(e -> {
-                e.setUrl(Utils.FORGE_MAVEN);
-                e.metadataSources(m -> {
-                    m.gradleMetadata();
-                    m.mavenPom();
-                    m.artifact();
-                });
-            });
+            if (EnvironmentChecks.AUTOMATIC_ATTACH_REPOS.isEnabled())
+                project.getRepositories().maven(Utils.forgeMaven());
 
             remapper.attachMappings(extension.getMappings().get());
 
@@ -267,11 +261,11 @@ public class UserDevPlugin implements Plugin<Project> {
                     .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
                     .attach(project);
 
-            project.getRepositories().maven(e -> {
-                e.setUrl(Utils.MOJANG_MAVEN);
-                e.metadataSources(MetadataSources::artifact);
-            });
-            project.getRepositories().mavenCentral(e -> e.mavenContent(c -> c.excludeGroup("net.minecraftforge"))); //Needed for MCP Deps; we do not publish any artufacts to maven central
+            if (EnvironmentChecks.AUTOMATIC_ATTACH_REPOS.isEnabled()) {
+                project.getRepositories().maven(Utils.mojangMaven());
+                project.getRepositories().mavenCentral(Utils.filterForge()); //Needed for MCP Deps; we do not publish any artifacts to maven central
+            }
+
             mcrepo.validate(minecraft, extension.getRuns().getAsMap(), extractNatives.get(), downloadAssets.get(), createSrgToMcp.get()); //This will set the MC_VERSION property.
 
             String mcVer = (String) project.getExtensions().getExtraProperties().get("MC_VERSION");
@@ -282,11 +276,11 @@ public class UserDevPlugin implements Plugin<Project> {
 
             // Register reobfJar for the 'jar' task
             if (extension.getReobf()) {
-            	reobfExtension.create(JavaPlugin.JAR_TASK_NAME);
-    	        project.getTasks().withType(JarJar.class).all(jarJar -> {
-    	            logger.info("Creating reobfuscation task for JarJar task: {}", jarJar.getName());
-    	            reobfExtension.create(jarJar.getName()).setOnlyIf(task -> jarJar.isEnabled());
-    	        });
+                reobfExtension.create(JavaPlugin.JAR_TASK_NAME);
+                project.getTasks().withType(JarJar.class).all(jarJar -> {
+                    logger.info("Creating reobfuscation task for JarJar task: {}", jarJar.getName());
+                    reobfExtension.create(jarJar.getName()).setOnlyIf(task -> jarJar.isEnabled());
+                });
             }
 
             String assetIndex = mcVer;

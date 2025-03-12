@@ -128,23 +128,16 @@ public class PatcherPlugin implements Plugin<Project> {
         final TaskProvider<DefaultTask> release = tasks.register("release", DefaultTask.class);
 
         //Add Known repos
-        project.getRepositories().maven(e -> {
-            e.setUrl(Utils.FORGE_MAVEN);
-            e.metadataSources(m -> {
-                m.gradleMetadata();
-                m.mavenPom();
-                m.artifact();
-            });
-        });
+        if (EnvironmentChecks.AUTOMATIC_ATTACH_REPOS.isEnabled())
+            project.getRepositories().maven(Utils.forgeMaven());
 
         new BaseRepo.Builder()
                 .add(MCPRepo.create(project))
                 .add(MinecraftRepo.create(project))
                 .attach(project);
-        project.getRepositories().maven(e -> {
-            e.setUrl(Utils.MOJANG_MAVEN);
-            e.metadataSources(MetadataSources::artifact);
-        });
+
+        if (EnvironmentChecks.AUTOMATIC_ATTACH_REPOS.isEnabled())
+            project.getRepositories().maven(Utils.mojangMaven());
 
         release.configure(task -> task.dependsOn(sourcesJar, universalJar, userdevJar));
 

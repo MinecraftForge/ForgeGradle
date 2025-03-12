@@ -38,6 +38,7 @@ public class EnvironmentChecks {
     private static final String RECOMPILE_ARGS_VARIABLE   = "net.minecraftforge.gradle.repo.recompile.args";
     private static final String ENABLE_RECOMPILE_FORK_VARIABLE  = "net.minecraftforge.gradle.repo.recompile.fork";
     private static final String RECOMPILE_FORK_ARGS_VARIABLE    = "net.minecraftforge.gradle.repo.recompile.fork.args";
+    private static final String AUTOMATIC_ATTACH_REPOS_VARIABLE = "net.minecraftforge.gradle.repo.attach";
 
     private static final EnvironmentFlag ENABLE_CERTIFICATE_CHECK = new EnvironmentFlag(ENABLE_CERTIFICATE_CHECK_VARIABLE, true);
     private static final EnvironmentFlag ENABLE_GRADLE_CHECK = new EnvironmentFlag(ENABLE_GRADLE_CHECK_VARIABLE, true);
@@ -115,6 +116,16 @@ public class EnvironmentChecks {
      * Environment Value: {@value #RECOMPILE_FORK_ARGS_VARIABLE}
      */
     public static final EnvironmentValue RECOMPILE_FORK_ARGS = new EnvironmentValue(RECOMPILE_FORK_ARGS_VARIABLE, null);
+
+    /**
+     * This controls if the Forge, MavenCentral, and Mojang repositories are automatically attached to the project.
+     * It is usually done during afterEvaluate, but can be disabled if you want to manage yourself.
+     * <p>
+     * Default is true.
+     * <p>
+     * Environment Flag: {@value #AUTOMATIC_ATTACH_REPOS_VARIABLE}
+     */
+    public static final EnvironmentFlag AUTOMATIC_ATTACH_REPOS = new EnvironmentFlag(AUTOMATIC_ATTACH_REPOS_VARIABLE, true);
 
     private static final Marker ENV_CHECK = MarkerFactory.getMarker("forgegradle.env_check");
 

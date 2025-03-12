@@ -5,8 +5,10 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
@@ -146,4 +148,36 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
      * Default: {@code false}
      */
     public abstract Property<Boolean> getGenerateRunFolders();
+
+    /**
+     * Returns an action that can be used to configure the Forge maven.
+     * This is typically automatically added by the FG plugin. But if
+     * {@link net.minecraftforge.gradle.common.util.EnvironmentChecks#AUTOMATIC_ATTACH_REPOS AUTOMATIC_ATTACH_REPOS}
+     * is disabled you'll have to do it yourself.
+     *
+     * <pre>{@code
+     * repositories {
+     *    maven minecraft.forgeMaven
+     * }
+     * }</pre>
+     */
+    public Action<? super MavenArtifactRepository> getForgeMaven() {
+        return Utils.forgeMaven();
+    }
+
+    /**
+     * Returns an action that can be used to configure the Mojang maven.
+     * This is typically automatically added by the FG plugin. But if
+     * {@link net.minecraftforge.gradle.common.util.EnvironmentChecks#AUTOMATIC_ATTACH_REPOS AUTOMATIC_ATTACH_REPOS}
+     * is disabled you'll have to do it yourself.
+     *
+     * <pre>{@code
+     * repositories {
+     *    maven minecraft.mojangMaven
+     * }
+     * }</pre>
+     */
+    public Action<? super MavenArtifactRepository> getMojangMaven() {
+        return Utils.mojangMaven();
+    }
 }

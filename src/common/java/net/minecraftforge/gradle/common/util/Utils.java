@@ -16,9 +16,12 @@ import net.minecraftforge.gradle.common.util.runs.RunConfigGenerator;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository.MetadataSources;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
@@ -96,6 +99,31 @@ public class Utils {
 
     public static final long ZIPTIME = 628041600000L;
     public static final TimeZone GMT = TimeZone.getTimeZone("GMT");
+
+    public static final Action<? super MavenArtifactRepository> forgeMaven() {
+        return e -> {
+            e.setUrl(Utils.FORGE_MAVEN);
+            e.metadataSources(m -> {
+                m.gradleMetadata();
+                m.mavenPom();
+                m.artifact();
+            });
+        };
+    }
+
+    public static final Action<? super MavenArtifactRepository> mojangMaven() {
+        return e -> {
+            e.setUrl(Utils.MOJANG_MAVEN);
+            e.metadataSources(MetadataSources::artifact);
+            filterForge().execute(e);
+        };
+    }
+
+    public static final Action<? super MavenArtifactRepository> filterForge() {
+        return e -> {
+            e.mavenContent(c -> c.excludeGroup("net.minecraftforge"));
+        };
+    }
 
     private static final String art(String name, String ver, String classifier) {
         return "net.minecraftforge:" + name + ':' + ver + ':' + classifier;

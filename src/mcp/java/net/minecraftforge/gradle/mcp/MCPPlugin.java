@@ -6,13 +6,13 @@
 package net.minecraftforge.gradle.mcp;
 
 import net.minecraftforge.gradle.common.util.Artifact;
+import net.minecraftforge.gradle.common.util.EnvironmentChecks;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.tasks.DownloadMCPConfig;
 import net.minecraftforge.gradle.mcp.tasks.SetupMCP;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.repositories.MavenArtifactRepository.MetadataSources;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.TaskProvider;
 
@@ -40,20 +40,12 @@ public class MCPPlugin implements Plugin<Project> {
         });
 
         project.afterEvaluate(p -> {
-            //Add Known repos
-            project.getRepositories().maven(e -> {
-                e.setUrl(Utils.MOJANG_MAVEN);
-                e.metadataSources(MetadataSources::artifact);
-            });
-            project.getRepositories().maven(e -> {
-                e.setUrl(Utils.FORGE_MAVEN);
-                e.metadataSources(m -> {
-                    m.gradleMetadata();
-                    m.mavenPom();
-                    m.artifact();
-                });
-            });
-            project.getRepositories().mavenCentral(e -> e.mavenContent(c -> c.excludeGroup("net.minecraftforge"))); //Needed for MCP Deps; we do not publish any artufacts to maven central
+            if (EnvironmentChecks.AUTOMATIC_ATTACH_REPOS.isEnabled()) {
+                //Add Known repos
+                project.getRepositories().maven(Utils.mojangMaven());
+                project.getRepositories().maven(Utils.forgeMaven());
+                project.getRepositories().mavenCentral(Utils.filterForge()); //Needed for MCP Deps; we do not publish any artufacts to maven central
+            }
         });
     }
 }
