@@ -77,8 +77,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class Utils {
-    private static final boolean ENABLE_FILTER_REPOS = Boolean.parseBoolean(System.getProperty("net.minecraftforge.gradle.filter_repos", "true"));
-
     public static final Gson GSON = new GsonBuilder()
         .registerTypeAdapter(MCPConfigV1.Step.class, new MCPConfigV1.Step.Deserializer())
         .registerTypeAdapter(VersionJson.Argument.class, new VersionJson.Argument.Deserializer())
@@ -411,7 +409,7 @@ public class Utils {
     }
 
     public static void addRepoFilters(Project project) {
-        if (!ENABLE_FILTER_REPOS) return;
+        if (!EnvironmentChecks.FILTER_REPOS.isEnabled()) return;
 
         if (project.getGradle().getStartParameter().getTaskNames().stream().anyMatch(t -> t.endsWith("DownloadSources"))) {
             // Only modify repos already present to fix issues with IntelliJ's download sources

@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 public class HashStore {
-    private final boolean INVALIDATE_CACHE = System.getProperty("FG_INVALIDATE_CACHE", "false").equals("true");
     private final int RAND_CACHE = new Random().nextInt();
 
     private final String root;
@@ -127,7 +126,7 @@ public class HashStore {
     }
 
     public boolean isSame() {
-        if (INVALIDATE_CACHE)
+        if (EnvironmentChecks.INVALIDATE_CACHE.isEnabled())
             add("invalidate", "" + RAND_CACHE);
         return oldHashes.equals(newHashes);
     }

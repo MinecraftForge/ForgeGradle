@@ -23,6 +23,7 @@ import net.minecraftforge.gradle.common.tasks.ExtractNatives;
 import net.minecraftforge.gradle.common.tasks.JarExec;
 import net.minecraftforge.gradle.common.util.Artifact;
 import net.minecraftforge.gradle.common.util.BaseRepo;
+import net.minecraftforge.gradle.common.util.EnvironmentChecks;
 import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
@@ -40,7 +41,6 @@ import net.minecraftforge.gradle.userdev.tasks.AccessTransformJar;
 import net.minecraftforge.gradle.userdev.tasks.ApplyMCPFunction;
 import net.minecraftforge.gradle.userdev.tasks.HackyJavaCompile;
 import net.minecraftforge.gradle.userdev.tasks.RenameJar;
-import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 import net.minecraftforge.srgutils.IMappingFile;
 import net.minecraftforge.srgutils.IMappingFile.IField;
 import net.minecraftforge.srgutils.IMappingFile.IMethod;
@@ -1081,6 +1081,7 @@ public class MinecraftUserRepo extends BaseRepo {
 
             boolean failed = false;
             byte[] lastPatched = FileUtils.readFileToByteArray(decomp);
+            boolean debug = EnvironmentChecks.DEBUG_REPOS.isEnabled();
             for (Patcher p : parents) {
                 ByteArrayOutputStream bout = new ByteArrayOutputStream();
                 PatchOperation.Builder opBuilder = PatchOperation.builder()
@@ -1090,8 +1091,8 @@ public class MinecraftUserRepo extends BaseRepo {
                         .patchesPrefix(p.getPatches())
                         .outputPath(bout, ArchiveFormat.ZIP)
                         .mode(PatchMode.ACCESS)
-                        .verbose(DEBUG)
-                        .summary(DEBUG);
+                        .verbose(debug)
+                        .summary(debug);
                 // Note that pre-1.13 patches use ../{src-base,src-work}/minecraft/ prefixes
                 // instead of the default {a,b}/ prefixes. Also, be sure not to override the
                 // defaults with null values.
@@ -1144,6 +1145,9 @@ public class MinecraftUserRepo extends BaseRepo {
 
     @Nullable
     private File findSource(@Nullable String mapping, boolean generate) throws IOException {
+        if (!EnvironmentChecks.ENABLE_SOURCES.isEnabled())
+            return null;
+
         File patched = findPatched(generate);
         if (patched == null || !patched.exists()) {
             debug("  Finding Source: Patched not found");
@@ -1213,6 +1217,9 @@ public class MinecraftUserRepo extends BaseRepo {
 
     @Nullable
     private File findRecomp(@Nullable String mapping, boolean generate) throws IOException {
+        if (!EnvironmentChecks.ENABLE_RECOMPILE.isEnabled())
+            return null;
+
         File source = findSource(mapping, generate);
         if (source == null || !source.exists()) {
             debug("  Finding Recomp: Sources not found");
@@ -1238,8 +1245,8 @@ public class MinecraftUserRepo extends BaseRepo {
             debug("    Compiling");
             File compiled = compileJava(source);
             if (compiled == null) {
-                debug("    Compiling failed");
-                throw new IllegalStateException("Compile failed in findRecomp. See log for more details");
+                info("Compile failed in findRecomp. See log for more details");
+                return null;
             }
 
             debug("    Injecting resources");
@@ -1359,6 +1366,27 @@ public class MinecraftUserRepo extends BaseRepo {
             compile.setTargetCompatibility(target);
             compile.getDestinationDirectory().set(output);
             compile.setSource(source.isDirectory() ? project.fileTree(source) : project.zipTree(source));
+
+            List<String> args = new ArrayList<>(compile.getOptions().getCompilerArgs());
+            String customArgs = EnvironmentChecks.RECOMPILE_ARGS.getValue();
+            if (customArgs == null) {
+                //args.add("-Xlint:none");
+                args.add("-nowarn"); // Shut up about simple warnings
+            } else {
+                args.addAll(Arrays.asList(customArgs.split(" ")));
+            }
+            compile.getOptions().setCompilerArgs(args);
+
+            if (EnvironmentChecks.ENABLE_RECOMPILE_FORK.isEnabled()) {
+                compile.getOptions().setFork(true);
+
+                customArgs = EnvironmentChecks.RECOMPILE_FORK_ARGS.getValue();
+                if (customArgs != null) {
+                    args = new ArrayList<>(compile.getOptions().getForkOptions().getJvmArgs());
+                    args.addAll(Arrays.asList(customArgs.split(" ")));
+                    compile.getOptions().getForkOptions().setJvmArgs(args);
+                }
+            }
 
             compile.doHackyCompile();
 

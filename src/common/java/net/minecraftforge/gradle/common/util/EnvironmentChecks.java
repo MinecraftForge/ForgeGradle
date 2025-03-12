@@ -19,19 +19,142 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLException;
 
 /**
- * Various environment checks.
- *
+ * Utility for common environment variables to toggle various features in FG.
+ * <p>
+ * These can be configured using the -D{Name}={true|false} to set the system property.
+ * <p>
+ * Various environment checks, such as Java version, Gradle version, and certificate validation.
  * @see #checkEnvironment(Project)
  */
 public class EnvironmentChecks {
     public static final String ENABLE_CERTIFICATE_CHECK_VARIABLE = "net.minecraftforge.gradle.check.certs";
     public static final String ENABLE_GRADLE_CHECK_VARIABLE = "net.minecraftforge.gradle.check.gradle";
     public static final String ENABLE_JAVA_CHECK_VARIABLE = "net.minecraftforge.gradle.check.java";
+    private static final String FILTER_REPOS_VARIABLE = "net.minecraftforge.gradle.filter.repos";
+    private static final String INVALIDATE_CACHE_VARIABLE = "net.minecraftforge.gradle.invalidate.cache";
+    private static final String DEBUG_REPOS_VARIABLE      = "net.minecraftforge.gradle.repo.debug";
+    private static final String ENABLE_SOURCES_VARIABLE   = "net.minecraftforge.gradle.repo.sources";
+    private static final String ENABLE_RECOMPILE_VARIABLE = "net.minecraftforge.gradle.repo.recompile";
+    private static final String RECOMPILE_ARGS_VARIABLE   = "net.minecraftforge.gradle.repo.recompile.args";
+    private static final String ENABLE_RECOMPILE_FORK_VARIABLE  = "net.minecraftforge.gradle.repo.recompile.fork";
+    private static final String RECOMPILE_FORK_ARGS_VARIABLE    = "net.minecraftforge.gradle.repo.recompile.fork.args";
 
-    private static final boolean ENABLE_CERTIFICATE_CHECK = Boolean.parseBoolean(System.getProperty(ENABLE_CERTIFICATE_CHECK_VARIABLE, "true"));
-    private static final boolean ENABLE_GRADLE_CHECK = Boolean.parseBoolean(System.getProperty(ENABLE_GRADLE_CHECK_VARIABLE, "true"));
-    private static final boolean ENABLE_JAVA_CHECK = Boolean.parseBoolean(System.getProperty(ENABLE_JAVA_CHECK_VARIABLE, "true"));
+    private static final EnvironmentFlag ENABLE_CERTIFICATE_CHECK = new EnvironmentFlag(ENABLE_CERTIFICATE_CHECK_VARIABLE, true);
+    private static final EnvironmentFlag ENABLE_GRADLE_CHECK = new EnvironmentFlag(ENABLE_GRADLE_CHECK_VARIABLE, true);
+    private static final EnvironmentFlag ENABLE_JAVA_CHECK = new EnvironmentFlag(ENABLE_JAVA_CHECK_VARIABLE, true);
+
+    /**
+     * Attempts to filter all repositories to not include any 'mapped' dependencies, this should
+     * speed up dependency resolution by not having it check public repositories for things we create.
+     * <p>
+     * Specifically it filters anything with a version that matches `.*_mapped_.*`
+     * <p>
+     * Environment Flag: {@value #FILTER_REPOS_VARIABLE}
+     */
+    public static final EnvironmentFlag FILTER_REPOS = new EnvironmentFlag(FILTER_REPOS_VARIABLE, true);
+
+    /**
+     * Forces anything that uses {@link net.minecraftforge.gradle.common.util.HashStore HashStore} to miss
+     * the cache this run, forcing all tasks and dependencies to be re-evaluated.
+     * <p>
+     * This is typically only used when developing ForgeGradle itself, as we would want to bust the cache
+     * when the code changes.
+     * <p>
+     * Environment Flag: {@value #INVALIDATE_CACHE_VARIABLE}
+     */
+    public static final EnvironmentFlag INVALIDATE_CACHE = new EnvironmentFlag(INVALIDATE_CACHE_VARIABLE, false);
+
+    /**
+     * Enables debugging for repositories, this will log a lot of information about what the repositories are doing.
+     * <p>
+     * Environment Flag: {@value #DEBUG_REPOS_VARIABLE}
+     */
+    public static final EnvironmentFlag DEBUG_REPOS = new EnvironmentFlag(DEBUG_REPOS_VARIABLE, false);
+
+    /**
+     * Enables generating source artifacts in our dynamic repositories. Disabling this is recommended for
+     * build services where the source code is not needed.<br>
+     * Default is true.
+     * <p>
+     * Environment Flag: {@value #ENABLE_SOURCES_VARIABLE}
+     */
+    public static final EnvironmentFlag ENABLE_SOURCES = new EnvironmentFlag(ENABLE_SOURCES_VARIABLE, true);
+
+    /**
+     * Enables recompiling Minecraft's source into a jar and serving it from the User Repo after the source
+     * has been requested. You can disable this if you don't care about line numbers matching between source
+     * and binary. <br>
+     * Default is true.
+     * <p>
+     * Environment Flag: {@value #ENABLE_RECOMPILE_VARIABLE}
+     */
+    public static final EnvironmentFlag ENABLE_RECOMPILE = new EnvironmentFlag(ENABLE_RECOMPILE_VARIABLE, true);
+
+    /**
+     * Additional arguments to pass to the recompile process in the UserDev repo. Added in cause you need to
+     * add more memory or something. <br>
+     * Default is null.
+     * <p>
+     * Environment Value: {@value #RECOMPILE_ARGS_VARIABLE}
+     */
+    public static final EnvironmentValue RECOMPILE_ARGS = new EnvironmentValue(RECOMPILE_ARGS_VARIABLE, null);
+
+    /**
+     * Enables forking the recompile process into a separate JVM. <br>
+     * Default is false.
+     * <p>
+     * Environment Flag: {@value #ENABLE_RECOMPILE_FORK_VARIABLE}
+     */
+    public static final EnvironmentFlag ENABLE_RECOMPILE_FORK = new EnvironmentFlag(ENABLE_RECOMPILE_FORK_VARIABLE, false);
+
+    /**
+     * Additional arguments to pass to the recompile process in the UserDev repo when being forked. Added in cause you need to
+     * add more memory or something. <br>
+     * Default is null.
+     * <p>
+     * Environment Value: {@value #RECOMPILE_FORK_ARGS_VARIABLE}
+     */
+    public static final EnvironmentValue RECOMPILE_FORK_ARGS = new EnvironmentValue(RECOMPILE_FORK_ARGS_VARIABLE, null);
+
     private static final Marker ENV_CHECK = MarkerFactory.getMarker("forgegradle.env_check");
+
+    public static final class EnvironmentFlag {
+        private final String key;
+        private final String simpleKey;
+        private final boolean _default;
+
+        private EnvironmentFlag(String key, boolean _default) {
+            this.key = key;
+            this.simpleKey = key.replace("net.minecraftforge.gradle.", "fg.");
+            this._default = _default;
+        }
+
+        public boolean isEnabled() {
+            String           val = System.getProperty(key);
+            if (val == null) val = System.getProperty(simpleKey);
+            //if (val == null) val = System.getenv(key);
+            //if (val == null) val = System.getenv(simpleKey);
+            return val == null ? _default : Boolean.parseBoolean(val);
+        }
+    }
+
+    public static final class EnvironmentValue {
+        private final String key;
+        private final String simpleKey;
+        private final String _default;
+
+        private EnvironmentValue(String key, String _default) {
+            this.key = key;
+            this.simpleKey = key.replace("net.minecraftforge.gradle.", "fg.");
+            this._default = _default;
+        }
+
+        public String getValue() {
+            String           val = System.getProperty(key);
+            if (val == null) val = System.getProperty(simpleKey);
+            return val == null ? _default : val;
+        }
+    }
 
     public static void checkJavaRange(@Nullable JavaVersionParser.JavaVersion minVersionInclusive, @Nullable JavaVersionParser.JavaVersion maxVersionExclusive) {
         checkRange("java", JavaVersionParser.getCurrentJavaVersion(), minVersionInclusive, maxVersionExclusive, "", "");
@@ -69,7 +192,7 @@ public class EnvironmentChecks {
      */
     public static void checkEnvironment(Project project) {
         Logger logger = project.getLogger();
-        if (ENABLE_JAVA_CHECK) {
+        if (ENABLE_JAVA_CHECK.isEnabled()) {
             logger.debug(ENV_CHECK, "Checking Java version");
             checkJavaRange(
                     // Minimum must be update 101 as it's the first one to include Let's Encrypt certificates.
@@ -80,7 +203,7 @@ public class EnvironmentChecks {
             logger.debug(ENV_CHECK, "Java version check disabled by system property");
         }
 
-        if (ENABLE_GRADLE_CHECK) {
+        if (ENABLE_GRADLE_CHECK.isEnabled()) {
             logger.debug(ENV_CHECK, "Checking Gradle version");
             checkGradleRange(
                     GradleVersion.version("8.1"),
@@ -90,7 +213,7 @@ public class EnvironmentChecks {
             logger.debug(ENV_CHECK, "Gradle version check disabled by system property");
         }
 
-        if (ENABLE_CERTIFICATE_CHECK) {
+        if (ENABLE_CERTIFICATE_CHECK.isEnabled()) {
             logger.debug(ENV_CHECK, "Checking server connections");
             testServerConnection(Utils.FORGE_MAVEN);
             testServerConnection(Utils.MOJANG_MAVEN);
@@ -116,6 +239,7 @@ public class EnvironmentChecks {
     /**
      * Exception thrown when an environment check fails.
      */
+    @SuppressWarnings("serial")
     static class EnvironmentCheckFailedException extends RuntimeException {
         EnvironmentCheckFailedException(String message) {
             super(message);

@@ -8,6 +8,7 @@ package net.minecraftforge.gradle.userdev.util;
 import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
 import net.minecraftforge.gradle.common.util.Artifact;
 import net.minecraftforge.gradle.common.util.BaseRepo;
+import net.minecraftforge.gradle.common.util.EnvironmentChecks;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.Utils;
 
@@ -130,6 +131,9 @@ public class DeobfuscatingRepo extends BaseRepo {
 
     @Nullable
     private File findSource(Artifact artifact, String mapping) throws IOException {
+        if (!EnvironmentChecks.ENABLE_SOURCES.isEnabled())
+            return null;
+
         // Check if we have previously failed to retrieve sources for the artifact.
         // If so, don't attempt the download again.
         File noSourceFlag = cache(getArtifactPath(artifact, mapping) + ".nosources");

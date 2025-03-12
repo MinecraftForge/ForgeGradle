@@ -27,9 +27,6 @@ import java.util.Random;
 import javax.annotation.Nullable;
 
 public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
-
-    public static final boolean DEBUG = Boolean.getBoolean("fg.debugRepo");
-
     private final File cache;
     protected final Logger log;
     protected final String REPO_NAME = getClass().getSimpleName();
@@ -52,7 +49,7 @@ public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
     }
 
     protected void debug(String message) {
-        if (DEBUG)
+        if (EnvironmentChecks.DEBUG_REPOS.isEnabled())
             this.log.lifecycle(message);
     }
     protected void info(String message) {
