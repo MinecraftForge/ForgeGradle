@@ -187,6 +187,7 @@ public class DownloadAssetsTask extends DefaultTask
                         {
                             // download
                             ReadableByteChannel channel = Channels.newChannel(new URL(Constants.URL_ASSETS + "/" + asset.path).openStream());
+                            LOGGER.debug("Downloading from URL {}", new URL(Constants.URL_ASSETS + "/" + asset.path));
                             FileOutputStream fout = new FileOutputStream(file);
                             FileChannel fileChannel = fout.getChannel();
                             
