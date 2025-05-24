@@ -1,10 +1,26 @@
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
+    }
+}
+
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
 apply plugin: 'maven'
 
+project.ext {
+    GIT_INFO = gitInfo(rootProject.file('.'))
+}
+
 group = 'net.minecraftforge.gradle'
-version = '1.0-SNAPSHOT'
+version = "${project.ext.GIT_INFO.tag}.${project.ext.GIT_INFO.offset}"
+println "Version $version"
 archivesBaseName = 'ForgeGradle'
 targetCompatibility = '1.6'
 sourceCompatibility = '1.6'
@@ -12,7 +28,7 @@ sourceCompatibility = '1.6'
 repositories {
     maven {
         name = "forge"
-        url = "http://files.minecraftforge.net/maven"
+        url = "https://maven.minecraftforge.net/"
     }
     mavenCentral()
 }
@@ -58,14 +74,15 @@ artifacts { archives jar }
 
 uploadArchives {
     repositories {
-        if (project.hasProperty("filesmaven")) {
-            logger.info('Publishing to files server')
-
             mavenDeployer {
                 configuration = configurations.deployerJars
 
-                repository(url: project.filesmaven.url) {
-                    authentication(userName: project.filesmaven.username, privateKey: project.filesmaven.key)
+                if (System.env.MAVEN_USER) {
+                    repository(url: "https://maven.minecraftforge.net/") {
+                        authentication(userName: System.env.MAVEN_USER, password: System.env.MAVEN_PASSWORD)
+                    }
+                } else {
+                    repository(url: 'file://localhost/' + project.file('repo').getAbsolutePath())
                 }
 
                 pom {
@@ -114,10 +131,46 @@ uploadArchives {
                     }
                 }
             }
-        }
-        else
-        {
-            add project.repositories.mavenLocal()
-        }
     }
+}
+
+def gitInfo(dir) {
+    String.metaClass.rsplit = { String del, int limit = -1 ->
+        def lst = new ArrayList()
+        def x = 0, idx
+        def tmp = delegate
+        while ((idx = tmp.lastIndexOf(del)) != -1 && (limit == -1 || x++ < limit)) {
+            lst.add(0, tmp.substring(idx + del.length(), tmp.length()))
+            tmp = tmp.substring(0, idx)
+        }
+        lst.add(0, tmp)
+        return lst
+    }
+
+    def git = null
+    try {
+        git = org.eclipse.jgit.api.Git.open(dir)
+    } catch (org.eclipse.jgit.errors.RepositoryNotFoundException e) {
+        return [
+                tag: '0.0',
+                offset: '0',
+                hash: '00000000',
+                branch: 'master',
+                commit: '0000000000000000000000',
+                abbreviatedId: '00000000'
+        ]
+    }
+    def desc = git.describe().setLong(true).setTags(true).call().rsplit('-', 2)
+    def head = git.repository.exactRef('HEAD')
+    def longBranch = head.symbolic ? head?.target?.name : null // matches Repository.getFullBranch() but returning null when on a detached HEAD
+
+    def ret = [:]
+    ret.tag = desc[0]
+    ret.offset = desc[1]
+    ret.hash = desc[2]
+    ret.branch = longBranch != null ? org.eclipse.jgit.lib.Repository.shortenRefName(longBranch) : null
+    ret.commit = org.eclipse.jgit.lib.ObjectId.toString(head.objectId)
+    ret.abbreviatedId = head.objectId.abbreviate(8).name()
+
+    return ret
 }
