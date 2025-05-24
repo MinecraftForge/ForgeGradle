@@ -116,7 +116,7 @@ public class Constants
 
     // urls
     public static final String URL_MC_MANIFEST  = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
-    public static final String URL_ASSETS       = "http://resources.download.minecraft.net";
+    public static final String URL_ASSETS       = "https://resources.download.minecraft.net";
     public static final String URL_LIBRARY      = "https://libraries.minecraft.net/";
     public static final String URL_FORGE_MAVEN  = "https://maven.minecraftforge.net";
     public static final String URL_MCP_JSON     = URL_FORGE_MAVEN + "/de/oceanlabs/mcp/versions.json";
