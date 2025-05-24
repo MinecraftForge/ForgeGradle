@@ -16,7 +16,6 @@ apply plugin: 'maven'
 
 project.ext {
     GIT_INFO = gitInfo(rootProject.file('.'))
-    OLD_FORMAT = '1.2-SNAPSHOT'
 }
 
 group = 'net.minecraftforge.gradle'
@@ -172,7 +171,7 @@ uploadArchives {
 
         pom {
             groupId = project.group
-            version = project.hasProperty('oldFormat') ? OLD_FORMAT : project.version
+            version = project.version
             artifactId = project.archivesBaseName
             project {
                 name project.archivesBaseName
