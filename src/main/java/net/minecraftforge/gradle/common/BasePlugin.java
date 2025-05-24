@@ -215,8 +215,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
 
     public abstract void applyPlugin();
 
-    private static boolean displayBanner = true;
-
     private void getRemoteJsons()
     {
         // MCP json
@@ -257,25 +255,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                 "classifier", "srg",
                 "ext", "zip"
                 ));
-
-        LOGGER.warn("WARNING: You are using an unsupported version of ForgeGradle.");
-        LOGGER.warn("Please consider upgrading to ForgeGradle 5 and helping in the efforts to get old versions working on the modern toolchain.");
-        LOGGER.warn("See https://gist.github.com/TheCurle/fe7ad3ede188cbdd15c235cc75d52d4a for more info on contributing.");
-
-        if (!displayBanner)
-            return;
-
-        LOGGER.lifecycle("#################################################");
-        LOGGER.lifecycle("         ForgeGradle {}        ", this.getVersionString());
-        LOGGER.lifecycle("  https://github.com/MinecraftForge/ForgeGradle  ");
-        LOGGER.lifecycle("#################################################");
-        LOGGER.lifecycle("                 Powered by MCP                  ");
-        LOGGER.lifecycle("             http://modcoderpack.com             ");
-        LOGGER.lifecycle("     by: Searge, ProfMobius, R4wk, ZeuX          ");
-        LOGGER.lifecycle("     Fesh0r, IngisKahn, bspkrs, LexManos         ");
-        LOGGER.lifecycle("#################################################");
-
-        displayBanner = false;
     }
 
     private String getVersionString()
