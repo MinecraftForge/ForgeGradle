@@ -16,6 +16,7 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 
@@ -23,21 +24,28 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 import java.util.List;
 
 public abstract class RenameJarInPlace extends JarExec {
     private final Provider<RegularFile> tempOutput = this.workDir.map(s -> s.file("output.jar"));
     private final Provider<RegularFile> tempMappings = this.workDir.map(s -> s.file("mappings.tsrg"));
 
+    private boolean useArgsFile = false;
+
     public RenameJarInPlace() {
         getTool().set(Utils.FART);
         getArgs().addAll("--input", "{input}", "--output", "{output}", "--names", "{mappings}", "--lib", "{libraries}");
         this.getOutputs().upToDateWhen(task -> false);
+        this.getArgsFile().convention(workDir.map(d -> d.file("command_line_args.txt")));
     }
 
     @Override
-    protected List<String> filterArgs(List<String> args) {
-        return replaceArgsMulti(args, ImmutableMap.of(
+    protected List<String> filterArgs(List<String> args) throws IOException {
+        List<String> ret = replaceArgsMulti(args, ImmutableMap.of(
                         "{input}", getInput().get().getAsFile(),
                         "{output}", tempOutput.get().getAsFile(),
                         "{mappings}", this.tempMappings.get().getAsFile()),
@@ -45,6 +53,13 @@ public abstract class RenameJarInPlace extends JarExec {
                         .putAll("{libraries}", getLibraries().getFiles())
                         .build()
         );
+
+        if (!useArgsFile)
+            return ret;
+
+        File argsFile = getArgsFile().get().getAsFile();
+        Files.write(argsFile.toPath(), ret, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        return Arrays.asList("--cfg", argsFile.getAbsolutePath());
     }
 
     @Override
@@ -90,4 +105,20 @@ public abstract class RenameJarInPlace extends JarExec {
 
     @InputFile
     public abstract RegularFileProperty getInput();
+
+    @Internal
+    public abstract RegularFileProperty getArgsFile();
+
+    @Internal
+    public boolean getUseArgsFile() {
+        return this.useArgsFile;
+    }
+
+    public void setUseArgsFile(boolean value) {
+        this.useArgsFile = value;
+    }
+
+    public void useArgsFile() {
+        this.useArgsFile = true;
+    }
 }

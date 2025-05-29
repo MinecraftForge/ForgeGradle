@@ -153,7 +153,7 @@ public abstract class JarExec extends DefaultTask {
         }
     }
 
-    protected List<String> filterArgs(List<String> args) {
+    protected List<String> filterArgs(List<String> args) throws IOException {
         return args;
     }
 

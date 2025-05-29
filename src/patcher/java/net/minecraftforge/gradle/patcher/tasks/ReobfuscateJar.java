@@ -18,18 +18,21 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import com.google.common.collect.ImmutableMap;
 import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +44,7 @@ import java.util.zip.ZipOutputStream;
 public abstract class ReobfuscateJar extends JarExec {
     private boolean keepPackages = false;
     private boolean keepData = false;
+    private boolean useArgsFile = false;
 
     private final Provider<RegularFile> outputTemp = workDir.map(d -> d.file("output_temp.jar"));
 
@@ -48,6 +52,7 @@ public abstract class ReobfuscateJar extends JarExec {
         getTool().set(Utils.FART);
         getArgs().addAll("--input", "{input}", "--output", "{output}", "--names", "{srg}", "--lib", "{libraries}");
         getOutput().convention(workDir.map(d -> d.file("output.jar")));
+        getArgsFile().convention(workDir.map(d -> d.file("command_line_args.txt")));
     }
 
     @TaskAction
@@ -88,14 +93,21 @@ public abstract class ReobfuscateJar extends JarExec {
     }
 
     @Override
-    protected List<String> filterArgs(List<String> args) {
-        return replaceArgsMulti(args, ImmutableMap.of(
+    protected List<String> filterArgs(List<String> args) throws IOException {
+        List<String> ret = replaceArgsMulti(args, ImmutableMap.of(
                         "{input}", getInput().get().getAsFile(),
                         "{output}", outputTemp.get().getAsFile(),
                         "{srg}", getSrg().get().getAsFile()),
                 ImmutableMultimap.<String, Object>builder()
                         .putAll("{libraries}", getLibraries().getFiles())
                         .build());
+
+        if (!useArgsFile)
+            return ret;
+
+        File argsFile = getArgsFile().get().getAsFile();
+        Files.write(argsFile.toPath(), ret, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        return Arrays.asList("--cfg", argsFile.getAbsolutePath());
     }
 
     @InputFile
@@ -106,6 +118,9 @@ public abstract class ReobfuscateJar extends JarExec {
 
     @OutputFile
     public abstract RegularFileProperty getOutput();
+
+    @Internal
+    public abstract RegularFileProperty getArgsFile();
 
     /**
      * The libraries to use for inheritance data during the renaming process.
@@ -138,5 +153,18 @@ public abstract class ReobfuscateJar extends JarExec {
 
     public void filterData() {
         this.keepData = false;
+    }
+
+    @Internal
+    public boolean getUseArgsFile() {
+        return this.useArgsFile;
+    }
+
+    public void setUseArgsFile(boolean value) {
+        this.useArgsFile = value;
+    }
+
+    public void useArgsFile() {
+        this.useArgsFile = true;
     }
 }
