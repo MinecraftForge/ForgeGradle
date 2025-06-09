@@ -27,8 +27,6 @@ import javax.inject.Inject;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 /// The configuration options for Slime Launcher tasks.
 ///
@@ -592,15 +590,21 @@ public sealed abstract class SlimeLauncherOptions implements Named permits Slime
         this.workingDir = this.getObjects().directoryProperty().convention(this.getLayout().getProjectDirectory().dir("run").dir(name));
     }
 
-    protected abstract @Inject ObjectFactory getObjects();
+    abstract ObjectFactory getObjects();
 
-    protected abstract @Inject ProjectLayout getLayout();
+    abstract ProjectLayout getLayout();
 
     abstract non-sealed static class Impl extends SlimeLauncherOptions {
         @Inject
         public Impl(String name) {
             super(name);
         }
+
+        @Override
+        protected abstract @Inject ObjectFactory getObjects();
+
+        @Override
+        protected abstract @Inject ProjectLayout getLayout();
     }
 
     /// Creates a Slime Launcher options named domain object container.

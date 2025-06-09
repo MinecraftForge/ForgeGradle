@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 
 /** Internal utilities. Documented for maintainability, NOT for public consumption. */
 final class Util {
@@ -111,8 +112,16 @@ final class Util {
     /// @param project The project
     /// @param task    The task to run first
     static void runFirst(Project project, TaskProvider<?> task) {
-        // we need this local class so that the execution request is serialized properly
-        record SimpleTaskExecutionRequest(List<String> getArgs) implements TaskExecutionRequest, Serializable {
+        // copy the requests because the backed list isn't concurrent
+        var requests = new ArrayList<>(project.getGradle().getStartParameter().getTaskRequests());
+
+        // add the task to the front of the list
+        requests.add(0, new TaskExecutionRequest() {
+            @Override
+            public List<String> getArgs() {
+                return List.of(task.get().getPath());
+            }
+
             @Override
             public @Nullable String getProjectPath() {
                 return null;
@@ -122,38 +131,10 @@ final class Util {
             public @Nullable File getRootDir() {
                 return null;
             }
-
-            @Override
-            public String toString() {
-                return "SimpleTaskExecutionRequest{args=[%s]}".formatted(String.join(", ", this.getArgs));
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                return this == o || o instanceof SimpleTaskExecutionRequest that && Objects.equals(this.getArgs, that.getArgs);
-            }
-
-            @Override
-            public int hashCode() {
-                return Objects.hashCode(getArgs);
-            }
-        }
-
-        // copy the requests because the backed list isn't concurrent
-        var requests = new ArrayList<>(project.getGradle().getStartParameter().getTaskRequests());
-
-        // remove any existing requests for this task
-        requests.removeIf(request -> {
-            var args = request.getArgs();
-            if (args.size() != 1) return false;
-
-            return Objects.equals(args.get(0), task.getName());
         });
 
-        // add the task to the front of the list
-        requests.add(0, new SimpleTaskExecutionRequest(List.of(task.getName())));
-
         // set the new requests
+        project.getLogger().info("Adding task to beginning of task graph! Project: {}, Task: {}", project.getName(), task.getName());
         project.getGradle().getStartParameter().setTaskRequests(requests);
     }
 }
