@@ -28,7 +28,7 @@ final class Closures {
     /// swap out the [current thread's context class loader][Thread#setContextClassLoader(ClassLoader)] with that of the
     /// closure in order to force resolution of the groovy metaclass to the delegate object.
     ///
-    /// I'm sorry.
+    /// I'm very sorry.
     ///
     /// @see org.gradle.api.internal.AbstractTask.ClosureTaskAction#doExecute(org.gradle.api.Task)
     @SuppressWarnings({"rawtypes", "unchecked", "JavadocReference"})

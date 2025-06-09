@@ -1,13 +1,15 @@
-name: Publish
+name: Publish FG7
 
 on:
+  workflow_dispatch:
+
   push:
     branches: [ 'FG_7.0' ]
     paths:
-      - fg-plugin/**
       - '!.github/workflows/**'
       - '!README.md'
       - '!settings.gradle'
+      - 'fg-plugin/**'
 
 permissions:
   contents: read
