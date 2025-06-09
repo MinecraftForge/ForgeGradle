@@ -4,8 +4,6 @@ plugins {
 
 rootProject.name = 'forgegradle'
 
-include 'fg-plugin'
-
 dependencyResolutionManagement {
     repositories {
         maven { url = 'https://maven.minecraftforge.net/' }

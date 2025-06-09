@@ -5,11 +5,9 @@ on:
 
   push:
     branches: [ 'FG_7.0' ]
-    paths:
-      - '!.github/workflows/**'
-      - '!README.md'
-      - '!settings.gradle'
-      - 'fg-plugin/**'
+    paths-ignore:
+      - '.github/workflows/**'
+      - 'README.md'
 
 permissions:
   contents: read
@@ -19,7 +17,7 @@ jobs:
     uses: MinecraftForge/SharedActions/.github/workflows/gradle.yml@v0
     with:
       java: 21
-      gradle_tasks: ':fg-plugin:check :fg-plugin:publish'
+      gradle_tasks: 'check publish'
       artifact_name: 'forgegradle'
     secrets:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
