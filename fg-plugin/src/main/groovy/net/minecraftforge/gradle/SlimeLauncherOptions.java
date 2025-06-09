@@ -616,7 +616,7 @@ public sealed abstract class SlimeLauncherOptions implements Named permits Slime
     /// @param task The task to apply the options to
     final void apply(SlimeLauncherExec task) {
         if (this.mainClass.map(Util::nullIfEmpty).isPresent())
-            task.getMainClass().set(this.mainClass);
+            task.getBootstrapMainClass().set(this.mainClass);
 
         if (this.args.map(Util::nullIfEmpty).isPresent())
             task.getMcBootstrapArgs().set(this.args);

@@ -22,6 +22,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.JavaExec
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.language.base.plugins.LifecycleBasePlugin
@@ -112,7 +113,7 @@ import java.nio.file.Files
                 '--metadata', this.metadataZip.get().asFile.absolutePath,
                 '--')
 
-            this.args(this.mcBootstrapArgs.get().toArray())
+            this.args(this.mcBootstrapArgs.getOrElse(List.of()).toArray())
         }
 
         Files.createDirectories(this.workingDir.toPath())
@@ -125,6 +126,6 @@ import java.nio.file.Files
     /** The location of the {@code metadata.zip} artifact produced by the Minecraft Mavenizer. */
     abstract @InputFile RegularFileProperty getMetadataZip()
     abstract @Input Property<String> getBootstrapMainClass()
-    abstract @Input ListProperty<String> getMcBootstrapArgs()
-    abstract @Input Property<Boolean> getClient()
+    abstract @Input @Optional ListProperty<String> getMcBootstrapArgs()
+    abstract @Input @Optional Property<Boolean> getClient()
 }
