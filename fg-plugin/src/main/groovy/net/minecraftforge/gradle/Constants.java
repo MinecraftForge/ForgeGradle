@@ -9,23 +9,23 @@ package net.minecraftforge.gradle;
 /// Looking for attributes? They are in [MinecraftExtension.Attributes].
 final class Constants {
     // Caches -- BE CAREFUL when changing this
-    public static final String CACHES_LOCATION = /* gradleUserHomeDir + */ "caches/forge_gradle_7";
+    static final String CACHES_LOCATION = /* gradleUserHomeDir + */ "caches/forge_gradle_7";
 
-    public static final String FORGE_MAVEN = "https://maven.minecraftforge.net/";
+    static final String FORGE_MAVEN = "https://maven.minecraftforge.net/";
 
-    public static final String MCMAVEN_VERSION = "0.3.0";
-    public static final String MCMAVEN_DL_URL = "https://maven.minecraftforge.net/net/minecraftforge/minecraft-mavenizer/" + MCMAVEN_VERSION + "/minecraft-mavenizer-" + MCMAVEN_VERSION + ".jar";
-    public static final String MCMAVEN_MAIN = "net.minecraftforge.mcmaven.cli.Main";
-    public static final int MCMAVEN_JAVA_VERSION = 21;
+    static final String MCMAVEN_VERSION = "0.3.0";
+    static final String MCMAVEN_DL_URL = "https://maven.minecraftforge.net/net/minecraftforge/minecraft-mavenizer/" + MCMAVEN_VERSION + "/minecraft-mavenizer-" + MCMAVEN_VERSION + ".jar";
+    static final String MCMAVEN_MAIN = "net.minecraftforge.mcmaven.cli.Main";
+    static final int MCMAVEN_JAVA_VERSION = 21;
 
-    public static final String SL_VERSION = "0.1.0";
-    public static final String SL_DL_URL = "https://maven.minecraftforge.net/net/minecraftforge/slime-launcher/" + SL_VERSION + "/slime-launcher-" + SL_VERSION + ".jar";
-    public static final String SLIMELAUNCHER_MAIN = "net.minecraftforge.launcher.Main";
-    public static final int SLIMELAUNCHER_JAVA_VERSION = 8;
+    static final String SL_VERSION = "0.1.0";
+    static final String SL_DL_URL = "https://maven.minecraftforge.net/net/minecraftforge/slime-launcher/" + SL_VERSION + "/slime-launcher-" + SL_VERSION + ".jar";
+    static final String SLIMELAUNCHER_MAIN = "net.minecraftforge.launcher.Main";
+    static final int SLIMELAUNCHER_JAVA_VERSION = 8;
 
     /// Use these with [java.text.MessageFormat#format(String, Object...)].
-    public static final class Messages {
-        public static final String WELCOME = """
+    static final class Messages {
+        static final String WELCOME = """
             Welcome to ForgeGradle 7.0!
             
             Here are some release highlights:
