@@ -33,6 +33,7 @@ import org.jetbrains.annotations.UnknownNullability;
 import javax.inject.Inject;
 import java.io.File;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -49,7 +50,7 @@ abstract class SyncMinecraftMaven extends DefaultTask implements ForgeGradleTask
     /** The name of the task that is used to sync the Minecraft Maven. */
     static final String NAME = "syncMinecraftMaven";
 
-    static TaskProvider<SyncMinecraftMaven> register(Project project, Collection<? extends ModuleVersionSelector> requests) {
+    static TaskProvider<SyncMinecraftMaven> register(Project project, Collection<? extends MinecraftDependency> requests) {
         return Util.runFirst(project, project.getTasks().register(NAME,
             SyncMinecraftMaven.class,
             task -> task.getRequests().addAll(Request.collect(requests))
@@ -105,14 +106,20 @@ abstract class SyncMinecraftMaven extends DefaultTask implements ForgeGradleTask
     }
 
     private List<String> argsFor(Request request) {
-        return List.of(
+        var args = new ArrayList<String>();
+        args.addAll(List.of(
             "--maven",
             "--cache", this.getCaches().get().getAsFile().getAbsolutePath(),
             "--output", this.getOutput().get().getAsFile().getAbsolutePath(),
             "--jdk-cache", this.getCaches().dir("jdks").get().getAsFile().getAbsolutePath(),
             "--artifact", request.module,
             "--version", request.version
-        );
+        ));
+        if ("parchment".equals(request.mappings.channel())) {
+            args.add("--parchment");
+            args.add(request.mappings.version());
+        }
+        return args;
     }
 
     // JavaExec
@@ -125,15 +132,16 @@ abstract class SyncMinecraftMaven extends DefaultTask implements ForgeGradleTask
     protected abstract @InputDirectory DirectoryProperty getOutput();
     protected abstract @Input @Optional SetProperty<Request> getRequests();
 
-    public record Request(String module, String version) implements Serializable {
-        public Request(ModuleVersionSelector module) {
+    public record Request(String module, String version, MinecraftExtension.Mappings mappings) implements Serializable {
+        public Request(MinecraftDependency module) {
             this(
                 "%s:%s".formatted(module.getGroup(), module.getName()),
-                Objects.requireNonNull(module.getVersion(), "Minecraft artifact must have a version")
+                Objects.requireNonNull(module.getVersion(), "Minecraft artifact must have a version"),
+                Objects.requireNonNull(module.getMappings(), "Minecraft dependencies are not finished")
             );
         }
 
-        private static Set<Request> collect(Collection<? extends ModuleVersionSelector> requests) {
+        private static Set<Request> collect(Collection<? extends MinecraftDependency> requests) {
             return requests.stream().map(Request::new).collect(Collectors.toSet());
         }
     }
