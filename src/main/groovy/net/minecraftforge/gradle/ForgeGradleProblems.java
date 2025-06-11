@@ -182,7 +182,7 @@ record ForgeGradleProblems(Problems problems, Predicate<String> properties) impl
             .withException(throwable)
             .stackLocation()
             .solution("Re-run the synchronization for your Gradle project.")
-            .solution("Manually run the " + MinecraftMavenExec.NAME + " task if necessary.")
+            .solution("Manually run the " + SyncMinecraftMaven.NAME + " task if necessary.")
             .solution(HELP_MESSAGE)
         );
     }

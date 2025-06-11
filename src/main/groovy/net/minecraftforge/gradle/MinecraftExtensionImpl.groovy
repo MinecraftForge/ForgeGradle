@@ -219,7 +219,7 @@ import java.util.concurrent.Callable
                     it.attributes(this.&applyAttributes)
             }
 
-            MinecraftMavenExec.register(project, MinecraftExtensionImpl.this.globalCaches, this.minecraft)
+            SyncMinecraftMaven.register(project, MinecraftExtensionImpl.this.globalCaches, this.minecraft)
 
             var repositories = project.extensions.extraProperties.has(EXT_MAVEN_REPOS)
                 ? new AppliedRepos(project.extensions.extraProperties.get(EXT_MAVEN_REPOS) as List<? extends MavenArtifactRepository>)

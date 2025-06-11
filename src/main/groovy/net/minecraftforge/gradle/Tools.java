@@ -17,29 +17,21 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.UnknownNullability;
 
 import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
-import java.util.Objects;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 import static net.minecraftforge.gradle.ForgeGradlePlugin.LOGGER;
 
-enum DefaultTools {
+enum Tools {
     MINECRAFT_MAVEN("minecraft-maven-" + Constants.MCMAVEN_VERSION + ".jar", Constants.MCMAVEN_DL_URL),
     SLIME_LAUNCHER("slime-launcher-" + Constants.SL_VERSION + ".jar", Constants.SL_DL_URL);
 
     private final String fileName;
     private final String downloadUrl;
 
-    private static @UnknownNullability DirectoryProperty caches;
-
-    DefaultTools(String fileName, String downloadUrl) {
+    Tools(String fileName, String downloadUrl) {
         this.fileName = fileName;
         this.downloadUrl = downloadUrl;
     }

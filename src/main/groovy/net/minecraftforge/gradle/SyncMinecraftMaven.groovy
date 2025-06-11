@@ -9,12 +9,10 @@ import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
 import groovy.transform.PackageScopeTarget
 import org.gradle.api.Project
-import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.problems.Problems
 import org.gradle.api.provider.Property
-import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.JavaExec
@@ -30,16 +28,16 @@ import javax.inject.Inject
  */
 @CompileStatic
 @PackageScope([PackageScopeTarget.CLASS, PackageScopeTarget.FIELDS])
-abstract class MinecraftMavenExec extends JavaExec {
+abstract class SyncMinecraftMaven extends JavaExec {
     /** The name of the task that is used to sync the Minecraft Maven. */
     static final String NAME = 'syncMinecraftMaven'
 
-    @PackageScope static TaskProvider<MinecraftMavenExec> register(Project project, DirectoryProperty globalCaches, Dependency dependency) {
-        project.tasks.register(NAME, MinecraftMavenExec) {
+    @PackageScope static TaskProvider<SyncMinecraftMaven> register(Project project, DirectoryProperty globalCaches, Dependency dependency) {
+        project.tasks.register(NAME, SyncMinecraftMaven) {
             it.group = 'Build Setup'
             it.description = 'Syncs the Minecraft Maven dependencies.'
 
-            it.classpath = it.objectFactory.fileCollection().from(DefaultTools.MINECRAFT_MAVEN.get(globalCaches, it.providerFactory))
+            it.classpath = it.objectFactory.fileCollection().from(Tools.MINECRAFT_MAVEN.get(globalCaches, it.providerFactory))
 
             it.cacheDir.set globalCaches.dir('mc-maven/cache').map(it.problems.ensureDirectory())
             it.jdkCacheDir.set globalCaches.dir('mc-maven/cache/jdks').map(it.problems.ensureDirectory())
@@ -62,7 +60,7 @@ abstract class MinecraftMavenExec extends JavaExec {
      * @param classpath The classpath containing the Minecraft Mavenizer.
      */
     @Inject
-    MinecraftMavenExec(Problems problems) {
+    SyncMinecraftMaven(Problems problems) {
         this.problems = new ForgeGradleProblems(problems, this.providerFactory)
 
         this.mainClass.convention(Constants.MCMAVEN_MAIN)
