@@ -167,7 +167,7 @@ import java.util.concurrent.Callable
         final NamedDomainObjectContainer<SlimeLauncherOptions> runs
         private final MapProperty<String, RunConfig> configs
 
-        private final ActionableLazy<AccessTransformersContainer> atContainer = ActionableLazy.of {
+        private final Lazy.Actionable<AccessTransformersContainer> atContainer = Lazy.Actionable.of {
             this.project.pluginManager.apply('net.minecraftforge.accesstransformers')
             AccessTransformersContainer.register(this.project, Attribute.of('net.minecraftforge.gradle.accesstransformed', Boolean)) { }
         }

@@ -54,7 +54,7 @@ import java.nio.file.Files
             task.inherit(configs, options.name)
             options.apply(task)
 
-            task.classpath DefaultTools.SLIME_LAUNCHER.get(globalCaches, task.providerFactory)
+            task.classpath Tools.SLIME_LAUNCHER.get(globalCaches, task.providerFactory)
 
             if (task.buildAllProjects)
                 task.dependsOn project.allprojects.collect { it.tasks.named(LifecycleBasePlugin.ASSEMBLE_TASK_NAME) }.toArray()

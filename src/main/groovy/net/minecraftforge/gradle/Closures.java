@@ -12,6 +12,7 @@ import org.codehaus.groovy.runtime.InvokerInvocationException;
 import org.gradle.api.Action;
 import org.jetbrains.annotations.UnknownNullability;
 
+import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -105,6 +106,14 @@ final class Closures {
     }
 
     static <R> Closure<R> supplier(Object owner, Supplier<? extends R> supplier) {
+        return callable(owner, supplier::get);
+    }
+
+    static <R> Closure<R> callable(Callable<? extends R> supplier) {
+        return callable(ReflectionUtils.getCallingClass(), supplier);
+    }
+
+    static <R> Closure<R> callable(Object owner, Callable<? extends R> supplier) {
         return new Supplying<>(owner, supplier);
     }
 
@@ -180,16 +189,16 @@ final class Closures {
     }
 
     private static final class Supplying<R> extends Closure<R> {
-        private final Supplier<? extends R> supplier;
+        private final Callable<? extends R> supplier;
 
-        private Supplying(Object owner, Supplier<? extends R> supplier) {
+        private Supplying(Object owner, Callable<? extends R> supplier) {
             super(owner, owner);
             this.supplier = supplier;
         }
 
         @SuppressWarnings("unused") // invoked by Groovy
-        public R doCall() {
-            return this.supplier.get();
+        public R doCall() throws Exception {
+            return this.supplier.call();
         }
     }
 
