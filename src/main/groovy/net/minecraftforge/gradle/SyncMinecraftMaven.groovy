@@ -32,23 +32,25 @@ abstract class SyncMinecraftMaven extends JavaExec {
     /** The name of the task that is used to sync the Minecraft Maven. */
     static final String NAME = 'syncMinecraftMaven'
 
-    @PackageScope static TaskProvider<SyncMinecraftMaven> register(Project project, DirectoryProperty globalCaches, Dependency dependency) {
-        project.tasks.register(NAME, SyncMinecraftMaven) {
-            it.group = 'Build Setup'
-            it.description = 'Syncs the Minecraft Maven dependencies.'
+    @PackageScope static TaskProvider<SyncMinecraftMaven> register(Project project, Dependency dependency) {
+        project.tasks.register(NAME, SyncMinecraftMaven) { task ->
+            final plugin = project.plugins.getPlugin(ForgeGradlePlugin)
 
-            it.classpath = it.objectFactory.fileCollection().from(Tools.MINECRAFT_MAVEN.get(globalCaches, it.providerFactory))
+            task.group = 'Build Setup'
+            task.description = 'Syncs the Minecraft Maven dependencies.'
 
-            it.cacheDir.set globalCaches.dir('mc-maven/cache').map(it.problems.ensureDirectory())
-            it.jdkCacheDir.set globalCaches.dir('mc-maven/cache/jdks').map(it.problems.ensureDirectory())
-            it.outputDir.set globalCaches.dir('mc-maven/output').map(it.problems.ensureDirectory())
+            task.classpath = task.objectFactory.fileCollection().from(plugin.getTool(Tools.MINECRAFT_MAVEN))
 
-            it.artifact.set "${dependency.group}:${dependency.name}".toString()
-            it.artifactVersion.set dependency.version
+            task.cacheDir.set plugin.globalCaches.dir('mc-maven/cache').map(task.problems.ensureDirectory())
+            task.jdkCacheDir.set plugin.globalCaches.dir('mc-maven/cache/jdks').map(task.problems.ensureDirectory())
+            task.outputDir.set plugin.globalCaches.dir('mc-maven/output').map(task.problems.ensureDirectory())
+
+            task.artifact.set "${dependency.group}:${dependency.name}".toString()
+            task.artifactVersion.set dependency.version
         }.tap {
             // TODO [ForgeGradle7][MinecraftMaven] This might cause problems if a consumer manually runs this task with custom arguments.
             //  Consider re-implementing Util#runFirst.
-            Util.runFirst project, it
+            Util.runFirst(project, it)
         }
     }
 

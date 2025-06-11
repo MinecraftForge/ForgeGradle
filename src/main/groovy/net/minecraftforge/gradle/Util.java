@@ -4,7 +4,9 @@
  */
 package net.minecraftforge.gradle;
 
+import groovy.lang.Closure;
 import org.gradle.TaskExecutionRequest;
+import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Provider;
@@ -15,7 +17,6 @@ import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -136,5 +137,59 @@ final class Util {
         // set the new requests
         project.getLogger().info("Adding task to beginning of task graph! Project: {}, Task: {}", project.getName(), task.getName());
         project.getGradle().getStartParameter().setTaskRequests(requests);
+    }
+
+    static <T> ActionableLazy<T> lazy(Callable<T> callable) {
+        return lazy(Closures.callable(callable));
+    }
+
+    static <T> ActionableLazy<T> lazy(Closure<T> closure) {
+        return new ActionableLazy.Simple<>(closure);
+    }
+
+    sealed interface ActionableLazy<T> extends Supplier<T>, Callable<T> {
+        boolean isPresent();
+
+        default void ifPresent(Action<? super T> action) {
+            if (this.isPresent())
+                action.execute(this.get());
+        }
+
+        void map(Action<? super T> action);
+
+        @Override
+        default T call() {
+            return this.get();
+        }
+
+        /// Represents a lazily computed value with the ability to optionally work with it using [#ifPresent(Action)] and
+        /// safely mutate it using [#map(Action)].
+        final class Simple<T> implements ActionableLazy<T> {
+            private final Closure<T> closure;
+            private @Nullable T value;
+
+            private boolean present = false;
+
+            private Simple(Closure<T> closure) {
+                this.closure = closure.compose(Closures.runnable(() -> this.present = true));
+            }
+
+            public void map(Action<? super T> action) {
+                this.present = true;
+                this.closure.andThen(Closures.<T>unaryOperator(value -> {
+                    action.execute(value);
+                    return value;
+                }));
+            }
+
+            public boolean isPresent() {
+                return this.present;
+            }
+
+            @Override
+            public T get() {
+                return this.value == null ? this.value = Closures.invoke(this.closure) : this.value;
+            }
+        }
     }
 }

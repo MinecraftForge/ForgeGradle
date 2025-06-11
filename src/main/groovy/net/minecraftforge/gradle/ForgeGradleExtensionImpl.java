@@ -5,9 +5,10 @@
 package net.minecraftforge.gradle;
 
 import org.gradle.api.plugins.ExtensionAware;
+import org.gradle.api.plugins.PluginAware;
 
 record ForgeGradleExtensionImpl() implements ForgeGradleExtension {
-    static void register(ExtensionAware target) {
+    static <T extends ExtensionAware & PluginAware> void register(T target) {
         target.getExtensions().add(
             ForgeGradleExtension.class,
             ForgeGradleExtension.NAME,

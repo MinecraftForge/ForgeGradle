@@ -39,22 +39,24 @@ import java.nio.file.Files
  */
 @CompileStatic
 @PackageScope abstract class SlimeLauncherExec extends JavaExec {
-    @PackageScope static TaskProvider<SlimeLauncherExec> register(Project project, SlimeLauncherOptions options, Map<String, RunConfig> configs, DirectoryProperty globalCaches, Dependency dependency, Provider<RegularFile> metadataZip) {
+    @PackageScope static TaskProvider<SlimeLauncherExec> register(Project project, SlimeLauncherOptions options, Map<String, RunConfig> configs, Dependency dependency, Provider<RegularFile> metadataZip) {
         project.tasks.register(options.taskName.get(), SlimeLauncherExec) { task ->
+            final plugin = project.plugins.getPlugin(ForgeGradlePlugin)
+
             task.description = "Runs the '$options.name' Slime Launcher run configuration."
 
             task.classpath = task.objectFactory.fileCollection().from(
                 task.providerFactory.provider { task.project.extensions.getByType(JavaPluginExtension).sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).runtimeClasspath }
             )
 
-            var caches = task.objectFactory.directoryProperty().value(globalCaches.dir("slime-launcher/cache/${dependency.group.replace('.', '/')}/${dependency.name}/${dependency.version}"))
+            var caches = task.objectFactory.directoryProperty().value(plugin.globalCaches.dir("slime-launcher/cache/${dependency.group.replace('.', '/')}/${dependency.name}/${dependency.version}"))
             task.cacheDir.set caches.map(task.problems.ensureDirectory())
             task.metadataZip.set metadataZip
 
             task.inherit(configs, options.name)
             options.apply(task)
 
-            task.classpath Tools.SLIME_LAUNCHER.get(globalCaches, task.providerFactory)
+            task.classpath plugin.getTool(Tools.SLIME_LAUNCHER)
 
             if (task.buildAllProjects)
                 task.dependsOn project.allprojects.collect { it.tasks.named(LifecycleBasePlugin.ASSEMBLE_TASK_NAME) }.toArray()

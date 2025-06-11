@@ -88,6 +88,18 @@ record ForgeGradleProblems(Problems problems, Predicate<String> properties) impl
             .solution("Use a valid plugin target (Project, Settings, Gradle)")
             .solution(HELP_MESSAGE));
     }
+
+    RuntimeException pluginNotYetApplied(Exception e) {
+        return this.getReporter().throwing(e, id("plugin-not-yet-applied", "ForgeGradle is not applied"), spec -> spec
+            .details("""
+                Attempted to get details from the ForgeGradle plugin, but it has not yet been applied to the target.""")
+            .severity(Severity.ERROR)
+            .stackLocation()
+            .solution("Apply the ForgeGradle plugin before attempting to use it from the target's plugin manager.")
+            .solution("Apply the ForgeGradle plugin before attempting to register any of its tasks that require in-house caching or tools.")
+            .solution(HELP_MESSAGE)
+        );
+    }
     //endregion
 
     //region Minecraft

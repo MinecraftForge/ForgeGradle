@@ -36,7 +36,15 @@ enum Tools {
         this.downloadUrl = downloadUrl;
     }
 
-    public Provider<File> get(DirectoryProperty cachesDir, ProviderFactory providers) {
+    /// Gets a provider for this tool using the given caches directory and provider factory.
+    ///
+    /// @param cachesDir The caches directory to store the tool
+    /// @param providers The provider factory to use
+    /// @return A provider for the tool as a [file][File]
+    /// @deprecated Use [ForgeGradlePlugin#getTool(Tools)] <- [org.gradle.api.plugins.PluginContainer#getPlugin(Class)]
+    ///  <- [org.gradle.api.plugins.PluginAware#getPlugins()]
+    @Deprecated
+    Provider<File> get(DirectoryProperty cachesDir, ProviderFactory providers) {
         return providers.of(Source.class, spec -> spec.parameters(parameters -> {
             parameters.getInputFile().set(cachesDir.file("tools/" + this.fileName));
             parameters.getDownloadUrl().set(this.downloadUrl);

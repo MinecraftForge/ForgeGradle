@@ -12,6 +12,7 @@ import groovy.transform.PackageScopeTarget
 import groovy.transform.stc.ClosureParams
 import groovy.transform.stc.SimpleType
 import net.minecraftforge.accesstransformers.gradle.AccessTransformersContainer
+import net.minecraftforge.accesstransformers.gradle.AccessTransformersExtension
 import net.minecraftforge.util.data.json.JsonData
 import net.minecraftforge.util.data.json.RunConfig
 import org.gradle.api.NamedDomainObjectContainer
@@ -31,6 +32,7 @@ import org.gradle.api.flow.FlowScope
 import org.gradle.api.initialization.Settings
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.ExtensionAware
+import org.gradle.api.plugins.PluginAware
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
@@ -46,11 +48,8 @@ import java.util.concurrent.Callable
     private static final String EXT_MAVEN_REPOS = 'fg_mc_maven_repos'
     private static final String EXT_MAPPINGS = 'fg_mc_mappings'
 
-    private final ForgeGradleProblems problems
+    private final ForgeGradlePlugin plugin
     private final ObjectFactory objects
-
-    // Caches
-    private final DirectoryProperty globalCaches
 
     // MCMaven
     private final DirectoryProperty output
@@ -58,10 +57,9 @@ import java.util.concurrent.Callable
     // Dependencies
     private final Property<Mappings> mappingsProp
 
-    @PackageScope static void register(
-        ExtensionAware target,
-        DirectoryProperty globalCaches,
-        ForgeGradleProblems problems,
+    @PackageScope static <T extends ExtensionAware & PluginAware> void register(
+        T target,
+        ForgeGradlePlugin plugin,
         Callable<? extends FlowScope> flowScope,
         Callable<? extends FlowProviders> flowProviders,
         Callable<? extends ObjectFactory> objects,
@@ -70,7 +68,7 @@ import java.util.concurrent.Callable
         Callable<? extends FileSystemOperations> fileSystemOperations,
         Callable<? extends ArchiveOperations> archiveOperations
     ) {
-        final minecraft = new MinecraftExtensionImpl(globalCaches, problems, objects.call())
+        final minecraft = new MinecraftExtensionImpl(plugin, objects.call())
 
         if (target instanceof Project) {
             target.extensions.add(MinecraftExtension.ForProject, MinecraftExtension.NAME, minecraft.forProject(target, flowScope.call(), flowProviders.call(), layout.call(), providers.call(), fileSystemOperations.call(), archiveOperations.call()))
@@ -81,15 +79,17 @@ import java.util.concurrent.Callable
         }
     }
 
-    private MinecraftExtensionImpl(DirectoryProperty globalCaches, ForgeGradleProblems problems, ObjectFactory objects) {
-        this.problems = problems
+    private MinecraftExtensionImpl(ForgeGradlePlugin plugin, ObjectFactory objects) {
+        this.plugin = plugin
         this.objects = objects
 
-        this.globalCaches = globalCaches
-
-        this.output = objects.directoryProperty().convention(this.globalCaches.dir('mc-maven/output').map(problems.ensureDirectory()))
+        this.output = objects.directoryProperty().convention(plugin.globalCaches.dir('mc-maven/output').map(problems.ensureDirectory()))
 
         this.mappingsProp = objects.property(Mappings)
+    }
+
+    @PackageScope ForgeGradleProblems getProblems() {
+        this.plugin.enhancedProblems
     }
 
     private MinecraftExtension forSettings(Settings target) {
@@ -167,7 +167,7 @@ import java.util.concurrent.Callable
         final NamedDomainObjectContainer<SlimeLauncherOptions> runs
         private final MapProperty<String, RunConfig> configs
 
-        private final Lazy.Actionable<AccessTransformersContainer> atContainer = Lazy.Actionable.of {
+        private final Util.ActionableLazy<AccessTransformersContainer> atContainer = Util.lazy {
             this.project.pluginManager.apply('net.minecraftforge.accesstransformers')
             AccessTransformersContainer.register(this.project, Attribute.of('net.minecraftforge.gradle.accesstransformed', Boolean)) { }
         }
@@ -219,7 +219,7 @@ import java.util.concurrent.Callable
                     it.attributes(this.&applyAttributes)
             }
 
-            SyncMinecraftMaven.register(project, MinecraftExtensionImpl.this.globalCaches, this.minecraft)
+            SyncMinecraftMaven.register(project, this.minecraft)
 
             var repositories = project.extensions.extraProperties.has(EXT_MAVEN_REPOS)
                 ? new AppliedRepos(project.extensions.extraProperties.get(EXT_MAVEN_REPOS) as List<? extends MavenArtifactRepository>)
@@ -234,7 +234,7 @@ import java.util.concurrent.Callable
             if (!repositories.mclibs)
                 MinecraftExtensionImpl.this.problems.reportMcLibsMavenNotDeclared()
 
-            var cacheDir = MinecraftExtensionImpl.this.globalCaches.dir("slime-launcher/cache/${this.minecraft.group.replace('.', '/')}/${this.minecraft.name}/${this.minecraft.version}").map(MinecraftExtensionImpl.this.problems.ensureDirectory())
+            var cacheDir = MinecraftExtensionImpl.this.plugin.globalCaches.dir("slime-launcher/cache/${this.minecraft.group.replace('.', '/')}/${this.minecraft.name}/${this.minecraft.version}").map(MinecraftExtensionImpl.this.problems.ensureDirectory())
             var metadataDir = MinecraftExtensionImpl.this.objects.directoryProperty().value(cacheDir).dir('metadata').map(MinecraftExtensionImpl.this.problems.ensureDirectory())
             var metadataZip = MinecraftExtensionImpl.this.output.file(Util.artifactPath(this.minecraft.group, this.minecraft.name, this.minecraft.version, 'metadata', 'zip'))
 
@@ -254,13 +254,13 @@ import java.util.concurrent.Callable
             }
 
             this.runs.forEach { options ->
-                SlimeLauncherExec.register(project, options, this.configs.getOrElse(Map.of()), MinecraftExtensionImpl.this.globalCaches, this.minecraft, metadataZip)
+                SlimeLauncherExec.register(project, options, this.configs.getOrElse(Map.of()), this.minecraft, metadataZip)
             }
 
             flowScope.always(ForgeGradleFlowAction.WelcomeMessage) {
                 it.parameters {
                     it.failure.set flowProviders.buildWorkResult.map { it.failure.orElse(null) }
-                    it.messagesDir.set MinecraftExtensionImpl.this.globalCaches.dir('messages')
+                    it.messagesDir.set MinecraftExtensionImpl.this.plugin.globalCaches.dir('messages')
                     it.displayOption.set this.providers.gradleProperty('net.minecraftforge.gradle.messages.welcome').map {
                         ForgeGradleFlowAction.WelcomeMessage.DisplayOption.valueOf(it.toUpperCase(Locale.ROOT))
                     }
