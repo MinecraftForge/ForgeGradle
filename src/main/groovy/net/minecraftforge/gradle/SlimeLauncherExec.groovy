@@ -39,14 +39,14 @@ import java.nio.file.Files
  */
 @CompileStatic
 @PackageScope abstract class SlimeLauncherExec extends JavaExec {
-    @PackageScope static TaskProvider<SlimeLauncherExec> register(Project project, SlimeLauncherOptions options, Map<String, RunConfig> configs, Dependency dependency, Provider<RegularFile> metadataZip) {
-        project.tasks.register(options.taskName.get(), SlimeLauncherExec) { task ->
+    @PackageScope static TaskProvider<SlimeLauncherExec> register(Project project, SourceSet sourceSet, SlimeLauncherOptions options, Map<String, RunConfig> configs, Dependency dependency, Provider<RegularFile> metadataZip) {
+        project.tasks.register(sourceSet.getTaskName('run', options.name), SlimeLauncherExec) { task ->
             final plugin = project.plugins.getPlugin(ForgeGradlePlugin)
 
             task.description = "Runs the '$options.name' Slime Launcher run configuration."
 
             task.classpath = task.objectFactory.fileCollection().from(
-                task.providerFactory.provider { task.project.extensions.getByType(JavaPluginExtension).sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).runtimeClasspath }
+                task.providerFactory.provider { sourceSet.runtimeClasspath }
             )
 
             var caches = task.objectFactory.directoryProperty().value(plugin.globalCaches.dir("slime-launcher/cache/${dependency.group.replace('.', '/')}/${dependency.name}/${dependency.version}"))

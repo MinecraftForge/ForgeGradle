@@ -8,7 +8,6 @@ import org.gradle.api.Action;
 import org.gradle.api.Transformer;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
-import org.gradle.api.artifacts.FileCollectionDependency;
 import org.gradle.api.file.Directory;
 import org.gradle.api.problems.Problem;
 import org.gradle.api.problems.ProblemGroup;
@@ -175,7 +174,7 @@ record ForgeGradleProblems(Problems problems, Predicate<String> properties) impl
                 This means that it cannot be substituted with file or project dependencies.
                 Expected: (implementation of) %s, Actual: '%s
                 Dependency: '%s'"""
-                .formatted(ExternalModuleDependency.class.getName(), dependency.getClass().getName(), depToString(dependency)))
+                .formatted(ExternalModuleDependency.class.getName(), dependency.getClass().getName(), Util.toString(dependency)))
             .severity(Severity.ERROR)
             .stackLocation()
             .solution("Declare a module dependency instead.")
@@ -199,49 +198,24 @@ record ForgeGradleProblems(Problems problems, Predicate<String> properties) impl
         );
     }
 
-    RuntimeException multipleMinecraftDependencies(Dependency current, Dependency replacement) {
-        return this.getReporter().throwing(new IllegalArgumentException("Cannot have more than one Minecraft dependency"), id("multiple-minecraft-dependencies", "Multiple Minecraft dependencies declared"), spec -> spec
-            .details("""
-                Attempted to use multiple Minecraft dependencies. Only one can be declared
-                Current: %s, Replacement: '%s'"""
-                .formatted(depToString(current), depToString(replacement)))
-            .severity(Severity.ERROR)
-            .stackLocation()
-            .solution("Declare only one Minecraft dependency using `minecraft.dep(...)`.")
-            .solution(HELP_MESSAGE)
-        );
-    }
-
     RuntimeException changingMinecraftDependency(Dependency dependency) {
         return this.getReporter().throwing(new IllegalArgumentException("Minecraft dependency cannot be changing"), id("changing-minecraft-dependency", "Minecraft dependency marked as changing"), spec -> spec
             .details("""
                 Attempted to use a Minecraft dependency that was marked as changing.
                 This is currently unsupported.
                 Dependency: %s"""
-                .formatted(depToString(dependency)))
+                .formatted(Util.toString(dependency)))
             .severity(Severity.ERROR)
             .solution("Do not mark the Minecraft dependency as changing.")
             .solution(HELP_MESSAGE)
-        );
-    }
-
-    private static String depToString(Dependency dependency) {
-        var group = dependency.getGroup();
-        var version = dependency.getVersion();
-        var reason = dependency.getReason();
-        return "(%s) %s%s%s%s%s".formatted(
-            dependency.getClass().getName(),
-            group != null ? group + ':' : "",
-            dependency.getName(),
-            version != null ? ':' + version : "",
-            reason != null ? " (" + reason + ')' : "",
-            dependency instanceof FileCollectionDependency files ? " [%s]".formatted(String.join(", ", files.getFiles().getFiles().stream().map(File::getAbsolutePath).map(CharSequence.class::cast)::iterator)) : ""
         );
     }
     //endregion
 
     //region Minecraft Maven
     void reportMcMavenNotDeclared() {
+        if (!properties.test("net.minecraftforge.gradle.warnings.missingRepository.mcmaven")) return;
+
         this.getReporter().report(id("minecraft-maven-not-declared", "Minecraft Maven not declared"), spec -> spec
             .details("""
                 ForgeGradle was configured to sync the Minecraft Maven, but it was not declared as a repository!
@@ -253,6 +227,8 @@ record ForgeGradleProblems(Problems problems, Predicate<String> properties) impl
     }
 
     void reportMcLibsMavenNotDeclared() {
+        if (!properties.test("net.minecraftforge.gradle.warnings.missingRepository.mclibs")) return;
+
         this.getReporter().report(id("minecraft-libs-maven-not-declared", "Minecraft Libraries maven not declared"), spec -> spec
             .details("""
                 ForgeGradle was configured to sync the Minecraft Maven, but the Minecraft Libraries maven was not declared!
@@ -265,6 +241,8 @@ record ForgeGradleProblems(Problems problems, Predicate<String> properties) impl
     }
 
     void reportForgeMavenNotDeclared() {
+        if (!properties.test("net.minecraftforge.gradle.warnings.missingRepository.forge")) return;
+
         this.getReporter().report(id("forge-maven-not-declared", "Forge maven not declared"), spec -> spec
             .details("""
                 ForgeGradle was configured to sync the Minecraft Maven, but the Forge maven was not declared!
@@ -275,26 +253,14 @@ record ForgeGradleProblems(Problems problems, Predicate<String> properties) impl
             .solution(HELP_MESSAGE)
         );
     }
-
-    void reportMcMavenNotFound(Throwable e) {
-        this.getReporter().report(id("minecraft-maven-not-found", "Minecraft Maven not found"), spec -> spec
-            .details("""
-                Attempted to sync the Minecraft Maven, but the Minecraft Mavenizer tool was not found!""")
-            .withException(e)
-            .severity(Severity.ERROR)
-            .solution("Ensure that the Forge Maven (`fg.forgeMaven`) exists in your project/settings repositories.")
-            .solution("If you are using a custom tool, ensure that you added your repository and it is up and running.")
-            .solution(HELP_MESSAGE)
-        );
-    }
     //endregion
 
     //region Deobfuscation
     RuntimeException invalidDeobfDependencyType(Dependency dependency) {
-        return this.getReporter().throwing(new IllegalArgumentException("Non-module dependencies are not currently supported"), id("unsupported-dependency-type", "Non-module dependency used as Minecraft/deobf dependency"), spec -> spec
+        return this.getReporter().throwing(new IllegalArgumentException("Non-module deobf dependencies are not supported"), id("unsupported-dependency-type", "Non-module dependency used as Minecraft/deobf dependency"), spec -> spec
             .details("""
                 Attempted to use a non-module dependency as a deobf dependency, which is currently unsupported.
-                Support for file dependencies will come at a later time. Project dependencies are not supported.
+                Support for file dependencies may come at a later time. Project dependencies will not be supported.
                 Expected: (implementation of) %s, Actual: '%s
                 Dependency: '%s'"""
                 .formatted(ExternalModuleDependency.class.getName(), dependency.getClass().getName(), dependency.toString()))

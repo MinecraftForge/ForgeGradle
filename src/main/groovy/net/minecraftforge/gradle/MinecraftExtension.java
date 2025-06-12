@@ -15,7 +15,6 @@ import groovy.transform.stc.SimpleType;
 import net.minecraftforge.accesstransformers.gradle.AccessTransformersContainer;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
-import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.attributes.Attribute;
@@ -24,6 +23,7 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderConvertible;
 import org.gradle.nativeplatform.OperatingSystemFamily;
 import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.UnknownNullability;
 
 import java.io.File;
 import java.io.Serializable;
@@ -209,10 +209,10 @@ public sealed interface MinecraftExtension permits MinecraftExtensionImpl, Minec
         /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
         /// in Gradle</a>
         @SuppressWarnings("rawtypes") // public-facing closure
-        ExternalModuleDependency dep(
+        MinecraftDependency dep(
             Object value,
-            @DelegatesTo(value = ExternalModuleDependency.class, strategy = Closure.DELEGATE_FIRST)
-            @ClosureParams(value = SimpleType.class, options = "org.gradle.api.artifacts.ExternalModuleDependency")
+            @DelegatesTo(value = MinecraftDependency.class, strategy = Closure.DELEGATE_FIRST)
+            @ClosureParams(value = SimpleType.class, options = "net.minecraftforge.gradle.MinecraftDependency")
             Closure closure
         );
 
@@ -224,7 +224,7 @@ public sealed interface MinecraftExtension permits MinecraftExtensionImpl, Minec
         /// @return The dependency
         /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
         /// in Gradle</a>
-        default ExternalModuleDependency dep(Object value, Action<? super ExternalModuleDependency> action) {
+        default MinecraftDependency dep(Object value, Action<? super MinecraftDependency> action) {
             return this.dep(value, Closures.action(this, action));
         }
 
@@ -234,7 +234,7 @@ public sealed interface MinecraftExtension permits MinecraftExtensionImpl, Minec
         /// @return The dependency
         /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
         /// in Gradle</a>
-        default ExternalModuleDependency dep(Object value) {
+        default MinecraftDependency dep(Object value) {
             return this.dep(value, Closures.empty(this));
         }
 
@@ -247,10 +247,10 @@ public sealed interface MinecraftExtension permits MinecraftExtensionImpl, Minec
         /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
         /// in Gradle</a>
         @SuppressWarnings("rawtypes") // public-facing closure
-        default ExternalModuleDependency dep(
+        default MinecraftDependency dep(
             Provider<?> value,
-            @DelegatesTo(value = ExternalModuleDependency.class, strategy = Closure.DELEGATE_FIRST)
-            @ClosureParams(value = SimpleType.class, options = "org.gradle.api.artifacts.ExternalModuleDependency")
+            @DelegatesTo(value = MinecraftDependency.class, strategy = Closure.DELEGATE_FIRST)
+            @ClosureParams(value = SimpleType.class, options = "net.minecraftforge.gradle.MinecraftDependency")
             Closure closure
         ) {
             return this.dep(value.get(), closure);
@@ -264,7 +264,7 @@ public sealed interface MinecraftExtension permits MinecraftExtensionImpl, Minec
         /// @return The dependency
         /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
         /// in Gradle</a>
-        default ExternalModuleDependency dep(Provider<?> value, Action<? super ExternalModuleDependency> action) {
+        default MinecraftDependency dep(Provider<?> value, Action<? super MinecraftDependency> action) {
             return this.dep(value, Closures.action(this, action));
         }
 
@@ -274,7 +274,7 @@ public sealed interface MinecraftExtension permits MinecraftExtensionImpl, Minec
         /// @return The dependency
         /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
         /// in Gradle</a>
-        default ExternalModuleDependency dep(Provider<?> value) {
+        default MinecraftDependency dep(Provider<?> value) {
             return this.dep(value, Closures.empty(this));
         }
 
@@ -287,10 +287,10 @@ public sealed interface MinecraftExtension permits MinecraftExtensionImpl, Minec
         /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
         /// in Gradle</a>
         @SuppressWarnings("rawtypes") // public-facing closure
-        default ExternalModuleDependency dep(
+        default MinecraftDependency dep(
             ProviderConvertible<?> value,
-            @DelegatesTo(value = ExternalModuleDependency.class, strategy = Closure.DELEGATE_FIRST)
-            @ClosureParams(value = SimpleType.class, options = "org.gradle.api.artifacts.ExternalModuleDependency")
+            @DelegatesTo(value = MinecraftDependency.class, strategy = Closure.DELEGATE_FIRST)
+            @ClosureParams(value = SimpleType.class, options = "net.minecraftforge.gradle.MinecraftDependency")
             Closure closure
         ) {
             return this.dep(value.asProvider(), closure);
@@ -304,7 +304,7 @@ public sealed interface MinecraftExtension permits MinecraftExtensionImpl, Minec
         /// @return The dependency
         /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
         /// in Gradle</a>
-        default ExternalModuleDependency dep(ProviderConvertible<?> value, Action<? super ExternalModuleDependency> action) {
+        default MinecraftDependency dep(ProviderConvertible<?> value, Action<? super MinecraftDependency> action) {
             return this.dep(value, Closures.action(this, action));
         }
 
@@ -314,7 +314,7 @@ public sealed interface MinecraftExtension permits MinecraftExtensionImpl, Minec
         /// @return The dependency
         /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
         /// in Gradle</a>
-        default ExternalModuleDependency dep(ProviderConvertible<?> value) {
+        default MinecraftDependency dep(ProviderConvertible<?> value) {
             return this.dep(value, Closures.empty(this));
         }
     }
@@ -335,6 +335,11 @@ public sealed interface MinecraftExtension permits MinecraftExtensionImpl, Minec
         public Mappings(String channel, String version) {
             this.channel = Objects.requireNonNull(channel, "Mappings channel cannot be null");
             this.version = Objects.requireNonNull(version, "Mappings version cannot be null");
+        }
+
+        static void checkParam(ForgeGradleProblems problems, @UnknownNullability Object param, String name) {
+            if (param == null)
+                throw problems.nullMappingsParam(name);
         }
     }
 

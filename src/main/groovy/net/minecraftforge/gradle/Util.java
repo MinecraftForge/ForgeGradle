@@ -8,6 +8,9 @@ import groovy.lang.Closure;
 import org.gradle.TaskExecutionRequest;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.FileCollectionDependency;
+import org.gradle.api.artifacts.ModuleVersionSelector;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.TaskProvider;
@@ -25,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 /** Internal utilities. Documented for maintainability, NOT for public consumption. */
 final class Util {
@@ -112,7 +116,7 @@ final class Util {
     ///
     /// @param project The project
     /// @param task    The task to run first
-    static void runFirst(Project project, TaskProvider<?> task) {
+    static <T extends TaskProvider<?>> T runFirst(Project project, T task) {
         // copy the requests because the backed list isn't concurrent
         var requests = new ArrayList<>(project.getGradle().getStartParameter().getTaskRequests());
 
@@ -137,6 +141,7 @@ final class Util {
         // set the new requests
         project.getLogger().info("Adding task to beginning of task graph! Project: {}, Task: {}", project.getName(), task.getName());
         project.getGradle().getStartParameter().setTaskRequests(requests);
+        return task;
     }
 
     static <T> ActionableLazy<T> lazy(Callable<T> callable) {
@@ -147,7 +152,34 @@ final class Util {
         return new ActionableLazy.Simple<>(closure);
     }
 
+    static String toString(ModuleVersionSelector module) {
+        var version = module.getVersion();
+        return "%s:%s%s".formatted(
+            module.getGroup(),
+            module.getName(),
+            version != null ? ':' + version : ""
+        );
+    }
+
+    static String toString(Dependency dependency) {
+        var group = dependency.getGroup();
+        var version = dependency.getVersion();
+        var reason = dependency.getReason();
+        return "(%s) %s%s%s%s%s".formatted(
+            dependency.getClass().getName(),
+            group != null ? group + ':' : "",
+            dependency.getName(),
+            version != null ? ':' + version : "",
+            reason != null ? " (" + reason + ')' : "",
+            dependency instanceof FileCollectionDependency files ? " [%s]".formatted(String.join(", ", files.getFiles().getFiles().stream().map(File::getAbsolutePath).map(CharSequence.class::cast)::iterator)) : ""
+        );
+    }
+
     sealed interface ActionableLazy<T> extends Supplier<T>, Callable<T> {
+        default ActionableLazy<T> orElse(ActionableLazy<T> ifAbsent) {
+            return this.isPresent() ? this : ifAbsent;
+        }
+
         boolean isPresent();
 
         default void ifPresent(Action<? super T> action) {
@@ -156,6 +188,8 @@ final class Util {
         }
 
         void map(Action<? super T> action);
+
+        ActionableLazy<T> copy();
 
         @Override
         default T call() {
@@ -170,13 +204,15 @@ final class Util {
 
             private boolean present = false;
 
+            private Closure<T> modifications = Closures.unaryOperator(UnaryOperator.identity());
+
             private Simple(Closure<T> closure) {
                 this.closure = closure.compose(Closures.runnable(() -> this.present = true));
             }
 
             public void map(Action<? super T> action) {
                 this.present = true;
-                this.closure.andThen(Closures.<T>unaryOperator(value -> {
+                this.modifications = this.modifications.andThen(Closures.unaryOperator(value -> {
                     action.execute(value);
                     return value;
                 }));
@@ -187,8 +223,18 @@ final class Util {
             }
 
             @Override
+            @SuppressWarnings("ClassEscapesDefinedScope") // class is package-private
+            public ActionableLazy<T> copy() {
+                var ret = new Simple<>(this.closure);
+                ret.value = this.value;
+                ret.present = this.present;
+                ret.modifications = this.modifications;
+                return ret;
+            }
+
+            @Override
             public T get() {
-                return this.value == null ? this.value = Closures.invoke(this.closure) : this.value;
+                return this.value == null ? this.value = Closures.invoke(this.closure.andThen(this.modifications)) : this.value;
             }
         }
     }

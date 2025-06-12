@@ -4,7 +4,6 @@
  */
 package net.minecraftforge.gradle;
 
-import org.codehaus.groovy.runtime.StringGroovyMethods;
 import org.gradle.api.Named;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.file.Directory;
@@ -49,24 +48,13 @@ import java.util.Map;
 public sealed abstract class SlimeLauncherOptions implements Named permits SlimeLauncherOptions.Impl {
     /// The name of the Slime Launcher configuration.
     ///
-    /// Note that this is **not** the same as the resulting [task name][#getTaskName()]. This is what you see when you
-    /// declare a run configuration in your buildscript.
+    /// This will be used to create the task name with the verb "run" using
+    /// [org.gradle.api.tasks.SourceSet#getTaskName(String, String)]
     ///
     /// @return The name of this configuration
     @Override
     public final String getName() {
         return this.name;
-    }
-
-    /// The name to use for the Gradle task.
-    ///
-    /// By default, this will be this configuration's [name][#getName()],
-    /// [capitalized][org.codehaus.groovy.runtime.StringGroovyMethods#capitalize(CharSequence)], appended to `"run"`
-    /// (i.e. "client" -> "runClient").
-    ///
-    /// @return A property for the name of the task
-    public final @Input Property<String> getTaskName() {
-        return this.taskName;
     }
 
     /// The main class for Slime Launcher to use.
@@ -105,9 +93,8 @@ public sealed abstract class SlimeLauncherOptions implements Named permits Slime
     /// extension adds Slime Launcher as a dependency to the consuming [project's][org.gradle.api.Project]
     /// [runtimeClasspath][org.gradle.api.plugins.JavaPlugin#RUNTIME_CLASSPATH_CONFIGURATION_NAME] configuration.
     ///
-    /// Keep in mind that if the [org.gradle.api.tasks.JavaExec] task is configured to have a different
-    /// [main class][org.gradle.api.tasks.JavaExec#getMainClass()], the classpath does not need to include Slime
-    /// Launcher.
+    /// Keep in mind that if the [org.gradle.api.tasks.JavaExec] task is configured to have a different [main
+    /// class][org.gradle.api.tasks.JavaExec#getMainClass()], the classpath does not need to include Slime Launcher.
     ///
     /// @return The classpath to use
     public final @InputFiles @Optional @Classpath FileCollection getClasspath() {
@@ -116,8 +103,8 @@ public sealed abstract class SlimeLauncherOptions implements Named permits Slime
 
     /// The minimum memory heap size to use.
     ///
-    /// Working with this property is preferred over manually using the `-Xms` argument in the
-    /// [JVM arguments][#getJvmArgs()].
+    /// Working with this property is preferred over manually using the `-Xms` argument in the [JVM
+    /// arguments][#getJvmArgs()].
     ///
     /// @return A property for the minimum heap size
     public final @Input @Optional Property<String> getMinHeapSize() {
@@ -126,8 +113,8 @@ public sealed abstract class SlimeLauncherOptions implements Named permits Slime
 
     /// The maximum memory heap size to use.
     ///
-    /// Working with this property is preferred over manually using the `-Xmx` argument in the
-    /// [JVM arguments][#getJvmArgs()].
+    /// Working with this property is preferred over manually using the `-Xmx` argument in the [JVM
+    /// arguments][#getJvmArgs()].
     ///
     /// @return A property for the maximum heap size
     public final @Input @Optional Property<String> getMaxHeapSize() {
@@ -158,22 +145,6 @@ public sealed abstract class SlimeLauncherOptions implements Named permits Slime
     /// @return A property for the working directory
     public final @InputDirectory DirectoryProperty getWorkingDir() {
         return this.workingDir;
-    }
-
-    /// Sets the name to use for the Gradle task.
-    ///
-    /// @param taskName The name
-    /// @see #getTaskName()
-    public final void setTaskName(String taskName) {
-        this.getTaskName().set(taskName);
-    }
-
-    /// Sets the name to use for the Gradle task.
-    ///
-    /// @param taskName The name
-    /// @see #getTaskName()
-    public final void setTaskName(Provider<String> taskName) {
-        this.getTaskName().set(taskName);
     }
 
     /// Sets the main class for Slime Launcher to use.
@@ -562,7 +533,6 @@ public sealed abstract class SlimeLauncherOptions implements Named permits Slime
 
     private final String name;
 
-    private final @Input Property<String> taskName;
     private final @Input @Optional Property<String> mainClass;
     private final @Input @Optional ListProperty<String> args;
     private final @Input @Optional ListProperty<String> jvmArgs;
@@ -579,7 +549,6 @@ public sealed abstract class SlimeLauncherOptions implements Named permits Slime
     private SlimeLauncherOptions(String name) {
         this.name = name;
 
-        this.taskName = this.getObjects().property(String.class).convention("run" + StringGroovyMethods.capitalize(name));
         this.mainClass = this.getObjects().property(String.class);
         this.args = this.getObjects().listProperty(String.class);
         this.jvmArgs = this.getObjects().listProperty(String.class);

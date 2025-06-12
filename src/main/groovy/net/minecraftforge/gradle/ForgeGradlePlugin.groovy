@@ -35,7 +35,7 @@ import javax.inject.Inject
  */
 @CompileStatic
 @PackageScope([PackageScopeTarget.CLASS, PackageScopeTarget.FIELDS])
-class ForgeGradlePlugin<T extends ExtensionAware & PluginAware> implements Plugin<T> {
+class ForgeGradlePlugin implements Plugin<ExtensionAware> {
     /** The global logger for ForgeGradle, mostly used within {@link ForgeGradleProblems}. */
     static final Logger LOGGER = Logging.getLogger("ForgeGradle")
 
@@ -62,7 +62,7 @@ class ForgeGradlePlugin<T extends ExtensionAware & PluginAware> implements Plugi
      * @param target The target to apply the plugin to
      */
     @Override
-    void apply(T target) {
+    void apply(ExtensionAware target) {
         this.globalCaches = this.objects.directoryProperty().convention(
             this.objects.directoryProperty().fileValue(this.getGradleUserHomeDir(target)).dir(Constants.CACHES_LOCATION).map(this.enhancedProblems.ensureDirectory())
         )
@@ -98,7 +98,7 @@ class ForgeGradlePlugin<T extends ExtensionAware & PluginAware> implements Plugi
     }
 
     @CompileDynamic
-    private File getGradleUserHomeDir(T target) {
+    private File getGradleUserHomeDir(ExtensionAware target) {
         try {
             target.gradle.startParameter.gradleUserHomeDir
         } catch (Throwable e) {

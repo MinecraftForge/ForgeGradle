@@ -8,7 +8,7 @@ import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.PluginAware;
 
 record ForgeGradleExtensionImpl() implements ForgeGradleExtension {
-    static <T extends ExtensionAware & PluginAware> void register(T target) {
+    static void register(ExtensionAware target) {
         target.getExtensions().add(
             ForgeGradleExtension.class,
             ForgeGradleExtension.NAME,

@@ -12,11 +12,11 @@ import groovy.transform.PackageScopeTarget
 import groovy.transform.stc.ClosureParams
 import groovy.transform.stc.SimpleType
 import net.minecraftforge.accesstransformers.gradle.AccessTransformersContainer
-import net.minecraftforge.accesstransformers.gradle.AccessTransformersExtension
 import net.minecraftforge.util.data.json.JsonData
 import net.minecraftforge.util.data.json.RunConfig
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
@@ -32,16 +32,18 @@ import org.gradle.api.flow.FlowScope
 import org.gradle.api.initialization.Settings
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.ExtensionAware
+import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.plugins.PluginAware
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
+import org.gradle.api.reflect.TypeOf
 import org.gradle.internal.os.OperatingSystem
 import org.gradle.nativeplatform.OperatingSystemFamily
-import org.jetbrains.annotations.Nullable
 
 import java.util.concurrent.Callable
+import java.util.function.BiFunction
 
 @CompileStatic
 @PackageScope final class MinecraftExtensionImpl implements MinecraftExtension {
@@ -57,8 +59,8 @@ import java.util.concurrent.Callable
     // Dependencies
     private final Property<Mappings> mappingsProp
 
-    @PackageScope static <T extends ExtensionAware & PluginAware> void register(
-        T target,
+    @PackageScope static void register(
+        ExtensionAware target,
         ForgeGradlePlugin plugin,
         Callable<? extends FlowScope> flowScope,
         Callable<? extends FlowProviders> flowProviders,
@@ -139,19 +141,14 @@ import java.util.concurrent.Callable
     @NamedVariant
     void mappings(String channel, String version) {
         // manual null-checks here instead of @NullCheck for enhanced problems reporting
-        this.nullCheckMappingsParam(channel, 'channel')
-        this.nullCheckMappingsParam(version, 'version')
+        Mappings.checkParam(this.problems, channel, 'channel')
+        Mappings.checkParam(this.problems, version, 'version')
 
         final replacement = new Mappings(channel, version)
         if (this.mappingsProp.present)
             this.problems.reportOverriddenMappings(this.mappingsProp.get(), replacement)
 
         this.mappingsProp.set replacement
-    }
-
-    private void nullCheckMappingsParam(def param, String name) {
-        if (param === null)
-            throw this.problems.nullMappingsParam(name)
     }
 
     @CompileStatic
@@ -173,7 +170,7 @@ import java.util.concurrent.Callable
         }
 
         // Dependencies
-        private @Nullable ExternalModuleDependency minecraft
+        private List<MinecraftDependencyImpl> minecraftDependencies = new ArrayList<>()
 
         private ForProjectImpl(Project project, FlowScope flowScope, FlowProviders flowProviders, ProjectLayout layout, ProviderFactory providers, FileSystemOperations fileSystemOperations, ArchiveOperations archiveOperations) {
             this.project = project
@@ -203,14 +200,16 @@ import java.util.concurrent.Callable
         }
 
         private void finish(Project project, FlowScope flowScope, FlowProviders flowProviders, FileSystemOperations fileSystemOperations, ArchiveOperations archiveOperations) {
-            if (this.minecraft === null) {
+            if (this.minecraftDependencies.isEmpty()) {
                 MinecraftExtensionImpl.this.problems.reportMissingMinecraftDependency()
                 return
-            }
+            } else {
+                if (this.atContainer.present && this.minecraftDependencies.size() > 1) {
+                    throw new UnsupportedOperationException('Cannot use the global minecraft.accessTransformers object with more than one Minecraft dependency')
+                }
 
-            this.atContainer.ifPresent { accessTransformers ->
-                this.minecraft.attributes {
-                    it.attribute(accessTransformers.attribute, true)
+                this.minecraftDependencies.forEach {
+                    it.finish(this.&getMappings, this.atContainer)
                 }
             }
 
@@ -219,7 +218,7 @@ import java.util.concurrent.Callable
                     it.attributes(this.&applyAttributes)
             }
 
-            SyncMinecraftMaven.register(project, this.minecraft)
+            SyncMinecraftMaven.register(project, this.minecraftDependencies)
 
             var repositories = project.extensions.extraProperties.has(EXT_MAVEN_REPOS)
                 ? new AppliedRepos(project.extensions.extraProperties.get(EXT_MAVEN_REPOS) as List<? extends MavenArtifactRepository>)
@@ -234,27 +233,39 @@ import java.util.concurrent.Callable
             if (!repositories.mclibs)
                 MinecraftExtensionImpl.this.problems.reportMcLibsMavenNotDeclared()
 
-            var cacheDir = MinecraftExtensionImpl.this.plugin.globalCaches.dir("slime-launcher/cache/${this.minecraft.group.replace('.', '/')}/${this.minecraft.name}/${this.minecraft.version}").map(MinecraftExtensionImpl.this.problems.ensureDirectory())
-            var metadataDir = MinecraftExtensionImpl.this.objects.directoryProperty().value(cacheDir).dir('metadata').map(MinecraftExtensionImpl.this.problems.ensureDirectory())
-            var metadataZip = MinecraftExtensionImpl.this.output.file(Util.artifactPath(this.minecraft.group, this.minecraft.name, this.minecraft.version, 'metadata', 'zip'))
+            if (!this.runs.empty) {
+                this.project.getExtensions().getByType(JavaPluginExtension).sourceSets.forEach { sourceSet ->
+                    var allDependencies = this.project.configurations.findByName(sourceSet.runtimeClasspathConfigurationName)?.allDependencies?.findAll { this.minecraftDependencies.contains(it) }
 
-            try {
-                fileSystemOperations.copy(copy -> copy
-                    .from(archiveOperations.zipTree(metadataZip))
-                    .into(metadataDir)
-                )
+                    if (allDependencies === null || allDependencies.empty) {
+                        throw new IllegalArgumentException('Cannot create run configurations without any Minecraft dependencies')
+                    } else if (allDependencies.size() > 1) {
+                        throw new IllegalArgumentException('Cannot create run configurations for more than one Minecraft dependency')
+                    } else {
+                        var cacheDir = MinecraftExtensionImpl.this.plugin.globalCaches.dir("slime-launcher/cache/${this.minecraftDependencies[0].group.replace('.', '/')}/${this.minecraftDependencies[0].name}/${this.minecraftDependencies[0].version}").map(MinecraftExtensionImpl.this.problems.ensureDirectory())
+                        var metadataDir = MinecraftExtensionImpl.this.objects.directoryProperty().value(cacheDir).dir('metadata').map(MinecraftExtensionImpl.this.problems.ensureDirectory())
+                        var metadataZip = MinecraftExtensionImpl.this.output.file(Util.artifactPath(this.minecraftDependencies[0].group, this.minecraftDependencies[0].name, this.minecraftDependencies[0].version, 'metadata', 'zip'))
 
-                this.configs.set JsonData.fromJson(
-                    metadataDir.get().file('launcher/runs.json').asFile,
-                    new TypeToken<Map<String, RunConfig>>() {}
-                )
-            } catch (Throwable ignored) {
-                // we probably don't have metadata yet. common for fresh setups before first run.
-                // if there's actually a problem, we can throw it in SlimeLauncherExec.
-            }
+                        try {
+                            fileSystemOperations.copy(copy -> copy
+                                .from(archiveOperations.zipTree(metadataZip))
+                                .into(metadataDir)
+                            )
 
-            this.runs.forEach { options ->
-                SlimeLauncherExec.register(project, options, this.configs.getOrElse(Map.of()), this.minecraft, metadataZip)
+                            this.configs.set JsonData.fromJson(
+                                metadataDir.get().file('launcher/runs.json').asFile,
+                                new TypeToken<Map<String, RunConfig>>() {}
+                            )
+                        } catch (Throwable ignored) {
+                            // we probably don't have metadata yet. common for fresh setups before first run.
+                            // if there's actually a problem, we can throw it in SlimeLauncherExec.
+                        }
+
+                        this.runs.forEach { options ->
+                            SlimeLauncherExec.register(project, sourceSet, options, this.configs.getOrElse(Map.of()), this.minecraftDependencies[0], metadataZip)
+                        }
+                    }
+                }
             }
 
             flowScope.always(ForgeGradleFlowAction.WelcomeMessage) {
@@ -303,31 +314,24 @@ import java.util.concurrent.Callable
             @ClosureParams(value = SimpleType, options = 'org.gradle.api.NamedDomainObjectContainer<net.minecraftforge.gradle.SlimeLauncherOptions>')
                 Closure<Void> closure
         ) {
-            this.runs.configure closure
+            this.runs.configure(closure)
         }
 
         @Override
-        ExternalModuleDependency dep(
+        MinecraftDependency dep(
             def value,
             @DelegatesTo(value = ExternalModuleDependency, strategy = Closure.DELEGATE_FIRST)
-            @ClosureParams(value = SimpleType, options = 'org.gradle.api.artifacts.ExternalModuleDependency')
+            @ClosureParams(value = SimpleType, options = 'net.minecraftforge.gradle.MinecraftDependency')
                 Closure closure
         ) {
             // creation + validation
-            final dependency = this.project.dependencies.create(value) { Dependency dependency ->
-                if (this.minecraft !== null)
-                    throw problems.multipleMinecraftDependencies(this.minecraft, dependency)
+            new MinecraftDependencyImpl(this.project.dependencies.create(value), this.project, MinecraftExtensionImpl.this.problems, MinecraftExtensionImpl.this.objects, this.providers).tap { dependency ->
+                // configuration
+                Closures.invoke(dependency, closure)
 
-                if (!(dependency instanceof ExternalModuleDependency))
-                    throw problems.invalidMinecraftDependencyType(dependency)
-            } as ExternalModuleDependency
-
-            // configuration
-            dependency.attributes(this.&applyAttributes)
-            Closures.invoke(dependency, closure)
-
-            // finish
-            this.minecraft = dependency
+                // finish
+                this.minecraftDependencies.add(dependency)
+            }
         }
 
         private final class AppliedRepos {
