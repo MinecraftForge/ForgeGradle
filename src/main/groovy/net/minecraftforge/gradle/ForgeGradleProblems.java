@@ -46,7 +46,7 @@ record ForgeGradleProblems(Problems problems, Predicate<String> properties) impl
     }
 
     ForgeGradleProblems(Problems problems, ProviderFactory providers) {
-        this(problems, property -> hasProperty(providers, property));
+        this(problems, property -> Util.isTrue(providers, property));
     }
 
     ForgeGradleProblems(Callable<? extends @UnknownNullability Problems> problems, Callable<? extends @UnknownNullability ProviderFactory> providers) {
@@ -61,15 +61,10 @@ record ForgeGradleProblems(Problems problems, Predicate<String> properties) impl
         return Util.tryElse(
             () -> {
                 var providers = Objects.requireNonNull(supplier.call());
-                return property -> hasProperty(providers, property);
+                return property -> Util.isTrue(providers, property);
             },
             Boolean::getBoolean
         );
-    }
-
-    private static boolean hasProperty(ProviderFactory providers, String property) {
-        return Util.isTrue(providers.gradleProperty(property))
-            || Util.isTrue(providers.systemProperty(property));
     }
 
     private static ProblemId id(String name, String displayName) {

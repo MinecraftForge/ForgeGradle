@@ -85,7 +85,7 @@ import java.util.function.BiFunction
         this.plugin = plugin
         this.objects = objects
 
-        this.output = objects.directoryProperty().convention(plugin.globalCaches.dir('mc-maven/output').map(problems.ensureDirectory()))
+        this.output = objects.directoryProperty().convention(plugin.globalCaches.dir('mavenizer/output').map(problems.ensureDirectory()))
 
         this.mappingsProp = objects.property(Mappings)
     }
@@ -233,8 +233,16 @@ import java.util.function.BiFunction
             if (!repositories.mclibs)
                 MinecraftExtensionImpl.this.problems.reportMcLibsMavenNotDeclared()
 
-            if (!this.runs.empty) {
-                this.project.getExtensions().getByType(JavaPluginExtension).sourceSets.forEach { sourceSet ->
+            var sourceSetsDir = objects.directoryProperty().value(this.layout.buildDirectory.dir('sourceSets'))
+            this.project.getExtensions().getByType(JavaPluginExtension).sourceSets.configureEach { sourceSet ->
+                if (!Util.isFalse(this.providers, 'net.minecraftforge.gradle.mergeSourceSets')) {
+                    // This is documented in SourceSetOutput's javadoc comment
+                    var unifiedDir = sourceSetsDir.dir(sourceSet.name)
+                    sourceSet.output.resourcesDir = unifiedDir
+                    sourceSet.java.destinationDirectory.set unifiedDir
+                }
+
+                if (!this.runs.empty) {
                     var allDependencies = this.project.configurations.findByName(sourceSet.runtimeClasspathConfigurationName)?.allDependencies?.findAll { this.minecraftDependencies.contains(it) }
 
                     if (allDependencies === null || allDependencies.empty) {

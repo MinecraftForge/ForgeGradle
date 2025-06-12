@@ -75,9 +75,9 @@ abstract class SyncMinecraftMaven extends DefaultTask implements ForgeGradleTask
         this.getMainClass().convention(Constants.MCMAVEN_MAIN);
 
         // Minecraft Maven
-        var defaultDirectory = objects.directoryProperty().value(this.getGlobalCaches().dir("mcmaven"));
-        this.getCaches().convention(defaultDirectory.dir("cache"));
-        this.getOutput().convention(defaultDirectory.dir("output"));
+        var defaultDirectory = objects.directoryProperty().value(this.getGlobalCaches().dir("mavenizer").map(this.problems.ensureDirectory()));
+        this.getCaches().convention(defaultDirectory.dir("cache").map(this.problems.ensureDirectory()));
+        this.getOutput().convention(defaultDirectory.dir("output").map(this.problems.ensureDirectory()));
 
         this.onlyIf(
             "Minecraft Mavenizer will not run if no Minecraft dependencies are present.",
@@ -97,7 +97,7 @@ abstract class SyncMinecraftMaven extends DefaultTask implements ForgeGradleTask
     private void exec(Request request) {
         this.execOperations.javaexec(spec -> {
             spec.setClasspath(this.getExecutable());
-            spec.setExecutable(this.getJavaLauncher());
+            spec.setExecutable(this.getJavaLauncher().get());
             spec.getMainClass().set(this.getMainClass());
 
             spec.setArgs(this.argsFor(request));
@@ -108,6 +108,7 @@ abstract class SyncMinecraftMaven extends DefaultTask implements ForgeGradleTask
         return List.of(
             "--maven",
             "--cache", this.getCaches().get().getAsFile().getAbsolutePath(),
+            "--output", this.getOutput().get().getAsFile().getAbsolutePath(),
             "--jdk-cache", this.getCaches().dir("jdks").get().getAsFile().getAbsolutePath(),
             "--artifact", request.module,
             "--version", request.version

@@ -30,7 +30,7 @@ dependencyResolutionManagement {
 
         // AccessTransformers Gradle Plugin
         // https://plugins.gradle.org/plugin/net.minecraftforge.accesstransformers
-        version 'accesstransformers', '1.0.0'
+        version 'accesstransformers', '1.0.1'
         library 'accesstransformers-plugin', 'net.minecraftforge.accesstransformers', 'net.minecraftforge.accesstransformers.gradle.plugin' versionRef 'accesstransformers'
         library 'accesstransformers-binary', 'net.minecraftforge', 'accesstransformers-gradle' versionRef 'accesstransformers'
         bundle 'accesstransformers', ['accesstransformers-plugin', 'accesstransformers-binary']

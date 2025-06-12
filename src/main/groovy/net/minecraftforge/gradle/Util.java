@@ -13,6 +13,7 @@ import org.gradle.api.artifacts.FileCollectionDependency;
 import org.gradle.api.artifacts.ModuleVersionSelector;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaLauncher;
@@ -98,8 +99,35 @@ final class Util {
         return s == null || s.isBlank() ? null : s;
     }
 
-    static boolean isTrue(Provider<? extends String> provider) {
-        return provider.map(Boolean::parseBoolean).getOrElse(false);
+    static @Nullable String getProperty(ProviderFactory providers, String property) {
+        return providers.gradleProperty(property).orElse(providers.systemProperty(property)).getOrNull();
+    }
+
+    static @Nullable Boolean getBoolean(ProviderFactory providers, String property) {
+        var gradleBoolean = getBoolean(providers.gradleProperty(property));
+        return gradleBoolean != null ? gradleBoolean : getBoolean(providers.systemProperty(property));
+    }
+
+    private static @Nullable Boolean getBoolean(Provider<? extends String> provider) {
+        if (Boolean.TRUE.equals(provider.map("true"::equalsIgnoreCase).getOrNull())) return true;
+        if (Boolean.FALSE.equals(provider.map("false"::equalsIgnoreCase).getOrNull())) return false;
+        return null;
+    }
+
+    static boolean isTrue(ProviderFactory providers, String property) {
+        return isTrue(providers.gradleProperty(property)) || isTrue(providers.systemProperty(property));
+    }
+
+    private static boolean isTrue(Provider<? extends String> provider) {
+        return Boolean.TRUE.equals(getBoolean(provider));
+    }
+
+    static boolean isFalse(ProviderFactory providers, String property) {
+        return isFalse(providers.gradleProperty(property)) || isFalse(providers.systemProperty(property));
+    }
+
+    private static boolean isFalse(Provider<? extends String> provider) {
+        return Boolean.FALSE.equals(getBoolean(provider));
     }
 
     static <T> T tryElse(Callable<? extends T> value, T orElse) {
