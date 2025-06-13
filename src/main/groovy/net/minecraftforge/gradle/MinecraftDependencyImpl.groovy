@@ -75,7 +75,7 @@ import java.util.function.Supplier
     private Util.ActionableLazy<AccessTransformersContainer> defaultAtContainer() {
         Util.lazy {
             this.project.pluginManager.apply('net.minecraftforge.accesstransformers')
-            AccessTransformersContainer.register(this.project, Attribute.of('net.minecraftforge.gradle.accesstransformed.' + this.atContainerCount++, Boolean)) { }
+            AccessTransformersContainer.register(this.project, Attribute.of('net.minecraftforge.gradle.accesstransformed.' + this.atContainerCount++, Boolean)) {}
         }
     }
 
@@ -94,11 +94,19 @@ import java.util.function.Supplier
     @PackageScope void finish(Supplier<MinecraftExtension.Mappings> defaultMappings, Util.ActionableLazy<AccessTransformersContainer> defaultATs) {
         var mappings = this.mappingsProp.tap { finalizeValue() }.getOrElse(defaultMappings.get())
 
-        this.attributes { attributes ->
-            attributes.attribute(MinecraftExtension.Attributes.os, objects.named(OperatingSystemFamily, OperatingSystem.current().familyName))
-            attributes.attribute(MinecraftExtension.Attributes.mappingsChannel, mappings.channel())
-            attributes.attribute(MinecraftExtension.Attributes.mappingsVersion, mappings.version())
+        this.project.configurations.forEach { configuration ->
+            if (!configuration.canBeDeclared) return
 
+            configuration.dependencyConstraints.add(this.project.dependencies.constraints.create(this.delegate) { constraint ->
+                constraint.attributes { attributes ->
+                    attributes.attribute(MinecraftExtension.Attributes.os, objects.named(OperatingSystemFamily, OperatingSystem.current().familyName))
+                    attributes.attribute(MinecraftExtension.Attributes.mappingsChannel, mappings.channel())
+                    attributes.attribute(MinecraftExtension.Attributes.mappingsVersion, mappings.version())
+                }
+            })
+        }
+
+        this.attributes { attributes ->
             this.atContainer.orElse(defaultATs).ifPresent { accessTransformers ->
                 attributes.attribute(accessTransformers.attribute, true)
             }

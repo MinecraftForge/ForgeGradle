@@ -16,12 +16,9 @@ import net.minecraftforge.util.data.json.JsonData
 import net.minecraftforge.util.data.json.RunConfig
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
-import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.attributes.Attribute
-import org.gradle.api.attributes.AttributeContainer
 import org.gradle.api.file.ArchiveOperations
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileSystemOperations
@@ -33,17 +30,12 @@ import org.gradle.api.initialization.Settings
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.plugins.JavaPluginExtension
-import org.gradle.api.plugins.PluginAware
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
-import org.gradle.api.reflect.TypeOf
-import org.gradle.internal.os.OperatingSystem
-import org.gradle.nativeplatform.OperatingSystemFamily
 
 import java.util.concurrent.Callable
-import java.util.function.BiFunction
 
 @CompileStatic
 @PackageScope final class MinecraftExtensionImpl implements MinecraftExtension {
@@ -193,12 +185,6 @@ import java.util.function.BiFunction
             project.afterEvaluate { this.finish(it, flowScope, flowProviders, fileSystemOperations, archiveOperations) }
         }
 
-        private void applyAttributes(AttributeContainer a) {
-            a.attribute(Attributes.os, objects.named(OperatingSystemFamily, OperatingSystem.current().familyName))
-            a.attribute(Attributes.mappingsChannel, MinecraftExtensionImpl.this.mappings.channel())
-            a.attribute(Attributes.mappingsVersion, MinecraftExtensionImpl.this.mappings.version())
-        }
-
         private void finish(Project project, FlowScope flowScope, FlowProviders flowProviders, FileSystemOperations fileSystemOperations, ArchiveOperations archiveOperations) {
             if (this.minecraftDependencies.isEmpty()) {
                 MinecraftExtensionImpl.this.problems.reportMissingMinecraftDependency()
@@ -213,25 +199,12 @@ import java.util.function.BiFunction
                 }
             }
 
-            project.configurations.configureEach {
-                if (it.canBeResolved)
-                    it.attributes(this.&applyAttributes)
-            }
-
             SyncMinecraftMaven.register(project, this.minecraftDependencies)
 
-            var repositories = project.extensions.extraProperties.has(EXT_MAVEN_REPOS)
+            var appliedRepos = project.extensions.extraProperties.has(EXT_MAVEN_REPOS)
                 ? new AppliedRepos(project.extensions.extraProperties.get(EXT_MAVEN_REPOS) as List<? extends MavenArtifactRepository>)
                 : new AppliedRepos(project.repositories.withType(MavenArtifactRepository))
-
-            if (!repositories.mcmaven)
-                MinecraftExtensionImpl.this.problems.reportMcMavenNotDeclared()
-
-            if (!repositories.forge)
-                MinecraftExtensionImpl.this.problems.reportForgeMavenNotDeclared()
-
-            if (!repositories.mclibs)
-                MinecraftExtensionImpl.this.problems.reportMcLibsMavenNotDeclared()
+            appliedRepos.check()
 
             var sourceSetsDir = objects.directoryProperty().value(this.layout.buildDirectory.dir('sourceSets'))
             this.project.getExtensions().getByType(JavaPluginExtension).sourceSets.configureEach { sourceSet ->
@@ -363,6 +336,17 @@ import java.util.function.BiFunction
                 this.mcmaven = containsExactly output.asFile
                 this.forge = contains 'maven.minecraftforge.net'
                 this.mclibs = contains 'libraries.minecraft.net'
+            }
+
+            private void check() {
+                if (!this.mcmaven)
+                    MinecraftExtensionImpl.this.problems.reportMcMavenNotDeclared()
+
+                if (!this.forge)
+                    MinecraftExtensionImpl.this.problems.reportForgeMavenNotDeclared()
+
+                if (!this.mclibs)
+                    MinecraftExtensionImpl.this.problems.reportMcLibsMavenNotDeclared()
             }
         }
 

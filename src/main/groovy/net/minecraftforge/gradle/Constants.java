@@ -9,7 +9,7 @@ package net.minecraftforge.gradle;
 /// Looking for attributes? They are in [MinecraftExtension.Attributes].
 final class Constants {
     // Caches -- BE CAREFUL when changing this
-    static final String CACHES_LOCATION = /* gradleUserHomeDir + */ "caches/forge_gradle_7";
+    static final String CACHES_LOCATION = /* gradleUserHomeDir + */ "caches/minecraftforge/forgegradle";
 
     static final String FORGE_MAVEN = "https://maven.minecraftforge.net/";
 
