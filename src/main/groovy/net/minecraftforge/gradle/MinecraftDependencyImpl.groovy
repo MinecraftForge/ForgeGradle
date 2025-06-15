@@ -7,6 +7,7 @@ package net.minecraftforge.gradle
 import groovy.transform.CompileStatic
 import groovy.transform.NamedVariant
 import groovy.transform.PackageScope
+import groovy.transform.PackageScopeTarget
 import groovy.transform.stc.ClosureParams
 import groovy.transform.stc.SimpleType
 import net.minecraftforge.accesstransformers.gradle.AccessTransformersContainer
@@ -28,7 +29,8 @@ import org.jetbrains.annotations.Nullable
 import java.util.function.Supplier
 
 @CompileStatic
-@PackageScope final class MinecraftDependencyImpl implements MinecraftDependencyInternal {
+@PackageScope([PackageScopeTarget.CLASS, PackageScopeTarget.CONSTRUCTORS])
+final class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     private static final String AT_COUNT_NAME = 'fg_minecraft_atcontainers'
 
     final ExternalModuleDependency delegate
@@ -36,25 +38,23 @@ import java.util.function.Supplier
     private final Project project
     private final ForgeGradleProblems problems
     private final ObjectFactory objects
+    private final ProviderFactory providers
 
     private final Property<MinecraftExtension.Mappings> mappingsProp
 
     private final Util.ActionableLazy<AccessTransformersContainer> atContainer
 
-    MinecraftDependencyImpl(Dependency dependency, Project project, Problems problems, ObjectFactory objects, ProviderFactory providers) {
-        this(dependency, project, new ForgeGradleProblems(problems, providers), objects)
+    MinecraftDependencyImpl(Dependency dependency, Project project, ForgeGradleProblems problems, ObjectFactory objects, ProviderFactory providers) {
+        this(dependency, project, problems, objects, providers, (Util.ActionableLazy<AccessTransformersContainer>) null)
     }
 
-    MinecraftDependencyImpl(Dependency dependency, Project project, ForgeGradleProblems problems, ObjectFactory objects) {
-        this(dependency, project, problems, objects, (Util.ActionableLazy<AccessTransformersContainer>) null)
-    }
-
-    MinecraftDependencyImpl(Dependency dependency, Project project, ForgeGradleProblems problems, ObjectFactory objects, @Nullable Util.ActionableLazy<AccessTransformersContainer> atContainer) {
+    MinecraftDependencyImpl(Dependency dependency, Project project, ForgeGradleProblems problems, ObjectFactory objects, ProviderFactory providers, @Nullable Util.ActionableLazy<AccessTransformersContainer> atContainer) {
         this.delegate = validateDependency(dependency, problems)
 
         this.project = project
         this.problems = problems
         this.objects = objects
+        this.providers = providers
 
         this.mappingsProp = objects.property(MinecraftExtension.Mappings)
 
@@ -92,12 +92,14 @@ import java.util.function.Supplier
     }
 
     @PackageScope void finish(Supplier<MinecraftExtension.Mappings> defaultMappings, Util.ActionableLazy<AccessTransformersContainer> defaultATs) {
-        var mappings = this.mappingsProp.tap { finalizeValue() }.getOrElse(defaultMappings.get())
+        var mappings = this.mappingsProp.convention(this.providers.provider { defaultMappings.get() }).tap { finalizeValue() } .get()
 
         this.project.configurations.forEach { configuration ->
             if (!configuration.canBeDeclared) return
 
-            configuration.dependencyConstraints.add(this.project.dependencies.constraints.create(this.delegate) { constraint ->
+            configuration.dependencyConstraints.add(this.project.dependencies.constraints.create(this.delegate.module.toString()) { constraint ->
+                constraint.because('Accounts for mappings used and natives variants')
+
                 constraint.attributes { attributes ->
                     attributes.attribute(MinecraftExtension.Attributes.os, objects.named(OperatingSystemFamily, OperatingSystem.current().familyName))
                     attributes.attribute(MinecraftExtension.Attributes.mappingsChannel, mappings.channel())
@@ -159,6 +161,6 @@ import java.util.function.Supplier
 
     @Override
     MinecraftDependency copy() {
-        new MinecraftDependencyImpl(this.delegate.copy(), this.project, this.problems, this.objects, this.atContainer.copy())
+        new MinecraftDependencyImpl(this.delegate.copy(), this.project, this.problems, this.objects, this.providers, this.atContainer.copy())
     }
 }

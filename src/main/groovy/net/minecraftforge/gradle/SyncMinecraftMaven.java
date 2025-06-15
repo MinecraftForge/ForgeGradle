@@ -6,32 +6,23 @@ package net.minecraftforge.gradle;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.ModuleVersionSelector;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.model.ObjectFactory;
-import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.problems.Problems;
-import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
-import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.TaskProvider;
-import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.process.ExecOperations;
-import org.jetbrains.annotations.UnknownNullability;
 
 import javax.inject.Inject;
-import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -106,8 +97,7 @@ abstract class SyncMinecraftMaven extends DefaultTask implements ForgeGradleTask
     }
 
     private List<String> argsFor(Request request) {
-        var args = new ArrayList<String>();
-        args.addAll(List.of(
+        var args = new ArrayList<>(List.of(
             "--maven",
             "--cache", this.getCaches().get().getAsFile().getAbsolutePath(),
             "--output", this.getOutput().get().getAsFile().getAbsolutePath(),

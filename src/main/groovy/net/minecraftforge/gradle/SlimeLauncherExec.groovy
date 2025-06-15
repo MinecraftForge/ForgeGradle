@@ -38,25 +38,23 @@ import java.nio.file.Files
  * configuration, so that the project's entire classpath can be used when starting the game.
  */
 @CompileStatic
-@PackageScope abstract class SlimeLauncherExec extends JavaExec {
+@PackageScope abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask {
     @PackageScope static TaskProvider<SlimeLauncherExec> register(Project project, SourceSet sourceSet, SlimeLauncherOptions options, Map<String, RunConfig> configs, Dependency dependency, Provider<RegularFile> metadataZip) {
         project.tasks.register(sourceSet.getTaskName('run', options.name), SlimeLauncherExec) { task ->
-            final plugin = project.plugins.getPlugin(ForgeGradlePlugin)
-
             task.description = "Runs the '$options.name' Slime Launcher run configuration."
 
             task.classpath = task.objectFactory.fileCollection().from(
                 task.providerFactory.provider { sourceSet.runtimeClasspath }
             )
 
-            var caches = task.objectFactory.directoryProperty().value(plugin.globalCaches.dir("slime-launcher/cache/${dependency.group.replace('.', '/')}/${dependency.name}/${dependency.version}"))
+            var caches = task.objectFactory.directoryProperty().value(task.globalCaches.dir("slime-launcher/cache/${dependency.group.replace('.', '/')}/${dependency.name}/${dependency.version}"))
             task.cacheDir.set caches.map(task.problems.ensureDirectory())
             task.metadataZip.set metadataZip
 
             task.inherit(configs, options.name)
             options.apply(task)
 
-            task.classpath plugin.getTool(Tools.SLIME_LAUNCHER)
+            task.classpath task.getTool(Tools.SLIME_LAUNCHER)
 
             if (task.buildAllProjects)
                 task.dependsOn project.allprojects.collect { it.tasks.named(LifecycleBasePlugin.ASSEMBLE_TASK_NAME) }.toArray()
