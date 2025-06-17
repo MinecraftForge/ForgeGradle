@@ -54,7 +54,7 @@ import java.nio.file.Files
             task.inherit(configs, options.name)
             options.apply(task)
 
-            task.classpath task.getTool(Tools.SLIME_LAUNCHER)
+            task.classpath task.getTool(Tools.SLIME_LAUNCHER, getProject())
 
             if (task.buildAllProjects)
                 task.dependsOn project.allprojects.collect { it.tasks.named(LifecycleBasePlugin.ASSEMBLE_TASK_NAME) }.toArray()
