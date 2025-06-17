@@ -72,7 +72,7 @@ enum Tools {
         } catch (UnknownConfigurationException exception) {
             return get(cachesDir, providers);
         } catch (IllegalStateException exception) {
-            throw new IllegalStateException(String.format("Cant have more then one %s define", getConfiguration()));
+            throw new IllegalStateException(String.format("Cant have more then one %s defined", getConfiguration()), exception);
         }
     }
 
