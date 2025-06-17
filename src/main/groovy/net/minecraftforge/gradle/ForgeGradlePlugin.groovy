@@ -82,6 +82,17 @@ class ForgeGradlePlugin implements Plugin<ExtensionAware> {
             this.&getFileSystemOperations,
             this.&getArchiveOperations
         )
+
+        if (target instanceof Project) {
+            Project project = (Project) target;
+
+            for (final def tool in Tools.values()) {
+                project.getConfigurations().register(tool.getConfiguration()) {
+                    it.setTransitive(false) // Cant be transitive, maybe allow it to be later?
+                    it.setVisible(true)
+                }
+            }
+        }
     }
 
     @PackageScope DirectoryProperty getGlobalCaches() {
@@ -96,6 +107,12 @@ class ForgeGradlePlugin implements Plugin<ExtensionAware> {
     @PackageScope Provider<File> getTool(Tools tool) {
         tool.get(this.globalCaches, this.providers)
     }
+
+    @SuppressWarnings('GrDeprecatedAPIUsage') // Intentional deprecation, please use this method
+    @PackageScope Provider<File> getTool(Tools tool, Project project) {
+        tool.get(project, this.globalCaches, this.providers)
+    }
+
 
     @CompileDynamic
     private File getGradleUserHomeDir(ExtensionAware target) {

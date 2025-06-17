@@ -4,6 +4,7 @@
  */
 package net.minecraftforge.gradle;
 
+import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.Provider;
@@ -19,6 +20,11 @@ interface ForgeGradleTask extends Task {
     @Internal
     default Provider<File> getTool(Tools tool) {
         return this.getPlugin().getTool(tool);
+    }
+
+    @Internal
+    default Provider<File> getTool(Tools tool, Project project) {
+        return this.getPlugin().getTool(tool, project);
     }
 
     @Internal

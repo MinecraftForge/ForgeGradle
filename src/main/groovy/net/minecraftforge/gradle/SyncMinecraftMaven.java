@@ -62,7 +62,7 @@ abstract class SyncMinecraftMaven extends DefaultTask implements ForgeGradleTask
         this.setDescription("Syncs the Minecraft dependencies using Minecraft Mavenizer.");
 
         // JavaExec
-        this.getExecutable().convention(this.getTool(Tools.MINECRAFT_MAVEN));
+        this.getExecutable().convention(this.getTool(Tools.MINECRAFT_MAVEN, getProject()));
         this.getJavaLauncher().convention(Util.launcherForStrictly(this.getProject().getExtensions().getByType(JavaToolchainService.class), Constants.MCMAVEN_JAVA_VERSION).map(j -> j.getExecutablePath().toString()));
         this.getMainClass().convention(Constants.MCMAVEN_MAIN);
 

@@ -6,6 +6,8 @@ package net.minecraftforge.gradle;
 
 import net.minecraftforge.util.download.DownloadUtils;
 import net.minecraftforge.util.hash.HashStore;
+import org.gradle.api.Project;
+import org.gradle.api.artifacts.UnknownConfigurationException;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -25,15 +27,17 @@ import java.io.IOException;
 import static net.minecraftforge.gradle.ForgeGradlePlugin.LOGGER;
 
 enum Tools {
-    MINECRAFT_MAVEN("minecraft-maven-" + Constants.MCMAVEN_VERSION + ".jar", Constants.MCMAVEN_DL_URL),
-    SLIME_LAUNCHER("slime-launcher-" + Constants.SL_VERSION + ".jar", Constants.SL_DL_URL);
+    MINECRAFT_MAVEN("minecraft-maven-" + Constants.MCMAVEN_VERSION + ".jar", Constants.MCMAVEN_DL_URL, "mavenizer"),
+    SLIME_LAUNCHER("slime-launcher-" + Constants.SL_VERSION + ".jar", Constants.SL_DL_URL, "slimelauncher");
 
     private final String fileName;
     private final String downloadUrl;
+    private final String configuration;
 
-    Tools(String fileName, String downloadUrl) {
+    Tools(String fileName, String downloadUrl, String configuration) {
         this.fileName = fileName;
         this.downloadUrl = downloadUrl;
+        this.configuration = configuration;
     }
 
     /// Gets a provider for this tool using the given caches directory and provider factory.
@@ -49,6 +53,31 @@ enum Tools {
             parameters.getInputFile().set(cachesDir.file("tools/" + this.fileName));
             parameters.getDownloadUrl().set(this.downloadUrl);
         }));
+    }
+
+    /// Gets a provider for this tool using the configuration, otherwise default to {@link Tools#get(Project, DirectoryProperty, ProviderFactory)}
+    ///
+    /// @param project The Project
+    /// @param cachesDir The caches directory to store the tool
+    /// @param providers The provider factory to use
+    /// @return A provider for the tool as a [file][File]
+    /// @deprecated Use [ForgeGradlePlugin#getTool(Tools, Project)] <- [org.gradle.api.plugins.PluginContainer#getPlugin(Class)]
+    ///  <- [org.gradle.api.plugins.PluginAware#getPlugins()]
+    @Deprecated
+    Provider<File> get(Project project, DirectoryProperty cachesDir, ProviderFactory providers) {
+        try {
+            final var cfg = project.getConfigurations().getByName(getConfiguration());
+            final var file = cfg.getSingleFile();
+            return providers.provider(() -> file);
+        } catch (UnknownConfigurationException exception) {
+            return get(cachesDir, providers);
+        } catch (IllegalStateException exception) {
+            throw new IllegalStateException(String.format("Cant have more then one %s define", getConfiguration()));
+        }
+    }
+
+    String getConfiguration() {
+        return configuration;
     }
 
     static abstract class Source implements ValueSource<File, Source.Parameters> {
