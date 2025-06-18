@@ -12,6 +12,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.file.ArchiveOperations
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.file.ProjectLayout
 import org.gradle.api.flow.FlowProviders
@@ -87,10 +88,7 @@ class ForgeGradlePlugin implements Plugin<ExtensionAware> {
             Project project = (Project) target;
 
             for (final def tool in Tools.values()) {
-                project.getConfigurations().register(tool.getConfiguration()) {
-                    it.setTransitive(false) // Cant be transitive, maybe allow it to be later?
-                    it.setVisible(true)
-                }
+                project.getConfigurations().register(tool.getConfiguration())
             }
         }
     }
@@ -104,12 +102,12 @@ class ForgeGradlePlugin implements Plugin<ExtensionAware> {
     }
 
     @SuppressWarnings('GrDeprecatedAPIUsage') // Intentional deprecation, please use this method
-    @PackageScope Provider<File> getTool(Tools tool) {
-        tool.get(this.globalCaches, this.providers)
+    @PackageScope FileCollection getTool(Tools tool) {
+        objects.fileCollection().from(tool.get(this.globalCaches, this.providers))
     }
 
     @SuppressWarnings('GrDeprecatedAPIUsage') // Intentional deprecation, please use this method
-    @PackageScope Provider<File> getTool(Tools tool, Project project) {
+    @PackageScope FileCollection getTool(Tools tool, Project project) {
         tool.get(project, this.globalCaches, this.providers)
     }
 

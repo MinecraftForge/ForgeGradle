@@ -9,6 +9,7 @@ import net.minecraftforge.util.hash.HashStore;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.UnknownConfigurationException;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
@@ -64,16 +65,18 @@ enum Tools {
     /// @deprecated Use [ForgeGradlePlugin#getTool(Tools, Project)] <- [org.gradle.api.plugins.PluginContainer#getPlugin(Class)]
     ///  <- [org.gradle.api.plugins.PluginAware#getPlugins()]
     @Deprecated
-    Provider<File> get(Project project, DirectoryProperty cachesDir, ProviderFactory providers) {
+    FileCollection get(Project project, DirectoryProperty cachesDir, ProviderFactory providers) {
         try {
             final var cfg = project.getConfigurations().getByName(getConfiguration());
-            final var file = cfg.getSingleFile();
-            return providers.provider(() -> file);
+            final var files = cfg.getFiles();
+            if (!files.isEmpty()) {
+                return project.getObjects().fileCollection().from(cfg.getFiles());
+            }
         } catch (UnknownConfigurationException exception) {
-            return get(cachesDir, providers);
-        } catch (IllegalStateException exception) {
-            throw new IllegalStateException(String.format("Cant have more then one %s defined", getConfiguration()), exception);
+            System.out.println("[FG7] Unknown Configuration %s, using defaults for tool %s".formatted(getConfiguration(), toString()));
         }
+
+        return project.getObjects().fileCollection().from(get(cachesDir, providers));
     }
 
     String getConfiguration() {
