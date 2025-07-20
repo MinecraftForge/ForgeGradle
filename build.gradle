@@ -54,6 +54,7 @@ repositories {
 dependencies {
     commonCompileOnly gradleApi(libs.versions.gradle.get())
     commonCompileOnly libs.groovy
+
     commonImplementation libs.diff4j
     commonImplementation libs.commons.io
     commonImplementation libs.lzma

@@ -22,9 +22,6 @@ dependencyResolutionManagement {
         version 'gradle', '4.9'
         library 'groovy', 'org.codehaus.groovy', 'groovy-all' version '2.4.12'
 
-        // Static Analysis
-        library 'nulls', 'org.jetbrains', 'annotations' version '26.0.2'
-
         // Dependencies
         library 'diff4j',         'com.cloudbees',             'diff4j'         version '1.2'
         library 'commons-io',     'commons-io',                'commons-io'     version '2.4'
