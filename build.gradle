@@ -1,63 +1,88 @@
 plugins {
-    id 'net.minecrell.licenser' version '0.4.1'
-    id 'org.ajoberstar.grgit' version '3.0.0'
-    id 'com.github.ben-manes.versions' version '0.20.0'
-  //id 'com.github.johnrengelman.shadow' version '2.0.4'
+    id 'dev.gradleplugins.java-gradle-plugin'
+    id 'idea'
+    id 'eclipse'
+    id 'maven-publish'
+    alias libs.plugins.licenser
+    alias libs.plugins.gradleutils
 }
 
-apply plugin: 'java'
-apply plugin: 'maven-publish'
-apply plugin: 'eclipse'
-
-sourceCompatibility = targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
-compileJava {
-    sourceCompatibility = targetCompatibility = '1.8'
-}
-
+final projectDisplayName = 'ForgeGradle'
+final projectArtifactId = base.archivesName = project.name // cannot change this
 group = 'net.minecraftforge.gradle'
-version = gitVersion()
-def gitVersion() {
-    def raw = grgit.describe(longDescr: true, tags: true)
-    def desc = (raw == null ? 'unknown-unknown-unknown' : raw).split('-') as List
-    def hash = desc.remove(desc.size() - 1)
-    def offset = desc.remove(desc.size() - 1)
-    def tag = desc.join('-')
-    def branch = grgit.branch.current().name    
-    return "${tag}.${offset}" //${t -> if (branch != 'master') t << '-' + branch}"
-}
-println('Version: ' + version + ' Java: ' + System.getProperty('java.version') + ' JVM: ' + System.getProperty('java.vm.version') + '(' + System.getProperty('java.vendor') + ') Arch: ' + System.getProperty('os.arch'))
+version = gitversion.tagOffset
+
+println "Version: $version"
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(8)
 
 sourceSets {
-    common
-    mcp
-    patcher
-    userdev
+    register('common')
+    register('mcp')
+    register('patcher')
+    register('userdev')
 }
 
 configurations {
-    all {
+    configureEach {
         exclude group: 'org.ow2.asm'
     }
-    mcpImplementation.extendsFrom commonImplementation
-    patcherImplementation.extendsFrom commonImplementation
-    userdevImplementation.extendsFrom mcpImplementation
-    implementation.extendsFrom mcpImplementation, patcherImplementation, userdevImplementation
+
+    def extend = { String to, String... from ->
+        final SourceSet toSet = sourceSets.getByName(to)
+
+        for (var s in from) {
+            final SourceSet fromSet = sourceSets.getByName(s)
+
+            named(toSet.implementationConfigurationName) { extendsFrom getByName(fromSet.implementationConfigurationName) }
+            named(toSet.compileOnlyConfigurationName) { extendsFrom getByName(fromSet.compileOnlyConfigurationName) }
+        }
+    }
+
+    extend('mcp', 'common')
+    extend('patcher', 'common')
+    extend('userdev', 'mcp')
+    extend('main', 'mcp', 'patcher', 'userdev')
 }
 
-jar {
+// See settings.gradle for why this is here
+repositories {
+    mavenCentral()
+    maven gradleutils.forgeMaven
+}
+
+dependencies {
+    commonCompileOnly gradleApi(libs.versions.gradle.get())
+    commonCompileOnly libs.groovy
+
+    commonImplementation libs.diff4j
+    commonImplementation libs.commons.io
+    commonImplementation libs.lzma
+    commonImplementation libs.javaxdelta
+    commonImplementation libs.gson
+    commonImplementation libs.guava
+    commonImplementation libs.fastcsv
+    commonImplementation libs.artifactural
+    commonImplementation libs.maven.artifact
+    commonImplementation libs.httpclient
+    commonImplementation libs.srgutils
+
+    mcpImplementation sourceSets.common.output
+    patcherImplementation sourceSets.mcp.output
+    patcherImplementation sourceSets.common.output
+    userdevImplementation sourceSets.mcp.output
+    userdevImplementation sourceSets.common.output
+}
+
+tasks.named('jar', Jar) {
     from sourceSets.common.output
     from sourceSets.mcp.output
     from sourceSets.patcher.output
     from sourceSets.userdev.output
 }
 
-repositories {
-    jcenter()
-    maven { url = 'https://maven.minecraftforge.net/' }
-}
-
 license {
-    header = file('HEADER')
+    header = rootProject.file('LICENSE-header.txt')
     ext {
         name = 'ForgeGradle'
         year = 2018
@@ -68,67 +93,64 @@ license {
     exclude 'net/minecraftforge/gradle/common/util/JavaVersionParser.java'
 }
 
-wrapper {
-    gradleVersion = '4.9'
-    distributionType = Wrapper.DistributionType.ALL
-}
+gradlePlugin {
+    website.set gitversion.url
+    vcsUrl.set gitversion.url + '.git'
 
-dependencies {
-    commonImplementation gradleApi()
-    commonImplementation 'com.cloudbees:diff4j:1.2'
-    commonImplementation 'commons-io:commons-io:2.4'
-    commonImplementation 'com.github.jponge:lzma-java:1.3' // replaces the LZMA binary
-    commonImplementation 'com.nothome:javaxdelta:2.0.1' // GDIFF implementation for BinPatches
-    commonImplementation 'com.google.code.gson:gson:2.8.5'
-    commonImplementation 'com.google.guava:guava:26.0-jre'
-    commonImplementation 'de.siegmar:fastcsv:1.0.2'
-    commonImplementation 'net.minecraftforge:artifactural:1.0.+'
-    commonImplementation 'org.apache.maven:maven-artifact:3.6.0'
-    commonImplementation 'org.apache.httpcomponents:httpclient:4.3.3'
-    commonImplementation 'net.minecraftforge:srgutils:0.2.12'
+    compatibility {
+        minimumGradleVersion = libs.versions.gradle.get()
+    }
 
-    mcpImplementation sourceSets.common.output
-    patcherImplementation sourceSets.mcp.output
-    patcherImplementation sourceSets.common.output
-    userdevImplementation sourceSets.mcp.output
-    userdevImplementation sourceSets.common.output
-}
+    java {
+        withSourcesJar()
+    }
 
-//Gradle doesn't add it's own source when doing the API. So lets hack it in!
-import org.gradle.plugins.ide.eclipse.model.*
-import org.gradle.plugins.ide.eclipse.model.internal.*
-project.extensions.eclipse.classpath.file.whenMerged { Classpath cp ->
-    def gradleSrc = gradle.gradleHomeDir.absolutePath.replace(File.separator, '/') + '/src/'
-    cp.entries.each { entry ->
-        if ((entry in AbstractLibrary) && entry.library.file.name.startsWith('gradle-')) {
-            def type = (entry.library.file.name =~ "^gradle(-(.*))?-(${gradle.gradleVersion})")[0][2]
-            if (type == 'api') type = 'core-api' //Gradle name is different for cores
-            if (type == '') type = 'core'
-            entry.sourcePath = new FileReferenceFactory().fromPath(gradleSrc + type)
+    plugins {
+        // UserDev
+        register('userdev') {
+            id = 'net.minecraftforge.gradle'
+            implementationClass = 'net.minecraftforge.gradle.userdev.UserDevPlugin'
         }
+
+        // MCP
+        def mcp = { String name ->
+            register(name) {
+                it.id = "net.minecraftforge.gradle.${name.replace('-', '.')}"
+                it.implementationClass = 'net.minecraftforge.gradle.mcp.MCPPlugin'
+            }
+        }
+        mcp('mcp')
+        mcp('forgedev-mcp')
+
+        // Patcher
+        def patcher = { String name ->
+            register(name) {
+                it.id = "net.minecraftforge.gradle.${name.replace('-', '.')}"
+                it.implementationClass = 'net.minecraftforge.gradle.patcher.PatcherPlugin'
+            }
+        }
+        patcher('patcher')
+        patcher('forgedev')
+        patcher('forgedev-patcher')
     }
 }
 
 publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-        }
-    }
-    repositories {
-        maven {
-            if (System.env.MAVEN_USER) {
-                url 'https://maven.minecraftforge.net/'
-                authentication {
-                    basic(BasicAuthentication)
-                }
-                credentials {
-                    username = System.env.MAVEN_USER ?: 'not'
-                    password = System.env.MAVEN_PASSWORD ?: 'set'
-                }
-            } else {
-                url 'file://' + rootProject.file('repo').getAbsolutePath()
+    publications.register('pluginMaven', MavenPublication) {
+        artifactId = projectArtifactId
+
+        pom { pom ->
+            name = projectDisplayName
+
+            gradleutils.pom.setGitHubDetails pom
+
+            licenses {
+                license gradleutils.pom.licenses.LGPLv2_1
             }
         }
+    }
+
+    repositories {
+        maven gradleutils.publishingForgeMaven
     }
 }
