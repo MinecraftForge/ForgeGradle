@@ -6,7 +6,10 @@
 package net.minecraftforge.gradle.userdev;
 
 import groovy.lang.Closure;
+import groovy.lang.DelegatesTo;
 import groovy.lang.GroovyObjectSupport;
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.SimpleType;
 import groovy.util.Node;
 import groovy.util.NodeList;
 import net.minecraftforge.gradle.common.util.BaseRepo;
@@ -18,6 +21,7 @@ import net.minecraftforge.gradle.userdev.util.MavenPomUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ExternalModuleDependencyBundle;
 import org.gradle.api.artifacts.MinimalExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
@@ -63,7 +67,12 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
         return deobf(dependency, null);
     }
 
-    public Dependency deobf(Object dependency, Closure<?> configure) {
+    public Dependency deobf(
+        Object dependency,
+        @DelegatesTo(Dependency.class)
+        @ClosureParams(value = SimpleType.class, options = "org.gradle.api.artifacts.Dependency")
+        Closure<?> configure
+    ) {
         Dependency baseDependency = project.getDependencies().create(dependency, configure);
         project.getDependencies().add(UserDevPlugin.OBF, baseDependency);
 
@@ -76,22 +85,26 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
         return deobf(dependency, null);
     }
 
-    public <T> Provider<?> deobf(Provider<T> dependency, Closure<?> configure) {
-        if (!dependency.isPresent()) return dependency;
-        boolean isBundle = dependency.get() instanceof ExternalModuleDependencyBundle;
-
+    public <T> Provider<?> deobf(
+        Provider<T> dependency,
+        @DelegatesTo(ExternalModuleDependency.class)
+        @ClosureParams(value = SimpleType.class, options = "org.gradle.api.artifacts.ExternalModuleDependency")
+        Closure<?> configure
+    ) {
         project.getDependencies().addProvider(UserDevPlugin.OBF, dependency, baseDependency -> {
             //noinspection ConstantValue -- null closure is allowed here
             if (configure != null)
                 configure.call(baseDependency);
         });
 
-        if (isBundle) {
+        // Checking for presence after DependencyHandler#addProvider so Gradle can throw its usual errors as needed
+        if (!dependency.isPresent()) return dependency;
+
+        if (dependency.get() instanceof ExternalModuleDependencyBundle) {
             // this provider MUST return ExternalModuleDependencyBundle
-            // we need to use Project#provider (or ProviderFactory#provider in FG7) to make a provider that has a forced type.
+            // The only way to coerce the type of it is to use a property, since we can set the type manually on creation.
             // ProviderInternal#getType uses the generic argument to determine what type it is.
             // Provider#map and #flatMap do NOT preserve the resultant type, which fucks with adding bundles to configurations.
-            // The only way to coerce the type of a provider is to use a property, since we can set the type manually on creation.
             return project.getObjects().property(ExternalModuleDependencyBundle.class).value(project.provider(() -> {
                 ExternalModuleDependencyBundle newBundle = new RemappedExternalModuleDependencyBundle();
                 for (MinimalExternalModuleDependency d : (ExternalModuleDependencyBundle) dependency.get()) {
@@ -110,11 +123,16 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
 
     @SuppressWarnings("unused")
     public <T> Provider<?> deobf(ProviderConvertible<T> dependency) {
+        //noinspection DataFlowIssue -- null closure is allowed here
         return deobf(dependency, null);
     }
 
-    public <T> Provider<?> deobf(ProviderConvertible<T> dependency, @Nullable Closure<?> configure) {
-        //noinspection DataFlowIssue -- null closure is allowed here
+    public <T> Provider<?> deobf(
+        ProviderConvertible<T> dependency,
+        @DelegatesTo(ExternalModuleDependency.class)
+        @ClosureParams(value = SimpleType.class, options = "org.gradle.api.artifacts.ExternalModuleDependency")
+        Closure<?> configure
+    ) {
         return deobf(dependency.asProvider(), configure);
     }
 
