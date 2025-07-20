@@ -244,8 +244,8 @@ public class MavenArtifactDownloader {
 
         //Remove old repos, and only use the ones we're told to.
         List<ArtifactRepository> old = new ArrayList<>(project.getRepositories());
-        project.getRepositories().clear();
-        project.getRepositories().addAll(repos);
+        //project.getRepositories().clear();
+        project.getRepositories().addAll(0, repos);
 
         Configuration cfg = project.getConfigurations().create(name);
         ExternalModuleDependency dependency = (ExternalModuleDependency)project.getDependencies().create(mine.getDescriptor());
