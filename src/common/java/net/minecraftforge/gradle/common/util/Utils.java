@@ -426,7 +426,7 @@ public class Utils {
                 read = IOUtils.copy(stream, out);
             }
 
-            if (len >= 0 && read != len) {
+            if (len != -1 && read != len) {
                 output.delete();
                 throw new IOException("Failed to read all of data from " + con.getURL() + " got " + read + " expected " + len);
             }
