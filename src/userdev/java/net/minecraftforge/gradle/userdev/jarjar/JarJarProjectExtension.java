@@ -18,8 +18,6 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.*;
 import org.gradle.api.attributes.Attribute;
-import org.gradle.api.provider.Provider;
-import org.gradle.api.provider.ProviderConvertible;
 import org.gradle.api.publish.maven.MavenPublication;
 
 import java.util.List;
@@ -80,14 +78,6 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
         project.getTasks().withType(JarJar.class).configureEach(JarJar::fromRuntimeConfiguration);
     }
 
-    public void pin(Dependency dependency, ProviderConvertible<String> version) {
-        pin(dependency, version.asProvider());
-    }
-
-    public void pin(Dependency dependency, Provider<String> version) {
-        pin(dependency, version.get());
-    }
-
     public void pin(Dependency dependency, String version) {
         enable();
         if (dependency instanceof ModuleDependency) {
@@ -102,14 +92,6 @@ public class JarJarProjectExtension extends GroovyObjectSupport {
             return Optional.ofNullable(moduleDependency.getAttributes().getAttribute(fixedJarJarVersionAttribute));
         }
         return Optional.empty();
-    }
-
-    public void ranged(Dependency dependency, ProviderConvertible<String> version) {
-        ranged(dependency, version.asProvider());
-    }
-
-    public void ranged(Dependency dependency, Provider<String> version) {
-        ranged(dependency, version.get());
     }
 
     public void ranged(Dependency dependency, String range) {

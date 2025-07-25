@@ -16,10 +16,6 @@ import org.gradle.api.provider.Provider;
 import groovy.lang.Closure;
 import groovy.lang.GroovyObjectSupport;
 import groovy.lang.MissingPropertyException;
-import org.gradle.api.provider.ProviderConvertible;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Map;
 
 import javax.inject.Inject;
@@ -89,43 +85,15 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         getMappingVersion().set(version);
     }
 
-    public void mappings(Object channel, Object version) {
-        try {
-            getMappingChannel().set(valueOf(channel, String.class));
-            getMappingVersion().set(valueOf(version, String.class));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Tried to set mappings using non-Strings", e);
-        }
-    }
-
-    public void mappings(Map<String, ?> mappings) {
-        Object channel = mappings.get("channel");
-        Object version = mappings.get("version");
+    public void mappings(Map<String, ? extends CharSequence> mappings) {
+        CharSequence channel = mappings.get("channel");
+        CharSequence version = mappings.get("version");
 
         if (channel == null || version == null) {
             throw new IllegalArgumentException("Must specify both mappings channel and version");
         }
 
-        mappings(channel, version);
-    }
-
-    @Contract("!null, _ -> !null")
-    private static <T> @Nullable T valueOf(@Nullable Object object, Class<T> castTo) {
-        if (object instanceof ProviderConvertible<?>)
-            object = ((ProviderConvertible<?>) object).asProvider().get();
-        else if (object instanceof Provider<?>)
-            object = ((Provider<?>) object).get();
-
-        if (object == null)
-            return null;
-
-        try {
-            return castTo.cast(object);
-        } catch (ClassCastException e) {
-            throw new IllegalArgumentException(String.format(
-                "Expected class %s but got class %s for value: %s", castTo.getName(), object.getClass().getName(), object)
-            );
-        }
+        mappings(channel.toString(), version.toString());
     }
 
     public ConfigurableFileCollection getAccessTransformers() {
