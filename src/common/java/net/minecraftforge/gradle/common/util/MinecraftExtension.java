@@ -103,14 +103,17 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         mappings(channel, version);
     }
 
-    // Using String#valueOf on the value will account for weird cases of GString and non-String CharSequences
-    private static void setMappingProperty(Property<String> property, Object value) {
+    // Using Object#toString on the value will account for weird cases of GString and non-String CharSequences
+    private void setMappingProperty(Property<String> property, Object value) {
+        Provider<?> provider;
         if (value instanceof ProviderConvertible<?>)
-            property.set(((ProviderConvertible<?>) value).asProvider().map(String::valueOf));
+            provider = ((ProviderConvertible<?>) value).asProvider();
         else if (value instanceof Provider<?>)
-            property.set(((Provider<?>) value).map(String::valueOf));
+            provider = (Provider<?>) value;
         else
-            property.set(String.valueOf(value));
+            provider = project.provider(() -> value);
+
+        property.set(provider.map(Object::toString));
     }
 
     public ConfigurableFileCollection getAccessTransformers() {
