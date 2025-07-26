@@ -17,8 +17,6 @@ import groovy.lang.Closure;
 import groovy.lang.GroovyObjectSupport;
 import groovy.lang.MissingPropertyException;
 import org.gradle.api.provider.ProviderConvertible;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
@@ -90,12 +88,8 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
     }
 
     public void mappings(Object channel, Object version) {
-        try {
-            getMappingChannel().set(valueOf(channel, String.class));
-            getMappingVersion().set(valueOf(version, String.class));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Tried to set mappings using non-Strings", e);
-        }
+        setMappingProperty(getMappingChannel(), channel);
+        setMappingProperty(getMappingVersion(), version);
     }
 
     public void mappings(Map<String, ?> mappings) {
@@ -109,23 +103,14 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         mappings(channel, version);
     }
 
-    @Contract("!null, _ -> !null")
-    private static <T> @Nullable T valueOf(@Nullable Object object, Class<T> castTo) {
-        if (object instanceof ProviderConvertible<?>)
-            object = ((ProviderConvertible<?>) object).asProvider().get();
-        else if (object instanceof Provider<?>)
-            object = ((Provider<?>) object).get();
-
-        if (object == null)
-            return null;
-
-        try {
-            return castTo.cast(object);
-        } catch (ClassCastException e) {
-            throw new IllegalArgumentException(String.format(
-                "Expected class %s but got class %s for value: %s", castTo.getName(), object.getClass().getName(), object)
-            );
-        }
+    // Using String#valueOf on the value will account for weird cases of GString and non-String CharSequences
+    private static void setMappingProperty(Property<String> property, Object value) {
+        if (value instanceof ProviderConvertible<?>)
+            property.set(((ProviderConvertible<?>) value).asProvider().map(String::valueOf));
+        else if (value instanceof Provider<?>)
+            property.set(((Provider<?>) value).map(String::valueOf));
+        else
+            property.set(String.valueOf(value));
     }
 
     public ConfigurableFileCollection getAccessTransformers() {
