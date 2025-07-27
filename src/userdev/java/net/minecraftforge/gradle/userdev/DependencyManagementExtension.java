@@ -25,6 +25,7 @@ import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ExternalModuleDependencyBundle;
 import org.gradle.api.artifacts.MinimalExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderConvertible;
 import org.gradle.api.publish.maven.MavenPublication;
@@ -91,16 +92,13 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
         @ClosureParams(value = SimpleType.class, options = "org.gradle.api.artifacts.ExternalModuleDependency")
         Closure<?> configure
     ) {
-        project.getDependencies().addProvider(UserDevPlugin.OBF, dependency, baseDependency -> {
-            //noinspection ConstantValue -- null closure is allowed here
-            if (configure != null)
-                configure.call(baseDependency);
-        });
+        if (dependency.isPresent() && dependency.get() instanceof ExternalModuleDependencyBundle) {
+            project.getDependencies().addProvider(UserDevPlugin.OBF, dependency, baseDependency -> {
+                //noinspection ConstantValue -- null closure is allowed here
+                if (configure != null)
+                    configure.call(baseDependency);
+            });
 
-        // Checking for presence after DependencyHandler#addProvider so Gradle can throw its usual errors as needed
-        if (!dependency.isPresent()) return dependency;
-
-        if (dependency.get() instanceof ExternalModuleDependencyBundle) {
             // this provider MUST return ExternalModuleDependencyBundle
             // The only way to coerce the type of it is to use a property, since we can set the type manually on creation.
             // ProviderInternal#getType uses the generic argument to determine what type it is.
@@ -117,7 +115,14 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
                 return newBundle;
             }));
         } else {
-            return dependency.map(d -> remapper.remap(project.getDependencies().create(d, configure)));
+            // Rationale: single dependencies may have additional data that must be calculated at configuration time
+            // The most obvious example being usage of DependencyHandler#variantOf.
+            // If the dependency isn't created immediately, that information is lost when copying the base dependency (i don't know why)
+            // It's a rather negligible performance hit and FG6 was already doing this anyway, so it's not a big deal.
+            // Still going to return a Provider<?> though, since we also handle bundles in this method
+            Property<Dependency> provider = project.getObjects().property(Dependency.class).value(dependency.map(d -> this.deobf(d, configure)));
+            provider.finalizeValue();
+            return provider;
         }
     }
 
