@@ -16,6 +16,8 @@ import org.gradle.api.provider.Provider;
 import groovy.lang.Closure;
 import groovy.lang.GroovyObjectSupport;
 import groovy.lang.MissingPropertyException;
+import org.gradle.api.provider.ProviderConvertible;
+
 import java.util.Map;
 
 import javax.inject.Inject;
@@ -85,15 +87,33 @@ public abstract class MinecraftExtension extends GroovyObjectSupport {
         getMappingVersion().set(version);
     }
 
-    public void mappings(Map<String, ? extends CharSequence> mappings) {
-        CharSequence channel = mappings.get("channel");
-        CharSequence version = mappings.get("version");
+    public void mappings(Object channel, Object version) {
+        setMappingProperty(getMappingChannel(), channel);
+        setMappingProperty(getMappingVersion(), version);
+    }
+
+    public void mappings(Map<String, ?> mappings) {
+        Object channel = mappings.get("channel");
+        Object version = mappings.get("version");
 
         if (channel == null || version == null) {
             throw new IllegalArgumentException("Must specify both mappings channel and version");
         }
 
-        mappings(channel.toString(), version.toString());
+        mappings(channel, version);
+    }
+
+    // Using Object#toString on the value will account for weird cases of GString and non-String CharSequences
+    private void setMappingProperty(Property<String> property, Object value) {
+        Provider<?> provider;
+        if (value instanceof ProviderConvertible<?>)
+            provider = ((ProviderConvertible<?>) value).asProvider();
+        else if (value instanceof Provider<?>)
+            provider = (Provider<?>) value;
+        else
+            provider = project.provider(() -> value);
+
+        property.set(provider.map(Object::toString));
     }
 
     public ConfigurableFileCollection getAccessTransformers() {
