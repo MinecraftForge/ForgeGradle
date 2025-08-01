@@ -21,7 +21,7 @@ public abstract class UserDevExtension extends MinecraftExtension {
     }
 
     public void setReobf(boolean value) {
-    	this.reobf = false;
+    	this.reobf = value;
     }
 
     public boolean getReobf() {
