@@ -151,7 +151,7 @@ import java.util.concurrent.Callable
     }
 
     @CompileStatic
-    @PackageScope final class ForProjectImpl implements MinecraftExtension.ForProject {
+    @PackageScope final class ForProjectImpl implements MinecraftExtension.ForProject, HasPublicType {
         private final Project project
         private final ProjectLayout layout
         private final ProviderFactory providers
@@ -190,6 +190,11 @@ import java.util.concurrent.Callable
 
             // Finish when the project is evaluated
             project.afterEvaluate { this.finish(it, flowScope, flowProviders, fileSystemOperations, archiveOperations) }
+        }
+
+        @Override
+        TypeOf<?> getPublicType() {
+            TypeOf.typeOf(MinecraftExtension.ForProject)
         }
 
         private void finish(Project project, FlowScope flowScope, FlowProviders flowProviders, FileSystemOperations fileSystemOperations, ArchiveOperations archiveOperations) {
