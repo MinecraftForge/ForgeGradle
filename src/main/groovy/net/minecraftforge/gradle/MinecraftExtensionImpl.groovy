@@ -300,7 +300,7 @@ import java.util.concurrent.Callable
         void runs(
             @DelegatesTo(NamedDomainObjectContainer)
             @ClosureParams(value = SimpleType, options = 'org.gradle.api.NamedDomainObjectContainer<net.minecraftforge.gradle.SlimeLauncherOptions>')
-                Closure<Void> closure
+                Closure closure
         ) {
             this.runs.configure(closure)
         }
