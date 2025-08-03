@@ -53,7 +53,7 @@ enum Tools {
 
     static abstract class Source implements ValueSource<File, Source.Parameters> {
         interface Parameters extends ValueSourceParameters {
-            @InputFile @PathSensitive(PathSensitivity.ABSOLUTE) RegularFileProperty getInputFile();
+            @InputFile RegularFileProperty getInputFile();
 
             @Input Property<String> getDownloadUrl();
         }

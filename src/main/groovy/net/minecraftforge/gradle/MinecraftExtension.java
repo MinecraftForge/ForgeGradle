@@ -21,6 +21,8 @@ import org.gradle.api.attributes.Attribute;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderConvertible;
+import org.gradle.api.reflect.HasPublicType;
+import org.gradle.api.reflect.TypeOf;
 import org.gradle.nativeplatform.OperatingSystemFamily;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.UnknownNullability;
@@ -190,7 +192,7 @@ public sealed interface MinecraftExtension permits MinecraftExtensionImpl, Minec
         void runs(
             @DelegatesTo(NamedDomainObjectContainer.class)
             @ClosureParams(value = SimpleType.class, options = "org.gradle.api.NamedDomainObjectContainer<net.minecraftforge.gradle.SlimeLauncherOptions>")
-            Closure<Void> closure
+            Closure closure
         );
 
         /// Configures the Slime Launcher options for this project, which will be used to create the launcher tasks.

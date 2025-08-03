@@ -67,9 +67,9 @@ abstract class SyncMinecraftMaven extends DefaultTask implements ForgeGradleTask
         this.getMainClass().convention(Constants.MCMAVEN_MAIN);
 
         // Minecraft Maven
-        var defaultDirectory = objects.directoryProperty().value(this.getGlobalCaches().dir("mavenizer").map(this.problems.ensureDirectory()));
-        this.getCaches().convention(defaultDirectory.dir("cache").map(this.problems.ensureDirectory()));
-        this.getOutput().convention(defaultDirectory.dir("output").map(this.problems.ensureDirectory()));
+        var defaultDirectory = objects.directoryProperty().value(this.getGlobalCaches().dir("mavenizer").map(this.problems.ensureFileLocation()));
+        this.getCaches().convention(defaultDirectory.dir("cache").map(this.problems.ensureFileLocation()));
+        this.getOutput().convention(defaultDirectory.dir("output").map(this.problems.ensureFileLocation()));
 
         this.onlyIf(
             "Minecraft Mavenizer will not run if no Minecraft dependencies are present.",

@@ -20,7 +20,6 @@ import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.ExtensionAware
-import org.gradle.api.plugins.PluginAware
 import org.gradle.api.problems.Problems
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
@@ -64,7 +63,7 @@ class ForgeGradlePlugin implements Plugin<ExtensionAware> {
     @Override
     void apply(ExtensionAware target) {
         this.globalCaches = this.objects.directoryProperty().convention(
-            this.objects.directoryProperty().fileValue(this.getGradleUserHomeDir(target)).dir(Constants.CACHES_LOCATION).map(this.enhancedProblems.ensureDirectory())
+            this.objects.directoryProperty().fileValue(this.getGradleUserHomeDir(target)).dir(Constants.CACHES_LOCATION).map(this.enhancedProblems.ensureFileLocation())
         )
 
         ForgeGradleExtensionImpl.register(

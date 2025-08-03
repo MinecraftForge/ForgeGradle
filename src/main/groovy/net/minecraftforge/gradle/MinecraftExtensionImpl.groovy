@@ -34,11 +34,13 @@ import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
+import org.gradle.api.reflect.HasPublicType
+import org.gradle.api.reflect.TypeOf
 
 import java.util.concurrent.Callable
 
 @CompileStatic
-@PackageScope final class MinecraftExtensionImpl implements MinecraftExtension {
+@PackageScope final class MinecraftExtensionImpl implements MinecraftExtension, HasPublicType {
     private static final String EXT_MAVEN_REPOS = 'fg_mc_maven_repos'
     private static final String EXT_MAPPINGS = 'fg_mc_mappings'
 
@@ -77,9 +79,14 @@ import java.util.concurrent.Callable
         this.plugin = plugin
         this.objects = objects
 
-        this.output = objects.directoryProperty().convention(plugin.globalCaches.dir('mavenizer/output').map(problems.ensureDirectory()))
+        this.output = objects.directoryProperty().convention(plugin.globalCaches.dir('mavenizer/output').map(problems.ensureFileLocation()))
 
         this.mappingsProp = objects.property(Mappings)
+    }
+
+    @Override
+    TypeOf<?> getPublicType() {
+        TypeOf.typeOf(MinecraftExtension)
     }
 
     @PackageScope ForgeGradleProblems getProblems() {
@@ -170,7 +177,7 @@ import java.util.concurrent.Callable
             this.providers = providers
 
             this.localCaches = MinecraftExtensionImpl.this.objects.directoryProperty().convention(
-                this.layout.buildDirectory.dir(Constants.CACHES_LOCATION).map(MinecraftExtensionImpl.this.problems.ensureDirectory())
+                this.layout.buildDirectory.dir(Constants.CACHES_LOCATION).map(MinecraftExtensionImpl.this.problems.ensureFileLocation())
             )
 
             this.runs = SlimeLauncherOptions.container(MinecraftExtensionImpl.this.objects, layout)
@@ -223,8 +230,8 @@ import java.util.concurrent.Callable
                     } else if (allDependencies.size() > 1) {
                         throw new IllegalArgumentException('Cannot create run configurations for more than one Minecraft dependency')
                     } else {
-                        var cacheDir = MinecraftExtensionImpl.this.plugin.globalCaches.dir("slime-launcher/cache/${this.minecraftDependencies[0].group.replace('.', '/')}/${this.minecraftDependencies[0].name}/${this.minecraftDependencies[0].version}").map(MinecraftExtensionImpl.this.problems.ensureDirectory())
-                        var metadataDir = MinecraftExtensionImpl.this.objects.directoryProperty().value(cacheDir).dir('metadata').map(MinecraftExtensionImpl.this.problems.ensureDirectory())
+                        var cacheDir = MinecraftExtensionImpl.this.plugin.globalCaches.dir("slime-launcher/cache/${this.minecraftDependencies[0].group.replace('.', '/')}/${this.minecraftDependencies[0].name}/${this.minecraftDependencies[0].version}").map(MinecraftExtensionImpl.this.problems.ensureFileLocation())
+                        var metadataDir = MinecraftExtensionImpl.this.objects.directoryProperty().value(cacheDir).dir('metadata').map(MinecraftExtensionImpl.this.problems.ensureFileLocation())
                         var metadataZip = MinecraftExtensionImpl.this.output.file(Util.artifactPath(this.minecraftDependencies[0].group, this.minecraftDependencies[0].name, this.minecraftDependencies[0].version, 'metadata', 'zip'))
 
                         try {

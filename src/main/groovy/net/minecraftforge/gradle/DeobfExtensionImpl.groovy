@@ -19,10 +19,12 @@ import org.gradle.api.attributes.AttributeContainer
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
+import org.gradle.api.reflect.HasPublicType
+import org.gradle.api.reflect.TypeOf
 
 @CompileStatic
 @PackageScope([PackageScopeTarget.CLASS, PackageScopeTarget.CONSTRUCTORS])
-final class DeobfExtensionImpl implements DeobfExtension {
+final class DeobfExtensionImpl implements DeobfExtension, HasPublicType {
     private final Project project
     private final ForgeGradleProblems problems
 
@@ -38,6 +40,11 @@ final class DeobfExtensionImpl implements DeobfExtension {
         this.project = project
         this.problems = problems
         this.mappingsProp = objects.property(MinecraftExtension.Mappings).convention(mappings)
+    }
+
+    @Override
+    TypeOf<?> getPublicType() {
+        TypeOf.typeOf(DeobfExtension)
     }
 
     private MinecraftExtension.Mappings getMappings() {

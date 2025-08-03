@@ -15,6 +15,8 @@ import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.reflect.HasPublicType;
+import org.gradle.api.reflect.TypeOf;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
@@ -563,10 +565,15 @@ public sealed abstract class SlimeLauncherOptions implements Named permits Slime
 
     abstract ProjectLayout getLayout();
 
-    abstract non-sealed static class Impl extends SlimeLauncherOptions {
+    abstract non-sealed static class Impl extends SlimeLauncherOptions implements HasPublicType {
         @Inject
         public Impl(String name) {
             super(name);
+        }
+
+        @Override
+        public TypeOf<?> getPublicType() {
+            return TypeOf.typeOf(SlimeLauncherOptions.class);
         }
 
         @Override

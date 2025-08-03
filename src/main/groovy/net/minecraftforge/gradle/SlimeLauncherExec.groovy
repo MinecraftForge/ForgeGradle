@@ -48,7 +48,7 @@ import java.nio.file.Files
             )
 
             var caches = task.objectFactory.directoryProperty().value(task.globalCaches.dir("slime-launcher/cache/${dependency.group.replace('.', '/')}/${dependency.name}/${dependency.version}"))
-            task.cacheDir.set caches.map(task.problems.ensureDirectory())
+            task.cacheDir.set caches.map(task.problems.ensureFileLocation())
             task.metadataZip.set metadataZip
 
             task.inherit(configs, options.name)

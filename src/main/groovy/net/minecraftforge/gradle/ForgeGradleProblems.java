@@ -9,6 +9,7 @@ import org.gradle.api.Transformer;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.file.Directory;
+import org.gradle.api.file.FileSystemLocation;
 import org.gradle.api.problems.Problem;
 import org.gradle.api.problems.ProblemGroup;
 import org.gradle.api.problems.ProblemId;
@@ -287,22 +288,24 @@ record ForgeGradleProblems(Problems problems, Predicate<String> properties) impl
     //endregion
 
     //region Utilities
-    Transformer<Directory, Directory> ensureDirectory() {
-        return dir -> {
+    <T extends FileSystemLocation> Transformer<T, T> ensureFileLocation() {
+        return file -> {
+            var dir = file instanceof Directory ? file.getAsFile() : file.getAsFile().getParentFile();
             try {
-                Files.createDirectories(dir.getAsFile().toPath());
-                return dir;
+                Files.createDirectories(dir.toPath());
             } catch (IOException e) {
                 throw this.getReporter().throwing(e, id("cannot-ensure-directory", "Failed to create directory"), spec -> spec
                     .details("""
                         Failed to create a directory required for ForgeGradle to function.
                         Directory: %s"""
-                        .formatted(dir.getAsFile().getAbsolutePath()))
+                        .formatted(dir.getAbsolutePath()))
                     .severity(Severity.ERROR)
                     .stackLocation()
                     .solution("Ensure that the you have write access to the directory that needs to be created.")
                     .solution(HELP_MESSAGE));
             }
+
+            return file;
         };
     }
     //endregion

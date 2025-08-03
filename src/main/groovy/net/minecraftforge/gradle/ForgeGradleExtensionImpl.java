@@ -6,8 +6,10 @@ package net.minecraftforge.gradle;
 
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.PluginAware;
+import org.gradle.api.reflect.HasPublicType;
+import org.gradle.api.reflect.TypeOf;
 
-record ForgeGradleExtensionImpl() implements ForgeGradleExtension {
+record ForgeGradleExtensionImpl() implements ForgeGradleExtension, HasPublicType {
     private static final ForgeGradleExtensionImpl INSTANCE = new ForgeGradleExtensionImpl();
 
     static void register(ExtensionAware target) {
@@ -16,5 +18,10 @@ record ForgeGradleExtensionImpl() implements ForgeGradleExtension {
             ForgeGradleExtension.NAME,
             INSTANCE
         );
+    }
+
+    @Override
+    public TypeOf<?> getPublicType() {
+        return TypeOf.typeOf(ForgeGradleExtension.class);
     }
 }

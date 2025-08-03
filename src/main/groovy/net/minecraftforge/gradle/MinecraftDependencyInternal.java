@@ -19,14 +19,21 @@ import org.gradle.api.artifacts.VersionConstraint;
 import org.gradle.api.artifacts.capability.CapabilitySelector;
 import org.gradle.api.attributes.AttributeContainer;
 import org.gradle.api.capabilities.Capability;
+import org.gradle.api.reflect.HasPublicType;
+import org.gradle.api.reflect.TypeOf;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-sealed interface MinecraftDependencyInternal extends MinecraftDependency permits MinecraftDependencyImpl {
+sealed interface MinecraftDependencyInternal extends MinecraftDependency, HasPublicType permits MinecraftDependencyImpl {
     ExternalModuleDependency getDelegate();
+
+    @Override
+    default TypeOf<?> getPublicType() {
+        return TypeOf.typeOf(MinecraftDependency.class);
+    }
 
     @Override
     default boolean isForce() {

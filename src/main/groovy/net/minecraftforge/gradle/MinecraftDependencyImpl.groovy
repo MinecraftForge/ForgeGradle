@@ -18,7 +18,6 @@ import org.gradle.api.attributes.Attribute
 import org.gradle.api.file.RegularFile
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.ExtraPropertiesExtension.UnknownPropertyException
-import org.gradle.api.problems.Problems
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
