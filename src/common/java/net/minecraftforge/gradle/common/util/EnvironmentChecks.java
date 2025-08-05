@@ -34,6 +34,7 @@ public class EnvironmentChecks {
     private static final String INVALIDATE_CACHE_VARIABLE = "net.minecraftforge.gradle.invalidate.cache";
     private static final String DEBUG_REPOS_VARIABLE      = "net.minecraftforge.gradle.repo.debug";
     private static final String ENABLE_SOURCES_VARIABLE   = "net.minecraftforge.gradle.repo.sources";
+    private static final String FORCE_SOURCES_VARIABLE    = "net.minecraftforge.gradle.repo.sources.force";
     private static final String ENABLE_RECOMPILE_VARIABLE = "net.minecraftforge.gradle.repo.recompile";
     private static final String RECOMPILE_ARGS_VARIABLE   = "net.minecraftforge.gradle.repo.recompile.args";
     private static final String ENABLE_RECOMPILE_FORK_VARIABLE  = "net.minecraftforge.gradle.repo.recompile.fork";
@@ -80,6 +81,15 @@ public class EnvironmentChecks {
      * Environment Flag: {@value #ENABLE_SOURCES_VARIABLE}
      */
     public static final EnvironmentFlag ENABLE_SOURCES = new EnvironmentFlag(ENABLE_SOURCES_VARIABLE, true);
+
+    /**
+     * Force decompilation when the raw minecraft library is requested. Typically the source is only generated
+     * when the source artifact is requested. This is useful for dev environments like IDEA who hate to ask for
+     * the sources.
+     * <p>
+     * Environment Flag: {@value #FORCE_SOURCES_VARIABLE}
+     */
+    public static final EnvironmentFlag FORCE_SOURCES = new EnvironmentFlag(FORCE_SOURCES_VARIABLE, false);
 
     /**
      * Enables recompiling Minecraft's source into a jar and serving it from the User Repo after the source
