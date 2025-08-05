@@ -245,8 +245,18 @@ public class UserDevPlugin implements Plugin<Project> {
                 throw new IllegalStateException("Missing '" + minecraft.getName() + "' dependency.");
             }
 
-            if (EnvironmentChecks.AUTOMATIC_ATTACH_REPOS.isEnabled())
+            // this is fucking annoing, for some reason gradle is exploding when any repo returns 404 for org/lwjgl/lwjgl-freetype/3.3.3/lwjgl-freetype-3.3.3-natives-macos-patch.jar
+            // So move mojang's maven above everything else, which *usually* causes errors because Mojang returns forbidden errors instead of 404s.
+            // But apparently this fixes osx
+            boolean isOsx = VersionJson.OS.getCurrent() == VersionJson.OS.OSX;
+
+            if (EnvironmentChecks.AUTOMATIC_ATTACH_REPOS.isEnabled()) {
+                if (isOsx) {
+                    project.getRepositories().maven(Utils.mojangMaven());
+                    project.getRepositories().mavenCentral(Utils.filterForge()); //Needed for MCP Deps; we do not publish any artifacts to maven central
+                }
                 project.getRepositories().maven(Utils.forgeMaven());
+            }
 
             remapper.attachMappings(extension.getMappings().get());
 
@@ -261,7 +271,7 @@ public class UserDevPlugin implements Plugin<Project> {
                     .add(MinecraftRepo.create(project)) //Provides vanilla extra/slim/data jars. These don't care about OBF names.
                     .attach(project);
 
-            if (EnvironmentChecks.AUTOMATIC_ATTACH_REPOS.isEnabled()) {
+            if (EnvironmentChecks.AUTOMATIC_ATTACH_REPOS.isEnabled() && !isOsx) {
                 project.getRepositories().maven(Utils.mojangMaven());
                 project.getRepositories().mavenCentral(Utils.filterForge()); //Needed for MCP Deps; we do not publish any artifacts to maven central
             }
