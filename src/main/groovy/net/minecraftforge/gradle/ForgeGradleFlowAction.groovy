@@ -39,7 +39,7 @@ abstract class ForgeGradleFlowAction<P extends Parameters> implements FlowAction
     }
 
     @PackageScope static boolean contains(Throwable e, String s) {
-        for (var cause = e; cause = cause.cause; cause !== null) {
+        for (var cause = e; cause !== null; cause = cause.cause) {
             if (cause.message.containsIgnoreCase(s)) return true
         }
 
