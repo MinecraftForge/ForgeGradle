@@ -18,7 +18,7 @@ final class Constants {
     static final String MCMAVEN_MAIN = "net.minecraftforge.mcmaven.cli.Main";
     static final int MCMAVEN_JAVA_VERSION = 21;
 
-    static final String SL_VERSION = "0.1.2";
+    static final String SL_VERSION = "0.1.6";
     static final String SL_DL_URL = "https://maven.minecraftforge.net/net/minecraftforge/slime-launcher/" + SL_VERSION + "/slime-launcher-" + SL_VERSION + ".jar";
     static final String SLIMELAUNCHER_MAIN = "net.minecraftforge.launcher.Main";
     static final int SLIMELAUNCHER_JAVA_VERSION = 8;
