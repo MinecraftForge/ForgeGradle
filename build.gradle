@@ -1,29 +1,30 @@
-//import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import com.github.jengelman.gradle.plugins.shadow.ShadowJavaPlugin
 import org.gradle.api.attributes.plugin.GradlePluginApiVersion
-
-// TODO [Jonathan][ForgeGradle7][Publishing] Re-enable the shadow jar once the AT Plugin dependency is figured out
 
 plugins {
     id 'java-gradle-plugin'
-    id 'groovy'
     id 'idea'
+    id 'eclipse'
     id 'maven-publish'
+    id 'io.freefair.javadoc-links'
+    id 'net.minecraftforge.gradleutils'
+    alias libs.plugins.gitversion
+    alias libs.plugins.changelog
     alias libs.plugins.licenser
-    alias libs.plugins.gradleutils
-    alias libs.plugins.javadoc.links
-    //alias libs.plugins.shadow
+    alias libs.plugins.plugin.publish
+    alias libs.plugins.shadow
 }
 
 final projectDisplayName = 'ForgeGradle'
-final projectArtifactId = base.archivesName = 'forgegradle'
 description = "Forge's Gradle plugin for Mod development"
+base.archivesName = 'forgegradle'
 group = 'net.minecraftforge'
 version = gitversion.tagOffset
 
 println "Version: $version"
 
 java {
-    // Gradle 9 will require Java 17
     toolchain.languageVersion = JavaLanguageVersion.of 17
     withSourcesJar()
     withJavadocJar()
@@ -38,35 +39,35 @@ configurations {
         }
     }
 
-    applyGradleVersionAttribute(apiElements)
-    applyGradleVersionAttribute(runtimeElements)
-    //applyGradleVersionAttribute(shadowRuntimeElements)
+    named(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, applyGradleVersionAttribute)
+    named(ShadowJavaPlugin.SHADOW_RUNTIME_ELEMENTS_CONFIGURATION_NAME, applyGradleVersionAttribute)
 }
 
 dependencies {
-    // Gradle API
-    compileOnly libs.gradle
+    // Static Analysis
     compileOnly libs.nulls
 
+    // Gradle API
+    compileOnly libs.gradle
+
+    // GradleUtils Shared Base
+    implementation libs.gradleutils.shared
+
     // AccessTransformers
-    runtimeOnly libs.accesstransformers.plugin
-    compileOnlyApi libs.accesstransformers.binary
+    compileOnlyApi libs.accesstransformers.gradle
 
     // Utils
     implementation libs.bundles.utils
 }
 
-/*
 // Removes local Gradle API from compileOnly. This is a workaround for bugged plugins.
-// TODO [GradleUtils][GradleAPI] Remove this once they are fixed.
 // Publish Plugin: https://github.com/gradle/plugin-portal-requests/issues/260
 // Shadow:         https://github.com/GradleUp/shadow/pull/1422
 afterEvaluate { project ->
     project.configurations.named(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME) { compileOnly ->
-        compileOnly.dependencies.remove project.dependencies.gradleApi()
+        compileOnly.dependencies.remove(project.dependencies.gradleApi())
     }
 }
- */
 
 license {
     header = rootProject.file('LICENSE-header.txt')
@@ -74,38 +75,27 @@ license {
     exclude '**/*.properties'
 }
 
-/*
 tasks.named('jar', Jar) {
     archiveClassifier = 'thin'
 }
 
 tasks.named('shadowJar', ShadowJar) {
-    enableRelocation = true
+    enableAutoRelocation = true
     archiveClassifier = null
     relocationPrefix = 'net.minecraftforge.gradle.shadow'
-
-    dependencies {
-        libs.bundles.accesstransformers.get().collect { exclude dependency(it) }
-    }
-}
- */
-
-tasks.withType(GroovyCompile).configureEach {
-    groovyOptions.optimizationOptions.indy = true
 }
 
 tasks.withType(Javadoc).configureEach {
-    javadocTool = javaToolchains.javadocToolFor { languageVersion = JavaLanguageVersion.of 24 }
+    javadocTool = javaToolchains.javadocToolFor { languageVersion = JavaLanguageVersion.of(24) }
 
     options { StandardJavadocDocletOptions options ->
         options.windowTitle = projectDisplayName + project.version
-        options.tags 'apiNote:a:API Note:', 'implNote:a:Implementation Note:'
+        options.tags 'apiNote:a:API Note:', 'implNote:a:Implementation Note:', 'implSpec:a:Implementation Requirements:'
     }
 }
 
 changelog {
     fromBase()
-    publishAll = false
 }
 
 gradlePlugin {
@@ -117,26 +107,24 @@ gradlePlugin {
         implementationClass = 'net.minecraftforge.gradle.ForgeGradlePlugin'
         displayName = projectDisplayName
         description = project.description
+        tags = ['minecraftforge', 'minecraft']
     }
 }
 
-/*
-// Allows the thin jar to be published, but won't be considered as the java-runtime variant in the module
-// This forces Gradle to use the fat jar when applying the plugin
-(components.java as AdhocComponentWithVariants).withVariantsFromConfiguration(configurations.runtimeElements) {
-    skip()
-}
- */
-
 publishing {
+    repositories {
+        maven gradleutils.publishingForgeMaven
+    }
+
     publications.register('pluginMaven', MavenPublication) {
-        artifactId = projectArtifactId
+        changelog.publish(it)
+        gradleutils.promote(it)
 
         pom { pom ->
             name = projectDisplayName
             description = project.description
 
-            gradleutils.pom.setGitHubDetails pom
+            gradleutils.pom.addRemoteDetails(pom)
 
             licenses {
                 license gradleutils.pom.licenses.LGPLv2_1
@@ -147,10 +135,7 @@ publishing {
             }
         }
     }
-
-    repositories {
-        maven gradleutils.publishingForgeMaven
-    }
 }
 
 idea.module { downloadSources = downloadJavadoc = true }
+eclipse.classpath { downloadSources = downloadJavadoc = true }

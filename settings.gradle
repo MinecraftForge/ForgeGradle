@@ -1,39 +1,45 @@
 plugins {
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.10.0'
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0' // https://plugins.gradle.org/plugin/org.gradle.toolchains.foojay-resolver-convention
+
+    // NOTE: We need to load this into the classpath before GradleUtils for the service to load correctly
+    id 'io.freefair.javadoc-links' version '8.14' apply false // https://plugins.gradle.org/plugin/io.freefair.javadoc-links
+
+    id 'net.minecraftforge.gradleutils' version '3.2.5' // https://plugins.gradle.org/plugin/net.minecraftforge.gradleutils
 }
 
 rootProject.name = 'forgegradle'
 
 dependencyResolutionManagement {
     repositories {
-        maven { url = 'https://maven.minecraftforge.net/' }
-        maven { url = 'https://maven.moddinglegacy.com/maven' } // Gradle API
-        mavenCentral()
         //mavenLocal()
+        mavenCentral()
+        maven gradleutils.forgeMaven
+        maven { url = 'https://maven.moddinglegacy.com/maven' } // Gradle API
     }
 
     //@formatter:off
     versionCatalogs.register('libs') {
-        plugin 'licenser',       'net.minecraftforge.licenser'    version '1.2.0'        // https://plugins.gradle.org/plugin/net.minecraftforge.licenser
-        plugin 'gradleutils',    'net.minecraftforge.gradleutils' version '2.6.0'        // https://plugins.gradle.org/plugin/net.minecraftforge.gradleutils
-        plugin 'javadoc-links',  'io.freefair.javadoc-links'      version '8.13.1'       // https://plugins.gradle.org/plugin/io.freefair.javadoc-links
-        plugin 'plugin-publish', 'com.gradle.plugin-publish'      version '1.3.1'        // https://plugins.gradle.org/plugin/com.gradle.plugin-publish
-        plugin 'shadow',         'com.gradleup.shadow'            version '9.0.0-beta15' // https://plugins.gradle.org/plugin/com.gradleup.shadow
+        plugin 'licenser',       'net.minecraftforge.licenser'   version '1.2.0' // https://plugins.gradle.org/plugin/net.minecraftforge.licenser
+        plugin 'gitversion',     'net.minecraftforge.gitversion' version '3.0.3' // https://plugins.gradle.org/plugin/net.minecraftforge.changelog
+        plugin 'changelog',      'net.minecraftforge.changelog'  version '3.0.3' // https://plugins.gradle.org/plugin/net.minecraftforge.changelog
+        plugin 'plugin-publish', 'com.gradle.plugin-publish'     version '1.3.1' // https://plugins.gradle.org/plugin/com.gradle.plugin-publish
+        plugin 'shadow',         'com.gradleup.shadow'           version '9.0.2' // https://plugins.gradle.org/plugin/com.gradleup.shadow
+
+        // Static Analysis
+        library 'nulls', 'org.jetbrains', 'annotations' version '26.0.2'
 
         // Gradle API
-        // TODO [ForgeGradle][FG7][Gradle Api] REMOVE once Gradle publish their own API artifacts
-        // Original:  https://github.com/remal-gradle-api/packages/packages/760197
-        // Mirror:    https://maven.moddinglegacy.com/#browse/browse:maven-public:name%2Fremal%2Fgradle-api%2Fgradle-api%2F8.14.1
-        version 'gradle', '8.14.1'
+        // Original: https://github.com/remal-gradle-api/packages/packages/760197?version=9.0.0
+        // Mirror:   https://repos.moddinglegacy.com/#/modding-legacy/name/remal/gradle-api/gradle-api/9.0.0
+        version 'gradle', '9.0.0'
         library 'gradle', 'name.remal.gradle-api', 'gradle-api'  versionRef 'gradle'
-        library 'nulls',  'org.jetbrains',         'annotations' version    '26.0.2'
+
+        // GradleUtils Shared Base
+        library 'gradleutils-shared', 'net.minecraftforge', 'gradleutils-shared' version '3.2.5'
 
         // AccessTransformers Gradle Plugin
         // https://plugins.gradle.org/plugin/net.minecraftforge.accesstransformers
-        version 'accesstransformers', '1.0.1'
-        library 'accesstransformers-plugin', 'net.minecraftforge.accesstransformers', 'net.minecraftforge.accesstransformers.gradle.plugin' versionRef 'accesstransformers'
-        library 'accesstransformers-binary', 'net.minecraftforge', 'accesstransformers-gradle' versionRef 'accesstransformers'
-        bundle 'accesstransformers', ['accesstransformers-plugin', 'accesstransformers-binary']
+        library 'accesstransformers-gradle', 'net.minecraftforge.accesstransformers', 'net.minecraftforge.accesstransformers.gradle.plugin' version '3.0.0'
 
         library 'utils-data',     'net.minecraftforge', 'json-data-utils' version '0.2.1' // https://files.minecraftforge.net/net/minecraftforge/json-data-utils/index.html
         library 'utils-hash',     'net.minecraftforge', 'hash-utils'      version '0.1.9' // https://files.minecraftforge.net/net/minecraftforge/hash-utils/index.html

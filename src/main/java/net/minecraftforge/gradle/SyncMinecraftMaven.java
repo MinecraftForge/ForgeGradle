@@ -4,22 +4,25 @@
  */
 package net.minecraftforge.gradle;
 
+import net.minecraftforge.gradleutils.shared.EnhancedPlugin;
+import net.minecraftforge.gradleutils.shared.EnhancedTask;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.model.ObjectFactory;
-import org.gradle.api.problems.Problems;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.provider.SetProperty;
+import org.gradle.api.reflect.HasPublicType;
+import org.gradle.api.reflect.TypeOf;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.TaskProvider;
-import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.process.ExecOperations;
 
 import javax.inject.Inject;
@@ -37,11 +40,11 @@ import java.util.stream.Collectors;
  *
  * @see MinecraftExtensionImpl
  */
-abstract class SyncMinecraftMaven extends DefaultTask implements ForgeGradleTask {
+abstract class SyncMinecraftMaven extends DefaultTask implements EnhancedTask, HasPublicType {
     /** The name of the task that is used to sync the Minecraft Maven. */
     static final String NAME = "syncMinecraftMaven";
 
-    static TaskProvider<SyncMinecraftMaven> register(Project project, Collection<? extends MinecraftDependency> requests) {
+    static TaskProvider<SyncMinecraftMaven> register(Project project, Collection<? extends MinecraftDependencyInternal> requests) {
         return Util.runFirst(project, project.getTasks().register(NAME,
             SyncMinecraftMaven.class,
             task -> task.getRequests().addAll(Request.collect(requests))
@@ -50,24 +53,24 @@ abstract class SyncMinecraftMaven extends DefaultTask implements ForgeGradleTask
 
     private final ForgeGradleProblems problems;
 
-    private final ExecOperations execOperations;
+    protected abstract @Inject ObjectFactory getObjects();
+    protected abstract @Inject ExecOperations getExecOperations();
 
     @Inject
-    public SyncMinecraftMaven(Problems problems, ObjectFactory objects, ProviderFactory providers, ExecOperations execOperations) {
-        this.problems = new ForgeGradleProblems(problems, providers);
-
-        this.execOperations = execOperations;
+    public SyncMinecraftMaven() {
+        this.problems = this.getObjects().newInstance(ForgeGradleProblems.class);
 
         this.setGroup("Build Setup");
         this.setDescription("Syncs the Minecraft dependencies using Minecraft Mavenizer.");
 
         // JavaExec
-        this.getExecutable().convention(this.getTool(Tools.MINECRAFT_MAVEN));
-        this.getJavaLauncher().convention(Util.launcherForStrictly(this.getProject().getExtensions().getByType(JavaToolchainService.class), Constants.MCMAVEN_JAVA_VERSION).map(j -> j.getExecutablePath().toString()));
-        this.getMainClass().convention(Constants.MCMAVEN_MAIN);
+        var fgtools = (ToolsExtensionImpl) this.getProject().getExtensions().getByType(ToolsExtension.class);
+        this.getExecutable().convention(fgtools.getClasspath(Tools.MAVENIZER).map(Object.class::cast).orElse(this.getTool(Tools.MAVENIZER)));
+        this.getJavaLauncher().convention(fgtools.getJavaLauncher(Tools.MAVENIZER).orElse(Util.launcherForStrictly(this.getProject(), Tools.MAVENIZER.getJavaVersion()).map(j -> j.getExecutablePath().toString())));
+        this.getMainClass().convention(fgtools.getMainClass(Tools.MAVENIZER).orElse(Tools.MAVENIZER.getMainClass()));
 
         // Minecraft Maven
-        var defaultDirectory = objects.directoryProperty().value(this.getGlobalCaches().dir("mavenizer").map(this.problems.ensureFileLocation()));
+        var defaultDirectory = this.getObjects().directoryProperty().value(this.globalCaches().dir("mavenizer").map(this.problems.ensureFileLocation()));
         this.getCaches().convention(defaultDirectory.dir("cache").map(this.problems.ensureFileLocation()));
         this.getOutput().convention(defaultDirectory.dir("output").map(this.problems.ensureFileLocation()));
 
@@ -80,6 +83,16 @@ abstract class SyncMinecraftMaven extends DefaultTask implements ForgeGradleTask
         );
     }
 
+    @Override
+    public Class<? extends EnhancedPlugin<? super Project>> pluginType() {
+        return ForgeGradlePlugin.class;
+    }
+
+    @Override
+    public @Internal TypeOf<?> getPublicType() {
+        return TypeOf.typeOf(DefaultTask.class);
+    }
+
     @TaskAction
     public void exec() {
         // TODO [ForgeGradle][MCMaven] Better logging for each request
@@ -87,7 +100,7 @@ abstract class SyncMinecraftMaven extends DefaultTask implements ForgeGradleTask
     }
 
     private void exec(Request request) {
-        this.execOperations.javaexec(spec -> {
+        this.getExecOperations().javaexec(spec -> {
             spec.setClasspath(this.getExecutable());
             spec.setExecutable(this.getJavaLauncher().get());
             spec.getMainClass().set(this.getMainClass());
@@ -122,17 +135,17 @@ abstract class SyncMinecraftMaven extends DefaultTask implements ForgeGradleTask
     protected abstract @InputDirectory DirectoryProperty getOutput();
     protected abstract @Input @Optional SetProperty<Request> getRequests();
 
-    public record Request(String module, String version, MinecraftExtension.Mappings mappings) implements Serializable {
-        public Request(MinecraftDependency module) {
+    public record Request(String module, String version, MinecraftMappings mappings) implements Serializable {
+        public Request(MinecraftDependency minecraft, ExternalModuleDependency module) {
             this(
                 "%s:%s".formatted(module.getGroup(), module.getName()),
                 Objects.requireNonNull(module.getVersion(), "Minecraft artifact must have a version"),
-                Objects.requireNonNull(module.getMappings(), "Minecraft dependencies are not finished")
+                Objects.requireNonNull(minecraft.getMappings(), "Minecraft dependencies are not finished")
             );
         }
 
-        private static Set<Request> collect(Collection<? extends MinecraftDependency> requests) {
-            return requests.stream().map(Request::new).collect(Collectors.toSet());
+        private static Set<Request> collect(Collection<? extends MinecraftDependencyInternal> requests) {
+            return requests.stream().map(d -> new Request(d, d.getDelegate().get())).collect(Collectors.toSet());
         }
     }
 }
