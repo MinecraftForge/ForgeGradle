@@ -276,20 +276,23 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                         var metadataDir = this.getObjects().directoryProperty().value(cacheDir).dir("metadata").map(this.problems.ensureFileLocation());
                         var metadataZip = this.output.file(Util.artifactPath(dependency.getGroup(), dependency.getName(), dependency.getVersion(), "metadata", "zip"));
 
-                        try {
-                            this.getFileSystemOperations().copy(copy -> copy
-                                .from(this.getArchiveOperations().zipTree(metadataZip))
-                                .into(metadataDir)
-                            );
+                        this.getFileSystemOperations().copy(copy -> copy
+                            .from(this.getArchiveOperations().zipTree(metadataZip))
+                            .into(metadataDir)
+                        );
 
-                            this.configs.set(this.getProviders().provider(() -> JsonData.fromJson(
-                                metadataDir.get().file("launcher/runs.json").getAsFile(),
-                                new TypeToken<Map<String, RunConfig>>() { }
-                            )));
-                        } catch (Throwable ignored) {
-                            // we probably don't have metadata yet. common for fresh setups before first run.
-                            // if there's actually a problem, we can throw it in SlimeLauncherExec.
-                        }
+                        this.configs.set(this.getProviders().provider(() -> {
+                            try {
+                                return JsonData.fromJson(
+                                    metadataDir.get().file("launcher/runs.json").getAsFile(),
+                                    new TypeToken<Map<String, RunConfig>>() { }
+                                );
+                            } catch (Throwable ignored) {
+                                // we probably don't have metadata yet. common for fresh setups before first run.
+                                // if there's actually a problem, we can throw it in SlimeLauncherExec.
+                                return null;
+                            }
+                        }));
 
                         this.runs.forEach(options -> SlimeLauncherExec.register(project, sourceSet, options, this.configs.getOrElse(Map.of()), dependency, metadataZip));
                     }
