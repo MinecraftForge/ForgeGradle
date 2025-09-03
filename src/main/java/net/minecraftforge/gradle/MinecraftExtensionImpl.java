@@ -20,6 +20,7 @@ import net.minecraftforge.util.data.json.RunConfig;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ExternalModuleDependencyBundle;
@@ -39,13 +40,20 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.reflect.TypeOf;
+import org.gradle.api.tasks.SourceSet;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
     private static final String EXT_MAVEN_REPOS = "fg_mc_maven_repos";
@@ -241,8 +249,28 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                 : new AppliedRepos(project.getRepositories().withType(MavenArtifactRepository.class));
             appliedRepos.check();
 
+            var configurations = project.getConfigurations();
+            var sourceSets = this.project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets();
+
+            var configurationsFiltered = project.getConfigurations().stream().collect(
+                Collectors.toMap(Configuration::getName, c -> c.getAllDependencies().stream().map(it -> {
+                    for (var minecraftDependency : this.minecraftDependencies) {
+                        var dependency = minecraftDependency.getDelegate().get();
+                        if (dependency.equals(it))
+                            return minecraftDependency;
+                    }
+
+                    return null;
+                }).filter(Objects::nonNull).toList())
+            );
+
             var sourceSetsDir = this.getObjects().directoryProperty().value(this.getProjectLayout().getBuildDirectory().dir("sourceSets"));
-            this.project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets().configureEach(sourceSet -> {
+            sourceSets.configureEach(sourceSet -> {
+                for (var minecraftDependency : this.minecraftDependencies) {
+                    if (Util.contains(configurations, sourceSet, minecraftDependency.getDelegate().get()))
+                        minecraftDependency.handle(sourceSet);
+                }
+
                 if (this.problems.test("net.minecraftforge.gradle.mergeSourceSets")) {
                     // This is documented in SourceSetOutput's javadoc comment
                     var unifiedDir = sourceSetsDir.dir(sourceSet.getName());
@@ -251,30 +279,14 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                 }
 
                 if (!this.runs.isEmpty()) {
-                    Set<? extends Dependency> allDependencies;
-                    var runtimeClasspath = this.project.getConfigurations().findByName(sourceSet.getRuntimeClasspathConfigurationName());
-                    if (runtimeClasspath != null) {
-                        allDependencies = runtimeClasspath.getAllDependencies().matching(it -> {
-                            for (var minecraftDependency : this.minecraftDependencies) {
-                                if (minecraftDependency.getDelegate().get().equals(it))
-                                    return true;
-                            }
-
-                            return false;
-                        });
-                    } else {
-                        allDependencies = Set.of();
-                    }
-
-                    if (allDependencies.isEmpty()) {
-                        throw new IllegalArgumentException("Cannot create run configurations without any Minecraft dependencies for " + sourceSet.getName());
-                    } else if (allDependencies.size() > 1) {
-                        throw new IllegalArgumentException("Cannot create run configurations for more than one Minecraft dependency");
-                    } else {
-                        var dependency = this.minecraftDependencies.get(0).getDelegate().get();
-                        var cacheDir = this.plugin.globalCaches().dir("slime-launcher/cache/%s/%s".formatted(dependency.getGroup().replace('.', '/'), dependency.getVersion())).map(this.problems.ensureFileLocation());
+                    var minecraftDependencies = configurationsFiltered.get(sourceSet.getRuntimeClasspathConfigurationName());
+                    var size = minecraftDependencies != null ? minecraftDependencies.size() : 0;
+                    for (var i = 0; i < size; i++) {
+                        var dependency = minecraftDependencies.get(0).getDelegate().get();
+                        var group = dependency.getGroup();
+                        var cacheDir = this.plugin.globalCaches().dir("slime-launcher/cache/%s%s".formatted(group != null ? group.replace('.', '/') + '/' : "", dependency.getVersion())).map(this.problems.ensureFileLocation());
                         var metadataDir = this.getObjects().directoryProperty().value(cacheDir).dir("metadata").map(this.problems.ensureFileLocation());
-                        var metadataZip = this.output.file(Util.artifactPath(dependency.getGroup(), dependency.getName(), dependency.getVersion(), "metadata", "zip"));
+                        var metadataZip = this.output.file(Util.artifactPath(group, dependency.getName(), dependency.getVersion(), "metadata", "zip"));
 
                         this.getFileSystemOperations().copy(copy -> copy
                             .from(this.getArchiveOperations().zipTree(metadataZip))
@@ -294,7 +306,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                             }
                         }));
 
-                        this.runs.forEach(options -> SlimeLauncherExec.register(project, sourceSet, options, this.configs.getOrElse(Map.of()), dependency, metadataZip));
+                        this.runs.forEach(options -> SlimeLauncherExec.register(project, sourceSet, options, this.configs.getOrElse(Map.of()), dependency, metadataZip, size == 1));
                     }
                 }
             });
@@ -392,6 +404,8 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         }
 
         static abstract class WithAccessTransformersImpl extends ForProjectImpl<ClosureOwner.MinecraftDependencyWithAccessTransformers> implements MinecraftExtensionInternal.ForProject.WithAccessTransformers {
+            private final Property<String> accessTransformers = this.getObjects().property(String.class);
+
             @Inject
             public WithAccessTransformersImpl(ForgeGradlePlugin plugin, Project project) {
                 super(plugin, project);
@@ -400,6 +414,11 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             @Override
             public TypeOf<?> getPublicType() {
                 return MinecraftExtensionInternal.ForProject.WithAccessTransformers.super.getPublicType();
+            }
+
+            @Override
+            public Property<String> getAccessTransformers() {
+                return this.accessTransformers;
             }
 
             @Override

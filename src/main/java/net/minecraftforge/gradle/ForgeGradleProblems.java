@@ -183,24 +183,6 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     //endregion
     //endregion
 
-    //region Deobfuscation
-    RuntimeException invalidDeobfDependencyType(Dependency dependency) {
-        return this.getReporter().throwing(new IllegalArgumentException("Non-module deobf dependencies are not supported"), this.id("unsupported-dependency-type", "Non-module dependency used as Minecraft/deobf dependency"), spec -> spec
-            .details("""
-                Attempted to use a non-module dependency as a deobf dependency, which is currently unsupported.
-                Support for file dependencies may come at a later time. Project dependencies will not be supported.
-                Expected: (implementation of) %s, Actual: '%s
-                Dependency: '%s'"""
-                .formatted(ExternalModuleDependency.class.getName(), dependency.getClass().getName(), dependency.toString()))
-            .severity(Severity.ERROR)
-            .stackLocation()
-            .solution("Declare a module dependency instead.")
-            .solution(HELP_MESSAGE)
-        );
-    }
-    //endregion
-
-    //region Access Transformers
     void reportAccessTransformersNotApplied(Throwable e) {
         this.getReporter().report(this.id("access-transformers-not-applied", "AccessTransformers plugin not applied"), spec -> spec
             .details("""

@@ -28,13 +28,16 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 abstract class SlimeLauncherExec extends ToolExec implements EnhancedTask, HasPublicType {
-    static void register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, Map<String, RunConfig> configs, Dependency dependency, Provider<RegularFile> metadataZip) {
+    static void register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, Map<String, RunConfig> configs, Dependency dependency, Provider<RegularFile> metadataZip, boolean single) {
         var tools = (ToolsExtensionImpl) project.getExtensions().getByType(ToolsExtension.class);
-        project.getTasks().register(sourceSet.getTaskName("run", options.getName()), SlimeLauncherExec.class, task -> {
+        var taskName = sourceSet.getTaskName("run", options.getName());
+        project.getTasks().register(single ? taskName : taskName + Util.dependencyToCamelCase(dependency), SlimeLauncherExec.class, task -> {
             task.setDescription("Runs the '%s' Slime Launcher run configuration.".formatted(options.getName()));
 
             // TOOL OVERRIDES

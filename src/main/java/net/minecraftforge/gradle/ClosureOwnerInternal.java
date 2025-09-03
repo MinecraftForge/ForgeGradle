@@ -22,19 +22,17 @@ import org.gradle.api.artifacts.VersionConstraint;
 import org.gradle.api.artifacts.capability.CapabilitySelector;
 import org.gradle.api.attributes.AttributeContainer;
 import org.gradle.api.capabilities.Capability;
-import org.gradle.api.file.RegularFile;
-import org.gradle.api.provider.Provider;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.reflect.HasPublicType;
 import org.gradle.api.reflect.TypeOf;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 interface ClosureOwnerInternal<D> extends ClosureOwner<D> {
-    default RuntimeException stub() {
+    private static RuntimeException stub() {
         return new UnsupportedOperationException();
     }
 
@@ -76,156 +74,156 @@ interface ClosureOwnerInternal<D> extends ClosureOwner<D> {
 
         @Override
         default boolean isChanging() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default ExternalModuleDependency setChanging(boolean changing) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default ExternalModuleDependency copy() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default boolean isForce() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default void version(Action<? super MutableVersionConstraint> configureAction) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default VersionConstraint getVersionConstraint() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default ModuleDependency exclude(Map<String, String> excludeProperties) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default Set<ExcludeRule> getExcludeRules() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default Set<DependencyArtifact> getArtifacts() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default ModuleDependency addArtifact(DependencyArtifact artifact) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default DependencyArtifact artifact(Closure configureClosure) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default DependencyArtifact artifact(Action<? super DependencyArtifact> configureAction) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default boolean isTransitive() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default ModuleDependency setTransitive(boolean transitive) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default @Nullable String getTargetConfiguration() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default void setTargetConfiguration(@Nullable String name) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default AttributeContainer getAttributes() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default ModuleDependency attributes(Action<? super AttributeContainer> configureAction) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default ModuleDependency capabilities(Action<? super ModuleDependencyCapabilitiesHandler> configureAction) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default List<Capability> getRequestedCapabilities() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default Set<CapabilitySelector> getCapabilitySelectors() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default void endorseStrictVersions() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default void doNotEndorseStrictVersions() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default boolean isEndorsingStrictVersions() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override default @Nullable String getGroup() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default String getName() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default @Nullable String getVersion() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default @Nullable String getReason() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default void because(@Nullable String reason) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default boolean matchesStrictly(ModuleVersionIdentifier identifier) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default ModuleIdentifier getModule() {
-            throw this.stub();
+            throw stub();
         }
     }
 
@@ -238,23 +236,18 @@ interface ClosureOwnerInternal<D> extends ClosureOwner<D> {
         net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers getOwnerDelegate();
 
         @Override
-        default void setAccessTransformer(RegularFile configFile) {
-            this.getOwnerDelegate().setAccessTransformer(configFile);
+        default RegularFileProperty getAccessTransformer() {
+            return this.getOwnerDelegate().getAccessTransformer();
         }
 
         @Override
-        default void setAccessTransformer(File configFile) {
-            this.getOwnerDelegate().setAccessTransformer(configFile);
+        default void setAccessTransformer(String accessTransformer) {
+            this.getOwnerDelegate().setAccessTransformer(accessTransformer);
         }
 
         @Override
-        default void setAccessTransformer(Object configFile) {
-            this.getOwnerDelegate().setAccessTransformer(configFile);
-        }
-
-        @Override
-        default void setAccessTransformer(Provider<?> configFile) {
-            this.getOwnerDelegate().setAccessTransformer(configFile);
+        default void setAccessTransformer(boolean accessTransformer) {
+            this.getOwnerDelegate().setAccessTransformer(accessTransformer);
         }
 
         @Override
@@ -292,156 +285,156 @@ interface ClosureOwnerInternal<D> extends ClosureOwner<D> {
 
         @Override
         default boolean isChanging() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default ExternalModuleDependency setChanging(boolean changing) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default ExternalModuleDependency copy() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default boolean isForce() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default void version(Action<? super MutableVersionConstraint> configureAction) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default VersionConstraint getVersionConstraint() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default ModuleDependency exclude(Map<String, String> excludeProperties) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default Set<ExcludeRule> getExcludeRules() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default Set<DependencyArtifact> getArtifacts() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default ModuleDependency addArtifact(DependencyArtifact artifact) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default DependencyArtifact artifact(Closure configureClosure) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default DependencyArtifact artifact(Action<? super DependencyArtifact> configureAction) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default boolean isTransitive() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default ModuleDependency setTransitive(boolean transitive) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default @Nullable String getTargetConfiguration() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default void setTargetConfiguration(@Nullable String name) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default AttributeContainer getAttributes() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default ModuleDependency attributes(Action<? super AttributeContainer> configureAction) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default ModuleDependency capabilities(Action<? super ModuleDependencyCapabilitiesHandler> configureAction) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default List<Capability> getRequestedCapabilities() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default Set<CapabilitySelector> getCapabilitySelectors() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default void endorseStrictVersions() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default void doNotEndorseStrictVersions() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default boolean isEndorsingStrictVersions() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override default @Nullable String getGroup() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default String getName() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default @Nullable String getVersion() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default @Nullable String getReason() {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default void because(@Nullable String reason) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default boolean matchesStrictly(ModuleVersionIdentifier identifier) {
-            throw this.stub();
+            throw stub();
         }
 
         @Override
         default ModuleIdentifier getModule() {
-            throw this.stub();
+            throw stub();
         }
     }
 }
