@@ -35,18 +35,9 @@ import java.util.stream.Stream;
 
 abstract class SlimeLauncherExec extends ToolExec implements EnhancedTask, HasPublicType {
     static void register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, Map<String, RunConfig> configs, Dependency dependency, Provider<RegularFile> metadataZip, boolean single) {
-        var tools = (ToolsExtensionImpl) project.getExtensions().getByType(ToolsExtension.class);
         var taskName = sourceSet.getTaskName("run", options.getName());
         project.getTasks().register(single ? taskName : taskName + Util.dependencyToCamelCase(dependency), SlimeLauncherExec.class, task -> {
             task.setDescription("Runs the '%s' Slime Launcher run configuration.".formatted(options.getName()));
-
-            // TOOL OVERRIDES
-            var classpathToolOverride = tools.getClasspath(Tools.SLIMELAUNCHER);
-            if (classpathToolOverride.isPresent())
-                task.setClasspath(classpathToolOverride.get());
-            var mainClassToolOverride = tools.getMainClass(Tools.SLIMELAUNCHER);
-            if (mainClassToolOverride.isPresent())
-                task.getMainClass().set(mainClassToolOverride);
 
             task.classpath(task.getObjectFactory().fileCollection().from(task.getProviderFactory().provider(sourceSet::getRuntimeClasspath)));
             task.getJavaLauncher().unset();

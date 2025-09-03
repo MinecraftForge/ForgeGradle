@@ -19,13 +19,12 @@ abstract class ForgeGradlePlugin extends EnhancedPlugin<ExtensionAware> {
 
     @Inject
     public ForgeGradlePlugin() {
-        super(NAME, DISPLAY_NAME);
+        super(NAME, DISPLAY_NAME, "fgtools");
     }
 
     @Override
     public void setup(ExtensionAware target) {
         ForgeGradleExtensionImpl.register(this, target);
-        ToolsExtensionImpl.register(this, target);
         MinecraftExtensionImpl.register(this, target);
     }
 }

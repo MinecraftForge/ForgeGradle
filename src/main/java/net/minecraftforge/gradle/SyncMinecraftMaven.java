@@ -20,9 +20,11 @@ import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.process.ExecOperations;
 
 import javax.inject.Inject;
@@ -64,10 +66,10 @@ abstract class SyncMinecraftMaven extends DefaultTask implements EnhancedTask, H
         this.setDescription("Syncs the Minecraft dependencies using Minecraft Mavenizer.");
 
         // JavaExec
-        var fgtools = (ToolsExtensionImpl) this.getProject().getExtensions().getByType(ToolsExtension.class);
-        this.getExecutable().convention(fgtools.getClasspath(Tools.MAVENIZER).map(Object.class::cast).orElse(this.getTool(Tools.MAVENIZER)));
-        this.getJavaLauncher().convention(fgtools.getJavaLauncher(Tools.MAVENIZER).orElse(Util.launcherForStrictly(this.getProject(), Tools.MAVENIZER.getJavaVersion()).map(j -> j.getExecutablePath().toString())));
-        this.getMainClass().convention(fgtools.getMainClass(Tools.MAVENIZER).orElse(Tools.MAVENIZER.getMainClass()));
+        var tool = this.getTool(Tools.MAVENIZER);
+        this.getExecutable().convention(tool.getClasspath());
+        this.getJavaLauncher().convention(tool.getJavaLauncher());
+        this.getMainClass().convention(tool.getMainClass());
 
         // Minecraft Maven
         var defaultDirectory = this.getObjects().directoryProperty().value(this.globalCaches().dir("mavenizer").map(this.problems.ensureFileLocation()));
@@ -102,7 +104,7 @@ abstract class SyncMinecraftMaven extends DefaultTask implements EnhancedTask, H
     private void exec(Request request) {
         this.getExecOperations().javaexec(spec -> {
             spec.setClasspath(this.getExecutable());
-            spec.setExecutable(this.getJavaLauncher().get());
+            spec.setExecutable(this.getJavaLauncher().get().getExecutablePath());
             spec.getMainClass().set(this.getMainClass());
 
             spec.setArgs(this.argsFor(request));
@@ -127,7 +129,7 @@ abstract class SyncMinecraftMaven extends DefaultTask implements EnhancedTask, H
 
     // JavaExec
     protected abstract @Classpath ConfigurableFileCollection getExecutable();
-    protected abstract @Input Property<String> getJavaLauncher();
+    protected abstract @Nested Property<JavaLauncher> getJavaLauncher();
     protected abstract @Input Property<String> getMainClass();
 
     // Minecraft Mavenizer

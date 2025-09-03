@@ -4,7 +4,7 @@ plugins {
     // NOTE: We need to load this into the classpath before GradleUtils for the service to load correctly
     id 'io.freefair.javadoc-links' version '8.14' apply false // https://plugins.gradle.org/plugin/io.freefair.javadoc-links
 
-    id 'net.minecraftforge.gradleutils' version '3.2.5' // https://plugins.gradle.org/plugin/net.minecraftforge.gradleutils
+    id 'net.minecraftforge.gradleutils' version '3.2.7' // https://plugins.gradle.org/plugin/net.minecraftforge.gradleutils
 }
 
 rootProject.name = 'forgegradle'
@@ -35,7 +35,7 @@ dependencyResolutionManagement {
         library 'gradle', 'name.remal.gradle-api', 'gradle-api'  versionRef 'gradle'
 
         // GradleUtils Shared Base
-        library 'gradleutils-shared', 'net.minecraftforge', 'gradleutils-shared' version '3.2.5'
+        library 'gradleutils-shared', 'net.minecraftforge', 'gradleutils-shared' version '3.2.7'
 
         // AccessTransformers Gradle Plugin
         // https://plugins.gradle.org/plugin/net.minecraftforge.accesstransformers
