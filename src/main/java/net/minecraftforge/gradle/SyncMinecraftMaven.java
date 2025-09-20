@@ -118,7 +118,8 @@ abstract class SyncMinecraftMaven extends DefaultTask implements EnhancedTask, H
             "--output", this.getOutput().get().getAsFile().getAbsolutePath(),
             "--jdk-cache", this.getCaches().dir("jdks").get().getAsFile().getAbsolutePath(),
             "--artifact", request.module,
-            "--version", request.version
+            "--version", request.version,
+            "--global-auxiliary-variants"
         ));
         if ("parchment".equals(request.mappings.channel())) {
             args.add("--parchment");

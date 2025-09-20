@@ -11,6 +11,18 @@ final class Constants {
     static final String FORGE_MAVEN = "https://maven.minecraftforge.net/";
     static final String MC_LIBS_MAVEN = "https://libraries.minecraft.net/";
 
+    static final String SLIMELAUNCHER_NAME = "slimelauncher";
+    static final String SLIMELAUNCHER_VERSION = "0.1.6";
+    static final String SLIMELAUNCHER_DL_URL = "https://maven.minecraftforge.net/net/minecraftforge/slime-launcher/" + SLIMELAUNCHER_VERSION + "/slime-launcher-" + SLIMELAUNCHER_VERSION + ".jar";
+    static final int SLIMELAUNCHER_JAVA_VERSION = 8;
+    static final String SLIMELAUNCHER_MAIN = "net.minecraftforge.launcher.Main";
+
+    static final String MAVENIZER_NAME = "mavenizer";
+    static final String MAVENIZER_VERSION = "0.3.17";
+    static final String MAVENIZER_DL_URL = "https://maven.minecraftforge.net/net/minecraftforge/minecraft-mavenizer/" + MAVENIZER_VERSION + "/minecraft-mavenizer-" + MAVENIZER_VERSION + ".jar";
+    static final int MAVENIZER_JAVA_VERSION = 21;
+    static final String MAVENIZER_MAIN = "net.minecraftforge.mcmaven.cli.Main";
+
     /// Use these with [java.text.MessageFormat#format(String, Object...)].
     static final class Messages {
         static final String WELCOME = """

@@ -37,11 +37,10 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
 
     private @UnknownNullability Provider<ExternalModuleDependency> delegate;
 
-    private final ForgeGradleProblems problems;
+    private final Property<MinecraftMappings> mappings;
 
     final Project project;
-
-    private final Property<MinecraftMappings> mappings;
+    private final ForgeGradleProblems problems = this.getObjects().newInstance(ForgeGradleProblems.class);
 
     protected abstract @Inject ObjectFactory getObjects();
 
@@ -52,7 +51,6 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     @Inject
     public MinecraftDependencyImpl(Project project) {
         this.project = project;
-        this.problems = this.getObjects().newInstance(ForgeGradleProblems.class);
 
         this.mappings = this.getObjects().property(MinecraftMappings.class).convention(
             ((MinecraftExtensionImpl) project.getExtensions().getByName(MinecraftExtension.NAME)).mappings
