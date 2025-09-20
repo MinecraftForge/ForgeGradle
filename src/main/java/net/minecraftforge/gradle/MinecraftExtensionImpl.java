@@ -97,7 +97,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         this.plugin = plugin;
         this.problems = this.getObjects().newInstance(ForgeGradleProblems.class);
 
-        this.output = this.getObjects().directoryProperty().convention(plugin.globalCaches().dir("mavenizer/output").map(this.problems.ensureFileLocation()));
+        this.output = this.getObjects().directoryProperty().convention(plugin.localCaches().dir("mavenizer/output").map(this.problems.ensureFileLocation()));
 
         this.mappings = this.getObjects().property(MinecraftMappings.class);
     }
