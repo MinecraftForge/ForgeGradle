@@ -46,11 +46,12 @@ abstract class SyncMinecraftMaven extends DefaultTask implements EnhancedTask, H
     /** The name of the task that is used to sync the Minecraft Maven. */
     static final String NAME = "syncMinecraftMaven";
 
-    static TaskProvider<SyncMinecraftMaven> register(Project project, Collection<? extends MinecraftDependencyInternal> requests) {
-        return Util.runFirst(project, project.getTasks().register(NAME,
-            SyncMinecraftMaven.class,
-            task -> task.getRequests().addAll(Request.collect(requests))
-        ));
+    static TaskProvider<SyncMinecraftMaven> register(Project project, MinecraftExtensionImpl.ForProjectImpl<?> minecraft) {
+        return Util.runFirst(project, project.getTasks().register(NAME, SyncMinecraftMaven.class, task -> {
+                task.getRequests().addAll(Request.collect(minecraft.minecraftDependencies));
+                task.getOutput().set(minecraft.output);
+            })
+        );
     }
 
     private final ForgeGradleProblems problems;

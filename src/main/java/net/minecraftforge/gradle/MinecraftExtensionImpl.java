@@ -240,7 +240,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
             this.minecraftDependencies.forEach(MinecraftDependencyImpl::resolve);
 
-            SyncMinecraftMaven.register(project, this.minecraftDependencies);
+            SyncMinecraftMaven.register(project, this);
 
             var ext = project.getExtensions().getExtraProperties();
             //noinspection DataFlowIssue
