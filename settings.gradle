@@ -1,1 +1,84 @@
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+    id 'io.freefair.javadoc-links' version '8.14' apply false
+    id 'net.minecraftforge.gradleutils' version '3.3.5'
+}
+
 rootProject.name = 'ForgeGradle'
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        maven { url = 'https://oss.sonatype.org/content/repositories/snapshots/' } // because SS and its snapshot
+        maven gradleutils.forgeMaven
+        maven { url = 'https://repo.eclipse.org/content/groups/eclipse/' } // because Srg2Source needs an eclipse dependency.
+        maven { url = 'https://libraries.minecraft.net/' } // because of the GradleStart stuff
+        //mavenLocal()
+    }
+
+    versionCatalogs.register('libs') {
+        plugin 'licenser',       'net.minecraftforge.licenser'   version '1.2.0'
+        plugin 'gitversion',     'net.minecraftforge.gitversion' version '3.1.1'
+        plugin 'changelog',      'net.minecraftforge.changelog'  version '3.1.2'
+        plugin 'plugin-publish', 'com.gradle.plugin-publish'     version '2.0.0'
+        plugin 'shadow',         'com.gradleup.shadow'           version '9.2.2'
+
+        // Gradle API
+        // https://mvnrepository.com/artifact/dev.gradleplugins/gradle-api/2.14
+        version 'gradle', '2.14'
+        library 'gradle',         'dev.gradleplugins',   'gradle-api'      versionRef 'gradle'
+        library 'gradle-testkit', 'dev.gradleplugins',   'gradle-test-kit' versionRef 'gradle'
+        library 'groovy',         'org.codehaus.groovy', 'groovy-all'      version    '2.4.4'
+
+        version 'asm', '6.0'
+        library 'asm',         'org.ow2.asm', 'asm'           versionRef 'asm'
+        library 'asm-tree',    'org.ow2.asm', 'asm-tree'      versionRef 'asm'
+        library 'asm-commons', 'org.ow2.asm', 'asm-commons'   versionRef 'asm'
+        library 'asm-debug',   'org.ow2.asm', 'asm-debug-all' versionRef 'asm'
+        bundle  'asm', ['asm', 'asm-tree', 'asm-commons']
+
+        library 'guava', 'com.google.guava', 'guava' version '18.0'
+
+        library 'opencsv', 'net.sf.opencsv',               'opencsv' version '2.3'   // reading CSVs.. also used by SpecialSource
+        library 'diff4j',  'com.cloudbees',                'diff4j'  version '1.1'   // for diffing and patching
+        library 'jastyle', 'com.github.abrarsyed.jastyle', 'jAstyle' version '1.3'   // formatting
+        library 'trove4j', 'net.sf.trove4j',               'trove4j' version '2.1.0' // because its awesome.
+
+        library 'lzma',         'com.github.jponge',    'lzma-java'    version '1.3'              // replaces the LZMA binary
+        library 'xdelta',       'com.nothome',          'javaxdelta'   version '2.0.1'            // GDIFF implementation for BinPatches
+        library 'gson',         'com.google.code.gson', 'gson'         version '2.2.4'            // Used instead of Argo for buuilding changelog.
+        library 'named-regexp', 'com.github.tony19',    'named-regexp' version '0.2.3'            // 1.7 Named regexp features
+        library 'forgeflower',  'net.minecraftforge',   'forgeflower'  version '1.0.342-SNAPSHOT' // Fernflower Forge edition
+
+        library 'specialsource', 'net.md-5', 'SpecialSource' version '1.8.2' // deobf and reobf
+
+        // because curse
+        library 'httpclient', 'org.apache.httpcomponents', 'httpclient' version '4.3.3'
+        library 'httpmime',   'org.apache.httpcomponents', 'httpmime' version '4.3.3'
+
+        // mcp stuff
+        library 'retroguard', 'de.oceanlabs.mcp',   'RetroGuard' version '3.6.6'
+        library 'mcinjector', 'de.oceanlabs.mcp',   'mcinjector' version '3.4-SNAPSHOT'
+        library 'srg2source', 'net.minecraftforge', 'Srg2Source' version '5.0.+'
+
+        // Because Eclipse is dumb and decided to use dynamic versions with J8 incompatibility
+        library 'eclipse-core-resources',   'org.eclipse.platform', 'org.eclipse.core.resources'   version '3.14.0'
+        library 'eclipse-core-runtime',     'org.eclipse.platform', 'org.eclipse.core.runtime'     version '3.20.100'
+        library 'eclipse-text',             'org.eclipse.platform', 'org.eclipse.text'             version '3.11.0'
+        library 'eclipse-core-filesystem',  'org.eclipse.platform', 'org.eclipse.core.filesystem'  version '1.7.700'
+        library 'eclipse-equinox-common',   'org.eclipse.platform', 'org.eclipse.equinox.common'   version '3.14.100'
+        library 'eclipse-core-contenttype', 'org.eclipse.platform', 'org.eclipse.core.contenttype' version '3.7.900'
+        library 'eclipse-core-jobs',        'org.eclipse.platform', 'org.eclipse.core.jobs'        version '3.10.1100'
+        library 'eclipse-equinox-registry', 'org.eclipse.platform', 'org.eclipse.equinox.registry' version '3.10.100'
+        library 'eclipse-osgi',             'org.eclipse.platform', 'org.eclipse.osgi'             version '3.16.200'
+        library 'eclipse-core-commands',    'org.eclipse.platform', 'org.eclipse.core.commands'    version '3.9.800'
+
+        //Stuff used in the GradleStart classes
+        library 'authlib',       'com.mojang',    'authlib'       version '1.5.16'
+        library 'launchwrapper', 'net.minecraft', 'launchwrapper' version '1.11'
+
+        library 'kotlin-gradle-plugin', 'org.jetbrains.kotlin', 'kotlin-gradle-plugin' version '1.1.3-2'
+
+        version 'junit', '4.12'
+    }
+}

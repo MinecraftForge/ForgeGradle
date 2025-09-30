@@ -1,0 +1,37 @@
+plugins {
+    id 'java-gradle-plugin'
+    id 'idea'
+    id 'eclipse'
+    alias libs.plugins.licenser
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+dependencies {
+    compileOnly libs.gradle
+    compileOnly libs.nulls
+
+    implementation libs.gradleutils.shared
+
+    implementation libs.bundles.asm
+}
+
+afterEvaluate {
+    configurations.api.withDependencies {
+        remove(dependencies.gradleApi())
+        remove(dependencies.localGroovy())
+    }
+}
+
+license {
+    header = rootProject.file('LICENSE-header.txt')
+    newLine = false
+    exclude '**/*.properties'
+}
+
+gradlePlugin {
+    plugins.register('jdt-transformer') {
+        id = 'local.build.jdt-transformer'
+        implementationClass = 'local.build.JDTTransformerPlugin'
+    }
+}

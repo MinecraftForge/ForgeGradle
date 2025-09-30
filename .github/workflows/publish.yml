@@ -2,19 +2,21 @@ name: Publish
 
 on:
   push:
-    branches: [ "FG_2.3" ]
+    branches: [ 'FG_2.3' ]
+    paths-ignore:
+      - '.github/workflows/**'
+      - 'docs/**'
+      - 'README.md'
 
 permissions:
   contents: read
 
 jobs:
   build:
-    uses: MinecraftForge/SharedActions/.github/workflows/gradle.yml@main
+    uses: MinecraftForge/SharedActions/.github/workflows/gradle.yml@v0
     with:
-      java: 8
-      gradle_tasks: "uploadArchives"
-      artifact_group: "net.minecraftforge.gradle"
-      artifact_name: "ForgeGradle"
+      java: 17
+      gradle_tasks: 'check publish'
     secrets:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
       PROMOTE_ARTIFACT_WEBHOOK: ${{ secrets.PROMOTE_ARTIFACT_WEBHOOK }}

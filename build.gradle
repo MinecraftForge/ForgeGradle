@@ -1,326 +1,184 @@
-buildscript {
-    repositories {
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-    dependencies {
-        classpath "com.gradle.publish:plugin-publish-plugin:0.9.1"
-        classpath 'nl.javadude.gradle.plugins:license-gradle-plugin:0.11.0'
-        classpath 'org.ow2.asm:asm:6.2.1'
-        classpath 'org.ow2.asm:asm-tree:6.2.1'
-        classpath 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
-    }
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.gradle.api.plugins.jvm.JvmTestSuite
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+
+plugins {
+    id 'java-gradle-plugin'
+    id 'jvm-test-suite'
+    id 'idea'
+    id 'eclipse'
+    id 'maven-publish'
+    id 'local.build.jdt-transformer'
+    id 'io.freefair.javadoc-links'
+    id 'net.minecraftforge.gradleutils'
+    alias libs.plugins.licenser
+    alias libs.plugins.gitversion
+    alias libs.plugins.changelog
+    alias libs.plugins.shadow
 }
 
-apply plugin: 'java'
-apply plugin: 'idea'
-apply plugin: 'eclipse'
-apply plugin: 'maven'
-apply plugin: "com.gradle.plugin-publish"
-apply plugin: 'license'
-
-project.ext {
-    GIT_INFO = gitInfo(rootProject.file('.'))
-}
-
+description = 'Gradle plugin for Forge'
 group = 'net.minecraftforge.gradle'
-version = "${project.ext.GIT_INFO.tag}.${project.ext.GIT_INFO.offset}"
-archivesBaseName = 'ForgeGradle'
-targetCompatibility = '1.8'
-sourceCompatibility = '1.8'
+version = gitversion.tagOffset
 
-repositories {
-    mavenLocal()
-    maven {
-        name = "forge"
-        url = "https://maven.minecraftforge.net"
-    }
-    maven {
-        // because Srg2Source needs an eclipse dependency.
-        name = "eclipse"
-        url = "https://repo.eclipse.org/content/groups/eclipse/"
-    }
-    jcenter() // get as many deps from here as possible
-    mavenCentral()
-
-    // because SS and its snapshot
-    maven {
-        name = "sonatype"
-        url = "https://oss.sonatype.org/content/repositories/snapshots/"
-    }
-
-
-    // because of the GradleStart stuff
-    maven {
-        name = "mojang"
-        url = "https://libraries.minecraft.net/"
-    }
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(8)
+    withSourcesJar()
+    //withJavadocJar()
 }
+
+gradleutils.pluginDevDefaults(configurations, libs.versions.gradle)
 
 configurations {
-    deployerJars
-    shade
-    compileOnly.extendsFrom shade
-    all {
+    dependencyScope('shade')
+
+    named('implementation') {
+        extendsFrom shade
+    }
+
+    resolvable('shadeClasspath') {
+        extendsFrom shade
+    }
+
+    named('shadowRuntimeElements') {
+        withDependencies {
+            addAll(runtimeClasspath.allDependencies)
+            removeAll(shade.allDependencies)
+        }
+    }
+
+    configureEach {
         resolutionStrategy {
-            force 'org.ow2.asm:asm-commons:6.0'
-            force 'org.ow2.asm:asm-tree:6.0'
-            force 'org.ow2.asm:asm:6.0'
+            force libs.asm.commons
+            force libs.asm.tree
+            force libs.asm
         }
     }
 }
 
 dependencies {
-    compile gradleApi()
+    compileOnly libs.gradle
+    compileOnly libs.groovy
 
     // moved to the beginning to be the overrider
-    //compile 'org.ow2.asm:asm-debug-all:6.0'
-    compile 'com.google.guava:guava:18.0'
+    //implementation libs.asm.debug
+    implementation libs.guava
 
-    compile 'net.sf.opencsv:opencsv:2.3' // reading CSVs.. also used by SpecialSource
-    compile 'com.cloudbees:diff4j:1.1' // for difing and patching
-    compile 'com.github.abrarsyed.jastyle:jAstyle:1.3' // formatting
-    compile 'net.sf.trove4j:trove4j:2.1.0' // because its awesome.
+    implementation libs.opencsv // reading CSVs.. also used by SpecialSource
+    implementation libs.diff4j // for difing and patching
+    implementation libs.jastyle // formatting
+    implementation libs.trove4j // because its awesome.
 
-    compile 'com.github.jponge:lzma-java:1.3' // replaces the LZMA binary
-    compile 'com.nothome:javaxdelta:2.0.1' // GDIFF implementation for BinPatches
-    compile 'com.google.code.gson:gson:2.2.4' // Used instead of Argo for buuilding changelog.
-    compile 'com.github.tony19:named-regexp:0.2.3' // 1.7 Named regexp features
-    compile 'net.minecraftforge:forgeflower:1.0.342-SNAPSHOT' // Fernflower Forge edition
+    implementation libs.lzma // replaces the LZMA binary
+    implementation libs.xdelta // GDIFF implementation for BinPatches
+    implementation libs.gson // Used instead of Argo for buuilding changelog.
+    implementation libs.named.regexp // 1.7 Named regexp features
+    implementation libs.forgeflower // Fernflower Forge edition
 
-    shade 'net.md-5:SpecialSource:1.8.2' // deobf and reobf
+    shade libs.specialsource // deobf and reobf
 
     // because curse
-    compile 'org.apache.httpcomponents:httpclient:4.3.3'
-    compile 'org.apache.httpcomponents:httpmime:4.3.3'
+    implementation libs.httpclient
+    implementation libs.httpmime
 
     // mcp stuff
-    shade 'de.oceanlabs.mcp:RetroGuard:3.6.6'
-    shade('de.oceanlabs.mcp:mcinjector:3.4-SNAPSHOT'){
+    shade libs.retroguard
+    shade(libs.mcinjector) {
         exclude group: 'org.ow2.asm'
     }
-    shade('net.minecraftforge:Srg2Source:5.0.+'){
+    shade(libs.srg2source) {
+        exclude group: 'cpw.mods', module: 'modlauncher'
         exclude group: 'org.ow2.asm'
         exclude group: 'org.eclipse.equinox', module: 'org.eclipse.equinox.common'
-        exclude group: 'cpw.mods',            module: 'modlauncher'
+
+        jdt.transform(it)
+    }
+    constraints {
+        shade('org.eclipse.jdt:org.eclipse.jdt.core') {
+            jdt.transform(it)
+        }
     }
 
     // Because Eclipse is dumb and decided to use dynamic versions with J8 incompatibility
-    shade('org.eclipse.platform:org.eclipse.core.resources:3.14.0') { force = true }
-    shade('org.eclipse.platform:org.eclipse.core.runtime:3.20.100') { force = true }
-    shade('org.eclipse.platform:org.eclipse.text:3.11.0') { force = true }
-    shade('org.eclipse.platform:org.eclipse.core.filesystem:1.7.700') { force = true }
-    shade('org.eclipse.platform:org.eclipse.equinox.common:3.14.100') { force = true }
-    shade('org.eclipse.platform:org.eclipse.core.contenttype:3.7.900') { force = true }
-    shade('org.eclipse.platform:org.eclipse.core.jobs:3.10.1100') { force = true }
-    shade('org.eclipse.platform:org.eclipse.equinox.registry:3.10.100') { force = true }
-    shade('org.eclipse.platform:org.eclipse.osgi:3.16.200') { force = true }
-    shade('org.eclipse.platform:org.eclipse.core.commands:3.9.800') { force = true }
+    shade libs.eclipse.core.resources
+    shade libs.eclipse.core.runtime
+    shade libs.eclipse.text
+    shade libs.eclipse.core.filesystem
+    shade libs.eclipse.equinox.common
+    shade libs.eclipse.core.contenttype
+    shade libs.eclipse.core.jobs
+    shade libs.eclipse.equinox.registry
+    shade libs.eclipse.osgi
+    shade libs.eclipse.core.commands
 
     //Stuff used in the GradleStart classes
-    compileOnly 'com.mojang:authlib:1.5.16'
-    compileOnly('net.minecraft:launchwrapper:1.11'){
-       exclude group: 'org.ow2.asm'
+    compileOnly libs.authlib
+    compileOnly(libs.launchwrapper) {
+        exclude group: 'org.ow2.asm'
     }
 
-    compileOnly 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.1.3-2'
-    testCompile 'junit:junit:4.12'
+    compileOnly libs.kotlin.gradle.plugin
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '2.14'
-}
+testing {
+    suites.named('test', JvmTestSuite) {
+        useJUnit(libs.versions.junit)
 
-sourceSets {
-    main.compileClasspath += configurations.shade;
-    main.runtimeClasspath += configurations.shade;
-    test.compileClasspath += configurations.shade;
-    test.runtimeClasspath += configurations.shade;
-}
+        dependencies {
+            implementation libs.gradle.testkit
+        }
 
-compileJava {
-	options.deprecation = true
-	//options.compilerArgs += ["-Werror"]
-	//options.compilerArgs += ["-Werror", "-Xlint:unchecked"]
-}
-
-processResources {
-    from(sourceSets.main.resources.srcDirs) {
-        include 'forgegradle.version.txt'
-        expand 'version': project.version
-    }
-    from(sourceSets.main.resources.srcDirs) {
-        exclude 'forgegradle.version.txt'
-    }
-}
-
-import java.util.zip.*
-import org.objectweb.asm.*
-import org.objectweb.asm.tree.*
-
-//TODO: Eclipse complains about unused messages. Find a way to make it shut up.
-class PatchJDTClasses extends DefaultTask {
-    static def COMPILATION_UNIT_RESOLVER = 'org/eclipse/jdt/core/dom/CompilationUnitResolver'
-    static def RANGE_EXTRACTOR = 'net/minecraftforge/srg2source/ast/RangeExtractor'
-    def RESOLVE_METHOD = 'resolve([Ljava/lang/String;[Ljava/lang/String;[Ljava/lang/String;Lorg/eclipse/jdt/core/dom/FileASTRequestor;ILjava/util/Map;I)V'
-    def GET_CONTENTS = 'org/eclipse/jdt/internal/compiler/util/Util.getFileCharContent(Ljava/io/File;Ljava/lang/String;)[C'
-    def HOOK_DESC_RESOLVE = '(Ljava/lang/String;Ljava/lang/String;)[C'
-
-    @Input def targets = [] as Set
-    @Input def libraries = [] as Set
-    @OutputFile File output
-
-    void target(String value) {
-        targets.add(value)
-    }
-
-    void library(File value) {
-        libraries.add(value)
-    }
-
-    @TaskAction
-    void patchClass() {
-        def toProcess = targets.collect()
-        new ZipOutputStream(new FileOutputStream(output)).withCloseable{ zout ->
-            libraries.stream().filter{ !it.isDirectory() }.each { lib ->
-                new ZipFile(lib).withCloseable { zin ->
-                    def remove = []
-                    toProcess.each{ target ->
-                        def entry = zin.getEntry(target+'.class')
-                        if (entry == null)
-                            return
-
-                        def node = new ClassNode()
-                        def reader = new ClassReader(zin.getInputStream(entry))
-                        reader.accept(node, 0)
-
-                        //CompilationUnitResolver allows batch compiling, the problem is it is hardcoded to read the contents from a File.
-                        //So we patch this call to redirect to us, so we can get the contents from our InputSupplier
-                        if (COMPILATION_UNIT_RESOLVER.equals(target)) {
-                            logger.lifecycle('Transforming: ' + target + ' From: ' + lib)
-                            def resolve = node.methods.find{ RESOLVE_METHOD.equals(it.name + it.desc) }
-                            if (resolve == null)
-                                throw new RuntimeException('Failed to patch ' + target + ': Could not find method ' + RESOLVE_METHOD)
-                            for (int x = 0; x < resolve.instructions.size(); x++) {
-                                def insn = resolve.instructions.get(x)
-                                if (insn.type == AbstractInsnNode.METHOD_INSN) {
-                                    if (GET_CONTENTS.equals(insn.owner + '.' + insn.name + insn.desc)) {
-                                        if (
-                                        resolve.instructions.get(x - 5).opcode == Opcodes.NEW &&
-                                                resolve.instructions.get(x - 4).opcode == Opcodes.DUP &&
-                                                resolve.instructions.get(x - 3).opcode == Opcodes.ALOAD &&
-                                                resolve.instructions.get(x - 2).opcode == Opcodes.INVOKESPECIAL &&
-                                                resolve.instructions.get(x - 1).opcode == Opcodes.ALOAD
-                                        ) {
-                                            resolve.instructions.set(resolve.instructions.get(x - 5), new InsnNode(Opcodes.NOP)); // NEW File
-                                            resolve.instructions.set(resolve.instructions.get(x - 4), new InsnNode(Opcodes.NOP)); // DUP
-                                            resolve.instructions.set(resolve.instructions.get(x - 2), new InsnNode(Opcodes.NOP)); // INVOKESTATIC <init>
-                                            insn.owner = RANGE_EXTRACTOR
-                                            insn.desc = HOOK_DESC_RESOLVE
-                                            logger.lifecycle('Patched ' + node.name)
-                                        } else {
-                                            throw new IllegalStateException('Found Util.getFileCharContents call, with unexpected context')
-                                        }
-                                    }
-                                }
-                            }
-                        } else if (RANGE_EXTRACTOR.equals(target)) {
-                            logger.lifecycle('Tansforming: ' + target + ' From: ' + lib)
-                            def marker = node.methods.find{ 'hasBeenASMPatched()Z'.equals(it.name + it.desc) }
-                            if (marker == null)
-                                throw new RuntimeException('Failed to patch ' + target + ': Could not find method hasBeenASMPatched()Z')
-                            marker.instructions.clear()
-                            marker.instructions.add(new InsnNode(Opcodes.ICONST_1))
-                            marker.instructions.add(new InsnNode(Opcodes.IRETURN))
-                            logger.lifecycle('Patched: ' + node.name)
-                        }
-
-                        def writer = new ClassWriter(0)
-                        node.accept(writer)
-
-                        remove.add(target)
-                        def nentry = new ZipEntry(entry.name)
-                        nentry.time = 0
-                        zout.putNextEntry(nentry)
-                        zout.write(writer.toByteArray())
-                        zout.closeEntry()
-                    }
-                    toProcess.removeAll(remove)
-                }
+        targets.configureEach {
+            testTask.configure {
+                ignoreFailures = true
+                javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(8) }
+                testLogging { exceptionFormat = TestExceptionFormat.FULL }
             }
-            if (!toProcess.isEmpty())
-                throw new IllegalStateException('Patching class failed: ' + toProcess)
         }
     }
 }
 
-task patchJDT(type: PatchJDTClasses) {
-    target PatchJDTClasses.COMPILATION_UNIT_RESOLVER
-    target PatchJDTClasses.RANGE_EXTRACTOR
-    configurations.shade.resolvedConfiguration.resolvedArtifacts.stream().filter { dep ->
-        dep.name.equals('org.eclipse.jdt.core') || dep.name.equals('Srg2Source')
-    }
-    .forEach { dep -> library dep.file }
-    output file('build/patchJDT/patch_jdt.jar')
+tasks.named('compileJava', JavaCompile) {
+    options.deprecation = true
+    //options.compilerArgs += ["-Werror"]
+    //options.compilerArgs += ["-Werror", "-Xlint:unchecked"]
 }
 
-jar {
-    dependsOn('patchJDT')
+tasks.named('validatePlugins', ValidatePlugins) {
+    enabled = false
+}
 
-    configurations.shade.each { dep ->
-        /* I can use this again to find where dupes come from, so.. gunna just keep it here.
-        logger.lifecycle(dep.toString())
-        project.zipTree(dep).visit { 
-            element -> 
-                def path = element.relativePath.toString()
-                if (path.contains('org/eclipse/core') && path.endsWith('.class'))
-                    println "  $element.relativePath"
-            
-        }
-        */
-        from(project.zipTree(dep)){
-            exclude 'META-INF', 'META-INF/**', '.api_description', '.options', 'about.html', 'module-info.class', 'plugin.properties', 'plugin.xml', 'about_files/**'
-            duplicatesStrategy 'warn'
-        }
+tasks.named('processResources', ProcessResources) { task ->
+    task.inputs.property('version', project.version)
+
+    task.filesMatching('forgegradle.version.txt') {
+        expand 'version': task.inputs.properties.version
     }
+}
 
-    from(zipTree(patchJDT.output)){
-        duplicatesStrategy 'include'
-    }
-
+tasks.named('jar', Jar) {
     manifest {
-        attributes 'version':project.version
-        attributes 'javaCompliance': project.targetCompatibility
-        attributes 'group':project.group
-        attributes 'Implementation-Version': project.version + "-" + GIT_INFO.hash
+        attributes([
+            'group'                 : group,
+            'version'               : version,
+            'javaCompliance'        : java.targetCompatibility,
+            'Implementation-Version': version + "-" + gitversion.info.hash
+        ])
     }
+
+    archiveClassifier = 'slim'
 }
 
-javadoc {
-	classpath += configurations.compileOnly
-
-    // linked javadoc urls.. why not...
-    options.addStringOption 'link', 'https://gradle.org/docs/current/javadoc/'
-    options.addStringOption 'link', 'http://docs.guava-libraries.googlecode.com/git-history/v18.0/javadoc'
-    options.addStringOption 'link', 'http://asm.ow2.org/asm50/javadoc/user/'
+shadow {
+    // Marks the jar as being embedded, not shadowed.
+    // shadowed = relocated, embedded = no relocation.
+    bundlingAttribute = Bundling.EMBEDDED
 }
 
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    from javadoc
-    classifier = "javadoc"
-}
-
-artifacts {
-    archives jar
-    //archives javadocJar
-}
-
-test {
-    // These tests are outdated, and I can't be arsed to fix them
-    exclude "*"
-    // if (project.hasProperty("filesmaven")) // disable this test when on the forge jenkins
-    //     exclude "**/ExtensionMcpMappingTest*"
+tasks.named('shadowJar', ShadowJar) {
+    archiveClassifier = null
+    configurations = [project.configurations.shadeClasspath]
+    exclude '.api_description', '.options', 'about.html', 'module-info.class', 'plugin.properties', 'plugin.xml', 'about_files/**'
 }
 
 license {
@@ -329,157 +187,108 @@ license {
         year = '2013-2019'
         fullname = 'Minecraft Forge'
     }
-    header rootProject.file('HEADER')
+
+    header = rootProject.file('LICENSE-header.txt')
+    newLine = false
     include '**net/minecraftforge/gradle/**/*.java'
-    excludes ([
+    excludes = [
         '**net/minecraftforge/gradle/util/ZipFileTree.java',
         '**net/minecraftforge/gradle/util/json/version/*',
         '**net/minecraftforge/gradle/util/patching/Base64.java',
         '**net/minecraftforge/gradle/util/patching/ContextualPatch.java'
-    ])
+    ]
     ignoreFailures false
-    strictCheck true
-    mapping {
-        java = 'SLASHSTAR_STYLE'
-    }
 }
 
-pluginBundle {
-    website = 'http://www.gradle.org/'
-    vcsUrl = 'https://github.com/MinecraftForge/ForgeGradle'
-    description = 'Gradle plugin for all Minecraft mod development needs'
-    tags = ['forge', 'minecraft', 'minecraftforge', 'sponge', 'mcp']
+changelog {
+    from '2.3'
+}
+
+gradlePlugin {
+    website = gitversion.url
+    vcsUrl = gitversion.url + '.git'
 
     plugins {
-        patcher {
-            id = 'net.minecraftforge.gradle.patcher'
-            displayName = 'Minicraft Patcher Plugin'
-        }
-        tweakerClient {
-            id = 'net.minecraftforge.gradle.tweaker-client'
-            displayName = 'Mincraft Client Tweaker Plugin'
-        }
-        tweakerServer {
-            id = 'net.minecraftforge.gradle.tweaker-server'
-            displayName = 'Mincraft Server Tweaker Plugin'
-        }
-        forge {
-            id = 'net.minecraftforge.gradle.forge'
-            displayName = 'MincraftForge Mod Development Plugin'
+        configureEach {
+            description = 'Gradle plugin for all Minecraft mod development needs'
+            tags = ['forge', 'minecraft', 'minecraftforge', 'sponge', 'mcp']
         }
 
-        launch4j {
+        register('patcher') {
+            id = 'net.minecraftforge.gradle.patcher'
+            displayName = 'Minecraft Patcher Plugin'
+            implementationClass = 'net.minecraftforge.gradle.patcher.PatcherPlugin'
+        }
+        register('tweakerClient') {
+            id = 'net.minecraftforge.gradle.tweaker-client'
+            displayName = 'Minecraft Client Tweaker Plugin'
+            implementationClass = 'net.minecraftforge.gradle.user.tweakers.ClientTweaker'
+        }
+        register('tweakerServer') {
+            id = 'net.minecraftforge.gradle.tweaker-server'
+            displayName = 'Minecraft Server Tweaker Plugin'
+            implementationClass = 'net.minecraftforge.gradle.user.tweakers.ServerTweaker'
+        }
+        register('forge') {
+            id = 'net.minecraftforge.gradle.forge'
+            displayName = 'MinecraftForge Mod Development Plugin'
+            implementationClass = 'net.minecraftforge.gradle.user.patcherUser.forge.ForgePlugin'
+        }
+        register('launch4j') {
             id = 'net.minecraftforge.gradle.launch4j'
             displayName = 'Specialized Launch4J Gradle Plugin'
+            implementationClass = 'edu.sc.seis.launch4j.Launch4jPlugin'
+        }
+        register('liteloader') {
+            id = 'net.minecraftforge.gradle.liteloader'
+            displayName = 'LiteLoader Mod Development Plugin'
+            implementationClass = 'net.minecraftforge.gradle.user.liteloader.LiteloaderPlugin'
         }
     }
 }
 
-uploadArchives {
-    repositories.mavenDeployer {
-
-        dependsOn 'build'
-
-        if (System.env.MAVEN_USER)
-        {
-            repository(url: "https://maven.minecraftforge.net/") {
-                authentication(userName: System.env.MAVEN_USER, password: System.env.MAVEN_PASSWORD)
-            }
-        }
-        else
-        {
-            // local repo folder. Might wanna juset use  gradle install   if you wanans end it to maven-local
-            repository(url: 'file://localhost/' + project.file('repo').getAbsolutePath())
-        }
-
-
-        pom {
-            groupId = project.group
-            version = project.version
-            artifactId = project.archivesBaseName
-            project {
-                name project.archivesBaseName
-                packaging 'jar'
-                description 'Gradle plugin for Forge'
-                url 'https://github.com/MinecraftForge/ForgeGradle'
-
-                scm {
-                    url 'https://github.com/MinecraftForge/ForgeGradle'
-                    connection 'scm:git:git://github.com/MinecraftForge/ForgeGradle.git'
-                    developerConnection 'scm:git:git@github.com:MinecraftForge/ForgeGradle.git'
-                }
-
-                issueManagement {
-                    system 'github'
-                    url 'https://github.com/MinecraftForge/ForgeGradle/issues'
-                }
-
-                licenses {
-                    license {
-                        name 'Lesser GNU Public License, Version 2.1'
-                        url 'https://www.gnu.org/licenses/lgpl-2.1.html'
-                        distribution 'repo'
-                    }
-                }
-
-                developers {
-                    developer {
-                        id 'AbrarSyed'
-                        name 'Abrar Syed'
-                        roles { role 'developer' }
-                    }
-                    developer {
-                        id 'LexManos'
-                        name 'Lex Manos'
-                        roles { role 'developer' }
-                    }
-                }
-            }
-        }
-    }
+shadow {
+    // Skips the automatic addition of the shadow variant into the Java component. We do that ourselves.
+    // The reason is because shadow calls mapToOptional(), which we cannot revert. The dependencies are not optional.
+    addShadowVariantIntoJavaComponent = false
 }
 
-// write out version so its convenient for doc deployment
-file('build').mkdirs()
-file('build/version.txt').text = version;
+afterEvaluate {
+    // Skips publishing the slim jar as a component. This makes the POM inherit the shadowRuntimeElements dependencies.
+    (components.java as AdhocComponentWithVariants).withVariantsFromConfiguration(configurations.runtimeElements) {
+        skip()
+    }
 
-def gitInfo(dir) {
-    String.metaClass.rsplit = { String del, int limit = -1 ->
-        def lst = new ArrayList()
-        def x = 0, idx
-        def tmp = delegate
-        while ((idx = tmp.lastIndexOf(del)) != -1 && (limit == -1 || x++ < limit)) {
-            lst.add(0, tmp.substring(idx + del.length(), tmp.length()))
-            tmp = tmp.substring(0, idx)
+    // Adds the shadowRuntimeElements variant to the Java component.
+    (components.java as AdhocComponentWithVariants).addVariantsFromConfiguration(configurations.shadowRuntimeElements) {}
+}
+
+publishing {
+    repositories {
+        maven gradleutils.publishingForgeMaven
+    }
+
+    publications.register('pluginMaven', MavenPublication) {
+        changelog.publish(it)
+        gradleutils.promote(it)
+
+        pom { pom ->
+            name = gradleutils.displayName
+            description = project.description
+
+            gradleutils.pom.addRemoteDetails(pom)
+
+            licenses {
+                license gradleutils.pom.licenses.LGPLv2_1
+            }
+
+            developers {
+                developer {
+                    id = 'AbrarSyed'
+                    name = 'Abrar Syed'
+                }
+                developer gradleutils.pom.developers.LexManos
+            }
         }
-        lst.add(0, tmp)
-        return lst
     }
-
-    def git = null
-    try {
-        git = org.eclipse.jgit.api.Git.open(dir)
-    } catch (org.eclipse.jgit.errors.RepositoryNotFoundException e) {
-        return [
-                tag: '0.0',
-                offset: '0',
-                hash: '00000000',
-                branch: 'master',
-                commit: '0000000000000000000000',
-                abbreviatedId: '00000000'
-        ]
-    }
-    def desc = git.describe().setLong(true).setTags(true).call().rsplit('-', 2)
-    def head = git.repository.exactRef('HEAD')
-    def longBranch = head.symbolic ? head?.target?.name : null // matches Repository.getFullBranch() but returning null when on a detached HEAD
-
-    def ret = [:]
-    ret.tag = desc[0]
-    ret.offset = desc[1]
-    ret.hash = desc[2]
-    ret.branch = longBranch != null ? org.eclipse.jgit.lib.Repository.shortenRefName(longBranch) : null
-    ret.commit = org.eclipse.jgit.lib.ObjectId.toString(head.objectId)
-    ret.abbreviatedId = head.objectId.abbreviate(8).name()
-
-    return ret
 }
