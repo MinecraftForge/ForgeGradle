@@ -31,7 +31,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     //region Minecraft
     //region Mappings
     RuntimeException missingMappings(Throwable throwable) {
-        return this.getReporter().throwing(throwable, this.id("missing-mappings", "Missing Minecraft mappings"), spec -> spec
+        return this.throwing(throwable, "missing-mappings", "Missing Minecraft mappings", spec -> spec
             .details("""
                 Attempted to consume Minecraft mappings, but none were declared.
                 Minecraft dependencies cannot be resolved without mappings.""")
@@ -44,7 +44,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     }
 
     RuntimeException nullMappingsParam(String name) {
-        return this.getReporter().throwing(new IllegalArgumentException("Mappings %s cannot be null".formatted(name)), this.id("null-mappings-param", "Null mappings parameter"), spec -> spec
+        return this.throwing(new IllegalArgumentException("Mappings %s cannot be null".formatted(name)), "null-mappings-param", "Null mappings parameter", spec -> spec
             .details("""
                 Attempted to create a Mappings object, but the %s parameter was null.
                 The parameters for the Mappings object are not null.""".formatted(name))
@@ -61,7 +61,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
         var comparison = "Old: (channel: %s, version: %s), New: (channel: %s, version: %s)"
             .formatted(original.channel(), original.version(), replacement.channel(), replacement.version());
         LOGGER.warn("WARNING: Overriding previously declared mappings! {}", comparison);
-        this.getReporter().report(id("multiple-mappings", "Multiple mappings declared"), spec -> spec
+        this.report("multiple-mappings", "Multiple mappings declared", spec -> spec
             .details("""
                 Mappings are being set, even though they have already been declared.
                 This will cause the current mappings to be overridden, which may lead to unexpected behavior.
@@ -79,7 +79,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
         if (!this.test("net.minecraftforge.gradle.warnings.missingMinecraftDependency")) return;
 
         LOGGER.error("ERROR: No Minecraft dependency declared! Disabling ForgeGradle. See Problems report for details.");
-        this.getReporter().report(id("missing-dependency", "Missing Minecraft dependency"), spec -> spec
+        this.report("missing-dependency", "Missing Minecraft dependency", spec -> spec
             .details("""
                 ForgeGradle was applied, but no Minecraft dependency was declared.
                 ForgeGradle will now be disabled and stop all further registrations.""")
@@ -94,7 +94,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     }
 
     RuntimeException invalidMinecraftDependencyType(Dependency dependency) {
-        return this.getReporter().throwing(new IllegalArgumentException("Minecraft dependency is not a module dependency"), this.id("unsupported-minecraft-dependency-type", "Non-module dependency used as Minecraft dependency"), spec -> spec
+        return this.throwing(new IllegalArgumentException("Minecraft dependency is not a module dependency"), "unsupported-minecraft-dependency-type", "Non-module dependency used as Minecraft dependency", spec -> spec
             .details("""
                 Attempted to use a non-module (or internal module) dependency as a Minecraft dependency.
                 The Minecraft dependency must be an external module dependency, as it is resolved from the Minecraft Maven.
@@ -111,7 +111,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
 
     @Deprecated(forRemoval = true)
     void reportMissingMetadata(Throwable throwable) {
-        this.getReporter().report(id("missing-metadata", "Failed to extract metadata"), spec -> spec
+        this.report("missing-metadata", "Failed to extract metadata", spec -> spec
             .details("""
                 ForgeGradle failed to locate or extract the metadata generated for the Minecraft dependency.
                 This is expected if the Minecraft Maven has not yet been synced.
@@ -126,7 +126,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     }
 
     RuntimeException changingMinecraftDependency(Dependency dependency) {
-        return this.getReporter().throwing(new IllegalArgumentException("Minecraft dependency cannot be changing"), this.id("changing-minecraft-dependency", "Minecraft dependency marked as changing"), spec -> spec
+        return this.throwing(new IllegalArgumentException("Minecraft dependency cannot be changing"), "changing-minecraft-dependency", "Minecraft dependency marked as changing", spec -> spec
             .details("""
                 Attempted to use a Minecraft dependency that was marked as changing.
                 This is currently unsupported.
@@ -143,7 +143,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     void reportMcMavenNotDeclared() {
         if (!this.test("net.minecraftforge.gradle.warnings.missingRepository.mcmaven")) return;
 
-        this.getReporter().report(id("minecraft-maven-not-declared", "Minecraft Maven not declared"), spec -> spec
+        this.report("minecraft-maven-not-declared", "Minecraft Maven not declared", spec -> spec
             .details("""
                 ForgeGradle was configured to sync the Minecraft Maven, but it was not declared as a repository!
                 This will result in a "cannot resolve dependency" error.""")
@@ -156,7 +156,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     void reportMcLibsMavenNotDeclared() {
         if (!this.test("net.minecraftforge.gradle.warnings.missingRepository.mclibs")) return;
 
-        this.getReporter().report(id("minecraft-libs-maven-not-declared", "Minecraft Libraries maven not declared"), spec -> spec
+        this.report("minecraft-libs-maven-not-declared", "Minecraft Libraries maven not declared", spec -> spec
             .details("""
                 ForgeGradle was configured to sync the Minecraft Maven, but the Minecraft Libraries maven was not declared!
                 The generated Minecraft artifact has dependencies from libraries that may only exist on there.
@@ -170,7 +170,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     void reportForgeMavenNotDeclared() {
         if (!this.test("net.minecraftforge.gradle.warnings.missingRepository.forge")) return;
 
-        this.getReporter().report(id("forge-maven-not-declared", "Forge maven not declared"), spec -> spec
+        this.report("forge-maven-not-declared", "Forge maven not declared", spec -> spec
             .details("""
                 ForgeGradle was configured to sync the Minecraft Maven, but the Forge maven was not declared!
                 The generated Minecraft artifact has dependencies from libraries that may only exist on there.
@@ -184,7 +184,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     //endregion
 
     void reportAccessTransformersNotApplied(Throwable e) {
-        this.getReporter().report(this.id("access-transformers-not-applied", "AccessTransformers plugin not applied"), spec -> spec
+        this.report("access-transformers-not-applied", "AccessTransformers plugin not applied", spec -> spec
             .details("""
                 The build failed with an exception when trying to access access transformers.
                 The project using ForgeGradle does not have the AccessTransformers Gradle plugin applied, and thus it cannot be used.
@@ -198,7 +198,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     }
 
     RuntimeException accessTransformersNotOnClasspath(Throwable e) {
-        return this.getReporter().throwing(e, this.id("access-transformers-not-on-classpath", "AccessTransformers plugin not on classpath"), spec -> spec
+        return this.throwing(e, "access-transformers-not-on-classpath", "AccessTransformers plugin not on classpath", spec -> spec
             .details("""
                 The AccessTransformers plugin was not loaded in the classpath before ForgeGradle.
                 ForgeGradle cannot create the 'minecraft' extension without referencing classes from the plugin.

@@ -7,7 +7,7 @@ plugins {
     id 'idea'
     id 'eclipse'
     id 'maven-publish'
-    id 'io.freefair.javadoc-links'
+    //id 'io.freefair.javadoc-links'
     id 'net.minecraftforge.gradleutils'
     alias libs.plugins.gitversion
     alias libs.plugins.changelog

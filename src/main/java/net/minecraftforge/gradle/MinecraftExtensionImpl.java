@@ -40,20 +40,14 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.reflect.TypeOf;
-import org.gradle.api.tasks.SourceSet;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
     private static final String EXT_MAVEN_REPOS = "fg_mc_maven_repos";
@@ -267,8 +261,9 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             var sourceSetsDir = this.getObjects().directoryProperty().value(this.getProjectLayout().getBuildDirectory().dir("sourceSets"));
             sourceSets.configureEach(sourceSet -> {
                 for (var minecraftDependency : this.minecraftDependencies) {
-                    if (Util.contains(configurations, sourceSet, minecraftDependency.getDelegate().get()))
+                    if (Util.contains(configurations, sourceSet, true, minecraftDependency.getDelegate().get())) {
                         minecraftDependency.handle(sourceSet);
+                    }
                 }
 
                 if (this.problems.test("net.minecraftforge.gradle.mergeSourceSets")) {

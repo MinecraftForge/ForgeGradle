@@ -1,10 +1,7 @@
 plugins {
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0' // https://plugins.gradle.org/plugin/org.gradle.toolchains.foojay-resolver-convention
-
-    // NOTE: We need to load this into the classpath before GradleUtils for the service to load correctly
-    id 'io.freefair.javadoc-links' version '8.14' apply false // https://plugins.gradle.org/plugin/io.freefair.javadoc-links
-
-    id 'net.minecraftforge.gradleutils' version '3.2.7' // https://plugins.gradle.org/plugin/net.minecraftforge.gradleutils
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+    id 'io.freefair.javadoc-links' version '8.14' apply false
+    id 'net.minecraftforge.gradleutils' version '3.3.11'
 }
 
 rootProject.name = 'forgegradle'
@@ -15,6 +12,7 @@ dependencyResolutionManagement {
         mavenCentral()
         maven gradleutils.forgeMaven
         maven { url = 'https://maven.moddinglegacy.com/maven' } // Gradle API
+        mavenLocal()
     }
 
     //@formatter:off
@@ -35,11 +33,11 @@ dependencyResolutionManagement {
         library 'gradle', 'name.remal.gradle-api', 'gradle-api'  versionRef 'gradle'
 
         // GradleUtils Shared Base
-        library 'gradleutils-shared', 'net.minecraftforge', 'gradleutils-shared' version '3.2.7'
+        library 'gradleutils-shared', 'net.minecraftforge', 'gradleutils-shared' version '3.3.11'
 
         // AccessTransformers Gradle Plugin
         // https://plugins.gradle.org/plugin/net.minecraftforge.accesstransformers
-        library 'accesstransformers-gradle', 'net.minecraftforge.accesstransformers', 'net.minecraftforge.accesstransformers.gradle.plugin' version '4.0.1'
+        library 'accesstransformers-gradle', 'net.minecraftforge.accesstransformers', 'net.minecraftforge.accesstransformers.gradle.plugin' version '4.0.2'
 
         library 'utils-data',     'net.minecraftforge', 'json-data-utils' version '0.2.1' // https://files.minecraftforge.net/net/minecraftforge/json-data-utils/index.html
         library 'utils-hash',     'net.minecraftforge', 'hash-utils'      version '0.1.9' // https://files.minecraftforge.net/net/minecraftforge/hash-utils/index.html

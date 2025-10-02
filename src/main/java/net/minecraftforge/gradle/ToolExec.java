@@ -4,19 +4,11 @@
  */
 package net.minecraftforge.gradle;
 
-import net.minecraftforge.gradleutils.shared.EnhancedPlugin;
-import net.minecraftforge.gradleutils.shared.EnhancedTask;
 import net.minecraftforge.gradleutils.shared.Tool;
 import net.minecraftforge.gradleutils.shared.ToolExecBase;
-import org.gradle.api.Project;
 
-abstract class ToolExec extends ToolExecBase<ForgeGradleProblems> implements EnhancedTask {
+abstract class ToolExec extends ToolExecBase<ForgeGradleProblems> implements ForgeGradleTask {
     ToolExec(Tool tool) {
-        super(ForgeGradleProblems.class, tool);
-    }
-
-    @Override
-    public Class<? extends EnhancedPlugin<? super Project>> pluginType() {
-        return ForgeGradlePlugin.class;
+        super(tool);
     }
 }

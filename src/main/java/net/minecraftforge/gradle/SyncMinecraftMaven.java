@@ -4,8 +4,6 @@
  */
 package net.minecraftforge.gradle;
 
-import net.minecraftforge.gradleutils.shared.EnhancedPlugin;
-import net.minecraftforge.gradleutils.shared.EnhancedTask;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ExternalModuleDependency;
@@ -42,7 +40,7 @@ import java.util.stream.Collectors;
  *
  * @see MinecraftExtensionImpl
  */
-abstract class SyncMinecraftMaven extends DefaultTask implements EnhancedTask, HasPublicType {
+abstract class SyncMinecraftMaven extends DefaultTask implements ForgeGradleTask, HasPublicType {
     /** The name of the task that is used to sync the Minecraft Maven. */
     static final String NAME = "syncMinecraftMaven";
 
@@ -54,15 +52,13 @@ abstract class SyncMinecraftMaven extends DefaultTask implements EnhancedTask, H
         );
     }
 
-    private final ForgeGradleProblems problems;
+    private final ForgeGradleProblems problems = this.getObjects().newInstance(ForgeGradleProblems.class);
 
     protected abstract @Inject ObjectFactory getObjects();
     protected abstract @Inject ExecOperations getExecOperations();
 
     @Inject
     public SyncMinecraftMaven() {
-        this.problems = this.getObjects().newInstance(ForgeGradleProblems.class);
-
         this.setGroup("Build Setup");
         this.setDescription("Syncs the Minecraft dependencies using Minecraft Mavenizer.");
 
@@ -84,11 +80,6 @@ abstract class SyncMinecraftMaven extends DefaultTask implements EnhancedTask, H
                 return requests.isPresent() && !requests.get().isEmpty();
             }
         );
-    }
-
-    @Override
-    public Class<? extends EnhancedPlugin<? super Project>> pluginType() {
-        return ForgeGradlePlugin.class;
     }
 
     @Override

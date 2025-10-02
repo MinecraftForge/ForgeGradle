@@ -5,6 +5,7 @@
 package net.minecraftforge.gradle;
 
 import net.minecraftforge.gradleutils.shared.EnhancedTask;
+import net.minecraftforge.gradleutils.shared.SharedUtil;
 import net.minecraftforge.util.data.json.RunConfig;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
@@ -30,10 +31,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
-abstract class SlimeLauncherExec extends ToolExec implements EnhancedTask, HasPublicType {
+abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, HasPublicType {
     static void register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, Map<String, RunConfig> configs, Dependency dependency, Provider<RegularFile> metadataZip, boolean single) {
         var taskName = sourceSet.getTaskName("run", options.getName());
         project.getTasks().register(single ? taskName : taskName + Util.dependencyToCamelCase(dependency), SlimeLauncherExec.class, task -> {
@@ -43,7 +45,7 @@ abstract class SlimeLauncherExec extends ToolExec implements EnhancedTask, HasPu
             task.getJavaLauncher().unset();
 
             var caches = task.getObjectFactory().directoryProperty().value(task.globalCaches().dir("slime-launcher/cache/%s/%s/%s".formatted(dependency.getGroup().replace(".", "/"), dependency.getName(), dependency.getVersion())));
-            task.getCacheDir().set(caches.map(task.getProblems().ensureFileLocation()));
+            task.getCacheDir().set(caches.map(task.problems.ensureFileLocation()));
             task.getMetadataZip().set(metadataZip);
 
             task.inherit(configs, options.getName());
@@ -54,14 +56,21 @@ abstract class SlimeLauncherExec extends ToolExec implements EnhancedTask, HasPu
         });
     }
 
+    private final ForgeGradleProblems problems = this.getObjectFactory().newInstance(ForgeGradleProblems.class);
+
     private boolean buildAllProjects;
 
     @Inject
     public SlimeLauncherExec() {
-        super(Tools.SLIMELAUNCHER);
-
         this.setGroup("Slime Launcher");
 
+        var resolved = this.getTool(Tools.SLIMELAUNCHER);
+
+        this.setClasspath(resolved.getClasspath());
+
+        if (resolved.hasMainClass())
+            this.getMainClass().set(resolved.getMainClass());
+        this.getJavaLauncher().set(resolved.getJavaLauncher());
         this.getModularity().getInferModulePath().set(false);
     }
 
@@ -119,6 +128,7 @@ abstract class SlimeLauncherExec extends ToolExec implements EnhancedTask, HasPu
             throw new RuntimeException(e);
         }
 
+        this.getLogger().info("{} {}", this.getClasspath().getAsPath(), String.join(" ", this.getArgs()));
         super.exec();
     }
 

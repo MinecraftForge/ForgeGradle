@@ -11,8 +11,12 @@ import groovy.transform.NamedVariant;
 import net.minecraftforge.accesstransformers.gradle.AccessTransformersContainer;
 import net.minecraftforge.gradleutils.shared.Closures;
 import org.gradle.api.Action;
+import org.gradle.api.InvalidUserDataException;
+import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.DependencyScopeConfiguration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.attributes.Attribute;
 import org.gradle.api.file.ProjectLayout;
@@ -64,23 +68,6 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     }
 
     Provider<ExternalModuleDependency> setDelegate(Object dependencyNotation, Closure<?> closure) {
-        var hash = this.hashCode();
-
-        this.project.afterEvaluate(project -> project.getConfigurations().forEach(configuration -> {
-            configuration.getDependencies().matching(dependency -> {
-                var ext = ((ExtensionAware) dependency).getExtensions().getExtraProperties();
-                return ext.has("__mc_dep_hash") && (int) ext.get("__mc_dep_hash") == hash;
-            }).configureEach(dependency -> configuration.getDependencyConstraints().add(this.project.getDependencies().getConstraints().create(((ExternalModuleDependency) dependency).getModule().toString(), constraint -> {
-                constraint.because("Accounts for mappings used and natives variants");
-
-                constraint.attributes(attributes -> {
-                    attributes.attribute(MinecraftExtension.Attributes.os, this.getObjects().named(OperatingSystemFamily.class, OperatingSystem.current().getFamilyName()));
-                    attributes.attributeProvider(MinecraftExtension.Attributes.mappingsChannel, mappings.map(MinecraftMappings::channel));
-                    attributes.attributeProvider(MinecraftExtension.Attributes.mappingsVersion, mappings.map(MinecraftMappings::version));
-                });
-            })));
-        }));
-
         return this.delegate = this.getObjects().property(ExternalModuleDependency.class).value(this.getProviders().provider(
             () -> (ExternalModuleDependency) this.project.getDependencies().create(dependencyNotation, Closures.<Dependency, ExternalModuleDependency>function(dependency -> {
                 if (!(dependency instanceof ExternalModuleDependency module))
@@ -90,8 +77,6 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
                     throw this.problems.changingMinecraftDependency(dependency);
 
                 Closures.invoke(this.closure(closure), module);
-
-                ((ExtensionAware) module).getExtensions().getExtraProperties().set("__mc_dep_hash", hash);
 
                 return module;
             }))
@@ -103,7 +88,32 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     }
 
     @Override
-    public void handle(SourceSet sourceSet) { }
+    public void handle(SourceSet sourceSet) {
+        var configurations = this.project.getConfigurations();
+        var dependency = this.getDelegate().get();
+
+        NamedDomainObjectProvider<DependencyScopeConfiguration> minecraftDependencyConstraints;
+        try {
+            minecraftDependencyConstraints = configurations.dependencyScope("minecraftDependencyConstraints", configuration -> {
+                configuration.setDescription("Transient dependency constraints for Minecraft dependencies.");
+            });
+        } catch (InvalidUserDataException e) {
+            minecraftDependencyConstraints = configurations.named("minecraftDependencyConstraints", DependencyScopeConfiguration.class);
+        }
+
+        configurations.getByName(sourceSet.getCompileClasspathConfigurationName()).extendsFrom(minecraftDependencyConstraints.get());
+        configurations.getByName(sourceSet.getRuntimeClasspathConfigurationName()).extendsFrom(minecraftDependencyConstraints.get());
+
+        minecraftDependencyConstraints.get().getDependencyConstraints().add(this.project.getDependencies().getConstraints().create(dependency.getModule().toString(), constraint -> {
+            constraint.because("Accounts for mappings used and natives variants");
+
+            constraint.attributes(attributes -> {
+                attributes.attribute(MinecraftExtension.Attributes.os, this.getObjects().named(OperatingSystemFamily.class, OperatingSystem.current().getFamilyName()));
+                attributes.attributeProvider(MinecraftExtension.Attributes.mappingsChannel, mappings.map(MinecraftMappings::channel));
+                attributes.attributeProvider(MinecraftExtension.Attributes.mappingsVersion, mappings.map(MinecraftMappings::version));
+            });
+        }));
+    }
 
     @Override
     public MinecraftMappings getMappings() {
@@ -164,16 +174,15 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
 
         @Override
         Provider<ExternalModuleDependency> setDelegate(Object dependencyNotation, Closure<?> closure) {
-            return this.delegate = this.getObjects().property(ExternalModuleDependency.class).value(this.getProviders().provider(() -> {
-                var dependency = super.setDelegate(dependencyNotation, closure);
-                return this.atPath.isPresent() || this.getAccessTransformer().isPresent() ? (ExternalModuleDependency) this.atContainer.dep(dependency).get() : dependency.get();
-            }));
+            var dependency = super.setDelegate(dependencyNotation, closure);
+            return this.delegate = this.atPath.map(path -> (ExternalModuleDependency) this.atContainer.dep(dependency).get()).orElse(dependency);
         }
 
         @Override
         public void handle(SourceSet sourceSet) {
             super.handle(sourceSet);
 
+            if (!Util.contains(project.getConfigurations(), sourceSet, false, this.getDelegate().get())) return;
             if (!this.atPath.isPresent()) return;
 
             var itor = sourceSet.getResources().getSrcDirs().iterator();
