@@ -19,6 +19,7 @@ import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.ExtraPropertiesExtension.UnknownPropertyException;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
@@ -63,6 +64,23 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     }
 
     Provider<ExternalModuleDependency> setDelegate(Object dependencyNotation, Closure<?> closure) {
+        var hash = this.hashCode();
+
+        this.project.afterEvaluate(project -> project.getConfigurations().forEach(configuration -> {
+            configuration.getDependencies().matching(dependency -> {
+                var ext = ((ExtensionAware) dependency).getExtensions().getExtraProperties();
+                return ext.has("__mc_dep_hash") && (int) ext.get("__mc_dep_hash") == hash;
+            }).configureEach(dependency -> configuration.getDependencyConstraints().add(this.project.getDependencies().getConstraints().create(((ExternalModuleDependency) dependency).getModule().toString(), constraint -> {
+                constraint.because("Accounts for mappings used and natives variants");
+
+                constraint.attributes(attributes -> {
+                    attributes.attribute(MinecraftExtension.Attributes.os, this.getObjects().named(OperatingSystemFamily.class, OperatingSystem.current().getFamilyName()));
+                    attributes.attributeProvider(MinecraftExtension.Attributes.mappingsChannel, mappings.map(MinecraftMappings::channel));
+                    attributes.attributeProvider(MinecraftExtension.Attributes.mappingsVersion, mappings.map(MinecraftMappings::version));
+                });
+            })));
+        }));
+
         return this.delegate = this.getObjects().property(ExternalModuleDependency.class).value(this.getProviders().provider(
             () -> (ExternalModuleDependency) this.project.getDependencies().create(dependencyNotation, Closures.<Dependency, ExternalModuleDependency>function(dependency -> {
                 if (!(dependency instanceof ExternalModuleDependency module))
@@ -73,21 +91,7 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
 
                 Closures.invoke(this.closure(closure), module);
 
-                var mappings = this.getMappings();
-
-                this.project.getConfigurations().forEach(configuration -> {
-                    if (!configuration.isCanBeDeclared()) return;
-
-                    configuration.getDependencyConstraints().add(this.project.getDependencies().getConstraints().create(module.getModule().toString(), constraint -> {
-                        constraint.because("Accounts for mappings used and natives variants");
-
-                        constraint.attributes(attributes -> {
-                            attributes.attribute(MinecraftExtension.Attributes.os, this.getObjects().named(OperatingSystemFamily.class, OperatingSystem.current().getFamilyName()));
-                            attributes.attribute(MinecraftExtension.Attributes.mappingsChannel, mappings.channel());
-                            attributes.attribute(MinecraftExtension.Attributes.mappingsVersion, mappings.version());
-                        });
-                    }));
-                });
+                ((ExtensionAware) module).getExtensions().getExtraProperties().set("__mc_dep_hash", hash);
 
                 return module;
             }))
