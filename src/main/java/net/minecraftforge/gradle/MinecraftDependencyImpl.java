@@ -156,26 +156,19 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
         private final AccessTransformersContainer atContainer;
         private final Property<String> atPath = this.getObjects().property(String.class);
 
-        private @UnknownNullability Provider<ExternalModuleDependency> delegate;
-
         @Inject
         public WithAccessTransformersImpl(Project project) {
             super(project);
-            this.atContainer = AccessTransformersContainer.register(
-                project, Attribute.of("net.minecraftforge.gradle.accesstransformed." + this.postIncrementContainerCount(), Boolean.class), it -> { }
-            );
+            this.atContainer = AccessTransformersContainer.register(project, it -> { });
             this.atPath.convention(project.getExtensions().getByType(MinecraftExtensionForProjectWithAccessTransformers.class).getAccessTransformers());
         }
 
         @Override
-        public Provider<ExternalModuleDependency> getDelegate() {
-            return this.delegate;
-        }
-
-        @Override
         Provider<ExternalModuleDependency> setDelegate(Object dependencyNotation, Closure<?> closure) {
-            var dependency = super.setDelegate(dependencyNotation, closure);
-            return this.delegate = this.atPath.map(path -> (ExternalModuleDependency) this.atContainer.dep(dependency).get()).orElse(dependency);
+            return super.setDelegate(dependencyNotation, Closures.<Dependency>consumer(dependency -> {
+                Closures.invoke(closure, dependency);
+                this.atContainer.configure(dependency);
+            }));
         }
 
         @Override

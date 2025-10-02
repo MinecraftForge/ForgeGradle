@@ -4,8 +4,6 @@
  */
 package net.minecraftforge.gradle;
 
-import net.minecraftforge.gradleutils.shared.EnhancedTask;
-import net.minecraftforge.gradleutils.shared.SharedUtil;
 import net.minecraftforge.util.data.json.RunConfig;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
@@ -29,11 +27,8 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Stream;
 
 abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, HasPublicType {
     static void register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, Map<String, RunConfig> configs, Dependency dependency, Provider<RegularFile> metadataZip, boolean single) {
