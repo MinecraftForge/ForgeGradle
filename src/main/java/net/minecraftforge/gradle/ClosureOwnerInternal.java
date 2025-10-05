@@ -8,6 +8,7 @@ import groovy.lang.Closure;
 import groovy.transform.Generated;
 import groovy.transform.NamedParam;
 import groovy.transform.NamedParams;
+import net.minecraftforge.accesstransformers.gradle.AccessTransformersConfiguration;
 import net.minecraftforge.accesstransformers.gradle.AccessTransformersContainer;
 import org.gradle.api.Action;
 import org.gradle.api.artifacts.DependencyArtifact;
@@ -248,11 +249,6 @@ interface ClosureOwnerInternal<D> extends ClosureOwner<D> {
         @Override
         default void setAccessTransformer(boolean accessTransformer) {
             this.getOwnerDelegate().setAccessTransformer(accessTransformer);
-        }
-
-        @Override
-        default void accessTransformer(Action<? super AccessTransformersContainer.Options> options) {
-            this.getOwnerDelegate().accessTransformer(options);
         }
 
         @Override

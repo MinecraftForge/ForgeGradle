@@ -4,6 +4,7 @@
  */
 package net.minecraftforge.gradle;
 
+import net.minecraftforge.accesstransformers.gradle.AccessTransformersConfiguration;
 import net.minecraftforge.accesstransformers.gradle.AccessTransformersContainer;
 import org.gradle.api.Action;
 import org.gradle.api.file.RegularFileProperty;
@@ -20,7 +21,6 @@ public sealed interface MinecraftDependencyWithAccessTransformers extends Minecr
     /// Gets the AccessTransformer configuration to use.
     ///
     /// @return The property for the configuration file to use
-    /// @apiNote To change other options with AccessTransformers, use [#accessTransformer(Action)]
     RegularFileProperty getAccessTransformer();
 
     /// Sets the path, relative to this dependency's [org.gradle.api.tasks.SourceSet#getResources()], to the
@@ -49,9 +49,4 @@ public sealed interface MinecraftDependencyWithAccessTransformers extends Minecr
     /// @param accessTransformer If this dependency should use AccessTransformers
     /// @see #setAccessTransformer(String)
     void setAccessTransformer(boolean accessTransformer);
-
-    /// Configures the AccessTransformer options for this project.
-    ///
-    /// @param options The options to apply
-    void accessTransformer(Action<? super AccessTransformersContainer.Options> options);
 }

@@ -13,7 +13,9 @@ non-sealed interface MinecraftExtensionInternal extends MinecraftExtension, HasP
         return TypeOf.typeOf(MinecraftExtension.class);
     }
 
-    record AttributesInternal() implements Attributes { }
+    record AttributesInternal() implements Attributes {
+        static AttributesInternal INSTANCE = new AttributesInternal();
+    }
 
     non-sealed interface ForProject<T extends ClosureOwner<?>> extends MinecraftExtensionForProject<T>, MinecraftExtensionInternal, HasPublicType {
         @Override

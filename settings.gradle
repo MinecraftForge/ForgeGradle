@@ -1,7 +1,7 @@
 plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
     id 'io.freefair.javadoc-links' version '8.14' apply false
-    id 'net.minecraftforge.gradleutils' version '3.3.11'
+    id 'net.minecraftforge.gradleutils' version '3.3.13'
 }
 
 rootProject.name = 'forgegradle'
@@ -33,15 +33,15 @@ dependencyResolutionManagement {
         library 'gradle', 'name.remal.gradle-api', 'gradle-api'  versionRef 'gradle'
 
         // GradleUtils Shared Base
-        library 'gradleutils-shared', 'net.minecraftforge', 'gradleutils-shared' version '3.3.11'
+        library 'gradleutils-shared', 'net.minecraftforge', 'gradleutils-shared' version '3.3.13'
 
         // AccessTransformers Gradle Plugin
         // https://plugins.gradle.org/plugin/net.minecraftforge.accesstransformers
-        library 'accesstransformers-gradle', 'net.minecraftforge.accesstransformers', 'net.minecraftforge.accesstransformers.gradle.plugin' version '5.0.0-beta.0'
+        library 'accesstransformers-gradle', 'net.minecraftforge.accesstransformers', 'net.minecraftforge.accesstransformers.gradle.plugin' version '5.0.0-beta.8'
 
-        library 'utils-data',     'net.minecraftforge', 'json-data-utils' version '0.2.1' // https://files.minecraftforge.net/net/minecraftforge/json-data-utils/index.html
-        library 'utils-hash',     'net.minecraftforge', 'hash-utils'      version '0.1.9' // https://files.minecraftforge.net/net/minecraftforge/hash-utils/index.html
-        library 'utils-download', 'net.minecraftforge', 'download-utils'  version '0.3.2' // https://files.minecraftforge.net/net/minecraftforge/download-utils/index.html
+        library 'utils-data',     'net.minecraftforge', 'json-data-utils' version '0.3.0'  // https://files.minecraftforge.net/net/minecraftforge/json-data-utils/index.html
+        library 'utils-hash',     'net.minecraftforge', 'hash-utils'      version '0.1.10' // https://files.minecraftforge.net/net/minecraftforge/hash-utils/index.html
+        library 'utils-download', 'net.minecraftforge', 'download-utils'  version '0.3.2'  // https://files.minecraftforge.net/net/minecraftforge/download-utils/index.html
         bundle 'utils', ['utils-data', 'utils-hash', 'utils-download']
     }
     //@formatter:on

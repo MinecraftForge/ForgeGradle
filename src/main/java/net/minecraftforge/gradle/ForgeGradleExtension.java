@@ -26,9 +26,11 @@ public sealed interface ForgeGradleExtension permits ForgeGradleExtensionInterna
      * }
      * </code></pre>
      *
-     * @see #forgeMaven
+     * @return The closure
      */
-    Action<MavenArtifactRepository> forgeMaven = ForgeGradleExtensionInternal.forgeMaven;
+    default Action<MavenArtifactRepository> getForgeMaven() {
+        return ForgeGradleExtensionInternal.forgeMaven;
+    }
 
     /**
      * A closure for the Minecraft libraries maven to be passed into
@@ -40,6 +42,10 @@ public sealed interface ForgeGradleExtension permits ForgeGradleExtensionInterna
      *     maven fg.minecraftLibsMaven
      * }
      * </code></pre>
+     *
+     * @return The closure
      */
-    Action<MavenArtifactRepository> minecraftLibsMaven = ForgeGradleExtensionInternal.minecraftLibsMaven;
+    default Action<MavenArtifactRepository> getMinecraftLibsMaven() {
+        return ForgeGradleExtensionInternal.minecraftLibsMaven;
+    }
 }

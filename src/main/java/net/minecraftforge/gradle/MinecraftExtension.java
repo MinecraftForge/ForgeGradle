@@ -65,14 +65,17 @@ public sealed interface MinecraftExtension extends MinecraftMappingsContainer pe
      * }
      * </code></pre>
      *
+     * @return The attributes object
      * @see Attributes
      */
-    Attributes attributes = new MinecraftExtensionInternal.AttributesInternal();
+    default Attributes getAttributes() {
+        return MinecraftExtensionInternal.AttributesInternal.INSTANCE;
+    };
 
     /// This interface contains the attributes used by the [Minecraft][MinecraftExtension] extension for resolving the
     /// Minecraft and deobfuscated dependencies.
     ///
-    /// @see MinecraftExtension#attributes
+    /// @see MinecraftExtension#getAttributes()
     sealed interface Attributes permits MinecraftExtensionInternal.AttributesInternal {
         /// The [operating system family][OperatingSystemFamily] of the project's host.
         ///
