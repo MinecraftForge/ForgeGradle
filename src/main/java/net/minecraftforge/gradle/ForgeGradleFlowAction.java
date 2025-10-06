@@ -54,7 +54,7 @@ abstract class ForgeGradleFlowAction<P extends ForgeGradleFlowAction.Parameters>
             if (parameters.getFailure().isPresent()) return;
 
             // check for marker file
-            var markerFile = parameters.messagesDir.file("7_0_BETA_WELCOME").get().getAsFile();
+            var markerFile = parameters.messagesDir.file("7_0_BETA_WELCOME_1").get().getAsFile();
             if (markerFile.exists()) return;
             Files.createDirectories(markerFile.toPath().getParent());
             Files.createFile(markerFile.toPath());

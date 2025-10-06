@@ -26,7 +26,9 @@ final class Constants {
     /// Use these with [java.text.MessageFormat#format(String, Object...)].
     static final class Messages {
         static final String WELCOME = """
-            Welcome to ForgeGradle 7.0!
+            Welcome to ForgeGradle 7.0 BETA!
+            
+            This is an unstable release of ForgeGradle 7 for testing purposes.
             
             Here are some release highlights:
             - Complete rewrite of the plugin and underlying code.
@@ -51,7 +53,8 @@ final class Constants {
               'net.minecraftforge.obfuscation' plugin. Many of these come with our provided
               MDK, so this should not be an issue for you.
             
-            This message will not display again until ForgeGradle 7.1 or the below file is deleted:
+            This message will not display again until the next major beta update, ForgeGradle
+            7.1, or the below file is deleted:
             {}
             
             For more details on this release, see https://docs.minecraftforge.net/en/fg-7.0/""";
