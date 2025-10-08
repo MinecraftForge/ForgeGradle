@@ -17,7 +17,7 @@ non-sealed interface MinecraftDependencyInternal extends MinecraftDependency, Ha
         return TypeOf.typeOf(MinecraftDependency.class);
     }
 
-    Provider<ExternalModuleDependency> getDelegate();
+    ExternalModuleDependency getDelegate();
 
     default <R> Closure<R> closure(Closure<R> closure) {
         return closure.rehydrate(closure.getDelegate(), new ClosureOwnerImpl.MinecraftDependencyImpl(closure.getOwner(), this), closure.getThisObject());

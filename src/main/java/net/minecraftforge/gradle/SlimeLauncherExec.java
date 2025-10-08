@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, HasPublicType {
-    static void register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, Map<String, RunConfig> configs, Dependency dependency, Provider<RegularFile> metadataZip, boolean single) {
+    static void register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, Map<String, RunConfig> configs, Dependency dependency, RegularFile metadataZip, boolean single) {
         var taskName = sourceSet.getTaskName("run", options.getName());
         project.getTasks().register(single ? taskName : taskName + Util.dependencyToCamelCase(dependency), SlimeLauncherExec.class, task -> {
             task.setDescription("Runs the '%s' Slime Launcher run configuration.".formatted(options.getName()));
@@ -46,7 +46,7 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
             task.inherit(configs, options.getName());
             options.apply(task);
 
-            if (task.buildAllProjects)
+            if (!project.getGradle().getStartParameter().isConfigureOnDemand() && task.buildAllProjects)
                 task.dependsOn(task.getProject().getAllprojects().stream().map(it -> it.getTasks().named(LifecycleBasePlugin.ASSEMBLE_TASK_NAME)).toArray());
         });
     }

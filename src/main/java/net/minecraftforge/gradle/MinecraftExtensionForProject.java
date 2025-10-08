@@ -18,7 +18,7 @@ import org.gradle.api.provider.ProviderConvertible;
 /// [Project][org.gradle.api.Project]-specific additions for the Minecraft extension. These will be accessible from the
 /// `minecraft` DSL object within your project's buildscript.
 ///
-/// @param <T> The type of closure owner used for [#dep(Object, Closure)]
+/// @param <T> The type of closure owner used for [#dependency]
 /// @see MinecraftExtension
 sealed public interface MinecraftExtensionForProject<T extends ClosureOwner<?>> extends MinecraftExtension permits MinecraftExtensionForProjectWithAccessTransformers, MinecraftExtensionInternal.ForProject {
     /// The collection of Slime Launcher options with which to create the launcher tasks.
@@ -50,7 +50,7 @@ sealed public interface MinecraftExtensionForProject<T extends ClosureOwner<?>> 
     /// @return The dependency
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
-    Provider<ExternalModuleDependency> dep(
+    ExternalModuleDependency dependency(
         Object value,
         @DelegatesTo(ExternalModuleDependency.class)
         @ClosureParams(value = FromString.class, options = "T")
@@ -65,8 +65,8 @@ sealed public interface MinecraftExtensionForProject<T extends ClosureOwner<?>> 
     /// @return The dependency
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
-    default Provider<ExternalModuleDependency> dep(Object value, Action<? super T> action) {
-        return this.dep(value, Closures.action(this, action));
+    default ExternalModuleDependency dependency(Object value, Action<? super T> action) {
+        return this.dependency(value, Closures.action(this, action));
     }
 
     /// Creates (or marks if existing) the given dependency as a Minecraft dependency.
@@ -75,8 +75,8 @@ sealed public interface MinecraftExtensionForProject<T extends ClosureOwner<?>> 
     /// @return The dependency
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
-    default Provider<ExternalModuleDependency> dep(Object value) {
-        return this.dep(value, Closures.empty(this));
+    default ExternalModuleDependency dependency(Object value) {
+        return this.dependency(value, Closures.empty(this));
     }
 
     /// Creates (or marks if existing) the given dependency as a Minecraft dependency and configures it with the given
@@ -87,13 +87,13 @@ sealed public interface MinecraftExtensionForProject<T extends ClosureOwner<?>> 
     /// @return The dependency
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
-    default Provider<ExternalModuleDependency> dep(
+    default ExternalModuleDependency dependency(
         Provider<?> value,
         @DelegatesTo(ExternalModuleDependency.class)
         @ClosureParams(value = FromString.class, options = "T")
         Closure<?> closure
     ) {
-        return this.dep(value.get(), closure);
+        return this.dependency(value.get(), closure);
     }
 
     /// Creates (or marks if existing) the given dependency as a Minecraft dependency and applies the given action to
@@ -104,8 +104,8 @@ sealed public interface MinecraftExtensionForProject<T extends ClosureOwner<?>> 
     /// @return The dependency
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
-    default Provider<ExternalModuleDependency> dep(Provider<?> value, Action<? super T> action) {
-        return this.dep(value, Closures.action(this, action));
+    default ExternalModuleDependency dependency(Provider<?> value, Action<? super T> action) {
+        return this.dependency(value, Closures.action(this, action));
     }
 
     /// Creates (or marks if existing) the given dependency as a Minecraft dependency.
@@ -114,8 +114,8 @@ sealed public interface MinecraftExtensionForProject<T extends ClosureOwner<?>> 
     /// @return The dependency
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
-    default Provider<ExternalModuleDependency> dep(Provider<?> value) {
-        return this.dep(value, Closures.empty(this));
+    default ExternalModuleDependency dependency(Provider<?> value) {
+        return this.dependency(value, Closures.empty(this));
     }
 
     /// Creates (or marks if existing) the given dependency as a Minecraft dependency and configures it with the given
@@ -126,13 +126,13 @@ sealed public interface MinecraftExtensionForProject<T extends ClosureOwner<?>> 
     /// @return The dependency
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
-    default Provider<ExternalModuleDependency> dep(
+    default ExternalModuleDependency dependency(
         ProviderConvertible<?> value,
         @DelegatesTo(ExternalModuleDependency.class)
         @ClosureParams(value = FromString.class, options = "T")
         Closure<?> closure
     ) {
-        return this.dep(value.asProvider(), closure);
+        return this.dependency(value.asProvider(), closure);
     }
 
     /// Creates (or marks if existing) the given dependency as a Minecraft dependency and applies the given action to
@@ -143,8 +143,8 @@ sealed public interface MinecraftExtensionForProject<T extends ClosureOwner<?>> 
     /// @return The dependency
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
-    default Provider<ExternalModuleDependency> dep(ProviderConvertible<?> value, Action<? super T> action) {
-        return this.dep(value, Closures.action(this, action));
+    default ExternalModuleDependency dependency(ProviderConvertible<?> value, Action<? super T> action) {
+        return this.dependency(value, Closures.action(this, action));
     }
 
     /// Creates (or marks if existing) the given dependency as a Minecraft dependency.
@@ -153,7 +153,7 @@ sealed public interface MinecraftExtensionForProject<T extends ClosureOwner<?>> 
     /// @return The dependency
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
-    default Provider<ExternalModuleDependency> dep(ProviderConvertible<?> value) {
-        return this.dep(value, Closures.empty(this));
+    default ExternalModuleDependency dependency(ProviderConvertible<?> value) {
+        return this.dependency(value, Closures.empty(this));
     }
 }

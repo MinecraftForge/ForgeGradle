@@ -11,6 +11,7 @@ import groovy.transform.NamedVariant;
 import net.minecraftforge.accesstransformers.gradle.ArtifactAccessTransformer;
 import net.minecraftforge.gradleutils.shared.Closures;
 import org.gradle.api.Action;
+import org.gradle.api.InvalidUserCodeException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
@@ -19,25 +20,30 @@ import org.gradle.api.attributes.Attribute;
 import org.gradle.api.attributes.AttributeContainer;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.file.ProjectLayout;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.internal.os.OperatingSystem;
 import org.gradle.nativeplatform.OperatingSystemFamily;
+import org.gradle.process.ExecOperations;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnknownNullability;
 
 import javax.inject.Inject;
 import java.io.File;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 
 abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
+    private static final String HAS_MINECRAFT_DEPENDENCY = "__fg_minecraft_dependency_declared";
     private static final String AT_COUNT_NAME = "__fg_minecraft_atcontainers";
 
-    private @UnknownNullability Provider<ExternalModuleDependency> delegate;
+    private @UnknownNullability ExternalModuleDependency delegate;
+    private @Nullable MavenizerAction mavenizer;
 
     private final Property<MinecraftMappings> mappings;
 
@@ -50,6 +56,8 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
 
     protected abstract @Inject ProviderFactory getProviders();
 
+    protected abstract @Inject ExecOperations getExecOperations();
+
     @Inject
     public MinecraftDependencyImpl(Project project) {
         this.project = project;
@@ -60,28 +68,69 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     }
 
     @Override
-    public Provider<ExternalModuleDependency> getDelegate() {
+    public ExternalModuleDependency getDelegate() {
         return this.delegate;
     }
 
-    Provider<ExternalModuleDependency> setDelegate(Object dependencyNotation, Closure<?> closure) {
-        return this.delegate = this.getObjects().property(ExternalModuleDependency.class).value(this.getProviders().provider(
-            () -> (ExternalModuleDependency) this.project.getDependencies().create(dependencyNotation, Closures.<Dependency, ExternalModuleDependency>function(dependency -> {
-                if (!(dependency instanceof ExternalModuleDependency module))
-                    throw this.problems.invalidMinecraftDependencyType(dependency);
+    ExternalModuleDependency setDelegate(Object dependencyNotation, Closure<?> closure) {
+        {
+            var ext = this.project.getGradle().getExtensions().getExtraProperties();
+            if (ext.has(HAS_MINECRAFT_DEPENDENCY) && Objects.requireNonNullElse((Boolean) ext.get(HAS_MINECRAFT_DEPENDENCY), false)) {
+                // TODO [ForgeGradle][Parallelism] Add warning for Mavenizer parallelism incubation
+                this.project.getLogger().warn("WARNING: Declaring multiple Minecraft dependencies is not supported and may lead to build issues and failures!");
+            }
 
-                if (module.isChanging())
-                    throw this.problems.changingMinecraftDependency(dependency);
+            ext.set(HAS_MINECRAFT_DEPENDENCY, true);
+        }
 
-                Closures.invoke(this.closure(closure), module);
+        var dependency = (ExternalModuleDependency) this.project.getDependencies().create(dependencyNotation, Closures.<Dependency, ExternalModuleDependency>function(d -> {
+            if (!(d instanceof ExternalModuleDependency module))
+                throw this.problems.invalidMinecraftDependencyType(d);
 
-                return module;
-            }))
-        ));
+            if (module.isChanging())
+                throw this.problems.changingMinecraftDependency(module);
+
+            Closures.invoke(this.closure(closure), module);
+
+            return module;
+        }));
+
+        var plugin = this.project.getPlugins().getPlugin(ForgeGradlePlugin.class);
+        this.mavenizer = new MavenizerAction(this.getObjects(), this.getExecOperations(), mavenizer -> {
+            // JavaExec
+            var tool = plugin.getTool(Tools.MAVENIZER);
+            mavenizer.classpath.convention(tool.getClasspath());
+            mavenizer.javaLauncher.convention(tool.getJavaLauncher());
+            mavenizer.mainClass.convention(tool.getMainClass());
+
+            // Minecraft Maven
+            var defaultDirectory = this.getObjects().directoryProperty().value(plugin.globalCaches().dir("mavenizer").map(this.problems.ensureFileLocation()));
+            mavenizer.caches.convention(defaultDirectory.dir("cache").map(this.problems.ensureFileLocation()));
+            mavenizer.output.convention(defaultDirectory.dir("output").map(this.problems.ensureFileLocation()));
+
+            // Dependency
+            mavenizer.module.set(dependency.getModule().toString());
+            mavenizer.version.set(dependency.getVersion());
+            mavenizer.mappings.set(this.mappings);
+
+            this.mappings.finalizeValue();
+        });
+
+        return this.delegate = dependency;
+    }
+
+    RegularFile getMetadataZip() {
+        try {
+            var mavenizer = Objects.requireNonNull(this.mavenizer);
+            mavenizer.releaseLog();
+            return mavenizer.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     void resolve() {
-        this.getDelegate().get();
+        this.getMetadataZip();
     }
 
     Action<? super AttributeContainer> addAttributes() {
@@ -95,15 +144,19 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     @Override
     public void handle(SourceSet sourceSet) {
         var configurations = this.project.getConfigurations();
-        var dependency = this.getDelegate().get();
+        var dependency = this.getDelegate();
 
         Util.forEachClasspath(configurations, sourceSet, configuration ->
             configuration.getResolutionStrategy().dependencySubstitution(s -> {
                 var moduleSelector = "%s:%s".formatted(dependency.getModule(), dependency.getVersion());
                 var module = s.module(moduleSelector);
-                s.substitute(module)
-                 .using(s.variant(module, variant -> variant.attributes(this.addAttributes())))
-                 .because("Accounts for mappings used and natives variants");
+                try {
+                    s.substitute(module)
+                     .using(s.variant(module, variant -> variant.attributes(this.addAttributes())))
+                     .because("Accounts for mappings used and natives variants");
+                } catch (InvalidUserCodeException e) {
+                    throw new IllegalStateException("Resolvable configuration '%s' was resolved too early!".formatted(configuration.getName()), e);
+                }
             })
         );
     }
@@ -171,7 +224,7 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
         public void handle(SourceSet sourceSet) {
             super.handle(sourceSet);
 
-            if (!Util.contains(project.getConfigurations(), sourceSet, false, this.getDelegate().get())) return;
+            if (!Util.contains(project.getConfigurations(), sourceSet, false, this.getDelegate())) return;
             if (!this.atPath.isPresent()) return;
 
             var itor = sourceSet.getResources().getSrcDirs().iterator();
@@ -200,7 +253,7 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
                 spec.parameters(ArtifactAccessTransformer.Parameters.defaults(project, parameters -> {
                     parameters.getConfig().set(this.atFile);
                     this.project.afterEvaluate(p ->
-                        ArtifactAccessTransformer.validateConfig(this.project, this.getDelegate().get(), this.atFile)
+                        ArtifactAccessTransformer.validateConfig(this.project, this.getDelegate(), this.atFile)
                     );
                 }));
 

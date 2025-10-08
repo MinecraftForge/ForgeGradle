@@ -4,9 +4,6 @@
  */
 package net.minecraftforge.gradle;
 
-import net.minecraftforge.accesstransformers.gradle.AccessTransformersConfiguration;
-import net.minecraftforge.accesstransformers.gradle.AccessTransformersContainer;
-import org.gradle.api.Action;
 import org.gradle.api.file.RegularFileProperty;
 
 /// An extension of [MinecraftDependency] that contains additional convenience methods for working with
