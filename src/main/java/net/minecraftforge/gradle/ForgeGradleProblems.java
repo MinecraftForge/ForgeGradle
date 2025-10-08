@@ -97,7 +97,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
         return this.throwing(new IllegalArgumentException("Minecraft dependency is not a module dependency"), "unsupported-minecraft-dependency-type", "Non-module dependency used as Minecraft dependency", spec -> spec
             .details("""
                 Attempted to use a non-module (or internal module) dependency as a Minecraft dependency.
-                The Minecraft dependency must be an external module dependency, as it is resolved from the Minecraft Maven.
+                The Minecraft dependency must be an external module dependency, as it is resolved from the Mavenizer output.
                 This means that it cannot be substituted with file or project dependencies.
                 Expected: (implementation of) %s, Actual: '%s
                 Dependency: '%s'"""
@@ -105,22 +105,6 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
             .severity(Severity.ERROR)
             .stackLocation()
             .solution("Declare a module dependency instead.")
-            .solution(HELP_MESSAGE)
-        );
-    }
-
-    @Deprecated(forRemoval = true)
-    void reportMissingMetadata(Throwable throwable) {
-        this.report("missing-metadata", "Failed to extract metadata", spec -> spec
-            .details("""
-                ForgeGradle failed to locate or extract the metadata generated for the Minecraft dependency.
-                This is expected if the Minecraft Maven has not yet been synced.
-                If you are seeing this after your first project sync, please report this as it might be a ForgeGradle bug.""")
-            .severity(Severity.WARNING)
-            .withException(throwable)
-            .stackLocation()
-            .solution("Re-run the synchronization for your Gradle project.")
-            .solution("Manually run the " + SyncMinecraftMaven.NAME + " task if necessary.")
             .solution(HELP_MESSAGE)
         );
     }

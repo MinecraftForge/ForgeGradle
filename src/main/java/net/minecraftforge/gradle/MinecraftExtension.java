@@ -20,7 +20,7 @@ import org.gradle.nativeplatform.OperatingSystemFamily;
 /// supported.
 ///   - The resulting Minecraft dependency is created by the Minecraft Mavenizer. It is not merely a dependency
 /// transformation, which means that it cannot use file and project dependencies to generate the Minecraft artifacts.
-///   - Attempting to provide a non-module dependency to [MinecraftExtensionForProject#dep(Object)], will cause the
+///   - Attempting to provide a non-module dependency to [MinecraftExtensionForProject#dependency(Object)], will cause the
 /// build to fail.
 public sealed interface MinecraftExtension extends MinecraftMappingsContainer permits MinecraftExtensionInternal, MinecraftExtensionForProject {
     /// The name for this extension in Gradle.

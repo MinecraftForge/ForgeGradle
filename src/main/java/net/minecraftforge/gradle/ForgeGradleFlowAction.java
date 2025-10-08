@@ -65,12 +65,10 @@ abstract class ForgeGradleFlowAction<P extends ForgeGradleFlowAction.Parameters>
 
     static abstract class AccessTransformersMissing extends ForgeGradleFlowAction<AccessTransformersMissing.Parameters> {
         static abstract class Parameters extends ForgeGradleFlowAction.Parameters {
-            final Property<Boolean> appliedPlugin;
+            final Property<Boolean> appliedPlugin = this.getObjects().property(Boolean.class).convention(false);
 
             @Inject
-            public Parameters() {
-                this.appliedPlugin = this.getObjects().property(Boolean.class).convention(false);
-            }
+            public Parameters() { }
         }
 
         @Inject
