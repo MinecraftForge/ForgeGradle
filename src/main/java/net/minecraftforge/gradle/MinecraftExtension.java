@@ -39,7 +39,7 @@ public sealed interface MinecraftExtension extends MinecraftMappingsContainer pe
      *
      * @return The closure
      */
-    Action<MavenArtifactRepository> getMaven();
+    Action<MavenArtifactRepository> getMavenizer();
 
     /**
      * Adds the generated Minecraft maven to the given repository handler.
@@ -49,10 +49,10 @@ public sealed interface MinecraftExtension extends MinecraftMappingsContainer pe
      *
      * @param repositories The repository handler to add the maven to
      * @return The Minecraft maven
-     * @see #getMaven()
+     * @see #getMavenizer()
      */
-    default MavenArtifactRepository maven(RepositoryHandler repositories) {
-        return repositories.maven(this.getMaven());
+    default MavenArtifactRepository mavenizer(RepositoryHandler repositories) {
+        return repositories.maven(this.getMavenizer());
     }
 
     /**

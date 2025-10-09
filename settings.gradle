@@ -18,38 +18,36 @@ gradle.beforeProject { Project project ->
     }
 }
 
-dependencyResolutionManagement {
-    //@formatter:off
-    versionCatalogs.register('libs') {
-        version 'gradleutils', '3.3.18'
+//@formatter:off
+dependencyResolutionManagement.versionCatalogs.register('libs') {
+    version 'gradleutils', '3.3.18'
 
-        plugin 'licenser',       'net.minecraftforge.licenser'    version '1.2.0' // https://plugins.gradle.org/plugin/net.minecraftforge.licenser
-        plugin 'gradleutils',    'net.minecraftforge.gradleutils' versionRef 'gradleutils'
-        plugin 'gitversion',     'net.minecraftforge.gitversion'  version '3.1.1' // https://plugins.gradle.org/plugin/net.minecraftforge.changelog
-        plugin 'changelog',      'net.minecraftforge.changelog'   version '3.1.2' // https://plugins.gradle.org/plugin/net.minecraftforge.changelog
-        plugin 'plugin-publish', 'com.gradle.plugin-publish'      version '2.0.0' // https://plugins.gradle.org/plugin/com.gradle.plugin-publish
-        plugin 'shadow',         'com.gradleup.shadow'            version '9.2.2' // https://plugins.gradle.org/plugin/com.gradleup.shadow
+    plugin 'licenser',       'net.minecraftforge.licenser'    version '1.2.0' // https://plugins.gradle.org/plugin/net.minecraftforge.licenser
+    plugin 'gradleutils',    'net.minecraftforge.gradleutils' versionRef 'gradleutils'
+    plugin 'gitversion',     'net.minecraftforge.gitversion'  version '3.1.1' // https://plugins.gradle.org/plugin/net.minecraftforge.changelog
+    plugin 'changelog',      'net.minecraftforge.changelog'   version '3.1.2' // https://plugins.gradle.org/plugin/net.minecraftforge.changelog
+    plugin 'plugin-publish', 'com.gradle.plugin-publish'      version '2.0.0' // https://plugins.gradle.org/plugin/com.gradle.plugin-publish
+    plugin 'shadow',         'com.gradleup.shadow'            version '9.2.2' // https://plugins.gradle.org/plugin/com.gradleup.shadow
 
-        // Static Analysis
-        library 'nulls', 'org.jetbrains', 'annotations' version '26.0.2'
+    // Static Analysis
+    library 'nulls', 'org.jetbrains', 'annotations' version '26.0.2'
 
-        // Gradle API
-        // Original: https://github.com/remal-gradle-api/packages/packages/760197?version=9.0.0
-        // Mirror:   https://repos.moddinglegacy.com/#/modding-legacy/name/remal/gradle-api/gradle-api/9.0.0
-        version 'gradle', '9.0.0'
-        library 'gradle', 'name.remal.gradle-api', 'gradle-api'  versionRef 'gradle'
+    // Gradle API
+    // Original: https://github.com/remal-gradle-api/packages/packages/760197?version=9.0.0
+    // Mirror:   https://repos.moddinglegacy.com/#/modding-legacy/name/remal/gradle-api/gradle-api/9.0.0
+    version 'gradle', '9.1.0'
+    library 'gradle', 'name.remal.gradle-api', 'gradle-api'  versionRef 'gradle'
 
-        // GradleUtils Shared Base
-        library 'gradleutils-shared', 'net.minecraftforge', 'gradleutils-shared' versionRef 'gradleutils'
+    // GradleUtils Shared Base
+    library 'gradleutils-shared', 'net.minecraftforge', 'gradleutils-shared' versionRef 'gradleutils'
 
-        // AccessTransformers Gradle Plugin
-        // https://plugins.gradle.org/plugin/net.minecraftforge.accesstransformers
-        library 'accesstransformers-gradle', 'net.minecraftforge.accesstransformers', 'net.minecraftforge.accesstransformers.gradle.plugin' version '5.0.0-beta.8'
+    // AccessTransformers Gradle Plugin
+    // https://plugins.gradle.org/plugin/net.minecraftforge.accesstransformers
+    library 'accesstransformers-gradle', 'net.minecraftforge.accesstransformers', 'net.minecraftforge.accesstransformers.gradle.plugin' version '5.0.0-beta.8'
 
-        library 'utils-data',     'net.minecraftforge', 'json-data-utils' version '0.3.0'  // https://files.minecraftforge.net/net/minecraftforge/json-data-utils/index.html
-        library 'utils-hash',     'net.minecraftforge', 'hash-utils'      version '0.1.10' // https://files.minecraftforge.net/net/minecraftforge/hash-utils/index.html
-        library 'utils-download', 'net.minecraftforge', 'download-utils'  version '0.3.2'  // https://files.minecraftforge.net/net/minecraftforge/download-utils/index.html
-        bundle 'utils', ['utils-data', 'utils-hash', 'utils-download']
-    }
-    //@formatter:on
+    library 'utils-data',     'net.minecraftforge', 'json-data-utils' version '0.3.0'  // https://files.minecraftforge.net/net/minecraftforge/json-data-utils/index.html
+    library 'utils-hash',     'net.minecraftforge', 'hash-utils'      version '0.1.10' // https://files.minecraftforge.net/net/minecraftforge/hash-utils/index.html
+    library 'utils-download', 'net.minecraftforge', 'download-utils'  version '0.3.2'  // https://files.minecraftforge.net/net/minecraftforge/download-utils/index.html
+    bundle 'utils', ['utils-data', 'utils-hash', 'utils-download']
 }
+//@formatter:on

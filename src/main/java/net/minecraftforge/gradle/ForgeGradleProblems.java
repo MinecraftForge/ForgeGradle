@@ -56,7 +56,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     }
 
     void reportOverriddenMappings(MinecraftMappings original, MinecraftMappings replacement) {
-        if (!this.test("net.minecraftforge.gradle.warnings.overriddenMappings")) return;
+        if (!this.test("net.minecraftforge.gradle.warnings.minecraft.mappings.overridden")) return;
 
         var comparison = "Old: (channel: %s, version: %s), New: (channel: %s, version: %s)"
             .formatted(original.channel(), original.version(), replacement.channel(), replacement.version());
@@ -76,7 +76,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
 
     //region Dependencies
     void reportMissingMinecraftDependency() {
-        if (!this.test("net.minecraftforge.gradle.warnings.missingMinecraftDependency")) return;
+        if (!this.test("net.minecraftforge.gradle.warnings.minecraft.dependency.missing")) return;
 
         LOGGER.error("ERROR: No Minecraft dependency declared! Disabling ForgeGradle. See Problems report for details.");
         this.report("missing-dependency", "Missing Minecraft dependency", spec -> spec
@@ -125,7 +125,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
 
     //region Minecraft Maven
     void reportMcMavenNotDeclared() {
-        if (!this.test("net.minecraftforge.gradle.warnings.missingRepository.mcmaven")) return;
+        if (!this.test("net.minecraftforge.gradle.warnings.repository.missing.mavenizer")) return;
 
         this.report("minecraft-maven-not-declared", "Minecraft Maven not declared", spec -> spec
             .details("""
@@ -138,7 +138,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     }
 
     void reportMcLibsMavenNotDeclared() {
-        if (!this.test("net.minecraftforge.gradle.warnings.missingRepository.mclibs")) return;
+        if (!this.test("net.minecraftforge.gradle.warnings.repository.missing.mojang")) return;
 
         this.report("minecraft-libs-maven-not-declared", "Minecraft Libraries maven not declared", spec -> spec
             .details("""
@@ -152,7 +152,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     }
 
     void reportForgeMavenNotDeclared() {
-        if (!this.test("net.minecraftforge.gradle.warnings.missingRepository.forge")) return;
+        if (!this.test("net.minecraftforge.gradle.warnings.repository.missing.forge")) return;
 
         this.report("forge-maven-not-declared", "Forge maven not declared", spec -> spec
             .details("""

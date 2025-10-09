@@ -18,7 +18,6 @@ import net.minecraftforge.util.data.json.RunConfig;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ExternalModuleDependencyBundle;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
@@ -95,9 +94,9 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
     }
 
     @Override
-    public Action<MavenArtifactRepository> getMaven() {
+    public Action<MavenArtifactRepository> getMavenizer() {
         return maven -> {
-            maven.setName("MinecraftMaven");
+            maven.setName("MinecraftMavenizer");
             maven.setUrl(this.mavenizerOutput.getAsFile());
         };
     }
@@ -229,7 +228,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
             var sourceSetsDir = this.getObjects().directoryProperty().value(this.getProjectLayout().getBuildDirectory().dir("sourceSets"));
             project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets().configureEach(sourceSet -> {
-                if (this.problems.test("net.minecraftforge.gradle.mergeSourceSets")) {
+                if (this.problems.test("net.minecraftforge.gradle.merge-source-sets")) {
                     // This is documented in SourceSetOutput's javadoc comment
                     var unifiedDir = sourceSetsDir.dir(sourceSet.getName());
                     sourceSet.getOutput().setResourcesDir(unifiedDir);
