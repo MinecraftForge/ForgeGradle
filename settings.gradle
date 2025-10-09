@@ -1,27 +1,34 @@
 plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
-    id 'io.freefair.javadoc-links' version '8.14' apply false
-    id 'net.minecraftforge.gradleutils' version '3.3.13'
 }
 
 rootProject.name = 'forgegradle'
 
-dependencyResolutionManagement {
-    repositories {
-        mavenCentral()
-        gradlePluginPortal()
-        maven gradleutils.forgeMaven
-        maven { url = 'https://maven.moddinglegacy.com/maven' } // Gradle API
-        //mavenLocal()
+// Applying plugins causes them to not have any IDE support when also applied to any build.gradle files
+// The workaround for now is to use this listener here so that it can stay in settings.gradle
+// See: https://youtrack.jetbrains.com/issue/IDEA-332061/Gradle-Missing-Code-Completion-Suggestions-for-Settings-Plugins-in-Groovy-DSL
+gradle.beforeProject { Project project ->
+    project.pluginManager.withPlugin('net.minecraftforge.gradleutils') {
+        project.repositories {
+            mavenCentral()
+            gradlePluginPortal()
+            maven project.gradleutils.forgeMaven
+            //mavenLocal()
+        }
     }
+}
 
+dependencyResolutionManagement {
     //@formatter:off
     versionCatalogs.register('libs') {
-        plugin 'licenser',       'net.minecraftforge.licenser'   version '1.2.0' // https://plugins.gradle.org/plugin/net.minecraftforge.licenser
-        plugin 'gitversion',     'net.minecraftforge.gitversion' version '3.1.1' // https://plugins.gradle.org/plugin/net.minecraftforge.changelog
-        plugin 'changelog',      'net.minecraftforge.changelog'  version '3.1.2' // https://plugins.gradle.org/plugin/net.minecraftforge.changelog
-        plugin 'plugin-publish', 'com.gradle.plugin-publish'     version '2.0.0' // https://plugins.gradle.org/plugin/com.gradle.plugin-publish
-        plugin 'shadow',         'com.gradleup.shadow'           version '9.2.2' // https://plugins.gradle.org/plugin/com.gradleup.shadow
+        version 'gradleutils', '3.3.18'
+
+        plugin 'licenser',       'net.minecraftforge.licenser'    version '1.2.0' // https://plugins.gradle.org/plugin/net.minecraftforge.licenser
+        plugin 'gradleutils',    'net.minecraftforge.gradleutils' versionRef 'gradleutils'
+        plugin 'gitversion',     'net.minecraftforge.gitversion'  version '3.1.1' // https://plugins.gradle.org/plugin/net.minecraftforge.changelog
+        plugin 'changelog',      'net.minecraftforge.changelog'   version '3.1.2' // https://plugins.gradle.org/plugin/net.minecraftforge.changelog
+        plugin 'plugin-publish', 'com.gradle.plugin-publish'      version '2.0.0' // https://plugins.gradle.org/plugin/com.gradle.plugin-publish
+        plugin 'shadow',         'com.gradleup.shadow'            version '9.2.2' // https://plugins.gradle.org/plugin/com.gradleup.shadow
 
         // Static Analysis
         library 'nulls', 'org.jetbrains', 'annotations' version '26.0.2'
@@ -33,7 +40,7 @@ dependencyResolutionManagement {
         library 'gradle', 'name.remal.gradle-api', 'gradle-api'  versionRef 'gradle'
 
         // GradleUtils Shared Base
-        library 'gradleutils-shared', 'net.minecraftforge', 'gradleutils-shared' version '3.3.13'
+        library 'gradleutils-shared', 'net.minecraftforge', 'gradleutils-shared' versionRef 'gradleutils'
 
         // AccessTransformers Gradle Plugin
         // https://plugins.gradle.org/plugin/net.minecraftforge.accesstransformers
