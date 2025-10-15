@@ -58,5 +58,19 @@ final class Constants {
             {}
             
             For more details on this release, see https://docs.minecraftforge.net/en/fg-7.0/""";
+
+        static final String MAGIC = """
+            This build is using ForgeGradle Magic. ForgeGradle Magic employs automatic
+            behavior that is hidden from buildscript authors in order to implement and
+            account for convenience features.
+            
+            Magic is enabled by default. It can be disabled by using the following
+            Gradle property:
+            net.minecraftforge.gradle.magic=false
+            
+            This message will not display again unless the below file is deleted:
+            {}
+            
+            For more information, see https://docs.minecraftforge.net/en/fg-7.0/magic/""";
     }
 }

@@ -63,6 +63,46 @@ abstract class ForgeGradleFlowAction<P extends ForgeGradleFlowAction.Parameters>
         }
     }
 
+    static abstract class MagicMessage extends ForgeGradleFlowAction<MagicMessage.Parameters> {
+        enum DisplayOption {
+            ONCE, NEVER, ALWAYS
+        }
+
+        static abstract class Parameters extends ForgeGradleFlowAction.Parameters {
+            final DirectoryProperty messagesDir;
+            final Property<DisplayOption> displayOption;
+
+            protected abstract @Inject ProviderFactory getProviders();
+
+            @Inject
+            public Parameters() {
+                this.messagesDir = this.getObjects().directoryProperty();
+                this.displayOption = this.getObjects().property(DisplayOption.class).convention(DisplayOption.ONCE).value(
+                    this.getProviders().gradleProperty("net.minecraftforge.gradle.messages.magic")
+                        .orElse(this.getProviders().systemProperty("net.minecraftforge.gradle.messages.magic"))
+                        .map(it -> DisplayOption.valueOf(it.toUpperCase(Locale.ROOT)))
+                );
+            }
+        }
+
+        @Inject
+        public MagicMessage() { }
+
+        @Override
+        protected void run(Parameters parameters) throws IOException {
+            // if build failed, don't bother
+            if (parameters.getFailure().isPresent()) return;
+
+            // check for marker file
+            var markerFile = parameters.messagesDir.file("7_0_BETA_MAGIC_1").get().getAsFile();
+            if (markerFile.exists()) return;
+            Files.createDirectories(markerFile.toPath().getParent());
+            Files.createFile(markerFile.toPath());
+
+            LOGGER.lifecycle(Constants.Messages.MAGIC, markerFile.getAbsolutePath());
+        }
+    }
+
     static abstract class AccessTransformersMissing extends ForgeGradleFlowAction<AccessTransformersMissing.Parameters> {
         static abstract class Parameters extends ForgeGradleFlowAction.Parameters {
             final Property<Boolean> appliedPlugin = this.getObjects().property(Boolean.class).convention(false);
