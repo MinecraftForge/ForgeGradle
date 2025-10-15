@@ -20,7 +20,9 @@
 ///
 /// Unlike many traditional Gradle plugins, ForgeGradle is *not* provided on the Gradle Plugin Portal due to its
 /// reliance on external tools that Forge hosts.
+@Incubating
 @NotNullByDefault
 package net.minecraftforge.gradle;
 
+import org.gradle.api.Incubating;
 import org.jetbrains.annotations.NotNullByDefault;

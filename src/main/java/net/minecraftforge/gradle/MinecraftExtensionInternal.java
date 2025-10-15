@@ -4,8 +4,11 @@
  */
 package net.minecraftforge.gradle;
 
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.reflect.HasPublicType;
 import org.gradle.api.reflect.TypeOf;
+
+import java.util.List;
 
 non-sealed interface MinecraftExtensionInternal extends MinecraftExtension, HasPublicType {
     @Override
@@ -22,6 +25,8 @@ non-sealed interface MinecraftExtensionInternal extends MinecraftExtension, HasP
         default TypeOf<?> getPublicType() {
             return new TypeOf<MinecraftExtensionForProject<ClosureOwner.MinecraftDependency>>() { };
         }
+
+        List<? extends MavenArtifactRepository> getRepositories();
 
         non-sealed interface WithAccessTransformers extends MinecraftExtensionForProjectWithAccessTransformers, MinecraftExtensionInternal.ForProject<ClosureOwner.MinecraftDependencyWithAccessTransformers>, HasPublicType {
             @Override

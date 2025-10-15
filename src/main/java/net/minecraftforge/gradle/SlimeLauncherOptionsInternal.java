@@ -4,59 +4,58 @@
  */
 package net.minecraftforge.gradle;
 
+import net.minecraftforge.util.data.json.RunConfig;
+import org.gradle.api.logging.Logger;
+import org.gradle.api.logging.Logging;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderConvertible;
 import org.gradle.api.reflect.HasPublicType;
 import org.gradle.api.reflect.TypeOf;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 non-sealed interface SlimeLauncherOptionsInternal extends SlimeLauncherOptions, HasPublicType {
+    Logger LOGGER = Logging.getLogger(SlimeLauncherOptions.class);
+
     @Override
     default TypeOf<?> getPublicType() {
         return TypeOf.typeOf(SlimeLauncherOptions.class);
     }
 
-    default void apply(SlimeLauncherExec task) {
-        if (this.getMainClass().filter(Util::isPresent).isPresent())
-            task.getBootstrapMainClass().set(this.getMainClass());
+    Property<Boolean> getClient();
 
-        if (this.getArgs().filter(Util::isPresent).isPresent())
-            task.getMcBootstrapArgs().set(this.getArgs().map(args -> {
-                var list = new ArrayList<String>(args.size());
-                for (var arg : args) {
-                    if (arg instanceof ProviderConvertible<?>) {
-                        var s = ((ProviderConvertible<?>) arg).asProvider().get();
-                        list.add(s.toString());
-                    } else if (arg instanceof Provider<?>) {
-                        var s = ((Provider<?>) arg).get();
-                        list.add(s.toString());
-                    } else {
-                        list.add(arg.toString());
-                    }
-                }
-                return list;
-            }));
+    default void inherit(Map<String, RunConfig> configs) {
+        this.inherit(configs, this.getName());
+    }
 
-        if (this.getJvmArgs().filter(Util::isPresent).isPresent())
-            task.jvmArgs(this.getJvmArgs().get());
+    default void inherit(Map<String, RunConfig> configs, String name) {
+        var config = configs.get(name);
+        if (config == null) return;
 
-        if (!this.getClasspath().isEmpty())
-            task.setClasspath(this.getClasspath());
+        if (config.parents != null && !config.parents.isEmpty())
+            config.parents.forEach(parent -> this.inherit(configs, parent));
 
-        if (this.getMinHeapSize().filter(Util::isPresent).isPresent())
-            task.setMinHeapSize(this.getMinHeapSize().get());
+        if (config.main != null)
+            this.getMainClass().convention(config.main);
 
-        if (this.getMaxHeapSize().filter(Util::isPresent).isPresent())
-            task.setMinHeapSize(this.getMaxHeapSize().get());
+        if (config.args != null && !config.args.isEmpty())
+            this.getArgs().convention(List.copyOf(config.args));
 
-        if (this.getSystemProperties().filter(Util::isPresent).isPresent())
-            task.systemProperties(this.getSystemProperties().get());
+        if (config.jvmArgs != null && !config.jvmArgs.isEmpty())
+            this.jvmArgs(config.jvmArgs);
 
-        if (this.getEnvironment().filter(Util::isPresent).isPresent())
-            task.environment(this.getEnvironment().get());
+        this.getClient().set(config.client);
 
-        if (this.getWorkingDir().isPresent())
-            task.workingDir(this.getWorkingDir());
+        if (config.buildAllProjects)
+            LOGGER.warn("WARNING: ForgeGradle 7 does not support the buildAllProjects feature.");
+
+        if (config.env != null && !config.env.isEmpty())
+            this.environment(config.env);
+
+        if (config.props != null && !config.props.isEmpty())
+            this.systemProperties(config.props);
     }
 }

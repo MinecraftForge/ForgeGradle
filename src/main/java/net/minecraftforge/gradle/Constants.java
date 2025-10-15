@@ -18,7 +18,7 @@ final class Constants {
     static final String SLIMELAUNCHER_MAIN = "net.minecraftforge.launcher.Main";
 
     static final String MAVENIZER_NAME = "mavenizer";
-    static final String MAVENIZER_VERSION = "0.3.17";
+    static final String MAVENIZER_VERSION = "0.3.25";
     static final String MAVENIZER_DL_URL = "https://maven.minecraftforge.net/net/minecraftforge/minecraft-mavenizer/" + MAVENIZER_VERSION + "/minecraft-mavenizer-" + MAVENIZER_VERSION + ".jar";
     static final int MAVENIZER_JAVA_VERSION = 21;
     static final String MAVENIZER_MAIN = "net.minecraftforge.mcmaven.cli.Main";
@@ -58,5 +58,19 @@ final class Constants {
             {}
             
             For more details on this release, see https://docs.minecraftforge.net/en/fg-7.0/""";
+
+        static final String MAGIC = """
+            This build is using ForgeGradle Magic. ForgeGradle Magic employs automatic
+            behavior that is hidden from buildscript authors in order to implement and
+            account for convenience features.
+            
+            Magic is enabled by default. It can be disabled by using the following
+            Gradle property:
+            net.minecraftforge.gradle.magic=false
+            
+            This message will not display again unless the below file is deleted:
+            {}
+            
+            For more information, see https://docs.minecraftforge.net/en/fg-7.0/magic/""";
     }
 }
