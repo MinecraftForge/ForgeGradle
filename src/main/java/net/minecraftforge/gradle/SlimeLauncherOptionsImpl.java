@@ -10,23 +10,33 @@ import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
+import org.gradle.api.provider.ProviderFactory;
 
 import javax.inject.Inject;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsInternal {
     private final String name;
 
     private final Property<String> mainClass = this.getObjects().property(String.class);
-    private final ListProperty<Object> args = this.getObjects().listProperty(Object.class);
-    private final ListProperty<Object> jvmArgs = this.getObjects().listProperty(Object.class);
+    private final ListProperty<String> args = this.getObjects().listProperty(String.class);
+    private final ListProperty<String> jvmArgs = this.getObjects().listProperty(String.class);
     private final ConfigurableFileCollection classpath = this.getObjects().fileCollection();
     private final Property<String> minHeapSize = this.getObjects().property(String.class);
     private final Property<String> maxHeapSize = this.getObjects().property(String.class);
-    private final MapProperty<String, Object> systemProperties = this.getObjects().mapProperty(String.class, Object.class);
-    private final MapProperty<String, Object> environment = this.getObjects().mapProperty(String.class, Object.class);
+    private final MapProperty<String, String> systemProperties = this.getObjects().mapProperty(String.class, String.class);
+    private final MapProperty<String, String> environment = this.getObjects().mapProperty(String.class, String.class);
     private final DirectoryProperty workingDir = this.getObjects().directoryProperty();
 
+    private final Property<Boolean> client = this.getObjects().property(Boolean.class).convention(false);
+
     protected abstract @Inject ObjectFactory getObjects();
+    protected abstract @Inject ProviderFactory getProviders();
 
     @Inject
     public SlimeLauncherOptionsImpl(String name) {
@@ -44,12 +54,12 @@ abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsInternal 
     }
 
     @Override
-    public ListProperty<Object> getArgs() {
+    public ListProperty<String> getArgs() {
         return this.args;
     }
 
     @Override
-    public ListProperty<Object> getJvmArgs() {
+    public ListProperty<String> getJvmArgs() {
         return this.jvmArgs;
     }
 
@@ -69,12 +79,12 @@ abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsInternal 
     }
 
     @Override
-    public MapProperty<String, Object> getSystemProperties() {
+    public MapProperty<String, String> getSystemProperties() {
         return this.systemProperties;
     }
 
     @Override
-    public MapProperty<String, Object> getEnvironment() {
+    public MapProperty<String, String> getEnvironment() {
         return this.environment;
     }
 
@@ -82,4 +92,146 @@ abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsInternal 
     public DirectoryProperty getWorkingDir() {
         return this.workingDir;
     }
+
+    @Override
+    public Property<Boolean> getClient() {
+        return this.client;
+    }
+
+    /* SETTERS */
+
+    public void args(Object args) {
+        this.getArgs().add(this.getProviders().provider(() -> Util.unpack(args).toString()));
+    }
+
+    public void args(Object... args) {
+        this.getArgs().addAll(this.getProviders().provider(() -> {
+            var ret = new ArrayList<String>(args.length);
+            for (var arg : args) {
+                ret.add(Util.unpack(arg).toString());
+            }
+            return ret;
+        }));
+    }
+
+    public void args(Iterable<?> args) {
+        this.getArgs().addAll(this.getProviders().provider(() -> {
+            var ret = new ArrayList<String>();
+            for (var arg : args) {
+                ret.add(Util.unpack(arg).toString());
+            }
+            return ret;
+        }));
+    }
+
+    public void args(Provider<? extends Iterable<?>> args) {
+        this.getArgs().addAll(args.map(iterable -> {
+            var ret = new ArrayList<String>();
+            for (var arg : iterable) {
+                ret.add(Util.unpack(arg).toString());
+            }
+            return ret;
+        }));
+    }
+
+    public void setArgs(String... args) {
+        this.getArgs().set(this.getProviders().provider(() -> {
+            var ret = new ArrayList<String>();
+            for (var arg : args) {
+                ret.add(Util.unpack(arg).toString());
+            }
+            return ret;
+        }));
+    }
+
+    public void jvmArgs(Object jvmArgs) {
+        this.getJvmArgs().add(this.getProviders().provider(() -> Util.unpack(jvmArgs).toString()));
+    }
+
+    public void jvmArgs(Object... jvmArgs) {
+        this.getJvmArgs().addAll(this.getProviders().provider(() -> {
+            var ret = new ArrayList<String>();
+            for (var arg : jvmArgs) {
+                ret.add(Util.unpack(arg).toString());
+            }
+            return ret;
+        }));
+    }
+
+    public void jvmArgs(Iterable<?> jvmArgs) {
+        this.getJvmArgs().addAll(this.getProviders().provider(() -> {
+            var ret = new ArrayList<String>();
+            for (var arg : jvmArgs) {
+                ret.add(Util.unpack(arg).toString());
+            }
+            return ret;
+        }));
+    }
+
+    public void jvmArgs(Provider<? extends Iterable<?>> jvmArgs) {
+        this.getJvmArgs().addAll(jvmArgs.map(iterable -> {
+            var ret = new ArrayList<String>();
+            for (var arg : iterable) {
+                ret.add(Util.unpack(arg).toString());
+            }
+            return ret;
+        }));
+    }
+
+    public void setJvmArgs(Object... jvmArgs) {
+        this.getJvmArgs().set(this.getProviders().provider(() -> {
+            var ret = new ArrayList<String>();
+            for (var arg : jvmArgs) {
+                ret.add(Util.unpack(arg).toString());
+            }
+            return ret;
+        }));
+    }
+
+    @Override
+    public void systemProperty(String name, Object value) {
+        this.getSystemProperties().put(name, this.getProviders().provider(() -> Util.unpack(value).toString()));
+    }
+
+    @Override
+    public void systemProperties(Map<String, ?> properties) {
+        for (var entry : properties.entrySet()) {
+            this.getSystemProperties().put(entry.getKey(), this.getProviders().provider(() -> Util.unpack(entry.getValue()).toString()));
+        }
+    }
+
+    @Override
+    public void systemProperties(Provider<? extends Map<String, ?>> properties) {
+        this.getSystemProperties().putAll(properties.map(map -> {
+            var ret = new HashMap<String, String>(map.size());
+            for (var entry : map.entrySet()) {
+                ret.put(entry.getKey(), Util.unpack(entry.getValue()).toString());
+            }
+            return ret;
+        }));
+    }
+
+    @Override
+    public void environment(String name, Object value) {
+        this.getSystemProperties().put(name, this.getProviders().provider(() -> Util.unpack(value).toString()));
+    }
+
+    @Override
+    public void environment(Map<String, ?> environment) {
+        for (var entry : environment.entrySet()) {
+            this.getEnvironment().put(entry.getKey(), this.getProviders().provider(() -> Util.unpack(entry.getValue()).toString()));
+        }
+    }
+
+    @Override
+    public void environment(Provider<? extends Map<String, ?>> properties) {
+        this.getEnvironment().putAll(properties.map(map -> {
+            var ret = new HashMap<String, String>(map.size());
+            for (var entry : map.entrySet()) {
+                ret.put(entry.getKey(), Util.unpack(entry.getValue()).toString());
+            }
+            return ret;
+        }));
+    }
+
 }

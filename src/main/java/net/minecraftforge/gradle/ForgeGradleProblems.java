@@ -124,6 +124,21 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     //endregion
 
     //region Minecraft Maven
+    RuntimeException mavenizerOutOfDateCompile(Dependency dependency) {
+        return this.throwing(new IllegalStateException(), "mavenizer-out-of-date", "Minecraft Mavenizer is out-of-date", spec -> spec
+            .details("""
+                Gradle cannot compile your sources because the Minecraft Mavenizer is out-of-date.
+                The Mavenizer must be re-run in order for the changes made to the Minecraft dependency to take effect.
+                Affected dependency: '%s'"""
+                .formatted(dependency))
+            .severity(Severity.ERROR)
+            .solution("Re-import your project in your IDE, as this will automatically synchronize the Mavenizer.")
+            .solution("Run `gradlew` with no arguments, as this will automatically synchronize the Mavenizer.")
+            .solution("Manually run the `syncMavenizer` task, located in the 'Build Setup' group.")
+            .solution("Temporary revert any edits to the Minecraft dependency until the Mavenizer is re-run.")
+            .solution(HELP_MESSAGE));
+    }
+
     void reportMcMavenNotDeclared() {
         if (!this.test("net.minecraftforge.gradle.warnings.repository.missing.mavenizer")) return;
 

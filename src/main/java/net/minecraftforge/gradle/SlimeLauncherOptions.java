@@ -13,7 +13,7 @@ import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 
-import java.util.Arrays;
+import java.io.Serializable;
 import java.util.Map;
 
 /// The configuration options for Slime Launcher tasks.
@@ -48,7 +48,7 @@ public sealed interface SlimeLauncherOptions extends Named permits SlimeLauncher
     /// Slime Launcher itself.
     ///
     /// @return A property for the arguments to pass to the main class
-    ListProperty<Object> getArgs();
+    ListProperty<String> getArgs();
 
     /// The JVM arguments to use.
     ///
@@ -56,7 +56,7 @@ public sealed interface SlimeLauncherOptions extends Named permits SlimeLauncher
     /// re-launcher but a dev-environment bootstrapper.
     ///
     /// @return A property for the JVM arguments
-    ListProperty<Object> getJvmArgs();
+    ListProperty<String> getJvmArgs();
 
     /// The classpath to use.
     ///
@@ -69,6 +69,7 @@ public sealed interface SlimeLauncherOptions extends Named permits SlimeLauncher
     ///
     /// @return The classpath to use
     ConfigurableFileCollection getClasspath();
+
     /// The minimum memory heap size to use.
     ///
     /// Working with this property is preferred over manually using the `-Xms` argument in the [JVM
@@ -88,12 +89,12 @@ public sealed interface SlimeLauncherOptions extends Named permits SlimeLauncher
     /// The system properties to use.
     ///
     /// @return A property for the system properties
-    MapProperty<String, Object> getSystemProperties();
+    MapProperty<String, String> getSystemProperties();
 
     /// The environment variables to use.
     ///
     /// @return A property for the environment variables
-    MapProperty<String, Object> getEnvironment();
+    MapProperty<String, String> getEnvironment();
 
     /// The working directory to use.
     ///
@@ -110,88 +111,68 @@ public sealed interface SlimeLauncherOptions extends Named permits SlimeLauncher
     /// @param args The arguments to add
     /// @apiNote To add multiple arguments, use [#args(Object...)]
     /// @see #getArgs()
-    default void args(Object args) {
-        this.getArgs().add(args);
-    }
+    void args(Object args);
 
     /// Adds to the arguments to pass to the [main class][#getMainClass()].
     ///
     /// @param args The arguments to add
     /// @apiNote Unlike [#setArgs(String...)], this method does not replace the existing arguments.
     /// @see #getArgs()
-    default void args(Object... args) {
-        this.getArgs().addAll(args);
-    }
+    void args(Object... args);
 
     /// Adds to the arguments to pass to the [main class][#getMainClass()].
     ///
     /// @param args The arguments to add
     /// @apiNote Unlike [ListProperty#set(Iterable)], this method does not replace the existing arguments.
     /// @see #getArgs()
-    default void args(Iterable<?> args) {
-        this.getArgs().addAll(args);
-    }
+    void args(Iterable<?> args);
 
     /// Adds to the arguments to pass to the [main class][#getMainClass()].
     ///
     /// @param args The arguments to add
     /// @apiNote Unlike [ListProperty#set(Provider)], this method does not replace the existing arguments.
     /// @see #getArgs()
-    default void args(Provider<? extends Iterable<?>> args) {
-        this.getArgs().addAll(args);
-    }
+    void args(Provider<? extends Iterable<?>> args);
 
     /// Sets the arguments to pass to the [main class][#getMainClass()].
     ///
     /// @param args The arguments
     /// @see #getArgs()
-    default void setArgs(String... args) {
-        this.getArgs().set(Arrays.asList(args));
-    }
+    void setArgs(String... args);
 
     /// Adds to the JVM arguments to use.
     ///
     /// @param jvmArgs The JVM argument to add
     /// @apiNote To add multiple arguments, use [#jvmArgs(Object...)]
     /// @see #getJvmArgs()
-    default void jvmArgs(Object jvmArgs) {
-        this.getJvmArgs().add(jvmArgs);
-    }
+    void jvmArgs(Object jvmArgs);
 
     /// Adds to the JVM arguments to use.
     ///
     /// @param jvmArgs The JVM arguments to add
     /// @apiNote Unlike [#setJvmArgs(Object...)], this method does not replace the existing arguments.
     /// @see #getJvmArgs()
-    default void jvmArgs(Object... jvmArgs) {
-        this.getJvmArgs().addAll(jvmArgs);
-    }
+    void jvmArgs(Object... jvmArgs);
 
     /// Adds to the JVM arguments to use.
     ///
     /// @param jvmArgs The JVM arguments to add
     /// @apiNote Unlike [ListProperty#set(Iterable)], this method does not replace the existing arguments.
     /// @see #getJvmArgs()
-    default void jvmArgs(Iterable<?> jvmArgs) {
-        this.getJvmArgs().addAll(jvmArgs);
-    }
+    void jvmArgs(Iterable<?> jvmArgs);
 
     /// Adds to the JVM arguments to use.
     ///
     /// @param jvmArgs The JVM arguments to add
     /// @apiNote Unlike [ListProperty#set(Provider)], this method does not replace the existing arguments.
     /// @see #getJvmArgs()
-    default void jvmArgs(Provider<? extends Iterable<?>> jvmArgs) {
-        this.getJvmArgs().addAll(jvmArgs);
-    }
+    void jvmArgs(Provider<? extends Iterable<?>> jvmArgs);
 
     /// Sets the JVM arguments to use.
     ///
     /// @param jvmArgs The arguments
     /// @see ListProperty#set(Iterable)
-    default void setJvmArgs(Object... jvmArgs) {
-        this.getJvmArgs().set(Arrays.asList(jvmArgs));
-    }
+    void setJvmArgs(Object... jvmArgs);
 
     /// Adds to the classpath to use.
     ///
@@ -253,29 +234,23 @@ public sealed interface SlimeLauncherOptions extends Named permits SlimeLauncher
     /// @param value The value
     /// @apiNote To add multiple system properties at once, use [#systemProperties(Provider)].
     /// @see #getSystemProperties()
-    default void systemProperty(String name, Object value) {
-        this.getSystemProperties().put(name, value);
-    }
+    void systemProperty(String name, Object value);
 
     /// Adds to the system properties to use.
     ///
     /// @param properties The system properties
-    /// @apiNote Unlike [MapProperty#set(Map)], this method does not replace the existing system properties. To add
+    /// @apiNote Unlike [MapProperty#set(Map)], this method does not replace the existing system properties. To add a
+    /// single property, use [#systemProperty(String,Object)].
+    /// @see #getSystemProperties()
+    void systemProperties(Map<String, ?> properties);
+
+    /// Adds to the system properties to use.
+    ///
+    /// @param properties The system properties
+    /// @apiNote Unlike [MapProperty#set(Provider)], this method does not replace the existing system properties. To add
     /// a single property, use [#systemProperty(String,Object)].
     /// @see #getSystemProperties()
-    default void systemProperties(Map<String, ?> properties) {
-        this.getSystemProperties().putAll(properties);
-    }
-
-    /// Adds to the system properties to use.
-    ///
-    /// @param properties The system properties
-    /// @apiNote Unlike [MapProperty#set(Provider)], this method does not replace the existing system properties.
-    /// To add a single property, use [#systemProperty(String,Object)].
-    /// @see #getSystemProperties()
-    default void systemProperties(Provider<? extends Map<String, ?>> properties) {
-        this.getSystemProperties().putAll(properties);
-    }
+    void systemProperties(Provider<? extends Map<String, ?>> properties);
 
     /// Adds a single environment variable to use.
     ///
@@ -283,9 +258,7 @@ public sealed interface SlimeLauncherOptions extends Named permits SlimeLauncher
     /// @param value The value
     /// @apiNote To add multiple environment variables at once, use [#environment(Provider)].
     /// @see #getEnvironment()
-    default void environment(String name, Object value) {
-        this.getEnvironment().put(name, value);
-    }
+    void environment(String name, Object value);
 
     /// Adds to the environment variables to use.
     ///
@@ -293,9 +266,7 @@ public sealed interface SlimeLauncherOptions extends Named permits SlimeLauncher
     /// @apiNote Unlike [MapProperty#set(Map)], this method does not replace the existing environment variables. To add
     /// a single variable, use [#environment(String,Object)].
     /// @see #getEnvironment()
-    default void environment(Map<String, ?> properties) {
-        this.getEnvironment().putAll(properties);
-    }
+    void environment(Map<String, ?> properties);
 
     /// Adds to the environment variables to use.
     ///
@@ -303,7 +274,5 @@ public sealed interface SlimeLauncherOptions extends Named permits SlimeLauncher
     /// @apiNote Unlike [MapProperty#set(Provider)], this method does not replace the existing environment variables. To
     /// add a single variable, use [#environment(String,Object)].
     /// @see #getEnvironment()
-    default void environment(Provider<? extends Map<String, ?>> properties) {
-        this.getEnvironment().putAll(properties);
-    }
+    void environment(Provider<? extends Map<String, ?>> properties);
 }

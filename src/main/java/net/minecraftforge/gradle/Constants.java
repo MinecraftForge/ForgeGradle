@@ -18,7 +18,7 @@ final class Constants {
     static final String SLIMELAUNCHER_MAIN = "net.minecraftforge.launcher.Main";
 
     static final String MAVENIZER_NAME = "mavenizer";
-    static final String MAVENIZER_VERSION = "0.3.17";
+    static final String MAVENIZER_VERSION = "0.3.25";
     static final String MAVENIZER_DL_URL = "https://maven.minecraftforge.net/net/minecraftforge/minecraft-mavenizer/" + MAVENIZER_VERSION + "/minecraft-mavenizer-" + MAVENIZER_VERSION + ".jar";
     static final int MAVENIZER_JAVA_VERSION = 21;
     static final String MAVENIZER_MAIN = "net.minecraftforge.mcmaven.cli.Main";
