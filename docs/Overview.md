@@ -1,5 +1,7 @@
 # ForgeGradle
 
+[![Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/net.minecraftforge.gradle)](https://plugins.gradle.org/plugin/net.minecraftforge.gradle)
+
 Welcome to ForgeGradle, Minecraft Forge's Gradle plugin. It is a small, simple,
 and effective plugin with the primary purpose of bootstrapping Minecraft Forge's
 toolchain to aid in the development of mods targeting Minecraft Forge.
@@ -12,7 +14,7 @@ ForgeGradle 7 can be applied to projects or settings by using the following:
 
 ```groovy
 plugins {
-    id 'net.minecraftforge.gradle' version '7.0.0'
+    id 'net.minecraftforge.gradle' version '<version>'
 }
 ```
 
@@ -41,7 +43,7 @@ unconventional ways, there are a few things to keep in mind.
 - ForgeGradle's **implementation and internal code is inaccessible.**
   - All implementations are package-private, so they cannot be accessed by other
     plugins or extended from. Everything that is public API has been
-   deliberately made so.
+    deliberately made so.
 - ForgeGradle is **not the toolchain.**
   - Unlike ForgeGradle 6 and its predecessors, ForgeGradle 7 does not include
     the toolchain. It instead acts as the configuring interface and invocation
