@@ -46,9 +46,9 @@ non-sealed interface MinecraftDependencyInternal extends MinecraftDependency, Ha
 
     ExternalModuleDependency init(Object dependencyNotation, Closure<?> closure);
 
-    ExternalModuleDependency asDependency();
+    @Nullable("configuration cache") ExternalModuleDependency asDependency();
 
-    TaskProvider<SyncMavenizer> asTask();
+    @Nullable("configuration cache") TaskProvider<SyncMavenizer> asTask();
 
     Action<? super AttributeContainer> addAttributes();
 

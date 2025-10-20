@@ -10,12 +10,14 @@ import groovy.transform.NamedParams;
 import groovy.transform.NamedVariant;
 import net.minecraftforge.accesstransformers.gradle.ArtifactAccessTransformer;
 import net.minecraftforge.gradleutils.shared.Closures;
+import net.minecraftforge.util.os.OS;
 import org.gradle.api.Action;
 import org.gradle.api.InvalidUserCodeException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.artifacts.ModuleIdentifier;
 import org.gradle.api.artifacts.type.ArtifactTypeDefinition;
 import org.gradle.api.attributes.Attribute;
 import org.gradle.api.attributes.AttributeContainer;
@@ -23,7 +25,6 @@ import org.gradle.api.attributes.Category;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.logging.LogLevel;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.JavaPluginExtension;
@@ -33,19 +34,22 @@ import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.compile.JavaCompile;
-import org.gradle.internal.os.OperatingSystem;
-import org.gradle.nativeplatform.OperatingSystemFamily;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.UnknownNullability;
 
 import javax.inject.Inject;
 import java.io.File;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
-    private @UnknownNullability ExternalModuleDependency delegate;
-    private @UnknownNullability TaskProvider<SyncMavenizer> mavenizer;
+    private transient @Nullable("configuration cache") ExternalModuleDependency delegate;
+    private transient @Nullable("configuration cache") TaskProvider<SyncMavenizer> mavenizer;
+
+    final Property<String> asString = getObjects().property(String.class);
+    final Property<String> asPath = getObjects().property(String.class);
+    final Property<ModuleIdentifier> module = getObjects().property(ModuleIdentifier.class);
+    final Property<String> version = getObjects().property(String.class);
 
     private final Provider<? extends Directory> mavenizerOutput;
     private final Property<MinecraftMappings> mappings;
@@ -70,12 +74,12 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     }
 
     @Override
-    public ExternalModuleDependency asDependency() {
+    public @Nullable("configuration cache") ExternalModuleDependency asDependency() {
         return this.delegate;
     }
 
     @Override
-    public TaskProvider<SyncMavenizer> asTask() {
+    public @Nullable("configuration cache") TaskProvider<SyncMavenizer> asTask() {
         return this.mavenizer;
     }
 
@@ -97,13 +101,18 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
 
         this.mavenizer = SyncMavenizer.register(getProject(), dependency, this.mappings, mavenizerOutput);
 
+        this.asString.set(dependency.toString());
+        this.asPath.set(Util.pathify(dependency));
+        this.module.set(dependency.getModule());
+        this.version.set(dependency.getVersion());
+
         return this.delegate = dependency;
     }
 
     @Override
     public Action<? super AttributeContainer> addAttributes() {
         return attributes -> {
-            attributes.attribute(MinecraftExtension.Attributes.os, this.getObjects().named(OperatingSystemFamily.class, OperatingSystem.current().getFamilyName()));
+            attributes.attributeProvider(MinecraftExtension.Attributes.os, getProviders().of(OperatingSystemName.class, spec -> spec.parameters(parameters -> parameters.getAllowedOperatingSystems().set(Set.of(OS.WINDOWS, OS.MACOS, OS.LINUX)))));
             attributes.attributeProvider(MinecraftExtension.Attributes.mappingsChannel, mappings.map(MinecraftMappings::channel));
             attributes.attributeProvider(MinecraftExtension.Attributes.mappingsVersion, mappings.map(MinecraftMappings::version));
         };
@@ -114,9 +123,8 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
         if (!configuration.isCanBeResolved()) return;
 
         this.mappings.finalizeValue();
-        var dependency = this.asDependency();
         configuration.getResolutionStrategy().dependencySubstitution(s -> {
-            var moduleSelector = "%s:%s".formatted(dependency.getModule(), dependency.getVersion());
+            var moduleSelector = "%s:%s".formatted(this.module.get(), this.version.get());
             var module = s.module(moduleSelector);
             try {
                 s.substitute(module)
@@ -127,12 +135,15 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
             }
         });
 
+        var asDependency = this.asDependency();
+        if (asDependency == null) return;
+
         var hierarchy = configuration.getHierarchy();
 
         var sourceSet = Util.getSourceSet(
             getProject().getConfigurations().matching(hierarchy::contains),
             getProject().getExtensions().getByType(JavaPluginExtension.class).getSourceSets(),
-            this.asDependency()
+            asDependency
         );
 
         // Hope that this is handled elsewhere, and that we are transitive.
@@ -145,9 +156,9 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     public void handle(SourceSet sourceSet) {
         getProject().getTasks().named(sourceSet.getCompileJavaTaskName(), JavaCompile.class, task -> {
             task.doFirst(t -> {
-                var file = this.mavenizerOutput.map(dir -> dir.dir(Util.pathify(asDependency()))).get().getAsFile();
+                var file = this.mavenizerOutput.map(dir -> dir.dir(this.asPath)).get().get().getAsFile();
                 if (!file.exists())
-                    throw this.problems.mavenizerOutOfDateCompile(asDependency());
+                    throw this.problems.mavenizerOutOfDateCompile(this.asString.get());
             });
         });
 
@@ -223,7 +234,10 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
         public void handle(SourceSet sourceSet) {
             super.handle(sourceSet);
 
-            if (!Util.contains(getProject().getConfigurations(), sourceSet, false, this.asDependency())) return;
+            var asDependency = this.asDependency();
+            if (asDependency == null) return;
+
+            if (!Util.contains(getProject().getConfigurations(), sourceSet, false, asDependency)) return;
             if (!this.atPath.isPresent()) return;
 
             var itor = sourceSet.getResources().getSrcDirs().iterator();
@@ -235,7 +249,7 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
                 this.atFile.convention(this.getProjectLayout().getProjectDirectory().file(this.getProviders().provider(() -> "src/%s/resources/%s".formatted(sourceSet.getName(), this.atPath.get()))).get());
             }
 
-            ArtifactAccessTransformer.validateConfig(getProject(), this.asDependency(), this.atFile);
+            ArtifactAccessTransformer.validateConfig(getProject(), asDependency, this.atFile);
         }
 
         private Attribute<Boolean> registerTransform() {

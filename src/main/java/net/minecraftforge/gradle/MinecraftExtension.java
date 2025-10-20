@@ -80,7 +80,7 @@ public sealed interface MinecraftExtension extends MinecraftMappingsContainer pe
         /// The [operating system family][OperatingSystemFamily] of the project's host.
         ///
         /// This is used to filter natives from the Minecraft repo.
-        Attribute<OperatingSystemFamily> os = Attribute.of("net.minecraftforge.native.operatingSystem", OperatingSystemFamily.class);
+        Attribute<String> os = Attribute.of("net.minecraftforge.native.operatingSystem", String.class);
         /// The requested mappings channel of the project.
         ///
         /// This is determined using [MinecraftMappings#channel()] via [#getMappings()]

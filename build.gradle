@@ -15,9 +15,10 @@ plugins {
 
 gradleutils.displayName = 'ForgeGradle'
 description = "Forge's Gradle plugin for Mod development"
-base.archivesName = 'forgegradle'
 group = 'net.minecraftforge'
 version = gitversion.tagOffset
+
+println "Version: $version"
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(17)

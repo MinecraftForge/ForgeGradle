@@ -10,10 +10,11 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.internal.impldep.com.google.common.io.Files;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 
 abstract class SlimeLauncherMetadata extends DefaultTask implements ForgeGradleTask {
     protected abstract @InputFile RegularFileProperty getMetadataZip();
@@ -33,7 +34,12 @@ abstract class SlimeLauncherMetadata extends DefaultTask implements ForgeGradleT
             .visit(file -> {
                 try {
                     if (file.getPath().equals("launcher/runs.json")) {
-                        Files.copy(file.getFile(), this.getRunsJson().getAsFile().get());
+                        Files.copy(
+                            file.getFile().toPath(),
+                            this.getRunsJson().getAsFile().get().toPath(),
+                            StandardCopyOption.REPLACE_EXISTING,
+                            StandardCopyOption.COPY_ATTRIBUTES
+                        );
                     }
                 } catch (IOException e) {
                     throw new RuntimeException(e);

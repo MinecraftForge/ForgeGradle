@@ -5,11 +5,11 @@
 package net.minecraftforge.gradle;
 
 import net.minecraftforge.gradleutils.shared.SharedUtil;
-import org.codehaus.groovy.runtime.InvokerHelper;
 import org.codehaus.groovy.runtime.StringGroovyMethods;
 import org.gradle.api.NamedDomainObjectSet;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ModuleIdentifier;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.jetbrains.annotations.Nullable;
@@ -24,19 +24,20 @@ final class Util extends SharedUtil {
     }
 
     static String dependencyToCamelCase(Dependency dependency) {
+        return dependencyToCamelCase(dependency.getGroup(), dependency.getName());
+    }
+
+    static String dependencyToCamelCase(ModuleIdentifier dependency) {
+        return dependencyToCamelCase(dependency.getGroup(), dependency.getName());
+    }
+
+    static String dependencyToCamelCase(@Nullable String group, String name) {
         var list = new ArrayList<String>(3);
 
-        var group = dependency.getGroup();
         if (group != null)
             list.addAll(Arrays.asList(group.split("\\.")));
 
-        list.add(dependency.getName());
-
-        try {
-            list.add(InvokerHelper.getProperty(dependency, "classifer").toString());
-        } catch (Exception ignored) {
-            // No classifier, not a problem
-        }
+        list.add(name);
 
         var builder = new StringBuilder(64);
         for (var s : list) {

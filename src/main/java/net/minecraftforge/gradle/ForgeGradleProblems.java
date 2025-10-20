@@ -124,7 +124,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     //endregion
 
     //region Minecraft Maven
-    RuntimeException mavenizerOutOfDateCompile(Dependency dependency) {
+    RuntimeException mavenizerOutOfDateCompile(Object dependency) {
         return this.throwing(new IllegalStateException(), "mavenizer-out-of-date", "Minecraft Mavenizer is out-of-date", spec -> spec
             .details("""
                 Gradle cannot compile your sources because the Minecraft Mavenizer is out-of-date.

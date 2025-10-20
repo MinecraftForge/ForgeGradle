@@ -4,6 +4,7 @@
  */
 package net.minecraftforge.gradle;
 
+import net.minecraftforge.util.data.json.RunConfig;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.model.ObjectFactory;
@@ -18,6 +19,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsInternal {
@@ -234,4 +236,70 @@ abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsInternal 
         }));
     }
 
+
+    /* INHERITANCE */
+
+    @Override
+    public SlimeLauncherOptionsInternal inherit(Map<String, RunConfig> configs, String name) {
+        var target = getObjects().newInstance(SlimeLauncherOptionsImpl.class, name);
+        target.getMainClass().convention(this.getMainClass());
+        target.getArgs().convention(this.getArgs());
+        target.getJvmArgs().convention(this.getJvmArgs());
+        target.getClasspath().convention(this.getClasspath());
+        target.getMinHeapSize().convention(this.getMinHeapSize());
+        target.getMaxHeapSize().convention(this.getMaxHeapSize());
+        target.getSystemProperties().convention(this.getSystemProperties());
+        target.getEnvironment().convention(this.getEnvironment());
+        target.getWorkingDir().convention(this.getWorkingDir());
+        target.getClient().convention(this.getClient());
+        return this.inherit(target, configs, name);
+    }
+
+    private SlimeLauncherOptionsInternal inherit(SlimeLauncherOptionsInternal target, Map<String, RunConfig> configs, String name) {
+        var config = configs.get(name);
+        if (config == null) return target;
+
+        if (config.parents != null && !config.parents.isEmpty())
+            config.parents.forEach(parent -> this.inherit(target, configs, parent));
+
+        if (config.main != null)
+            target.getMainClass().convention(config.main);
+
+        if (config.args != null && !config.args.isEmpty())
+            target.getArgs().convention(List.copyOf(config.args));
+
+        if (config.jvmArgs != null && !config.jvmArgs.isEmpty())
+            target.jvmArgs(config.jvmArgs);
+
+        target.getClient().set(config.client);
+
+        if (config.buildAllProjects)
+            LOGGER.warn("WARNING: ForgeGradle 7 does not support the buildAllProjects feature.");
+
+        if (config.env != null && !config.env.isEmpty())
+            target.environment(config.env);
+
+        if (config.props != null && !config.props.isEmpty())
+            target.systemProperties(config.props);
+
+        return target;
+    }
+
+    /* DEBUGGING */
+
+    @Override public String toString() {
+        return "SlimeLauncherOptionsImpl{" +
+            "name='" + name + '\'' +
+            ", mainClass=" + mainClass.getOrNull() +
+            ", args=[" + String.join(", ", args.getOrElse(List.of())) + ']' +
+            ", jvmArgs=[" + String.join(", ", jvmArgs.getOrElse(List.of())) + ']' +
+            ", classpath=[" + classpath.getAsPath() + ']' +
+            ", minHeapSize=" + minHeapSize.getOrNull() +
+            ", maxHeapSize=" + maxHeapSize.getOrNull() +
+            ", systemProperties=" + systemProperties.getOrNull() +
+            ", environment=" + environment.getOrNull() +
+            ", workingDir=" + workingDir.getOrNull() +
+            ", client=" + client.getOrNull() +
+            '}';
+    }
 }

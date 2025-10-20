@@ -271,7 +271,10 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             if (!this.minecraftDependencies.isEmpty()) {
                 var syncMavenizer = project.getTasks().register("syncMavenizer", task -> task.setGroup("Build Setup"));
                 for (var minecraftDependency : this.minecraftDependencies) {
-                    syncMavenizer.configure(task -> task.dependsOn(minecraftDependency.asTask()));
+                    var mavenizer = minecraftDependency.asTask();
+                    if (mavenizer == null) continue;
+
+                    syncMavenizer.configure(task -> task.dependsOn(mavenizer));
                 }
 
                 project.getPluginManager().withPlugin("eclipse", eclipsePlugin -> {
@@ -302,8 +305,8 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                         // This can never be null in production and is only here to make the IDE happy.
                         assert minecraftDependency != null;
 
-                        var dependency = minecraftDependency.asDependency();
-                        this.runs.forEach(options -> SlimeLauncherExec.register(project, sourceSet, options, dependency, single));
+                        var impl = (MinecraftDependencyImpl) minecraftDependency;
+                        this.runs.forEach(options -> SlimeLauncherExec.register(project, sourceSet, options, impl.module.get(), impl.version.get(), impl.asPath.get(), impl.asString.get(), single));
                     }
                 });
             }

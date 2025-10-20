@@ -12,6 +12,11 @@ import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.Classpath;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Optional;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -34,13 +39,16 @@ import java.util.Map;
 /// public-facing interface APIs in ForgeGradle, this class remains sealed and is implemented by a package-private class
 /// that cannot be directly accessed.
 public sealed interface SlimeLauncherOptions extends Named permits SlimeLauncherOptionsInternal {
+    @Override
+    @Input String getName();
+
     /// The main class for Slime Launcher to use.
     ///
     /// This is the class that will be invoked by Slime Launcher, **not** the main class of the
     /// [org.gradle.api.tasks.JavaExec] task that will be produced from these options.
     ///
     /// @return A property for the main class
-    Property<String> getMainClass();
+    @Input @Optional Property<String> getMainClass();
 
     /// The arguments to pass to the main class.
     ///
@@ -48,7 +56,7 @@ public sealed interface SlimeLauncherOptions extends Named permits SlimeLauncher
     /// Slime Launcher itself.
     ///
     /// @return A property for the arguments to pass to the main class
-    ListProperty<String> getArgs();
+    @Input @Optional ListProperty<String> getArgs();
 
     /// The JVM arguments to use.
     ///
@@ -56,7 +64,7 @@ public sealed interface SlimeLauncherOptions extends Named permits SlimeLauncher
     /// re-launcher but a dev-environment bootstrapper.
     ///
     /// @return A property for the JVM arguments
-    ListProperty<String> getJvmArgs();
+    @Input @Optional ListProperty<String> getJvmArgs();
 
     /// The classpath to use.
     ///
@@ -68,7 +76,7 @@ public sealed interface SlimeLauncherOptions extends Named permits SlimeLauncher
     /// class][org.gradle.api.tasks.JavaExec#getMainClass()], the classpath does not need to include Slime Launcher.
     ///
     /// @return The classpath to use
-    ConfigurableFileCollection getClasspath();
+    @InputFiles @Classpath @Optional ConfigurableFileCollection getClasspath();
 
     /// The minimum memory heap size to use.
     ///
@@ -76,7 +84,7 @@ public sealed interface SlimeLauncherOptions extends Named permits SlimeLauncher
     /// arguments][#getJvmArgs()].
     ///
     /// @return A property for the minimum heap size
-    Property<String> getMinHeapSize();
+    @Input @Optional Property<String> getMinHeapSize();
 
     /// The maximum memory heap size to use.
     ///
@@ -84,17 +92,17 @@ public sealed interface SlimeLauncherOptions extends Named permits SlimeLauncher
     /// arguments][#getJvmArgs()].
     ///
     /// @return A property for the maximum heap size
-    Property<String> getMaxHeapSize();
+    @Input @Optional Property<String> getMaxHeapSize();
 
     /// The system properties to use.
     ///
     /// @return A property for the system properties
-    MapProperty<String, String> getSystemProperties();
+    @Input @Optional MapProperty<String, String> getSystemProperties();
 
     /// The environment variables to use.
     ///
     /// @return A property for the environment variables
-    MapProperty<String, String> getEnvironment();
+    @Input @Optional MapProperty<String, String> getEnvironment();
 
     /// The working directory to use.
     ///
@@ -104,7 +112,7 @@ public sealed interface SlimeLauncherOptions extends Named permits SlimeLauncher
     /// place its caches and metadata, which do not interfere with the working directory.
     ///
     /// @return A property for the working directory
-    DirectoryProperty getWorkingDir();
+    @Internal DirectoryProperty getWorkingDir();
 
     /// Adds to the arguments to pass to the [main class][#getMainClass()].
     ///

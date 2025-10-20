@@ -12,6 +12,8 @@ import org.gradle.api.Project;
 import org.gradle.api.UnknownDomainObjectException;
 import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ModuleIdentifier;
+import org.gradle.api.attributes.Usage;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
@@ -38,22 +40,27 @@ import java.util.List;
 import java.util.Map;
 
 abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, HasPublicType {
-    static void register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, Dependency dependency, boolean single) {
+    static void register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, ModuleIdentifier module, String version, String asPath, String asString, boolean single) {
         TaskProvider<SlimeLauncherMetadata> metadata;
         {
             TaskProvider<SlimeLauncherMetadata> t;
-            var taskName = "slimeLauncherMetadata" + (single ? "" : "for" + Util.dependencyToCamelCase(dependency));
+            var taskName = "slimeLauncherMetadata" + (single ? "" : "for" + Util.dependencyToCamelCase(module));
             try {
                 t = project.getTasks().named(taskName, SlimeLauncherMetadata.class);
             } catch (UnknownDomainObjectException e) {
-                var metadataZip = project.getObjects().fileProperty().fileProvider(project.getProviders().provider(() ->
-                    project.getConfigurations().detachedConfiguration(
-                        project.getDependencyFactory().create(dependency.getGroup(), dependency.getName(), dependency.getVersion(), "metadata", "zip")
-                    ).getSingleFile()
-                ));
+                var metadataDep = project.getDependencyFactory().create(module.getGroup(), module.getName(), version, "metadata", "zip");
+                var metadataAttr = project.getObjects().named(Usage.class, "metadata");
+                var metadataZip = project.getObjects().fileProperty().fileProvider(project.getProviders().provider(() -> {
+                    var configuration = project.getConfigurations().detachedConfiguration(
+                        metadataDep
+                    );
+                    configuration.setTransitive(false);
+                    configuration.attributes(a -> a.attribute(Usage.USAGE_ATTRIBUTE, metadataAttr));
+                    return configuration.getSingleFile();
+                }));
 
                 t = project.getTasks().register(taskName, SlimeLauncherMetadata.class, task -> {
-                    task.setDescription("Extracts the Slime Launcher metadata%s.".formatted(single ? "" : " for '%s'".formatted(Util.toString(dependency))));
+                    task.setDescription("Extracts the Slime Launcher metadata%s.".formatted(single ? "" : " for '%s'".formatted(asString)));
 
                     task.getMetadataZip().set(metadataZip);
                 });
@@ -62,7 +69,7 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
             metadata = t;
         }
 
-        var taskName = sourceSet.getTaskName("run", options.getName()) + (single ? "" : "for" + Util.dependencyToCamelCase(dependency));
+        var taskName = sourceSet.getTaskName("run", options.getName()) + (single ? "" : "for" + Util.dependencyToCamelCase(module));
         project.getTasks().register(taskName, SlimeLauncherExec.class, task -> {
             task.getRunName().set(options.getName());
             task.setDescription("Runs the '%s' Slime Launcher run configuration.".formatted(options.getName()));
@@ -70,8 +77,9 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
             task.classpath(task.getObjectFactory().fileCollection().from(task.getProviderFactory().provider(sourceSet::getRuntimeClasspath)));
             task.getJavaLauncher().unset();
 
-            var caches = task.getObjectFactory().directoryProperty().value(task.globalCaches().dir("slime-launcher/cache/%s".formatted(Util.pathify(dependency))));
+            var caches = task.getObjectFactory().directoryProperty().value(task.globalCaches().dir("slime-launcher/cache/%s".formatted(asPath)));
             task.getCacheDir().set(caches.map(task.problems.ensureFileLocation()));
+            task.getMetadataZip().set(metadata.flatMap(SlimeLauncherMetadata::getMetadataZip));
             task.getRunsJson().set(metadata.flatMap(SlimeLauncherMetadata::getRunsJson));
 
             task.getOptions().set(options);
@@ -84,9 +92,11 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
 
     protected abstract @Internal DirectoryProperty getCacheDir();
 
+    protected abstract @InputFile RegularFileProperty getMetadataZip();
+
     protected abstract @InputFile RegularFileProperty getRunsJson();
 
-    protected abstract @Input Property<String> getDelegateMainClass();
+    protected abstract @Input @Optional Property<String> getDelegateMainClass();
 
     protected abstract @Input @Optional ListProperty<String> getDelegateArgs();
 
@@ -116,7 +126,7 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
     @Override
     public void exec() {
         Provider<String> mainClass;
-        Provider<List<String>> args;
+        List<String> args;
 
         //region Launcher Metadata Inheritance
         Map<String, RunConfig> configs = Map.of();
@@ -129,12 +139,12 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
             // continue
         }
 
-        var options = (SlimeLauncherOptionsImpl) this.getOptions().get();
-        options.inherit(configs);
+        var options = ((SlimeLauncherOptionsInternal) this.getOptions().get()).inherit(configs);
 
         mainClass = this.getDelegateMainClass().orElse(options.getMainClass().filter(Util::isPresent));
-        args = this.getDelegateArgs().orElse(options.getArgs());
-        this.jvmArgs(options.getJvmArgs());
+        args = new ArrayList<>(options.getArgs().getOrElse(List.of()));
+        args.addAll(this.getDelegateArgs().getOrElse(List.of()));
+        this.jvmArgs(options.getJvmArgs().get());
         if (!options.getClasspath().isEmpty())
             this.setClasspath(options.getClasspath());
         if (options.getMinHeapSize().filter(Util::isPresent).isPresent())
@@ -151,11 +161,11 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
         } else {
             this.args("--main", mainClass.get(),
                 "--cache", this.getCacheDir().get().getAsFile().getAbsolutePath(),
-                "--metadata", this.getRunsJson().get().getAsFile().getAbsolutePath(),
+                "--metadata", this.getMetadataZip().get().getAsFile().getAbsolutePath(),
                 "--");
         }
 
-        this.args(args.get().toArray());
+        this.args(args);
 
         if (!this.getClient().getOrElse(false))
             this.setStandardInput(System.in);
@@ -167,6 +177,13 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
         }
 
         this.getLogger().info("{} {}", this.getClasspath().getAsPath(), String.join(" ", this.getArgs()));
-        super.exec();
+        try {
+            super.exec();
+        } catch (Exception e) {
+            this.getLogger().error("Something went wrong! Here is some debug info.");
+            this.getLogger().error("Args: {}", this.getArgs());
+            this.getLogger().error("Options: {}", options);
+            throw e;
+        }
     }
 }
