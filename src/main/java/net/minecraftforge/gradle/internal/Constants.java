@@ -28,9 +28,7 @@ final class Constants {
     /// Use these with [java.text.MessageFormat#format(String, Object...)].
     static final class Messages {
         static final String WELCOME = """
-            Welcome to ForgeGradle 7.0 BETA!
-            
-            This is an unstable release of ForgeGradle 7 for testing purposes.
+            Welcome to ForgeGradle 7.0 Release Candidate!
             
             Here are some release highlights:
             - Complete rewrite of the plugin and underlying code.
@@ -41,9 +39,6 @@ final class Constants {
               work-in-progress).
             
             A couple of important things to note:
-            - ForgeGradle 6 and older will no longer be supported, except for critical bug
-              fixes. We will (gently) encourage developers to move away from them and use
-              ForgeGradle 7 instead.
             - Many plugins that worked with ForgeGradle 6, such as Parchment's Librarian,
               do not work with ForgeGradle 7. For most cases (such as parchment), we have
               implemented native support. If ForgeGradle 7 is lacking in some aspect,
@@ -54,13 +49,20 @@ final class Constants {
               If you are on an older version (1.20.4 and older), you will need the
               'net.minecraftforge.renamer' plugin. Many of these come with our provided
               MDK, so this should not be an issue for you.
+            - If you come across any lingering bugs, please report them to our GitHub
+              issue tracker (https://github.com/MinecraftForge/ForgeGradle/issues).
+              Please do not use Discord as a means to report issues, as they will get
+              lost in the discussion very easily.
             
             For more details on this release, see https://docs.minecraftforge.net/en/fg-7.0/""";
 
         static final String WELCOME_CONDITION = """
-            This message will not display again until the next major beta update, ForgeGradle
-            7.1, or the below file is deleted:
-            {}""";
+            This message will not display again until ForgeGradle 7.0 or the below file is
+            deleted:
+            {}
+            
+            Documentation will be coming at a later date. Thank you for testing
+            ForgeGradle 7!""";
 
         static final String MAGIC = """
             This build is using ForgeGradle Magic. ForgeGradle Magic employs automatic

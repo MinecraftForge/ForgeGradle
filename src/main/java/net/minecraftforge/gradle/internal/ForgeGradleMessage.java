@@ -13,8 +13,8 @@ import org.gradle.api.provider.Provider;
 import java.util.Locale;
 
 enum ForgeGradleMessage {
-    WELCOME("7_0_BETA_WELCOME_1", Constants.Messages.WELCOME, Constants.Messages.WELCOME_CONDITION),
-    MAGIC("7_0_BETA_MAGIC_1", Constants.Messages.MAGIC);
+    WELCOME("7_0_RC_WELCOME_1", Constants.Messages.WELCOME, Constants.Messages.WELCOME_CONDITION),
+    MAGIC("7_0_RC_MAGIC_1", Constants.Messages.MAGIC);
 
     private static final String MESSAGES_DIR = "messages";
 
