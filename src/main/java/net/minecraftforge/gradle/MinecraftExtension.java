@@ -59,7 +59,7 @@ public interface MinecraftExtension extends MinecraftMappingsContainer {
      * <pre><code>
      * dependencies {
      *     implementation 'com.example:example:1.0' {
-     *         attributes.attribute(minecraft.attributes.os, objects.named(OperatingSystemFamily, OperatingSystemFamily.WINDOWS))
+     *         attributes.attribute(minecraft.attributes.os, 'windows')
      *     }
      * }
      * </code></pre>

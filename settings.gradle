@@ -30,12 +30,12 @@ dependencyResolutionManagement.versionCatalogs.register('libs') {
     plugin 'shadow',         'com.gradleup.shadow'            version '9.2.2' // https://plugins.gradle.org/plugin/com.gradleup.shadow
 
     // Static Analysis
-    library 'nulls', 'org.jetbrains', 'annotations' version '26.0.2'
+    library 'nulls', 'org.jetbrains', 'annotations' version '26.0.2-1'
 
     // Gradle API
     // Original: https://github.com/remal-gradle-api/packages/packages/760197?version=9.0.0
     // Mirror:   https://repos.moddinglegacy.com/#/modding-legacy/name/remal/gradle-api/gradle-api/9.0.0
-    version 'gradle', '9.1.0'
+    version 'gradle', '9.2.0'
     library 'gradle', 'name.remal.gradle-api', 'gradle-api'  versionRef 'gradle'
 
     // GradleUtils Shared Base
