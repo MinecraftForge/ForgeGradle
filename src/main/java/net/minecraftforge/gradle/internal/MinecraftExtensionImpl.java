@@ -143,7 +143,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         }
     }
 
-    static abstract class ForProjectImpl<T extends ClosureOwner<?> & MinecraftDependency & ExternalModuleDependency> extends MinecraftExtensionImpl implements MinecraftExtensionInternal.ForProject<T> {
+    static abstract class ForProjectImpl<T extends ClosureOwner & MinecraftDependency & ExternalModuleDependency> extends MinecraftExtensionImpl implements MinecraftExtensionInternal.ForProject<T> {
         // Slime Launcher
         private final NamedDomainObjectContainer<SlimeLauncherOptionsImpl> runs;
 

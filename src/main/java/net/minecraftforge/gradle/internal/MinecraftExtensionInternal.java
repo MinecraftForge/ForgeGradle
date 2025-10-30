@@ -49,7 +49,7 @@ interface MinecraftExtensionInternal extends MinecraftExtension, HasPublicType, 
         }
     }
 
-    interface ForProject<T extends ClosureOwner<?>> extends MinecraftExtensionForProject<T>, MinecraftExtensionInternal, HasPublicType {
+    interface ForProject<T extends ClosureOwner> extends MinecraftExtensionForProject<T>, MinecraftExtensionInternal, HasPublicType {
         @Override
         default TypeOf<?> getPublicType() {
             return new TypeOf<MinecraftExtensionForProject<ClosureOwner.MinecraftDependency>>() { };

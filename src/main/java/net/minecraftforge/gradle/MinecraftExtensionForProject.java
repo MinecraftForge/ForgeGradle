@@ -18,7 +18,7 @@ import org.gradle.api.artifacts.ExternalModuleDependency;
 ///
 /// @param <T> The type of closure owner used for [#dependency]
 /// @see MinecraftExtension
-public interface MinecraftExtensionForProject<T extends ClosureOwner<?>> extends MinecraftExtension {
+public interface MinecraftExtensionForProject<T extends ClosureOwner> extends MinecraftExtension {
     /// The collection of Slime Launcher options with which to create the launcher tasks.
     ///
     /// @return The collection of run task options

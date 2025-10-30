@@ -32,7 +32,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-interface ClosureOwnerInternal<D> extends ClosureOwner<D> {
+interface ClosureOwnerInternal<D> extends ClosureOwner {
+    /// Gets the owner delegate for this closure owner.
+    ///
+    /// The owner delegate sits on top of the [Closure][groovy.lang.Closure]'s original
+    /// {@linkplain groovy.lang.Closure#getOwner() owner}, and is used primarily on top of it when the closure owner is
+    /// invoked. If a member can't be found in the owner delegate, the original owner is queried instead.
+    ///
+    /// @return The owner delegate
+    D getOwnerDelegate();
+
     private static RuntimeException stub() {
         return new UnsupportedOperationException();
     }

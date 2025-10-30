@@ -12,27 +12,16 @@ import org.gradle.api.artifacts.ExternalModuleDependency;
 /// without needing to create an object that does so. For example, the [net.minecraftforge.gradle.MinecraftDependency]
 /// implementation is not itself an [ExternalModuleDependency], but the [MinecraftDependency] closure owner provides an
 /// abstraction that delegates to both of those interfaces simultaneously.
-///
-/// @param <D> The type of the owner delegate to be used on top of the original owner
-public interface ClosureOwner<D> {
-    /// Gets the owner delegate for this closure owner.
-    ///
-    /// The owner delegate sits on top of the [Closure][groovy.lang.Closure]'s original
-    /// {@linkplain groovy.lang.Closure#getOwner() owner}, and is used primarily on top of it when the closure owner is
-    /// invoked. If a member can't be found in the owner delegate, the original owner is queried instead.
-    ///
-    /// @return The owner delegate
-    D getOwnerDelegate();
-
+public interface ClosureOwner {
     /// A closure owner that delegates to [net.minecraftforge.gradle.MinecraftDependency] and
     /// [ExternalModuleDependency].
     ///
     /// @see ClosureOwner
-    interface MinecraftDependency extends ClosureOwner<net.minecraftforge.gradle.MinecraftDependency>, net.minecraftforge.gradle.MinecraftDependency, ExternalModuleDependency { }
+    interface MinecraftDependency extends ClosureOwner, net.minecraftforge.gradle.MinecraftDependency, ExternalModuleDependency { }
 
     /// A closure owner that delegates to [net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers] and
     /// [ExternalModuleDependency].
     ///
     /// @see ClosureOwner
-    interface MinecraftDependencyWithAccessTransformers extends ClosureOwner<net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers>, net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers, ExternalModuleDependency { }
+    interface MinecraftDependencyWithAccessTransformers extends ClosureOwner, net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers, ExternalModuleDependency { }
 }
