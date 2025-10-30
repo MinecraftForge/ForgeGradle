@@ -5,14 +5,18 @@
 package net.minecraftforge.gradle.internal;
 
 import net.minecraftforge.gradleutils.shared.EnhancedFlowAction;
+import org.gradle.api.Project;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.ProviderFactory;
+import org.gradle.api.provider.SetProperty;
+import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Locale;
+import java.text.MessageFormat;
+import java.util.ArrayList;
 
 import static net.minecraftforge.gradle.internal.ForgeGradlePlugin.LOGGER;
 
@@ -23,83 +27,74 @@ abstract class ForgeGradleFlowAction<P extends ForgeGradleFlowAction.Parameters>
         }
     }
 
-    static abstract class WelcomeMessage extends ForgeGradleFlowAction<WelcomeMessage.Parameters> {
-        enum DisplayOption {
-            ONCE, NEVER, ALWAYS
-        }
-
+    static abstract class MessageBoard extends ForgeGradleFlowAction<MessageBoard.Parameters> {
         static abstract class Parameters extends ForgeGradleFlowAction.Parameters {
-            final DirectoryProperty messagesDir;
-            final Property<DisplayOption> displayOption;
-
-            protected abstract @Inject ProviderFactory getProviders();
+            final SetProperty<ForgeGradleMessage.QueuedMessage> messages = this.getObjects().setProperty(ForgeGradleMessage.QueuedMessage.class);
 
             @Inject
-            public Parameters() {
-                this.messagesDir = this.getObjects().directoryProperty();
-                this.displayOption = this.getObjects().property(DisplayOption.class).convention(DisplayOption.ONCE).value(
-                    this.getProviders().gradleProperty("net.minecraftforge.gradle.messages.welcome")
-                        .orElse(this.getProviders().systemProperty("net.minecraftforge.gradle.messages.welcome"))
-                        .map(it -> DisplayOption.valueOf(it.toUpperCase(Locale.ROOT)))
-                );
+            public Parameters() { }
+
+            void queue(Project project, DirectoryProperty globalCaches, ForgeGradleMessage message) {
+                this.messages.add(message.queue(project, globalCaches));
             }
         }
 
         @Inject
-        public WelcomeMessage() { }
+        public MessageBoard() { }
 
         @Override
-        protected void run(Parameters parameters) throws IOException {
+        protected void run(Parameters parameters) {
             // if build failed, don't bother
             if (parameters.getFailure().isPresent()) return;
 
-            // check for marker file
-            var markerFile = parameters.messagesDir.file("7_0_BETA_WELCOME_1").get().getAsFile();
-            if (markerFile.exists()) return;
-            Files.createDirectories(markerFile.toPath().getParent());
-            Files.createFile(markerFile.toPath());
+            var pending = parameters.messages.get();
+            var messages = new ArrayList<ForgeGradleMessage.QueuedMessage>(pending.size());
+            @Nullable File markerFile = null;
+            for (var queued : pending) {
+                switch (queued.displayOption()) {
+                    case NEVER:
+                        continue;
 
-            LOGGER.lifecycle(Constants.Messages.WELCOME, markerFile.getAbsolutePath());
-        }
-    }
+                    case ONCE:
+                        // check for marker file
+                        markerFile = queued.markerFile().get().getAsFile();
+                        if (markerFile.exists()) continue;
 
-    static abstract class MagicMessage extends ForgeGradleFlowAction<MagicMessage.Parameters> {
-        enum DisplayOption {
-            ONCE, NEVER, ALWAYS
-        }
+                        try {
+                            Files.createDirectories(markerFile.toPath().getParent());
+                            Files.createFile(markerFile.toPath());
+                        } catch (IOException e) {
+                            parameters.problems().reportMessageBoardCacheBroken(e, markerFile, queued.message().getProperty());
+                        }
 
-        static abstract class Parameters extends ForgeGradleFlowAction.Parameters {
-            final DirectoryProperty messagesDir;
-            final Property<DisplayOption> displayOption;
-
-            protected abstract @Inject ProviderFactory getProviders();
-
-            @Inject
-            public Parameters() {
-                this.messagesDir = this.getObjects().directoryProperty();
-                this.displayOption = this.getObjects().property(DisplayOption.class).convention(DisplayOption.ONCE).value(
-                    this.getProviders().gradleProperty("net.minecraftforge.gradle.messages.magic")
-                        .orElse(this.getProviders().systemProperty("net.minecraftforge.gradle.messages.magic"))
-                        .map(it -> DisplayOption.valueOf(it.toUpperCase(Locale.ROOT)))
-                );
+                    case ALWAYS:
+                        messages.add(queued);
+                        break;
+                }
             }
-        }
 
-        @Inject
-        public MagicMessage() { }
+            if (messages.isEmpty())
+                return;
 
-        @Override
-        protected void run(Parameters parameters) throws IOException {
-            // if build failed, don't bother
-            if (parameters.getFailure().isPresent()) return;
+            if (!LOGGER.isLifecycleEnabled()) {
+                LOGGER.warn("WARNING: ForgeGradle messages cannot be displayed as the logger is not configured to display lifecycle messages.");
+            }
 
-            // check for marker file
-            var markerFile = parameters.messagesDir.file("7_0_BETA_MAGIC_1").get().getAsFile();
-            if (markerFile.exists()) return;
-            Files.createDirectories(markerFile.toPath().getParent());
-            Files.createFile(markerFile.toPath());
+            var count = messages.size();
+            LOGGER.lifecycle("You have " + count + " new message" + (count == 1 ? "" : "s") + " from ForgeGradle.\n");
+            for (var i = 0; i < count; i++) {
+                var queued = messages.get(i);
 
-            LOGGER.lifecycle(Constants.Messages.MAGIC, markerFile.getAbsolutePath());
+                LOGGER.lifecycle("---   Message %d/%d   ---".formatted(i + 1, count));
+                LOGGER.lifecycle(MessageFormat.format(queued.message().getText(), queued));
+
+                if (markerFile != null && queued.displayOption() == ForgeGradleMessage.DisplayOption.ONCE)
+                    LOGGER.lifecycle('\n' + queued.message().getCondition(), markerFile.getAbsolutePath());
+
+                LOGGER.lifecycle("--- End of Message ---");
+                if (i != count - 1)
+                    LOGGER.lifecycle("");
+            }
         }
     }
 

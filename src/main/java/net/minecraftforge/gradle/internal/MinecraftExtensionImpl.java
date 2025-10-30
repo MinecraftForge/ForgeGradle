@@ -41,7 +41,6 @@ import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -171,31 +170,10 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             if (ext.has(EXT_MAPPINGS))
                 this.mappings.set((MinecraftMappingsImpl) ext.get(EXT_MAPPINGS));
 
-            var flowScope = this.getFlowScope();
+            plugin.queueMessage(ForgeGradleMessage.WELCOME);
+            plugin.queueMessage(ForgeGradleMessage.MAGIC);
 
-            flowScope.always(ForgeGradleFlowAction.WelcomeMessage.class, spec -> spec.parameters(parameters -> {
-                parameters.getFailure().set(this.getFlowProviders().getBuildWorkResult().map(p -> p.getFailure().orElse(null)));
-                parameters.messagesDir.set(plugin.globalCaches().dir("messages"));
-                parameters.displayOption.set(
-                    this.getProviders().gradleProperty("net.minecraftforge.gradle.messages.welcome")
-                        .orElse(this.getProviders().systemProperty("net.minecraftforge.gradle.messages.welcome")).map(
-                            it -> ForgeGradleFlowAction.WelcomeMessage.DisplayOption.valueOf(it.toUpperCase(Locale.ROOT))
-                        )
-                );
-            }));
-
-            flowScope.always(ForgeGradleFlowAction.MagicMessage.class, spec -> spec.parameters(parameters -> {
-                parameters.getFailure().set(this.getFlowProviders().getBuildWorkResult().map(p -> p.getFailure().orElse(null)));
-                parameters.messagesDir.set(plugin.globalCaches().dir("messages"));
-                parameters.displayOption.set(
-                    this.getProviders().gradleProperty("net.minecraftforge.gradle.messages.magic")
-                        .orElse(this.getProviders().systemProperty("net.minecraftforge.gradle.messages.magic")).map(
-                            it -> ForgeGradleFlowAction.MagicMessage.DisplayOption.valueOf(it.toUpperCase(Locale.ROOT))
-                        )
-                );
-            }));
-
-            flowScope.always(ForgeGradleFlowAction.AccessTransformersMissing.class, spec -> spec.parameters(parameters -> {
+            this.getFlowScope().always(ForgeGradleFlowAction.AccessTransformersMissing.class, spec -> spec.parameters(parameters -> {
                 parameters.getFailure().set(this.getFlowProviders().getBuildWorkResult().map(p -> p.getFailure().orElse(null)));
                 parameters.appliedPlugin.set(project.getPluginManager().hasPlugin("net.minecraftforge.accesstransformers"));
             }));

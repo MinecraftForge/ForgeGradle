@@ -55,11 +55,12 @@ final class Constants {
               'net.minecraftforge.obfuscation' plugin. Many of these come with our provided
               MDK, so this should not be an issue for you.
             
+            For more details on this release, see https://docs.minecraftforge.net/en/fg-7.0/""";
+
+        static final String WELCOME_CONDITION = """
             This message will not display again until the next major beta update, ForgeGradle
             7.1, or the below file is deleted:
-            {}
-            
-            For more details on this release, see https://docs.minecraftforge.net/en/fg-7.0/""";
+            {}""";
 
         static final String MAGIC = """
             This build is using ForgeGradle Magic. ForgeGradle Magic employs automatic
@@ -69,9 +70,6 @@ final class Constants {
             Magic is enabled by default. It can be disabled by using the following
             Gradle property:
             net.minecraftforge.gradle.magic=false
-            
-            This message will not display again unless the below file is deleted:
-            {}
             
             For more information, see https://docs.minecraftforge.net/en/fg-7.0/magic/""";
     }

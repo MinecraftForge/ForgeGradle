@@ -14,6 +14,8 @@ import org.gradle.api.provider.ProviderFactory;
 
 import javax.inject.Inject;
 
+import java.io.File;
+
 import static net.minecraftforge.gradle.internal.ForgeGradlePlugin.LOGGER;
 
 /**
@@ -183,6 +185,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     //endregion
     //endregion
 
+    //region Access Transformers
     void reportAccessTransformersNotApplied(Throwable e) {
         this.report("access-transformers-not-applied", "AccessTransformers plugin not applied", spec -> spec
             .details("""
@@ -214,6 +217,20 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
             .solution("Declare the 'net.minecraftforge.accesstransformers' plugin before ForgeGradle.")
             .solution(HELP_MESSAGE)
         );
+    }
+    //endregion
+
+    //region Message Board
+    void reportMessageBoardCacheBroken(Throwable e, File file, String property) {
+        this.report("message-board-cache-broken", "ForgeGradle's message board cannot save data", spec -> spec
+            .details("""
+                ForgeGradle's message board cannot save data to its cache directory.
+                This will prevent ForgeGradle from remembering that a message has been displayed.""")
+            .severity(Severity.ERROR)
+            .withException(e)
+            .solution("Ensure read/write access for the following file: " + file)
+            .solution("Disable the message by setting the following property: " + property + "=never")
+            .solution(HELP_MESSAGE));
     }
     //endregion
 }
