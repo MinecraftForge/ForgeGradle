@@ -2,7 +2,7 @@
  * Copyright (c) Forge Development LLC and contributors
  * SPDX-License-Identifier: LGPL-2.1-only
  */
-package net.minecraftforge.gradle;
+package net.minecraftforge.gradle.internal;
 
 import net.minecraftforge.gradleutils.shared.EnhancedFlowAction;
 import org.gradle.api.file.DirectoryProperty;
@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Locale;
 
-import static net.minecraftforge.gradle.ForgeGradlePlugin.LOGGER;
+import static net.minecraftforge.gradle.internal.ForgeGradlePlugin.LOGGER;
 
 abstract class ForgeGradleFlowAction<P extends ForgeGradleFlowAction.Parameters> extends EnhancedFlowAction<P> {
     static abstract class Parameters extends EnhancedFlowAction.EnhancedFlowParameters<ForgeGradleProblems> {

@@ -12,15 +12,13 @@ import net.minecraftforge.gradleutils.shared.Closures;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.artifacts.ExternalModuleDependency;
-import org.gradle.api.provider.Provider;
-import org.gradle.api.provider.ProviderConvertible;
 
 /// [Project][org.gradle.api.Project]-specific additions for the Minecraft extension. These will be accessible from the
 /// `minecraft` DSL object within your project's buildscript.
 ///
 /// @param <T> The type of closure owner used for [#dependency]
 /// @see MinecraftExtension
-sealed public interface MinecraftExtensionForProject<T extends ClosureOwner<?>> extends MinecraftExtension permits MinecraftExtensionForProjectWithAccessTransformers, MinecraftExtensionInternal.ForProject {
+public interface MinecraftExtensionForProject<T extends ClosureOwner<?>> extends MinecraftExtension {
     /// The collection of Slime Launcher options with which to create the launcher tasks.
     ///
     /// @return The collection of run task options
@@ -76,84 +74,6 @@ sealed public interface MinecraftExtensionForProject<T extends ClosureOwner<?>> 
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
     default ExternalModuleDependency dependency(Object value) {
-        return this.dependency(value, Closures.empty(this));
-    }
-
-    /// Creates (or marks if existing) the given dependency as a Minecraft dependency and configures it with the given
-    /// closure.
-    ///
-    /// @param value   The dependency
-    /// @param closure The closure to configure the dependency with
-    /// @return The dependency
-    /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
-    /// in Gradle</a>
-    default ExternalModuleDependency dependency(
-        Provider<?> value,
-        @DelegatesTo(ExternalModuleDependency.class)
-        @ClosureParams(value = FromString.class, options = "T")
-        Closure<?> closure
-    ) {
-        return this.dependency(value.get(), closure);
-    }
-
-    /// Creates (or marks if existing) the given dependency as a Minecraft dependency and applies the given action to
-    /// it.
-    ///
-    /// @param value  The dependency
-    /// @param action The action to apply to the dependency attributes
-    /// @return The dependency
-    /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
-    /// in Gradle</a>
-    default ExternalModuleDependency dependency(Provider<?> value, Action<? super T> action) {
-        return this.dependency(value, Closures.action(this, action));
-    }
-
-    /// Creates (or marks if existing) the given dependency as a Minecraft dependency.
-    ///
-    /// @param value The dependency
-    /// @return The dependency
-    /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
-    /// in Gradle</a>
-    default ExternalModuleDependency dependency(Provider<?> value) {
-        return this.dependency(value, Closures.empty(this));
-    }
-
-    /// Creates (or marks if existing) the given dependency as a Minecraft dependency and configures it with the given
-    /// closure.
-    ///
-    /// @param value   The dependency
-    /// @param closure The closure to configure the dependency with
-    /// @return The dependency
-    /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
-    /// in Gradle</a>
-    default ExternalModuleDependency dependency(
-        ProviderConvertible<?> value,
-        @DelegatesTo(ExternalModuleDependency.class)
-        @ClosureParams(value = FromString.class, options = "T")
-        Closure<?> closure
-    ) {
-        return this.dependency(value.asProvider(), closure);
-    }
-
-    /// Creates (or marks if existing) the given dependency as a Minecraft dependency and applies the given action to
-    /// it.
-    ///
-    /// @param value  The dependency
-    /// @param action The action to apply to the dependency attributes
-    /// @return The dependency
-    /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
-    /// in Gradle</a>
-    default ExternalModuleDependency dependency(ProviderConvertible<?> value, Action<? super T> action) {
-        return this.dependency(value, Closures.action(this, action));
-    }
-
-    /// Creates (or marks if existing) the given dependency as a Minecraft dependency.
-    ///
-    /// @param value The dependency
-    /// @return The dependency
-    /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
-    /// in Gradle</a>
-    default ExternalModuleDependency dependency(ProviderConvertible<?> value) {
         return this.dependency(value, Closures.empty(this));
     }
 }

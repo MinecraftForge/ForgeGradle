@@ -6,4 +6,4 @@ package net.minecraftforge.gradle;
 
 /// The Minecraft dependency contains information essential for how the
 /// {@linkplain MinecraftExtensionForProject minecraft extension} processes Minecraft dependencies.
-public sealed interface MinecraftDependency extends MinecraftMappingsContainer permits ClosureOwner.MinecraftDependency, MinecraftDependencyWithAccessTransformers, MinecraftDependencyInternal { }
+public interface MinecraftDependency extends MinecraftMappingsContainer { }

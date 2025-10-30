@@ -2,7 +2,7 @@
  * Copyright (c) Forge Development LLC and contributors
  * SPDX-License-Identifier: LGPL-2.1-only
  */
-package net.minecraftforge.gradle;
+package net.minecraftforge.gradle.internal;
 
 import net.minecraftforge.util.data.json.RunConfig;
 import org.gradle.api.file.ConfigurableFileCollection;
@@ -15,9 +15,7 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 
 import javax.inject.Inject;
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +36,7 @@ abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsInternal 
     private final Property<Boolean> client = this.getObjects().property(Boolean.class).convention(false);
 
     protected abstract @Inject ObjectFactory getObjects();
+
     protected abstract @Inject ProviderFactory getProviders();
 
     @Inject

@@ -9,7 +9,6 @@ import org.gradle.api.Action;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.attributes.Attribute;
-import org.gradle.nativeplatform.OperatingSystemFamily;
 
 /// The main extension for ForgeGradle, where the Minecraft dependency resolution takes place.
 ///
@@ -20,9 +19,9 @@ import org.gradle.nativeplatform.OperatingSystemFamily;
 /// supported.
 ///   - The resulting Minecraft dependency is created by the Minecraft Mavenizer. It is not merely a dependency
 /// transformation, which means that it cannot use file and project dependencies to generate the Minecraft artifacts.
-///   - Attempting to provide a non-module dependency to [MinecraftExtensionForProject#dependency(Object)], will cause the
-/// build to fail.
-public sealed interface MinecraftExtension extends MinecraftMappingsContainer permits MinecraftExtensionInternal, MinecraftExtensionForProject {
+///   - Attempting to provide a non-module dependency to [MinecraftExtensionForProject#dependency(Object)], will cause
+/// the build to fail.
+public interface MinecraftExtension extends MinecraftMappingsContainer {
     /// The name for this extension in Gradle.
     String NAME = "minecraft";
 
@@ -68,30 +67,34 @@ public sealed interface MinecraftExtension extends MinecraftMappingsContainer pe
      * @return The attributes object
      * @see Attributes
      */
-    default Attributes getAttributes() {
-        return MinecraftExtensionInternal.AttributesInternal.INSTANCE;
-    };
+    Attributes getAttributes();
 
     /// This interface contains the attributes used by the [Minecraft][MinecraftExtension] extension for resolving the
     /// Minecraft and deobfuscated dependencies.
     ///
     /// @see MinecraftExtension#getAttributes()
-    sealed interface Attributes permits MinecraftExtensionInternal.AttributesInternal {
-        /// The [operating system family][OperatingSystemFamily] of the project's host.
+    interface Attributes {
+        /// The operating system of the project's host.
         ///
         /// This is used to filter natives from the Minecraft repo.
-        Attribute<String> os = Attribute.of("net.minecraftforge.native.operatingSystem", String.class);
+        ///
+        /// @return The operating system attribute
+        Attribute<String> getOs();
+
         /// The requested mappings channel of the project.
         ///
-        /// This is determined using [MinecraftMappings#channel()] via [#getMappings()]
+        /// This is determined using [MinecraftMappings#getChannel()] via [#getMappings()]
         ///
-        /// @see #mappingsVersion
-        Attribute<String> mappingsChannel = Attribute.of("net.minecraftforge.mappings.channel", String.class);
+        /// @return The mappings channel attribute
+        /// @see #getMappingsVersion()
+        Attribute<String> getMappingsChannel();
+
         /// The requested mappings version of the project.
         ///
-        /// This is determined using [MinecraftMappings#version()] via [#getMappings()]
+        /// This is determined using [MinecraftMappings#getVersion()] via [#getMappings()]
         ///
-        /// @see #mappingsChannel
-        Attribute<String> mappingsVersion = Attribute.of("net.minecraftforge.mappings.version", String.class);
+        /// @return The mappings channel version
+        /// @see #getMappingsChannel()
+        Attribute<String> getMappingsVersion();
     }
 }

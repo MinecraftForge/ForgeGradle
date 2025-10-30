@@ -2,24 +2,24 @@
  * Copyright (c) Forge Development LLC and contributors
  * SPDX-License-Identifier: LGPL-2.1-only
  */
-package net.minecraftforge.gradle;
+package net.minecraftforge.gradle.internal;
 
 import groovy.lang.Closure;
+import net.minecraftforge.gradle.MinecraftDependency;
+import net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers;
 import org.gradle.api.Action;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.attributes.AttributeContainer;
-import org.gradle.api.file.Directory;
 import org.gradle.api.plugins.ExtensionAware;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.reflect.HasPublicType;
 import org.gradle.api.reflect.TypeOf;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 import org.jetbrains.annotations.Nullable;
 
-non-sealed interface MinecraftDependencyInternal extends MinecraftDependency, HasPublicType {
+interface MinecraftDependencyInternal extends MinecraftDependency, HasPublicType, MinecraftMappingsContainerInternal {
     String MC_EXT_NAME = "__fg_minecraft_dependency";
     String AT_COUNT_NAME = "__fg_minecraft_atcontainers";
 
@@ -60,7 +60,7 @@ non-sealed interface MinecraftDependencyInternal extends MinecraftDependency, Ha
 
     void handle(SourceSet sourceSet);
 
-    non-sealed interface WithAccessTransformers extends MinecraftDependencyWithAccessTransformers, MinecraftDependencyInternal {
+    interface WithAccessTransformers extends MinecraftDependencyWithAccessTransformers, MinecraftDependencyInternal {
         @Override
         default TypeOf<?> getPublicType() {
             return TypeOf.typeOf(MinecraftDependencyWithAccessTransformers.class);

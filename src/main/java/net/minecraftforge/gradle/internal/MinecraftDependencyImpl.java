@@ -2,13 +2,15 @@
  * Copyright (c) Forge Development LLC and contributors
  * SPDX-License-Identifier: LGPL-2.1-only
  */
-package net.minecraftforge.gradle;
+package net.minecraftforge.gradle.internal;
 
 import groovy.lang.Closure;
-import groovy.transform.NamedParam;
-import groovy.transform.NamedParams;
 import groovy.transform.NamedVariant;
 import net.minecraftforge.accesstransformers.gradle.ArtifactAccessTransformer;
+import net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers;
+import net.minecraftforge.gradle.MinecraftExtension;
+import net.minecraftforge.gradle.MinecraftExtensionForProjectWithAccessTransformers;
+import net.minecraftforge.gradle.MinecraftMappings;
 import net.minecraftforge.gradleutils.shared.Closures;
 import net.minecraftforge.util.os.OS;
 import org.gradle.api.Action;
@@ -38,7 +40,6 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import java.io.File;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -52,7 +53,7 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     final Property<String> version = getObjects().property(String.class);
 
     private final Provider<? extends Directory> mavenizerOutput;
-    private final Property<MinecraftMappings> mappings;
+    private final Property<MinecraftMappingsImpl> mappings;
     private @Nullable String sourceSetName;
 
     private final ForgeGradleProblems problems = this.getObjects().newInstance(ForgeGradleProblems.class);
@@ -68,7 +69,7 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     @Inject
     public MinecraftDependencyImpl(Provider<? extends Directory> mavenizerOutput) {
         this.mavenizerOutput = mavenizerOutput;
-        this.mappings = this.getObjects().property(MinecraftMappings.class).convention(
+        this.mappings = this.getObjects().property(MinecraftMappingsImpl.class).convention(
             ((MinecraftExtensionImpl) getProject().getExtensions().getByType(MinecraftExtension.class)).mappings
         );
     }
@@ -112,9 +113,9 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     @Override
     public Action<? super AttributeContainer> addAttributes() {
         return attributes -> {
-            attributes.attributeProvider(MinecraftExtension.Attributes.os, getProviders().of(OperatingSystemName.class, spec -> spec.parameters(parameters -> parameters.getAllowedOperatingSystems().set(Set.of(OS.WINDOWS, OS.MACOS, OS.LINUX)))));
-            attributes.attributeProvider(MinecraftExtension.Attributes.mappingsChannel, mappings.map(MinecraftMappings::channel));
-            attributes.attributeProvider(MinecraftExtension.Attributes.mappingsVersion, mappings.map(MinecraftMappings::version));
+            attributes.attributeProvider(MinecraftExtensionInternal.AttributesInternal.OS, getProviders().of(OperatingSystemName.class, spec -> spec.parameters(parameters -> parameters.getAllowedOperatingSystems().set(Set.of(OS.WINDOWS, OS.MACOS, OS.LINUX)))));
+            attributes.attributeProvider(MinecraftExtensionInternal.AttributesInternal.MAPPINGS_CHANNEL, mappings.map(MinecraftMappings::getChannel));
+            attributes.attributeProvider(MinecraftExtensionInternal.AttributesInternal.MAPPINGS_VERSION, mappings.map(MinecraftMappings::getVersion));
         };
     }
 
@@ -185,34 +186,13 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     @Override
     @NamedVariant
     public void mappings(String channel, String version) {
-        // manual null-checks here instead of @NullCheck for enhanced problems reporting
-        MinecraftMappings.checkParam(this.problems, channel, "channel");
-        MinecraftMappings.checkParam(this.problems, version, "version");
-
-        this.mappings.set(new MinecraftMappings(channel, version));
-    }
-
-    @Override
-    public void mappings(
-        @NamedParams({
-            @NamedParam(
-                type = String.class,
-                value = "channel",
-                required = true
-            ),
-            @NamedParam(
-                type = String.class,
-                value = "version",
-                required = true
-            )
-        }) Map<?, ?> namedArgs
-    ) {
-        this.mappings(namedArgs.get("channel").toString(), namedArgs.get("version").toString());
+        this.mappings.set(this.getObjects().newInstance(MinecraftMappingsImpl.class, channel, version));
     }
 
     static abstract class WithAccessTransformersImpl extends MinecraftDependencyImpl implements WithAccessTransformers {
         private final RegularFileProperty atFile = this.getObjects().fileProperty();
-        private final Property<String> atPath = this.getObjects().property(String.class)
+        private final Property<String> atPath = this
+            .getObjects().property(String.class)
             .convention(getProject().getExtensions().getByType(MinecraftExtensionForProjectWithAccessTransformers.class).getAccessTransformers());
 
         private final Attribute<Boolean> attribute = this.registerTransform();

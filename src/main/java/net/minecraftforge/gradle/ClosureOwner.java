@@ -28,11 +28,11 @@ public interface ClosureOwner<D> {
     /// [ExternalModuleDependency].
     ///
     /// @see ClosureOwner
-    sealed interface MinecraftDependency extends ClosureOwner<net.minecraftforge.gradle.MinecraftDependency>, net.minecraftforge.gradle.MinecraftDependency, ExternalModuleDependency permits ClosureOwnerInternal.MinecraftDependency { }
+    interface MinecraftDependency extends ClosureOwner<net.minecraftforge.gradle.MinecraftDependency>, net.minecraftforge.gradle.MinecraftDependency, ExternalModuleDependency { }
 
     /// A closure owner that delegates to [net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers] and
     /// [ExternalModuleDependency].
     ///
     /// @see ClosureOwner
-    sealed interface MinecraftDependencyWithAccessTransformers extends ClosureOwner<net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers>, net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers, ExternalModuleDependency permits ClosureOwnerInternal.MinecraftDependencyWithAccessTransformers { }
+    interface MinecraftDependencyWithAccessTransformers extends ClosureOwner<net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers>, net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers, ExternalModuleDependency { }
 }

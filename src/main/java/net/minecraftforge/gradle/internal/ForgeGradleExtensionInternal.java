@@ -2,14 +2,15 @@
  * Copyright (c) Forge Development LLC and contributors
  * SPDX-License-Identifier: LGPL-2.1-only
  */
-package net.minecraftforge.gradle;
+package net.minecraftforge.gradle.internal;
 
+import net.minecraftforge.gradle.ForgeGradleExtension;
 import org.gradle.api.Action;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.reflect.HasPublicType;
 import org.gradle.api.reflect.TypeOf;
 
-non-sealed interface ForgeGradleExtensionInternal extends ForgeGradleExtension, HasPublicType {
+interface ForgeGradleExtensionInternal extends ForgeGradleExtension, HasPublicType {
     @Override
     default TypeOf<?> getPublicType() {
         return TypeOf.typeOf(ForgeGradleExtension.class);
@@ -20,8 +21,18 @@ non-sealed interface ForgeGradleExtensionInternal extends ForgeGradleExtension, 
         repo.setUrl(Constants.FORGE_MAVEN);
     };
 
+    @Override
+    default Action<MavenArtifactRepository> getForgeMaven() {
+        return forgeMaven;
+    }
+
     Action<MavenArtifactRepository> minecraftLibsMaven = repo -> {
         repo.setName("Minecraft libraries");
         repo.setUrl(Constants.MC_LIBS_MAVEN);
     };
+
+    @Override
+    default Action<MavenArtifactRepository> getMinecraftLibsMaven() {
+        return minecraftLibsMaven;
+    }
 }

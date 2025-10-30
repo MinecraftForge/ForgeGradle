@@ -2,14 +2,14 @@
  * Copyright (c) Forge Development LLC and contributors
  * SPDX-License-Identifier: LGPL-2.1-only
  */
-package net.minecraftforge.gradle;
+package net.minecraftforge.gradle.internal;
 
 import groovy.lang.Closure;
 import groovy.transform.Generated;
 import groovy.transform.NamedParam;
 import groovy.transform.NamedParams;
-import net.minecraftforge.accesstransformers.gradle.AccessTransformersConfiguration;
-import net.minecraftforge.accesstransformers.gradle.AccessTransformersContainer;
+import net.minecraftforge.gradle.ClosureOwner;
+import net.minecraftforge.gradle.MinecraftMappings;
 import org.gradle.api.Action;
 import org.gradle.api.artifacts.DependencyArtifact;
 import org.gradle.api.artifacts.ExcludeRule;
@@ -37,7 +37,7 @@ interface ClosureOwnerInternal<D> extends ClosureOwner<D> {
         return new UnsupportedOperationException();
     }
 
-    non-sealed interface MinecraftDependency extends ClosureOwnerInternal<net.minecraftforge.gradle.MinecraftDependency>, ClosureOwner.MinecraftDependency, HasPublicType {
+    interface MinecraftDependency extends ClosureOwnerInternal<net.minecraftforge.gradle.MinecraftDependency>, ClosureOwner.MinecraftDependency, HasPublicType {
         @Override
         default TypeOf<?> getPublicType() {
             return TypeOf.typeOf(ClosureOwner.MinecraftDependency.class);
@@ -228,7 +228,7 @@ interface ClosureOwnerInternal<D> extends ClosureOwner<D> {
         }
     }
 
-    non-sealed interface MinecraftDependencyWithAccessTransformers extends ClosureOwnerInternal<net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers>, ClosureOwner.MinecraftDependencyWithAccessTransformers, HasPublicType {
+    interface MinecraftDependencyWithAccessTransformers extends ClosureOwnerInternal<net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers>, ClosureOwner.MinecraftDependencyWithAccessTransformers, HasPublicType {
         @Override
         default TypeOf<?> getPublicType() {
             return TypeOf.typeOf(ClosureOwner.MinecraftDependencyWithAccessTransformers.class);

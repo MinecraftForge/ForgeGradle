@@ -2,18 +2,22 @@
  * Copyright (c) Forge Development LLC and contributors
  * SPDX-License-Identifier: LGPL-2.1-only
  */
-package net.minecraftforge.gradle;
+package net.minecraftforge.gradle.internal;
 
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
 import groovy.transform.CompileStatic;
-import groovy.transform.NamedParam;
-import groovy.transform.NamedParams;
 import groovy.transform.NamedVariant;
 import groovy.transform.PackageScope;
 import groovy.transform.stc.ClosureParams;
 import groovy.transform.stc.FromString;
 import groovy.transform.stc.SimpleType;
+import net.minecraftforge.gradle.ClosureOwner;
+import net.minecraftforge.gradle.MinecraftDependency;
+import net.minecraftforge.gradle.MinecraftExtension;
+import net.minecraftforge.gradle.MinecraftExtensionForProject;
+import net.minecraftforge.gradle.MinecraftMappings;
+import net.minecraftforge.gradle.SlimeLauncherOptions;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
@@ -32,14 +36,12 @@ import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.reflect.TypeOf;
-import org.gradle.language.base.plugins.LifecycleBasePlugin;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -54,7 +56,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
     final DirectoryProperty mavenizerOutput;
 
     // Dependencies
-    final Property<MinecraftMappings> mappings;
+    final Property<MinecraftMappingsImpl> mappings;
 
     protected abstract @Inject ObjectFactory getObjects();
 
@@ -87,7 +89,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
         this.mavenizerOutput = this.getObjects().directoryProperty().convention(plugin.localCaches().dir("mavenizer/output").map(this.problems.ensureFileLocation()));
 
-        this.mappings = this.getObjects().property(MinecraftMappings.class);
+        this.mappings = this.getObjects().property(MinecraftMappingsImpl.class);
     }
 
     @Override
@@ -115,29 +117,11 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
     @Override
     @NamedVariant
     public void mappings(String channel, String version) {
-        var replacement = new MinecraftMappings(MinecraftMappings.checkParam(this.problems, channel, "channel"), MinecraftMappings.checkParam(this.problems, version, "version"));
+        var replacement = this.getObjects().newInstance(MinecraftMappingsImpl.class, channel, version);
         if (this.mappings.isPresent())
             this.problems.reportOverriddenMappings(this.mappings.get(), replacement);
 
         this.mappings.set(replacement);
-    }
-
-    @Override
-    public void mappings(
-        @NamedParams({
-            @NamedParam(
-                type = String.class,
-                value = "channel",
-                required = true
-            ),
-            @NamedParam(
-                type = String.class,
-                value = "version",
-                required = true
-            )
-        }) Map<?, ?> namedArgs
-    ) {
-        this.mappings(namedArgs.get("channel").toString(), namedArgs.get("version").toString());
     }
 
     @CompileStatic
@@ -185,7 +169,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
             var ext = project.getExtensions().getExtraProperties();
             if (ext.has(EXT_MAPPINGS))
-                this.mappings.set((MinecraftMappings) ext.get(EXT_MAPPINGS));
+                this.mappings.set((MinecraftMappingsImpl) ext.get(EXT_MAPPINGS));
 
             var flowScope = this.getFlowScope();
 
@@ -337,6 +321,8 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             @ClosureParams(value = SimpleType.class, options = "net.minecraftforge.gradle.MinecraftDependency.ClosureOwner")
             Closure<?> closure
         ) {
+            value = Util.unpack(value);
+
             if (value instanceof ExternalModuleDependencyBundle)
                 throw new IllegalArgumentException("Minecraft dependency cannot be a bundle");
 

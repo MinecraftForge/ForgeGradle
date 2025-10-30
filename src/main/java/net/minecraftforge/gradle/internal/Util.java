@@ -2,7 +2,7 @@
  * Copyright (c) Forge Development LLC and contributors
  * SPDX-License-Identifier: LGPL-2.1-only
  */
-package net.minecraftforge.gradle;
+package net.minecraftforge.gradle.internal;
 
 import net.minecraftforge.gradleutils.shared.SharedUtil;
 import org.codehaus.groovy.runtime.StringGroovyMethods;
@@ -13,12 +13,19 @@ import org.gradle.api.artifacts.ModuleIdentifier;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnknownNullability;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-/** Internal utilities. Documented for maintainability, NOT for public consumption. */
 final class Util extends SharedUtil {
+    static String checkMappingsParam(ForgeGradleProblems problems, @UnknownNullability Object param, String name) {
+        if (param == null)
+            throw problems.nullMappingsParam(name);
+
+        return param.toString();
+    }
+
     static boolean isPresent(String c) {
         return !c.isBlank();
     }

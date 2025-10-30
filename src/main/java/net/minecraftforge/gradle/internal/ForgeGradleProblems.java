@@ -2,8 +2,9 @@
  * Copyright (c) Forge Development LLC and contributors
  * SPDX-License-Identifier: LGPL-2.1-only
  */
-package net.minecraftforge.gradle;
+package net.minecraftforge.gradle.internal;
 
+import net.minecraftforge.gradle.MinecraftMappings;
 import net.minecraftforge.gradleutils.shared.EnhancedProblems;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
@@ -13,7 +14,7 @@ import org.gradle.api.provider.ProviderFactory;
 
 import javax.inject.Inject;
 
-import static net.minecraftforge.gradle.ForgeGradlePlugin.LOGGER;
+import static net.minecraftforge.gradle.internal.ForgeGradlePlugin.LOGGER;
 
 /**
  * This concrete extension of Gradle's {@linkplain Problems} API is used to enhance the reporting of problems throughout
@@ -59,7 +60,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
         if (!this.test("net.minecraftforge.gradle.warnings.minecraft.mappings.overridden")) return;
 
         var comparison = "Old: (channel: %s, version: %s), New: (channel: %s, version: %s)"
-            .formatted(original.channel(), original.version(), replacement.channel(), replacement.version());
+            .formatted(original.getChannel(), original.getVersion(), replacement.getChannel(), replacement.getVersion());
         LOGGER.warn("WARNING: Overriding previously declared mappings! {}", comparison);
         this.report("multiple-mappings", "Multiple mappings declared", spec -> spec
             .details("""

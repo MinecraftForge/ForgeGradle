@@ -2,8 +2,10 @@
  * Copyright (c) Forge Development LLC and contributors
  * SPDX-License-Identifier: LGPL-2.1-only
  */
-package net.minecraftforge.gradle;
+package net.minecraftforge.gradle.internal;
 
+import net.minecraftforge.gradle.MinecraftExtensionForProject;
+import net.minecraftforge.gradle.MinecraftMappings;
 import org.codehaus.groovy.runtime.StringGroovyMethods;
 import org.gradle.api.Project;
 import org.gradle.api.UnknownDomainObjectException;
@@ -29,7 +31,7 @@ import java.util.List;
     because = "Mavenizer uses its own in-house caching."
 )
 abstract class SyncMavenizer extends ToolExec {
-    static TaskProvider<SyncMavenizer> register(Project project, ExternalModuleDependency dependency, Provider<MinecraftMappings> mappings, Provider<? extends Directory> output) {
+    static TaskProvider<SyncMavenizer> register(Project project, ExternalModuleDependency dependency, Provider<? extends MinecraftMappings> mappings, Provider<? extends Directory> output) {
         var version = dependency.getVersion();
         var taskName = "syncMavenizerFor"
             + StringGroovyMethods.capitalize(dependency.getName())
@@ -49,10 +51,15 @@ abstract class SyncMavenizer extends ToolExec {
     }
 
     protected abstract @Internal DirectoryProperty getCaches();
+
     protected abstract @Internal DirectoryProperty getOutput();
+
     protected abstract @Input Property<ModuleIdentifier> getModule();
+
     protected abstract @Input Property<String> getVersion();
+
     protected abstract @Input Property<MinecraftMappings> getMappings();
+
     protected abstract @Input @Optional ListProperty<String> getRepositories();
 
     private void addRepositories(Iterable<? extends MavenArtifactRepository> repositories) {
@@ -101,8 +108,8 @@ abstract class SyncMavenizer extends ToolExec {
             "--global-auxiliary-variants"
         );
 
-        if ("parchment".equals(this.getMappings().get().channel())) {
-            this.args("--parchment", this.getMappings().get().version());
+        if ("parchment".equals(this.getMappings().get().getChannel())) {
+            this.args("--parchment", this.getMappings().get().getVersion());
         }
 
         for (var repository : this.getRepositories().getOrElse(List.of())) {

@@ -1,10 +1,14 @@
-package net.minecraftforge.gradle;
+/*
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+package net.minecraftforge.gradle.internal;
 
 import net.minecraftforge.util.os.OS;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.provider.ValueSource;
 import org.gradle.api.provider.ValueSourceParameters;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 

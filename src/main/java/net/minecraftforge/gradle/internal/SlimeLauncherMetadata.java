@@ -2,7 +2,7 @@
  * Copyright (c) Forge Development LLC and contributors
  * SPDX-License-Identifier: LGPL-2.1-only
  */
-package net.minecraftforge.gradle;
+package net.minecraftforge.gradle.internal;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ArchiveOperations;
@@ -18,6 +18,7 @@ import java.nio.file.StandardCopyOption;
 
 abstract class SlimeLauncherMetadata extends DefaultTask implements ForgeGradleTask {
     protected abstract @InputFile RegularFileProperty getMetadataZip();
+
     protected abstract @OutputFile RegularFileProperty getRunsJson();
 
     protected abstract @Inject ArchiveOperations getArchiveOperations();

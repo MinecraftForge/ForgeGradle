@@ -10,7 +10,7 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 
 /// The ForgeGradle extension contains a handful of helpers that are not directly related to development involving
 /// Minecraft.
-public sealed interface ForgeGradleExtension permits ForgeGradleExtensionInternal {
+public interface ForgeGradleExtension {
     /// The name for this extension in Gradle.
     String NAME = "fg";
 
@@ -28,9 +28,7 @@ public sealed interface ForgeGradleExtension permits ForgeGradleExtensionInterna
      *
      * @return The closure
      */
-    default Action<MavenArtifactRepository> getForgeMaven() {
-        return ForgeGradleExtensionInternal.forgeMaven;
-    }
+    Action<MavenArtifactRepository> getForgeMaven();
 
     /**
      * A closure for the Minecraft libraries maven to be passed into
@@ -45,7 +43,5 @@ public sealed interface ForgeGradleExtension permits ForgeGradleExtensionInterna
      *
      * @return The closure
      */
-    default Action<MavenArtifactRepository> getMinecraftLibsMaven() {
-        return ForgeGradleExtensionInternal.minecraftLibsMaven;
-    }
+    Action<MavenArtifactRepository> getMinecraftLibsMaven();
 }

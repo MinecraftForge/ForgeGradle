@@ -75,7 +75,7 @@ gradlePlugin {
 
     plugins.register('forgegradle') {
         id = 'net.minecraftforge.gradle'
-        implementationClass = 'net.minecraftforge.gradle.ForgeGradlePlugin'
+        implementationClass = 'net.minecraftforge.gradle.internal.ForgeGradlePlugin'
         displayName = gradleutils.displayName.get()
         description = project.description
         tags = ['minecraftforge', 'minecraft']

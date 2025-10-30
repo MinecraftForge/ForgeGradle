@@ -18,7 +18,6 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 
-import java.io.Serializable;
 import java.util.Map;
 
 /// The configuration options for Slime Launcher tasks.
@@ -33,12 +32,7 @@ import java.util.Map;
 /// `JavaExec` task will cause it to not use Slime Launcher and skip its configurations for it. If a consumer wishes to
 /// use Slime Launcher but change the main class it delegates to after initial setup, that can be done using
 /// [Property#set] on [#getMainClass()].
-///
-/// @apiNote This class is public-facing as a class instead of an interface to satisfy the requirement that Gradle's
-/// [org.gradle.api.NamedDomainObjectContainer] must house a class that implements the [Named] interface. Like the other
-/// public-facing interface APIs in ForgeGradle, this class remains sealed and is implemented by a package-private class
-/// that cannot be directly accessed.
-public sealed interface SlimeLauncherOptions extends Named permits SlimeLauncherOptionsInternal {
+public interface SlimeLauncherOptions extends Named {
     @Override
     @Input String getName();
 
