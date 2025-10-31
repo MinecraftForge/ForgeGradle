@@ -18,8 +18,8 @@ package net.minecraftforge.gradle.common.util;
 
 import com.google.common.base.Strings;
 import com.google.common.primitives.Ints;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

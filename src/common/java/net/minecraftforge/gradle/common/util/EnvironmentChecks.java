@@ -7,16 +7,15 @@ package net.minecraftforge.gradle.common.util;
 
 import org.gradle.api.Project;
 import org.gradle.util.GradleVersion;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
 
-import java.io.IOException;
-import java.net.URL;
-
-import javax.annotation.Nullable;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLException;
+import java.io.IOException;
+import java.net.URL;
 
 /**
  * Utility for common environment variables to toggle various features in FG.

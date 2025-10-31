@@ -5,15 +5,15 @@
 
 package net.minecraftforge.gradle.common.tasks;
 
+import com.google.common.collect.Maps;
+import com.google.common.hash.Hashing;
+import com.google.common.hash.HashingInputStream;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import com.google.common.collect.Maps;
-import com.google.common.hash.Hashing;
-import com.google.common.hash.HashingInputStream;
 import java.io.BufferedWriter;
 import java.io.FileInputStream;
 import java.io.FileWriter;

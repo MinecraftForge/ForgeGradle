@@ -9,8 +9,8 @@ import net.minecraftforge.gradle.common.util.HashFunction;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.net.URL;
 import java.util.function.Function;

@@ -5,11 +5,10 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import groovy.lang.GroovyObjectSupport;
 import org.gradle.api.Project;
-import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.SourceSet;
 
-import groovy.lang.GroovyObjectSupport;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

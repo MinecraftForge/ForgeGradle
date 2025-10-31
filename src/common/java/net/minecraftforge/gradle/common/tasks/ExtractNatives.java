@@ -8,7 +8,6 @@ package net.minecraftforge.gradle.common.tasks;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.common.util.VersionJson;
 import net.minecraftforge.gradle.common.util.VersionJson.LibraryDownload;
-
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;

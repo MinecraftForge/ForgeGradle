@@ -5,12 +5,12 @@
 
 package net.minecraftforge.gradle.common.config;
 
+import net.minecraftforge.gradle.common.util.Utils;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-
-import net.minecraftforge.gradle.common.util.Utils;
 
 public class Config {
     public int spec;

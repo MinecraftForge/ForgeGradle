@@ -30,7 +30,6 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderConvertible;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.publish.tasks.GenerateModuleMetadata;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.ArrayList;

@@ -6,7 +6,6 @@
 package net.minecraftforge.gradle.mcp;
 
 import net.minecraftforge.gradle.common.util.Artifact;
-
 import org.gradle.api.Project;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;

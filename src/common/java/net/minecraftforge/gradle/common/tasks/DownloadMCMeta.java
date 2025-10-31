@@ -5,8 +5,9 @@
 
 package net.minecraftforge.gradle.common.tasks;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import net.minecraftforge.gradle.common.util.ManifestJson;
-
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
@@ -17,8 +18,6 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;

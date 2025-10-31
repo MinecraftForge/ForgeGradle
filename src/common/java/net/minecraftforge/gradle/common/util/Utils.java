@@ -5,6 +5,13 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
+import groovy.lang.Closure;
 import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
 import net.minecraftforge.gradle.common.config.MCPConfigV1;
 import net.minecraftforge.gradle.common.legacy.LegacyExtension;
@@ -13,7 +20,6 @@ import net.minecraftforge.gradle.common.tasks.ide.CopyEclipseResources;
 import net.minecraftforge.gradle.common.tasks.ide.CopyIntellijResources;
 import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import net.minecraftforge.gradle.common.util.runs.RunConfigGenerator;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Action;
@@ -25,17 +31,10 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository.MetadataSou
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonSyntaxException;
-import groovy.lang.Closure;
 import org.gradle.plugins.ide.eclipse.EclipsePlugin;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.IdeaPlugin;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -75,9 +74,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public class Utils {
     public static final Gson GSON = new GsonBuilder()
@@ -370,8 +366,7 @@ public class Utils {
         return GSON.fromJson(new InputStreamReader(new ByteArrayInputStream(data)), classOfT);
     }
 
-    @Nonnull
-    public static String capitalize(@Nonnull final String toCapitalize) {
+    public static String capitalize(final String toCapitalize) {
         return toCapitalize.length() > 1 ? toCapitalize.substring(0, 1).toUpperCase() + toCapitalize.substring(1) : toCapitalize;
     }
 
@@ -522,7 +517,7 @@ public class Utils {
         return mapping.indexOf('_');
     }
 
-    public static void setupIDEResourceCopy(@Nonnull final Project project) {
+    public static void setupIDEResourceCopy(final Project project) {
         boolean ideaFound = true;
         if (project.getPlugins().hasPlugin(IdeaPlugin.class)) {
             final IdeaPlugin idea = project.getPlugins().getPlugin(IdeaPlugin.class);
@@ -543,7 +538,7 @@ public class Utils {
         }
     }
 
-    public static String getIntellijOutName(@Nonnull final SourceSet sourceSet) {
+    public static String getIntellijOutName(final SourceSet sourceSet) {
         return sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) ? "production" : sourceSet.getName();
     }
 }

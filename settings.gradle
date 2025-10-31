@@ -6,7 +6,57 @@ pluginManagement {
 }
 
 plugins {
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.7.0'
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
 
 rootProject.name = 'ForgeGradle'
+
+// Applying plugins causes them to not have any IDE support when also applied to any build.gradle files
+// The workaround for now is to use this listener here so that it can stay in settings.gradle
+// See: https://youtrack.jetbrains.com/issue/IDEA-332061/Gradle-Missing-Code-Completion-Suggestions-for-Settings-Plugins-in-Groovy-DSL
+gradle.beforeProject { Project project ->
+    project.pluginManager.withPlugin('net.minecraftforge.gradleutils') {
+        project.repositories {
+            mavenCentral()
+            gradlePluginPortal()
+            maven project.gradleutils.forgeMaven
+            //mavenLocal()
+        }
+    }
+}
+
+//@formatter:off
+dependencyResolutionManagement.versionCatalogs.register('libs') {
+    version 'gradleutils', '3.3.22'
+
+    plugin 'licenser',       'net.minecraftforge.licenser'    version '1.2.0'
+    plugin 'gradleutils',    'net.minecraftforge.gradleutils' versionRef 'gradleutils'
+    plugin 'gitversion',     'net.minecraftforge.gitversion'  version '3.1.6'
+    plugin 'changelog',      'net.minecraftforge.changelog'   version '3.1.3'
+    plugin 'plugin-publish', 'com.gradle.plugin-publish'      version '2.0.0'
+    plugin 'shadow',         'com.gradleup.shadow'            version '9.2.2'
+
+    // Static Analysis
+    library 'nulls', 'org.jetbrains', 'annotations' version '26.0.2-1'
+
+    // Gradle API
+    // Original: https://github.com/remal-gradle-api/packages/packages/760197?version=9.0.0
+    // Mirror:   https://repos.moddinglegacy.com/#/modding-legacy/name/remal/gradle-api/gradle-api/9.0.0
+    version 'gradle', '8.1'
+    library 'gradle', 'name.remal.gradle-api', 'gradle-api'  versionRef 'gradle'
+
+    library 'commons-io', 'commons-io:commons-io:2.11.0'
+    library 'gson', 'com.google.code.gson:gson:2.10.1'
+    library 'guava', 'com.google.guava:guava:31.1-jre'
+    library 'fastcsv', 'de.siegmar:fastcsv:2.2.1'
+    library 'artifactural', 'net.minecraftforge:artifactural:3.0.20'
+    library 'unsafe', 'net.minecraftforge:unsafe:0.2.0'
+    library 'maven-artifact', 'org.apache.maven:maven-artifact:3.9.1'
+    library 'httpclient', 'org.apache.httpcomponents:httpclient:4.5.14'
+    library 'srgutils', 'net.minecraftforge:srgutils:0.5.10'
+    library 'diffpatch', 'net.minecraftforge:DiffPatch:2.0.12'
+
+    library 'jarjar-metadata', 'net.minecraftforge:JarJarMetadata:0.3.19'
+    library 'jarjar-selector', 'net.minecraftforge:JarJarSelector:0.3.19'
+}
+//@formatter:on

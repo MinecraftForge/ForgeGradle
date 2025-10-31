@@ -5,6 +5,7 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import com.google.common.base.Joiner;
 import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
 import net.minecraftforge.artifactural.api.repository.ArtifactProvider;
 import net.minecraftforge.artifactural.api.repository.Repository;
@@ -17,14 +18,13 @@ import net.minecraftforge.gradle.common.util.VersionJson.Download;
 import net.minecraftforge.gradle.common.util.VersionJson.OS;
 import net.minecraftforge.srgutils.IMappingFile;
 import net.minecraftforge.srgutils.MinecraftVersion;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.repositories.RepositoryContentDescriptor;
 import org.gradle.api.logging.Logger;
+import org.jetbrains.annotations.Nullable;
 
-import com.google.common.base.Joiner;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -38,8 +38,6 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
-
-import javax.annotation.Nullable;
 
 public class MinecraftRepo extends BaseRepo {
     private static MinecraftRepo INSTANCE;

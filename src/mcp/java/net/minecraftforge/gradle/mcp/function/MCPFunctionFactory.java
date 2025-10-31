@@ -7,13 +7,12 @@ package net.minecraftforge.gradle.mcp.function;
 
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import org.gradle.api.Project;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
-import javax.annotation.Nullable;
 
 /**
  * Internal Use Only

@@ -5,6 +5,7 @@
 
 package net.minecraftforge.gradle.userdev;
 
+import net.minecraftforge.gradle.common.legacy.LegacyExtension;
 import net.minecraftforge.gradle.common.tasks.ApplyMappings;
 import net.minecraftforge.gradle.common.tasks.ApplyRangeMap;
 import net.minecraftforge.gradle.common.tasks.DownloadAssets;
@@ -24,14 +25,12 @@ import net.minecraftforge.gradle.mcp.MCPRepo;
 import net.minecraftforge.gradle.mcp.tasks.DownloadMCPMappings;
 import net.minecraftforge.gradle.mcp.tasks.GenerateSRG;
 import net.minecraftforge.gradle.userdev.jarjar.JarJarProjectExtension;
-import net.minecraftforge.gradle.common.legacy.LegacyExtension;
 import net.minecraftforge.gradle.userdev.tasks.JarJar;
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace;
 import net.minecraftforge.gradle.userdev.util.DeobfuscatingRepo;
 import net.minecraftforge.gradle.userdev.util.Deobfuscator;
 import net.minecraftforge.gradle.userdev.util.DependencyRemapper;
 import net.minecraftforge.srgutils.IMappingFile;
-
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.NamedDomainObjectContainer;
@@ -41,7 +40,6 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ExternalModuleDependency;
-import org.gradle.api.artifacts.repositories.MavenArtifactRepository.MetadataSources;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.logging.Logger;
@@ -62,8 +60,6 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import javax.annotation.Nonnull;
-
 public class UserDevPlugin implements Plugin<Project> {
     public static final String JAR_JAR_TASK_NAME = "jarJar";
     public static final String JAR_JAR_GROUP = "jarjar";
@@ -79,7 +75,7 @@ public class UserDevPlugin implements Plugin<Project> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public void apply(@Nonnull Project project) {
+    public void apply(Project project) {
         EnvironmentChecks.checkEnvironment(project);
         Utils.addRepoFilters(project);
 

@@ -5,9 +5,9 @@
 
 package net.minecraftforge.gradle.mcp.function;
 
-import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 
 import java.io.FileReader;
 import java.io.IOException;

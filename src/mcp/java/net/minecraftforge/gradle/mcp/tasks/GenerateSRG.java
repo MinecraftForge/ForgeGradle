@@ -13,7 +13,6 @@ import net.minecraftforge.srgutils.IMappingFile;
 import net.minecraftforge.srgutils.IMappingFile.IField;
 import net.minecraftforge.srgutils.IMappingFile.IMethod;
 import net.minecraftforge.srgutils.IRenamer;
-
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;

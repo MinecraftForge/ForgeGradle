@@ -5,6 +5,9 @@
 
 package net.minecraftforge.gradle.patcher.tasks;
 
+import com.google.common.io.Files;
+import groovy.lang.Closure;
+import groovy.lang.MissingPropertyException;
 import net.minecraftforge.gradle.common.config.MCPConfigV1.Function;
 import net.minecraftforge.gradle.common.config.UserdevConfigV1;
 import net.minecraftforge.gradle.common.config.UserdevConfigV2;
@@ -13,7 +16,6 @@ import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.MCPExtension;
 import net.minecraftforge.gradle.patcher.PatcherExtension;
-
 import org.gradle.api.DefaultTask;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
@@ -29,10 +31,9 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.jetbrains.annotations.Nullable;
 
-import com.google.common.io.Files;
-import groovy.lang.Closure;
-import groovy.lang.MissingPropertyException;
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -41,10 +42,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.inject.Inject;
 
 public abstract class GenerateUserdevConfig extends DefaultTask {
 
@@ -58,7 +55,7 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
     private boolean notchObf = false;
 
     @Inject
-    public GenerateUserdevConfig(@Nonnull final Project project) {
+    public GenerateUserdevConfig(final Project project) {
         this.runs = project.container(RunConfig.class, name -> new RunConfig(project, name));
 
         ObjectFactory objects = project.getObjects();

@@ -10,8 +10,8 @@ import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaToolchainService;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;

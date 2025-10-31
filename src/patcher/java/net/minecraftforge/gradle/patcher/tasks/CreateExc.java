@@ -5,8 +5,10 @@
 
 package net.minecraftforge.gradle.patcher.tasks;
 
+import com.google.common.base.Strings;
+import com.google.common.io.Files;
+import de.siegmar.fastcsv.reader.NamedCsvReader;
 import net.minecraftforge.gradle.common.config.MCPConfigV2;
-
 import net.minecraftforge.srgutils.IMappingFile;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
@@ -15,9 +17,6 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import com.google.common.base.Strings;
-import com.google.common.io.Files;
-import de.siegmar.fastcsv.reader.NamedCsvReader;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;

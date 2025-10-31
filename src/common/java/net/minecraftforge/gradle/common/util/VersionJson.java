@@ -10,6 +10,8 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import org.jetbrains.annotations.Nullable;
+
 import java.lang.reflect.Type;
 import java.net.URL;
 import java.util.Collections;
@@ -20,8 +22,6 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import javax.annotation.Nullable;
 
 public class VersionJson {
     @Nullable

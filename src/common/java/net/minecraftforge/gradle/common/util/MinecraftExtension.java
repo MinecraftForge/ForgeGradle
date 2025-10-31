@@ -5,6 +5,9 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import groovy.lang.Closure;
+import groovy.lang.GroovyObjectSupport;
+import groovy.lang.MissingPropertyException;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
@@ -12,15 +15,10 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
-
-import groovy.lang.Closure;
-import groovy.lang.GroovyObjectSupport;
-import groovy.lang.MissingPropertyException;
 import org.gradle.api.provider.ProviderConvertible;
 
-import java.util.Map;
-
 import javax.inject.Inject;
+import java.util.Map;
 
 public abstract class MinecraftExtension extends GroovyObjectSupport {
 

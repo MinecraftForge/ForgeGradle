@@ -5,10 +5,11 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import de.siegmar.fastcsv.reader.NamedCsvReader;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.Nullable;
 
-import de.siegmar.fastcsv.reader.NamedCsvReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,8 +32,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-
-import javax.annotation.Nullable;
 
 public class McpNames {
     private static final String NEWLINE = System.getProperty("line.separator");

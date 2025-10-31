@@ -7,6 +7,7 @@ package net.minecraftforge.gradle.common.util;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,8 +16,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
-
-import javax.annotation.Nullable;
 
 public class HashStore {
     private final int RAND_CACHE = new Random().nextInt();

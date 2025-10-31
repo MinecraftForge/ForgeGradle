@@ -5,6 +5,7 @@
 
 package net.minecraftforge.gradle.common.tasks;
 
+import com.google.common.collect.ImmutableMap;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.tasks.InputFile;
@@ -13,7 +14,6 @@ import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;

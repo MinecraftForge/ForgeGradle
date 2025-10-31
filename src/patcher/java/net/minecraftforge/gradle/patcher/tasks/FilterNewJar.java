@@ -6,7 +6,6 @@
 package net.minecraftforge.gradle.patcher.tasks;
 
 import net.minecraftforge.gradle.common.util.Utils;
-
 import net.minecraftforge.srgutils.IMappingFile;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;

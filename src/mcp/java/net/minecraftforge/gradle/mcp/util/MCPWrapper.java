@@ -5,20 +5,18 @@
 
 package net.minecraftforge.gradle.mcp.util;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.Maps;
+import net.minecraftforge.gradle.common.config.MCPConfigV2;
+import net.minecraftforge.gradle.common.util.HashFunction;
+import net.minecraftforge.gradle.common.util.Utils;
+import org.gradle.api.Project;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.zip.ZipFile;
-
-import org.gradle.api.Project;
-
-import com.google.common.base.Joiner;
-import com.google.common.collect.Maps;
-
-import net.minecraftforge.gradle.common.config.MCPConfigV2;
-import net.minecraftforge.gradle.common.util.HashFunction;
-import net.minecraftforge.gradle.common.util.Utils;
 
 public class MCPWrapper {
     private final String hash;
