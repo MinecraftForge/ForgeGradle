@@ -7,7 +7,6 @@ plugins {
     alias libs.plugins.gitversion
     alias libs.plugins.changelog
     alias libs.plugins.licenser
-    alias libs.plugins.plugin.publish
 }
 
 gradleutils.displayName = 'ForgeGradle'
