@@ -22,8 +22,6 @@ java {
     withSourcesJar()
 }
 
-gradleutils.pluginDevDefaults(configurations, libs.versions.gradle)
-
 sourceSets {
     register('common')
 
