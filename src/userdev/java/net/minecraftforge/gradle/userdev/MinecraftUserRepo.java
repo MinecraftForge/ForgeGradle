@@ -196,6 +196,7 @@ public class MinecraftUserRepo extends BaseRepo {
 
         //Maven POMs can't self-reference apparently, so we have to add any deps that are self referential.
         Patcher patcher = parent;
+        String mixinExtras = null;
         while (patcher != null) {
             patcher.getLibraries().stream().map(Artifact::from)
             .filter(e -> GROUP.equals(e.getGroup()) && NAME.equals(e.getName()))
@@ -217,7 +218,13 @@ public class MinecraftUserRepo extends BaseRepo {
                 }
                 cfg.getDependencies().add(_dep);
             });
+            if (patcher.configv2 != null && patcher.configv2.mixinExtras != null)
+                mixinExtras = patcher.configv2.mixinExtras;
             patcher = patcher.getParent();
+        }
+
+        if (mixinExtras != null) {
+            MixinExtrasDependencyHandler.handle(project, mixinExtras);
         }
 
         Map<String, String> tokens = new HashMap<>();

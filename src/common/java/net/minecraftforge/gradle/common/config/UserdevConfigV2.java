@@ -7,6 +7,7 @@ package net.minecraftforge.gradle.common.config;
 
 import net.minecraftforge.gradle.common.config.MCPConfigV1.Function;
 import net.minecraftforge.gradle.common.util.Utils;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
@@ -37,6 +38,10 @@ public class UserdevConfigV2 extends UserdevConfigV1 {
     private List<String> universalFilters;
     @Nullable
     public List<String> modules; // Modules passed to --module-path
+    @Nullable
+    @Deprecated
+    @ApiStatus.ScheduledForRemoval(inVersion = "V3")
+    public String mixinExtras; // ME artifact, since we don't have dependency filters for compile/runtime
     private String sourceFileCharset = StandardCharsets.UTF_8.name();
 
     public void setNotchObf(boolean value) {

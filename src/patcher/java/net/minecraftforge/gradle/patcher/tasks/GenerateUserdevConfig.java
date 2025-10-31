@@ -19,6 +19,7 @@ import net.minecraftforge.gradle.patcher.PatcherExtension;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.model.ObjectFactory;
@@ -26,6 +27,7 @@ import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.provider.ProviderConvertible;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
@@ -51,6 +53,7 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
     private DataFunction processor;
     private final MapProperty<String, File> processorData;
     private final Property<String> sourceFileEncoding;
+    private final Property<String> mixinExtras;
 
     private boolean notchObf = false;
 
@@ -67,6 +70,8 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
         getPatches().convention("patches/");
 
         processorData = objects.mapProperty(String.class, File.class);
+
+        mixinExtras = objects.property(String.class);
 
         getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.json")));
     }
@@ -103,6 +108,7 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
             json.setNotchObf(notchObf);
             json.setSourceFileCharset(getSourceFileEncoding().get());
             getUniversalFilters().get().forEach(json::addUniversalFilter);
+            json.mixinExtras = getMixinExtras().getOrNull();
         }
 
         Files.write(Utils.GSON.toJson(json).getBytes(StandardCharsets.UTF_8), getOutput().get().getAsFile());
@@ -177,6 +183,32 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
     @Input
     @Optional
     public abstract ListProperty<String> getSRGLines();
+
+    @Input
+    @Optional
+    public Property<String> getMixinExtras() {
+        return this.mixinExtras;
+    }
+
+    public final void setMixinExtras(Dependency value) {
+        String group = value.getGroup();
+        if (group == null)
+            throw new IllegalArgumentException("Dependency group cannot be null");
+
+        String version = value.getVersion();
+        if (version == null)
+            throw new IllegalArgumentException("Dependency version cannot be null");
+
+        this.getMixinExtras().set(group + ':' + value.getName() + ':' + version);
+    }
+
+    public final void setMixinExtras(Provider<? extends Dependency> value) {
+        this.setMixinExtras(value.get());
+    }
+
+    public final void setMixinExtras(ProviderConvertible<? extends Dependency> value) {
+        this.setMixinExtras(value.asProvider());
+    }
 
     public NamedDomainObjectContainer<RunConfig> runs(@SuppressWarnings("rawtypes") Closure closure) {
         return runs.configure(closure);
