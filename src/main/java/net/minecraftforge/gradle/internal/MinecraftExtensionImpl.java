@@ -268,7 +268,10 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                         assert minecraftDependency != null;
 
                         var impl = (MinecraftDependencyImpl) minecraftDependency;
-                        this.runs.forEach(options -> SlimeLauncherExec.register(project, sourceSet, options, impl.module.get(), impl.version.get(), impl.asPath.get(), impl.asString.get(), single));
+                        this.runs.forEach(options -> {
+                            var task = SlimeLauncherExec.register(project, sourceSet, options, impl.module.get(), impl.version.get(), impl.asPath.get(), impl.asString.get(), single);
+                            impl.handle(task);
+                        });
                     }
                 });
             }

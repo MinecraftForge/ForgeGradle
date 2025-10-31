@@ -176,6 +176,18 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
         this.sourceSetName = sourceSet.getName();
     }
 
+    void handle(TaskProvider<SlimeLauncherExec> runTask) {
+        var problems = this.problems;
+        var asString = this.asString.get();
+        var dependencyOutput = this.mavenizerOutput.map(dir -> dir.dir(this.asPath)).get().get().getAsFile();
+        runTask.configure(task -> {
+            task.doFirst(t -> {
+                if (!dependencyOutput.exists())
+                    throw problems.mavenizerOutOfDateRunTask(asString);
+            });
+        });
+    }
+
     @Override
     public MinecraftMappings getMappings() {
         try {

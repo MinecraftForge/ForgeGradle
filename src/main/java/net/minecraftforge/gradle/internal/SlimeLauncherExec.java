@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 
 abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, HasPublicType {
-    static void register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, ModuleIdentifier module, String version, String asPath, String asString, boolean single) {
+    static TaskProvider<SlimeLauncherExec> register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, ModuleIdentifier module, String version, String asPath, String asString, boolean single) {
         TaskProvider<SlimeLauncherMetadata> metadata;
         {
             TaskProvider<SlimeLauncherMetadata> t;
@@ -67,7 +67,7 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
         }
 
         var taskName = sourceSet.getTaskName("run", options.getName()) + (single ? "" : "for" + Util.dependencyToCamelCase(module));
-        project.getTasks().register(taskName, SlimeLauncherExec.class, task -> {
+        return project.getTasks().register(taskName, SlimeLauncherExec.class, task -> {
             task.getRunName().set(options.getName());
             task.setDescription("Runs the '%s' Slime Launcher run configuration.".formatted(options.getName()));
 

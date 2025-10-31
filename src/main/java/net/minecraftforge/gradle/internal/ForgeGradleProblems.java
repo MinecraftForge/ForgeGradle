@@ -128,9 +128,24 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
 
     //region Minecraft Maven
     RuntimeException mavenizerOutOfDateCompile(Object dependency) {
-        return this.throwing(new IllegalStateException(), "mavenizer-out-of-date", "Minecraft Mavenizer is out-of-date", spec -> spec
+        return this.throwing(new IllegalStateException(), "mavenizer-out-of-date-for-compile", "Minecraft Mavenizer is out-of-date", spec -> spec
             .details("""
                 Gradle cannot compile your sources because the Minecraft Mavenizer is out-of-date.
+                The Mavenizer must be re-run in order for the changes made to the Minecraft dependency to take effect.
+                Affected dependency: '%s'"""
+                .formatted(dependency))
+            .severity(Severity.ERROR)
+            .solution("Re-import your project in your IDE, as this will automatically synchronize the Mavenizer.")
+            .solution("Run `gradlew` with no arguments, as this will automatically synchronize the Mavenizer.")
+            .solution("Manually run the `syncMavenizer` task, located in the 'Build Setup' group.")
+            .solution("Temporary revert any edits to the Minecraft dependency until the Mavenizer is re-run.")
+            .solution(HELP_MESSAGE));
+    }
+
+    RuntimeException mavenizerOutOfDateRunTask(Object dependency) {
+        return this.throwing(new IllegalStateException(), "mavenizer-out-of-date-for-run", "Minecraft Mavenizer is out-of-date", spec -> spec
+            .details("""
+                Gradle cannot run the game with Slime Launcher because the Minecraft Mavenizer is out-of-date.
                 The Mavenizer must be re-run in order for the changes made to the Minecraft dependency to take effect.
                 Affected dependency: '%s'"""
                 .formatted(dependency))
