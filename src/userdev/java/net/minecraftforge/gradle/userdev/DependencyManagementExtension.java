@@ -19,21 +19,30 @@ import net.minecraftforge.gradle.userdev.util.DeobfuscatingVersionUtils;
 import net.minecraftforge.gradle.userdev.util.DependencyRemapper;
 import net.minecraftforge.gradle.userdev.util.MavenPomUtils;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ExternalModuleDependencyBundle;
 import org.gradle.api.artifacts.MinimalExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
+import org.gradle.api.java.archives.Attributes;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderConvertible;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.publish.tasks.GenerateModuleMetadata;
+import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.bundling.Jar;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -51,6 +60,65 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
         this.repository = new BaseRepo.Builder()
                 .add(deobfuscatingRepo)
                 .attach(project, "bundled_deobf_repo");
+
+        project.afterEvaluate(this::afterEvaluate);
+    }
+
+    private void afterEvaluate(Project project) {
+        JavaPluginExtension java = project.getExtensions().getByType(JavaPluginExtension.class);
+        for (SourceSet sourceSet : java.getSourceSets()) {
+            if (!containsForge(project, sourceSet)
+                || !isDeclaringMixinUsage(project, sourceSet))
+                continue;
+
+            for (Configuration configuration : getConfigurationsToAddME(project, sourceSet)) {
+                configuration.withDependencies(dependencies -> dependencies.add(project.getDependencies().create("io.github.llamalad7:mixinextras-common:0.5.0")));
+            }
+        }
+    }
+
+    private static boolean containsForge(Project project, SourceSet sourceSet) {
+        Configuration configuration = project.getConfigurations().findByName(sourceSet.getCompileClasspathConfigurationName());
+        if (configuration == null) return false;
+
+        return !configuration.getAllDependencies().matching(
+            dependency -> "net.minecraftforge".equals(dependency.getGroup()) && "forge".equals(dependency.getName())
+        ).isEmpty();
+    }
+
+    // NOTE: Returns null if Jar task doesn't have "MixinConfigs" or "MixinConnector"
+    private static boolean isDeclaringMixinUsage(Project project, SourceSet sourceSet) {
+        Task task = project.getTasks().findByName(sourceSet.getJarTaskName());
+        if (!(task instanceof Jar))
+            return false;
+
+        Jar jar = (Jar) task;
+        Attributes attributes = jar.getManifest().getAttributes();
+        if (!(attributes.containsKey("MixinConfigs") || attributes.containsKey("MixinConnector")))
+            return false;
+
+        return true;
+    }
+
+    private static Configuration[] getConfigurationsToAddME(Project project, SourceSet sourceSet) {
+        ConfigurationContainer configurations = project.getConfigurations();
+        boolean addToCompileOnly = alreadyContainsMixinExtras(configurations.findByName(sourceSet.getCompileClasspathConfigurationName()));
+        boolean addToAnnotationProcessor = alreadyContainsMixinExtras(configurations.findByName(sourceSet.getAnnotationProcessorConfigurationName()));
+
+        if (addToCompileOnly && addToAnnotationProcessor)
+            return new Configuration[] {configurations.getByName(sourceSet.getCompileOnlyConfigurationName()), configurations.getByName(sourceSet.getAnnotationProcessorConfigurationName())};
+        else if (addToCompileOnly)
+            return new Configuration[] {configurations.getByName(sourceSet.getCompileOnlyConfigurationName())};
+        else if (addToAnnotationProcessor)
+            return new Configuration[] {configurations.getByName(sourceSet.getAnnotationProcessorConfigurationName())};
+        else
+            return new Configuration[] { };
+    }
+
+    private static boolean alreadyContainsMixinExtras(@Nullable Configuration configuration) {
+        return configuration != null && !configuration.getAllDependencies().matching(
+            dependency -> "io.github.llamalad7".equals(dependency.getGroup()) && dependency.getName().startsWith("mixinextras")
+        ).isEmpty();
     }
 
     public DeobfuscatingRepo getDeobfuscatingRepo() {
