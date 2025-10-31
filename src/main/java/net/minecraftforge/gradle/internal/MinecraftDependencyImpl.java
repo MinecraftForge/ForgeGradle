@@ -155,11 +155,13 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
 
     @Override
     public void handle(SourceSet sourceSet) {
+        var problems = this.problems;
+        var asString = this.asString.get();
+        var dependencyOutput = this.mavenizerOutput.map(dir -> dir.dir(this.asPath)).get().get().getAsFile();
         getProject().getTasks().named(sourceSet.getCompileJavaTaskName(), JavaCompile.class, task -> {
             task.doFirst(t -> {
-                var file = this.mavenizerOutput.map(dir -> dir.dir(this.asPath)).get().get().getAsFile();
-                if (!file.exists())
-                    throw this.problems.mavenizerOutOfDateCompile(this.asString.get());
+                if (!dependencyOutput.exists())
+                    throw problems.mavenizerOutOfDateCompile(asString);
             });
         });
 
