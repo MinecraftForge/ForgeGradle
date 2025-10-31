@@ -5,9 +5,9 @@
 
 package net.minecraftforge.gradle.patcher.tasks;
 
+import com.google.common.collect.ImmutableMap;
 import net.minecraftforge.gradle.common.tasks.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
-
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -17,7 +17,6 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.List;
 
 public abstract class GenerateBinPatches extends JarExec {

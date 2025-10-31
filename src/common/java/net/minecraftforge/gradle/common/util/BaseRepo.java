@@ -13,18 +13,16 @@ import net.minecraftforge.artifactural.base.artifact.StreamableArtifact;
 import net.minecraftforge.artifactural.base.repository.ArtifactProviderBuilder;
 import net.minecraftforge.artifactural.base.repository.SimpleRepository;
 import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
-
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.repositories.RepositoryContentDescriptor;
 import org.gradle.api.logging.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
-import javax.annotation.Nullable;
 
 public abstract class BaseRepo implements ArtifactProvider<ArtifactIdentifier> {
     private final File cache;

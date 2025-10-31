@@ -8,8 +8,8 @@ package net.minecraftforge.gradle.common.util;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.MediaType;
 import org.apache.commons.io.IOUtils;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;

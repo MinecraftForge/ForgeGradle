@@ -8,14 +8,12 @@ package net.minecraftforge.gradle.mcp;
 import com.google.common.collect.ImmutableSet;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import org.gradle.api.Project;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.io.File;
 import java.util.Set;
 
 class MCPChannelProvider implements ChannelProvider {
-    @Nonnull
     @Override
     public Set<String> getChannels() {
         return ImmutableSet.of("snapshot", "snapshot_nodoc", "stable", "stable_nodoc");

@@ -5,15 +5,13 @@
 
 package net.minecraftforge.gradle.common.tasks;
 
+import com.google.common.collect.ImmutableMap;
 import net.minecraftforge.gradle.common.util.Utils;
-
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
-
-import com.google.common.collect.ImmutableMap;
 
 import java.io.File;
 import java.util.List;

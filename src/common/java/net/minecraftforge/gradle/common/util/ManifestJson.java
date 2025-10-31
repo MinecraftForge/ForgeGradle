@@ -5,9 +5,9 @@
 
 package net.minecraftforge.gradle.common.util;
 
-import java.net.URL;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
+import java.net.URL;
 
 public class ManifestJson {
     public ManifestJson.VersionInfo[] versions;

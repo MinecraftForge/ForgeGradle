@@ -9,18 +9,23 @@ import net.minecraftforge.gradle.common.tasks.ide.CopyIntellijResources;
 import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
-
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
+import org.jetbrains.annotations.Nullable;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,14 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 
 public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBuilder {
     boolean useGradlePaths = true;
@@ -105,7 +102,7 @@ public class IntellijRunGenerator extends RunConfigGenerator.XMLConfigurationBui
     }
 
     @Override
-    protected Map<String, Document> createRunConfiguration(final MinecraftExtension mc, @Nonnull final Project project, final RunConfig runConfig, final DocumentBuilder documentBuilder, List<String> additionalClientArgs,
+    protected Map<String, Document> createRunConfiguration(final MinecraftExtension mc, final Project project, final RunConfig runConfig, final DocumentBuilder documentBuilder, List<String> additionalClientArgs,
             FileCollection minecraftArtifacts, FileCollection runtimeClasspathArtifacts) {
         final Map<String, Document> documents = new LinkedHashMap<>();
 

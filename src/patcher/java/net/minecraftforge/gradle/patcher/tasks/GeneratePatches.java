@@ -5,6 +5,10 @@
 
 package net.minecraftforge.gradle.patcher.tasks;
 
+import codechicken.diffpatch.cli.CliOperation;
+import codechicken.diffpatch.cli.DiffOperation;
+import codechicken.diffpatch.util.LoggingOutputStream;
+import codechicken.diffpatch.util.archiver.ArchiveFormat;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
@@ -17,10 +21,6 @@ import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
-import codechicken.diffpatch.cli.CliOperation;
-import codechicken.diffpatch.cli.DiffOperation;
-import codechicken.diffpatch.util.LoggingOutputStream;
-import codechicken.diffpatch.util.archiver.ArchiveFormat;
 import java.nio.file.Path;
 
 public abstract class GeneratePatches extends DefaultTask {

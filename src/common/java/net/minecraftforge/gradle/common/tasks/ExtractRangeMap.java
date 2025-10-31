@@ -5,8 +5,8 @@
 
 package net.minecraftforge.gradle.common.tasks;
 
+import com.google.common.collect.ImmutableMap;
 import net.minecraftforge.gradle.common.util.Utils;
-
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.plugins.JavaPluginExtension;
@@ -15,7 +15,6 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.List;
 
 public abstract class ExtractRangeMap extends JarExec {

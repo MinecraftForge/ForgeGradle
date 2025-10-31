@@ -7,6 +7,7 @@ package net.minecraftforge.gradle.mcp.function;
 
 import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
+
 import java.io.File;
 import java.io.Serializable;
 import java.util.Map;

@@ -7,7 +7,6 @@ package net.minecraftforge.gradle.common.tasks;
 
 import net.minecraftforge.gradle.common.util.McpNames;
 import net.minecraftforge.gradle.common.util.Utils;
-
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.RegularFileProperty;

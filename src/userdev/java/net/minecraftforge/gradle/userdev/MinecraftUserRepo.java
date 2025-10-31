@@ -5,7 +5,14 @@
 
 package net.minecraftforge.gradle.userdev;
 
+import codechicken.diffpatch.cli.CliOperation;
+import codechicken.diffpatch.cli.PatchOperation;
+import codechicken.diffpatch.util.LoggingOutputStream;
+import codechicken.diffpatch.util.PatchMode;
+import codechicken.diffpatch.util.archiver.ArchiveFormat;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
 import net.minecraftforge.artifactural.api.repository.Repository;
 import net.minecraftforge.artifactural.base.repository.ArtifactProviderBuilder;
@@ -46,7 +53,6 @@ import net.minecraftforge.srgutils.IMappingFile.IField;
 import net.minecraftforge.srgutils.IMappingFile.IMethod;
 import net.minecraftforge.srgutils.IRenamer;
 import net.minecraftforge.srgutils.MinecraftVersion;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
@@ -56,17 +62,10 @@ import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.RepositoryContentDescriptor;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
-
-import codechicken.diffpatch.cli.CliOperation;
-import codechicken.diffpatch.cli.PatchOperation;
-import codechicken.diffpatch.util.LoggingOutputStream;
-import codechicken.diffpatch.util.PatchMode;
-import codechicken.diffpatch.util.archiver.ArchiveFormat;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Property;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -104,8 +103,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
-
-import javax.annotation.Nullable;
 
 public class MinecraftUserRepo extends BaseRepo {
     public static final boolean CHANGING_USERDEV = false; //Used when testing to update the userdev cache every 30 seconds.

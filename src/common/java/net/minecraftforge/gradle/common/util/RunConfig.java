@@ -5,15 +5,15 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import groovy.lang.Closure;
+import groovy.lang.GroovyObjectSupport;
+import groovy.util.MapEntry;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
-
-import groovy.lang.Closure;
-import groovy.lang.GroovyObjectSupport;
-import groovy.util.MapEntry;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.Serializable;
@@ -27,8 +27,6 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import javax.annotation.Nullable;
 
 public class RunConfig extends GroovyObjectSupport implements Serializable {
 

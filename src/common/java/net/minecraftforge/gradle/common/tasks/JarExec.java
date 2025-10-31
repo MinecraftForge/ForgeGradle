@@ -6,8 +6,9 @@
 package net.minecraftforge.gradle.common.tasks;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
 import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
-
 import org.codehaus.groovy.control.io.NullWriter;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
@@ -36,9 +37,9 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.jvm.toolchain.JavaToolchainSpec;
+import org.jetbrains.annotations.Nullable;
 
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
+import javax.inject.Inject;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -54,9 +55,6 @@ import java.util.Objects;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
-
-import javax.annotation.Nullable;
-import javax.inject.Inject;
 
 /**
  * Executes the tool JAR.

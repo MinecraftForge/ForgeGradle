@@ -5,24 +5,21 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Iterables;
 import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier;
-
 import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.specs.Spec;
-
-import com.google.common.base.Splitter;
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.Iterables;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Locale;
 import java.util.function.Predicate;
-
-import javax.annotation.Nullable;
 
 public class Artifact implements ArtifactIdentifier, Comparable<Artifact>, Serializable {
     private static final long serialVersionUID = 1L;

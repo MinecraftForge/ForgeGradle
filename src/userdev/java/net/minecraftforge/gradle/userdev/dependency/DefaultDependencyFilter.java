@@ -6,10 +6,12 @@
 package net.minecraftforge.gradle.userdev.dependency;
 
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.*;
+import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.specs.Spec;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DefaultDependencyFilter extends AbstractDependencyManagementObject implements DependencyFilter {
     protected final List<Spec<? super ArtifactIdentifier>> includeSpecs = new ArrayList<>();

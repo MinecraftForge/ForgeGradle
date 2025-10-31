@@ -5,6 +5,8 @@
 
 package net.minecraftforge.gradle.patcher;
 
+import codechicken.diffpatch.util.PatchMode;
+import com.google.common.collect.Lists;
 import net.minecraftforge.gradle.common.legacy.LegacyExtension;
 import net.minecraftforge.gradle.common.tasks.ApplyMappings;
 import net.minecraftforge.gradle.common.tasks.ApplyRangeMap;
@@ -43,13 +45,11 @@ import net.minecraftforge.gradle.patcher.tasks.GenerateBinPatches;
 import net.minecraftforge.gradle.patcher.tasks.GeneratePatches;
 import net.minecraftforge.gradle.patcher.tasks.GenerateUserdevConfig;
 import net.minecraftforge.gradle.patcher.tasks.ReobfuscateJar;
-
 import org.gradle.api.DefaultTask;
 import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.repositories.MavenArtifactRepository.MetadataSources;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.plugins.JavaPlugin;
@@ -62,9 +62,8 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.api.tasks.compile.JavaCompile;
+import org.jetbrains.annotations.Nullable;
 
-import codechicken.diffpatch.util.PatchMode;
-import com.google.common.collect.Lists;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -73,14 +72,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 public class PatcherPlugin implements Plugin<Project> {
     private static final String MC_DEP_CONFIG = "minecraftImplementation";
 
     @Override
-    public void apply(@Nonnull Project project) {
+    public void apply(Project project) {
         EnvironmentChecks.checkEnvironment(project);
 
         final PatcherExtension extension = project.getExtensions().create(PatcherExtension.class, PatcherExtension.EXTENSION_NAME, PatcherExtension.class, project);

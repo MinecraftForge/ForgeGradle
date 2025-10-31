@@ -6,8 +6,8 @@
 package net.minecraftforge.gradle.common.config;
 
 import net.minecraftforge.gradle.common.util.Utils;
-
 import org.apache.commons.io.IOUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -15,8 +15,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-
-import javax.annotation.Nullable;
 
 public class MCPConfigV2 extends MCPConfigV1 {
     public static MCPConfigV2 get(InputStream stream) {

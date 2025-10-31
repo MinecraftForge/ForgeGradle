@@ -6,7 +6,6 @@
 package net.minecraftforge.gradle.common.util;
 
 import net.minecraftforge.gradle.common.tasks.ExtractNatives;
-
 import org.gradle.api.Project;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.TaskProvider;

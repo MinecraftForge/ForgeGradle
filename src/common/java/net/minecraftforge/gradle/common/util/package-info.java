@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-@NonNullApi
+@NotNullByDefault
 package net.minecraftforge.gradle.common.util;
 
-import org.gradle.api.NonNullApi;
+import org.jetbrains.annotations.NotNullByDefault;

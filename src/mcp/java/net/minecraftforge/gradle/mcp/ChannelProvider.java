@@ -6,9 +6,8 @@
 package net.minecraftforge.gradle.mcp;
 
 import org.gradle.api.Project;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
@@ -22,7 +21,6 @@ public interface ChannelProvider {
      *
      * @return an immutable set of the channels supported by this ChannelProvider
      */
-    @Nonnull
     Set<String> getChannels();
 
     /**

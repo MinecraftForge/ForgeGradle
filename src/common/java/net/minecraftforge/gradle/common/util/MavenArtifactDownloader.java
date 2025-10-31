@@ -5,9 +5,12 @@
 
 package net.minecraftforge.gradle.common.util;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
+import groovy.util.Node;
+import groovy.xml.XmlParser;
 import net.minecraftforge.artifactural.gradle.GradleRepositoryAdapter;
-
 import net.minecraftforge.artifactural.gradle.RepositoryContentUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -24,12 +27,10 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.credentials.Credentials;
 import org.gradle.api.credentials.PasswordCredentials;
 import org.gradle.authentication.http.BasicAuthentication;
+import org.jetbrains.annotations.Nullable;
 import org.xml.sax.SAXException;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import groovy.util.Node;
-import groovy.xml.XmlParser;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -47,9 +48,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
-import javax.annotation.Nullable;
-import javax.xml.parsers.ParserConfigurationException;
 
 public class MavenArtifactDownloader {
     /**

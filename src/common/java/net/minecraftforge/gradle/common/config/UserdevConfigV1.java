@@ -8,6 +8,7 @@ package net.minecraftforge.gradle.common.config;
 import net.minecraftforge.gradle.common.config.MCPConfigV1.Function;
 import net.minecraftforge.gradle.common.util.RunConfig;
 import net.minecraftforge.gradle.common.util.Utils;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -16,8 +17,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.annotation.Nullable;
 
 public class UserdevConfigV1 extends Config {
     public static UserdevConfigV1 get(InputStream stream) {

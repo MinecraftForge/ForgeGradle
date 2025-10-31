@@ -7,12 +7,10 @@ package net.minecraftforge.gradle.userdev.dependency;
 
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
-import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.specs.Spec;
 
 import java.util.Optional;
-import java.util.stream.DoubleStream;
 
 /**
  * A handler which manages version information.

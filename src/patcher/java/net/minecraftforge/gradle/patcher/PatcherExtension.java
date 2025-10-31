@@ -5,18 +5,18 @@
 
 package net.minecraftforge.gradle.patcher;
 
+import com.google.common.collect.ImmutableMap;
 import net.minecraftforge.gradle.common.config.UserdevConfigV2.DataFunction;
 import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.common.util.RunConfig;
-
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
+import org.jetbrains.annotations.Nullable;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,8 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import javax.annotation.Nullable;
 
 public abstract class PatcherExtension extends MinecraftExtension {
     public static final String EXTENSION_NAME = "patcher";

@@ -5,8 +5,11 @@
 
 package net.minecraftforge.gradle.common.tasks;
 
+import com.google.common.collect.Maps;
+import com.google.common.io.ByteStreams;
+import groovy.lang.Closure;
+import groovy.util.MapEntry;
 import org.gradle.api.DefaultTask;
-import org.gradle.api.NonNullApi;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
@@ -20,12 +23,8 @@ import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.util.PatternFilterable;
 import org.gradle.api.tasks.util.PatternSet;
-
-import com.google.common.collect.Maps;
-import com.google.common.io.ByteStreams;
-import groovy.lang.Closure;
-import groovy.util.MapEntry;
 import org.gradle.work.DisableCachingByDefault;
+import org.jetbrains.annotations.NotNullByDefault;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -40,7 +39,7 @@ import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-@NonNullApi
+@NotNullByDefault
 @DisableCachingByDefault(because = "The output file is often the same as the input file and we have to work around Gradle 8 behavior by not marking the output file as an output")
 public abstract class SignJar extends DefaultTask implements PatternFilterable {
     private final PatternSet patternSet = new PatternSet();

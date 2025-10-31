@@ -7,11 +7,10 @@ package net.minecraftforge.gradle.common.util;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
-import javax.annotation.Nullable;
 
 public final class JavadocAdder
 {

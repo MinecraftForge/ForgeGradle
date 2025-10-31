@@ -9,7 +9,6 @@ import com.google.common.collect.ImmutableList;
 import net.minecraftforge.gradle.common.tasks.ide.CopyEclipseResources;
 import net.minecraftforge.gradle.common.util.MinecraftExtension;
 import net.minecraftforge.gradle.common.util.RunConfig;
-
 import net.minecraftforge.gradle.common.util.Utils;
 import org.gradle.api.Project;
 import org.gradle.api.Task;

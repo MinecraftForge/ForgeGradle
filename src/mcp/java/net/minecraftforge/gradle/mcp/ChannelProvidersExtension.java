@@ -7,8 +7,8 @@ package net.minecraftforge.gradle.mcp;
 
 import org.gradle.api.Project;
 import org.gradle.api.plugins.ExtensionContainer;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

@@ -13,9 +13,8 @@ import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.srgutils.IMappingFile;
 import org.gradle.api.Project;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -27,7 +26,6 @@ import java.util.TreeMap;
 import java.util.zip.ZipOutputStream;
 
 class OfficialChannelProvider implements ChannelProvider {
-    @Nonnull
     @Override
     public Set<String> getChannels() {
         return ImmutableSet.of("official");

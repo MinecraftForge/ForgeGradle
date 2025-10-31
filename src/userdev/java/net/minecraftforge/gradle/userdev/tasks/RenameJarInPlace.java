@@ -5,9 +5,10 @@
 
 package net.minecraftforge.gradle.userdev.tasks;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import net.minecraftforge.gradle.common.tasks.JarExec;
 import net.minecraftforge.gradle.common.util.Utils;
-
 import net.minecraftforge.srgutils.IMappingFile;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.file.ConfigurableFileCollection;
@@ -20,8 +21,6 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

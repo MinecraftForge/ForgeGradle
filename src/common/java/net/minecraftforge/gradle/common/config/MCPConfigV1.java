@@ -5,13 +5,14 @@
 
 package net.minecraftforge.gradle.common.config;
 
-import net.minecraftforge.gradle.common.util.Utils;
-
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import net.minecraftforge.gradle.common.util.Utils;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.lang.reflect.Type;
@@ -20,8 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-
-import javax.annotation.Nullable;
 
 public class MCPConfigV1 extends Config {
     public static MCPConfigV1 get(InputStream stream) {

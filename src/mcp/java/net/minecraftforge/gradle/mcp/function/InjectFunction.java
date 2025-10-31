@@ -9,7 +9,6 @@ import net.minecraftforge.gradle.common.util.HashStore;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.gradle.mcp.util.MCPEnvironment;
 import net.minecraftforge.srgutils.MinecraftVersion;
-
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
