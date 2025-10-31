@@ -27,46 +27,59 @@ gradleutils.pluginDevDefaults(configurations, libs.versions.gradle)
 sourceSets {
     register('common')
 
-    register('mcp')
+    register('mcp') {
+        configurations.named(implementationConfigurationName) {
+            extendsFrom configurations.getByName(common.implementationConfigurationName)
+        }
 
-    register('patcher')
-
-    register('userdev')
-}
-
-configurations {
-    configureEach {
-        exclude group: 'org.ow2.asm'
+        configurations.named(compileOnlyConfigurationName) {
+            extendsFrom configurations.getByName(common.compileOnlyConfigurationName)
+        }
     }
 
-    named(sourceSets.mcp.implementationConfigurationName) {
-        extendsFrom getByName(sourceSets.common.implementationConfigurationName)
+    register('patcher') {
+        configurations.named(implementationConfigurationName) {
+            extendsFrom configurations.getByName(common.implementationConfigurationName)
+        }
+
+        configurations.named(compileOnlyConfigurationName) {
+            extendsFrom configurations.getByName(common.compileOnlyConfigurationName)
+        }
     }
 
-    named(sourceSets.patcher.implementationConfigurationName) {
-        extendsFrom getByName(sourceSets.common.implementationConfigurationName)
+    register('userdev') {
+        configurations.named(implementationConfigurationName) {
+            extendsFrom configurations.getByName(mcp.implementationConfigurationName)
+        }
+
+        configurations.named(compileOnlyConfigurationName) {
+            extendsFrom configurations.getByName(mcp.compileOnlyConfigurationName)
+        }
     }
 
-    named(sourceSets.userdev.implementationConfigurationName) {
-        extendsFrom getByName(sourceSets.mcp.implementationConfigurationName)
-    }
+    named('main') {
+        configurations.named(implementationConfigurationName) {
+            extendsFrom(
+                configurations.getByName(mcp.implementationConfigurationName),
+                configurations.getByName(patcher.implementationConfigurationName),
+                configurations.getByName(userdev.implementationConfigurationName),
+            )
+        }
 
-    named('implementation') {
-        extendsFrom(
-            getByName(sourceSets.mcp.implementationConfigurationName),
-            getByName(sourceSets.patcher.implementationConfigurationName),
-            getByName(sourceSets.userdev.implementationConfigurationName)
-        )
+        configurations.named(compileOnlyConfigurationName) {
+            extendsFrom(
+                configurations.getByName(mcp.compileOnlyConfigurationName),
+                configurations.getByName(patcher.compileOnlyConfigurationName),
+                configurations.getByName(userdev.compileOnlyConfigurationName),
+            )
+        }
     }
 }
 
 dependencies {
     commonCompileOnly libs.nulls
-    userdevCompileOnly libs.nulls
-    patcherCompileOnly libs.nulls
-    mcpCompileOnly libs.nulls
 
-    commonImplementation libs.gradle
+    commonCompileOnly libs.gradle
 
     commonImplementation libs.commons.io
     commonImplementation libs.gson
