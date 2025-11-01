@@ -56,8 +56,8 @@ final class MixinExtrasDependencyHandler {
 
     private static Configuration[] getConfigurationsToAddME(Project project, SourceSet sourceSet) {
         ConfigurationContainer configurations = project.getConfigurations();
-        boolean addToCompileOnly = alreadyContainsMixinExtras(configurations.findByName(sourceSet.getCompileClasspathConfigurationName()));
-        boolean addToAnnotationProcessor = alreadyContainsMixinExtras(configurations.findByName(sourceSet.getAnnotationProcessorConfigurationName()));
+        boolean addToCompileOnly = isMissingMixinExtras(configurations.findByName(sourceSet.getCompileClasspathConfigurationName()));
+        boolean addToAnnotationProcessor = isMissingMixinExtras(configurations.findByName(sourceSet.getAnnotationProcessorConfigurationName()));
 
         if (addToCompileOnly && addToAnnotationProcessor)
             return new Configuration[] {configurations.getByName(sourceSet.getCompileOnlyConfigurationName()), configurations.getByName(sourceSet.getAnnotationProcessorConfigurationName())};
@@ -69,9 +69,9 @@ final class MixinExtrasDependencyHandler {
             return new Configuration[] { };
     }
 
-    private static boolean alreadyContainsMixinExtras(@Nullable Configuration configuration) {
-        return configuration != null && !configuration.getAllDependencies().matching(
-            dependency -> "io.github.llamalad7".equals(dependency.getGroup()) && dependency.getName().startsWith("mixinextras")
+    private static boolean isMissingMixinExtras(@Nullable Configuration configuration) {
+        return configuration != null && configuration.getAllDependencies().matching(
+            dependency -> "io.github.llamalad7".equals(dependency.getGroup()) && "mixinextras-common".equals(dependency.getName())
         ).isEmpty();
     }
 }
