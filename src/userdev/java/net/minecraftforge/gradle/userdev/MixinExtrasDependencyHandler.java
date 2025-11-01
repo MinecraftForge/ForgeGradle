@@ -6,13 +6,10 @@
 package net.minecraftforge.gradle.userdev;
 
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
-import org.gradle.api.java.archives.Attributes;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.bundling.Jar;
 import org.jetbrains.annotations.Nullable;
 
 final class MixinExtrasDependencyHandler {
@@ -21,8 +18,7 @@ final class MixinExtrasDependencyHandler {
     static void handle(Project project, String artifact) {
         JavaPluginExtension java = project.getExtensions().getByType(JavaPluginExtension.class);
         for (SourceSet sourceSet : java.getSourceSets()) {
-            if (!containsForge(project, sourceSet)
-                || !isDeclaringMixinUsage(project, sourceSet))
+            if (!containsForge(project, sourceSet))
                 continue;
 
             for (Configuration configuration : getConfigurationsToAddME(project, sourceSet)) {
@@ -38,20 +34,6 @@ final class MixinExtrasDependencyHandler {
         return !configuration.getAllDependencies().matching(
             dependency -> "net.minecraftforge".equals(dependency.getGroup()) && "forge".equals(dependency.getName())
         ).isEmpty();
-    }
-
-    // NOTE: Returns null if Jar task doesn't have "MixinConfigs" or "MixinConnector"
-    private static boolean isDeclaringMixinUsage(Project project, SourceSet sourceSet) {
-        Task task = project.getTasks().findByName(sourceSet.getJarTaskName());
-        if (!(task instanceof Jar))
-            return false;
-
-        Jar jar = (Jar) task;
-        Attributes attributes = jar.getManifest().getAttributes();
-        if (!(attributes.containsKey("MixinConfigs") || attributes.containsKey("MixinConnector")))
-            return false;
-
-        return true;
     }
 
     private static Configuration[] getConfigurationsToAddME(Project project, SourceSet sourceSet) {
