@@ -20,22 +20,31 @@ final class ExtraDependenciesHandler {
     private ExtraDependenciesHandler() { }
 
     enum Scope {
-        RUNTIME(SourceSet::getRuntimeClasspathConfigurationName, SourceSet::getRuntimeOnlyConfigurationName),
-        COMPILE(SourceSet::getCompileClasspathConfigurationName, SourceSet::getCompileOnlyConfigurationName),
-        ANNOTATION_PROCESSOR(SourceSet::getAnnotationProcessorConfigurationName, SourceSet::getAnnotationProcessorConfigurationName);
+        RUNTIME(SourceSet::getRuntimeClasspathConfigurationName, SourceSet::getRuntimeClasspathConfigurationName, SourceSet::getRuntimeOnlyConfigurationName),
+        COMPILE(SourceSet::getCompileClasspathConfigurationName, SourceSet::getCompileClasspathConfigurationName, SourceSet::getCompileOnlyConfigurationName),
+        ANNOTATION_PROCESSOR(SourceSet::getAnnotationProcessorConfigurationName, SourceSet::getRuntimeClasspathConfigurationName, SourceSet::getAnnotationProcessorConfigurationName);
 
         private final Function<SourceSet, String> classpath;
+        private final Function<SourceSet, String> condition;
         private final Function<SourceSet, String> declarable;
 
-        Scope(Function<SourceSet, String> classpath, Function<SourceSet, String> declarable) {
+        Scope(Function<SourceSet, String> classpath, Function<SourceSet, String> condition, Function<SourceSet, String> declarable) {
             this.classpath = classpath;
+            this.condition = condition;
             this.declarable = declarable;
         }
 
+        // Check this for dependency
         private @Nullable Configuration getClasspathConfiguration(Project project, SourceSet sourceSet) {
             return project.getConfigurations().findByName(this.classpath.apply(sourceSet));
         }
 
+        // Check this for Forge
+        private @Nullable Configuration getConditionConfiguration(Project project, SourceSet sourceSet) {
+            return project.getConfigurations().findByName(this.condition.apply(sourceSet));
+        }
+
+        // Add dependency to this
         private @Nullable Configuration getDeclarableConfiguration(Project project, SourceSet sourceSet) {
             return project.getConfigurations().findByName(this.declarable.apply(sourceSet));
         }
@@ -44,24 +53,21 @@ final class ExtraDependenciesHandler {
     static void handle(Project project, Scope scope, String group, String name, String artifact) {
         JavaPluginExtension java = project.getExtensions().getByType(JavaPluginExtension.class);
         for (SourceSet sourceSet : java.getSourceSets()) {
-            Configuration classpath = scope.getClasspathConfiguration(project, sourceSet);
-            if (!containsDependency(classpath, group, name))
+            if (isMissingDependency(scope.getConditionConfiguration(project, sourceSet), group, name))
                 continue;
 
             ExternalModuleDependency dependency = project.getDependencyFactory().create(artifact);
-            if (isMissingDependency(classpath, dependency)) {
+            if (isMissingDependency(scope.getClasspathConfiguration(project, sourceSet), dependency)) {
                 Configuration configuration = scope.getDeclarableConfiguration(project, sourceSet);
                 if (configuration == null) continue;
 
-                configuration.withDependencies(dependencies -> dependencies.add(dependency));
+                configuration.getDependencies().add(dependency);
             }
         }
     }
 
-    private static boolean containsDependency(@Nullable Configuration configuration, String group, String name) {
-        if (configuration == null) return false;
-
-        return !configuration.getAllDependencies().matching(
+    private static boolean isMissingDependency(@Nullable Configuration configuration, String group, String name) {
+        return configuration != null && configuration.getAllDependencies().matching(
             dependency -> group.equals(dependency.getGroup()) && name.equals(dependency.getName())
         ).isEmpty();
     }
