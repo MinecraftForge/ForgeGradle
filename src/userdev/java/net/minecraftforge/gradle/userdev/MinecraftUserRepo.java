@@ -232,7 +232,8 @@ public class MinecraftUserRepo extends BaseRepo {
                     }
                 }
 
-                if (patcher.configv2.extraDependencies.annotationProcessor != null) {
+                DependencyManagementExtension fg = project.getExtensions().getByType(DependencyManagementExtension.class);
+                if (fg.getInheritAnnotationProcessor().getOrElse(false) && patcher.configv2.extraDependencies.annotationProcessor != null) {
                     for (String artifact : patcher.configv2.extraDependencies.annotationProcessor) {
                         ExtraDependenciesHandler.handle(project, ExtraDependenciesHandler.Scope.ANNOTATION_PROCESSOR, GROUP, NAME, artifact);
                     }
