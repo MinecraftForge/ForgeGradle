@@ -41,7 +41,7 @@ public class UserdevConfigV2 extends UserdevConfigV1 {
     @Nullable
     @Deprecated
     @ApiStatus.ScheduledForRemoval(inVersion = "V3")
-    public String mixinExtras; // ME artifact, since we don't have dependency filters for compile/runtime
+    public ScopedDependencies extraDependencies;
     private String sourceFileCharset = StandardCharsets.UTF_8.name();
 
     public void setNotchObf(boolean value) {
@@ -97,5 +97,41 @@ public class UserdevConfigV2 extends UserdevConfigV1 {
                 this.data = new HashMap<>();
             return this.data.put(name, path);
         }
+    }
+
+    private void addRuntimeDependency(String dependency) {
+        if (this.extraDependencies == null)
+            extraDependencies = new ScopedDependencies();
+
+        if (this.extraDependencies.runtimeOnly == null)
+            this.extraDependencies.runtimeOnly = new ArrayList<>();
+
+        this.extraDependencies.runtimeOnly.add(dependency);
+    }
+
+    private void addCompileDependency(String dependency) {
+        if (this.extraDependencies == null)
+            extraDependencies = new ScopedDependencies();
+
+        if (this.extraDependencies.compileOnly == null)
+            this.extraDependencies.compileOnly = new ArrayList<>();
+
+        this.extraDependencies.compileOnly.add(dependency);
+    }
+
+    private void addAnnotationProcessorDependency(String dependency) {
+        if (this.extraDependencies == null)
+            extraDependencies = new ScopedDependencies();
+
+        if (this.extraDependencies.annotationProcessor == null)
+            this.extraDependencies.annotationProcessor = new ArrayList<>();
+
+        this.extraDependencies.annotationProcessor.add(dependency);
+    }
+
+    public static class ScopedDependencies {
+        public @Nullable List<String> runtimeOnly;
+        public @Nullable List<String> compileOnly;
+        public @Nullable List<String> annotationProcessor;
     }
 }

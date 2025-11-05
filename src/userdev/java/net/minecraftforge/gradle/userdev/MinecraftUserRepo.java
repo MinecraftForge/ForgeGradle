@@ -218,13 +218,28 @@ public class MinecraftUserRepo extends BaseRepo {
                 }
                 cfg.getDependencies().add(_dep);
             });
-            if (patcher.configv2 != null && patcher.configv2.mixinExtras != null)
-                mixinExtras = patcher.configv2.mixinExtras;
-            patcher = patcher.getParent();
-        }
 
-        if (mixinExtras != null) {
-            MixinExtrasDependencyHandler.handle(project, mixinExtras);
+            if (patcher.configv2 != null && patcher.configv2.extraDependencies != null) {
+                if (patcher.configv2.extraDependencies.runtimeOnly != null) {
+                    for (String artifact : patcher.configv2.extraDependencies.runtimeOnly) {
+                        ExtraDependenciesHandler.handle(project, ExtraDependenciesHandler.Scope.RUNTIME, GROUP, NAME, artifact);
+                    }
+                }
+
+                if (patcher.configv2.extraDependencies.compileOnly != null) {
+                    for (String artifact : patcher.configv2.extraDependencies.compileOnly) {
+                        ExtraDependenciesHandler.handle(project, ExtraDependenciesHandler.Scope.COMPILE, GROUP, NAME, artifact);
+                    }
+                }
+
+                if (patcher.configv2.extraDependencies.annotationProcessor != null) {
+                    for (String artifact : patcher.configv2.extraDependencies.annotationProcessor) {
+                        ExtraDependenciesHandler.handle(project, ExtraDependenciesHandler.Scope.ANNOTATION_PROCESSOR, GROUP, NAME, artifact);
+                    }
+                }
+            }
+
+            patcher = patcher.getParent();
         }
 
         Map<String, String> tokens = new HashMap<>();
