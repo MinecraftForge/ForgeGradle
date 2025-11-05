@@ -19,6 +19,7 @@ import net.minecraftforge.gradle.patcher.PatcherExtension;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.model.ObjectFactory;
@@ -26,6 +27,7 @@ import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.provider.ProviderConvertible;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
@@ -38,6 +40,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -51,6 +54,9 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
     private DataFunction processor;
     private final MapProperty<String, File> processorData;
     private final Property<String> sourceFileEncoding;
+    private final ListProperty<String> extraRuntimeDeps;
+    private final ListProperty<String> extraCompileDeps;
+    private final ListProperty<String> extraAnnotationProcessorDeps;
 
     private boolean notchObf = false;
 
@@ -67,6 +73,10 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
         getPatches().convention("patches/");
 
         processorData = objects.mapProperty(String.class, File.class);
+
+        extraRuntimeDeps = objects.listProperty(String.class);
+        extraCompileDeps = objects.listProperty(String.class);
+        extraAnnotationProcessorDeps = objects.listProperty(String.class);
 
         getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.json")));
     }
@@ -103,6 +113,10 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
             json.setNotchObf(notchObf);
             json.setSourceFileCharset(getSourceFileEncoding().get());
             getUniversalFilters().get().forEach(json::addUniversalFilter);
+            json.extraDependencies = new UserdevConfigV2.ScopedDependencies();
+            json.extraDependencies.compileOnly = new ArrayList<>(getExtraCompileDeps().get());
+            json.extraDependencies.runtimeOnly = new ArrayList<>(getExtraRuntimeDeps().get());
+            json.extraDependencies.annotationProcessor = new ArrayList<>(getExtraAnnotationProcessorDeps().get());
         }
 
         Files.write(Utils.GSON.toJson(json).getBytes(StandardCharsets.UTF_8), getOutput().get().getAsFile());
@@ -177,6 +191,72 @@ public abstract class GenerateUserdevConfig extends DefaultTask {
     @Input
     @Optional
     public abstract ListProperty<String> getSRGLines();
+    
+    private static String depToString(Dependency value) {
+        String group = value.getGroup();
+        if (group == null)
+            throw new IllegalArgumentException("Dependency group cannot be null");
+
+        String version = value.getVersion();
+        if (version == null)
+            throw new IllegalArgumentException("Dependency version cannot be null");
+
+        return group + ':' + value.getName() + ':' + version;
+    }
+
+    @Input
+    @Optional
+    public ListProperty<String> getExtraCompileDeps() {
+        return this.extraCompileDeps;
+    }
+
+    public final void addCompileDependency(Dependency value) {
+        this.getExtraCompileDeps().add(depToString(value));
+    }
+
+    public final void addCompileDependency(Provider<? extends Dependency> value) {
+        this.addCompileDependency(value.get());
+    }
+
+    public final void addCompileDependency(ProviderConvertible<? extends Dependency> value) {
+        this.addCompileDependency(value.asProvider());
+    }
+
+    @Input
+    @Optional
+    public ListProperty<String> getExtraRuntimeDeps() {
+        return this.extraRuntimeDeps;
+    }
+
+    public final void addRuntimeDependency(Dependency value) {
+        this.getExtraRuntimeDeps().add(depToString(value));
+    }
+
+    public final void addRuntimeDependency(Provider<? extends Dependency> value) {
+        this.addRuntimeDependency(value.get());
+    }
+
+    public final void addRuntimeDependency(ProviderConvertible<? extends Dependency> value) {
+        this.addRuntimeDependency(value.asProvider());
+    }
+
+    @Input
+    @Optional
+    public ListProperty<String> getExtraAnnotationProcessorDeps() {
+        return this.extraAnnotationProcessorDeps;
+    }
+
+    public final void addAnnotationProcessorDependency(Dependency value) {
+        this.getExtraAnnotationProcessorDeps().add(depToString(value));
+    }
+
+    public final void addAnnotationProcessorDependency(Provider<? extends Dependency> value) {
+        this.addAnnotationProcessorDependency(value.get());
+    }
+
+    public final void addAnnotationProcessorDependency(ProviderConvertible<? extends Dependency> value) {
+        this.addAnnotationProcessorDependency(value.asProvider());
+    }
 
     public NamedDomainObjectContainer<RunConfig> runs(@SuppressWarnings("rawtypes") Closure closure) {
         return runs.configure(closure);

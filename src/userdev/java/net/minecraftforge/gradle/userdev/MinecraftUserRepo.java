@@ -196,6 +196,7 @@ public class MinecraftUserRepo extends BaseRepo {
 
         //Maven POMs can't self-reference apparently, so we have to add any deps that are self referential.
         Patcher patcher = parent;
+        String mixinExtras = null;
         while (patcher != null) {
             patcher.getLibraries().stream().map(Artifact::from)
             .filter(e -> GROUP.equals(e.getGroup()) && NAME.equals(e.getName()))
@@ -217,6 +218,28 @@ public class MinecraftUserRepo extends BaseRepo {
                 }
                 cfg.getDependencies().add(_dep);
             });
+
+            if (patcher.configv2 != null && patcher.configv2.extraDependencies != null) {
+                if (patcher.configv2.extraDependencies.runtimeOnly != null) {
+                    for (String artifact : patcher.configv2.extraDependencies.runtimeOnly) {
+                        ExtraDependenciesHandler.handle(project, ExtraDependenciesHandler.Scope.RUNTIME, GROUP, NAME, artifact);
+                    }
+                }
+
+                if (patcher.configv2.extraDependencies.compileOnly != null) {
+                    for (String artifact : patcher.configv2.extraDependencies.compileOnly) {
+                        ExtraDependenciesHandler.handle(project, ExtraDependenciesHandler.Scope.COMPILE, GROUP, NAME, artifact);
+                    }
+                }
+
+                DependencyManagementExtension fg = project.getExtensions().getByType(DependencyManagementExtension.class);
+                if (fg.getInheritAnnotationProcessor().getOrElse(false) && patcher.configv2.extraDependencies.annotationProcessor != null) {
+                    for (String artifact : patcher.configv2.extraDependencies.annotationProcessor) {
+                        ExtraDependenciesHandler.handle(project, ExtraDependenciesHandler.Scope.ANNOTATION_PROCESSOR, GROUP, NAME, artifact);
+                    }
+                }
+            }
+
             patcher = patcher.getParent();
         }
 

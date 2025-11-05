@@ -43,6 +43,7 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
     private final DependencyRemapper remapper;
     private final DeobfuscatingRepo deobfuscatingRepo;
     private final ArtifactRepository repository;
+    private final Property<Boolean> inheritAnnotationProcessor;
 
     public DependencyManagementExtension(Project project, DependencyRemapper remapper, DeobfuscatingRepo deobfuscatingRepo) {
         this.project = project;
@@ -51,6 +52,7 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
         this.repository = new BaseRepo.Builder()
                 .add(deobfuscatingRepo)
                 .attach(project, "bundled_deobf_repo");
+        this.inheritAnnotationProcessor = project.getObjects().property(Boolean.class).convention(false);
     }
 
     public DeobfuscatingRepo getDeobfuscatingRepo() {
@@ -59,6 +61,10 @@ public class DependencyManagementExtension extends GroovyObjectSupport {
 
     public ArtifactRepository getRepository() {
         return repository;
+    }
+
+    public Property<Boolean> getInheritAnnotationProcessor() {
+        return inheritAnnotationProcessor;
     }
 
     @SuppressWarnings("unused")
