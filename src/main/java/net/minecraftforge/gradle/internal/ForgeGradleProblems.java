@@ -6,8 +6,10 @@ package net.minecraftforge.gradle.internal;
 
 import net.minecraftforge.gradle.MinecraftMappings;
 import net.minecraftforge.gradleutils.shared.EnhancedProblems;
+import org.gradle.api.Action;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.problems.ProblemSpec;
 import org.gradle.api.problems.Problems;
 import org.gradle.api.problems.Severity;
 import org.gradle.api.provider.ProviderFactory;
@@ -127,10 +129,12 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     //endregion
 
     //region Minecraft Maven
-    RuntimeException mavenizerOutOfDateCompile(Object dependency) {
-        return this.throwing(new IllegalStateException(), "mavenizer-out-of-date-for-compile", "Minecraft Mavenizer is out-of-date", spec -> spec
+    void mavenizerOutOfDate(boolean throwIt, Object dependency) {
+        String name = "mavenizer-out-of-date";
+        String displayName = "Minecraft Mavenizer is out-of-date";
+        Action<? super ProblemSpec> problemSpec = spec -> spec
             .details("""
-                Gradle cannot compile your sources because the Minecraft Mavenizer is out-of-date.
+                Gradle cannot compile your sources or run the game because the Minecraft Mavenizer is out-of-date.
                 The Mavenizer must be re-run in order for the changes made to the Minecraft dependency to take effect.
                 Affected dependency: '%s'"""
                 .formatted(dependency))
@@ -139,22 +143,12 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
             .solution("Run `gradlew` with no arguments, as this will automatically synchronize the Mavenizer.")
             .solution("Manually run the `syncMavenizer` task, located in the 'Build Setup' group.")
             .solution("Temporary revert any edits to the Minecraft dependency until the Mavenizer is re-run.")
-            .solution(HELP_MESSAGE));
-    }
+            .solution(HELP_MESSAGE);
 
-    RuntimeException mavenizerOutOfDateRunTask(Object dependency) {
-        return this.throwing(new IllegalStateException(), "mavenizer-out-of-date-for-run", "Minecraft Mavenizer is out-of-date", spec -> spec
-            .details("""
-                Gradle cannot run the game with Slime Launcher because the Minecraft Mavenizer is out-of-date.
-                The Mavenizer must be re-run in order for the changes made to the Minecraft dependency to take effect.
-                Affected dependency: '%s'"""
-                .formatted(dependency))
-            .severity(Severity.ERROR)
-            .solution("Re-import your project in your IDE, as this will automatically synchronize the Mavenizer.")
-            .solution("Run `gradlew` with no arguments, as this will automatically synchronize the Mavenizer.")
-            .solution("Manually run the `syncMavenizer` task, located in the 'Build Setup' group.")
-            .solution("Temporary revert any edits to the Minecraft dependency until the Mavenizer is re-run.")
-            .solution(HELP_MESSAGE));
+        if (throwIt)
+            throw this.throwing(new IllegalStateException(displayName), name, displayName, problemSpec);
+        else
+            this.report(name, displayName, problemSpec);
     }
 
     void reportMcMavenNotDeclared() {

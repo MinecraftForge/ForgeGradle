@@ -27,6 +27,8 @@ import org.gradle.api.attributes.Category;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.flow.FlowProviders;
+import org.gradle.api.flow.FlowScope;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.JavaPluginExtension;
@@ -36,6 +38,7 @@ import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.internal.impldep.com.google.common.base.Optional;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -59,6 +62,10 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     private final ForgeGradleProblems problems = this.getObjects().newInstance(ForgeGradleProblems.class);
 
     protected abstract @Inject Project getProject();
+
+    protected abstract @Inject FlowScope getFlowScope();
+
+    protected abstract @Inject FlowProviders getFlowProviders();
 
     protected abstract @Inject ObjectFactory getObjects();
 
@@ -155,13 +162,13 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
 
     @Override
     public void handle(SourceSet sourceSet) {
-        var problems = this.problems;
         var asString = this.asString.get();
         var dependencyOutput = this.mavenizerOutput.map(dir -> dir.dir(this.asPath)).get().get().getAsFile();
-        getProject().getTasks().named(sourceSet.getCompileJavaTaskName(), JavaCompile.class, task -> {
-            task.doFirst(t -> {
-                if (!dependencyOutput.exists())
-                    throw problems.mavenizerOutOfDateCompile(asString);
+        getFlowScope().always(ForgeGradleFlowAction.MavenizerSyncCheck.class, spec -> {
+            spec.parameters(parameters -> {
+                parameters.getFailure().set(getFlowProviders().getBuildWorkResult().map(r -> r.getFailure().orElse(null)));
+                parameters.dependencyOutput.set(dependencyOutput);
+                parameters.dependency.set(asString);
             });
         });
 
@@ -174,18 +181,6 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
         }
 
         this.sourceSetName = sourceSet.getName();
-    }
-
-    void handle(TaskProvider<SlimeLauncherExec> runTask) {
-        var problems = this.problems;
-        var asString = this.asString.get();
-        var dependencyOutput = this.mavenizerOutput.map(dir -> dir.dir(this.asPath)).get().get().getAsFile();
-        runTask.configure(task -> {
-            task.doFirst(t -> {
-                if (!dependencyOutput.exists())
-                    throw problems.mavenizerOutOfDateRunTask(asString);
-            });
-        });
     }
 
     @Override
