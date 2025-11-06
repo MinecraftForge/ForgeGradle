@@ -15,7 +15,6 @@ import org.gradle.api.artifacts.ModuleIdentifier;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.reflect.HasPublicType;
@@ -28,6 +27,7 @@ import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -75,7 +75,6 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
             task.setDescription("Generates the '%s' Slime Launcher run configuration for Eclipse.".formatted(options.getName()));
 
             task.getClasspath().from(task.getObjects().fileCollection().from(task.getProviders().provider(sourceSet::getRuntimeClasspath)));
-            task.getJavaLauncher().unset();
 
             var caches = task.getObjects().directoryProperty().value(task.globalCaches().dir("slime-launcher/cache/%s".formatted(asPath)));
             task.getCacheDir().set(caches.map(task.problems.ensureFileLocation()));
@@ -92,7 +91,6 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
             task.setDescription("Runs the '%s' Slime Launcher run configuration.".formatted(options.getName()));
 
             task.classpath(task.getObjectFactory().fileCollection().from(task.getProviderFactory().provider(sourceSet::getRuntimeClasspath)));
-            task.getJavaLauncher().unset();
 
             var caches = task.getObjectFactory().directoryProperty().value(task.globalCaches().dir("slime-launcher/cache/%s".formatted(asPath)));
             task.getCacheDir().set(caches.map(task.problems.ensureFileLocation()));
@@ -125,7 +123,7 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
         this.setClasspath(tool.getClasspath());
         if (tool.hasMainClass())
             this.getMainClass().set(tool.getMainClass());
-        this.getJavaLauncher().set(tool.getJavaLauncher());
+        this.getJavaLauncher().set(Util.launcherFor(getProject(),tool.getJavaVersion()));
         this.getModularity().getInferModulePath().set(false);
     }
 

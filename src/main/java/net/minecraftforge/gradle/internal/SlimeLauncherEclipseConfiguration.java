@@ -80,6 +80,8 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
 
     protected abstract @Inject ProviderFactory getProviders();
 
+    protected abstract @Inject ProjectLayout getProjectLayout();
+
     protected abstract @Inject WorkerExecutor getWorkerExecutor();
 
     final ForgeGradleProblems problems = this.getObjects().newInstance(ForgeGradleProblems.class);
@@ -95,7 +97,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
         var tool = this.getTool(Tools.SLIMELAUNCHER);
         this.getClasspath().from(tool.getClasspath());
         this.getMainClass().set(tool.getMainClass());
-        this.getJavaLauncher().set(tool.getJavaLauncher());
+        this.getJavaLauncher().set(Util.launcherFor(getProject(),tool.getJavaVersion()));
     }
 
     @TaskAction
@@ -174,6 +176,9 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
 
             MapProperty<String, String> getEnvironment();
         }
+
+        @Inject
+        public Action() { }
 
         @Override
         public void execute() {
