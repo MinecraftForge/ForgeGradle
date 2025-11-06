@@ -12,6 +12,7 @@ import net.minecraftforge.util.data.json.RunConfig;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.model.ObjectFactory;
@@ -136,7 +137,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
         //endregion
 
         //region Slime Launcher setup
-        args.addAll(List.of("--main", options.getMainClass().get(),
+        args.addAll(0, List.of("--main", options.getMainClass().get(),
             "--cache", this.getCacheDir().get().getAsFile().getAbsolutePath(),
             "--metadata", this.getMetadataZip().get().getAsFile().getAbsolutePath(),
             "--"));
@@ -153,6 +154,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
         queue.submit(Action.class, parameters -> {
             parameters.getOutputFile().set(this.getOutputFile());
             parameters.getEclipseProjectName().set(this.getEclipseProjectName().orElse(this.getProjectName()));
+            parameters.getClasspath().setFrom(this.getClasspath());
             parameters.getMainClass().set(this.getMainClass().get());
             parameters.getArgs().set(args);
             parameters.getJvmArgs().set(jvmArgs);
@@ -167,6 +169,8 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
             RegularFileProperty getOutputFile();
 
             Property<String> getEclipseProjectName();
+
+            ConfigurableFileCollection getClasspath();
 
             Property<String> getMainClass();
 
@@ -209,8 +213,12 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
             stringAttribute(launch, rootElement, "org.eclipse.jdt.launching.VM_ARGUMENTS", String.join(" ", parameters.getJvmArgs().get()));
             stringAttribute(launch, rootElement, "org.eclipse.jdt.launching.PROGRAM_ARGUMENTS", String.join(" ", parameters.getArgs().get()));
             stringAttribute(launch, rootElement, "org.eclipse.jdt.launching.WORKING_DIRECTORY", parameters.getWorkingDir().getAsFile().get().getAbsolutePath());
-            stringAttribute(launch, rootElement, "org.eclipse.jdt.launching.JRE_CONTAINER", parameters.getJavaHome().getAsFile().get().getAbsolutePath());
+            //stringAttribute(launch, rootElement, "org.eclipse.jdt.launching.JRE_CONTAINER", parameters.getJavaHome().getAsFile().get().getAbsolutePath());
             mapAttribute(launch, rootElement, "org.eclipse.debug.core.environmentVariables", parameters.getEnvironment().get());
+            classpathAttribute(launch, rootElement, parameters.getClasspath());
+            booleanAttribute(launch, rootElement, "org.eclipse.jdt.launching.DEFAULT_CLASSPATH", false);
+
+            launch.appendChild(rootElement);
 
             var source = new DOMSource(launch);
             var result = new StreamResult(parameters.getOutputFile().getAsFile().get());
@@ -222,15 +230,50 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
             }
         }
 
-        private static void stringAttribute(Document document, Element parent, String key, String value) {
+        private static void stringAttribute(Document document, Element parent, String key, Object value) {
             var attribute = document.createElement("stringAttribute");
 
             attribute.setAttribute("key", key);
-            attribute.setAttribute("value", value);
+            attribute.setAttribute("value", value.toString());
             parent.appendChild(attribute);
         }
 
-        private static void mapAttribute(Document document, Element parent, String key, Map<String, String> map) {
+        private static void booleanAttribute(Document document, Element parent, String key, boolean value) {
+            var attribute = document.createElement("booleanAttribute");
+
+            attribute.setAttribute("key", key);
+            attribute.setAttribute("value", Boolean.toString(value));
+            parent.appendChild(attribute);
+        }
+
+        private static void listAttribute(Document document, Element parent, String key, Iterable<?> list) {
+            var attribute = document.createElement("listAttribute");
+            attribute.setAttribute("key", key);
+
+            for (var v : list) {
+                var listEntry = document.createElement("listEntry");
+                listEntry.setAttribute("value", v.toString());
+                attribute.appendChild(listEntry);
+            }
+            parent.appendChild(attribute);
+        }
+
+        private static final String CLASSPATH_ENTRY_PREFIX = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?> <runtimeClasspathEntry externalArchive=\"";
+        private static final String CLASSPATH_ENTRY_SUFFIX = "\" path=\"5\" type=\"2\"/>";
+
+        private static void classpathAttribute(Document document, Element parent, FileCollection files) {
+            var attribute = document.createElement("listAttribute");
+            attribute.setAttribute("key", "org.eclipse.jdt.launching.CLASSPATH");
+
+            for (var v : files.getFiles()) {
+                var listEntry = document.createElement("listEntry");
+                listEntry.setAttribute("value", CLASSPATH_ENTRY_PREFIX + v + CLASSPATH_ENTRY_SUFFIX);
+                attribute.appendChild(listEntry);
+            }
+            parent.appendChild(attribute);
+        }
+
+        private static void mapAttribute(Document document, Element parent, String key, Map<String, ?> map) {
             var attribute = document.createElement("mapAttribute");
             attribute.setAttribute("key", key);
 
@@ -240,7 +283,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
 
                 var mapEntry = document.createElement("mapEntry");
                 mapEntry.setAttribute("key", k);
-                mapEntry.setAttribute("value", v);
+                mapEntry.setAttribute("value", v.toString());
                 attribute.appendChild(mapEntry);
             }
             parent.appendChild(attribute);
