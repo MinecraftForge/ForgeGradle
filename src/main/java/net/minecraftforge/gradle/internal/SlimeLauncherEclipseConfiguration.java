@@ -1,15 +1,34 @@
+/*
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
 package net.minecraftforge.gradle.internal;
 
+import com.google.gson.JsonIOException;
+import com.google.gson.reflect.TypeToken;
+import net.minecraftforge.gradle.SlimeLauncherOptions;
+import net.minecraftforge.util.data.json.JsonData;
+import net.minecraftforge.util.data.json.RunConfig;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.ProviderFactory;
+import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.TaskAction;
+import org.gradle.jvm.toolchain.JavaLauncher;
+import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkerExecutor;
@@ -27,23 +46,116 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 // This is mostly taken from ForgeGradle 6 but slimmed down to what we need
-abstract class GenerateEclipseLauncher extends DefaultTask implements ForgeGradleTask {
+abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements ForgeGradleTask {
     protected abstract @OutputFile RegularFileProperty getOutputFile();
+
     protected abstract @Input Property<String> getProjectName();
+
     protected abstract @Input @Optional Property<String> getEclipseProjectName();
-    protected abstract @Input @Optional ListProperty<String> getArgs();
-    protected abstract @Input @Optional ListProperty<String> getJvmArgs();
-    protected abstract @Internal DirectoryProperty getWorkingDir();
-    protected abstract @Input @Optional MapProperty<String, String> getEnvironment();
+
+    protected abstract @Input Property<String> getRunName();
+
+    protected abstract @Nested Property<JavaLauncher> getJavaLauncher();
+
+    protected abstract @InputFiles @Classpath ConfigurableFileCollection getClasspath();
+
+    protected abstract @Input Property<String> getMainClass();
+
+    protected abstract @Nested Property<SlimeLauncherOptions> getOptions();
+
+    protected abstract @Internal DirectoryProperty getCacheDir();
+
+    protected abstract @InputFile RegularFileProperty getMetadataZip();
+
+    protected abstract @InputFile RegularFileProperty getRunsJson();
+
+    protected abstract @Inject ObjectFactory getObjects();
+
+    protected abstract @Inject ProviderFactory getProviders();
 
     protected abstract @Inject WorkerExecutor getWorkerExecutor();
 
-    @Inject
-    public GenerateEclipseLauncher() {
+    final ForgeGradleProblems problems = this.getObjects().newInstance(ForgeGradleProblems.class);
 
+    @Inject
+    public SlimeLauncherEclipseConfiguration() {
+        this.getProjectName().convention(this.getProject().getName());
+        this.getEclipseProjectName().convention(getProviders().provider(() -> {
+            var eclipse = getProject().getExtensions().findByType(EclipseModel.class);
+            return eclipse == null ? null : eclipse.getProject().getName();
+        }));
+
+        var tool = this.getTool(Tools.SLIMELAUNCHER);
+        this.getClasspath().from(tool.getClasspath());
+        this.getMainClass().set(tool.getMainClass());
+        this.getJavaLauncher().set(tool.getJavaLauncher());
+    }
+
+    @TaskAction
+    protected void exec() {
+        List<String> args;
+        List<String> jvmArgs;
+        MapProperty<String, String> environment;
+        DirectoryProperty workingDir;
+
+        //region Launcher Metadata Inheritance
+        Map<String, RunConfig> configs = Map.of();
+        try {
+            configs = JsonData.fromJson(
+                this.getRunsJson().getAsFile().get(),
+                new TypeToken<>() { }
+            );
+        } catch (JsonIOException e) {
+            // continue
+        }
+
+        var options = ((SlimeLauncherOptionsInternal) this.getOptions().get()).inherit(configs);
+
+        args = new ArrayList<>(options.getArgs().getOrElse(List.of()));
+        jvmArgs = new ArrayList<>(options.getJvmArgs().getOrElse(List.of()));
+        if (!options.getClasspath().isEmpty())
+            this.getClasspath().setFrom(options.getClasspath());
+        if (options.getMinHeapSize().filter(Util::isPresent).isPresent())
+            jvmArgs.add("-Xms" + options.getMinHeapSize().get());
+        if (options.getMaxHeapSize().filter(Util::isPresent).isPresent())
+            jvmArgs.add("-Xmx" + options.getMaxHeapSize().get());
+        for (var property : options.getSystemProperties().getOrElse(Map.of()).entrySet())
+            jvmArgs.add("-D" + property.getKey() + '=' + property.getValue());
+        environment = options.getEnvironment();
+        workingDir = options.getWorkingDir();
+        //endregion
+
+        //region Slime Launcher setup
+        args.addAll(List.of("--main", options.getMainClass().get(),
+            "--cache", this.getCacheDir().get().getAsFile().getAbsolutePath(),
+            "--metadata", this.getMetadataZip().get().getAsFile().getAbsolutePath(),
+            "--"));
+
+        try {
+            Files.createDirectories(workingDir.get().getAsFile().toPath());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        //endregion
+
+        var queue = this.getWorkerExecutor().classLoaderIsolation();
+
+        queue.submit(Action.class, parameters -> {
+            parameters.getOutputFile().set(this.getOutputFile());
+            parameters.getEclipseProjectName().set(this.getEclipseProjectName().orElse(this.getProjectName()));
+            parameters.getMainClass().set(this.getMainClass().get());
+            parameters.getArgs().set(args);
+            parameters.getJvmArgs().set(jvmArgs);
+            parameters.getWorkingDir().set(workingDir);
+            parameters.getEnvironment().set(environment);
+        });
     }
 
     static abstract class Action implements WorkAction<Action.Parameters> {
