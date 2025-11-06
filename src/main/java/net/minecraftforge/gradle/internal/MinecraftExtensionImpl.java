@@ -167,9 +167,14 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             super(plugin);
             var project = getProject();
 
-            project.getTasks().register("genEclipseRuns", task -> {
+            var genEclipseRuns = project.getTasks().register("genEclipseRuns", task -> {
                 task.setGroup("IDE");
                 task.setDescription("Generates the run configuration launch files for Eclipse.");
+            });
+
+            project.getPluginManager().withPlugin("eclipse", eclipsePlugin -> {
+                var eclipse = project.getExtensions().getByType(EclipseModel.class);
+                eclipse.synchronizationTasks(genEclipseRuns);
             });
 
             this.runs = this.getObjects().domainObjectContainer(SlimeLauncherOptionsImpl.class);
