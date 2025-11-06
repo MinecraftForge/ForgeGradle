@@ -73,6 +73,7 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
         var genEclipseRun = project.getTasks().register(generateEclipseRunTaskName, SlimeLauncherEclipseConfiguration.class, task -> {
             task.getRunName().set(options.getName());
             task.setDescription("Generates the '%s' Slime Launcher run configuration for Eclipse.".formatted(options.getName()));
+            task.getOutputFile().set(task.getProjectLayout().getProjectDirectory().file(runTaskName + ".launch"));
 
             task.getClasspath().from(task.getObjects().fileCollection().from(task.getProviders().provider(sourceSet::getRuntimeClasspath)));
 

@@ -12,6 +12,7 @@ import net.minecraftforge.util.data.json.RunConfig;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
@@ -157,6 +158,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
             parameters.getJvmArgs().set(jvmArgs);
             parameters.getWorkingDir().set(workingDir);
             parameters.getEnvironment().set(environment);
+            parameters.getJavaHome().set(this.getJavaLauncher().map(j -> j.getMetadata().getInstallationPath()));
         });
     }
 
@@ -173,6 +175,8 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
             ListProperty<String> getJvmArgs();
 
             DirectoryProperty getWorkingDir();
+
+            DirectoryProperty getJavaHome();
 
             MapProperty<String, String> getEnvironment();
         }
@@ -205,6 +209,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
             stringAttribute(launch, rootElement, "org.eclipse.jdt.launching.VM_ARGUMENTS", String.join(" ", parameters.getJvmArgs().get()));
             stringAttribute(launch, rootElement, "org.eclipse.jdt.launching.PROGRAM_ARGUMENTS", String.join(" ", parameters.getArgs().get()));
             stringAttribute(launch, rootElement, "org.eclipse.jdt.launching.WORKING_DIRECTORY", parameters.getWorkingDir().getAsFile().get().getAbsolutePath());
+            stringAttribute(launch, rootElement, "org.eclipse.jdt.launching.JRE_CONTAINER", parameters.getJavaHome().getAsFile().get().getAbsolutePath());
             mapAttribute(launch, rootElement, "org.eclipse.debug.core.environmentVariables", parameters.getEnvironment().get());
 
             var source = new DOMSource(launch);
