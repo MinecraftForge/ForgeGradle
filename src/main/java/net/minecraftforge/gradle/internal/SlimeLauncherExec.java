@@ -30,6 +30,7 @@ import org.gradle.api.tasks.TaskProvider;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 import javax.inject.Inject;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -37,7 +38,7 @@ import java.util.List;
 import java.util.Map;
 
 abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, HasPublicType {
-    static TaskProvider<SlimeLauncherExec> register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, ModuleIdentifier module, String version, String asPath, String asString, boolean single) {
+    static TaskProvider<SlimeLauncherExec> register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, ModuleIdentifier module, String version, String asPath, String asString, boolean single, File eclipseOutputDir) {
         TaskProvider<SlimeLauncherMetadata> metadata;
         {
             TaskProvider<SlimeLauncherMetadata> t;
@@ -70,12 +71,17 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
         var runTaskName = sourceSet.getTaskName("run", options.getName()) + taskNameSuffix;
         var generateEclipseRunTaskName = sourceSet.getTaskName("genEclipseRun", options.getName()) + taskNameSuffix;
 
+        var sourceSetOutputs = project.getObjects().fileCollection().from(sourceSet.getOutput().getResourcesDir(), sourceSet.getJava().getDestinationDirectory());
+        var eclipseOutputs = project.getObjects().fileCollection().from(eclipseOutputDir);
         var genEclipseRun = project.getTasks().register(generateEclipseRunTaskName, SlimeLauncherEclipseConfiguration.class, task -> {
             task.getRunName().set(options.getName());
             task.setDescription("Generates the '%s' Slime Launcher run configuration for Eclipse.".formatted(options.getName()));
             task.getOutputFile().set(task.getProjectLayout().getProjectDirectory().file(runTaskName + ".launch"));
 
-            task.getClasspath().from(task.getObjects().fileCollection().from(task.getProviders().provider(sourceSet::getRuntimeClasspath)));
+            task.getClasspath()
+                .from(task.getObjects().fileCollection().from(task.getProviders().provider(sourceSet::getRuntimeClasspath)))
+                .minus(sourceSetOutputs)
+                .plus(eclipseOutputs);
 
             var caches = task.getObjects().directoryProperty().value(task.globalCaches().dir("slime-launcher/cache/%s".formatted(asPath)));
             task.getCacheDir().set(caches.map(task.problems.ensureFileLocation()));
