@@ -51,7 +51,10 @@ public interface MinecraftExtension extends MinecraftMappingsContainer {
      * @see #getMavenizer()
      */
     default MavenArtifactRepository mavenizer(RepositoryHandler repositories) {
-        return repositories.maven(this.getMavenizer());
+        var mavenizer = repositories.maven(this.getMavenizer());
+        repositories.remove(mavenizer);
+        repositories.addFirst(mavenizer);
+        return mavenizer;
     }
 
     /**
