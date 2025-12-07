@@ -16,6 +16,7 @@ import org.gradle.api.attributes.Usage;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.reflect.HasPublicType;
@@ -124,6 +125,8 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
 
     protected abstract @Input @Optional Property<Boolean> getClient();
 
+    protected abstract @Internal MapProperty<String, String> getForkProperties();
+
     private final ForgeGradleProblems problems = this.getObjectFactory().newInstance(ForgeGradleProblems.class);
 
     @Inject
@@ -136,6 +139,7 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
             this.getMainClass().set(tool.getMainClass());
         this.getJavaLauncher().set(Util.launcherFor(getProject(),tool.getJavaVersion()));
         this.getModularity().getInferModulePath().set(false);
+        this.getForkProperties().set(Util.getForkProperties(getProviderFactory()));
     }
 
     @Override

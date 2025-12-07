@@ -20,7 +20,7 @@ gradle.beforeProject { Project project ->
 
 //@formatter:off
 dependencyResolutionManagement.versionCatalogs.register('libs') {
-    version 'gradleutils', '3.3.38'
+    version 'gradleutils', '3.3.39'
 
     plugin 'licenser',       'net.minecraftforge.licenser'    version '1.2.0' // https://plugins.gradle.org/plugin/net.minecraftforge.licenser
     plugin 'gradleutils',    'net.minecraftforge.gradleutils' versionRef 'gradleutils'
