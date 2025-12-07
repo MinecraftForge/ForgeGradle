@@ -25,6 +25,8 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ExternalModuleDependencyBundle;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.attributes.Category;
+import org.gradle.api.attributes.DocsType;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.flow.FlowProviders;
@@ -247,6 +249,33 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                     if (mavenizer == null) continue;
 
                     syncMavenizer.configure(task -> task.dependsOn(mavenizer));
+
+                    var dependency = minecraftDependency.asDependency();
+                    if (dependency == null) continue;
+
+                    // See https://github.com/MinecraftForge/ForgeGradle/issues/1008#issuecomment-3623727384
+                    // Basically, if IntelliJ can't immediately find a sources JAR next to the main jar, it tries to use this scuffed task
+                    // Intercept the configuration that the task uses and replace any dependencies we have with our own
+                    project.getConfigurations().named(name -> name.startsWith("downloadArtifact_")).configureEach(configuration -> {
+                        var itor = configuration.getDependencies().iterator();
+                        while (itor.hasNext()) {
+                            var existing = itor.next();
+                            if (!Objects.equals(dependency.getGroup(), existing.getGroup())
+                                || !dependency.getName().equals(existing.getName())
+                                || !Objects.equals(dependency.getVersion(), existing.getVersion()))
+                                continue;
+
+                            itor.remove();
+                            var replacement = dependency.copy();
+                            replacement.attributes(a -> {
+                                a.attribute(Category.CATEGORY_ATTRIBUTE, a.named(Category.class, Category.DOCUMENTATION));
+                                a.attribute(DocsType.DOCS_TYPE_ATTRIBUTE, a.named(DocsType.class, DocsType.SOURCES));
+                            });
+                            configuration.withDependencies(dependencies ->
+                                dependencies.add(replacement)
+                            );
+                        }
+                    });
                 }
 
                 project.getPluginManager().withPlugin("eclipse", eclipsePlugin -> {

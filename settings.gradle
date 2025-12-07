@@ -35,7 +35,7 @@ dependencyResolutionManagement.versionCatalogs.register('libs') {
     // Gradle API
     // Original: https://github.com/remal-gradle-api/packages/packages/760197?version=9.0.0
     // Mirror:   https://repos.moddinglegacy.com/#/modding-legacy/name/remal/gradle-api/gradle-api/9.0.0
-    version 'gradle', '9.2.0'
+    version 'gradle', '9.3.0-rc-1'
     library 'gradle', 'name.remal.gradle-api', 'gradle-api'  versionRef 'gradle'
 
     // GradleUtils Shared Base
@@ -45,7 +45,7 @@ dependencyResolutionManagement.versionCatalogs.register('libs') {
     // https://plugins.gradle.org/plugin/net.minecraftforge.accesstransformers
     library 'accesstransformers-gradle', 'net.minecraftforge.accesstransformers', 'net.minecraftforge.accesstransformers.gradle.plugin' version '5.0.1'
 
-    library 'utils-data',     'net.minecraftforge', 'json-data-utils' version '0.4.0'  // https://files.minecraftforge.net/net/minecraftforge/json-data-utils/index.html
+    library 'utils-data',     'net.minecraftforge', 'json-data-utils' version '0.4.1'  // https://files.minecraftforge.net/net/minecraftforge/json-data-utils/index.html
     library 'utils-os',       'net.minecraftforge', 'os-utils'        version '0.1.0'  // https://files.minecraftforge.net/net/minecraftforge/os-utils/index.html
     library 'utils-hash',     'net.minecraftforge', 'hash-utils'      version '0.1.12' // https://files.minecraftforge.net/net/minecraftforge/hash-utils/index.html
     library 'utils-download', 'net.minecraftforge', 'download-utils'  version '0.4.0'  // https://files.minecraftforge.net/net/minecraftforge/download-utils/index.html
