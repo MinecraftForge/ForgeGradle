@@ -39,6 +39,7 @@ import org.gradle.api.reflect.TypeOf;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
 import javax.inject.Inject;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -221,13 +222,22 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             checkRepos(getRepositories());
 
             var sourceSetsDir = this.getObjects().directoryProperty().value(this.getProjectLayout().getBuildDirectory().dir("sourceSets"));
+            var mergeSourceSets = this.problems.test("net.minecraftforge.gradle.merge-source-sets");
             project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets().configureEach(sourceSet -> {
-                if (this.problems.test("net.minecraftforge.gradle.merge-source-sets")) {
+                if (mergeSourceSets) {
                     // This is documented in SourceSetOutput's javadoc comment
                     var unifiedDir = sourceSetsDir.dir(sourceSet.getName());
                     sourceSet.getOutput().setResourcesDir(unifiedDir);
                     sourceSet.getJava().getDestinationDirectory().set(unifiedDir);
                 }
+
+                project.getPluginManager().withPlugin("eclipse", eclipsePlugin -> {
+                    var eclipse = project.getExtensions().getByType(EclipseModel.class);
+                    if (mergeSourceSets)
+                        eclipse.getClasspath().setDefaultOutputDir(sourceSetsDir.getAsFile().get());
+                    else
+                        problems.reportUnmergedSourceSets();
+                });
             });
 
             if (!this.minecraftDependencies.isEmpty()) {
@@ -250,6 +260,20 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             }
 
             if (!this.runs.isEmpty() && !this.minecraftDependencies.isEmpty()) {
+                var genEclipseRuns = project.getTasks().register("genEclipseRuns", task -> {
+                    task.setGroup("IDE");
+                    task.setDescription("Generates the run configuration launch files for Eclipse.");
+                });
+
+                File eclipseOutputDir;
+                var eclipse = project.getExtensions().findByType(EclipseModel.class);
+                if (eclipse != null) {
+                    eclipse.synchronizationTasks(genEclipseRuns);
+                    eclipseOutputDir = eclipse.getClasspath().getDefaultOutputDir();
+                } else {
+                    eclipseOutputDir = getProjectLayout().getProjectDirectory().dir("bin").getAsFile();
+                }
+
                 var configurations = project.getConfigurations();
                 var sourceSets = project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets();
 
@@ -269,7 +293,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
                         var impl = (MinecraftDependencyImpl) minecraftDependency;
                         this.runs.forEach(options -> {
-                            var task = SlimeLauncherExec.register(project, sourceSet, options, impl.module.get(), impl.version.get(), impl.asPath.get(), impl.asString.get(), single);
+                            var task = SlimeLauncherExec.register(project, sourceSet, options, impl.module.get(), impl.version.get(), impl.asPath.get(), impl.asString.get(), single, eclipseOutputDir);
                         });
                     }
                 });
