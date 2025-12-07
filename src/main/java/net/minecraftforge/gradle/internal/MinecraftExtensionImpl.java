@@ -21,7 +21,6 @@ import net.minecraftforge.gradle.SlimeLauncherOptions;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ExternalModuleDependencyBundle;
@@ -37,9 +36,7 @@ import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.reflect.TypeOf;
-import org.gradle.api.tasks.TaskProvider;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
-import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import java.io.File;

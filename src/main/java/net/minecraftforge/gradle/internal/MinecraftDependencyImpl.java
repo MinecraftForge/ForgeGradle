@@ -37,8 +37,6 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
-import org.gradle.api.tasks.compile.JavaCompile;
-import org.gradle.internal.impldep.com.google.common.base.Optional;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;

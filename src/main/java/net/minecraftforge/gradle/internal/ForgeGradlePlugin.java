@@ -14,7 +14,6 @@ import org.gradle.api.plugins.ExtensionAware;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 abstract class ForgeGradlePlugin extends EnhancedPlugin<ExtensionAware> {

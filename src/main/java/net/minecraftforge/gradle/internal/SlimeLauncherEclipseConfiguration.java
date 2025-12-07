@@ -31,6 +31,7 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
+import org.gradle.work.DisableCachingByDefault;
 import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkerExecutor;
@@ -55,10 +56,13 @@ import java.util.List;
 import java.util.Map;
 
 // This is mostly taken from ForgeGradle 6 but slimmed down to what we need
+@DisableCachingByDefault(because = "ForgeGradle would require more information to cache this task")
 abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements ForgeGradleTask {
     protected abstract @OutputFile RegularFileProperty getOutputFile();
 
     protected abstract @Input Property<String> getProjectName();
+
+    protected abstract @Input Property<String> getSourceSetName();
 
     protected abstract @Input @Optional Property<String> getEclipseProjectName();
 
@@ -74,7 +78,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
 
     protected abstract @Internal DirectoryProperty getCacheDir();
 
-    protected abstract @InputFile RegularFileProperty getMetadataZip();
+    protected abstract @InputFiles ConfigurableFileCollection getMetadata();
 
     protected abstract @InputFile RegularFileProperty getRunsJson();
 
@@ -120,7 +124,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
             // continue
         }
 
-        var options = ((SlimeLauncherOptionsInternal) this.getOptions().get()).inherit(configs);
+        var options = ((SlimeLauncherOptionsInternal) this.getOptions().get()).inherit(configs, this.getSourceSetName().get());
 
         args = new ArrayList<>(options.getArgs().getOrElse(List.of()));
         jvmArgs = new ArrayList<>(options.getJvmArgs().getOrElse(List.of()));
@@ -139,7 +143,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
         //region Slime Launcher setup
         args.addAll(0, List.of("--main", options.getMainClass().get(),
             "--cache", this.getCacheDir().get().getAsFile().getAbsolutePath(),
-            "--metadata", this.getMetadataZip().get().getAsFile().getAbsolutePath(),
+            "--metadata", this.getMetadata().getSingleFile().getAbsolutePath(),
             "--"));
 
         try {

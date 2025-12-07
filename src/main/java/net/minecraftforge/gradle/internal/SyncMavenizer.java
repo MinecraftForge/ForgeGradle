@@ -25,11 +25,10 @@ import org.gradle.process.ExecResult;
 import org.gradle.work.DisableCachingByDefault;
 
 import javax.inject.Inject;
+import java.io.IOException;
 import java.util.List;
 
-@DisableCachingByDefault(
-    because = "Mavenizer uses its own in-house caching."
-)
+@DisableCachingByDefault(because = "Mavenizer uses its own in-house caching")
 abstract class SyncMavenizer extends ToolExec {
     static TaskProvider<SyncMavenizer> register(Project project, ExternalModuleDependency dependency, Provider<? extends MinecraftMappings> mappings, Provider<? extends Directory> output) {
         var version = dependency.getVersion();
@@ -90,7 +89,7 @@ abstract class SyncMavenizer extends ToolExec {
     }
 
     @Override
-    protected ExecResult exec() {
+    protected ExecResult exec() throws IOException {
         return super.exec().rethrowFailure().assertNormalExitValue();
     }
 
@@ -98,15 +97,13 @@ abstract class SyncMavenizer extends ToolExec {
     protected void addArguments() {
         super.addArguments();
 
-        this.args(
-            "--maven",
-            "--cache", this.getCaches().getLocationOnly().get().getAsFile().getAbsolutePath(),
-            "--output", this.getOutput().getLocationOnly().get().getAsFile().getAbsolutePath(),
-            "--jdk-cache", this.getCaches().getLocationOnly().get().dir("jdks").getAsFile().getAbsolutePath(),
-            "--artifact", this.getModule().get(),
-            "--version", this.getVersion().get(),
-            "--global-auxiliary-variants"
-        );
+        this.args("--maven");
+        this.args("--cache", this.getCaches());
+        this.args("--output", this.getOutput());
+        this.args("--jdk-cache", this.getCaches());
+        this.args("--artifact", this.getModule());
+        this.args("--version", this.getVersion());
+        this.args("--global-auxiliary-variants");
 
         if ("parchment".equals(this.getMappings().get().getChannel())) {
             this.args("--parchment", this.getMappings().get().getVersion());

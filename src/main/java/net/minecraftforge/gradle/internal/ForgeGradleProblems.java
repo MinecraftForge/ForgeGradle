@@ -15,7 +15,6 @@ import org.gradle.api.problems.Severity;
 import org.gradle.api.provider.ProviderFactory;
 
 import javax.inject.Inject;
-
 import java.io.File;
 
 import static net.minecraftforge.gradle.internal.ForgeGradlePlugin.LOGGER;

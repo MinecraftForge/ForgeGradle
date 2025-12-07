@@ -4,9 +4,12 @@
  */
 package net.minecraftforge.gradle.internal;
 
+import net.minecraftforge.gradle.SlimeLauncherOptionsNested;
 import net.minecraftforge.util.data.json.RunConfig;
+import org.gradle.api.Action;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
@@ -20,7 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsInternal {
+public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsInternal {
     private final String name;
 
     private final Property<String> mainClass = this.getObjects().property(String.class);
@@ -34,6 +37,10 @@ abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsInternal 
     private final DirectoryProperty workingDir = this.getObjects().directoryProperty();
 
     private final Property<Boolean> client = this.getObjects().property(Boolean.class).convention(false);
+
+    private final MapProperty<String, SlimeLauncherOptionsNested> nested = this.getObjects().mapProperty(String.class, SlimeLauncherOptionsNested.class);
+
+    protected abstract @Inject ProjectLayout getProjectLayout();
 
     protected abstract @Inject ObjectFactory getObjects();
 
@@ -97,6 +104,20 @@ abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsInternal 
     @Override
     public Property<Boolean> getClient() {
         return this.client;
+    }
+
+    @Override
+    public MapProperty<String, SlimeLauncherOptionsNested> getNested() {
+        return this.nested;
+    }
+
+    /* NESTED */
+
+    @Override
+    public void with(String sourceSetName, Action<? super SlimeLauncherOptionsNested> action) {
+        var child = getObjects().newInstance(SlimeLauncherOptionsImpl.class, this.name);
+        action.execute(child);
+        this.getNested().put(sourceSetName, child);
     }
 
     /* SETTERS */
@@ -239,7 +260,7 @@ abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsInternal 
     /* INHERITANCE */
 
     @Override
-    public SlimeLauncherOptionsInternal inherit(Map<String, RunConfig> configs, String name) {
+    public SlimeLauncherOptionsInternal inherit(Map<String, RunConfig> configs, String sourceSetName, String name) {
         var target = getObjects().newInstance(SlimeLauncherOptionsImpl.class, name);
         target.getMainClass().convention(this.getMainClass());
         target.getArgs().convention(this.getArgs());
@@ -249,46 +270,69 @@ abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsInternal 
         target.getMaxHeapSize().convention(this.getMaxHeapSize());
         target.getSystemProperties().convention(this.getSystemProperties());
         target.getEnvironment().convention(this.getEnvironment());
-        target.getWorkingDir().convention(this.getWorkingDir());
+        target.getWorkingDir().convention(this.getWorkingDir().orElse(getProjectLayout().getProjectDirectory().dir("runs/" + sourceSetName + '/' + this.name)));
         target.getClient().convention(this.getClient());
-        return this.inherit(target, configs, name);
+        return this.inherit(target, sourceSetName, configs, name);
     }
 
-    private SlimeLauncherOptionsInternal inherit(SlimeLauncherOptionsInternal target, Map<String, RunConfig> configs, String name) {
+    private SlimeLauncherOptionsInternal inherit(SlimeLauncherOptionsInternal target, String sourceSetName, Map<String, RunConfig> configs, String name) {
         var config = configs.get(name);
-        if (config == null) return target;
+        if (config != null) {
+            if (config.parents != null && !config.parents.isEmpty())
+                config.parents.forEach(parent -> this.inherit(target, sourceSetName, configs, parent));
 
-        if (config.parents != null && !config.parents.isEmpty())
-            config.parents.forEach(parent -> this.inherit(target, configs, parent));
+            if (config.main != null)
+                target.getMainClass().convention(config.main);
 
-        if (config.main != null)
-            target.getMainClass().convention(config.main);
+            if (config.args != null && !config.args.isEmpty())
+                target.getArgs().convention(List.copyOf(config.args));
 
-        if (config.args != null && !config.args.isEmpty())
-            target.getArgs().convention(List.copyOf(config.args));
+            if (config.jvmArgs != null && !config.jvmArgs.isEmpty())
+                target.jvmArgs(config.jvmArgs);
 
-        if (config.jvmArgs != null && !config.jvmArgs.isEmpty())
-            target.jvmArgs(config.jvmArgs);
+            target.getClient().convention(config.client);
 
-        target.getClient().set(config.client);
+            if (config.buildAllProjects)
+                LOGGER.warn("WARNING: ForgeGradle 7 does not support the buildAllProjects feature.");
 
-        if (config.buildAllProjects)
-            LOGGER.warn("WARNING: ForgeGradle 7 does not support the buildAllProjects feature.");
+            if (config.env != null && !config.env.isEmpty())
+                target.environment(config.env);
 
-        if (config.env != null && !config.env.isEmpty())
-            target.environment(config.env);
+            if (config.props != null && !config.props.isEmpty())
+                target.systemProperties(config.props);
+        }
 
-        if (config.props != null && !config.props.isEmpty())
-            target.systemProperties(config.props);
+        var child = this.getNested().getting(sourceSetName).getOrNull();
+        if (child != null) {
+            if (child.getMainClass().filter(Util::isPresent).isPresent())
+                target.getMainClass().set(child.getMainClass());
+
+            target.args(child.getArgs().getOrElse(List.of()));
+
+            target.jvmArgs(child.getJvmArgs().getOrElse(List.of()));
+
+            if (child.getMaxHeapSize().filter(Util::isPresent).isPresent())
+                target.getMaxHeapSize().set(child.getMaxHeapSize());
+
+            if (child.getMinHeapSize().filter(Util::isPresent).isPresent())
+                target.getMinHeapSize().set(child.getMinHeapSize());
+
+            target.environment(child.getEnvironment().getOrElse(Map.of()));
+
+            target.systemProperties(child.getSystemProperties().getOrElse(Map.of()));
+
+            target.getWorkingDir().set(child.getWorkingDir());
+        }
 
         return target;
     }
 
     /* DEBUGGING */
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return "SlimeLauncherOptionsImpl{" +
-            "name='" + name + '\'' +
+            "name=" + name +
             ", mainClass=" + mainClass.getOrNull() +
             ", args=[" + String.join(", ", args.getOrElse(List.of())) + ']' +
             ", jvmArgs=[" + String.join(", ", jvmArgs.getOrElse(List.of())) + ']' +

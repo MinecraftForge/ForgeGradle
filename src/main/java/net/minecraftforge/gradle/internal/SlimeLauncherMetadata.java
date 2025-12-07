@@ -6,8 +6,9 @@ package net.minecraftforge.gradle.internal;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ArchiveOperations;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -17,7 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
 abstract class SlimeLauncherMetadata extends DefaultTask implements ForgeGradleTask {
-    protected abstract @InputFile RegularFileProperty getMetadataZip();
+    protected abstract @InputFiles ConfigurableFileCollection getMetadata();
 
     protected abstract @OutputFile RegularFileProperty getRunsJson();
 
@@ -30,7 +31,7 @@ abstract class SlimeLauncherMetadata extends DefaultTask implements ForgeGradleT
 
     @TaskAction
     protected void exec() {
-        this.getArchiveOperations().zipTree(this.getMetadataZip())
+        this.getArchiveOperations().zipTree(this.getMetadata().getSingleFile())
             .matching(it -> it.include("launcher/**"))
             .visit(file -> {
                 try {
