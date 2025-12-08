@@ -30,7 +30,7 @@ dependencyResolutionManagement.versionCatalogs.register('libs') {
     plugin 'shadow',         'com.gradleup.shadow'            version '9.3.0' // https://plugins.gradle.org/plugin/com.gradleup.shadow
 
     // Static Analysis
-    library 'nulls', 'org.jetbrains', 'annotations' version '26.0.2-1'
+    library 'annotations-jspecify', 'org.jspecify', 'jspecify' version '1.0.0'
 
     // Gradle API
     // Original: https://github.com/remal-gradle-api/packages/packages/760197?version=9.0.0

@@ -37,7 +37,7 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import javax.inject.Inject;
 import java.io.File;
@@ -45,8 +45,9 @@ import java.util.Objects;
 import java.util.Set;
 
 abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
-    private transient @Nullable("configuration cache") ExternalModuleDependency delegate;
-    private transient @Nullable("configuration cache") TaskProvider<SyncMavenizer> mavenizer;
+    // These can be nullable due to configuration caching.
+    private transient @Nullable ExternalModuleDependency delegate;
+    private transient @Nullable TaskProvider<SyncMavenizer> mavenizer;
 
     final Property<String> asString = getObjects().property(String.class);
     final Property<String> asPath = getObjects().property(String.class);
@@ -79,13 +80,15 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
         );
     }
 
+    // Can be nullable due to configuration caching.
     @Override
-    public @Nullable("configuration cache") ExternalModuleDependency asDependency() {
+    public @Nullable ExternalModuleDependency asDependency() {
         return this.delegate;
     }
 
+    // Can be nullable due to configuration caching.
     @Override
-    public @Nullable("configuration cache") TaskProvider<SyncMavenizer> asTask() {
+    public @Nullable TaskProvider<SyncMavenizer> asTask() {
         return this.mavenizer;
     }
 
@@ -258,12 +261,12 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
 
                 spec.getFrom()
                     .attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, ArtifactTypeDefinition.JAR_TYPE)
-                    .attribute(Category.CATEGORY_ATTRIBUTE, this.getObjects().named(Category.class, Category.LIBRARY))
+                    .attribute(Category.CATEGORY_ATTRIBUTE, spec.getFrom().named(Category.class, Category.LIBRARY))
                     .attribute(attribute, false);
 
                 spec.getTo()
                     .attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, ArtifactTypeDefinition.JAR_TYPE)
-                    .attribute(Category.CATEGORY_ATTRIBUTE, this.getObjects().named(Category.class, Category.LIBRARY))
+                    .attribute(Category.CATEGORY_ATTRIBUTE, spec.getTo().named(Category.class, Category.LIBRARY))
                     .attribute(attribute, true);
             });
 

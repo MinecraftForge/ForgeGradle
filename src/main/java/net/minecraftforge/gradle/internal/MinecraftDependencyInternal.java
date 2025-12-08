@@ -17,7 +17,7 @@ import org.gradle.api.reflect.HasPublicType;
 import org.gradle.api.reflect.TypeOf;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 interface MinecraftDependencyInternal extends MinecraftDependency, HasPublicType, MinecraftMappingsContainerInternal {
     String MC_EXT_NAME = "__fg_minecraft_dependency";
@@ -46,9 +46,11 @@ interface MinecraftDependencyInternal extends MinecraftDependency, HasPublicType
 
     ExternalModuleDependency init(Object dependencyNotation, Closure<?> closure);
 
-    @Nullable("configuration cache") ExternalModuleDependency asDependency();
+    // Can be nullable due to configuration caching.
+    @Nullable ExternalModuleDependency asDependency();
 
-    @Nullable("configuration cache") TaskProvider<SyncMavenizer> asTask();
+    // Can be nullable due to configuration caching.
+    @Nullable TaskProvider<SyncMavenizer> asTask();
 
     Action<? super AttributeContainer> addAttributes();
 

@@ -7,14 +7,15 @@ package net.minecraftforge.gradle.internal;
 import groovy.transform.NamedParam;
 import groovy.transform.NamedParams;
 import net.minecraftforge.gradle.MinecraftMappingsContainer;
-import org.jetbrains.annotations.UnknownNullability;
+import org.jspecify.annotations.NullUnmarked;
 
 import java.util.Map;
 
 interface MinecraftMappingsContainerInternal extends MinecraftMappingsContainer {
     // NOTE: Overridden with @UnknownNullability, null is checked in MinecraftMappingsImpl
     @Override
-    void mappings(@UnknownNullability String channel, @UnknownNullability String version);
+    @NullUnmarked
+    void mappings(String channel, String version);
 
     @Override
     default void mappings(
