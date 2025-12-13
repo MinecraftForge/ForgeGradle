@@ -26,6 +26,10 @@ java {
     withJavadocJar()
 }
 
+shadow {
+    addTargetJvmVersionAttribute = false
+}
+
 gradleutils.pluginDevDefaults(configurations, libs.versions.gradle)
 
 configurations {
