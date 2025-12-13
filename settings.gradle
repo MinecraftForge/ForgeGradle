@@ -4,6 +4,10 @@ plugins {
 
 rootProject.name = 'forgegradle'
 
+include 'runtime-environment-check'
+
+enableFeaturePreview 'TYPESAFE_PROJECT_ACCESSORS'
+
 // Applying plugins causes them to not have any IDE support when also applied to any build.gradle files
 // The workaround for now is to use this listener here so that it can stay in settings.gradle
 // See: https://youtrack.jetbrains.com/issue/IDEA-332061/Gradle-Missing-Code-Completion-Suggestions-for-Settings-Plugins-in-Groovy-DSL

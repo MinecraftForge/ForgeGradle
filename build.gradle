@@ -26,9 +26,31 @@ java {
     withJavadocJar()
 }
 
+shadow {
+    addTargetJvmVersionAttribute = false
+}
+
 gradleutils.pluginDevDefaults(configurations, libs.versions.gradle)
 
+configurations {
+    dependencyScope('runtimeCheckerOnly') {
+        description = 'Contains the dependencies for the runtime environment checker used to check the Gradle version.'
+    }
+
+    resolvable('runtimeCheckerClasspath') {
+        description = 'Contains the classpath for the runtime environment checker used to check the Gradle version.'
+        transitive = false
+        extendsFrom runtimeCheckerOnly
+    }
+
+    named('runtimeClasspath') {
+        extendsFrom runtimeCheckerClasspath
+    }
+}
+
 dependencies {
+    runtimeCheckerOnly projects.runtimeEnvironmentCheck
+
     // Static Analysis
     api libs.annotations.jspecify
 
@@ -51,16 +73,27 @@ license {
     exclude '**/*.properties'
 }
 
+def includeRuntimeChecker = { Jar jar ->
+    jar.dependsOn(configurations.runtimeCheckerClasspath.buildDependencies)
+    jar.from(provider { zipTree(configurations.runtimeCheckerClasspath.singleFile) }) {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
+}
+
 tasks.named('jar', Jar) {
+    includeRuntimeChecker(it)
     archiveClassifier = 'thin'
 }
 
 tasks.named('shadowJar', ShadowJar) {
+    includeRuntimeChecker(it)
+
     enableAutoRelocation = true
     archiveClassifier = null
     relocationPrefix = 'net.minecraftforge.gradle.shadow'
 
     dependencies {
+        exclude dependency(projects.runtimeEnvironmentCheck)
         exclude dependency(libs.annotations.jspecify)
     }
 }
@@ -79,7 +112,7 @@ gradlePlugin {
 
     plugins.register('forgegradle') {
         id = 'net.minecraftforge.gradle'
-        implementationClass = 'net.minecraftforge.gradle.internal.ForgeGradlePlugin'
+        implementationClass = 'net.minecraftforge.gradle.internal.ForgeGradlePluginEntry'
         displayName = gradleutils.displayName.get()
         description = project.description
         tags = ['minecraftforge', 'minecraft']

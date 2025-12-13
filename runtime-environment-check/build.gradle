@@ -1,0 +1,26 @@
+plugins {
+    id 'java'
+    id 'idea'
+    id 'eclipse'
+    alias libs.plugins.gradleutils
+    alias libs.plugins.licenser
+}
+
+gradleutils.displayName = 'Runtime Environment Check'
+description = 'A small Gradle plugin entry point that checks for the required Gradle version.'
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(8)
+
+dependencies {
+    // Static Analysis
+    implementation libs.annotations.jspecify
+
+    // Gradle API
+    compileOnly libs.gradle
+}
+
+license {
+    header = rootProject.file('LICENSE-header.txt')
+    newLine = false
+    exclude '**/*.properties'
+}
