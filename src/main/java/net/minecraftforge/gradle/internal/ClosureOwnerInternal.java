@@ -26,7 +26,7 @@ import org.gradle.api.capabilities.Capability;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.reflect.HasPublicType;
 import org.gradle.api.reflect.TypeOf;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;

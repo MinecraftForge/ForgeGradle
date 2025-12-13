@@ -30,7 +30,7 @@ gradleutils.pluginDevDefaults(configurations, libs.versions.gradle)
 
 dependencies {
     // Static Analysis
-    compileOnly libs.nulls
+    api libs.annotations.jspecify
 
     // Gradle API
     compileOnly libs.gradle
@@ -59,6 +59,10 @@ tasks.named('shadowJar', ShadowJar) {
     enableAutoRelocation = true
     archiveClassifier = null
     relocationPrefix = 'net.minecraftforge.gradle.shadow'
+
+    dependencies {
+        exclude dependency(libs.annotations.jspecify)
+    }
 }
 
 tasks.withType(Javadoc).configureEach {

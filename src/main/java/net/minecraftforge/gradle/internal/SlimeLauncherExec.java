@@ -50,13 +50,11 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
             try {
                 t = project.getTasks().named(taskName, SlimeLauncherMetadata.class);
             } catch (UnknownDomainObjectException e) {
-                var metadataDep = project.getDependencyFactory().create(module.getGroup(), module.getName(), version, "metadata", "zip");
-                var metadataAttr = project.getObjects().named(Usage.class, "metadata");
                 var metadataConfiguration = project.getConfigurations().detachedConfiguration(
-                    metadataDep
+                    project.getDependencyFactory().create(module.getGroup(), module.getName(), version, "metadata", "zip")
                 );
                 metadataConfiguration.setTransitive(false);
-                metadataConfiguration.attributes(a -> a.attribute(Usage.USAGE_ATTRIBUTE, metadataAttr));
+                metadataConfiguration.attributes(a -> a.attribute(Usage.USAGE_ATTRIBUTE, a.named(Usage.class, "metadata")));
 
                 t = project.getTasks().register(taskName, SlimeLauncherMetadata.class, task -> {
                     task.setDescription("Extracts the Slime Launcher metadata%s.".formatted(single ? "" : " for '%s'".formatted(asString)));

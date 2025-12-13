@@ -8,7 +8,7 @@ import net.minecraftforge.util.os.OS;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.provider.ValueSource;
 import org.gradle.api.provider.ValueSourceParameters;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import javax.inject.Inject;
 

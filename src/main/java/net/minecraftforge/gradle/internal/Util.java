@@ -12,14 +12,13 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleIdentifier;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.UnknownNullability;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
 final class Util extends SharedUtil {
-    static String checkMappingsParam(ForgeGradleProblems problems, @UnknownNullability Object param, String name) {
+    static String checkMappingsParam(ForgeGradleProblems problems, @Nullable Object param, String name) {
         if (param == null)
             throw problems.nullMappingsParam(name);
 
