@@ -24,6 +24,13 @@ public interface SlimeLauncherOptionsNested {
     /// @return A property for the main class
     @Input @Optional Property<String> getMainClass();
 
+    /// Wither or not to inherit arguments from the UserDev provided run configs.
+    ///
+    /// If you set this to false you must specify all arguments to start the process manually.
+    ///
+    /// @return A property controlling inheritance of arguments from UserDev config file.
+    @Input @Optional Property<Boolean> getInheritArgs();
+
     /// The arguments to pass to the main class.
     ///
     /// This is the arguments that will be passed to the main class through Slime Launcher, **not** the arguments for
@@ -31,6 +38,13 @@ public interface SlimeLauncherOptionsNested {
     ///
     /// @return A property for the arguments to pass to the main class
     @Input @Optional ListProperty<String> getArgs();
+
+    /// Wither or not to inherit JVM arguments from the UserDev provided run configs.
+    ///
+    /// If you set this to false you must specify all JVM arguments to start the process manually.
+    ///
+    /// @return A property controlling inheritance of JVM arguments from UserDev config file.
+    @Input @Optional Property<Boolean> getInheritJvmArgs();
 
     /// The JVM arguments to use.
     ///

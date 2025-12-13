@@ -16,7 +16,6 @@ import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
-
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,7 +26,9 @@ public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsIn
     private final String name;
 
     private final Property<String> mainClass = this.getObjects().property(String.class);
+    private final Property<Boolean> inheritArgs = this.getObjects().property(Boolean.class);
     private final ListProperty<String> args = this.getObjects().listProperty(String.class);
+    private final Property<Boolean> inheritJvmArgs = this.getObjects().property(Boolean.class);
     private final ListProperty<String> jvmArgs = this.getObjects().listProperty(String.class);
     private final ConfigurableFileCollection classpath = this.getObjects().fileCollection();
     private final Property<String> minHeapSize = this.getObjects().property(String.class);
@@ -62,8 +63,18 @@ public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsIn
     }
 
     @Override
+    public Property<Boolean> getInheritArgs() {
+        return this.inheritArgs;
+    }
+
+    @Override
     public ListProperty<String> getArgs() {
         return this.args;
+    }
+
+    @Override
+    public Property<Boolean> getInheritJvmArgs() {
+        return this.inheritJvmArgs;
     }
 
     @Override
@@ -263,7 +274,9 @@ public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsIn
     public SlimeLauncherOptionsInternal inherit(Map<String, RunConfig> configs, String sourceSetName, String name) {
         var target = getObjects().newInstance(SlimeLauncherOptionsImpl.class, name);
         target.getMainClass().convention(this.getMainClass());
+        target.getInheritArgs().convention(this.getInheritArgs());
         target.getArgs().convention(this.getArgs());
+        target.getInheritJvmArgs().convention(this.getInheritJvmArgs());
         target.getJvmArgs().convention(this.getJvmArgs());
         target.getClasspath().convention(this.getClasspath());
         target.getMinHeapSize().convention(this.getMinHeapSize());
@@ -284,11 +297,21 @@ public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsIn
             if (config.main != null)
                 target.getMainClass().convention(config.main);
 
-            if (config.args != null && !config.args.isEmpty())
-                target.getArgs().convention(List.copyOf(config.args));
+            if (config.args != null && !config.args.isEmpty()) {
+                if (target.getInheritArgs().getOrElse(Boolean.TRUE)) {
+                    var args = new ArrayList<>(config.args);
+                    args.addAll(target.getArgs().get());
+                    target.getArgs().convention(args);
+                }
+            }
 
-            if (config.jvmArgs != null && !config.jvmArgs.isEmpty())
-                target.jvmArgs(config.jvmArgs);
+            if (config.jvmArgs != null && !config.jvmArgs.isEmpty()) {
+                if (target.getInheritJvmArgs().getOrElse(Boolean.TRUE)) {
+                    var args = new ArrayList<>(config.jvmArgs);
+                    args.addAll(target.getJvmArgs().get());
+                    target.getJvmArgs().convention(args);
+                }
+            }
 
             target.getClient().convention(config.client);
 
