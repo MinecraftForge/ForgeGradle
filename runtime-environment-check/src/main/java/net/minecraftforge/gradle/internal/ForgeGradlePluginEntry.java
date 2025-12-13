@@ -24,7 +24,7 @@ abstract class ForgeGradlePluginEntry implements Plugin<PluginAware> {
     public void apply(PluginAware target) {
         if (CURRENT_GRADLE.compareTo(MINIMUM_GRADLE) < 0) {
             String message = String.format(
-                "ForgeGradle requires %s or later to run. You are currently using %s.",
+                "ForgeGradle 7 requires %s or later to run. You are currently using %s.",
                 MINIMUM_GRADLE,
                 CURRENT_GRADLE
             );
