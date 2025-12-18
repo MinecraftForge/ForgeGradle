@@ -17,14 +17,14 @@ gradle.beforeProject { Project project ->
             mavenCentral()
             gradlePluginPortal()
             maven project.gradleutils.forgeMaven
-            mavenLocal()
+            //mavenLocal()
         }
     }
 }
 
 //@formatter:off
 dependencyResolutionManagement.versionCatalogs.register('libs') {
-    version 'gradleutils', '3.3.39'
+    version 'gradleutils', '3.3.40'
 
     plugin 'licenser',       'net.minecraftforge.licenser'    version '1.2.0' // https://plugins.gradle.org/plugin/net.minecraftforge.licenser
     plugin 'gradleutils',    'net.minecraftforge.gradleutils' versionRef 'gradleutils'
@@ -43,8 +43,7 @@ dependencyResolutionManagement.versionCatalogs.register('libs') {
     library 'gradle', 'name.remal.gradle-api', 'gradle-api'  versionRef 'gradle'
 
     // GradleUtils Shared Base
-    //library 'gradleutils-shared', 'net.minecraftforge', 'gradleutils-shared' versionRef 'gradleutils'
-    library 'gradleutils-shared', 'net.minecraftforge', 'gradleutils-shared' version '3.3.40'
+    library 'gradleutils-shared', 'net.minecraftforge', 'gradleutils-shared' versionRef 'gradleutils'
 
     // AccessTransformers Gradle Plugin
     // https://plugins.gradle.org/plugin/net.minecraftforge.accesstransformers
