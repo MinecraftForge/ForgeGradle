@@ -27,6 +27,8 @@ interface MinecraftExtensionInternal extends MinecraftExtension, HasPublicType, 
         return AttributesInternal.INSTANCE;
     }
 
+    DirectoryProperty getMavenizerOutput();
+
     record AttributesInternal() implements Attributes {
         static AttributesInternal INSTANCE = new AttributesInternal();
 

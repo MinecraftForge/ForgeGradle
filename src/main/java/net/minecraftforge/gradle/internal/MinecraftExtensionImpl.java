@@ -15,6 +15,7 @@ import net.minecraftforge.gradle.MinecraftExtension;
 import net.minecraftforge.gradle.MinecraftExtensionForProject;
 import net.minecraftforge.gradle.MinecraftMappings;
 import net.minecraftforge.gradle.SlimeLauncherOptions;
+import org.codehaus.groovy.runtime.InvokerHelper;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
@@ -49,16 +50,11 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
-    private static final String EXT_MAVEN_REPOS = "fg_mc_maven_repos";
-    private static final String EXT_MAPPINGS = "fg_mc_mappings";
+    private final DirectoryProperty mavenizerOutput = getObjects().directoryProperty();
 
-    final ForgeGradleProblems problems;
+    final Property<MinecraftMappingsImpl> mappings = getObjects().property(MinecraftMappingsImpl.class);
 
-    // MCMaven
-    final DirectoryProperty mavenizerOutput;
-
-    // Dependencies
-    final Property<MinecraftMappingsImpl> mappings;
+    final ForgeGradleProblems problems = getObjects().newInstance(ForgeGradleProblems.class);
 
     protected abstract @Inject ObjectFactory getObjects();
 
@@ -72,16 +68,16 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         if (target instanceof Project project) {
             if (project.getPluginManager().hasPlugin("net.minecraftforge.accesstransformers")) {
                 try {
-                    extensions.create(MinecraftExtension.NAME, MinecraftExtensionImpl.ForProjectImpl.WithAccessTransformersImpl.class, plugin);
+                    extensions.create(MinecraftExtension.NAME, ForProjectImpl.WithAccessTransformersImpl.class, plugin);
                 } catch (Exception e) {
                     var problems = project.getObjects().newInstance(ForgeGradleProblems.class);
                     throw problems.accessTransformersNotOnClasspath(e);
                 }
             } else {
-                extensions.create(MinecraftExtension.NAME, MinecraftExtensionImpl.ForProjectImpl.class, plugin);
+                extensions.create(MinecraftExtension.NAME, ForProjectImpl.class, plugin);
             }
         } else if (target instanceof Settings) {
-            extensions.create(MinecraftExtension.NAME, MinecraftExtensionImpl.ForSettingsImpl.class, plugin, target);
+            extensions.create(MinecraftExtension.NAME, ForSettingsImpl.class, plugin, target);
         } else {
             extensions.create(MinecraftExtension.NAME, MinecraftExtensionImpl.class, plugin);
         }
@@ -89,11 +85,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
     @Inject
     public MinecraftExtensionImpl(ForgeGradlePlugin plugin) {
-        this.problems = this.getObjects().newInstance(ForgeGradleProblems.class);
-
-        this.mavenizerOutput = this.getObjects().directoryProperty().convention(plugin.localCaches().dir("mavenizer/output").map(this.problems.ensureFileLocation()));
-
-        this.mappings = this.getObjects().property(MinecraftMappingsImpl.class);
+        this.mavenizerOutput.convention(plugin.localCaches().dir("mavenizer/output").map(this.problems.ensureFileLocation()));
     }
 
     @Override
@@ -102,10 +94,15 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
     }
 
     @Override
+    public DirectoryProperty getMavenizerOutput() {
+        return this.mavenizerOutput;
+    }
+
+    @Override
     public Action<MavenArtifactRepository> getMavenizer() {
         return maven -> {
             maven.setName("MinecraftMavenizer");
-            maven.setUrl(this.mavenizerOutput.getAsFile());
+            maven.setUrl(this.getMavenizerOutput());
         };
     }
 
@@ -114,16 +111,16 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         try {
             return this.mappings.get();
         } catch (IllegalStateException e) {
-            throw this.problems.missingMappings(e);
+            throw problems.missingMappings(e);
         }
     }
 
     @Override
     @NamedVariant
     public void mappings(String channel, String version) {
-        var replacement = this.getObjects().newInstance(MinecraftMappingsImpl.class, channel, version);
+        var replacement = getObjects().newInstance(MinecraftMappingsImpl.class, channel, version);
         if (this.mappings.isPresent())
-            this.problems.reportOverriddenMappings(this.mappings.get(), replacement);
+            problems.reportOverriddenMappings(this.mappings.get(), replacement);
 
         this.mappings.set(replacement);
     }
@@ -136,16 +133,16 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         }
 
         private void finish(Settings settings) {
-            if (!this.mappings.isPresent()) return;
-            var repositories = settings.getDependencyResolutionManagement().getRepositories().withType(MavenArtifactRepository.class);
-
-            var ext = settings.getGradle().getExtensions().getExtraProperties();
-            ext.set(EXT_MAVEN_REPOS, repositories);
-            ext.set(EXT_MAPPINGS, this.mappings.get());
+            settings.getGradle().getExtensions().add(
+                ForgeGradleSharedData.NAME,
+                new ForgeGradleSharedData(
+                    this.mappings.getOrNull()
+                )
+            );
         }
     }
 
-    static abstract class ForProjectImpl<T extends ClosureOwner & MinecraftDependency & ExternalModuleDependency> extends MinecraftExtensionImpl implements MinecraftExtensionInternal.ForProject<T> {
+    static abstract class ForProjectImpl<T extends ClosureOwner & MinecraftDependency & ExternalModuleDependency> extends MinecraftExtensionImpl implements ForProject<T> {
         private @Nullable TaskProvider<Task> genEclipseRuns;
         final DirectoryProperty eclipseOutputDir = getObjects().directoryProperty().convention(getProjectLayout().getProjectDirectory().dir("bin"));
 
@@ -167,9 +164,10 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         public ForProjectImpl(ForgeGradlePlugin plugin) {
             super(plugin);
 
-            var ext = getProject().getExtensions().getExtraProperties();
-            if (ext.has(EXT_MAPPINGS))
-                this.mappings.set((MinecraftMappingsImpl) ext.get(EXT_MAPPINGS));
+            var sharedData = getProject().getGradle().getExtensions().findByType(ForgeGradleSharedData.class);
+            if (sharedData != null) {
+                this.mappings.set(sharedData.mappings());
+            }
 
             plugin.queueMessage(ForgeGradleMessage.WELCOME);
             plugin.queueMessage(ForgeGradleMessage.MAGIC);
@@ -218,12 +216,17 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         }
 
         @Override
-        @SuppressWarnings("unchecked")
         public List<? extends MavenArtifactRepository> getRepositories() {
-            var ext = getProject().getGradle().getExtensions().getExtraProperties();
-            return ext.has(EXT_MAVEN_REPOS)
-                ? Objects.requireNonNull((List<? extends MavenArtifactRepository>) ext.get(EXT_MAVEN_REPOS))
-                : getProject().getRepositories().withType(MavenArtifactRepository.class);
+            var repositories = getObjects().namedDomainObjectList(MavenArtifactRepository.class);
+            repositories.addAll(getProject().getRepositories().withType(MavenArtifactRepository.class));
+            try {
+                Settings settings = (Settings) InvokerHelper.getProperty(getProject().getGradle(), "settings");
+                repositories.addAll(settings.getDependencyResolutionManagement().getRepositories().withType(MavenArtifactRepository.class));
+            } catch (Exception e) {
+                problems.reportCannotAccessSettingsRepos(e);
+            }
+
+            return repositories;
         }
 
         @Override
@@ -341,7 +344,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             if (value instanceof ExternalModuleDependencyBundle)
                 throw new IllegalArgumentException("Minecraft dependency cannot be a bundle");
 
-            var minecraftDependency = (MinecraftDependencyInternal) this.getObjects().newInstance(this.getMinecraftDependencyClass(), this.mavenizerOutput);
+            var minecraftDependency = (MinecraftDependencyInternal) this.getObjects().newInstance(this.getMinecraftDependencyClass(), this.getMavenizerOutput());
             this.minecraftDependencies.add(minecraftDependency);
             return minecraftDependency.init(value, closure);
         }
@@ -366,7 +369,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             };
 
             // Mavenizer
-            if (!containsExactly.test(ForProjectImpl.this.mavenizerOutput.getAsFile())) {
+            if (!containsExactly.test(ForProjectImpl.this.getMavenizerOutput().getAsFile())) {
                 problems.reportMcMavenNotDeclared();
             }
 
@@ -381,7 +384,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             }
         }
 
-        static abstract class WithAccessTransformersImpl extends ForProjectImpl<ClosureOwner.MinecraftDependencyWithAccessTransformers> implements MinecraftExtensionInternal.ForProject.WithAccessTransformers {
+        static abstract class WithAccessTransformersImpl extends ForProjectImpl<ClosureOwner.MinecraftDependencyWithAccessTransformers> implements WithAccessTransformers {
             private final Property<String> accessTransformers = this.getObjects().property(String.class);
 
             @Inject
@@ -391,7 +394,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
             @Override
             public TypeOf<?> getPublicType() {
-                return MinecraftExtensionInternal.ForProject.WithAccessTransformers.super.getPublicType();
+                return WithAccessTransformers.super.getPublicType();
             }
 
             @Override
