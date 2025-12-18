@@ -6,11 +6,8 @@ package net.minecraftforge.gradle.internal;
 
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
-import groovy.transform.CompileStatic;
 import groovy.transform.NamedVariant;
-import groovy.transform.PackageScope;
 import groovy.transform.stc.ClosureParams;
-import groovy.transform.stc.FromString;
 import groovy.transform.stc.SimpleType;
 import net.minecraftforge.gradle.ClosureOwner;
 import net.minecraftforge.gradle.MinecraftDependency;
@@ -21,6 +18,8 @@ import net.minecraftforge.gradle.SlimeLauncherOptions;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ExternalModuleDependencyBundle;
@@ -38,10 +37,11 @@ import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.reflect.TypeOf;
+import org.gradle.api.tasks.TaskProvider;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
+import org.jspecify.annotations.Nullable;
 
 import javax.inject.Inject;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -61,6 +61,8 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
     final Property<MinecraftMappingsImpl> mappings;
 
     protected abstract @Inject ObjectFactory getObjects();
+
+    protected abstract @Inject ProviderFactory getProviders();
 
     static void register(
         ForgeGradlePlugin plugin,
@@ -126,8 +128,6 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         this.mappings.set(replacement);
     }
 
-    @CompileStatic
-    @PackageScope
     static abstract class ForSettingsImpl extends MinecraftExtensionImpl {
         @Inject
         public ForSettingsImpl(ForgeGradlePlugin plugin, Settings settings) {
@@ -146,8 +146,11 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
     }
 
     static abstract class ForProjectImpl<T extends ClosureOwner & MinecraftDependency & ExternalModuleDependency> extends MinecraftExtensionImpl implements MinecraftExtensionInternal.ForProject<T> {
+        private @Nullable TaskProvider<Task> genEclipseRuns;
+        final DirectoryProperty eclipseOutputDir = getObjects().directoryProperty().convention(getProjectLayout().getProjectDirectory().dir("bin"));
+
         // Slime Launcher
-        private final NamedDomainObjectContainer<SlimeLauncherOptionsImpl> runs;
+        private final NamedDomainObjectContainer<SlimeLauncherOptionsImpl> runs = getObjects().domainObjectContainer(SlimeLauncherOptionsImpl.class);
 
         // Dependencies
         final List<MinecraftDependencyInternal> minecraftDependencies = new ArrayList<>();
@@ -160,16 +163,11 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
         protected abstract @Inject ProjectLayout getProjectLayout();
 
-        protected abstract @Inject ProviderFactory getProviders();
-
         @Inject
         public ForProjectImpl(ForgeGradlePlugin plugin) {
             super(plugin);
-            var project = getProject();
 
-            this.runs = this.getObjects().domainObjectContainer(SlimeLauncherOptionsImpl.class);
-
-            var ext = project.getExtensions().getExtraProperties();
+            var ext = getProject().getExtensions().getExtraProperties();
             if (ext.has(EXT_MAPPINGS))
                 this.mappings.set((MinecraftMappingsImpl) ext.get(EXT_MAPPINGS));
 
@@ -178,15 +176,40 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
             this.getFlowScope().always(ForgeGradleFlowAction.AccessTransformersMissing.class, spec -> spec.parameters(parameters -> {
                 parameters.getFailure().set(this.getFlowProviders().getBuildWorkResult().map(p -> p.getFailure().orElse(null)));
-                parameters.appliedPlugin.set(project.getPluginManager().hasPlugin("net.minecraftforge.accesstransformers"));
+                parameters.appliedPlugin.set(getProject().getPluginManager().hasPlugin("net.minecraftforge.accesstransformers"));
             }));
 
-            project.getConfigurations()
-                   .matching(Configuration::isCanBeResolved)
-                   .configureEach(c -> c.withDependencies(d -> this.apply(c)));
+            getProject().getConfigurations().configureEach(c -> c.withDependencies(d -> this.apply(c)));
+
+            getProject().getDependencies().attributesSchema(schema -> {
+                schema.attribute(ForgeAttributes.OperatingSystem.ATTRIBUTE, strategy -> {
+                    var currentOS = getProviders().of(ForgeAttributes.OperatingSystem.CurrentValue.class, ForgeAttributes.OperatingSystem.CurrentValue.Parameters.DEFAULT).get();
+                    strategy.getDisambiguationRules().add(ForgeAttributes.OperatingSystem.DisambiguationRule.class, ctor -> ctor.params(currentOS));
+                });
+
+                schema.attribute(ForgeAttributes.MappingsChannel.ATTRIBUTE, strategy ->
+                    strategy.getDisambiguationRules().add(ForgeAttributes.MappingsChannel.DisambiguationRule.class)
+                );
+
+                schema.attribute(ForgeAttributes.MappingsVersion.ATTRIBUTE, strategy ->
+                    strategy.ordered(ForgeAttributes.MappingsVersion.COMPARATOR)
+                );
+            });
+
+            getProject().getPluginManager().withPlugin("eclipse", appliedEclipsePlugin -> {
+                var eclipse = getProject().getExtensions().getByType(EclipseModel.class);
+
+                this.genEclipseRuns = getProject().getTasks().register("genEclipseRuns", task -> {
+                    task.setGroup("IDE");
+                    task.setDescription("Generates the run configuration launch files for Eclipse.");
+                });
+                eclipse.synchronizationTasks(genEclipseRuns);
+
+                this.eclipseOutputDir.fileProvider(getProviders().provider(() -> eclipse.getClasspath().getDefaultOutputDir()));
+            });
 
             // Finish when the project is evaluated
-            project.afterEvaluate(this::finish);
+            getProject().afterEvaluate(this::finish);
         }
 
         @Override
@@ -203,7 +226,14 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                 : getProject().getRepositories().withType(MavenArtifactRepository.class);
         }
 
+        @Override
+        public DirectoryProperty getEclipseOutputDir() {
+            return this.eclipseOutputDir;
+        }
+
         private void apply(Configuration configuration) {
+            if (!configuration.isCanBeResolved()) return;
+
             var hierarchy = configuration.getHierarchy();
 
             var minecraftDependencies = hierarchy
@@ -213,7 +243,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                 .collect(Collectors.toSet());
 
             for (var minecraftDependency : minecraftDependencies) {
-                // This can never be null in production and is only here to make the IDE happy.
+                // This can never be null and is only here to make the IDE happy.
                 assert minecraftDependency != null;
 
                 minecraftDependency.handle(configuration);
@@ -223,9 +253,20 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         private void finish(Project project) {
             checkRepos(getRepositories());
 
+            var sourceSets = project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets();
             var sourceSetsDir = this.getObjects().directoryProperty().value(this.getProjectLayout().getBuildDirectory().dir("sourceSets"));
             var mergeSourceSets = this.problems.test("net.minecraftforge.gradle.merge-source-sets");
-            project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets().configureEach(sourceSet -> {
+            sourceSets.all(sourceSet -> {
+                var sourceSetName = sourceSet.getName();
+                var syncMavenizer = Util.runFirst(project, project.getTasks().register(sourceSet.getTaskName("sync", "mavenizer"), task -> {
+                    task.setGroup("Build Setup");
+                    task.setDescription("Synchronizes the Mavenizer output for source set '" + sourceSetName + '.');
+                }));
+
+                try {
+                    project.getTasks().named(sourceSet.getCompileJavaTaskName(), task -> task.dependsOn(syncMavenizer));
+                } catch (UnknownTaskException ignored) { }
+
                 if (mergeSourceSets) {
                     // This is documented in SourceSetOutput's javadoc comment
                     var unifiedDir = sourceSetsDir.dir(sourceSet.getName());
@@ -235,6 +276,8 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
                 project.getPluginManager().withPlugin("eclipse", eclipsePlugin -> {
                     var eclipse = project.getExtensions().getByType(EclipseModel.class);
+                    eclipse.synchronizationTasks(syncMavenizer);
+
                     if (mergeSourceSets)
                         eclipse.getClasspath().setDefaultOutputDir(sourceSetsDir.getAsFile().get());
                     else
@@ -242,16 +285,13 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                 });
             });
 
-            if (!this.minecraftDependencies.isEmpty()) {
-                var syncMavenizer = project.getTasks().register("syncMavenizer", task -> task.setGroup("Build Setup"));
-                for (var minecraftDependency : this.minecraftDependencies) {
-                    var mavenizer = minecraftDependency.asTask();
-                    if (mavenizer == null) continue;
-
-                    syncMavenizer.configure(task -> task.dependsOn(mavenizer));
-
-                    var dependency = minecraftDependency.asDependency();
-                    if (dependency == null) continue;
+            for (var minecraftDependency : this.minecraftDependencies) {
+                var dependency = minecraftDependency.asDependency();
+                if (dependency != null) {
+                    minecraftDependency.handle(
+                        Util.collect(project, false, dependency),
+                        Util.collect(project, true, dependency)
+                    );
 
                     // See https://github.com/MinecraftForge/ForgeGradle/issues/1008#issuecomment-3623727384
                     // Basically, if IntelliJ can't immediately find a sources JAR next to the main jar, it tries to use this scuffed task
@@ -277,70 +317,12 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                         }
                     });
                 }
-
-                project.getPluginManager().withPlugin("eclipse", eclipsePlugin -> {
-                    var eclipse = project.getExtensions().getByType(EclipseModel.class);
-                    eclipse.synchronizationTasks(syncMavenizer);
-                });
-
-                var taskNames = project.getGradle().getStartParameter().getTaskNames();
-                taskNames.add(0, syncMavenizer.get().getPath());
-                project.getGradle().getStartParameter().setTaskNames(taskNames);
-            }
-
-            if (!this.runs.isEmpty() && !this.minecraftDependencies.isEmpty()) {
-                var genEclipseRuns = project.getTasks().register("genEclipseRuns", task -> {
-                    task.setGroup("IDE");
-                    task.setDescription("Generates the run configuration launch files for Eclipse.");
-                });
-
-                File eclipseOutputDir;
-                var eclipse = project.getExtensions().findByType(EclipseModel.class);
-                if (eclipse != null) {
-                    eclipse.synchronizationTasks(genEclipseRuns);
-                    eclipseOutputDir = eclipse.getClasspath().getDefaultOutputDir();
-                } else {
-                    eclipseOutputDir = getProjectLayout().getProjectDirectory().dir("bin").getAsFile();
-                }
-
-                var configurations = project.getConfigurations();
-                var sourceSets = project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets();
-
-                sourceSets.configureEach(sourceSet -> {
-                    var minecraftDependencies = configurations
-                        .getByName(sourceSet.getRuntimeClasspathConfigurationName())
-                        .getAllDependencies()
-                        .matching(MinecraftDependencyInternal::is)
-                        .stream()
-                        .map(MinecraftDependencyInternal::get)
-                        .collect(Collectors.toSet());
-
-                    boolean single = minecraftDependencies.size() == 1;
-                    for (var minecraftDependency : minecraftDependencies) {
-                        // This can never be null in production and is only here to make the IDE happy.
-                        assert minecraftDependency != null;
-
-                        var impl = (MinecraftDependencyImpl) minecraftDependency;
-                        this.runs.forEach(options -> {
-                            var task = SlimeLauncherExec.register(project, sourceSet, options, impl.module.get(), impl.version.get(), impl.asPath.get(), impl.asString.get(), single, eclipseOutputDir);
-                        });
-                    }
-                });
             }
         }
 
         @Override
         public NamedDomainObjectContainer<? extends SlimeLauncherOptions> getRuns() {
             return this.runs;
-        }
-
-        @Override
-        public void runs(
-            @DelegatesTo(NamedDomainObjectContainer.class)
-            @ClosureParams(value = FromString.class, options = "org.gradle.api.NamedDomainObjectContainer<net.minecraftforge.gradle.SlimeLauncherOptions>")
-            Closure<?> closure
-        ) {
-            this.runs.configure(closure);
         }
 
         Class<? extends MinecraftDependencyInternal> getMinecraftDependencyClass() {

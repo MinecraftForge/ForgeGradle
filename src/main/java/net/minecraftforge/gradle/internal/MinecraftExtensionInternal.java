@@ -10,6 +10,7 @@ import net.minecraftforge.gradle.MinecraftExtensionForProject;
 import net.minecraftforge.gradle.MinecraftExtensionForProjectWithAccessTransformers;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.attributes.Attribute;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.reflect.HasPublicType;
 import org.gradle.api.reflect.TypeOf;
 
@@ -29,23 +30,19 @@ interface MinecraftExtensionInternal extends MinecraftExtension, HasPublicType, 
     record AttributesInternal() implements Attributes {
         static AttributesInternal INSTANCE = new AttributesInternal();
 
-        static final Attribute<String> OS = Attribute.of("net.minecraftforge.native.operatingSystem", String.class);
-        static final Attribute<String> MAPPINGS_CHANNEL = Attribute.of("net.minecraftforge.mappings.channel", String.class);
-        static final Attribute<String> MAPPINGS_VERSION = Attribute.of("net.minecraftforge.mappings.version", String.class);
-
         @Override
         public Attribute<String> getOs() {
-            return OS;
+            return ForgeAttributes.OperatingSystem.ATTRIBUTE;
         }
 
         @Override
         public Attribute<String> getMappingsChannel() {
-            return MAPPINGS_CHANNEL;
+            return ForgeAttributes.MappingsChannel.ATTRIBUTE;
         }
 
         @Override
         public Attribute<String> getMappingsVersion() {
-            return MAPPINGS_VERSION;
+            return ForgeAttributes.MappingsVersion.ATTRIBUTE;
         }
     }
 
@@ -56,6 +53,8 @@ interface MinecraftExtensionInternal extends MinecraftExtension, HasPublicType, 
         }
 
         List<? extends MavenArtifactRepository> getRepositories();
+
+        DirectoryProperty getEclipseOutputDir();
 
         interface WithAccessTransformers extends MinecraftExtensionForProjectWithAccessTransformers, MinecraftExtensionInternal.ForProject<ClosureOwner.MinecraftDependencyWithAccessTransformers>, HasPublicType {
             @Override

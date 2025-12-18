@@ -7,7 +7,10 @@ package net.minecraftforge.gradle.internal;
 import groovy.lang.Closure;
 import net.minecraftforge.gradle.MinecraftDependency;
 import net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers;
+import net.minecraftforge.gradle.SlimeLauncherOptions;
 import org.gradle.api.Action;
+import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.NamedDomainObjectSet;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
@@ -17,7 +20,10 @@ import org.gradle.api.reflect.HasPublicType;
 import org.gradle.api.reflect.TypeOf;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
+import org.jspecify.annotations.NullUnmarked;
 import org.jspecify.annotations.Nullable;
+
+import java.util.Set;
 
 interface MinecraftDependencyInternal extends MinecraftDependency, HasPublicType, MinecraftMappingsContainerInternal {
     String MC_EXT_NAME = "__fg_minecraft_dependency";
@@ -27,6 +33,10 @@ interface MinecraftDependencyInternal extends MinecraftDependency, HasPublicType
     default TypeOf<?> getPublicType() {
         return TypeOf.typeOf(MinecraftDependency.class);
     }
+
+    @Override
+    @NullUnmarked
+    NamedDomainObjectContainer<? extends SlimeLauncherOptions> getRuns();
 
     static boolean is(Dependency dependency) {
         try {
@@ -60,7 +70,7 @@ interface MinecraftDependencyInternal extends MinecraftDependency, HasPublicType
 
     void handle(Configuration configuration);
 
-    void handle(SourceSet sourceSet);
+    void handle(NamedDomainObjectSet<SourceSet> sourceSets, NamedDomainObjectSet<SourceSet> allSourceSets);
 
     interface WithAccessTransformers extends MinecraftDependencyWithAccessTransformers, MinecraftDependencyInternal {
         @Override

@@ -64,6 +64,7 @@ dependencies {
     compileOnlyApi libs.accesstransformers.gradle
 
     // Utils
+    implementation libs.maven.artifact
     implementation libs.bundles.utils
 }
 
@@ -92,6 +93,7 @@ tasks.named('shadowJar', ShadowJar) {
     archiveClassifier = null
     relocationPrefix = 'net.minecraftforge.gradle.shadow'
 
+    minimize()
     dependencies {
         exclude dependency(projects.runtimeEnvironmentCheck)
         exclude dependency(libs.annotations.jspecify)

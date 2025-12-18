@@ -9,12 +9,15 @@ import groovy.transform.NamedVariant;
 import net.minecraftforge.accesstransformers.gradle.ArtifactAccessTransformer;
 import net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers;
 import net.minecraftforge.gradle.MinecraftExtension;
+import net.minecraftforge.gradle.MinecraftExtensionForProject;
 import net.minecraftforge.gradle.MinecraftExtensionForProjectWithAccessTransformers;
 import net.minecraftforge.gradle.MinecraftMappings;
+import net.minecraftforge.gradle.SlimeLauncherOptions;
 import net.minecraftforge.gradleutils.shared.Closures;
-import net.minecraftforge.util.os.OS;
 import org.gradle.api.Action;
 import org.gradle.api.InvalidUserCodeException;
+import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.NamedDomainObjectSet;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
@@ -23,8 +26,11 @@ import org.gradle.api.artifacts.ModuleIdentifier;
 import org.gradle.api.artifacts.type.ArtifactTypeDefinition;
 import org.gradle.api.attributes.Attribute;
 import org.gradle.api.attributes.AttributeContainer;
+import org.gradle.api.attributes.AttributeDisambiguationRule;
 import org.gradle.api.attributes.Category;
+import org.gradle.api.attributes.MultipleCandidatesDetails;
 import org.gradle.api.file.Directory;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.flow.FlowProviders;
@@ -37,6 +43,7 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.jspecify.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -48,14 +55,17 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     // These can be nullable due to configuration caching.
     private transient @Nullable ExternalModuleDependency delegate;
     private transient @Nullable TaskProvider<SyncMavenizer> mavenizer;
+    private transient @Nullable NamedDomainObjectContainer<SlimeLauncherOptionsImpl> runs;
+
+    private final MinecraftExtensionImpl.ForProjectImpl<?> minecraft;
 
     final Property<String> asString = getObjects().property(String.class);
     final Property<String> asPath = getObjects().property(String.class);
     final Property<ModuleIdentifier> module = getObjects().property(ModuleIdentifier.class);
     final Property<String> version = getObjects().property(String.class);
 
-    private final Provider<? extends Directory> mavenizerOutput;
-    private final Property<MinecraftMappingsImpl> mappings;
+    private final DirectoryProperty mavenizerOutput = getObjects().directoryProperty();
+    private final Property<MinecraftMappingsImpl> mappings = this.getObjects().property(MinecraftMappingsImpl.class);
     private @Nullable String sourceSetName;
 
     private final ForgeGradleProblems problems = this.getObjects().newInstance(ForgeGradleProblems.class);
@@ -74,10 +84,16 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
 
     @Inject
     public MinecraftDependencyImpl(Provider<? extends Directory> mavenizerOutput) {
-        this.mavenizerOutput = mavenizerOutput;
-        this.mappings = this.getObjects().property(MinecraftMappingsImpl.class).convention(
-            ((MinecraftExtensionImpl) getProject().getExtensions().getByType(MinecraftExtension.class)).mappings
-        );
+        this.minecraft = ((MinecraftExtensionImpl.ForProjectImpl<?>) getProject().getExtensions().getByType(MinecraftExtensionForProject.class));
+
+        this.mavenizerOutput.set(mavenizerOutput);
+        this.mappings.convention(minecraft.mappings);
+    }
+
+    // Can be nullable due to configuration caching.
+    @Override
+    public @Nullable NamedDomainObjectContainer<? extends SlimeLauncherOptions> getRuns() {
+        return this.runs;
     }
 
     // Can be nullable due to configuration caching.
@@ -94,6 +110,8 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
 
     @Override
     public ExternalModuleDependency init(Object dependencyNotation, Closure<?> closure) {
+        this.runs = getObjects().domainObjectContainer(SlimeLauncherOptionsImpl.class);
+
         var dependency = (ExternalModuleDependency) getProject().getDependencies().create(dependencyNotation, Closures.<Dependency, ExternalModuleDependency>function(d -> {
             if (!(d instanceof ExternalModuleDependency module))
                 throw this.problems.invalidMinecraftDependencyType(d);
@@ -120,68 +138,44 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
 
     @Override
     public Action<? super AttributeContainer> addAttributes() {
-        return attributes -> {
-            attributes.attributeProvider(MinecraftExtensionInternal.AttributesInternal.OS, getProviders().of(OperatingSystemName.class, spec -> spec.parameters(parameters -> parameters.getAllowedOperatingSystems().set(Set.of(OS.WINDOWS, OS.MACOS, OS.LINUX)))));
-            attributes.attributeProvider(MinecraftExtensionInternal.AttributesInternal.MAPPINGS_CHANNEL, mappings.map(MinecraftMappings::getChannel));
-            attributes.attributeProvider(MinecraftExtensionInternal.AttributesInternal.MAPPINGS_VERSION, mappings.map(MinecraftMappings::getVersion));
-        };
+        return attributes -> { };
     }
 
     @Override
-    public void handle(Configuration configuration) {
-        if (!configuration.isCanBeResolved()) return;
+    public void handle(Configuration configuration) { }
 
-        this.mappings.finalizeValue();
-        configuration.getResolutionStrategy().dependencySubstitution(s -> {
-            var moduleSelector = "%s:%s".formatted(this.module.get(), this.version.get());
-            var module = s.module(moduleSelector);
-            try {
-                s.substitute(module)
-                 .using(s.variant(module, variant -> variant.attributes(this.addAttributes())))
-                 .because("Accounts for mappings used and natives variants");
-            } catch (InvalidUserCodeException e) {
-                throw new IllegalStateException("Resolvable configuration '%s' was resolved too early!".formatted(configuration.getName()), e);
-            }
-        });
-
-        var asDependency = this.asDependency();
-        if (asDependency == null) return;
-
-        var hierarchy = configuration.getHierarchy();
-
-        var sourceSet = Util.getSourceSet(
-            getProject().getConfigurations().matching(hierarchy::contains),
-            getProject().getExtensions().getByType(JavaPluginExtension.class).getSourceSets(),
-            asDependency
+    @Override
+    public void handle(NamedDomainObjectSet<SourceSet> sourceSets, NamedDomainObjectSet<SourceSet> allSourceSets) {
+        allSourceSets.all(sourceSet ->
+            getProject().getTasks().named(sourceSet.getTaskName("sync", "mavenizer"), task -> task.dependsOn(this.mavenizer))
         );
 
-        // Hope that this is handled elsewhere, and that we are transitive.
-        if (sourceSet != null) {
-            this.handle(sourceSet);
-        }
-    }
-
-    @Override
-    public void handle(SourceSet sourceSet) {
         var asString = this.asString.get();
-        var dependencyOutput = this.mavenizerOutput.map(dir -> dir.dir(this.asPath)).get().get().getAsFile();
-        getFlowScope().always(ForgeGradleFlowAction.MavenizerSyncCheck.class, spec -> {
+        var dependencyOutput = this.mavenizerOutput.dir(this.asPath);
+        getFlowScope().always(ForgeGradleFlowAction.MavenizerSyncCheck.class, spec ->
             spec.parameters(parameters -> {
                 parameters.getFailure().set(getFlowProviders().getBuildWorkResult().map(r -> r.getFailure().orElse(null)));
                 parameters.dependencyOutput.set(dependencyOutput);
                 parameters.dependency.set(asString);
+            })
+        );
+
+        if (!sourceSets.isEmpty() && this.sourceSetName == null)
+            this.sourceSetName = sourceSets.iterator().next().getName();
+
+        var runs = Objects.requireNonNullElseGet(getRuns(), () -> getObjects().domainObjectContainer(SlimeLauncherOptionsImpl.class));
+        ((NamedDomainObjectContainer<SlimeLauncherOptionsImpl>) runs).addAll((NamedDomainObjectContainer<SlimeLauncherOptionsImpl>) minecraft.getRuns());
+        allSourceSets.configureEach(sourceSet -> {
+            var single = getProject()
+                .getConfigurations()
+                .getByName(sourceSet.getRuntimeClasspathConfigurationName())
+                .getAllDependencies()
+                .matching(MinecraftDependencyInternal::is)
+                .size() == 1;
+            runs.forEach(options -> {
+                var task = SlimeLauncherExec.register(getProject(), sourceSet, (SlimeLauncherOptionsImpl) options, module.get(), version.get(), asPath.get(), asString, single, minecraft.getEclipseOutputDir());
             });
         });
-
-        if (this.sourceSetName != null) {
-            if (!this.sourceSetName.equals(sourceSet.getName())) {
-                throw new IllegalStateException("MinecraftDependency '%s' has already been handled!".formatted(this.asDependency()));
-            }
-
-            return;
-        }
-
-        this.sourceSetName = sourceSet.getName();
     }
 
     @Override
@@ -221,25 +215,43 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
         }
 
         @Override
-        public void handle(SourceSet sourceSet) {
-            super.handle(sourceSet);
+        public void handle(Configuration configuration) {
+            super.handle(configuration);
 
-            var asDependency = this.asDependency();
-            if (asDependency == null) return;
+            if (configuration.isCanBeResolved()) {
+                configuration.getResolutionStrategy().dependencySubstitution(s -> {
+                    var moduleSelector = "%s:%s".formatted(this.module.get(), this.version.get());
+                    var module = s.module(moduleSelector);
+                    try {
+                        s.substitute(module)
+                         .using(s.variant(module, variant -> variant.attributes(this.addAttributes())))
+                         .because("Applies AccessTransformers");
+                    } catch (InvalidUserCodeException e) {
+                        throw new IllegalStateException("Resolvable configuration '%s' was resolved too early!".formatted(configuration.getName()), e);
+                    }
+                });
+            }
+        }
 
-            if (!Util.contains(getProject().getConfigurations(), sourceSet, false, asDependency)) return;
-            if (!this.atPath.isPresent()) return;
+        @Override
+        public void handle(NamedDomainObjectSet<SourceSet> sourceSets, NamedDomainObjectSet<SourceSet> allSourceSets) {
+            super.handle(sourceSets, allSourceSets);
+
+            if (!this.atPath.isPresent() || sourceSets.isEmpty()) return;
+            var sourceSet = sourceSets.iterator().next();
 
             var itor = sourceSet.getResources().getSrcDirs().iterator();
             if (itor.hasNext()) {
-                this.atFile.convention(this.getProjectLayout().file(this.getProviders().provider(() -> new File(itor.next(), this.atPath.get()))).get());
+                var file = itor.next();
+                this.atFile.convention(this.getProjectLayout().file(this.atPath.map(atPath -> new File(file, atPath))));
             } else {
                 // weird edge case where a source set might not have any resources???
                 // in which case, just best guess the location for accesstransformer.cfg
-                this.atFile.convention(this.getProjectLayout().getProjectDirectory().file(this.getProviders().provider(() -> "src/%s/resources/%s".formatted(sourceSet.getName(), this.atPath.get()))).get());
+                var sourceSetName = sourceSet.getName();
+                this.atFile.convention(this.getProjectLayout().getProjectDirectory().file(this.atPath.map(atPath -> "src/" + sourceSetName + "/resources/" + atPath)));
             }
 
-            ArtifactAccessTransformer.validateConfig(getProject(), asDependency, this.atFile);
+            ArtifactAccessTransformer.validateConfig(getProject(), asDependency(), this.atFile);
         }
 
         private Attribute<Boolean> registerTransform() {
@@ -247,8 +259,7 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
 
             var attribute = Attribute.of("net.minecraftforge.gradle.accesstransformers.automatic." + this.getIndex(), Boolean.class);
 
-            dependencies.attributesSchema(attributesSchema -> attributesSchema.attribute(attribute));
-
+            dependencies.getAttributesSchema().attribute(attribute);
             dependencies.getArtifactTypes().named(
                 ArtifactTypeDefinition.JAR_TYPE,
                 type -> type.getAttributes().attribute(attribute, false)

@@ -27,11 +27,13 @@ public interface MinecraftExtensionForProject<T extends ClosureOwner> extends Mi
     /// Configures the Slime Launcher options for this project, which will be used to create the launcher tasks.
     ///
     /// @param closure The configuring closure
-    void runs(
+    default void runs(
         @DelegatesTo(NamedDomainObjectContainer.class)
         @ClosureParams(value = FromString.class, options = "org.gradle.api.NamedDomainObjectContainer<net.minecraftforge.gradle.SlimeLauncherOptions>")
         Closure<?> closure
-    );
+    ) {
+        this.getRuns().configure(closure);
+    }
 
     /// Configures the Slime Launcher options for this project, which will be used to create the launcher tasks.
     ///
