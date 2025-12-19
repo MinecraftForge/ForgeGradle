@@ -150,7 +150,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         private final NamedDomainObjectContainer<SlimeLauncherOptionsImpl> runs = getObjects().domainObjectContainer(SlimeLauncherOptionsImpl.class);
 
         // Dependencies
-        final List<MinecraftDependencyInternal> minecraftDependencies = new ArrayList<>();
+        private final List<MinecraftDependencyInternal> minecraftDependencies = new ArrayList<>();
 
         protected abstract @Inject Project getProject();
 
