@@ -27,8 +27,7 @@ public interface MinecraftAccessTransformersContainer {
     /// file is in a strict location.
     void setAccessTransformer(String accessTransformer);
 
-    /// Sets if this dependency should use AccessTransformers. The default value depends on the state of
-    /// [MinecraftExtensionForProjectWithAccessTransformers#getAccessTransformers()].
+    /// Sets if this dependency should use AccessTransformers.
     ///
     /// If `true`, this calls [#setAccessTransformer(String)] using [#DEFAULT_PATH] as the path. If `false`, this will
     /// force this dependency to *not use* AccessTransformers, even if the convention is set to do so from the Minecraft

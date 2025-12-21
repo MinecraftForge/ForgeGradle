@@ -100,8 +100,8 @@ tasks.named('shadowJar', ShadowJar) {
     }
 }
 
-tasks.withType(Javadoc).configureEach {
-    javadocTool = javaToolchains.javadocToolFor { languageVersion = JavaLanguageVersion.of(24) }
+tasks.named('javadoc', Javadoc) {
+    javadocTool = javaToolchains.javadocToolFor { languageVersion = JavaLanguageVersion.of(25) }
 }
 
 changelog {

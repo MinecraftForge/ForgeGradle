@@ -7,6 +7,7 @@ package net.minecraftforge.gradle;
 import groovy.lang.Closure;
 import org.gradle.api.Action;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.attributes.Attribute;
 
 /// The ForgeGradle extension contains a handful of helpers that are not directly related to development involving
 /// Minecraft.
@@ -44,4 +45,48 @@ public interface ForgeGradleExtension {
      * @return The closure
      */
     Action<MavenArtifactRepository> getMinecraftLibsMaven();
+
+    /**
+     * The attributes object for easy reference.
+     * <pre><code>
+     * dependencies {
+     *     implementation 'com.example:example:1.0' {
+     *         attributes.attribute(fg.attributes.os, 'windows')
+     *     }
+     * }
+     * </code></pre>
+     *
+     * @return The attributes object
+     * @see Attributes
+     */
+    Attributes getAttributes();
+
+    /// This interface contains the attributes used by the [Minecraft][MinecraftExtension] extension for resolving the
+    /// Minecraft and deobfuscated dependencies.
+    ///
+    /// @see ForgeGradleExtension#getAttributes()
+    interface Attributes {
+        /// The operating system of the project's host.
+        ///
+        /// This is used to filter natives from the Minecraft repo.
+        ///
+        /// @return The operating system attribute
+        Attribute<String> getOs();
+
+        /// The requested mappings channel of the project.
+        ///
+        /// This is determined using [MinecraftMappings#getChannel()] via [#getMappings()]
+        ///
+        /// @return The mappings channel attribute
+        /// @see #getMappingsVersion()
+        Attribute<String> getMappingsChannel();
+
+        /// The requested mappings version of the project.
+        ///
+        /// This is determined using [MinecraftMappings#getVersion()] via [#getMappings()]
+        ///
+        /// @return The mappings channel version
+        /// @see #getMappingsChannel()
+        Attribute<String> getMappingsVersion();
+    }
 }

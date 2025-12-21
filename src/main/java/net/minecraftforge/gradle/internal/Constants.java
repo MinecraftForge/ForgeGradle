@@ -4,11 +4,11 @@
  */
 package net.minecraftforge.gradle.internal;
 
-import net.minecraftforge.gradle.MinecraftExtension;
+import net.minecraftforge.gradle.ForgeGradleExtension;
 
 /// The package-private constants used throughout ForgeGradle.
 ///
-/// Looking for attributes? They are in [MinecraftExtension.Attributes].
+/// Looking for attributes? They are in [ForgeGradleExtension.Attributes].
 final class Constants {
     static final String FORGE_MAVEN = "https://maven.minecraftforge.net/";
     static final String MC_LIBS_MAVEN = "https://libraries.minecraft.net/";

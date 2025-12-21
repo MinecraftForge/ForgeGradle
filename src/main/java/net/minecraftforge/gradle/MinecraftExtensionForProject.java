@@ -19,30 +19,7 @@ import org.gradle.api.artifacts.ExternalModuleDependency;
 ///
 /// @param <T> The type of closure owner used for [#dependency]
 /// @see MinecraftExtension
-public interface MinecraftExtensionForProject extends MinecraftExtension, MinecraftAccessTransformersContainer {
-    /// The collection of Slime Launcher options with which to create the launcher tasks.
-    ///
-    /// @return The collection of run task options
-    NamedDomainObjectContainer<? extends SlimeLauncherOptions> getRuns();
-
-    /// Configures the Slime Launcher options for this project, which will be used to create the launcher tasks.
-    ///
-    /// @param closure The configuring closure
-    default void runs(
-        @DelegatesTo(NamedDomainObjectContainer.class)
-        @ClosureParams(value = FromString.class, options = "org.gradle.api.NamedDomainObjectContainer<net.minecraftforge.gradle.SlimeLauncherOptions>")
-        Closure<?> closure
-    ) {
-        this.getRuns().configure(closure);
-    }
-
-    /// Configures the Slime Launcher options for this project, which will be used to create the launcher tasks.
-    ///
-    /// @param action The configuring action
-    default void runs(Action<? super NamedDomainObjectContainer<? extends SlimeLauncherOptions>> action) {
-        this.runs(Closures.action(this, action));
-    }
-
+public interface MinecraftExtensionForProject extends MinecraftExtension, MinecraftDependency {
     /// Creates (or marks if existing) the given dependency as a Minecraft dependency and configures it with the given
     /// closure.
     ///
