@@ -59,28 +59,27 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
     protected abstract @Inject ProviderFactory getProviders();
 
+    // TODO [ForgeGradle] KnownPlugins system. See https://github.com/LexManos/ForgeGradle/commit/7c59cf3c8d54a89e01cd14a0c5ab75ea51918360
+    //      Specifically, the ability to hide external plugin types from method signatures and lambdas using a dummy MissingExtension
+    //      Thankfully, this will very likely not affect the base DSL at all, making it only additive.
+    //      But for now, MinecraftExtensionForProject and MinecraftDependency both implement MinecraftAccessTransformersContainer
     static void register(
         ForgeGradlePlugin plugin,
         ExtensionAware target
     ) {
         var extensions = target.getExtensions();
         if (target instanceof Project) {
-            extensions.create(MinecraftExtension.NAME, ForProjectImpl.class, plugin);
+            extensions.create(MinecraftExtensionForProject.class, MinecraftExtension.NAME, ForProjectImpl.class, plugin);
         } else if (target instanceof Settings) {
-            extensions.create(MinecraftExtension.NAME, ForSettingsImpl.class, plugin, target);
+            extensions.create(MinecraftExtension.class, MinecraftExtension.NAME, ForSettingsImpl.class, plugin, target);
         } else {
-            extensions.create(MinecraftExtension.NAME, MinecraftExtensionImpl.class, plugin);
+            extensions.create(MinecraftExtension.class, MinecraftExtension.NAME, MinecraftExtensionImpl.class, plugin);
         }
     }
 
     @Inject
     public MinecraftExtensionImpl(ForgeGradlePlugin plugin) {
         this.mavenizerOutput.convention(plugin.localCaches().dir("mavenizer/output").map(this.problems.ensureFileLocation()));
-    }
-
-    @Override
-    public TypeOf<?> getPublicType() {
-        return MinecraftExtensionInternal.super.getPublicType();
     }
 
     @Override
@@ -228,11 +227,6 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
             // Finish when the project is evaluated
             getProject().afterEvaluate(this::finish);
-        }
-
-        @Override
-        public TypeOf<?> getPublicType() {
-            return TypeOf.typeOf(MinecraftExtensionForProject.class);
         }
 
         @Override

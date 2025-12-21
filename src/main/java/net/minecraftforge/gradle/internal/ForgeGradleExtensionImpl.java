@@ -6,17 +6,16 @@ package net.minecraftforge.gradle.internal;
 
 import net.minecraftforge.gradle.ForgeGradleExtension;
 import org.gradle.api.plugins.ExtensionAware;
-import org.gradle.api.reflect.HasPublicType;
 
 import javax.inject.Inject;
 
-abstract class ForgeGradleExtensionImpl implements ForgeGradleExtensionInternal, HasPublicType {
+abstract class ForgeGradleExtensionImpl implements ForgeGradleExtensionInternal {
     static void register(
         ForgeGradlePlugin plugin,
         ExtensionAware target
     ) {
         var extensions = target.getExtensions();
-        extensions.create(ForgeGradleExtension.NAME, ForgeGradleExtensionImpl.class);
+        extensions.create(ForgeGradleExtension.class, ForgeGradleExtension.NAME, ForgeGradleExtensionImpl.class);
     }
 
     @Inject

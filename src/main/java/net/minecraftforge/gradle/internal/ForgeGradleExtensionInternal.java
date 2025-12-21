@@ -8,15 +8,8 @@ import net.minecraftforge.gradle.ForgeGradleExtension;
 import org.gradle.api.Action;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.attributes.Attribute;
-import org.gradle.api.reflect.HasPublicType;
-import org.gradle.api.reflect.TypeOf;
 
-interface ForgeGradleExtensionInternal extends ForgeGradleExtension, HasPublicType {
-    @Override
-    default TypeOf<?> getPublicType() {
-        return TypeOf.typeOf(ForgeGradleExtension.class);
-    }
-
+interface ForgeGradleExtensionInternal extends ForgeGradleExtension {
     Action<MavenArtifactRepository> forgeMaven = repo -> {
         repo.setName("MinecraftForge");
         repo.setUrl(Constants.FORGE_MAVEN);
@@ -39,7 +32,7 @@ interface ForgeGradleExtensionInternal extends ForgeGradleExtension, HasPublicTy
 
     @Override
     default Attributes getAttributes() {
-        return ForgeGradleExtensionInternal.AttributesInternal.INSTANCE;
+        return AttributesInternal.INSTANCE;
     }
 
     record AttributesInternal() implements Attributes {
