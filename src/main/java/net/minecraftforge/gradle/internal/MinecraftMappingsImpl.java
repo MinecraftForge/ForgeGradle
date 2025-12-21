@@ -7,8 +7,11 @@ package net.minecraftforge.gradle.internal;
 import org.gradle.api.model.ObjectFactory;
 
 import javax.inject.Inject;
+import java.io.Serial;
 
 abstract class MinecraftMappingsImpl implements MinecraftMappingsInternal {
+    private static final @Serial long serialVersionUID = 6944934115402768018L;
+
     private final String channel;
     private final String version;
 

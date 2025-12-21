@@ -150,6 +150,17 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
             this.report(name, displayName, problemSpec);
     }
 
+    void reportCannotAccessSettingsRepos(Exception e) {
+        this.report("cannot-access-settings-repos", "Cannot access Settings repositories", spec -> spec
+            .details("""
+                ForgeGradle is unable to access the repositories defined by the Settings' dependency resolution management.
+                This is a ForgeGradle bug and needs to be reported to the ForgeGradle issue tracker on GitHub.""")
+            .severity(Severity.ERROR)
+            .withException(e)
+            .solution("For now, only declare repositories in the project.")
+            .solution(HELP_MESSAGE));
+    }
+
     void reportMcMavenNotDeclared() {
         if (!this.test("net.minecraftforge.gradle.warnings.repository.missing.mavenizer")) return;
 

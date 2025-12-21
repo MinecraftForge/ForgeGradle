@@ -10,7 +10,9 @@ import groovy.transform.NamedParam;
 import groovy.transform.NamedParams;
 import net.minecraftforge.gradle.ClosureOwner;
 import net.minecraftforge.gradle.MinecraftMappings;
+import net.minecraftforge.gradle.SlimeLauncherOptions;
 import org.gradle.api.Action;
+import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.artifacts.DependencyArtifact;
 import org.gradle.api.artifacts.ExcludeRule;
 import org.gradle.api.artifacts.ExternalModuleDependency;
@@ -80,6 +82,11 @@ interface ClosureOwnerInternal<D> extends ClosureOwner {
             }) Map namedArgs
         ) {
             this.getOwnerDelegate().mappings(namedArgs);
+        }
+
+        @Override
+        default NamedDomainObjectContainer<? extends SlimeLauncherOptions> getRuns() {
+            return this.getOwnerDelegate().getRuns();
         }
 
         @Override
@@ -286,6 +293,11 @@ interface ClosureOwnerInternal<D> extends ClosureOwner {
             }) Map<?, ?> namedArgs
         ) {
             this.getOwnerDelegate().mappings(namedArgs);
+        }
+
+        @Override
+        default NamedDomainObjectContainer<? extends SlimeLauncherOptions> getRuns() {
+            return this.getOwnerDelegate().getRuns();
         }
 
         @Override

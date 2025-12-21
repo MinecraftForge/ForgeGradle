@@ -24,7 +24,7 @@ gradle.beforeProject { Project project ->
 
 //@formatter:off
 dependencyResolutionManagement.versionCatalogs.register('libs') {
-    version 'gradleutils', '3.3.39'
+    version 'gradleutils', '3.3.40'
 
     plugin 'licenser',       'net.minecraftforge.licenser'    version '1.2.0' // https://plugins.gradle.org/plugin/net.minecraftforge.licenser
     plugin 'gradleutils',    'net.minecraftforge.gradleutils' versionRef 'gradleutils'
@@ -48,6 +48,9 @@ dependencyResolutionManagement.versionCatalogs.register('libs') {
     // AccessTransformers Gradle Plugin
     // https://plugins.gradle.org/plugin/net.minecraftforge.accesstransformers
     library 'accesstransformers-gradle', 'net.minecraftforge.accesstransformers', 'net.minecraftforge.accesstransformers.gradle.plugin' version '5.0.1'
+
+    // Artifact Versioning
+    library 'maven-artifact', 'org.apache.maven', 'maven-artifact' version '3.9.11'
 
     library 'utils-data',     'net.minecraftforge', 'json-data-utils' version '0.4.1'  // https://files.minecraftforge.net/net/minecraftforge/json-data-utils/index.html
     library 'utils-os',       'net.minecraftforge', 'os-utils'        version '0.1.0'  // https://files.minecraftforge.net/net/minecraftforge/os-utils/index.html
