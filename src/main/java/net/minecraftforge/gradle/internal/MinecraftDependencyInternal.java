@@ -6,7 +6,6 @@ package net.minecraftforge.gradle.internal;
 
 import groovy.lang.Closure;
 import net.minecraftforge.gradle.MinecraftDependency;
-import net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers;
 import net.minecraftforge.gradle.SlimeLauncherOptions;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
@@ -23,9 +22,7 @@ import org.gradle.api.tasks.TaskProvider;
 import org.jspecify.annotations.NullUnmarked;
 import org.jspecify.annotations.Nullable;
 
-import java.util.Set;
-
-interface MinecraftDependencyInternal extends MinecraftDependency, HasPublicType, MinecraftMappingsContainerInternal {
+interface MinecraftDependencyInternal extends MinecraftDependency, HasPublicType, MinecraftMappingsContainerInternal, MinecraftAccessTransformersContainerInternal {
     String MC_EXT_NAME = "__fg_minecraft_dependency";
     String AT_COUNT_NAME = "__fg_minecraft_atcontainers";
 
@@ -71,15 +68,4 @@ interface MinecraftDependencyInternal extends MinecraftDependency, HasPublicType
     void handle(Configuration configuration);
 
     void handle(NamedDomainObjectSet<SourceSet> sourceSets, NamedDomainObjectSet<SourceSet> allSourceSets);
-
-    interface WithAccessTransformers extends MinecraftDependencyWithAccessTransformers, MinecraftDependencyInternal {
-        @Override
-        default TypeOf<?> getPublicType() {
-            return TypeOf.typeOf(MinecraftDependencyWithAccessTransformers.class);
-        }
-
-        default <R> Closure<R> closure(Closure<R> closure) {
-            return closure.rehydrate(closure.getDelegate(), new ClosureOwnerImpl.MinecraftDependencyWithAccessTransformersImpl(closure.getOwner(), this), closure.getThisObject());
-        }
-    }
 }

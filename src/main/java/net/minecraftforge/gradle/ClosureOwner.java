@@ -18,10 +18,4 @@ public interface ClosureOwner {
     ///
     /// @see ClosureOwner
     interface MinecraftDependency extends ClosureOwner, net.minecraftforge.gradle.MinecraftDependency, ExternalModuleDependency { }
-
-    /// A closure owner that delegates to [net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers] and
-    /// [ExternalModuleDependency].
-    ///
-    /// @see ClosureOwner
-    interface MinecraftDependencyWithAccessTransformers extends ClosureOwner, net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers, ExternalModuleDependency { }
 }

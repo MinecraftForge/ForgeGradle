@@ -8,6 +8,7 @@ import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
 import groovy.transform.stc.ClosureParams;
 import groovy.transform.stc.FromString;
+import groovy.transform.stc.SimpleType;
 import net.minecraftforge.gradleutils.shared.Closures;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
@@ -18,7 +19,7 @@ import org.gradle.api.artifacts.ExternalModuleDependency;
 ///
 /// @param <T> The type of closure owner used for [#dependency]
 /// @see MinecraftExtension
-public interface MinecraftExtensionForProject<T extends ClosureOwner> extends MinecraftExtension {
+public interface MinecraftExtensionForProject extends MinecraftExtension, MinecraftAccessTransformersContainer {
     /// The collection of Slime Launcher options with which to create the launcher tasks.
     ///
     /// @return The collection of run task options
@@ -53,7 +54,7 @@ public interface MinecraftExtensionForProject<T extends ClosureOwner> extends Mi
     ExternalModuleDependency dependency(
         Object value,
         @DelegatesTo(ExternalModuleDependency.class)
-        @ClosureParams(value = FromString.class, options = "T")
+        @ClosureParams(value = SimpleType.class, options = "net.minecraftforge.gradle.ClosureOwner.MinecraftDependency")
         Closure<?> closure
     );
 
@@ -65,7 +66,7 @@ public interface MinecraftExtensionForProject<T extends ClosureOwner> extends Mi
     /// @return The dependency
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
-    default ExternalModuleDependency dependency(Object value, Action<? super T> action) {
+    default ExternalModuleDependency dependency(Object value, Action<? super ClosureOwner.MinecraftDependency> action) {
         return this.dependency(value, Closures.action(this, action));
     }
 

@@ -9,8 +9,6 @@ import groovy.lang.DelegatesTo;
 import groovy.transform.NamedVariant;
 import groovy.transform.stc.ClosureParams;
 import groovy.transform.stc.SimpleType;
-import net.minecraftforge.gradle.ClosureOwner;
-import net.minecraftforge.gradle.MinecraftDependency;
 import net.minecraftforge.gradle.MinecraftExtension;
 import net.minecraftforge.gradle.MinecraftExtensionForProject;
 import net.minecraftforge.gradle.MinecraftMappings;
@@ -29,6 +27,7 @@ import org.gradle.api.attributes.Category;
 import org.gradle.api.attributes.DocsType;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.ProjectLayout;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.flow.FlowProviders;
 import org.gradle.api.flow.FlowScope;
 import org.gradle.api.initialization.Settings;
@@ -52,9 +51,9 @@ import java.util.stream.Collectors;
 abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
     private final DirectoryProperty mavenizerOutput = getObjects().directoryProperty();
 
-    final Property<MinecraftMappingsImpl> mappings = getObjects().property(MinecraftMappingsImpl.class);
+    private final Property<MinecraftMappingsInternal> mappings = getObjects().property(MinecraftMappingsInternal.class);
 
-    final ForgeGradleProblems problems = getObjects().newInstance(ForgeGradleProblems.class);
+    private final ForgeGradleProblems problems = getObjects().newInstance(ForgeGradleProblems.class);
 
     protected abstract @Inject ObjectFactory getObjects();
 
@@ -65,17 +64,8 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         ExtensionAware target
     ) {
         var extensions = target.getExtensions();
-        if (target instanceof Project project) {
-            if (project.getPluginManager().hasPlugin("net.minecraftforge.accesstransformers")) {
-                try {
-                    extensions.create(MinecraftExtension.NAME, ForProjectImpl.WithAccessTransformersImpl.class, plugin);
-                } catch (Exception e) {
-                    var problems = project.getObjects().newInstance(ForgeGradleProblems.class);
-                    throw problems.accessTransformersNotOnClasspath(e);
-                }
-            } else {
-                extensions.create(MinecraftExtension.NAME, ForProjectImpl.class, plugin);
-            }
+        if (target instanceof Project) {
+            extensions.create(MinecraftExtension.NAME, ForProjectImpl.class, plugin);
         } else if (target instanceof Settings) {
             extensions.create(MinecraftExtension.NAME, ForSettingsImpl.class, plugin, target);
         } else {
@@ -91,6 +81,11 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
     @Override
     public TypeOf<?> getPublicType() {
         return MinecraftExtensionInternal.super.getPublicType();
+    }
+
+    @Override
+    public Property<MinecraftMappingsInternal> getMappingsProperty() {
+        return this.mappings;
     }
 
     @Override
@@ -136,13 +131,13 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             settings.getGradle().getExtensions().add(
                 ForgeGradleSharedData.NAME,
                 new ForgeGradleSharedData(
-                    this.mappings.getOrNull()
+                    this.getMappingsProperty().getOrNull()
                 )
             );
         }
     }
 
-    static abstract class ForProjectImpl<T extends ClosureOwner & MinecraftDependency & ExternalModuleDependency> extends MinecraftExtensionImpl implements ForProject<T> {
+    static abstract class ForProjectImpl extends MinecraftExtensionImpl implements ForProject {
         private @Nullable TaskProvider<Task> genEclipseRuns;
         final DirectoryProperty eclipseOutputDir = getObjects().directoryProperty().convention(getProjectLayout().getProjectDirectory().dir("bin"));
 
@@ -151,6 +146,13 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
         // Dependencies
         private final List<MinecraftDependencyInternal> minecraftDependencies = new ArrayList<>();
+
+        // Access Transformers
+        private final boolean hasAccessTransformersPlugin;
+        private final RegularFileProperty accessTransformer = getObjects().fileProperty();
+        private final Property<String> accessTransformerPath = getObjects().property(String.class);
+
+        private final ForgeGradleProblems problems = getObjects().newInstance(ForgeGradleProblems.class);
 
         protected abstract @Inject Project getProject();
 
@@ -164,35 +166,53 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         public ForProjectImpl(ForgeGradlePlugin plugin) {
             super(plugin);
 
+            if (getProject().getPluginManager().hasPlugin("net.minecraftforge.accesstransformers")) {
+                hasAccessTransformersPlugin = true;
+            } else {
+                hasAccessTransformersPlugin = false;
+                getProject().getPluginManager().withPlugin("net.minecraftforge.accesstransformers", appliedPlugin -> {
+                    // TODO Report AccessTransformers applied in wrong order
+                });
+            }
+
             var sharedData = getProject().getGradle().getExtensions().findByType(ForgeGradleSharedData.class);
             if (sharedData != null) {
-                this.mappings.set(sharedData.mappings());
+                this.getMappingsProperty().value(sharedData.mappings());
             }
 
             plugin.queueMessage(ForgeGradleMessage.WELCOME);
             plugin.queueMessage(ForgeGradleMessage.MAGIC);
 
-            this.getFlowScope().always(ForgeGradleFlowAction.AccessTransformersMissing.class, spec -> spec.parameters(parameters -> {
-                parameters.getFailure().set(this.getFlowProviders().getBuildWorkResult().map(p -> p.getFailure().orElse(null)));
-                parameters.appliedPlugin.set(getProject().getPluginManager().hasPlugin("net.minecraftforge.accesstransformers"));
+            getFlowScope().always(ForgeGradleFlowAction.AccessTransformersMissing.class, spec -> spec.parameters(parameters -> {
+                parameters.getFailure().set(getFlowProviders().getBuildWorkResult().map(p -> p.getFailure().orElse(null)));
+                parameters.appliedPlugin.set(hasAccessTransformersPlugin);
             }));
 
             getProject().getConfigurations().configureEach(c -> c.withDependencies(d -> this.apply(c)));
 
-            getProject().getDependencies().attributesSchema(schema -> {
-                schema.attribute(ForgeAttributes.OperatingSystem.ATTRIBUTE, strategy -> {
+            // Dependencies
+            {
+                var dependencies = getProject().getDependencies();
+                var components = dependencies.getComponents();
+                var attributesSchema = dependencies.getAttributesSchema();
+
+                try {
+                    components.withModule("net.minecraftforge:forge", ForgeGradleComponentMetadataRules.AlwaysUseMatureStatus.class);
+                } catch (Exception e) {
+                    // TODO Handle settings only rules
+                }
+
+                attributesSchema.attribute(ForgeAttributes.OperatingSystem.ATTRIBUTE, strategy -> {
                     var currentOS = getProviders().of(ForgeAttributes.OperatingSystem.CurrentValue.class, ForgeAttributes.OperatingSystem.CurrentValue.Parameters.DEFAULT).get();
                     strategy.getDisambiguationRules().add(ForgeAttributes.OperatingSystem.DisambiguationRule.class, ctor -> ctor.params(currentOS));
                 });
-
-                schema.attribute(ForgeAttributes.MappingsChannel.ATTRIBUTE, strategy ->
+                attributesSchema.attribute(ForgeAttributes.MappingsChannel.ATTRIBUTE, strategy ->
                     strategy.getDisambiguationRules().add(ForgeAttributes.MappingsChannel.DisambiguationRule.class)
                 );
-
-                schema.attribute(ForgeAttributes.MappingsVersion.ATTRIBUTE, strategy ->
+                attributesSchema.attribute(ForgeAttributes.MappingsVersion.ATTRIBUTE, strategy ->
                     strategy.ordered(ForgeAttributes.MappingsVersion.COMPARATOR)
                 );
-            });
+            }
 
             getProject().getPluginManager().withPlugin("eclipse", appliedEclipsePlugin -> {
                 var eclipse = getProject().getExtensions().getByType(EclipseModel.class);
@@ -212,7 +232,22 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
         @Override
         public TypeOf<?> getPublicType() {
-            return new TypeOf<MinecraftExtensionForProject<ClosureOwner.MinecraftDependency>>() { };
+            return TypeOf.typeOf(MinecraftExtensionForProject.class);
+        }
+
+        @Override
+        public boolean hasAccessTransformersPlugin() {
+            return this.hasAccessTransformersPlugin;
+        }
+
+        @Override
+        public RegularFileProperty getAccessTransformer() {
+            return this.accessTransformer;
+        }
+
+        @Override
+        public Property<String> getAccessTransformerPath() {
+            return this.accessTransformerPath;
         }
 
         @Override
@@ -220,7 +255,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             var repositories = getObjects().namedDomainObjectList(MavenArtifactRepository.class);
             repositories.addAll(getProject().getRepositories().withType(MavenArtifactRepository.class));
             try {
-                Settings settings = (Settings) InvokerHelper.getProperty(getProject().getGradle(), "settings");
+                var settings = (Settings) InvokerHelper.getProperty(getProject().getGradle(), "settings");
                 repositories.addAll(settings.getDependencyResolutionManagement().getRepositories().withType(MavenArtifactRepository.class));
             } catch (Exception e) {
                 problems.reportCannotAccessSettingsRepos(e);
@@ -328,10 +363,6 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             return this.runs;
         }
 
-        Class<? extends MinecraftDependencyInternal> getMinecraftDependencyClass() {
-            return MinecraftDependencyImpl.class;
-        }
-
         @Override
         public ExternalModuleDependency dependency(
             Object value,
@@ -344,7 +375,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             if (value instanceof ExternalModuleDependencyBundle)
                 throw new IllegalArgumentException("Minecraft dependency cannot be a bundle");
 
-            var minecraftDependency = (MinecraftDependencyInternal) this.getObjects().newInstance(this.getMinecraftDependencyClass(), this.getMavenizerOutput());
+            var minecraftDependency = this.getObjects().newInstance(MinecraftDependencyImpl.class, this.getMavenizerOutput());
             this.minecraftDependencies.add(minecraftDependency);
             return minecraftDependency.init(value, closure);
         }
@@ -381,30 +412,6 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             // Mojang
             if (!contains.test("libraries.minecraft.net")) {
                 problems.reportMcLibsMavenNotDeclared();
-            }
-        }
-
-        static abstract class WithAccessTransformersImpl extends ForProjectImpl<ClosureOwner.MinecraftDependencyWithAccessTransformers> implements WithAccessTransformers {
-            private final Property<String> accessTransformers = this.getObjects().property(String.class);
-
-            @Inject
-            public WithAccessTransformersImpl(ForgeGradlePlugin plugin) {
-                super(plugin);
-            }
-
-            @Override
-            public TypeOf<?> getPublicType() {
-                return WithAccessTransformers.super.getPublicType();
-            }
-
-            @Override
-            public Property<String> getAccessTransformers() {
-                return this.accessTransformers;
-            }
-
-            @Override
-            final Class<? extends MinecraftDependencyImpl> getMinecraftDependencyClass() {
-                return MinecraftDependencyImpl.WithAccessTransformersImpl.class;
             }
         }
     }

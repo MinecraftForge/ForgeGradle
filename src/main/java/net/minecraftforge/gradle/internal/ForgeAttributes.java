@@ -98,6 +98,6 @@ final class ForgeAttributes {
     static final class MappingsVersion {
         static final Attribute<String> ATTRIBUTE = Attribute.of("net.minecraftforge.mappings.version", String.class);
 
-        static final Comparator<String> COMPARATOR = Comparator.comparing(DefaultArtifactVersion::new);
+        static final Comparator<String> COMPARATOR = Util.versionComparator();
     }
 }

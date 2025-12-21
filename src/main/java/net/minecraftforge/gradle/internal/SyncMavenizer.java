@@ -84,7 +84,7 @@ abstract class SyncMavenizer extends ToolExec {
 
         this.getCaches().convention(this.defaultToolDir.dir("caches"));
 
-        var minecraft = ((MinecraftExtensionInternal.ForProject<?>) getProject().getExtensions().getByType(MinecraftExtensionForProject.class));
+        var minecraft = ((MinecraftExtensionInternal.ForProject) getProject().getExtensions().getByType(MinecraftExtensionForProject.class));
         this.addRepositories(minecraft.getRepositories());
     }
 

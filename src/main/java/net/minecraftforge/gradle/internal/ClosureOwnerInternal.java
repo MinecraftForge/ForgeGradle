@@ -9,6 +9,7 @@ import groovy.transform.Generated;
 import groovy.transform.NamedParam;
 import groovy.transform.NamedParams;
 import net.minecraftforge.gradle.ClosureOwner;
+import net.minecraftforge.gradle.MinecraftDependency;
 import net.minecraftforge.gradle.MinecraftMappings;
 import net.minecraftforge.gradle.SlimeLauncherOptions;
 import org.gradle.api.Action;
@@ -90,167 +91,14 @@ interface ClosureOwnerInternal<D> extends ClosureOwner {
         }
 
         @Override
-        default boolean isChanging() {
-            throw stub();
+        default void runs(Closure<?> closure) {
+            this.getOwnerDelegate().runs(closure);
         }
 
         @Override
-        default ExternalModuleDependency setChanging(boolean changing) {
-            throw stub();
+        default void runs(Action<? super NamedDomainObjectContainer<? extends SlimeLauncherOptions>> action) {
+            this.getOwnerDelegate().runs(action);
         }
-
-        @Override
-        default ExternalModuleDependency copy() {
-            throw stub();
-        }
-
-        @Override
-        default boolean isForce() {
-            throw stub();
-        }
-
-        @Override
-        default void version(Action<? super MutableVersionConstraint> configureAction) {
-            throw stub();
-        }
-
-        @Override
-        default VersionConstraint getVersionConstraint() {
-            throw stub();
-        }
-
-        @Override
-        default ModuleDependency exclude(Map<String, String> excludeProperties) {
-            throw stub();
-        }
-
-        @Override
-        default Set<ExcludeRule> getExcludeRules() {
-            throw stub();
-        }
-
-        @Override
-        default Set<DependencyArtifact> getArtifacts() {
-            throw stub();
-        }
-
-        @Override
-        default ModuleDependency addArtifact(DependencyArtifact artifact) {
-            throw stub();
-        }
-
-        @Override
-        default DependencyArtifact artifact(Closure configureClosure) {
-            throw stub();
-        }
-
-        @Override
-        default DependencyArtifact artifact(Action<? super DependencyArtifact> configureAction) {
-            throw stub();
-        }
-
-        @Override
-        default boolean isTransitive() {
-            throw stub();
-        }
-
-        @Override
-        default ModuleDependency setTransitive(boolean transitive) {
-            throw stub();
-        }
-
-        @Override
-        default @Nullable String getTargetConfiguration() {
-            throw stub();
-        }
-
-        @Override
-        default void setTargetConfiguration(@Nullable String name) {
-            throw stub();
-        }
-
-        @Override
-        default AttributeContainer getAttributes() {
-            throw stub();
-        }
-
-        @Override
-        default ModuleDependency attributes(Action<? super AttributeContainer> configureAction) {
-            throw stub();
-        }
-
-        @Override
-        default ModuleDependency capabilities(Action<? super ModuleDependencyCapabilitiesHandler> configureAction) {
-            throw stub();
-        }
-
-        @Override
-        default List<Capability> getRequestedCapabilities() {
-            throw stub();
-        }
-
-        @Override
-        default Set<CapabilitySelector> getCapabilitySelectors() {
-            throw stub();
-        }
-
-        @Override
-        default void endorseStrictVersions() {
-            throw stub();
-        }
-
-        @Override
-        default void doNotEndorseStrictVersions() {
-            throw stub();
-        }
-
-        @Override
-        default boolean isEndorsingStrictVersions() {
-            throw stub();
-        }
-
-        @Override default @Nullable String getGroup() {
-            throw stub();
-        }
-
-        @Override
-        default String getName() {
-            throw stub();
-        }
-
-        @Override
-        default @Nullable String getVersion() {
-            throw stub();
-        }
-
-        @Override
-        default @Nullable String getReason() {
-            throw stub();
-        }
-
-        @Override
-        default void because(@Nullable String reason) {
-            throw stub();
-        }
-
-        @Override
-        default boolean matchesStrictly(ModuleVersionIdentifier identifier) {
-            throw stub();
-        }
-
-        @Override
-        default ModuleIdentifier getModule() {
-            throw stub();
-        }
-    }
-
-    interface MinecraftDependencyWithAccessTransformers extends ClosureOwnerInternal<net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers>, ClosureOwner.MinecraftDependencyWithAccessTransformers, HasPublicType {
-        @Override
-        default TypeOf<?> getPublicType() {
-            return TypeOf.typeOf(ClosureOwner.MinecraftDependencyWithAccessTransformers.class);
-        }
-
-        net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers getOwnerDelegate();
 
         @Override
         default RegularFileProperty getAccessTransformer() {
@@ -265,39 +113,6 @@ interface ClosureOwnerInternal<D> extends ClosureOwner {
         @Override
         default void setAccessTransformer(boolean accessTransformer) {
             this.getOwnerDelegate().setAccessTransformer(accessTransformer);
-        }
-
-        @Override
-        default @Nullable MinecraftMappings getMappings() {
-            return this.getOwnerDelegate().getMappings();
-        }
-
-        @Override
-        default void mappings(String channel, String version) {
-            this.getOwnerDelegate().mappings(channel, version);
-        }
-
-        @Override
-        default void mappings(
-            @NamedParams({
-                @NamedParam(
-                    type = String.class,
-                    value = "channel",
-                    required = true
-                ),
-                @NamedParam(
-                    type = String.class,
-                    value = "version",
-                    required = true
-                )
-            }) Map<?, ?> namedArgs
-        ) {
-            this.getOwnerDelegate().mappings(namedArgs);
-        }
-
-        @Override
-        default NamedDomainObjectContainer<? extends SlimeLauncherOptions> getRuns() {
-            return this.getOwnerDelegate().getRuns();
         }
 
         @Override

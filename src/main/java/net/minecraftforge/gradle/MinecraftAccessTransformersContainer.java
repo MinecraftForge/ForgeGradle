@@ -1,16 +1,8 @@
-/*
- * Copyright (c) Forge Development LLC and contributors
- * SPDX-License-Identifier: LGPL-2.1-only
- */
 package net.minecraftforge.gradle;
 
 import org.gradle.api.file.RegularFileProperty;
 
-/// An extension of [MinecraftDependency] that contains additional convenience methods for working with
-/// AccessTransformers.
-///
-/// @see MinecraftDependency
-public interface MinecraftDependencyWithAccessTransformers extends MinecraftDependency {
+public interface MinecraftAccessTransformersContainer {
     /// The default path, from the source set's [resources][org.gradle.api.tasks.SourceSet#getResources()], for the
     /// AccessTransformers config to be located in.
     String DEFAULT_PATH = "META-INF/accesstransformer.cfg";

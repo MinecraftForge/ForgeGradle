@@ -7,10 +7,10 @@ package net.minecraftforge.gradle.internal;
 import net.minecraftforge.gradle.ClosureOwner;
 import net.minecraftforge.gradle.MinecraftExtension;
 import net.minecraftforge.gradle.MinecraftExtensionForProject;
-import net.minecraftforge.gradle.MinecraftExtensionForProjectWithAccessTransformers;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.attributes.Attribute;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.reflect.HasPublicType;
 import org.gradle.api.reflect.TypeOf;
 
@@ -26,6 +26,8 @@ interface MinecraftExtensionInternal extends MinecraftExtension, HasPublicType, 
     default Attributes getAttributes() {
         return AttributesInternal.INSTANCE;
     }
+
+    Property<MinecraftMappingsInternal> getMappingsProperty();
 
     DirectoryProperty getMavenizerOutput();
 
@@ -48,21 +50,14 @@ interface MinecraftExtensionInternal extends MinecraftExtension, HasPublicType, 
         }
     }
 
-    interface ForProject<T extends ClosureOwner> extends MinecraftExtensionForProject<T>, MinecraftExtensionInternal, HasPublicType {
+    interface ForProject extends MinecraftExtensionForProject, MinecraftExtensionInternal, HasPublicType, MinecraftAccessTransformersContainerInternal {
         @Override
         default TypeOf<?> getPublicType() {
-            return new TypeOf<MinecraftExtensionForProject<ClosureOwner.MinecraftDependency>>() { };
+            return TypeOf.typeOf(MinecraftExtensionForProject.class);
         }
 
         List<? extends MavenArtifactRepository> getRepositories();
 
         DirectoryProperty getEclipseOutputDir();
-
-        interface WithAccessTransformers extends MinecraftExtensionForProjectWithAccessTransformers, MinecraftExtensionInternal.ForProject<ClosureOwner.MinecraftDependencyWithAccessTransformers>, HasPublicType {
-            @Override
-            default TypeOf<?> getPublicType() {
-                return TypeOf.typeOf(MinecraftExtensionForProjectWithAccessTransformers.class);
-            }
-        }
     }
 }

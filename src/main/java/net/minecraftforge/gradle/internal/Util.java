@@ -10,12 +10,16 @@ import org.gradle.api.NamedDomainObjectSet;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleIdentifier;
+import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.strategy.Version;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Locale;
+import java.util.Map;
 
 final class Util extends SharedUtil {
     static String checkMappingsParam(ForgeGradleProblems problems, @Nullable Object param, String name) {
