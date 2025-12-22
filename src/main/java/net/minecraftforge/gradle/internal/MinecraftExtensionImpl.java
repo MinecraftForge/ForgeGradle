@@ -26,6 +26,7 @@ import org.gradle.api.artifacts.dsl.ComponentMetadataHandler;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.attributes.DocsType;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
@@ -165,7 +166,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
         // Access Transformers
         private final boolean hasAccessTransformersPlugin;
-        private final RegularFileProperty accessTransformer = getObjects().fileProperty();
+        private final ConfigurableFileCollection accessTransformer = getObjects().fileCollection();
         private final Property<String> accessTransformerPath = getObjects().property(String.class);
 
         private final ForgeGradleProblems problems = getObjects().newInstance(ForgeGradleProblems.class);
@@ -251,7 +252,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         }
 
         @Override
-        public RegularFileProperty getAccessTransformer() {
+        public ConfigurableFileCollection getAccessTransformer() {
             return this.accessTransformer;
         }
 

@@ -26,6 +26,7 @@ import org.gradle.api.artifacts.VersionConstraint;
 import org.gradle.api.artifacts.capability.CapabilitySelector;
 import org.gradle.api.attributes.AttributeContainer;
 import org.gradle.api.capabilities.Capability;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.reflect.HasPublicType;
 import org.gradle.api.reflect.TypeOf;
@@ -101,7 +102,7 @@ interface ClosureOwnerInternal<D> extends ClosureOwner {
         }
 
         @Override
-        default RegularFileProperty getAccessTransformer() {
+        default ConfigurableFileCollection getAccessTransformer() {
             return this.getOwnerDelegate().getAccessTransformer();
         }
 

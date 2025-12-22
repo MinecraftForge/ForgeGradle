@@ -22,6 +22,7 @@ import org.gradle.api.artifacts.ModuleIdentifier;
 import org.gradle.api.artifacts.type.ArtifactTypeDefinition;
 import org.gradle.api.attributes.Attribute;
 import org.gradle.api.attributes.AttributeContainer;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.ProjectLayout;
@@ -50,7 +51,7 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     private final MinecraftExtensionInternal.ForProject minecraft = ((MinecraftExtensionInternal.ForProject) getProject().getExtensions().getByType(MinecraftExtensionForProject.class));
 
     // Access Transformers
-    private final RegularFileProperty accessTransformer = this.getObjects().fileProperty();
+    private final ConfigurableFileCollection accessTransformer = this.getObjects().fileCollection();
     private final Property<String> accessTransformerPath = this.getObjects().property(String.class);
 
     // Dependency Information
@@ -107,7 +108,7 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     }
 
     @Override
-    public RegularFileProperty getAccessTransformer() {
+    public ConfigurableFileCollection getAccessTransformer() {
         return this.accessTransformer;
     }
 
@@ -119,7 +120,7 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     /* INTERNAL */
 
     private boolean hasAccessTransformers() {
-        return this.accessTransformer.isPresent() || this.accessTransformerPath.isPresent();
+        return !this.accessTransformer.isEmpty() || this.accessTransformerPath.isPresent();
     }
 
     // Can be nullable due to configuration caching.
@@ -220,23 +221,23 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
             });
         });
 
-        if (!this.accessTransformer.isPresent() && !this.accessTransformerPath.isPresent()) {
+        if (this.accessTransformer.isEmpty() && !this.accessTransformerPath.isPresent()) {
             this.accessTransformer.convention(minecraft.getAccessTransformer());
             this.accessTransformerPath.convention(minecraft.getAccessTransformerPath());
         }
 
-        if (!this.accessTransformer.isPresent() && this.accessTransformerPath.isPresent() && !sourceSets.isEmpty()) {
+        if (this.accessTransformer.isEmpty() && this.accessTransformerPath.isPresent() && !sourceSets.isEmpty()) {
             var sourceSet = sourceSets.iterator().next();
 
             var itor = sourceSet.getResources().getSrcDirs().iterator();
             if (itor.hasNext()) {
                 var file = itor.next();
-                this.accessTransformer.value(this.getProjectLayout().file(this.accessTransformerPath.map(atPath -> new File(file, atPath))));
+                this.accessTransformer.setFrom(this.getProjectLayout().file(this.accessTransformerPath.map(atPath -> new File(file, atPath))));
             } else {
                 // weird edge case where a source set might not have any resources???
                 // in which case, just best guess the location for accesstransformer.cfg
                 var sourceSetName = sourceSet.getName();
-                this.accessTransformer.value(this.getProjectLayout().getProjectDirectory().file(this.accessTransformerPath.map(atPath -> "src/" + sourceSetName + "/resources/" + atPath)));
+                this.accessTransformer.setFrom(this.getProjectLayout().getProjectDirectory().file(this.accessTransformerPath.map(atPath -> "src/" + sourceSetName + "/resources/" + atPath)));
             }
         }
     }

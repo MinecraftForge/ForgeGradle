@@ -4,6 +4,7 @@
  */
 package net.minecraftforge.gradle;
 
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 
 public interface MinecraftAccessTransformersContainer {
@@ -14,7 +15,7 @@ public interface MinecraftAccessTransformersContainer {
     /// Gets the AccessTransformer configuration to use.
     ///
     /// @return The property for the configuration file to use
-    RegularFileProperty getAccessTransformer();
+    ConfigurableFileCollection getAccessTransformer();
 
     /// Sets the path, relative to this dependency's [org.gradle.api.tasks.SourceSet#getResources()], to the
     /// AccessTransformers config file to use.

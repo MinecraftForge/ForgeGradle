@@ -35,7 +35,7 @@ import java.util.List;
 
 @DisableCachingByDefault(because = "Mavenizer uses its own in-house caching")
 abstract class SyncMavenizer extends ToolExec {
-    static TaskProvider<SyncMavenizer> register(Project project, ExternalModuleDependency dependency, Provider<? extends MinecraftMappings> mappings, Provider<? extends RegularFile> accessTransformer, Provider<? extends Directory> output) {
+    static TaskProvider<SyncMavenizer> register(Project project, ExternalModuleDependency dependency, Provider<? extends MinecraftMappings> mappings, ConfigurableFileCollection accessTransformer, Provider<? extends Directory> output) {
         var version = dependency.getVersion();
         var taskName = "syncMavenizerFor"
             + StringGroovyMethods.capitalize(dependency.getName())
@@ -49,8 +49,7 @@ abstract class SyncMavenizer extends ToolExec {
             task.getModule().set(dependency.getModule());
             task.getVersion().set(dependency.getVersion());
             task.getMappings().set(mappings);
-            if (accessTransformer.isPresent())
-                task.getAccessTransformer().setFrom(accessTransformer);
+            task.getAccessTransformer().setFrom(accessTransformer);
         });
     }
 
