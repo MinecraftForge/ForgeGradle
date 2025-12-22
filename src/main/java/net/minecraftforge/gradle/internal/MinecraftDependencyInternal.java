@@ -24,7 +24,6 @@ import org.jspecify.annotations.Nullable;
 
 interface MinecraftDependencyInternal extends MinecraftDependency, HasPublicType, MinecraftMappingsContainerInternal, MinecraftAccessTransformersContainerInternal {
     String MC_EXT_NAME = "__fg_minecraft_dependency";
-    String AT_COUNT_NAME = "__fg_minecraft_atcontainers";
 
     @Override
     default TypeOf<?> getPublicType() {
@@ -58,8 +57,6 @@ interface MinecraftDependencyInternal extends MinecraftDependency, HasPublicType
 
     // Can be nullable due to configuration caching.
     @Nullable TaskProvider<SyncMavenizer> asTask();
-
-    Action<? super AttributeContainer> addAttributes();
 
     default <R> Closure<R> closure(Closure<R> closure) {
         return closure.rehydrate(closure.getDelegate(), new ClosureOwnerImpl.MinecraftDependencyImpl(closure.getOwner(), this), closure.getThisObject());

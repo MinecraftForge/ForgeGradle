@@ -22,6 +22,7 @@ import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ExternalModuleDependencyBundle;
+import org.gradle.api.artifacts.dsl.ComponentMetadataHandler;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.attributes.DocsType;
@@ -31,6 +32,8 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.flow.FlowProviders;
 import org.gradle.api.flow.FlowScope;
 import org.gradle.api.initialization.Settings;
+import org.gradle.api.initialization.resolve.DependencyResolutionManagement;
+import org.gradle.api.initialization.resolve.RepositoriesMode;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.JavaPluginExtension;
@@ -39,10 +42,12 @@ import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.reflect.TypeOf;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
+import org.jetbrains.annotations.UnmodifiableView;
 import org.jspecify.annotations.Nullable;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -119,6 +124,13 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         this.mappings.set(replacement);
     }
 
+    // TODO [ForgeGradle] Do this better (most likely by getting a list of possible artifacts from Mavenizer)
+    static void applyComponentRules(ComponentMetadataHandler components) {
+        components.all(ForgeGradleComponentMetadataRules.AlwaysUseMatureStatus.class, ctor ->
+            ctor.params(List.of("net.minecraftforge:forge", "net.minecraftforge:fmlonly"))
+        );
+    }
+
     static abstract class ForSettingsImpl extends MinecraftExtensionImpl {
         @Inject
         public ForSettingsImpl(ForgeGradlePlugin plugin, Settings settings) {
@@ -127,12 +139,17 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         }
 
         private void finish(Settings settings) {
+            // Attach shared data to Gradle instance (accessible to project)
             settings.getGradle().getExtensions().add(
                 ForgeGradleSharedData.NAME,
                 new ForgeGradleSharedData(
                     this.getMappingsProperty().getOrNull()
                 )
             );
+
+            // Add component rules, even if they aren't used
+            // RulesMode.PREFER_PROJECT && !projectRules.isEmpty() -> use projectRules
+            applyComponentRules(settings.getDependencyResolutionManagement().getComponents());
         }
     }
 
@@ -154,6 +171,8 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         private final ForgeGradleProblems problems = getObjects().newInstance(ForgeGradleProblems.class);
 
         protected abstract @Inject Project getProject();
+
+        protected abstract @Inject DependencyResolutionManagement getDependencyResolutionManagement();
 
         protected abstract @Inject FlowScope getFlowScope();
 
@@ -192,15 +211,12 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             // Dependencies
             {
                 var dependencies = getProject().getDependencies();
-                var components = dependencies.getComponents();
-                var attributesSchema = dependencies.getAttributesSchema();
 
                 try {
-                    components.withModule("net.minecraftforge:forge", ForgeGradleComponentMetadataRules.AlwaysUseMatureStatus.class);
-                } catch (Exception e) {
-                    // TODO Handle settings only rules
-                }
+                    applyComponentRules(dependencies.getComponents());
+                } catch (Exception ignored) { }
 
+                var attributesSchema = dependencies.getAttributesSchema();
                 attributesSchema.attribute(ForgeAttributes.OperatingSystem.ATTRIBUTE, strategy -> {
                     var currentOS = getProviders().of(ForgeAttributes.OperatingSystem.CurrentValue.class, ForgeAttributes.OperatingSystem.CurrentValue.Parameters.DEFAULT).get();
                     strategy.getDisambiguationRules().add(ForgeAttributes.OperatingSystem.DisambiguationRule.class, ctor -> ctor.params(currentOS));
@@ -246,16 +262,17 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
         @Override
         public List<? extends MavenArtifactRepository> getRepositories() {
-            var repositories = getObjects().namedDomainObjectList(MavenArtifactRepository.class);
-            repositories.addAll(getProject().getRepositories().withType(MavenArtifactRepository.class));
-            try {
-                var settings = (Settings) InvokerHelper.getProperty(getProject().getGradle(), "settings");
-                repositories.addAll(settings.getDependencyResolutionManagement().getRepositories().withType(MavenArtifactRepository.class));
-            } catch (Exception e) {
-                problems.reportCannotAccessSettingsRepos(e);
-            }
+            var repositoriesMode = getDependencyResolutionManagement().getRepositoriesMode().getOrElse(RepositoriesMode.PREFER_PROJECT);
+            var projectRepositories = getProject().getRepositories().withType(MavenArtifactRepository.class);
+            var settingsRepositories = getDependencyResolutionManagement().getRepositories().withType(MavenArtifactRepository.class);
 
-            return repositories;
+            return switch (repositoriesMode) {
+                case FAIL_ON_PROJECT_REPOS -> Collections.unmodifiableList(settingsRepositories);
+                case PREFER_SETTINGS ->
+                    Collections.unmodifiableList(!projectRepositories.isEmpty() && settingsRepositories.isEmpty() ? projectRepositories : settingsRepositories);
+                case PREFER_PROJECT ->
+                    Collections.unmodifiableList(!settingsRepositories.isEmpty() && projectRepositories.isEmpty() ? settingsRepositories : projectRepositories);
+            };
         }
 
         @Override

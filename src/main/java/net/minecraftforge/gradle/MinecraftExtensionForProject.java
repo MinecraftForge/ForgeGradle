@@ -17,7 +17,6 @@ import org.gradle.api.artifacts.ExternalModuleDependency;
 /// [Project][org.gradle.api.Project]-specific additions for the Minecraft extension. These will be accessible from the
 /// `minecraft` DSL object within your project's buildscript.
 ///
-/// @param <T> The type of closure owner used for [#dependency]
 /// @see MinecraftExtension
 public interface MinecraftExtensionForProject extends MinecraftExtension, MinecraftDependency {
     /// Creates (or marks if existing) the given dependency as a Minecraft dependency and configures it with the given

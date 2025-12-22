@@ -20,7 +20,7 @@ final class Constants {
     static final String SLIMELAUNCHER_MAIN = "net.minecraftforge.launcher.Main";
 
     static final String MAVENIZER_NAME = "mavenizer";
-    static final String MAVENIZER_VERSION = "0.4.15";
+    static final String MAVENIZER_VERSION = "0.4.18";
     static final String MAVENIZER_DL_URL = "https://maven.minecraftforge.net/net/minecraftforge/minecraft-mavenizer/" + MAVENIZER_VERSION + "/minecraft-mavenizer-" + MAVENIZER_VERSION + ".jar";
     static final int MAVENIZER_JAVA_VERSION = 25;
     static final String MAVENIZER_MAIN = "net.minecraftforge.mcmaven.cli.Main";
@@ -50,9 +50,9 @@ final class Constants {
               please let us know!
             - Many things that ForgeGradle 6 and older used to do are now decentralized
               away from the plugin. This means that your project will need to apply
-              'net.minecraftforge.accesstransformers' if you wish to use AccessTransformers.
+              'net.minecraftforge.jarjar' if you wish to use Forge's Jar-in-Jar system.
               If you are on an older version (1.20.4 and older), you will need the
-              'net.minecraftforge.obfuscation' plugin. Many of these come with our provided
+              'net.minecraftforge.renamer' plugin. Many of these come with our provided
               MDK, so this should not be an issue for you.
             
             For more details on this release, see https://docs.minecraftforge.net/en/fg-7.0/""";

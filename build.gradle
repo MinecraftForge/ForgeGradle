@@ -60,9 +60,6 @@ dependencies {
     // GradleUtils Shared Base
     implementation libs.gradleutils.shared
 
-    // AccessTransformers
-    compileOnlyApi libs.accesstransformers.gradle
-
     // Utils
     implementation libs.maven.artifact
     implementation libs.bundles.utils

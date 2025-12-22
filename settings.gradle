@@ -45,10 +45,6 @@ dependencyResolutionManagement.versionCatalogs.register('libs') {
     // GradleUtils Shared Base
     library 'gradleutils-shared', 'net.minecraftforge', 'gradleutils-shared' versionRef 'gradleutils'
 
-    // AccessTransformers Gradle Plugin
-    // https://plugins.gradle.org/plugin/net.minecraftforge.accesstransformers
-    library 'accesstransformers-gradle', 'net.minecraftforge.accesstransformers', 'net.minecraftforge.accesstransformers.gradle.plugin' version '5.0.1'
-
     // Artifact Versioning
     library 'maven-artifact', 'org.apache.maven', 'maven-artifact' version '3.9.11'
 

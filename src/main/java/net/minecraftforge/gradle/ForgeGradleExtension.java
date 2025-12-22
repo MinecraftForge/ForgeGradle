@@ -75,7 +75,7 @@ public interface ForgeGradleExtension {
 
         /// The requested mappings channel of the project.
         ///
-        /// This is determined using [MinecraftMappings#getChannel()] via [#getMappings()]
+        /// This is determined using [MinecraftMappings#getChannel()] via [MinecraftMappingsContainer#getMappings()]
         ///
         /// @return The mappings channel attribute
         /// @see #getMappingsVersion()
@@ -83,7 +83,7 @@ public interface ForgeGradleExtension {
 
         /// The requested mappings version of the project.
         ///
-        /// This is determined using [MinecraftMappings#getVersion()] via [#getMappings()]
+        /// This is determined using [MinecraftMappings#getVersion()] via [MinecraftMappingsContainer#getMappings()]
         ///
         /// @return The mappings channel version
         /// @see #getMappingsChannel()
