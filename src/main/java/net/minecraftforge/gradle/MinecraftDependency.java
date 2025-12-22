@@ -14,7 +14,7 @@ import org.gradle.api.NamedDomainObjectContainer;
 
 /// The Minecraft dependency contains information essential for how the
 /// {@linkplain MinecraftExtensionForProject minecraft extension} processes Minecraft dependencies.
-public interface MinecraftDependency extends MinecraftMappingsContainer {
+public interface MinecraftDependency extends MinecraftMappingsContainer, MinecraftAccessTransformersContainer {
     /// The collection of Slime Launcher options with which to create the launcher tasks.
     ///
     /// @return The collection of run task options

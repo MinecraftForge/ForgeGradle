@@ -21,6 +21,10 @@ abstract class ForgeGradlePluginEntry implements Plugin<PluginAware> {
     private static final GradleVersion CURRENT_GRADLE = GradleVersion.current();
     private static final GradleVersion MINIMUM_GRADLE = GradleVersion.version("9.3.0-rc-1");
 
+    private static final String PLUGIN_DISPLAY_NAME = "ForgeGradle";
+    private static final String PLUGIN_VERSION = "7";
+    private static final String PLUGIN_CLASS = "net.minecraftforge.gradle.internal.ForgeGradlePlugin";
+
     @Inject
     public ForgeGradlePluginEntry() { }
 
@@ -28,7 +32,9 @@ abstract class ForgeGradlePluginEntry implements Plugin<PluginAware> {
     public void apply(PluginAware target) {
         if (CURRENT_GRADLE.compareTo(MINIMUM_GRADLE) < 0) {
             String message = String.format(
-                "ForgeGradle 7 requires %s or later to run. You are currently using %s.",
+                "%s %s requires %s or later to run. You are currently using %s.",
+                PLUGIN_DISPLAY_NAME,
+                PLUGIN_VERSION,
                 MINIMUM_GRADLE,
                 CURRENT_GRADLE
             );
@@ -37,9 +43,9 @@ abstract class ForgeGradlePluginEntry implements Plugin<PluginAware> {
         }
 
         try {
-            target.getPluginManager().apply(Class.forName("net.minecraftforge.gradle.internal.ForgeGradlePlugin"));
+            target.getPluginManager().apply(Class.forName(PLUGIN_CLASS));
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Failed to find the ForgeGradle entry-point.", e);
+            throw new RuntimeException(String.format("Failed to find the %s entry-point.", PLUGIN_DISPLAY_NAME), e);
         }
     }
 }

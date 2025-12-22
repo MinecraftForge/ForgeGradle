@@ -4,13 +4,10 @@
  */
 package net.minecraftforge.gradle;
 
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 
-/// An extension of [MinecraftDependency] that contains additional convenience methods for working with
-/// AccessTransformers.
-///
-/// @see MinecraftDependency
-public interface MinecraftDependencyWithAccessTransformers extends MinecraftDependency {
+public interface MinecraftAccessTransformersContainer {
     /// The default path, from the source set's [resources][org.gradle.api.tasks.SourceSet#getResources()], for the
     /// AccessTransformers config to be located in.
     String DEFAULT_PATH = "META-INF/accesstransformer.cfg";
@@ -18,7 +15,7 @@ public interface MinecraftDependencyWithAccessTransformers extends MinecraftDepe
     /// Gets the AccessTransformer configuration to use.
     ///
     /// @return The property for the configuration file to use
-    RegularFileProperty getAccessTransformer();
+    ConfigurableFileCollection getAccessTransformer();
 
     /// Sets the path, relative to this dependency's [org.gradle.api.tasks.SourceSet#getResources()], to the
     /// AccessTransformers config file to use.
@@ -35,8 +32,7 @@ public interface MinecraftDependencyWithAccessTransformers extends MinecraftDepe
     /// file is in a strict location.
     void setAccessTransformer(String accessTransformer);
 
-    /// Sets if this dependency should use AccessTransformers. The default value depends on the state of
-    /// [MinecraftExtensionForProjectWithAccessTransformers#getAccessTransformers()].
+    /// Sets if this dependency should use AccessTransformers.
     ///
     /// If `true`, this calls [#setAccessTransformer(String)] using [#DEFAULT_PATH] as the path. If `false`, this will
     /// force this dependency to *not use* AccessTransformers, even if the convention is set to do so from the Minecraft

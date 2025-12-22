@@ -68,10 +68,4 @@ abstract class ClosureOwnerImpl<D> extends GroovyObjectSupport implements Closur
             super(originalOwner, ownerDelegate);
         }
     }
-
-    static class MinecraftDependencyWithAccessTransformersImpl extends ClosureOwnerImpl<net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers> implements ClosureOwnerInternal.MinecraftDependencyWithAccessTransformers {
-        MinecraftDependencyWithAccessTransformersImpl(Object originalOwner, net.minecraftforge.gradle.MinecraftDependencyWithAccessTransformers ownerDelegate) {
-            super(originalOwner, ownerDelegate);
-        }
-    }
 }

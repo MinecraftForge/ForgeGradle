@@ -12,12 +12,17 @@ import org.gradle.api.UnknownDomainObjectException;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ModuleIdentifier;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.RegularFile;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskProvider;
@@ -30,23 +35,22 @@ import java.util.List;
 
 @DisableCachingByDefault(because = "Mavenizer uses its own in-house caching")
 abstract class SyncMavenizer extends ToolExec {
-    static TaskProvider<SyncMavenizer> register(Project project, ExternalModuleDependency dependency, Provider<? extends MinecraftMappings> mappings, Provider<? extends Directory> output) {
+    static TaskProvider<SyncMavenizer> register(Project project, ExternalModuleDependency dependency, Provider<? extends MinecraftMappings> mappings, ConfigurableFileCollection accessTransformer, Provider<? extends Directory> output) {
         var version = dependency.getVersion();
         var taskName = "syncMavenizerFor"
             + StringGroovyMethods.capitalize(dependency.getName())
             + (version == null ? "" : version.replace(".", "").replace('-', '_'));
 
         var tasks = project.getTasks();
-        try {
-            return tasks.named(taskName, SyncMavenizer.class);
-        } catch (UnknownDomainObjectException e) {
-            return project.getTasks().register(taskName, SyncMavenizer.class, task -> {
-                task.getOutput().set(output);
-                task.getModule().set(dependency.getModule());
-                task.getVersion().set(dependency.getVersion());
-                task.getMappings().set(mappings);
-            });
-        }
+        return tasks.getNames().contains(taskName)
+            ? tasks.named(taskName, SyncMavenizer.class)
+            : tasks.register(taskName, SyncMavenizer.class, task -> {
+            task.getOutput().set(output);
+            task.getModule().set(dependency.getModule());
+            task.getVersion().set(dependency.getVersion());
+            task.getMappings().set(mappings);
+            task.getAccessTransformer().setFrom(accessTransformer);
+        });
     }
 
     protected abstract @Internal DirectoryProperty getCaches();
@@ -58,6 +62,8 @@ abstract class SyncMavenizer extends ToolExec {
     protected abstract @Input Property<String> getVersion();
 
     protected abstract @Input Property<MinecraftMappings> getMappings();
+
+    protected abstract @InputFiles @Optional ConfigurableFileCollection getAccessTransformer();
 
     protected abstract @Input @Optional ListProperty<String> getRepositories();
 
@@ -84,7 +90,7 @@ abstract class SyncMavenizer extends ToolExec {
 
         this.getCaches().convention(this.defaultToolDir.dir("caches"));
 
-        var minecraft = ((MinecraftExtensionInternal.ForProject<?>) getProject().getExtensions().getByType(MinecraftExtensionForProject.class));
+        var minecraft = ((MinecraftExtensionInternal.ForProject) getProject().getExtensions().getByType(MinecraftExtensionForProject.class));
         this.addRepositories(minecraft.getRepositories());
     }
 
@@ -103,6 +109,7 @@ abstract class SyncMavenizer extends ToolExec {
         this.args("--jdk-cache", this.getCaches());
         this.args("--artifact", this.getModule());
         this.args("--version", this.getVersion());
+        this.args("--access-transformer", this.getAccessTransformer());
         this.args("--global-auxiliary-variants");
 
         if ("parchment".equals(this.getMappings().get().getChannel())) {

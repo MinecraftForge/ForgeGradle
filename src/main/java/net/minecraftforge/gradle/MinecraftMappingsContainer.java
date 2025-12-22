@@ -28,7 +28,7 @@ public interface MinecraftMappingsContainer {
      * <p>This method includes a generated named variant that can make declaration in your buildscript easier.</p>
      * <pre><code>
      * minecraft {
-     *     mappings channel: 'official', version: '1.21.5'
+     *     mappings channel: 'official', version: '1.21.11'
      * }
      * </code></pre>
      *

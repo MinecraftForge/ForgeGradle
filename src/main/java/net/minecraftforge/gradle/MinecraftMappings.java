@@ -15,7 +15,7 @@ public interface MinecraftMappings extends Serializable {
     /// @return The channel
     String getChannel();
 
-    /// Gets the version for these mappings (i.e. `1.21.10`)
+    /// Gets the version for these mappings (i.e. `1.21.11`)
     ///
     /// @return The version
     String getVersion();

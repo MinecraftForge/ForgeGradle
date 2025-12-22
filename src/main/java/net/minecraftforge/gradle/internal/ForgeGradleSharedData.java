@@ -1,12 +1,13 @@
+/*
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
 package net.minecraftforge.gradle.internal;
 
-import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.jspecify.annotations.Nullable;
 
-import java.util.List;
-
 record ForgeGradleSharedData(
-    @Nullable MinecraftMappingsImpl mappings
+    @Nullable MinecraftMappingsInternal mappings
 ) {
     static final String NAME = "__fg_shared_data";
 }

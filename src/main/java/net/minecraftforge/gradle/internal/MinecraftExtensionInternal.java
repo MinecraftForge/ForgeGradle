@@ -4,65 +4,25 @@
  */
 package net.minecraftforge.gradle.internal;
 
-import net.minecraftforge.gradle.ClosureOwner;
 import net.minecraftforge.gradle.MinecraftExtension;
 import net.minecraftforge.gradle.MinecraftExtensionForProject;
-import net.minecraftforge.gradle.MinecraftExtensionForProjectWithAccessTransformers;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
-import org.gradle.api.attributes.Attribute;
 import org.gradle.api.file.DirectoryProperty;
-import org.gradle.api.reflect.HasPublicType;
-import org.gradle.api.reflect.TypeOf;
+import org.gradle.api.provider.Property;
+import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.List;
 
-interface MinecraftExtensionInternal extends MinecraftExtension, HasPublicType, MinecraftMappingsContainerInternal {
-    @Override
-    default TypeOf<?> getPublicType() {
-        return TypeOf.typeOf(MinecraftExtension.class);
-    }
-
-    @Override
-    default Attributes getAttributes() {
-        return AttributesInternal.INSTANCE;
-    }
+interface MinecraftExtensionInternal extends MinecraftExtension, MinecraftMappingsContainerInternal {
+    Property<MinecraftMappingsInternal> getMappingsProperty();
 
     DirectoryProperty getMavenizerOutput();
 
-    record AttributesInternal() implements Attributes {
-        static AttributesInternal INSTANCE = new AttributesInternal();
-
-        @Override
-        public Attribute<String> getOs() {
-            return ForgeAttributes.OperatingSystem.ATTRIBUTE;
-        }
-
-        @Override
-        public Attribute<String> getMappingsChannel() {
-            return ForgeAttributes.MappingsChannel.ATTRIBUTE;
-        }
-
-        @Override
-        public Attribute<String> getMappingsVersion() {
-            return ForgeAttributes.MappingsVersion.ATTRIBUTE;
-        }
-    }
-
-    interface ForProject<T extends ClosureOwner> extends MinecraftExtensionForProject<T>, MinecraftExtensionInternal, HasPublicType {
-        @Override
-        default TypeOf<?> getPublicType() {
-            return new TypeOf<MinecraftExtensionForProject<ClosureOwner.MinecraftDependency>>() { };
-        }
-
-        List<? extends MavenArtifactRepository> getRepositories();
+    // NOTE: This internal interface does NOT implement MinecraftDependencyInternal as it is not actually a dependency!
+    //       The top-level interface implements MinecraftDependency since it acts as a default for all Minecraft dependencies.
+    interface ForProject extends MinecraftExtensionForProject, MinecraftExtensionInternal, MinecraftAccessTransformersContainerInternal {
+        @UnmodifiableView List<? extends MavenArtifactRepository> getRepositories();
 
         DirectoryProperty getEclipseOutputDir();
-
-        interface WithAccessTransformers extends MinecraftExtensionForProjectWithAccessTransformers, MinecraftExtensionInternal.ForProject<ClosureOwner.MinecraftDependencyWithAccessTransformers>, HasPublicType {
-            @Override
-            default TypeOf<?> getPublicType() {
-                return TypeOf.typeOf(MinecraftExtensionForProjectWithAccessTransformers.class);
-            }
-        }
     }
 }

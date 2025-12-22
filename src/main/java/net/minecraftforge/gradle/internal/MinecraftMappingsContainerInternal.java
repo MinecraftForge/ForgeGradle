@@ -12,7 +12,7 @@ import org.jspecify.annotations.NullUnmarked;
 import java.util.Map;
 
 interface MinecraftMappingsContainerInternal extends MinecraftMappingsContainer {
-    // NOTE: Overridden with @UnknownNullability, null is checked in MinecraftMappingsImpl
+    // NOTE: Overridden with @NullUnmarked, null is checked in MinecraftMappingsImpl
     @Override
     @NullUnmarked
     void mappings(String channel, String version);
