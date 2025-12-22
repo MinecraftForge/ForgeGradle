@@ -155,7 +155,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
     }
 
     static abstract class ForProjectImpl extends MinecraftExtensionImpl implements ForProject {
-        private @Nullable TaskProvider<Task> genEclipseRuns;
+        private final TaskProvider<Task> genEclipseRuns;
         final DirectoryProperty eclipseOutputDir = getObjects().directoryProperty().convention(getProjectLayout().getProjectDirectory().dir("bin"));
 
         // Slime Launcher
@@ -230,17 +230,16 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                 );
             }
 
-            getProject().getPluginManager().withPlugin("eclipse", appliedEclipsePlugin -> {
-                var eclipse = getProject().getExtensions().getByType(EclipseModel.class);
-
-                this.genEclipseRuns = getProject().getTasks().register("genEclipseRuns", task -> {
-                    task.setGroup("IDE");
-                    task.setDescription("Generates the run configuration launch files for Eclipse.");
-                });
-                eclipse.synchronizationTasks(genEclipseRuns);
-
-                this.eclipseOutputDir.fileProvider(getProviders().provider(() -> eclipse.getClasspath().getDefaultOutputDir()));
+            genEclipseRuns = getProject().getTasks().register("genEclipseRuns", task -> {
+                task.setGroup("IDE");
+                task.setDescription("Generates the run configuration launch files for Eclipse.");
             });
+            getProject().getPluginManager().withPlugin("eclipse", appliedPlugin ->
+                getProject().getExtensions().configure(EclipseModel.class, eclipse -> {
+                    eclipse.synchronizationTasks(genEclipseRuns);
+                    eclipseOutputDir.fileProvider(getProviders().provider(() -> eclipse.getClasspath().getDefaultOutputDir()));
+                })
+            );
 
             // Finish when the project is evaluated
             getProject().afterEvaluate(this::finish);
@@ -324,15 +323,16 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                     sourceSet.getJava().getDestinationDirectory().set(unifiedDir);
                 }
 
-                project.getPluginManager().withPlugin("eclipse", eclipsePlugin -> {
-                    var eclipse = project.getExtensions().getByType(EclipseModel.class);
-                    eclipse.synchronizationTasks(syncMavenizer);
+                project.getPluginManager().withPlugin("eclipse", appliedPlugin ->
+                    project.getExtensions().configure(EclipseModel.class, eclipse -> eclipse.synchronizationTasks(syncMavenizer))
+                );
+            });
 
-                    if (mergeSourceSets)
-                        eclipse.getClasspath().setDefaultOutputDir(sourceSetsDir.getAsFile().get());
-                    else
-                        problems.reportUnmergedSourceSets();
-                });
+            project.getPluginManager().withPlugin("eclipse", eclipsePlugin -> {
+                if (mergeSourceSets)
+                    project.getExtensions().configure(EclipseModel.class, eclipse -> eclipse.getClasspath().setDefaultOutputDir(sourceSetsDir.getAsFile().get()));
+                else
+                    problems.reportUnmergedSourceSets();
             });
 
             for (var minecraftDependency : this.minecraftDependencies) {

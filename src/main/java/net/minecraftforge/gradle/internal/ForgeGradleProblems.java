@@ -215,6 +215,19 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
             .solution("Do not use the 'eclipse' plugin if you (or no one in your team) is using Eclipse.")
             .solution(HELP_MESSAGE));
     }
+
+    void reportMissingEclipsePlugin(String taskName) {
+        report("eclipse-missing-for-run-generation", "Eclipse plugin is not loaded", spec -> spec
+            .details("""
+                The Eclipse plugin is not loaded into this build, yet it was tasked with creating Eclipse run configurations.
+                This may cause incorrect values to be used for the Eclipse project's output directory and project name.
+                It is highly recommended to use the 'eclipse' plugin with your project if you plan on regularly using Eclipse."""
+            )
+            .severity(Severity.WARNING)
+            .solution("Use the 'eclipse' plugin in your build.")
+            .solution("Run the '%s' task directly from Eclipse.".formatted(taskName))
+            .solution(HELP_MESSAGE));
+    }
     //endregion
 
     //region Access Transformers

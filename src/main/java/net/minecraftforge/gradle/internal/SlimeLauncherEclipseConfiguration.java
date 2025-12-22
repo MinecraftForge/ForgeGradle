@@ -108,6 +108,9 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
 
     @TaskAction
     protected void exec() {
+        if (!this.getEclipseProjectName().isPresent())
+            problems.reportMissingEclipsePlugin(this.getName());
+
         List<String> args;
         List<String> jvmArgs;
         MapProperty<String, String> environment;
