@@ -4,8 +4,6 @@
  */
 package net.minecraftforge.gradle.internal;
 
-import net.minecraftforge.gradle.ForgeGradleExtension;
-
 /// The package-private constants used throughout ForgeGradle.
 ///
 /// Looking for attributes? They are in [ForgeGradleExtension.Attributes].
@@ -20,7 +18,7 @@ final class Constants {
     static final String SLIMELAUNCHER_MAIN = "net.minecraftforge.launcher.Main";
 
     static final String MAVENIZER_NAME = "mavenizer";
-    static final String MAVENIZER_VERSION = "0.4.18";
+    static final String MAVENIZER_VERSION = "0.4.19";
     static final String MAVENIZER_DL_URL = "https://maven.minecraftforge.net/net/minecraftforge/minecraft-mavenizer/" + MAVENIZER_VERSION + "/minecraft-mavenizer-" + MAVENIZER_VERSION + ".jar";
     static final int MAVENIZER_JAVA_VERSION = 25;
     static final String MAVENIZER_MAIN = "net.minecraftforge.mcmaven.cli.Main";
@@ -29,7 +27,7 @@ final class Constants {
     static final class Messages {
         static final String WELCOME = """
             Welcome to ForgeGradle 7.0 Release Candidate!
-            
+
             Here are some release highlights:
             - Complete rewrite of the plugin and underlying code.
             - Complete overhaul of DSL objects and registrations.
@@ -37,7 +35,7 @@ final class Constants {
             - Support for declaring defaults in settings.gradle.
             - Support for all Forge versions from Minecraft 1.20.6 (older versions are a
               work-in-progress).
-            
+
             A couple of important things to note:
             - Many plugins that worked with ForgeGradle 6, such as Parchment's Librarian,
               do not work with ForgeGradle 7. For most cases (such as parchment), we have
@@ -53,14 +51,14 @@ final class Constants {
               issue tracker (https://github.com/MinecraftForge/ForgeGradle/issues).
               Please do not use Discord as a means to report issues, as they will get
               lost in the discussion very easily.
-            
+
             For more details on this release, see https://docs.minecraftforge.net/en/fg-7.0/""";
 
         static final String WELCOME_CONDITION = """
             This message will not display again until ForgeGradle 7.0 or the below file is
             deleted:
             {}
-            
+
             Documentation will be coming at a later date. Thank you for testing
             ForgeGradle 7!""";
 
@@ -68,11 +66,11 @@ final class Constants {
             This build is using ForgeGradle Magic. ForgeGradle Magic employs automatic
             behavior that is hidden from buildscript authors in order to implement and
             account for convenience features.
-            
+
             Magic is enabled by default. It can be disabled by using the following
             Gradle property:
             net.minecraftforge.gradle.magic=false
-            
+
             For more information, see https://docs.minecraftforge.net/en/fg-7.0/magic/""";
     }
 }
