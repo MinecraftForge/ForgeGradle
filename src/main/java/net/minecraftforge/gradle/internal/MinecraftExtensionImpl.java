@@ -39,9 +39,12 @@ import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.reflect.TypeOf;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.jvm.toolchain.JavaLauncher;
+import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.jetbrains.annotations.UnmodifiableView;
 import org.jspecify.annotations.Nullable;
@@ -50,16 +53,21 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
+    private static final String MAVENIZER_REPO_NAME = "MinecraftMavenizer";
+
     private final DirectoryProperty mavenizerOutput = getObjects().directoryProperty();
 
     private final Property<MinecraftMappingsInternal> mappings = getObjects().property(MinecraftMappingsInternal.class);
 
     private final ForgeGradleProblems problems = getObjects().newInstance(ForgeGradleProblems.class);
+
+    protected final ForgeGradlePlugin plugin;
 
     protected abstract @Inject ObjectFactory getObjects();
 
@@ -85,6 +93,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
     @Inject
     public MinecraftExtensionImpl(ForgeGradlePlugin plugin) {
+        this.plugin = plugin;
         this.mavenizerOutput.convention(plugin.localCaches().dir("mavenizer/output").map(this.problems.ensureFileLocation()));
     }
 
@@ -101,7 +110,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
     @Override
     public Action<MavenArtifactRepository> getMavenizer() {
         return maven -> {
-            maven.setName("MinecraftMavenizer");
+            maven.setName(MAVENIZER_REPO_NAME);
             maven.setUrl(this.getMavenizerOutput());
         };
     }
@@ -375,8 +384,9 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             return this.runs;
         }
 
+        @SuppressWarnings({"UnstableApiUsage"})
         @Override
-        public ExternalModuleDependency dependency(
+        public Provider<ExternalModuleDependency> dependency(
             Object value,
             @DelegatesTo(ExternalModuleDependency.class)
             @ClosureParams(value = SimpleType.class, options = "net.minecraftforge.gradle.MinecraftDependency.ClosureOwner")
@@ -389,7 +399,64 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
             var minecraftDependency = this.getObjects().newInstance(MinecraftDependencyImpl.class, this.getMavenizerOutput());
             this.minecraftDependencies.add(minecraftDependency);
-            return minecraftDependency.init(value, closure);
+            var dep = minecraftDependency.init(value, closure);
+            var mavenizer = this.getProviders().of(MavenizerValueSource.class, spec -> {
+                spec.parameters(params -> {
+                    var tool = this.plugin.getTool(Tools.MAVENIZER);
+                    params.getClasspath().setFrom(tool.getClasspath());
+                    params.getJavaLauncher().set(tool.getJavaLauncher().map(JavaLauncher::getExecutablePath));
+                    params.getArguments().set(this.getProviders().provider(() -> {
+                        var toolCache = this.plugin.globalCaches()
+                            .dir(tool.getName().toLowerCase(Locale.ENGLISH))
+                            .map(this.problems.ensureFileLocation());
+                        var cache = toolCache.get().dir("caches").getAsFile().getAbsolutePath();
+
+                        var ret = new ArrayList<String>();
+                        ret.addAll(List.of(
+                            "--maven",
+                            "--cache", cache,
+                            "--jdk-cache", cache,
+                            "--output", this.getMavenizerOutput().get().getAsFile().getAbsolutePath(),
+                            "--artifact", dep.getModule().toString(),
+                            "--version", Objects.requireNonNull(dep.getVersion()),
+                            "--global-auxiliary-variants"
+                        ));
+
+                        // If we are finding the access transformer from sourcesets, just find from any source set
+                        // We can't filter by configurations becase the config cache doesn't like that.
+                        // So if users fuck up, then we can output a warning, or they can manually set the AT file.
+                        // This is a 'best effort'
+                        var sourceSets = getProject().getExtensions().getByType(JavaPluginExtension.class).getSourceSets();
+                        minecraftDependency.finalizeAccessTransformers(sourceSets);
+
+                        for (var at : minecraftDependency.getAccessTransformer()) {
+                            //System.out.println("Access Transformer: " + at);
+                            ret.add("--access-transformer");
+                            ret.add(at.getAbsolutePath());
+                        }
+
+                        var mappings = minecraftDependency.getMappings();
+                        if ("parchment".equals(mappings.getChannel()))
+                            ret.addAll(List.of("--parchment", mappings.getVersion()));
+
+                        for (var repo : this.getRepositories()) {
+                            if (MAVENIZER_REPO_NAME.equals(repo.getName()))
+                                continue;
+                            var url = repo.getUrl().toString();
+                            if (!url.endsWith("/"))
+                                url += '/';
+                            ret.add("--repository");
+                            ret.add(repo.getName() + ',' + url);
+                        }
+                        return ret;
+                    }));
+                });
+            });
+
+            return this.getProviders().provider(() -> {
+                mavenizer.get();// Invoke mavenizer, it should be invoked already by gradle config cache, but Force it to be
+                return dep;
+            });
         }
 
         private void checkRepos(List<? extends MavenArtifactRepository> repos) {

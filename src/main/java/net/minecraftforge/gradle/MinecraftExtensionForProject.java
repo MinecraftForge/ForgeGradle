@@ -13,6 +13,7 @@ import net.minecraftforge.gradleutils.shared.Closures;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.provider.Provider;
 
 /// [Project][org.gradle.api.Project]-specific additions for the Minecraft extension. These will be accessible from the
 /// `minecraft` DSL object within your project's buildscript.
@@ -27,7 +28,7 @@ public interface MinecraftExtensionForProject extends MinecraftExtension, Minecr
     /// @return The dependency
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
-    ExternalModuleDependency dependency(
+    Provider<ExternalModuleDependency> dependency(
         Object value,
         @DelegatesTo(ExternalModuleDependency.class)
         @ClosureParams(value = SimpleType.class, options = "net.minecraftforge.gradle.ClosureOwner.MinecraftDependency")
@@ -42,7 +43,7 @@ public interface MinecraftExtensionForProject extends MinecraftExtension, Minecr
     /// @return The dependency
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
-    default ExternalModuleDependency dependency(Object value, Action<? super ClosureOwner.MinecraftDependency> action) {
+    default Provider<ExternalModuleDependency> dependency(Object value, Action<? super ClosureOwner.MinecraftDependency> action) {
         return this.dependency(value, Closures.action(this, action));
     }
 
@@ -52,7 +53,7 @@ public interface MinecraftExtensionForProject extends MinecraftExtension, Minecr
     /// @return The dependency
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
-    default ExternalModuleDependency dependency(Object value) {
+    default Provider<ExternalModuleDependency> dependency(Object value) {
         return this.dependency(value, Closures.empty(this));
     }
 }

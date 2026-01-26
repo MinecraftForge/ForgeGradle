@@ -221,6 +221,10 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
             });
         });
 
+        finalizeAccessTransformers(sourceSets);
+    }
+
+    void finalizeAccessTransformers(NamedDomainObjectSet<SourceSet> sourceSets) {
         if (this.accessTransformer.isEmpty() && !this.accessTransformerPath.isPresent()) {
             this.accessTransformer.convention(minecraft.getAccessTransformer());
             this.accessTransformerPath.convention(minecraft.getAccessTransformerPath());

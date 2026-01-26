@@ -96,7 +96,8 @@ abstract class SyncMavenizer extends ToolExec {
 
     @Override
     protected ExecResult exec() throws IOException {
-        return super.exec().rethrowFailure().assertNormalExitValue();
+        this.getProject().getLogger().lifecycle("Skipping SyncMavenizer...");
+        return null; //return super.exec().rethrowFailure().assertNormalExitValue();
     }
 
     @Override
