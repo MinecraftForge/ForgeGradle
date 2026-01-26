@@ -10,7 +10,6 @@ import net.minecraftforge.gradle.MinecraftExtensionForProject;
 import net.minecraftforge.gradle.MinecraftMappings;
 import net.minecraftforge.gradle.SlimeLauncherOptions;
 import net.minecraftforge.gradleutils.shared.Closures;
-import org.gradle.api.Action;
 import org.gradle.api.InvalidUserCodeException;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NamedDomainObjectSet;
@@ -19,14 +18,10 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ModuleIdentifier;
-import org.gradle.api.artifacts.type.ArtifactTypeDefinition;
-import org.gradle.api.attributes.Attribute;
-import org.gradle.api.attributes.AttributeContainer;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.ProjectLayout;
-import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.flow.FlowProviders;
 import org.gradle.api.flow.FlowScope;
 import org.gradle.api.model.ObjectFactory;
@@ -34,7 +29,6 @@ import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.TaskProvider;
 import org.jspecify.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -44,7 +38,6 @@ import java.util.Objects;
 abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     // These can be nullable due to configuration caching.
     private transient @Nullable ExternalModuleDependency delegate;
-    private transient @Nullable TaskProvider<SyncMavenizer> mavenizer;
     private transient @Nullable NamedDomainObjectContainer<SlimeLauncherOptionsImpl> runs;
 
     // Minecraft extension
@@ -129,12 +122,6 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
         return this.delegate;
     }
 
-    // Can be nullable due to configuration caching.
-    @Override
-    public @Nullable TaskProvider<SyncMavenizer> asTask() {
-        return this.mavenizer;
-    }
-
     @Override
     public ExternalModuleDependency init(Object dependencyNotation, Closure<?> closure) {
         this.runs = getObjects().domainObjectContainer(SlimeLauncherOptionsImpl.class);
@@ -152,8 +139,6 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
 
             return module;
         }));
-
-        this.mavenizer = SyncMavenizer.register(getProject(), dependency, this.mappings, this.accessTransformer, mavenizerOutput);
 
         this.asString.set(dependency.toString());
         this.asPath.set(Util.pathify(dependency));
@@ -190,10 +175,6 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
 
     @Override
     public void handle(NamedDomainObjectSet<SourceSet> sourceSets, NamedDomainObjectSet<SourceSet> allSourceSets) {
-        allSourceSets.all(sourceSet ->
-            getProject().getTasks().named(sourceSet.getTaskName("sync", "mavenizer"), task -> task.dependsOn(this.mavenizer))
-        );
-
         var asString = this.asString.get();
         var dependencyOutput = this.mavenizerOutput.dir(this.asPath);
         getFlowScope().always(ForgeGradleFlowAction.MavenizerSyncCheck.class, spec ->
@@ -221,6 +202,10 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
             });
         });
 
+        finalizeAccessTransformers(sourceSets);
+    }
+
+    void finalizeAccessTransformers(NamedDomainObjectSet<SourceSet> sourceSets) {
         if (this.accessTransformer.isEmpty() && !this.accessTransformerPath.isPresent()) {
             this.accessTransformer.convention(minecraft.getAccessTransformer());
             this.accessTransformerPath.convention(minecraft.getAccessTransformerPath());
