@@ -49,7 +49,7 @@ dependencyResolutionManagement.versionCatalogs.register('libs') {
     library 'gson', 'com.google.code.gson:gson:2.10.1'
     library 'guava', 'com.google.guava:guava:31.1-jre'
     library 'fastcsv', 'de.siegmar:fastcsv:2.2.1'
-    library 'artifactural', 'net.minecraftforge:artifactural:3.0.20'
+    library 'artifactural', 'net.minecraftforge:artifactural:3.0.21'
     library 'unsafe', 'net.minecraftforge:unsafe:0.2.0'
     library 'maven-artifact', 'org.apache.maven:maven-artifact:3.9.1'
     library 'httpclient', 'org.apache.httpcomponents:httpclient:4.5.14'
