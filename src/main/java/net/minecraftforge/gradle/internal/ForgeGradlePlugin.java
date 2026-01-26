@@ -25,10 +25,6 @@ abstract class ForgeGradlePlugin extends EnhancedPlugin<ExtensionAware> {
 
     private final ForgeGradleProblems problems = this.getObjects().newInstance(ForgeGradleProblems.class);
 
-    static {
-        LOGGER.lifecycle("ForgeGradle 7 is an incubating plugin.");
-    }
-
     protected abstract @Inject FlowScope getFlowScope();
 
     protected abstract @Inject FlowProviders getFlowProviders();

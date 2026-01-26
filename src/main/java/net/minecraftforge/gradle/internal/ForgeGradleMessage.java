@@ -12,9 +12,12 @@ import org.gradle.api.provider.Provider;
 
 import java.util.Locale;
 
+// TODO [ForgeGradle] Queue Magic message
+//      While FG7 has some magic, none of it is substantial enough for it to warrant it yet
+//      It also needs to be rewritten in a way that makes it much more informative
 enum ForgeGradleMessage {
-    WELCOME("7_0_RC_WELCOME_1", Constants.Messages.WELCOME, Constants.Messages.WELCOME_CONDITION),
-    MAGIC("7_0_RC_MAGIC_1", Constants.Messages.MAGIC);
+    WELCOME("7_0_WELCOME_1", Constants.Messages.WELCOME, Constants.Messages.WELCOME_CONDITION),
+    MAGIC("7_0_MAGIC_1", Constants.Messages.MAGIC);
 
     private static final String MESSAGES_DIR = "messages";
 

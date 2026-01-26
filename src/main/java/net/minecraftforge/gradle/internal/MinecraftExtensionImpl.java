@@ -214,7 +214,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             }
 
             plugin.queueMessage(ForgeGradleMessage.WELCOME);
-            plugin.queueMessage(ForgeGradleMessage.MAGIC);
+            //plugin.queueMessage(ForgeGradleMessage.MAGIC);
 
             getFlowScope().always(ForgeGradleFlowAction.AccessTransformersMissing.class, spec -> spec.parameters(parameters -> {
                 parameters.getFailure().set(getFlowProviders().getBuildWorkResult().map(p -> p.getFailure().orElse(null)));
