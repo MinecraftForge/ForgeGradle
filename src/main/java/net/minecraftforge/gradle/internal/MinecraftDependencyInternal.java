@@ -55,9 +55,6 @@ interface MinecraftDependencyInternal extends MinecraftDependency, HasPublicType
     // Can be nullable due to configuration caching.
     @Nullable ExternalModuleDependency asDependency();
 
-    // Can be nullable due to configuration caching.
-    @Nullable TaskProvider<SyncMavenizer> asTask();
-
     default <R> Closure<R> closure(Closure<R> closure) {
         return closure.rehydrate(closure.getDelegate(), new ClosureOwnerImpl.MinecraftDependencyImpl(closure.getOwner(), this), closure.getThisObject());
     }

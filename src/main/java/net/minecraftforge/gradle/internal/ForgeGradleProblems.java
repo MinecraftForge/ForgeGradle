@@ -140,7 +140,6 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
             .severity(Severity.ERROR)
             .solution("Re-import your project in your IDE, as this will automatically synchronize the Mavenizer.")
             .solution("Run `gradlew` with no arguments, as this will automatically synchronize the Mavenizer.")
-            .solution("Manually run the `syncMavenizer` task, located in the 'Build Setup' group.")
             .solution("Temporary revert any edits to the Minecraft dependency until the Mavenizer is re-run.")
             .solution(HELP_MESSAGE);
 

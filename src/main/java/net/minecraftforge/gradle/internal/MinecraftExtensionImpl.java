@@ -315,26 +315,12 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             var sourceSetsDir = this.getObjects().directoryProperty().value(this.getProjectLayout().getBuildDirectory().dir("sourceSets"));
             var mergeSourceSets = this.problems.test("net.minecraftforge.gradle.merge-source-sets");
             sourceSets.all(sourceSet -> {
-                var sourceSetName = sourceSet.getName();
-                var syncMavenizer = Util.runFirst(project, project.getTasks().register(sourceSet.getTaskName("sync", "mavenizer"), task -> {
-                    task.setGroup("Build Setup");
-                    task.setDescription("Synchronizes the Mavenizer output for source set '" + sourceSetName + '.');
-                }));
-
-                try {
-                    project.getTasks().named(sourceSet.getCompileJavaTaskName(), task -> task.dependsOn(syncMavenizer));
-                } catch (UnknownTaskException ignored) { }
-
                 if (mergeSourceSets) {
                     // This is documented in SourceSetOutput's javadoc comment
                     var unifiedDir = sourceSetsDir.dir(sourceSet.getName());
                     sourceSet.getOutput().setResourcesDir(unifiedDir);
                     sourceSet.getJava().getDestinationDirectory().set(unifiedDir);
                 }
-
-                project.getPluginManager().withPlugin("eclipse", appliedPlugin ->
-                    project.getExtensions().configure(EclipseModel.class, eclipse -> eclipse.synchronizationTasks(syncMavenizer))
-                );
             });
 
             project.getPluginManager().withPlugin("eclipse", eclipsePlugin -> {
