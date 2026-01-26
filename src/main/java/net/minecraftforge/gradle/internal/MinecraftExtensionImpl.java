@@ -98,6 +98,11 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
     }
 
     @Override
+    public TypeOf<?> getPublicType() {
+        return MinecraftExtensionInternal.super.getPublicType();
+    }
+
+    @Override
     public Property<MinecraftMappingsInternal> getMappingsProperty() {
         return this.mappings;
     }
@@ -252,6 +257,11 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
             // Finish when the project is evaluated
             getProject().afterEvaluate(this::finish);
+        }
+
+        @Override
+        public TypeOf<?> getPublicType() {
+            return ForProject.super.getPublicType();
         }
 
         @Override
