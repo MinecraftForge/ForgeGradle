@@ -39,7 +39,7 @@ dependencyResolutionManagement.versionCatalogs.register('libs') {
     // Gradle API
     // Original: https://github.com/remal-gradle-api/packages/packages/760197?version=9.0.0
     // Mirror:   https://repos.moddinglegacy.com/#/modding-legacy/name/remal/gradle-api/gradle-api/9.0.0
-    version 'gradle', '9.3.0-rc-1'
+    version 'gradle', '9.3.0'
     library 'gradle', 'name.remal.gradle-api', 'gradle-api'  versionRef 'gradle'
 
     // GradleUtils Shared Base

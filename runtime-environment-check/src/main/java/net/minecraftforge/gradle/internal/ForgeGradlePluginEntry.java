@@ -19,7 +19,7 @@ abstract class ForgeGradlePluginEntry implements Plugin<PluginAware> {
     private static final Logger LOGGER = Logging.getLogger(ForgeGradlePluginEntry.class);
 
     private static final GradleVersion CURRENT_GRADLE = GradleVersion.current();
-    private static final GradleVersion MINIMUM_GRADLE = GradleVersion.version("9.3.0-rc-1");
+    private static final GradleVersion MINIMUM_GRADLE = GradleVersion.version("9.3.0");
 
     private static final String PLUGIN_DISPLAY_NAME = "ForgeGradle";
     private static final String PLUGIN_VERSION = "7";
