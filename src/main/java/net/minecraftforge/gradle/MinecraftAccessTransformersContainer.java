@@ -15,6 +15,7 @@ public interface MinecraftAccessTransformersContainer {
     /// Gets the AccessTransformer configuration files to use.
     ///
     /// @return The property for the configuration file to use
+    /// @see #getAccessTransformers()
     ConfigurableFileCollection getAccessTransformer();
 
     /// Gets the AccessTransformer configuration files to use.
@@ -49,4 +50,11 @@ public interface MinecraftAccessTransformersContainer {
     /// @param accessTransformer If this dependency should use AccessTransformers
     /// @see #setAccessTransformer(String)
     void setAccessTransformer(boolean accessTransformer);
+
+    /// Uses the default configuration path for AccessTransformers.
+    ///
+    /// @see #setAccessTransformer(boolean)
+    default void useDefaultAccessTransformer() {
+        this.setAccessTransformer(true);
+    }
 }
