@@ -21,7 +21,10 @@ abstract class MinecraftMappingsImpl implements MinecraftMappingsInternal {
     public MinecraftMappingsImpl(String channel, String version) {
         var problems = this.getObjects().newInstance(ForgeGradleProblems.class);
         this.channel = Util.checkMappingsParam(problems, channel, "channel");
-        this.version = Util.checkMappingsParam(problems, version, "version");
+        if (this.channel.equals("parchment"))
+            this.version = ParchmentVersion.parse(Util.checkMappingsParam(problems, version, "version")).toFriendly();
+        else
+            this.version = Util.checkMappingsParam(problems, version, "version");
     }
 
     @Override
