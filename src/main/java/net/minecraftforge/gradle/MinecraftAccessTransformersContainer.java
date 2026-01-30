@@ -12,10 +12,17 @@ public interface MinecraftAccessTransformersContainer {
     /// AccessTransformers config to be located in.
     String DEFAULT_PATH = "META-INF/accesstransformer.cfg";
 
-    /// Gets the AccessTransformer configuration to use.
+    /// Gets the AccessTransformer configuration files to use.
     ///
     /// @return The property for the configuration file to use
     ConfigurableFileCollection getAccessTransformer();
+
+    /// Gets the AccessTransformer configuration files to use.
+    ///
+    /// @return The property for the configuration file to use
+    default ConfigurableFileCollection getAccessTransformers() {
+        return getAccessTransformer();
+    }
 
     /// Sets the path, relative to this dependency's [org.gradle.api.tasks.SourceSet#getResources()], to the
     /// AccessTransformers config file to use.

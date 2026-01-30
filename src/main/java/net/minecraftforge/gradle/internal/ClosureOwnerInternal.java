@@ -107,6 +107,11 @@ interface ClosureOwnerInternal<D> extends ClosureOwner {
         }
 
         @Override
+        default ConfigurableFileCollection getAccessTransformers() {
+            return this.getOwnerDelegate().getAccessTransformers();
+        }
+
+        @Override
         default void setAccessTransformer(String accessTransformer) {
             this.getOwnerDelegate().setAccessTransformer(accessTransformer);
         }
