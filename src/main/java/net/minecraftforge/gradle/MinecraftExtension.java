@@ -25,7 +25,7 @@ public interface MinecraftExtension extends MinecraftMappingsContainer {
     String NAME = "minecraft";
 
     /**
-     * A closure for the generated Minecraft maven to be passed into
+     * A closure for the Minecraft Mavenizer's output to be passed into
      * {@link org.gradle.api.artifacts.dsl.RepositoryHandler#maven(Closure)}.
      * <p>Declaring this in your buildscript is <strong>required</strong> for the Minecraft dependencies to resolve
      * properly.</p>
@@ -36,7 +36,11 @@ public interface MinecraftExtension extends MinecraftMappingsContainer {
      * </code></pre>
      *
      * @return The closure
+     * @see #mavenizer(RepositoryHandler)
+     * @deprecated Use {@link #mavenizer(RepositoryHandler)} instead, as it has special handling to avoid pitfalls when
+     * including the mavenizer output in your repositories.
      */
+    @Deprecated(since = "7.0")
     Action<MavenArtifactRepository> getMavenizer();
 
     /**
@@ -47,6 +51,8 @@ public interface MinecraftExtension extends MinecraftMappingsContainer {
      *
      * @param repositories The repository handler to add the maven to
      * @return The Minecraft maven
+     * @apiNote This version includes special logic to avoid pitfalls when adding the Mavenizer output as a repository
+     * when using ForgeGradle in a subproject, for example, if all projects need to use the Forge maven.
      * @see #getMavenizer()
      */
     default MavenArtifactRepository mavenizer(RepositoryHandler repositories) {

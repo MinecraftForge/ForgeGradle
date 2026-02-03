@@ -149,14 +149,27 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
             this.report(name, displayName, problemSpec);
     }
 
-    void reportCannotAccessSettingsRepos(Exception e) {
-        this.report("cannot-access-settings-repos", "Cannot access Settings repositories", spec -> spec
+    void reportMavenizerNotHighestRepository() {
+        this.report("mavenizer-not-highest-repo", "Mavenizer repository is not the highest", spec -> spec
             .details("""
-                ForgeGradle is unable to access the repositories defined by the Settings' dependency resolution management.
-                This is a ForgeGradle bug and needs to be reported to the ForgeGradle issue tracker on GitHub.""")
+                The Mavenizer repository is not the highest ranked repository for the project's repositories.
+                Any publicly consumable artifacts for Forge present in other repositories may be used instead of the generated artifacts by Mavenizer.
+                This may result in incorrect dependencies being consumed a "cannot resolve dependency" error.""")
+            .severity(Severity.ADVICE)
+            .solution("Declare Mavenizer's repository before any other repository.")
+            .solution("Use `minecraft.mavenizer(repositories)` instead of `repositories.maven(minecraft.mavenizer)`.")
+            .solution(HELP_MESSAGE));
+    }
+
+    void reportForgeAboveMavenizer() {
+        this.report("forge-maven-above-mavenizer", "Forge Maven has a higher priority than Mavenizer", spec -> spec
+            .details("""
+                The Forge Maven repository was found to have a higher priority for the project's repositories than Mavenizer.
+                The publicly consumable artifacts for Forge will be used instead of the generated artifacts by Mavenizer.
+                This will result in incorrect dependencies being consumed or a "cannot resolve dependency" error.""")
             .severity(Severity.ERROR)
-            .withException(e)
-            .solution("For now, only declare repositories in the project.")
+            .solution("Declare Mavenizer's repository before the Forge repository.")
+            .solution("Use `minecraft.mavenizer(repositories)` instead of `repositories.maven(minecraft.mavenizer)`.")
             .solution(HELP_MESSAGE));
     }
 

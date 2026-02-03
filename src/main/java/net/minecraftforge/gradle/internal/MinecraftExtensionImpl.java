@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
@@ -456,38 +457,44 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         }
 
         private void checkRepos(List<? extends MavenArtifactRepository> repos) {
-            Predicate<String> contains = s -> {
-                for (var repo : repos) {
+            ToIntFunction<String> indexOf = s -> {
+                for (var i = 0; i < repos.size(); i++) {
+                    var repo = repos.get(i);
                     if (repo.getUrl().toString().contains(s))
-                        return true;
+                        return i;
                 }
 
-                return false;
+                return -1;
             };
 
-            Predicate<Object> containsExactly = object -> {
-                for (var repo : repos) {
-                    if (repo.getUrl().equals(ForProjectImpl.this.getProject().uri(object)))
-                        return true;
+            ToIntFunction<Object> indexOfExactly = object -> {
+                for (var i = 0; i < repos.size(); i++) {
+                    var repo = repos.get(i);
+                    if (repo.getUrl().equals(getProject().uri(object)))
+                        return i;
                 }
 
-                return false;
+                return -1;
             };
 
             // Mavenizer
-            if (!containsExactly.test(ForProjectImpl.this.getMavenizerOutput().getAsFile())) {
+            int mavenizer = indexOfExactly.applyAsInt(ForProjectImpl.this.getMavenizerOutput().getAsFile());
+            if (mavenizer < 0)
                 problems.reportMcMavenNotDeclared();
-            }
+            else if (mavenizer != 0) // if Mavenizer is not highest repository
+                problems.reportMavenizerNotHighestRepository();
 
             // Forge
-            if (!contains.test("maven.minecraftforge.net")) {
+            int forge = indexOf.applyAsInt("maven.minecraftforge.net");
+            if (forge < 0) {
                 problems.reportForgeMavenNotDeclared();
-            }
+            } else if (mavenizer > 0 && forge < mavenizer) // If Forge is above Mavenizer
+                problems.reportForgeAboveMavenizer();
 
             // Mojang
-            if (!contains.test("libraries.minecraft.net")) {
+            int mojang = indexOf.applyAsInt("libraries.minecraft.net");
+            if (mojang < 0)
                 problems.reportMcLibsMavenNotDeclared();
-            }
         }
     }
 }
