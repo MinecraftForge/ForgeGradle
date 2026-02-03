@@ -171,7 +171,6 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
     static abstract class ForProjectImpl extends MinecraftExtensionImpl implements ForProject {
         private final TaskProvider<Task> genEclipseRuns;
-        final DirectoryProperty eclipseOutputDir = getObjects().directoryProperty().convention(getProjectLayout().getProjectDirectory().dir("bin"));
 
         // Slime Launcher
         private final NamedDomainObjectContainer<SlimeLauncherOptionsImpl> runs = getObjects().domainObjectContainer(SlimeLauncherOptionsImpl.class);
@@ -252,7 +251,6 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             getProject().getPluginManager().withPlugin("eclipse", appliedPlugin ->
                 getProject().getExtensions().configure(EclipseModel.class, eclipse -> {
                     eclipse.synchronizationTasks(genEclipseRuns);
-                    eclipseOutputDir.fileProvider(getProviders().provider(() -> eclipse.getClasspath().getDefaultOutputDir()));
                 })
             );
 
@@ -295,11 +293,6 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             };
         }
 
-        @Override
-        public DirectoryProperty getEclipseOutputDir() {
-            return this.eclipseOutputDir;
-        }
-
         private void apply(Configuration configuration) {
             if (!configuration.isCanBeResolved()) return;
 
@@ -336,7 +329,11 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
             project.getPluginManager().withPlugin("eclipse", eclipsePlugin -> {
                 if (mergeSourceSets)
-                    project.getExtensions().configure(EclipseModel.class, eclipse -> eclipse.getClasspath().setDefaultOutputDir(sourceSetsDir.getAsFile().get()));
+                    project.getExtensions().configure(EclipseModel.class, eclipse -> eclipse.classpath(classpath -> {
+                        var output = sourceSetsDir.getAsFile().get();
+                        classpath.setDefaultOutputDir(output);
+                        classpath.getBaseSourceOutputDir().set(output);
+                    }));
                 else
                     problems.reportUnmergedSourceSets();
             });

@@ -16,6 +16,7 @@ import org.gradle.api.attributes.Usage;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.DirectoryTree;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
@@ -31,18 +32,26 @@ import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.work.DisableCachingByDefault;
+import org.jspecify.annotations.Nullable;
 
 import javax.inject.Inject;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
 @DisableCachingByDefault(because = "Running the game cannot be cached")
 abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, HasPublicType {
-    static TaskProvider<SlimeLauncherExec> register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, ModuleIdentifier module, String version, String asPath, String asString, boolean single, Provider<Directory> eclipseOutputDir) {
+    static TaskProvider<SlimeLauncherExec> register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, ModuleIdentifier module, String version, String asPath, String asString, boolean single) {
         TaskProvider<SlimeLauncherMetadata> metadata;
         {
             TaskProvider<SlimeLauncherMetadata> t;
@@ -70,18 +79,50 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
         var runTaskName = sourceSet.getTaskName("run", options.getName()) + taskNameSuffix;
         var generateEclipseRunTaskName = sourceSet.getTaskName("genEclipseRun", options.getName()) + taskNameSuffix;
 
-        var sourceSetOutputs = project.getObjects().fileCollection().from(sourceSet.getOutput().getResourcesDir(), sourceSet.getJava().getDestinationDirectory());
-        var eclipseOutputs = project.getObjects().fileCollection().from(eclipseOutputDir);
         var genEclipseRun = project.getTasks().register(generateEclipseRunTaskName, SlimeLauncherEclipseConfiguration.class, task -> {
             task.getRunName().set(options.getName());
             task.setDescription("Generates the '%s' Slime Launcher run configuration for Eclipse.".formatted(options.getName()));
             task.getOutputFile().set(task.getProjectLayout().getProjectDirectory().file(runTaskName + ".launch"));
 
-            task.getClasspath()
-                .from(task.getObjects().fileCollection().from(task.getProviders().provider(sourceSet::getRuntimeClasspath)))
-                .minus(sourceSetOutputs)
-                .plus(eclipseOutputs);
+            var runtimeClasspath = task.getObjects().fileCollection().from(
+                task.getProviders().provider(() -> {
+                    var runtime = sourceSet.getRuntimeClasspath();
+                    var eclipseModel = project.getExtensions().findByType(EclipseModel.class);
+                    if (eclipseModel == null)
+                        return runtime.getFiles();
 
+                    // We need to build a map of sourcesets to real output paths like Eclipse's plugin does.
+                    // There is no known exposure of this stuff, so have to do it ourselves.
+                    // https://github.com/gradle/gradle/blob/master/platforms/ide/ide/src/main/java/org/gradle/plugins/ide/eclipse/model/internal/SourceFoldersCreator.java#L220
+                    var classpath = eclipseModel.getClasspath();
+                    var sortedSourceSets = sortSourceSets(classpath.getSourceSets());
+                    var replacements = new HashMap<File, File>();
+                    var base = classpath.getBaseSourceOutputDir().getAsFile().get();
+                    var claimed = new HashSet<File>();
+                    claimed.add(classpath.getDefaultOutputDir());
+
+                    // Gather the output name eclipse will use, and all outputs gradle expects
+                    for (var sources : sortedSourceSets) {
+                        var name =  sources.getName();
+                        var path = new File(base, name);
+                        while (claimed.contains(path)) {
+                            name += '_';
+                            path = new File(base, name);
+                        }
+                        claimed.add(path);
+                        if (sources.getOutput().getResourcesDir() != null)
+                            replacements.put(sources.getOutput().getResourcesDir(), path);
+                        for (var dir : sources.getOutput().getClassesDirs().getFiles())
+                            replacements.put(dir, path);
+                    }
+
+                    // Now replace the existing classpath with the ones eclipse will use
+                    var ret = new LinkedHashSet<File>(runtime.getFiles().size());
+                    for (var file : runtime.getFiles())
+                        ret.add(replacements.getOrDefault(file, file));
+                    return ret;
+                }));
+            task.getClasspath().from(runtimeClasspath);
             task.getSourceSetName().set(sourceSet.getName());
 
             task.getCacheDir().set(task.getObjects().directoryProperty().value(task.globalCaches().dir("slime-launcher/cache/%s".formatted(asPath)).map(task.problems.ensureFileLocation())));
@@ -204,6 +245,27 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
             this.getLogger().error("Args: {}", this.getArgs());
             this.getLogger().error("Options: {}", options);
             throw e;
+        }
+    }
+
+    private static List<SourceSet> sortSourceSets(@Nullable Iterable<SourceSet> sourceSets) {
+        if (sourceSets == null)
+            return new ArrayList<>(0);
+        var ret = new ArrayList<SourceSet>();
+        for (var item : sourceSets)
+            ret.add(item);
+        ret.sort(Comparator.comparing(SlimeLauncherExec::toComparable));
+        return ret;
+    }
+
+    private static Integer toComparable(SourceSet sourceSet) {
+        String name = sourceSet.getName();
+        if (SourceSet.MAIN_SOURCE_SET_NAME.equals(name)) {
+            return 0;
+        } else if (SourceSet.TEST_SOURCE_SET_NAME.equals(name)) {
+            return 1;
+        } else {
+            return 2;
         }
     }
 }

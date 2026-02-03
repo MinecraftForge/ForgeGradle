@@ -198,7 +198,7 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
                 .matching(MinecraftDependencyInternal::is)
                 .size() == 1;
             runs.forEach(options -> {
-                var task = SlimeLauncherExec.register(getProject(), sourceSet, (SlimeLauncherOptionsImpl) options, module.get(), version.get(), asPath.get(), asString, single, minecraft.getEclipseOutputDir());
+                var task = SlimeLauncherExec.register(getProject(), sourceSet, (SlimeLauncherOptionsImpl) options, module.get(), version.get(), asPath.get(), asString, single);
             });
         });
 
