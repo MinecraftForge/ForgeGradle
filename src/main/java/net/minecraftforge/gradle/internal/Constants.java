@@ -70,10 +70,7 @@ final class Constants {
         static final String WELCOME_CONDITION = """
             This message will not display again until ForgeGradle 7.1 or the below file is
             deleted:
-            {}
-
-            Documentation will be coming at a later date. Thank you for testing
-            ForgeGradle 7!""";
+            {}""";
 
         // TODO [ForgeGradle][Magic] Rewrite this to be more informative as to what is actually happening.
         //      As of right now, this remains unused.
