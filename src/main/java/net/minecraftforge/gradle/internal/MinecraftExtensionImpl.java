@@ -329,7 +329,11 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
             project.getPluginManager().withPlugin("eclipse", eclipsePlugin -> {
                 if (mergeSourceSets)
-                    project.getExtensions().configure(EclipseModel.class, eclipse -> eclipse.getClasspath().setDefaultOutputDir(sourceSetsDir.getAsFile().get()));
+                    project.getExtensions().configure(EclipseModel.class, eclipse -> eclipse.classpath(classpath -> {
+                        var output = sourceSetsDir.getAsFile().get();
+                        classpath.setDefaultOutputDir(output);
+                        classpath.getBaseSourceOutputDir().set(output);
+                    }));
                 else
                     problems.reportUnmergedSourceSets();
             });
