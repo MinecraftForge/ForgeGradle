@@ -171,7 +171,6 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
     static abstract class ForProjectImpl extends MinecraftExtensionImpl implements ForProject {
         private final TaskProvider<Task> genEclipseRuns;
-        final DirectoryProperty eclipseOutputDir = getObjects().directoryProperty().convention(getProjectLayout().getProjectDirectory().dir("bin"));
 
         // Slime Launcher
         private final NamedDomainObjectContainer<SlimeLauncherOptionsImpl> runs = getObjects().domainObjectContainer(SlimeLauncherOptionsImpl.class);
@@ -252,7 +251,6 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             getProject().getPluginManager().withPlugin("eclipse", appliedPlugin ->
                 getProject().getExtensions().configure(EclipseModel.class, eclipse -> {
                     eclipse.synchronizationTasks(genEclipseRuns);
-                    eclipseOutputDir.fileProvider(getProviders().provider(() -> eclipse.getClasspath().getDefaultOutputDir()));
                 })
             );
 
@@ -293,11 +291,6 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                 case PREFER_PROJECT ->
                     Collections.unmodifiableList(!settingsRepositories.isEmpty() && projectRepositories.isEmpty() ? settingsRepositories : projectRepositories);
             };
-        }
-
-        @Override
-        public DirectoryProperty getEclipseOutputDir() {
-            return this.eclipseOutputDir;
         }
 
         private void apply(Configuration configuration) {

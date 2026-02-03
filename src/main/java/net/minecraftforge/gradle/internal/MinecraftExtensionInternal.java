@@ -34,7 +34,5 @@ interface MinecraftExtensionInternal extends MinecraftExtension, HasPublicType, 
         }
 
         @UnmodifiableView List<? extends MavenArtifactRepository> getRepositories();
-
-        DirectoryProperty getEclipseOutputDir();
     }
 }
