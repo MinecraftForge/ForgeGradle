@@ -6,11 +6,12 @@ package net.minecraftforge.gradle;
 
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.provider.ProviderConvertible;
 
 import java.io.File;
 
-public interface MavenizerInstance {
-    Provider<ExternalModuleDependency> getDependency();
+public interface MavenizerInstance extends ProviderConvertible<ExternalModuleDependency> {
+    @Override Provider<ExternalModuleDependency> asProvider();
     Provider<String> getMappingVersion();
     Provider<String> getToSrg();
     Provider<File> getToSrgFile();

@@ -56,7 +56,7 @@ class MavenizerInstanceImpl implements MavenizerInstance {
     }
 
     @Override
-    public Provider<ExternalModuleDependency> getDependency() {
+    public Provider<ExternalModuleDependency> asProvider() {
         return this.invoke.map(m -> this.dependency);
     }
 

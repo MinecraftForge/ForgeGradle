@@ -377,7 +377,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
         @SuppressWarnings({"UnstableApiUsage"})
         @Override
-        public Provider<ExternalModuleDependency> dependency(
+        public MavenizerInstance dependency(
             String name,
             Object value,
             @DelegatesTo(ExternalModuleDependency.class)
@@ -454,7 +454,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         }
 
         @Override
-        public MavenizerInstance instance(String name) {
+        public MavenizerInstance getDependency(String name) {
             return this.mavenizerRegistry.get(name);
         }
 
