@@ -53,6 +53,16 @@ public interface MinecraftExtensionForProject extends MinecraftExtension, Minecr
     default MavenizerInstance dependency(Object value, Action<? super ClosureOwner.MinecraftDependency> action) {
         return this.dependency("default", value, action);
     }
+
+    /// Creates (or marks if existing) the given dependency as a Minecraft dependency and applies the given action to
+    /// it.
+    ///
+    /// @param name   The name to give the Mavenizer instance used to generate the dependency
+    /// @param value  The dependency
+    /// @param action The action to apply to the dependency attributes
+    /// @return The dependency
+    /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
+    /// in Gradle</a>
     default MavenizerInstance dependency(String name, Object value, Action<? super ClosureOwner.MinecraftDependency> action) {
         return this.dependency(name, value, Closures.action(this, action));
     }
@@ -66,12 +76,28 @@ public interface MinecraftExtensionForProject extends MinecraftExtension, Minecr
     default MavenizerInstance dependency(Object value) {
         return this.dependency("default", value);
     }
+
+    /// Creates (or marks if existing) the given dependency as a Minecraft dependency.
+    ///
+    /// @param name  The name to give the Mavenizer instance used to generate the dependency
+    /// @param value The dependency
+    /// @return The dependency
+    /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
+    /// in Gradle</a>
     default MavenizerInstance dependency(String name, Object value) {
         return this.dependency(name, value, Closures.empty(this));
     }
 
+    /// Gets the default Minecraft dependency that was created using one of the [#dependency] methods.
+    ///
+    /// @return The default Minecraft dependency
+    /// @see #getDependency(String)
     default MavenizerInstance getDependency() {
         return this.getDependency("default");
     }
+
+    /// Gets the named Minecraft dependency that was created using one of the [#dependency] methods.
+    ///
+    /// @return The default Minecraft dependency
     MavenizerInstance getDependency(String name);
 }
