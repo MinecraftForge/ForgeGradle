@@ -41,7 +41,7 @@ class MavenizerInstanceImpl implements MavenizerInstance {
         if (this.map == null) {
             valueSource.get(); // Execute Mavenizer, probably called before, but just be sure.
             this.map = (Map<String, String>) new JsonSlurper().parse(this.jsonFile, "UTF-8");
-            this.map.forEach((k, v) -> this.extension.getProject().getLogger().lifecycle(k + " => " + v));
+            //this.map.forEach((k, v) -> this.extension.getProject().getLogger().lifecycle(k + " => " + v));
         }
         return this.map;
     }
@@ -62,7 +62,7 @@ class MavenizerInstanceImpl implements MavenizerInstance {
 
     @Override
     public Provider<String> getMappingVersion() {
-        return this.invoke.map(get("mappings.vesion"));
+        return this.invoke.map(get("mappings.version"));
     }
 
     @Override
@@ -72,7 +72,7 @@ class MavenizerInstanceImpl implements MavenizerInstance {
 
     @Override
     public Provider<File> getToSrgFile() {
-        return getToSrg().map(this.extension.getProject()::file);
+        return this.invoke.map(get("mappings.srg.file")).map(this.extension.getProject()::file);
     }
 
     @Override
@@ -82,6 +82,6 @@ class MavenizerInstanceImpl implements MavenizerInstance {
 
     @Override
     public Provider<File> getToObfFile() {
-        return getToSrg().map(this.extension.getProject()::file);
+        return this.invoke.map(get("mappings.obf.file")).map(this.extension.getProject()::file);
     }
 }
