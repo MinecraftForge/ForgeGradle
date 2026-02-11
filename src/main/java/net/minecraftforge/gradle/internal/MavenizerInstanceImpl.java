@@ -8,6 +8,7 @@ import groovy.json.JsonSlurper;
 import net.minecraftforge.gradle.MavenizerInstance;
 import org.gradle.api.Transformer;
 import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Provider;
 import org.jspecify.annotations.Nullable;
 
@@ -20,7 +21,7 @@ class MavenizerInstanceImpl implements MavenizerInstance {
     private final ExternalModuleDependency dependency;
     private final File jsonFile;
 
-    private final Provider<Map<String, String>> invoke;
+    private final MapProperty<String, String> invoke;
     private @Nullable Map<String, String> map;
 
     MavenizerInstanceImpl(
@@ -33,7 +34,8 @@ class MavenizerInstanceImpl implements MavenizerInstance {
         this.dependency = dependency;
         this.valueSource = valueSource;
         this.jsonFile = jsonFile;
-        this.invoke = this.extension.getProviders().provider(this::invoke);
+        this.invoke = this.extension.getObjects().mapProperty(String.class, String.class)
+            .convention(this.extension.getProviders().provider(this::invoke));
     }
 
     @SuppressWarnings("unchecked")
@@ -46,13 +48,11 @@ class MavenizerInstanceImpl implements MavenizerInstance {
         return this.map;
     }
 
-    private Transformer<String, Map<String, String>> get(String key) {
-        return map -> {
-          var ret = map.get(key);
-          if (ret == null)
-              throw new IllegalStateException("Mavenizer did not output expected json data " + key);
-          return ret;
-        };
+    private Provider<String> get(String key) {
+        return this.invoke.getting(key)
+            .orElse(this.extension.getProviders().provider(() -> {
+                throw new IllegalStateException("Mavenizer did not output expected json data " + key);
+            }));
     }
 
     @Override
@@ -62,26 +62,26 @@ class MavenizerInstanceImpl implements MavenizerInstance {
 
     @Override
     public Provider<String> getMappingVersion() {
-        return this.invoke.map(get("mappings.version"));
+        return get("mappings.version");
     }
 
     @Override
     public Provider<String> getToSrg() {
-        return this.invoke.map(get("mappings.srg.artifact"));
+        return get("mappings.srg.artifact");
     }
 
     @Override
     public Provider<File> getToSrgFile() {
-        return this.invoke.map(get("mappings.srg.file")).map(this.extension.getProject()::file);
+        return get("mappings.srg.file").map(this.extension.getProject()::file);
     }
 
     @Override
     public Provider<String> getToObf() {
-        return this.invoke.map(get("mappings.obf.artifact"));
+        return get("mappings.obf.artifact");
     }
 
     @Override
     public Provider<File> getToObfFile() {
-        return this.invoke.map(get("mappings.obf.file")).map(this.extension.getProject()::file);
+        return get("mappings.obf.file").map(this.extension.getProject()::file);
     }
 }
