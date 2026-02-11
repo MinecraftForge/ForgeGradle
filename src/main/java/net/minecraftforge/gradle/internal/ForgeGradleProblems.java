@@ -214,14 +214,17 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
         );
     }
 
-    void reportDuplicateMavenizerNames() {
-        this.report("forge-maven-duplicate-name", "Duplicate minecraft dependencies registered", spec -> spec
-                .details("""
+    void reportDuplicateMavenizerNames(String name) {
+        this.report("forge-maven-duplicate-name", "Duplicate Minecraft dependencies registered", spec -> spec
+            .details("""
+                A Minecraft dependency was declared with a name already in use!
                 In order to manage access to mapping data each deobfuscated dependency needs to have a unique name.
-                Call the `minecraft.dependency` method with a unique name as the first parameter, the default when not specified is `default`""")
-                .severity(Severity.WARNING)
-                .solution("Call `minecraft.dependency` method with a unique name as the first parameter`")
-                .solution(HELP_MESSAGE)
+                Call the `minecraft.dependency` method with a unique name as the first parameter, the default when not specified is `default`
+                Name used: %s"""
+                .formatted(name))
+            .severity(Severity.WARNING)
+            .solution("Call `minecraft.dependency` method with a unique name as the first parameter`")
+            .solution(HELP_MESSAGE)
         );
     }
     //endregion

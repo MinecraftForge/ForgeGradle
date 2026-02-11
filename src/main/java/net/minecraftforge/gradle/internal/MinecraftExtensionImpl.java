@@ -405,8 +405,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                             .map(this.problems.ensureFileLocation());
                         var cache = toolCache.get().dir("caches").getAsFile().getAbsolutePath();
 
-                        var ret = new ArrayList<String>();
-                        ret.addAll(List.of(
+                        var ret = new ArrayList<>(List.of(
                             "--maven",
                             "--cache", cache,
                             "--jdk-cache", cache,
@@ -449,10 +448,9 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             });
 
             var instance = new MavenizerInstanceImpl(this, mavenizer, dep, outputJson);
-            if (this.mavenizerRegistry.containsKey(name))
-                problems.reportDuplicateMavenizerNames();
-            this.mavenizerRegistry.put(name, instance);
-            return instance.getDependency();
+            if (this.mavenizerRegistry.put(name, instance) != null)
+                problems.reportDuplicateMavenizerNames(name);
+            return instance;
         }
 
         @Override
