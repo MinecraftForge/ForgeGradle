@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
@@ -455,7 +456,10 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
         @Override
         public MavenizerInstance getDependency(String name) {
-            return this.mavenizerRegistry.get(name);
+            var ret = this.mavenizerRegistry.get(name);
+            if (ret == null)
+                throw problems.mavenizerInstanceNotFound(new NoSuchElementException("Mavenizer instance not found: " + name), name);
+            return ret;
         }
 
         private void checkRepos(List<? extends MavenArtifactRepository> repos) {

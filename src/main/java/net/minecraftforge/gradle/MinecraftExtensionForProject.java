@@ -91,6 +91,7 @@ public interface MinecraftExtensionForProject extends MinecraftExtension, Minecr
     /// Gets the default Minecraft dependency that was created using one of the [#dependency] methods.
     ///
     /// @return The default Minecraft dependency
+    /// @throws java.util.NoSuchElementException If the default Minecraft dependency has not yet been created.
     /// @see #getDependency(String)
     default MavenizerInstance getDependency() {
         return this.getDependency("default");
@@ -99,5 +100,6 @@ public interface MinecraftExtensionForProject extends MinecraftExtension, Minecr
     /// Gets the named Minecraft dependency that was created using one of the [#dependency] methods.
     ///
     /// @return The default Minecraft dependency
+    /// @throws java.util.NoSuchElementException If the named Minecraft dependency has not yet been created.
     MavenizerInstance getDependency(String name);
 }

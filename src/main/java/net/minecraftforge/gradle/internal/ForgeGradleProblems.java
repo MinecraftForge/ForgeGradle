@@ -16,6 +16,7 @@ import org.gradle.api.provider.ProviderFactory;
 
 import javax.inject.Inject;
 import java.io.File;
+import java.util.NoSuchElementException;
 
 import static net.minecraftforge.gradle.internal.ForgeGradlePlugin.LOGGER;
 
@@ -224,6 +225,19 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
                 .formatted(name))
             .severity(Severity.WARNING)
             .solution("Call `minecraft.dependency` method with a unique name as the first parameter.")
+            .solution(HELP_MESSAGE)
+        );
+    }
+
+    RuntimeException mavenizerInstanceNotFound(NoSuchElementException e, String name) {
+        return this.throwing(e, "mavenizer-instance-not-found", "Minecraft dependency instance not found", spec -> spec
+            .details("""
+                A Minecraft dependency instance was requested but not found!
+                The Minecraft dependency must be declared using `minecraft.dependency` first before it can be referenced.
+                Name requested: %s"""
+                .formatted(name))
+            .severity(Severity.ERROR)
+            .solution("Call `minecraft.dependency` method before getting it using `minecraft.getDependency()`.")
             .solution(HELP_MESSAGE)
         );
     }
