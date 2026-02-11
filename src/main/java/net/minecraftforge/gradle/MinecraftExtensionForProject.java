@@ -34,6 +34,15 @@ public interface MinecraftExtensionForProject extends MinecraftExtension, Minecr
         return this.dependency("default", value, closure);
     }
 
+    /// Creates (or marks if existing) the given dependency as a Minecraft dependency and configures it with the given
+    /// closure.
+    ///
+    /// @param name    The name to give the Mavenizer instance used to generate the dependency
+    /// @param value   The dependency
+    /// @param closure The closure to configure the dependency with
+    /// @return The dependency
+    /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
+    /// in Gradle</a>
     MavenizerInstance dependency(
         String name,
         Object value,
