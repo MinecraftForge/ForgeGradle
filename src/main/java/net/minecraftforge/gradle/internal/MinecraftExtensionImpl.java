@@ -9,16 +9,15 @@ import groovy.lang.DelegatesTo;
 import groovy.transform.NamedVariant;
 import groovy.transform.stc.ClosureParams;
 import groovy.transform.stc.SimpleType;
+import net.minecraftforge.gradle.MavenizerInstance;
 import net.minecraftforge.gradle.MinecraftExtension;
 import net.minecraftforge.gradle.MinecraftExtensionForProject;
 import net.minecraftforge.gradle.MinecraftMappings;
 import net.minecraftforge.gradle.SlimeLauncherOptions;
-import org.codehaus.groovy.runtime.InvokerHelper;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ExternalModuleDependencyBundle;
@@ -29,7 +28,6 @@ import org.gradle.api.attributes.DocsType;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.ProjectLayout;
-import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.flow.FlowProviders;
 import org.gradle.api.flow.FlowScope;
 import org.gradle.api.initialization.Settings;
@@ -44,18 +42,16 @@ import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.reflect.TypeOf;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.jvm.toolchain.JavaLauncher;
-import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
-import org.jetbrains.annotations.UnmodifiableView;
-import org.jspecify.annotations.Nullable;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
-import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
@@ -177,6 +173,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
 
         // Dependencies
         private final List<MinecraftDependencyInternal> minecraftDependencies = new ArrayList<>();
+        private final Map<String, MavenizerInstanceImpl> mavenizerRegistry = new HashMap<>();
 
         // Access Transformers
         private final boolean hasAccessTransformersPlugin;
@@ -381,6 +378,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         @SuppressWarnings({"UnstableApiUsage"})
         @Override
         public Provider<ExternalModuleDependency> dependency(
+            String name,
             Object value,
             @DelegatesTo(ExternalModuleDependency.class)
             @ClosureParams(value = SimpleType.class, options = "net.minecraftforge.gradle.MinecraftDependency.ClosureOwner")
@@ -394,6 +392,8 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             var minecraftDependency = this.getObjects().newInstance(MinecraftDependencyImpl.class, this.getMavenizerOutput());
             this.minecraftDependencies.add(minecraftDependency);
             var dep = minecraftDependency.init(value, closure);
+            var outputJson = this.plugin.localCaches().file("mavenizer/" + name + ".json").get().getAsFile();
+
             var mavenizer = this.getProviders().of(MavenizerValueSource.class, spec -> {
                 spec.parameters(params -> {
                     var tool = this.plugin.getTool(Tools.MAVENIZER);
@@ -413,7 +413,8 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                             "--output", this.getMavenizerOutput().get().getAsFile().getAbsolutePath(),
                             "--artifact", dep.getModule().toString(),
                             "--version", Objects.requireNonNull(dep.getVersion()),
-                            "--global-auxiliary-variants"
+                            "--global-auxiliary-variants",
+                            "--output-json", outputJson.getAbsolutePath()
                         ));
 
                         // If we are finding the access transformer from sourcesets, just find from any source set
@@ -447,10 +448,16 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                 });
             });
 
-            return this.getProviders().provider(() -> {
-                mavenizer.get();// Invoke mavenizer, it should be invoked already by gradle config cache, but Force it to be
-                return dep;
-            });
+            var instance = new MavenizerInstanceImpl(this, mavenizer, dep, outputJson);
+            if (this.mavenizerRegistry.containsKey(name))
+                problems.reportDuplicateMavenizerNames();
+            this.mavenizerRegistry.put(name, instance);
+            return instance.getDependency();
+        }
+
+        @Override
+        public MavenizerInstance instance(String name) {
+            return this.mavenizerRegistry.get(name);
         }
 
         private void checkRepos(List<? extends MavenArtifactRepository> repos) {

@@ -28,7 +28,17 @@ public interface MinecraftExtensionForProject extends MinecraftExtension, Minecr
     /// @return The dependency
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
+    default Provider<ExternalModuleDependency> dependency(
+        Object value,
+        @DelegatesTo(ExternalModuleDependency.class)
+        @ClosureParams(value = SimpleType.class, options = "net.minecraftforge.gradle.ClosureOwner.MinecraftDependency")
+        Closure<?> closure
+    ) {
+        return this.dependency("default", value, closure);
+    }
+
     Provider<ExternalModuleDependency> dependency(
+        String name,
         Object value,
         @DelegatesTo(ExternalModuleDependency.class)
         @ClosureParams(value = SimpleType.class, options = "net.minecraftforge.gradle.ClosureOwner.MinecraftDependency")
@@ -44,7 +54,10 @@ public interface MinecraftExtensionForProject extends MinecraftExtension, Minecr
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
     default Provider<ExternalModuleDependency> dependency(Object value, Action<? super ClosureOwner.MinecraftDependency> action) {
-        return this.dependency(value, Closures.action(this, action));
+        return this.dependency("default", value, action);
+    }
+    default Provider<ExternalModuleDependency> dependency(String name, Object value, Action<? super ClosureOwner.MinecraftDependency> action) {
+        return this.dependency(name, value, Closures.action(this, action));
     }
 
     /// Creates (or marks if existing) the given dependency as a Minecraft dependency.
@@ -54,6 +67,14 @@ public interface MinecraftExtensionForProject extends MinecraftExtension, Minecr
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
     default Provider<ExternalModuleDependency> dependency(Object value) {
-        return this.dependency(value, Closures.empty(this));
+        return this.dependency("default", value);
     }
+    default Provider<ExternalModuleDependency> dependency(String name, Object value) {
+        return this.dependency(name, value, Closures.empty(this));
+    }
+
+    default MavenizerInstance instance() {
+        return this.instance("default");
+    }
+    MavenizerInstance instance(String name);
 }
