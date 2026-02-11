@@ -16,6 +16,7 @@ import org.gradle.api.provider.ProviderFactory;
 
 import javax.inject.Inject;
 import java.io.File;
+import java.util.NoSuchElementException;
 
 import static net.minecraftforge.gradle.internal.ForgeGradlePlugin.LOGGER;
 
@@ -210,6 +211,33 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
                 This may result in a "cannot resolve dependency" error.""")
             .severity(Severity.WARNING)
             .solution("Declare the Forge maven (`fg.forgeMaven`) in your project/settings repositories.")
+            .solution(HELP_MESSAGE)
+        );
+    }
+
+    void reportDuplicateMavenizerNames(String name) {
+        this.report("mavenizer-instance-duplicate-name", "Duplicate Minecraft dependencies registered", spec -> spec
+            .details("""
+                A Minecraft dependency was declared with a name already in use!
+                In order to manage access to mapping data each deobfuscated dependency needs to have a unique name.
+                Call the `minecraft.dependency` method with a unique name as the first parameter, the default when not specified is `default`
+                Name used: %s"""
+                .formatted(name))
+            .severity(Severity.WARNING)
+            .solution("Call `minecraft.dependency` method with a unique name as the first parameter.")
+            .solution(HELP_MESSAGE)
+        );
+    }
+
+    RuntimeException mavenizerInstanceNotFound(NoSuchElementException e, String name) {
+        return this.throwing(e, "mavenizer-instance-not-found", "Minecraft dependency instance not found", spec -> spec
+            .details("""
+                A Minecraft dependency instance was requested but not found!
+                The Minecraft dependency must be declared using `minecraft.dependency` first before it can be referenced.
+                Name requested: %s"""
+                .formatted(name))
+            .severity(Severity.ERROR)
+            .solution("Call `minecraft.dependency` method before getting it using `minecraft.getDependency()`.")
             .solution(HELP_MESSAGE)
         );
     }

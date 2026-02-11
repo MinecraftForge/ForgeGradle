@@ -7,13 +7,10 @@ package net.minecraftforge.gradle;
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
 import groovy.transform.stc.ClosureParams;
-import groovy.transform.stc.FromString;
 import groovy.transform.stc.SimpleType;
 import net.minecraftforge.gradleutils.shared.Closures;
 import org.gradle.api.Action;
-import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.artifacts.ExternalModuleDependency;
-import org.gradle.api.provider.Provider;
 
 /// [Project][org.gradle.api.Project]-specific additions for the Minecraft extension. These will be accessible from the
 /// `minecraft` DSL object within your project's buildscript.
@@ -28,7 +25,26 @@ public interface MinecraftExtensionForProject extends MinecraftExtension, Minecr
     /// @return The dependency
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
-    Provider<ExternalModuleDependency> dependency(
+    default MavenizerInstance dependency(
+        Object value,
+        @DelegatesTo(ExternalModuleDependency.class)
+        @ClosureParams(value = SimpleType.class, options = "net.minecraftforge.gradle.ClosureOwner.MinecraftDependency")
+        Closure<?> closure
+    ) {
+        return this.dependency("default", value, closure);
+    }
+
+    /// Creates (or marks if existing) the given dependency as a Minecraft dependency and configures it with the given
+    /// closure.
+    ///
+    /// @param name    The name to give the Mavenizer instance used to generate the dependency
+    /// @param value   The dependency
+    /// @param closure The closure to configure the dependency with
+    /// @return The dependency
+    /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
+    /// in Gradle</a>
+    MavenizerInstance dependency(
+        String name,
         Object value,
         @DelegatesTo(ExternalModuleDependency.class)
         @ClosureParams(value = SimpleType.class, options = "net.minecraftforge.gradle.ClosureOwner.MinecraftDependency")
@@ -43,8 +59,21 @@ public interface MinecraftExtensionForProject extends MinecraftExtension, Minecr
     /// @return The dependency
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
-    default Provider<ExternalModuleDependency> dependency(Object value, Action<? super ClosureOwner.MinecraftDependency> action) {
-        return this.dependency(value, Closures.action(this, action));
+    default MavenizerInstance dependency(Object value, Action<? super ClosureOwner.MinecraftDependency> action) {
+        return this.dependency("default", value, action);
+    }
+
+    /// Creates (or marks if existing) the given dependency as a Minecraft dependency and applies the given action to
+    /// it.
+    ///
+    /// @param name   The name to give the Mavenizer instance used to generate the dependency
+    /// @param value  The dependency
+    /// @param action The action to apply to the dependency attributes
+    /// @return The dependency
+    /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
+    /// in Gradle</a>
+    default MavenizerInstance dependency(String name, Object value, Action<? super ClosureOwner.MinecraftDependency> action) {
+        return this.dependency(name, value, Closures.action(this, action));
     }
 
     /// Creates (or marks if existing) the given dependency as a Minecraft dependency.
@@ -53,7 +82,33 @@ public interface MinecraftExtensionForProject extends MinecraftExtension, Minecr
     /// @return The dependency
     /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
     /// in Gradle</a>
-    default Provider<ExternalModuleDependency> dependency(Object value) {
-        return this.dependency(value, Closures.empty(this));
+    default MavenizerInstance dependency(Object value) {
+        return this.dependency("default", value);
     }
+
+    /// Creates (or marks if existing) the given dependency as a Minecraft dependency.
+    ///
+    /// @param name  The name to give the Mavenizer instance used to generate the dependency
+    /// @param value The dependency
+    /// @return The dependency
+    /// @see <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">Declaring Dependencies
+    /// in Gradle</a>
+    default MavenizerInstance dependency(String name, Object value) {
+        return this.dependency(name, value, Closures.empty(this));
+    }
+
+    /// Gets the default Minecraft dependency that was created using one of the [#dependency] methods.
+    ///
+    /// @return The default Minecraft dependency
+    /// @throws java.util.NoSuchElementException If the default Minecraft dependency has not yet been created.
+    /// @see #getDependency(String)
+    default MavenizerInstance getDependency() {
+        return this.getDependency("default");
+    }
+
+    /// Gets the named Minecraft dependency that was created using one of the [#dependency] methods.
+    ///
+    /// @return The default Minecraft dependency
+    /// @throws java.util.NoSuchElementException If the named Minecraft dependency has not yet been created.
+    MavenizerInstance getDependency(String name);
 }
