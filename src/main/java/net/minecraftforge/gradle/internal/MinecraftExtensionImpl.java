@@ -92,7 +92,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
     @Inject
     public MinecraftExtensionImpl(ForgeGradlePlugin plugin) {
         this.plugin = plugin;
-        this.mavenizerOutput.convention(plugin.localCaches().dir("mavenizer/output").map(this.problems.ensureFileLocation()));
+        this.mavenizerOutput.convention(plugin.rootProjectDirectory().dir(".gradle/mavenizer/repo").map(this.problems.ensureFileLocation()));
     }
 
     @Override
@@ -393,7 +393,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             var minecraftDependency = this.getObjects().newInstance(MinecraftDependencyImpl.class, this.getMavenizerOutput());
             this.minecraftDependencies.add(minecraftDependency);
             var dep = minecraftDependency.init(value, closure);
-            var outputJson = this.plugin.localCaches().file("mavenizer/" + name + ".json").get().getAsFile();
+            var outputJson = this.plugin.rootProjectDirectory().file(".gradle/mavenizer/dependencies/" + name + ".json").get().getAsFile();
 
             var mavenizer = this.getProviders().of(MavenizerValueSource.class, spec -> {
                 spec.parameters(params -> {
