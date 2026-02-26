@@ -10,6 +10,7 @@ import org.gradle.api.Action;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.ProjectLayout;
+import org.gradle.api.logging.LogLevel;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
@@ -23,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsInternal {
+    private static final LogLevel level = LogLevel.INFO;
+
     private final String name;
 
     private final Property<String> mainClass = this.getObjects().property(String.class);
@@ -269,85 +272,143 @@ public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsIn
 
 
     /* INHERITANCE */
-
     @Override
     public SlimeLauncherOptionsInternal inherit(Map<String, RunConfig> configs, String sourceSetName, String name) {
+        LOGGER.log(level, "Baking Launch Options: {} for sourceset {}", name, sourceSetName);
         var target = getObjects().newInstance(SlimeLauncherOptionsImpl.class, name);
-        target.getMainClass().convention(this.getMainClass());
-        target.getInheritArgs().convention(this.getInheritArgs());
-        target.getArgs().convention(this.getArgs()).addAll(this.getArgs());
-        target.getInheritJvmArgs().convention(this.getInheritJvmArgs());
-        target.getJvmArgs().convention(this.getJvmArgs()).addAll(this.getJvmArgs());
-        target.getClasspath().convention(this.getClasspath()).setFrom(this.getClasspath());
-        target.getMinHeapSize().convention(this.getMinHeapSize());
-        target.getMaxHeapSize().convention(this.getMaxHeapSize());
-        target.getSystemProperties().convention(this.getSystemProperties()).putAll(this.getSystemProperties());
-        target.getEnvironment().convention(this.getEnvironment()).putAll(this.getEnvironment());
-        target.getWorkingDir().convention(this.getWorkingDir().orElse(getProjectLayout().getProjectDirectory().dir("runs/" + sourceSetName + '/' + this.name)));
-        target.getClient().convention(this.getClient());
-        return this.inherit(target, sourceSetName, configs, name);
-    }
+        target.getWorkingDir().set(getProjectLayout().getProjectDirectory().dir("runs/" + sourceSetName + '/' + this.name));
+        target.getClasspath().setFrom(this.getClasspath());
 
-    private SlimeLauncherOptionsInternal inherit(SlimeLauncherOptionsInternal target, String sourceSetName, Map<String, RunConfig> configs, String name) {
-        var config = configs.get(name);
-        if (config != null) {
-            if (config.parents != null && !config.parents.isEmpty())
-                config.parents.forEach(parent -> this.inherit(target, sourceSetName, configs, parent));
+        // Pull from userdev config
+        LOGGER.log(level, "Inheriting Json Parent {}", name);
+        target.inheritFromJson("  ", configs, name);
 
-            if (config.main != null)
-                target.getMainClass().convention(config.main);
+        // Pull from this container
+        LOGGER.log(level, "Inheriting From Self");
+        target.inherit(this);
 
-            if (config.args != null && !config.args.isEmpty()) {
-                if (target.getInheritArgs().getOrElse(Boolean.TRUE)) {
-                    var args = new ArrayList<>(config.args);
-                    args.addAll(target.getArgs().get());
-                    target.getArgs().convention(args);
-                }
-            }
-
-            if (config.jvmArgs != null && !config.jvmArgs.isEmpty()) {
-                if (target.getInheritJvmArgs().getOrElse(Boolean.TRUE)) {
-                    var args = new ArrayList<>(config.jvmArgs);
-                    args.addAll(target.getJvmArgs().get());
-                    target.getJvmArgs().convention(args);
-                }
-            }
-
-            target.getClient().convention(config.client);
-
-            if (config.buildAllProjects)
-                LOGGER.warn("WARNING: ForgeGradle 7 does not support the buildAllProjects feature.");
-
-            if (config.env != null && !config.env.isEmpty())
-                target.environment(config.env);
-
-            if (config.props != null && !config.props.isEmpty())
-                target.systemProperties(config.props);
+        // Gradle is stupid and boolean properties are always present, so only allow upgrading from false -> true
+        if (this.getClient().isPresent() && this.getClient().getOrElse(Boolean.FALSE)) {
+            LOGGER.log(level, "  Client: {}", this.getClient().get());
+            target.getClient().set(this.getClient().get());
         }
 
+        // Inherit from sourceset specific container
         var child = this.getNested().getting(sourceSetName).getOrNull();
         if (child != null) {
-            if (child.getMainClass().filter(Util::isPresent).isPresent())
-                target.getMainClass().set(child.getMainClass());
+            LOGGER.log(level, "Inheriting from Child");
+            target.inherit(child);
+        }
+        return target;
+    }
 
-            target.args(child.getArgs().getOrElse(List.of()));
+    // Set the values from
+    private void inheritFromJson(String prefix, Map<String, RunConfig> configs, String name) {
+        var config = configs.get(name);
+        if (config == null)
+            return;
 
-            target.jvmArgs(child.getJvmArgs().getOrElse(List.of()));
-
-            if (child.getMaxHeapSize().filter(Util::isPresent).isPresent())
-                target.getMaxHeapSize().set(child.getMaxHeapSize());
-
-            if (child.getMinHeapSize().filter(Util::isPresent).isPresent())
-                target.getMinHeapSize().set(child.getMinHeapSize());
-
-            target.environment(child.getEnvironment().getOrElse(Map.of()));
-
-            target.systemProperties(child.getSystemProperties().getOrElse(Map.of()));
-
-            target.getWorkingDir().set(child.getWorkingDir());
+        if (config.parents != null) {
+            for (var parent : config.parents) {
+                LOGGER.log(level, "{}Inheriting Json Parent {}", prefix, name);
+                this.inheritFromJson(prefix + "  ", configs, parent);
+            }
         }
 
-        return target;
+        if (config.main != null) {
+            LOGGER.log(level, "{}Main-Class: {}", prefix, config.main);
+            getMainClass().set(config.main);
+        }
+
+        if (config.args != null && !config.args.isEmpty()) {
+            LOGGER.log(level, "{}Args: {}", prefix, config.args);
+            var args = new ArrayList<>(config.args);
+            args.addAll(this.getArgs().getOrElse(List.of()));
+            getArgs().set(args);
+        }
+
+        if (config.jvmArgs != null && !config.jvmArgs.isEmpty()) {
+            LOGGER.log(level, "{}JVM Args: {}", prefix, config.jvmArgs);
+            var args = new ArrayList<>(config.jvmArgs);
+            args.addAll(this.getJvmArgs().getOrElse(List.of()));
+            getJvmArgs().set(args);
+        }
+
+        LOGGER.log(level, "{}Client: {}", prefix, config.client);
+        getClient().convention(config.client); // Neds to be convention because boolean properties can only be set once
+
+        if (config.buildAllProjects)
+            LOGGER.warn("WARNING: ForgeGradle 7 does not support the buildAllProjects feature.");
+
+        if (config.env != null && !config.env.isEmpty()) {
+            for (var entry : config.env.entrySet()) {
+                LOGGER.log(level, "{}Env: {} = {}", prefix, entry.getKey(), entry.getValue());
+                this.environment(entry.getKey(), entry.getValue());
+            }
+        }
+
+        if (config.props != null && !config.props.isEmpty()) {
+            for (var entry : config.props.entrySet()) {
+                LOGGER.log(level, "{}System: {} = {}", prefix, entry.getKey(), entry.getValue());
+                this.systemProperty(entry.getKey(), entry.getValue());
+            }
+        }
+    }
+
+    private void inherit(SlimeLauncherOptionsNested target) {
+        if (target.getMainClass().isPresent()) {
+            LOGGER.log(level, "  MainClass: {}", target.getMainClass().get());
+            getMainClass().set(target.getMainClass());
+        }
+
+        // ListProperties are ALWAYS present, there is no way to tell if this is intentionally set to empty
+        if (target.getArgs().isPresent() && !target.getArgs().get().isEmpty()) {
+            var args = new ArrayList<>(this.getArgs().getOrElse(List.of()));
+            if (!target.getInheritArgs().getOrElse(Boolean.TRUE))
+                args.clear();
+            args.addAll(target.getArgs().get());
+            getArgs().set(args);
+            LOGGER.log(level, "  Args: {}", args);
+        }
+
+        // ListProperties are ALWAYS present, there is no way to tell if this is intentionally set to empty
+        if (target.getJvmArgs().isPresent() && !target.getJvmArgs().get().isEmpty()) {
+            var args = new ArrayList<>(this.getJvmArgs().getOrElse(List.of()));
+            if (!target.getInheritJvmArgs().getOrElse(Boolean.TRUE))
+                args.clear();
+            args.addAll(target.getJvmArgs().get());
+            getJvmArgs().set(args);
+            LOGGER.log(level, "  JVM Args: {}", args);
+        }
+
+        if (target.getMinHeapSize().isPresent()) {
+            LOGGER.log(level, "  Min Heap Space: {}", target.getMinHeapSize().get());
+            getMinHeapSize().set(target.getMinHeapSize());
+        }
+
+        if (target.getMaxHeapSize().isPresent()) {
+            LOGGER.log(level, "  Max Heap Space: {}", target.getMaxHeapSize().get());
+            getMaxHeapSize().set(target.getMaxHeapSize());
+        }
+
+        if (target.getEnvironment().isPresent()) {
+            for (var entry : target.getEnvironment().get().entrySet()) {
+                LOGGER.log(level, "  Env: {} = {}", entry.getKey(), entry.getValue());
+                this.environment(entry.getKey(), entry.getValue());
+            }
+        }
+
+        if (target.getSystemProperties().isPresent()) {
+            for (var entry : target.getSystemProperties().get().entrySet()) {
+                LOGGER.log(level, "  System: {} = {}", entry.getKey(), entry.getValue());
+                this.systemProperty(entry.getKey(), entry.getValue());
+            }
+        }
+
+        if (target.getWorkingDir().isPresent()) {
+            LOGGER.log(level, "  WorkingDir: {}", target.getWorkingDir().get());
+            this.getWorkingDir().set(target.getWorkingDir());
+        }
     }
 
     /* DEBUGGING */
