@@ -14,9 +14,7 @@ import org.gradle.api.UnknownDomainObjectException;
 import org.gradle.api.artifacts.ModuleIdentifier;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
-import org.gradle.api.file.DirectoryTree;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
@@ -41,7 +39,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -160,7 +157,7 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
 
     protected abstract @InputFiles ConfigurableFileCollection getMetadata();
 
-    protected abstract @InputFile RegularFileProperty getRunsJson();
+    protected abstract @InputFile @Optional RegularFileProperty getRunsJson();
 
     protected abstract @Input @Optional Property<Boolean> getClient();
 
@@ -193,13 +190,16 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
 
         //region Launcher Metadata Inheritance
         Map<String, RunConfig> configs = Map.of();
-        try {
-            configs = JsonData.fromJson(
-                this.getRunsJson().getAsFile().get(),
-                new TypeToken<>() { }
-            );
-        } catch (JsonIOException e) {
-            // continue
+        var jsons = this.getRunsJson().getAsFile().getOrNull();
+        if (jsons != null && jsons.exists()) {
+            try {
+                configs = JsonData.fromJson(
+                    this.getRunsJson().getAsFile().get(),
+                    new TypeToken<>() { }
+                );
+            } catch (JsonIOException e) {
+                // continue
+            }
         }
 
         var options = ((SlimeLauncherOptionsInternal) this.getOptions().get()).inherit(configs, this.getSourceSetName().get());

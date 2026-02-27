@@ -13,16 +13,19 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import javax.inject.Inject;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 abstract class SlimeLauncherMetadata extends DefaultTask implements ForgeGradleTask {
     protected abstract @InputFiles ConfigurableFileCollection getMetadata();
 
     protected abstract @OutputFile RegularFileProperty getRunsJson();
-
-    protected abstract @Inject ArchiveOperations getArchiveOperations();
 
     @Inject
     public SlimeLauncherMetadata() {
@@ -30,22 +33,25 @@ abstract class SlimeLauncherMetadata extends DefaultTask implements ForgeGradleT
     }
 
     @TaskAction
-    protected void exec() {
-        this.getArchiveOperations().zipTree(this.getMetadata().getSingleFile())
-            .matching(it -> it.include("launcher/**"))
-            .visit(file -> {
-                try {
-                    if (file.getPath().equals("launcher/runs.json")) {
-                        Files.copy(
-                            file.getFile().toPath(),
-                            this.getRunsJson().getAsFile().get().toPath(),
-                            StandardCopyOption.REPLACE_EXISTING,
-                            StandardCopyOption.COPY_ATTRIBUTES
-                        );
-                    }
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+    protected void exec() throws IOException {
+        var archive = this.getMetadata().getSingleFile();
+        var json = this.getRunsJson().getAsFile().get().toPath();
+
+        boolean foundRuns = false;
+        try (var zin = new ZipInputStream(new FileInputStream(archive))) {
+            for (ZipEntry entry; ((entry = zin.getNextEntry()) != null); ) {
+                if (!entry.getName().startsWith("launcher/"))
+                    continue;
+                if (entry.getName().equals("launcher/runs.json")) {
+                    Files.copy(zin, json, StandardCopyOption.REPLACE_EXISTING);
+                    foundRuns = true;
                 }
-            });
+            }
+        }
+
+        // If we don't find a metadata file, write an empty runs
+        // This happens when using a 'vanilla' minecraft dependency
+        if (!foundRuns)
+            Files.writeString(json, "{}", StandardCharsets.UTF_8);
     }
 }

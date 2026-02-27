@@ -80,7 +80,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
 
     protected abstract @InputFiles ConfigurableFileCollection getMetadata();
 
-    protected abstract @InputFile RegularFileProperty getRunsJson();
+    protected abstract @InputFile @Optional RegularFileProperty getRunsJson();
 
     protected abstract @Inject ObjectFactory getObjects();
 
@@ -118,13 +118,16 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
 
         //region Launcher Metadata Inheritance
         Map<String, RunConfig> configs = Map.of();
-        try {
-            configs = JsonData.fromJson(
-                this.getRunsJson().getAsFile().get(),
-                new TypeToken<>() { }
-            );
-        } catch (JsonIOException e) {
-            // continue
+        var jsons = this.getRunsJson().getAsFile().getOrNull();
+        if (jsons != null && jsons.exists()) {
+            try {
+                configs = JsonData.fromJson(
+                    this.getRunsJson().getAsFile().get(),
+                    new TypeToken<>() { }
+                );
+            } catch (JsonIOException e) {
+                // continue
+            }
         }
 
         var options = ((SlimeLauncherOptionsInternal) this.getOptions().get()).inherit(configs, this.getSourceSetName().get());
