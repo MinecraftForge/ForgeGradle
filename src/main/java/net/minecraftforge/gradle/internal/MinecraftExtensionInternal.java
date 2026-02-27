@@ -13,6 +13,7 @@ import org.gradle.api.reflect.HasPublicType;
 import org.gradle.api.reflect.TypeOf;
 import org.jetbrains.annotations.UnmodifiableView;
 
+import java.util.Collection;
 import java.util.List;
 
 interface MinecraftExtensionInternal extends MinecraftExtension, HasPublicType, MinecraftMappingsContainerInternal {
@@ -34,5 +35,7 @@ interface MinecraftExtensionInternal extends MinecraftExtension, HasPublicType, 
         }
 
         @UnmodifiableView List<? extends MavenArtifactRepository> getRepositories();
+
+        @UnmodifiableView Collection<MavenizerInstanceImpl> getDependencies();
     }
 }

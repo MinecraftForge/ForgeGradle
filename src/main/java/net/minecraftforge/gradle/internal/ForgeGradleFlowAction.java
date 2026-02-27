@@ -119,24 +119,4 @@ abstract class ForgeGradleFlowAction<P extends ForgeGradleFlowAction.Parameters>
             parameters.problems().reportAccessTransformersNotApplied(e);
         }
     }
-
-    static abstract class MavenizerSyncCheck extends ForgeGradleFlowAction<MavenizerSyncCheck.Parameters> {
-        static abstract class Parameters extends ForgeGradleFlowAction.Parameters {
-            final DirectoryProperty dependencyOutput = this.getObjects().directoryProperty();
-            final Property<String> dependency = this.getObjects().property(String.class);
-
-            @Inject
-            public Parameters() { }
-        }
-
-        @Inject
-        public MavenizerSyncCheck() { }
-
-        @Override
-        protected void run(Parameters parameters) {
-            if (parameters.dependencyOutput.getAsFile().get().exists()) return;
-
-            parameters.problems().mavenizerOutOfDate(parameters.getFailure().isPresent(), parameters.dependency.get());
-        }
-    }
 }

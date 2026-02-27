@@ -5,6 +5,7 @@
 package net.minecraftforge.gradle.internal;
 
 import groovy.lang.Closure;
+import net.minecraftforge.gradle.MavenizerInstance;
 import net.minecraftforge.gradle.MinecraftDependency;
 import net.minecraftforge.gradle.SlimeLauncherOptions;
 import org.gradle.api.Action;
@@ -13,7 +14,9 @@ import org.gradle.api.NamedDomainObjectSet;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.artifacts.ModuleIdentifier;
 import org.gradle.api.attributes.AttributeContainer;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.reflect.HasPublicType;
 import org.gradle.api.reflect.TypeOf;
@@ -58,6 +61,13 @@ interface MinecraftDependencyInternal extends MinecraftDependency, HasPublicType
     default <R> Closure<R> closure(Closure<R> closure) {
         return closure.rehydrate(closure.getDelegate(), new ClosureOwnerImpl.MinecraftDependencyImpl(closure.getOwner(), this), closure.getThisObject());
     }
+
+    MavenizerInstance getMavenizerInstance();
+    FileCollection getMinecraftDependencies();
+    FileCollection getMetadataDependency();
+    TaskProvider<SlimeLauncherMetadata> getMetadataTask();
+    String getPath();
+    ModuleIdentifier getModule();
 
     void handle(Configuration configuration);
 

@@ -6,7 +6,6 @@ package net.minecraftforge.gradle.internal;
 
 import groovy.json.JsonSlurper;
 import net.minecraftforge.gradle.MavenizerInstance;
-import org.gradle.api.Transformer;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Provider;
@@ -58,6 +57,11 @@ class MavenizerInstanceImpl implements MavenizerInstance {
     @Override
     public Provider<ExternalModuleDependency> asProvider() {
         return this.invoke.map(m -> this.dependency);
+    }
+
+    @Override
+    public Provider<String> getMappingChannel() {
+        return get("mappings.channel");
     }
 
     @Override

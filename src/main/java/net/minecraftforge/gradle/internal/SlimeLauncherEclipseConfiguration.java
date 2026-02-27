@@ -4,12 +4,12 @@
  */
 package net.minecraftforge.gradle.internal;
 
-import com.google.gson.JsonIOException;
 import com.google.gson.reflect.TypeToken;
 import net.minecraftforge.gradle.SlimeLauncherOptions;
 import net.minecraftforge.util.data.json.JsonData;
 import net.minecraftforge.util.data.json.RunConfig;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
@@ -28,13 +28,16 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.TaskProvider;
 import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.work.DisableCachingByDefault;
 import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkerExecutor;
+import org.jspecify.annotations.Nullable;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -49,20 +52,98 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
 // This is mostly taken from ForgeGradle 6 but slimmed down to what we need
 @DisableCachingByDefault(because = "ForgeGradle would require more information to cache this task")
-abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements ForgeGradleTask {
+abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements ForgeGradleTask, SlimeLauncherRunTask {
+    static TaskProvider<SlimeLauncherEclipseConfiguration> register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, MinecraftDependencyInternal mcdep, String runTaskName) {
+        var metadata = mcdep.getMetadataTask();
+        var generateEclipseRunTaskName = sourceSet.getTaskName("genEclipseRun", options.getName()) + "For" + Util.dependencyToCamelCase(mcdep.getModule());
+
+        var genEclipseRun = project.getTasks().register(generateEclipseRunTaskName, SlimeLauncherEclipseConfiguration.class, task -> {
+            task.getRunName().set(options.getName());
+            task.setDescription("Generates the '%s' Slime Launcher run configuration for Eclipse.".formatted(options.getName()));
+            task.getOutputFile().set(task.getProjectLayout().getProjectDirectory().file(runTaskName + ".launch"));
+
+
+            var inst = mcdep.getMavenizerInstance();
+            var runtimeClasspath = task.getObjects().fileCollection().from(task.getProviders().provider(sourceSet::getRuntimeClasspath));
+            task.getRuntimeClasspath().setFrom(runtimeClasspath); // main classpath gets polluted by Slimelauncher so keep a copy
+            task.getMinecraftClasspath().setFrom(mcdep.getMinecraftDependencies());
+            task.getMappingChannel().set(inst.getMappingChannel());
+            task.getMappingVersion().set(inst.getMappingVersion());
+            // Despite the name this is set to createSrgToMcp.getOutput().get().getAsFile().getAbsolutePath() so.. Srg -> MCP .srg mapping file.
+            //ret.put("mcp_to_srg", getSrgToMcp().getAsFile().map(File::getAbsolutePath)::get);
+
+            var runtimeClasspath2 = task.getObjects().fileCollection().from(
+                task.getProviders().provider(() -> {
+                    var runtime = sourceSet.getRuntimeClasspath();
+                    var eclipseModel = project.getExtensions().findByType(EclipseModel.class);
+                    if (eclipseModel == null)
+                        return runtime.getFiles();
+
+                    // We need to build a map of sourcesets to real output paths like Eclipse's plugin does.
+                    // There is no known exposure of this stuff, so have to do it ourselves.
+                    // https://github.com/gradle/gradle/blob/master/platforms/ide/ide/src/main/java/org/gradle/plugins/ide/eclipse/model/internal/SourceFoldersCreator.java#L220
+                    var classpath = eclipseModel.getClasspath();
+                    var sortedSourceSets = sortSourceSets(classpath.getSourceSets());
+                    var replacements = new HashMap<File, File>();
+                    var base = classpath.getBaseSourceOutputDir().getAsFile().get();
+                    var claimed = new HashSet<File>();
+                    claimed.add(classpath.getDefaultOutputDir());
+
+                    // Gather the output name eclipse will use, and all outputs gradle expects
+                    for (var sources : sortedSourceSets) {
+                        var name =  sources.getName();
+                        var path = new File(base, name);
+                        while (claimed.contains(path)) {
+                            name += '_';
+                            path = new File(base, name);
+                        }
+                        claimed.add(path);
+                        if (sources.getOutput().getResourcesDir() != null)
+                            replacements.put(sources.getOutput().getResourcesDir(), path);
+                        for (var dir : sources.getOutput().getClassesDirs().getFiles())
+                            replacements.put(dir, path);
+                    }
+
+                    // Now replace the existing classpath with the ones eclipse will use
+                    var ret = new LinkedHashSet<File>(runtime.getFiles().size());
+                    for (var file : runtime.getFiles())
+                        ret.add(replacements.getOrDefault(file, file));
+                    return ret;
+                }));
+            task.getClasspath().from(runtimeClasspath);
+            task.getSourceSetName().set(sourceSet.getName());
+
+            task.getCacheDir().set(task.getObjects().directoryProperty().value(task.globalCaches().dir("slime-launcher/cache/%s".formatted(mcdep.getPath())).map(task.problems.ensureFileLocation())));
+            task.getLocalCacheDir().set(task.getObjects().directoryProperty().value(task.localCaches().dir("slime-launcher/cache/%s".formatted(mcdep.getPath())).map(task.problems.ensureFileLocation())));
+            task.getMetadata().setFrom(metadata.map(SlimeLauncherMetadata::getMetadata));
+            task.getRunsJson().set(metadata.flatMap(SlimeLauncherMetadata::getRunsJson));
+
+            task.getOptions().set(options);
+        });
+
+        project.getTasks().named("genEclipseRuns", task -> task.dependsOn(genEclipseRun));
+        return genEclipseRun;
+    }
+
+
     protected abstract @OutputFile RegularFileProperty getOutputFile();
 
     protected abstract @Input Property<String> getProjectName();
 
-    protected abstract @Input Property<String> getSourceSetName();
+    public abstract @Input @Override Property<String> getSourceSetName();
 
     protected abstract @Input @Optional Property<String> getEclipseProjectName();
 
@@ -77,8 +158,13 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
     protected abstract @Nested Property<SlimeLauncherOptions> getOptions();
 
     protected abstract @Internal DirectoryProperty getCacheDir();
-
-    protected abstract @InputFiles ConfigurableFileCollection getMetadata();
+    public abstract @Internal @Override DirectoryProperty getLocalCacheDir();
+    public abstract @InputFiles @Override ConfigurableFileCollection getMetadata();
+    public abstract @InputFiles @Override ConfigurableFileCollection getMinecraftClasspath();
+    public abstract @InputFiles @Override ConfigurableFileCollection getRuntimeClasspath();
+    public abstract @Input @Override Property<String> getMappingChannel();
+    public abstract @Input @Override Property<String> getMappingVersion();
+    //protected abstract @InputFile @Override RegularFileProperty getSrgToMcp();
 
     protected abstract @InputFile @Optional RegularFileProperty getRunsJson();
 
@@ -111,29 +197,30 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
         if (!this.getEclipseProjectName().isPresent())
             problems.reportMissingEclipsePlugin(this.getName());
 
-        List<String> args;
-        List<String> jvmArgs;
-        MapProperty<String, String> environment;
         DirectoryProperty workingDir;
 
         //region Launcher Metadata Inheritance
         Map<String, RunConfig> configs = Map.of();
         var jsons = this.getRunsJson().getAsFile().getOrNull();
-        if (jsons != null && jsons.exists()) {
-            try {
-                configs = JsonData.fromJson(
-                    this.getRunsJson().getAsFile().get(),
-                    new TypeToken<>() { }
-                );
-            } catch (JsonIOException e) {
-                // continue
-            }
-        }
+        if (jsons != null && jsons.exists())
+            configs = JsonData.fromJson(jsons, new TypeToken<>() { });
 
         var options = ((SlimeLauncherOptionsInternal) this.getOptions().get()).inherit(configs, this.getSourceSetName().get());
+        var tokens = SlimeLauncherRunHelper.buildTokens(this);
+        var unknown = new HashSet<String>();
 
-        args = new ArrayList<>(options.getArgs().getOrElse(List.of()));
-        jvmArgs = new ArrayList<>(options.getJvmArgs().getOrElse(List.of()));
+        var args = new ArrayList<>(List.of(
+            "--main", options.getMainClass().get(),
+            "--cache", this.getCacheDir().get().getAsFile().getAbsolutePath(),
+            "--metadata", this.getMetadata().getSingleFile().getAbsolutePath(),
+            "--"
+        ));
+        for (var arg : options.getArgs().getOrElse(List.of()))
+            args.add(Util.replaceTokens(tokens, arg, unknown));
+
+        var jvmArgs = new ArrayList<String>();
+        for (var arg : options.getJvmArgs().getOrElse(List.of()))
+            jvmArgs.add(Util.replaceTokens(tokens, arg, unknown));
         if (!options.getClasspath().isEmpty())
             this.getClasspath().setFrom(options.getClasspath());
         if (options.getMinHeapSize().filter(Util::isPresent).isPresent())
@@ -141,17 +228,21 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
         if (options.getMaxHeapSize().filter(Util::isPresent).isPresent())
             jvmArgs.add("-Xmx" + options.getMaxHeapSize().get());
         for (var property : options.getSystemProperties().getOrElse(Map.of()).entrySet())
-            jvmArgs.add("-D" + property.getKey() + '=' + property.getValue());
-        environment = options.getEnvironment();
+            jvmArgs.add("-D" + property.getKey() + '=' + Util.replaceTokens(tokens, property.getValue(), unknown));
+
+        var env = new HashMap<String, String>();
+        for (var entry : options.getEnvironment().get().entrySet()) {
+            var value = Util.replaceTokens(tokens, entry.getValue(), unknown);
+            env.put(entry.getKey(), value);
+        }
+
         workingDir = options.getWorkingDir();
         //endregion
 
-        //region Slime Launcher setup
-        args.addAll(0, List.of("--main", options.getMainClass().get(),
-            "--cache", this.getCacheDir().get().getAsFile().getAbsolutePath(),
-            "--metadata", this.getMetadata().getSingleFile().getAbsolutePath(),
-            "--"));
+        for (var token : unknown)
+            getLogger().debug("Unknown Run Token: {}", token);
 
+        //region Slime Launcher setup
         try {
             Files.createDirectories(workingDir.get().getAsFile().toPath());
         } catch (IOException e) {
@@ -169,9 +260,30 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
             parameters.getArgs().set(args);
             parameters.getJvmArgs().set(jvmArgs);
             parameters.getWorkingDir().set(workingDir);
-            parameters.getEnvironment().set(environment);
+            parameters.getEnvironment().set(env);
             parameters.getJavaHome().set(this.getJavaLauncher().map(j -> j.getMetadata().getInstallationPath()));
         });
+    }
+
+    private static List<SourceSet> sortSourceSets(@Nullable Iterable<SourceSet> sourceSets) {
+        if (sourceSets == null)
+            return new ArrayList<>(0);
+        var ret = new ArrayList<SourceSet>();
+        for (var item : sourceSets)
+            ret.add(item);
+        ret.sort(Comparator.comparing(SlimeLauncherEclipseConfiguration::toComparable));
+        return ret;
+    }
+
+    private static Integer toComparable(SourceSet sourceSet) {
+        String name = sourceSet.getName();
+        if (SourceSet.MAIN_SOURCE_SET_NAME.equals(name)) {
+            return 0;
+        } else if (SourceSet.TEST_SOURCE_SET_NAME.equals(name)) {
+            return 1;
+        } else {
+            return 2;
+        }
     }
 
     static abstract class Action implements WorkAction<Action.Parameters> {

@@ -6,6 +6,7 @@ package net.minecraftforge.gradle.internal;
 
 import groovy.lang.Closure;
 import groovy.transform.NamedVariant;
+import net.minecraftforge.gradle.MavenizerInstance;
 import net.minecraftforge.gradle.MinecraftExtensionForProject;
 import net.minecraftforge.gradle.MinecraftMappings;
 import net.minecraftforge.gradle.SlimeLauncherOptions;
@@ -18,9 +19,11 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ModuleIdentifier;
+import org.gradle.api.attributes.Usage;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.flow.FlowProviders;
 import org.gradle.api.flow.FlowScope;
@@ -29,6 +32,7 @@ import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.TaskProvider;
 import org.jspecify.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -42,6 +46,10 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
 
     // Minecraft extension
     private final MinecraftExtensionInternal.ForProject minecraft = ((MinecraftExtensionInternal.ForProject) getProject().getExtensions().getByType(MinecraftExtensionForProject.class));
+    private final String mavenizerName; // Name for our mavenizer invocation in the Minecraft Extension
+    private @Nullable Configuration detatchedConfig;
+    private @Nullable Configuration metadataConfig;
+    private @Nullable TaskProvider<SlimeLauncherMetadata> metadataTask;
 
     // Access Transformers
     private final ConfigurableFileCollection accessTransformer = this.getObjects().fileCollection();
@@ -53,25 +61,19 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     private final Property<ModuleIdentifier> module = getObjects().property(ModuleIdentifier.class);
     private final Property<String> version = getObjects().property(String.class);
 
-    private final DirectoryProperty mavenizerOutput = getObjects().directoryProperty();
     private final Property<MinecraftMappingsInternal> mappings = this.getObjects().property(MinecraftMappingsInternal.class);
-    private @Nullable String sourceSetName;
 
     private final ForgeGradleProblems problems = this.getObjects().newInstance(ForgeGradleProblems.class);
 
     protected abstract @Inject Project getProject();
-
-    protected abstract @Inject FlowScope getFlowScope();
-
-    protected abstract @Inject FlowProviders getFlowProviders();
 
     protected abstract @Inject ObjectFactory getObjects();
 
     protected abstract @Inject ProjectLayout getProjectLayout();
 
     @Inject
-    public MinecraftDependencyImpl(Provider<? extends Directory> mavenizerOutput) {
-        this.mavenizerOutput.set(mavenizerOutput);
+    public MinecraftDependencyImpl(String mavenizerName) {
+        this.mavenizerName = mavenizerName;
         this.mappings.convention(minecraft.getMappingsProperty());
     }
 
@@ -94,6 +96,30 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     @NamedVariant
     public void mappings(String channel, String version) {
         this.mappings.set(this.getObjects().newInstance(MinecraftMappingsImpl.class, channel, version));
+    }
+
+    @Override
+    public MavenizerInstance getMavenizerInstance() {
+        return this.minecraft.getDependency(this.mavenizerName);
+    }
+
+    @Override
+    public FileCollection getMinecraftDependencies() {
+        assert this.detatchedConfig != null;
+        return this.detatchedConfig;
+    }
+
+    @Override
+    public FileCollection getMetadataDependency() {
+        assert this.metadataConfig != null;
+        return this.metadataConfig;
+    }
+
+    @Override
+    public TaskProvider<SlimeLauncherMetadata> getMetadataTask() {
+        if (this.metadataTask == null)
+            this.metadataTask = SlimeLauncherMetadata.register(this.getProject(), this);
+        return this.metadataTask;
     }
 
     @Override public boolean hasAccessTransformersPlugin() {
@@ -140,12 +166,35 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
             return module;
         }));
 
+        // Keep a standalone configuration of JUST this dependency, so we can fill in 'minecraft_classpath' for run configs.
+        this.detatchedConfig = this.getProject().getConfigurations().detachedConfiguration(dependency);
+        this.metadataConfig = this.getProject().getConfigurations().detachedConfiguration(getProject().getDependencyFactory().create(
+            dependency.getModule().getGroup(), dependency.getModule().getName(), dependency.getVersion(), "metadata", "zip"
+        ));
+        this.metadataConfig.setTransitive(false);
+        this.metadataConfig.attributes(a -> a.attribute(Usage.USAGE_ATTRIBUTE, a.named(Usage.class, "metadata")));
+
         this.asString.set(dependency.toString());
         this.asPath.set(Util.pathify(dependency));
         this.module.set(dependency.getModule());
         this.version.set(dependency.getVersion());
 
         return this.delegate = dependency;
+    }
+
+    @Override
+    public String toString() {
+        return this.asString.getOrElse(super.toString());
+    }
+
+    @Override
+    public String getPath() {
+        return this.asPath.get();
+    }
+
+    @Override
+    public ModuleIdentifier getModule() {
+        return this.module.get();
     }
 
     @Override
@@ -157,13 +206,14 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
 
             // Apply the dependency substitution for mappings attributes.
             if (this.mappings.isPresent()) {
+                var instance = this.getMavenizerInstance();
                 var module = dependencySubstitution.module(moduleSelector);
                 try {
                     dependencySubstitution
                         .substitute(module)
                         .using(dependencySubstitution.variant(module, variant -> variant.attributes(attributes -> {
-                            attributes.attributeProvider(ForgeAttributes.MappingsChannel.ATTRIBUTE, this.mappings.map(MinecraftMappings::getChannel));
-                            attributes.attributeProvider(ForgeAttributes.MappingsVersion.ATTRIBUTE, this.mappings.map(MinecraftMappings::getVersion));
+                            attributes.attributeProvider(ForgeAttributes.MappingsChannel.ATTRIBUTE, instance.getMappingChannel());
+                            attributes.attributeProvider(ForgeAttributes.MappingsVersion.ATTRIBUTE, instance.getMappingVersion());
                         })))
                         .because("Accounts for declared mappings.");
                 } catch (InvalidUserCodeException e) {
@@ -175,30 +225,12 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
 
     @Override
     public void handle(NamedDomainObjectSet<SourceSet> sourceSets, NamedDomainObjectSet<SourceSet> allSourceSets) {
-        var asString = this.asString.get();
-        var dependencyOutput = this.mavenizerOutput.dir(this.asPath);
-        getFlowScope().always(ForgeGradleFlowAction.MavenizerSyncCheck.class, spec ->
-            spec.parameters(parameters -> {
-                parameters.getFailure().set(getFlowProviders().getBuildWorkResult().map(r -> r.getFailure().orElse(null)));
-                parameters.dependencyOutput.set(dependencyOutput);
-                parameters.dependency.set(asString);
-            })
-        );
-
-        if (!sourceSets.isEmpty() && this.sourceSetName == null)
-            this.sourceSetName = sourceSets.iterator().next().getName();
-
         var runs = Objects.requireNonNullElseGet(this.getRuns(), () -> getObjects().domainObjectContainer(SlimeLauncherOptionsImpl.class));
         ((NamedDomainObjectContainer<SlimeLauncherOptionsImpl>) runs).addAll((NamedDomainObjectContainer<SlimeLauncherOptionsImpl>) minecraft.getRuns());
+
         allSourceSets.configureEach(sourceSet -> {
-            var single = getProject()
-                .getConfigurations()
-                .getByName(sourceSet.getRuntimeClasspathConfigurationName())
-                .getAllDependencies()
-                .matching(MinecraftDependencyInternal::is)
-                .size() == 1;
             runs.forEach(options -> {
-                var task = SlimeLauncherExec.register(getProject(), sourceSet, (SlimeLauncherOptionsImpl) options, module.get(), version.get(), asPath.get(), asString, single);
+                var runTask = SlimeLauncherExec.register(getProject(), sourceSet, (SlimeLauncherOptionsImpl)options, this);
             });
         });
 
