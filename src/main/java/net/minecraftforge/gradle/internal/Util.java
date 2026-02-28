@@ -32,10 +32,6 @@ final class Util extends SharedUtil {
         return !c.isBlank();
     }
 
-    static String dependencyToCamelCase(Dependency dependency) {
-        return dependencyToCamelCase(dependency.getGroup(), dependency.getName());
-    }
-
     static String dependencyToCamelCase(ModuleIdentifier dependency) {
         return dependencyToCamelCase(dependency.getGroup(), dependency.getName());
     }
@@ -43,9 +39,12 @@ final class Util extends SharedUtil {
     static String dependencyToCamelCase(@Nullable String group, String name) {
         var list = new ArrayList<String>(3);
 
-        if (group != null)
+        boolean isForge = "net.minecraftforge".equals(group) && "forge".equals(name);
+
+        if (group != null && !isForge)
             list.addAll(Arrays.asList(group.split("\\.")));
 
+        // TODO: [ForgeGradle] Add version distinction for run task names
         list.add(name);
 
         var builder = new StringBuilder(64);

@@ -7,9 +7,6 @@ package net.minecraftforge.gradle.internal;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.Internal;
 
 public interface SlimeLauncherRunTask {
     Property<String> getSourceSetName();
@@ -17,6 +14,9 @@ public interface SlimeLauncherRunTask {
     ConfigurableFileCollection getMetadata();
     ConfigurableFileCollection getMinecraftClasspath();
     ConfigurableFileCollection getRuntimeClasspath();
+    ConfigurableFileCollection getPatcherModules();
+    Property<String> getMinecraftVersion();
+    Property<String> getMCPVersion();
     Property<String> getMappingChannel();
     Property<String> getMappingVersion();
     //RegularFileProperty getSrgToMcp();

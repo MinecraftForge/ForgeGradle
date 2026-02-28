@@ -27,7 +27,7 @@ import java.util.zip.ZipInputStream;
 
 abstract class SlimeLauncherMetadata extends DefaultTask implements ForgeGradleTask {
     static TaskProvider<SlimeLauncherMetadata> register(Project project, MinecraftDependencyInternal mcdep) {
-        var taskName = "slimeLauncherMetadatafor" + Util.dependencyToCamelCase(mcdep.getModule());
+        var taskName = "slimeLauncherMetadataFor" + Util.dependencyToCamelCase(mcdep.getModule());
         return project.getTasks().register(taskName, SlimeLauncherMetadata.class, task -> {
             task.setDescription("Extracts the Slime Launcher metadata for '%s'.".formatted(mcdep.toString()));
             task.getMetadata().setFrom(mcdep.getMetadataDependency());

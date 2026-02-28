@@ -43,7 +43,7 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
     static TaskProvider<SlimeLauncherExec> register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, MinecraftDependencyInternal mcdep) {
         var minecraft = ((MinecraftExtensionInternal.ForProject)project.getExtensions().getByType(MinecraftExtensionForProject.class));
         var metadata = mcdep.getMetadataTask();
-        var single = minecraft.getDependencies().size() > 1;
+        var single = minecraft.getDependencies().size() == 1;
 
         var taskNameSuffix = (single ? "" : "For" + Util.dependencyToCamelCase(mcdep.getModule()));
         var runTaskName = sourceSet.getTaskName("run", options.getName()) + taskNameSuffix;
@@ -54,15 +54,9 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
             task.getSourceSetName().set(sourceSet.getName());
             task.setDescription("Runs the '%s' Slime Launcher run configuration.".formatted(options.getName()));
 
-            var inst = mcdep.getMavenizerInstance();
             var runtimeClasspath = task.getObjectFactory().fileCollection().from(task.getProviderFactory().provider(sourceSet::getRuntimeClasspath));
             task.classpath(runtimeClasspath);
-            task.getRuntimeClasspath().setFrom(runtimeClasspath); // main classpath gets polluted by Slimelauncher so keep a copy
-            task.getMinecraftClasspath().setFrom(mcdep.getMinecraftDependencies());
-            task.getMappingChannel().set(inst.getMappingChannel());
-            task.getMappingVersion().set(inst.getMappingVersion());
-            // We need a way to reverse this file, cuz we want srg->mcp and this is mcp->srg
-            //task.getSrgToMcp().set(project.file(inst.getToSrgFile()));
+            SlimeLauncherRunHelper.configure(task, mcdep, runtimeClasspath);
 
             task.getCacheDir().set(task.getObjectFactory().directoryProperty().value(task.globalCaches().dir("slime-launcher/cache/%s".formatted(mcdep.getPath())).map(task.problems.ensureFileLocation())));
             task.getLocalCacheDir().set(task.getObjectFactory().directoryProperty().value(task.localCaches().dir("slime-launcher/cache/%s".formatted(mcdep.getPath())).map(task.problems.ensureFileLocation())));
@@ -84,6 +78,9 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
     public abstract @InputFiles @Override ConfigurableFileCollection getMetadata();
     public abstract @InputFiles @Override ConfigurableFileCollection getMinecraftClasspath();
     public abstract @InputFiles @Override ConfigurableFileCollection getRuntimeClasspath();
+    public abstract @InputFiles @Override ConfigurableFileCollection getPatcherModules();
+    public abstract @Input @Override Property<String> getMinecraftVersion();
+    public abstract @Input @Override Property<String> getMCPVersion();
     public abstract @Input @Override Property<String> getMappingChannel();
     public abstract @Input @Override Property<String> getMappingVersion();
     //protected abstract @InputFile @Override RegularFileProperty getSrgToMcp();

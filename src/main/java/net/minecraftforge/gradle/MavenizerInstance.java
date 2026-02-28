@@ -59,4 +59,16 @@ public interface MavenizerInstance extends ProviderConvertible<ExternalModuleDep
     /// [org.gradle.api.artifacts.dsl.DependencyFactory#create(CharSequence)] or
     /// [org.gradle.api.artifacts.dsl.DependencyHandler#addProvider(String, Provider)].
     Provider<File> getToObfFile();
+
+    /// Gets the Minecraft Version used by the Mavenizer instance.
+    /// Only returns a value when Mavenizer is above 0.4.33
+    ///
+    /// @return The Minecraft Version
+    Provider<String> getMinecraftVersion();
+
+    /// Gets the MCP Config version used by the Mavenizer instance.
+    /// Only returns a value when Mavenizer is above 0.4.33, and we're targeting
+    /// an artifact that uses MCP Config. So Forge for Minecraft 1.13+
+    /// @return The MCP Version
+    Provider<String> getMCPVersion();
 }

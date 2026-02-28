@@ -6,7 +6,6 @@ package net.minecraftforge.gradle.internal;
 
 import groovy.lang.Closure;
 import groovy.transform.NamedVariant;
-import net.minecraftforge.gradle.MavenizerInstance;
 import net.minecraftforge.gradle.MinecraftExtensionForProject;
 import net.minecraftforge.gradle.MinecraftMappings;
 import net.minecraftforge.gradle.SlimeLauncherOptions;
@@ -21,22 +20,18 @@ import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ModuleIdentifier;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.file.Directory;
-import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.ProjectLayout;
-import org.gradle.api.flow.FlowProviders;
-import org.gradle.api.flow.FlowScope;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 import org.jspecify.annotations.Nullable;
 
 import javax.inject.Inject;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Objects;
 
 abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
@@ -47,8 +42,9 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     // Minecraft extension
     private final MinecraftExtensionInternal.ForProject minecraft = ((MinecraftExtensionInternal.ForProject) getProject().getExtensions().getByType(MinecraftExtensionForProject.class));
     private final String mavenizerName; // Name for our mavenizer invocation in the Minecraft Extension
-    private @Nullable Configuration detatchedConfig;
+    private @Nullable Configuration selfConfig;
     private @Nullable Configuration metadataConfig;
+    private @Nullable Configuration patcherModulesConfig;
     private @Nullable TaskProvider<SlimeLauncherMetadata> metadataTask;
 
     // Access Transformers
@@ -99,20 +95,39 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     }
 
     @Override
-    public MavenizerInstance getMavenizerInstance() {
-        return this.minecraft.getDependency(this.mavenizerName);
+    public MavenizerInstanceImpl getMavenizerInstance() {
+        return (MavenizerInstanceImpl)this.minecraft.getDependency(this.mavenizerName);
     }
 
     @Override
     public FileCollection getMinecraftDependencies() {
-        assert this.detatchedConfig != null;
-        return this.detatchedConfig;
+        assert this.selfConfig != null;
+        return this.selfConfig;
     }
 
     @Override
     public FileCollection getMetadataDependency() {
         assert this.metadataConfig != null;
         return this.metadataConfig;
+    }
+
+    @Override
+    public FileCollection getPatcherModules() {
+        if (this.patcherModulesConfig == null) {
+            var cfg = this.getProject().getConfigurations().detachedConfiguration();
+            cfg.setCanBeResolved(true);
+            cfg.setTransitive(false);
+            cfg.getDependencies().addAllLater(
+                this.getMavenizerInstance().getPatcherModules().map(lst -> {
+                    var ret = new ArrayList<Dependency>(lst.size());
+                    for (var gav : lst)
+                        ret.add(getProject().getDependencyFactory().create(gav));
+                    return ret;
+                })
+            );
+            this.patcherModulesConfig = cfg;
+        }
+        return this.patcherModulesConfig;
     }
 
     @Override
@@ -153,21 +168,21 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
         this.runs = getObjects().domainObjectContainer(SlimeLauncherOptionsImpl.class);
 
         var dependency = (ExternalModuleDependency) getProject().getDependencies().create(dependencyNotation, Closures.<Dependency, ExternalModuleDependency>function(d -> {
-            if (!(d instanceof ExternalModuleDependency module))
+            if (!(d instanceof ExternalModuleDependency external))
                 throw this.problems.invalidMinecraftDependencyType(d);
 
-            if (module.isChanging())
-                throw this.problems.changingMinecraftDependency(module);
+            if (external.isChanging())
+                throw this.problems.changingMinecraftDependency(external);
 
-            Closures.invoke(this.closure(closure), module);
+            Closures.invoke(this.closure(closure), external);
 
-            ((ExtensionAware) module).getExtensions().getExtraProperties().set(MC_EXT_NAME, this);
+            ((ExtensionAware) external).getExtensions().getExtraProperties().set(MC_EXT_NAME, this);
 
-            return module;
+            return external;
         }));
 
         // Keep a standalone configuration of JUST this dependency, so we can fill in 'minecraft_classpath' for run configs.
-        this.detatchedConfig = this.getProject().getConfigurations().detachedConfiguration(dependency);
+        this.selfConfig = this.getProject().getConfigurations().detachedConfiguration(dependency);
         this.metadataConfig = this.getProject().getConfigurations().detachedConfiguration(getProject().getDependencyFactory().create(
             dependency.getModule().getGroup(), dependency.getModule().getName(), dependency.getVersion(), "metadata", "zip"
         ));
@@ -195,6 +210,11 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     @Override
     public ModuleIdentifier getModule() {
         return this.module.get();
+    }
+
+    @Override
+    public String getKey() {
+        return this.mavenizerName;
     }
 
     @Override

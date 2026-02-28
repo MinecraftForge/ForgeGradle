@@ -25,21 +25,21 @@ class SlimeLauncherRunHelper {
         ret.put("assets_root", () -> "{assets_root}");
         ret.put("natives",  () -> "{natives}");
 
-
         ret.put("mcp_mappings", task.getMappingChannel().zip(task.getMappingVersion(), (c, v) -> c + '_' + v)::get);
         var minecraft = getClasspath(task.getMinecraftClasspath());
         var runtime = getClasspath(task.getRuntimeClasspath());
+        var modules = getClasspath(task.getPatcherModules());
         ret.put("minecraft_classpath", getClasspath(minecraft));
         ret.put("runtime_classpath", getClasspath(runtime));
+        ret.put("modules", getClasspath(modules));
         ret.put("minecraft_classpath_file", getClasspathFile(task, "minecraft", minecraft));
         ret.put("runtime_classpath_file", getClasspathFile(task, "runtime_" + task.getSourceSetName().get(), runtime));
+        ret.put("mc_version", task.getMinecraftVersion()::get);
+        ret.put("mcp_version", task.getMCPVersion()::get);
         // Despite the name this is set to createSrgToMcp.getOutput().get().getAsFile().getAbsolutePath() so.. Srg -> MCP .srg mapping file.
         //ret.put("mcp_to_srg", getSrgToMcp().getAsFile().map(File::getAbsolutePath)::get);
 
         // Pending:
-        //mc_version    The simple vanilla Minecraft Version - 1.21.11
-        //mcp_version   The full MCP Config version - 1.21.11-000000000.000000
-        //modules       The classpath of a detached configuration containing the dependencies from UserDevV2.modules
         //source_roots  The destination directories of each sourceset added to this run config. This is the old hacky thing for people who don't merge their sourcesets. Or use older versions that manually builds them. May not actually need this.
         return ret;
     }
@@ -67,5 +67,18 @@ class SlimeLauncherRunHelper {
             }
             return file.getAbsolutePath();
         });
+    }
+
+    static void configure(SlimeLauncherRunTask task, MinecraftDependencyInternal mcdep, FileCollection runtimeClasspath) {
+        var inst = mcdep.getMavenizerInstance();
+        task.getRuntimeClasspath().setFrom(runtimeClasspath); // main classpath gets polluted by Slimelauncher so keep a copy
+        task.getMinecraftClasspath().setFrom(mcdep.getMinecraftDependencies());
+        task.getPatcherModules().setFrom(mcdep.getPatcherModules());
+        task.getMinecraftVersion().set(inst.getMinecraftVersion());
+        task.getMCPVersion().set(inst.getMCPVersion());
+        task.getMappingChannel().set(inst.getMappingChannel());
+        task.getMappingVersion().set(inst.getMappingVersion());
+        // We need a way to reverse this file, cuz we want srg->mcp and this is mcp->srg
+        //task.getSrgToMcp().set(project.file(inst.getToSrgFile()));
     }
 }

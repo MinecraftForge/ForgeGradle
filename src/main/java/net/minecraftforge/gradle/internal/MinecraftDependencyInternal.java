@@ -65,9 +65,11 @@ interface MinecraftDependencyInternal extends MinecraftDependency, HasPublicType
     MavenizerInstance getMavenizerInstance();
     FileCollection getMinecraftDependencies();
     FileCollection getMetadataDependency();
+    FileCollection getPatcherModules();
     TaskProvider<SlimeLauncherMetadata> getMetadataTask();
     String getPath();
     ModuleIdentifier getModule();
+    String getKey();
 
     void handle(Configuration configuration);
 

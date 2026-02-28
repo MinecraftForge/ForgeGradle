@@ -10,6 +10,8 @@ import net.minecraftforge.util.data.json.JsonData;
 import net.minecraftforge.util.data.json.RunConfig;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
@@ -75,17 +77,26 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
             task.setDescription("Generates the '%s' Slime Launcher run configuration for Eclipse.".formatted(options.getName()));
             task.getOutputFile().set(task.getProjectLayout().getProjectDirectory().file(runTaskName + ".launch"));
 
+            var configName = sourceSet.getRuntimeClasspathConfigurationName();
+            var config = project.getConfigurations().getByName(configName);
+            task.getProjectDependencies().addAll(config.getIncoming().getArtifacts().getResolvedArtifacts()
+                .map(artifacts -> {
+                    var ret = new ArrayList<String>();
+                    // We need to reference our self as well
+                    ret.add(getProjectEclipseName(project));
 
-            var inst = mcdep.getMavenizerInstance();
-            var runtimeClasspath = task.getObjects().fileCollection().from(task.getProviders().provider(sourceSet::getRuntimeClasspath));
-            task.getRuntimeClasspath().setFrom(runtimeClasspath); // main classpath gets polluted by Slimelauncher so keep a copy
-            task.getMinecraftClasspath().setFrom(mcdep.getMinecraftDependencies());
-            task.getMappingChannel().set(inst.getMappingChannel());
-            task.getMappingVersion().set(inst.getMappingVersion());
-            // Despite the name this is set to createSrgToMcp.getOutput().get().getAsFile().getAbsolutePath() so.. Srg -> MCP .srg mapping file.
-            //ret.put("mcp_to_srg", getSrgToMcp().getAsFile().map(File::getAbsolutePath)::get);
+                    var root = project.getRootProject();
+                    for (var artifact : artifacts) {
+                        var id = artifact.getId().getComponentIdentifier();
+                        if (id instanceof ProjectComponentIdentifier projectIdentifier) {
+                            var dep = root.project(projectIdentifier.getProjectPath());
+                            ret.add(getProjectEclipseName(dep));
+                        }
+                    }
+                    return ret;
+                }));
 
-            var runtimeClasspath2 = task.getObjects().fileCollection().from(
+            var runtimeClasspath = task.getObjects().fileCollection().from(
                 task.getProviders().provider(() -> {
                     var runtime = sourceSet.getRuntimeClasspath();
                     var eclipseModel = project.getExtensions().findByType(EclipseModel.class);
@@ -123,7 +134,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
                         ret.add(replacements.getOrDefault(file, file));
                     return ret;
                 }));
-            task.getClasspath().from(runtimeClasspath);
+            SlimeLauncherRunHelper.configure(task, mcdep, runtimeClasspath);
             task.getSourceSetName().set(sourceSet.getName());
 
             task.getCacheDir().set(task.getObjects().directoryProperty().value(task.globalCaches().dir("slime-launcher/cache/%s".formatted(mcdep.getPath())).map(task.problems.ensureFileLocation())));
@@ -150,6 +161,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
     protected abstract @Input Property<String> getRunName();
 
     protected abstract @Nested Property<JavaLauncher> getJavaLauncher();
+    protected abstract @Input ListProperty<String> getProjectDependencies();
 
     protected abstract @InputFiles @Classpath ConfigurableFileCollection getClasspath();
 
@@ -162,6 +174,9 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
     public abstract @InputFiles @Override ConfigurableFileCollection getMetadata();
     public abstract @InputFiles @Override ConfigurableFileCollection getMinecraftClasspath();
     public abstract @InputFiles @Override ConfigurableFileCollection getRuntimeClasspath();
+    public abstract @InputFiles @Override ConfigurableFileCollection getPatcherModules();
+    public abstract @Input @Override Property<String> getMinecraftVersion();
+    public abstract @Input @Override Property<String> getMCPVersion();
     public abstract @Input @Override Property<String> getMappingChannel();
     public abstract @Input @Override Property<String> getMappingVersion();
     //protected abstract @InputFile @Override RegularFileProperty getSrgToMcp();
@@ -181,10 +196,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
     @Inject
     public SlimeLauncherEclipseConfiguration() {
         this.getProjectName().convention(this.getProject().getName());
-        this.getEclipseProjectName().convention(getProviders().provider(() -> {
-            var eclipse = getProject().getExtensions().findByType(EclipseModel.class);
-            return eclipse == null ? null : eclipse.getProject().getName();
-        }));
+        this.getEclipseProjectName().convention(getProject().provider(() -> getProjectEclipseName(this.getProject())));
 
         var tool = this.getTool(Tools.SLIMELAUNCHER);
         this.getClasspath().from(tool.getClasspath());
@@ -255,6 +267,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
         queue.submit(Action.class, parameters -> {
             parameters.getOutputFile().set(this.getOutputFile());
             parameters.getEclipseProjectName().set(this.getEclipseProjectName().orElse(this.getProjectName()));
+            parameters.getProjectDependencies().set(this.getProjectDependencies());
             parameters.getClasspath().setFrom(this.getClasspath());
             parameters.getMainClass().set(this.getMainClass().get());
             parameters.getArgs().set(args);
@@ -262,6 +275,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
             parameters.getWorkingDir().set(workingDir);
             parameters.getEnvironment().set(env);
             parameters.getJavaHome().set(this.getJavaLauncher().map(j -> j.getMetadata().getInstallationPath()));
+            parameters.getJavaVersion().set(this.getJavaLauncher().map(j -> j.getMetadata().getLanguageVersion().toString()));
         });
     }
 
@@ -291,6 +305,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
             RegularFileProperty getOutputFile();
 
             Property<String> getEclipseProjectName();
+            ListProperty<String> getProjectDependencies();
 
             ConfigurableFileCollection getClasspath();
 
@@ -303,6 +318,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
             DirectoryProperty getWorkingDir();
 
             DirectoryProperty getJavaHome();
+            Property<String> getJavaVersion();
 
             MapProperty<String, String> getEnvironment();
         }
@@ -337,7 +353,10 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
             stringAttribute(launch, rootElement, "org.eclipse.jdt.launching.WORKING_DIRECTORY", parameters.getWorkingDir().getAsFile().get().getAbsolutePath());
             //stringAttribute(launch, rootElement, "org.eclipse.jdt.launching.JRE_CONTAINER", parameters.getJavaHome().getAsFile().get().getAbsolutePath());
             mapAttribute(launch, rootElement, "org.eclipse.debug.core.environmentVariables", parameters.getEnvironment().get());
-            classpathAttribute(launch, rootElement, parameters.getClasspath());
+            var classpathList = classpathList(rootElement);
+            addClasspathProjects(classpathList, parameters.getProjectDependencies());
+            addClasspathLibraries(classpathList, parameters.getClasspath());
+            addClasspathJava(classpathList, parameters.getJavaVersion().get());
             booleanAttribute(launch, rootElement, "org.eclipse.jdt.launching.DEFAULT_CLASSPATH", false);
 
             launch.appendChild(rootElement);
@@ -380,19 +399,39 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
             parent.appendChild(attribute);
         }
 
-        private static final String CLASSPATH_ENTRY_PREFIX = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?> <runtimeClasspathEntry externalArchive=\"";
-        private static final String CLASSPATH_ENTRY_SUFFIX = "\" path=\"5\" type=\"2\"/>";
+        private static final String CLASSPATH_ENTRY_PREFIX = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><runtimeClasspathEntry ";
+        private static final String CLASSPATH_ENTRY_SUFFIX = " path=\"5\" />";
 
-        private static void classpathAttribute(Document document, Element parent, FileCollection files) {
-            var attribute = document.createElement("listAttribute");
+        private static Element addChild(Element parent, String name) {
+            var ret = parent.getOwnerDocument().createElement(name);
+            parent.appendChild(ret);
+            return ret;
+        }
+
+        private static Element classpathList(Element parent) {
+            var attribute = addChild(parent, "listAttribute");
             attribute.setAttribute("key", "org.eclipse.jdt.launching.CLASSPATH");
+            return attribute;
+        }
 
-            for (var v : files.getFiles()) {
-                var listEntry = document.createElement("listEntry");
-                listEntry.setAttribute("value", CLASSPATH_ENTRY_PREFIX + v + CLASSPATH_ENTRY_SUFFIX);
-                attribute.appendChild(listEntry);
+        private static void classpathEntry(Element parent, int type, String value) {
+            addChild(parent, "listEntry").setAttribute("value", CLASSPATH_ENTRY_PREFIX + value + " type=\"" + type + "\"" + CLASSPATH_ENTRY_SUFFIX);
+        }
+
+        private static void addClasspathLibraries(Element parent, FileCollection files) {
+            for (var v : files.getFiles())
+                classpathEntry(parent, 2, "externalArchive=\"" + v + "\"");
+        }
+
+        private static void addClasspathProjects(Element parent, ListProperty<String> projects) {
+            for (var v : projects.get()) {
+                classpathEntry(parent, 1, "projectName=\"" + v + "\"");
+                classpathEntry(parent, 4, "containerPath=\"org.eclipse.buildship.core.gradleclasspathcontainer\" javaProject=\"" + v + "\"");
             }
-            parent.appendChild(attribute);
+        }
+
+        private static void addClasspathJava(Element parent, String version) {
+            classpathEntry(parent, 4, "containerPath=\"org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-" + version + "\"");
         }
 
         private static void mapAttribute(Document document, Element parent, String key, Map<String, ?> map) {
@@ -410,5 +449,11 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
             }
             parent.appendChild(attribute);
         }
+    }
+
+    private static String getProjectEclipseName(Project project) {
+        var eclipse = project.getExtensions().findByType(EclipseModel.class);
+        var name = eclipse == null ? null : eclipse.getProject().getName();
+        return name != null ? name : project.getName();
     }
 }
