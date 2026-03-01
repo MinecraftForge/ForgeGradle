@@ -433,6 +433,8 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                         var mappings = minecraftDependency.getMappings();
                         if ("parchment".equals(mappings.getChannel()))
                             ret.addAll(List.of("--parchment", mappings.getVersion()));
+                        else if (!"official".equals(mappings.getChannel()))
+                            ret.addAll(List.of("--mappings", mappings.getChannel() + ':' + mappings.getVersion()));
 
                         for (var repo : this.getRepositories()) {
                             if (MAVENIZER_REPO_NAME.equals(repo.getName()))
