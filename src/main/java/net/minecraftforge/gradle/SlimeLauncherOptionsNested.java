@@ -4,6 +4,13 @@
  */
 package net.minecraftforge.gradle;
 
+import groovy.lang.Closure;
+import groovy.lang.DelegatesTo;
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.FromString;
+import net.minecraftforge.gradleutils.shared.Closures;
+import org.gradle.api.Action;
+import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
@@ -11,8 +18,11 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.SourceSet;
 
+import java.util.List;
 import java.util.Map;
 
 public interface SlimeLauncherOptionsNested {
@@ -203,4 +213,35 @@ public interface SlimeLauncherOptionsNested {
     /// add a single variable, use [#environment(String,Object)].
     /// @see #getEnvironment()
     void environment(Provider<? extends Map<String, ?>> properties);
+
+
+    @Internal
+    NamedDomainObjectContainer<? extends ModConfig> getMods();
+
+    default void mods(
+        @DelegatesTo(NamedDomainObjectContainer.class)
+        @ClosureParams(value = FromString.class, options = "org.gradle.api.NamedDomainObjectContainer<net.minecraftforge.gradle.SlimeLauncherOptionsNested$ModConfig>")
+        Closure<?> closure
+    ) {
+        this.getMods().configure(closure);
+    }
+
+    default void mods(Action<? super NamedDomainObjectContainer<? extends ModConfig>> action) {
+        this.mods(Closures.action(this, action));
+    }
+
+    interface ModConfig {
+        String getName();
+        List<SourceSet> getSources();
+        void setSources(List<SourceSet> sources);
+        default void sources(List<SourceSet> sources) {
+            getSources().addAll(sources);
+        }
+        default void sources(SourceSet... sources) {
+            getSources().addAll(List.of(sources));
+        }
+        default void source(SourceSet source) {
+            getSources().add(source);
+        }
+    }
 }

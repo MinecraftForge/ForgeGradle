@@ -7,6 +7,7 @@ package net.minecraftforge.gradle.internal;
 import net.minecraftforge.gradle.SlimeLauncherOptionsNested;
 import net.minecraftforge.util.data.json.RunConfig;
 import org.gradle.api.Action;
+import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.ProjectLayout;
@@ -17,6 +18,8 @@ import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
+import org.gradle.api.tasks.SourceSet;
+
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,6 +46,8 @@ public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsIn
     private final Property<Boolean> client = this.getObjects().property(Boolean.class).convention(false);
 
     private final MapProperty<String, SlimeLauncherOptionsNested> nested = this.getObjects().mapProperty(String.class, SlimeLauncherOptionsNested.class);
+
+    private final NamedDomainObjectContainer<ModConfigImpl> mods = this.getObjects().domainObjectContainer(ModConfigImpl.class);
 
     protected abstract @Inject ProjectLayout getProjectLayout();
 
@@ -123,6 +128,11 @@ public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsIn
     @Override
     public MapProperty<String, SlimeLauncherOptionsNested> getNested() {
         return this.nested;
+    }
+
+    @Override
+    public NamedDomainObjectContainer<ModConfigImpl> getMods() {
+        return this.mods;
     }
 
     /* NESTED */
@@ -249,7 +259,7 @@ public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsIn
 
     @Override
     public void environment(String name, Object value) {
-        this.getSystemProperties().put(name, this.getProviders().provider(() -> Util.unpack(value).toString()));
+        this.getEnvironment().put(name, this.getProviders().provider(() -> Util.unpack(value).toString()));
     }
 
     @Override
@@ -409,6 +419,17 @@ public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsIn
             LOGGER.log(level, "  WorkingDir: {}", target.getWorkingDir().get());
             this.getWorkingDir().set(target.getWorkingDir());
         }
+
+        for (var mod : target.getMods()) {
+            LOGGER.log(level, "  Mod: {}", mod.getName());
+            var thisMod = this.getMods().maybeCreate(mod.getName());
+            for (var source : mod.getSources()) {
+                if (thisMod.getSources().stream().noneMatch(targetMod -> targetMod.getName().equals(mod.getName()))) {
+                    LOGGER.log(level, "    Source: {}", source.getName());
+                    thisMod.source(source);
+                }
+            }
+        }
     }
 
     /* DEBUGGING */
@@ -428,5 +449,31 @@ public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsIn
             ", workingDir=" + workingDir.getOrNull() +
             ", client=" + client.getOrNull() +
             '}';
+    }
+
+    public static abstract class ModConfigImpl implements ModConfig {
+        private final String name;
+        private final List<SourceSet>  sourceSets = new ArrayList<>();
+
+        @Inject
+        public ModConfigImpl(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String getName() {
+            return this.name;
+        }
+
+        @Override
+        public List<SourceSet> getSources() {
+            return this.sourceSets;
+        }
+
+        @Override
+        public void setSources(List<SourceSet> sources) {
+            this.sourceSets.clear();
+            this.sourceSets.addAll(sources);
+        }
     }
 }

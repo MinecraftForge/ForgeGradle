@@ -35,8 +35,10 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @DisableCachingByDefault(because = "Running the game cannot be cached")
 abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, HasPublicType, SlimeLauncherRunTask {
@@ -122,7 +124,7 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
             configs = JsonData.fromJson(jsons, new TypeToken<>() { });
 
         var options = ((SlimeLauncherOptionsInternal) this.getOptions().get()).inherit(configs, this.getSourceSetName().get());
-        var tokens = SlimeLauncherRunHelper.buildTokens(this);
+        var tokens = SlimeLauncherRunHelper.buildTokens(this, options, SlimeLauncherRunHelper::getOutputs);
         var unknown = new HashSet<String>();
 
         mainClass = options.getMainClass().filter(Util::isPresent);

@@ -10,7 +10,6 @@ import net.minecraftforge.util.data.json.JsonData;
 import net.minecraftforge.util.data.json.RunConfig;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
@@ -64,6 +63,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 // This is mostly taken from ForgeGradle 6 but slimmed down to what we need
 @DisableCachingByDefault(because = "ForgeGradle would require more information to cache this task")
@@ -98,39 +98,28 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
 
             var runtimeClasspath = task.getObjects().fileCollection().from(
                 task.getProviders().provider(() -> {
-                    var runtime = sourceSet.getRuntimeClasspath();
                     var eclipseModel = project.getExtensions().findByType(EclipseModel.class);
-                    if (eclipseModel == null)
-                        return runtime.getFiles();
+                    var eclipseOutputs = getOutputs(project);
+                    if (eclipseModel == null || eclipseOutputs.isEmpty())
+                        return sourceSet.getRuntimeClasspath().getFiles();
 
                     // We need to build a map of sourcesets to real output paths like Eclipse's plugin does.
-                    // There is no known exposure of this stuff, so have to do it ourselves.
-                    // https://github.com/gradle/gradle/blob/master/platforms/ide/ide/src/main/java/org/gradle/plugins/ide/eclipse/model/internal/SourceFoldersCreator.java#L220
-                    var classpath = eclipseModel.getClasspath();
-                    var sortedSourceSets = sortSourceSets(classpath.getSourceSets());
                     var replacements = new HashMap<File, File>();
-                    var base = classpath.getBaseSourceOutputDir().getAsFile().get();
-                    var claimed = new HashSet<File>();
-                    claimed.add(classpath.getDefaultOutputDir());
 
                     // Gather the output name eclipse will use, and all outputs gradle expects
-                    for (var sources : sortedSourceSets) {
-                        var name =  sources.getName();
-                        var path = new File(base, name);
-                        while (claimed.contains(path)) {
-                            name += '_';
-                            path = new File(base, name);
+                    for (var source : eclipseModel.getClasspath().getSourceSets()) {
+                        var path = eclipseOutputs.get(source);
+                        if (path != null) {
+                            if (source.getOutput().getResourcesDir() != null)
+                                replacements.put(source.getOutput().getResourcesDir(), path);
+                            for (var dir : source.getOutput().getClassesDirs().getFiles())
+                                replacements.put(dir, path);
                         }
-                        claimed.add(path);
-                        if (sources.getOutput().getResourcesDir() != null)
-                            replacements.put(sources.getOutput().getResourcesDir(), path);
-                        for (var dir : sources.getOutput().getClassesDirs().getFiles())
-                            replacements.put(dir, path);
                     }
 
                     // Now replace the existing classpath with the ones eclipse will use
-                    var ret = new LinkedHashSet<File>(runtime.getFiles().size());
-                    for (var file : runtime.getFiles())
+                    var ret = new LinkedHashSet<File>();
+                    for (var file : sourceSet.getRuntimeClasspath().getFiles())
                         ret.add(replacements.getOrDefault(file, file));
                     return ret;
                 }));
@@ -218,7 +207,8 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
             configs = JsonData.fromJson(jsons, new TypeToken<>() { });
 
         var options = ((SlimeLauncherOptionsInternal) this.getOptions().get()).inherit(configs, this.getSourceSetName().get());
-        var tokens = SlimeLauncherRunHelper.buildTokens(this);
+        var eclipseOutputs = new Lazy<>(() -> getOutputs(getProject()));
+        var tokens = SlimeLauncherRunHelper.buildTokens(this, options, source -> getOutputs(eclipseOutputs.get(), source));
         var unknown = new HashSet<String>();
 
         var args = new ArrayList<>(List.of(
@@ -455,5 +445,41 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
         var eclipse = project.getExtensions().findByType(EclipseModel.class);
         var name = eclipse == null ? null : eclipse.getProject().getName();
         return name != null ? name : project.getName();
+    }
+
+    private static Map<SourceSet, File> getOutputs(Project project) {
+        var eclipseModel = project.getExtensions().findByType(EclipseModel.class);
+        if (eclipseModel == null)
+            return Map.of();
+
+        // We need to build a map of sourcesets to real output paths like Eclipse's plugin does.
+        // There is no known exposure of this stuff, so have to do it ourselves.
+        // https://github.com/gradle/gradle/blob/master/platforms/ide/ide/src/main/java/org/gradle/plugins/ide/eclipse/model/internal/SourceFoldersCreator.java#L220
+        var classpath = eclipseModel.getClasspath();
+        var sortedSourceSets = sortSourceSets(classpath.getSourceSets());
+        var base = classpath.getBaseSourceOutputDir().getAsFile().get();
+        var claimed = new HashSet<File>();
+        claimed.add(classpath.getDefaultOutputDir());
+
+        // Gather the output name eclipse will use, and all outputs gradle expects
+        var ret = new HashMap<SourceSet, File>();
+        for (var sources : sortedSourceSets) {
+            var name =  sources.getName();
+            var path = new File(base, name);
+            while (claimed.contains(path)) {
+                name += '_';
+                path = new File(base, name);
+            }
+            claimed.add(path);
+            ret.put(sources, path);
+        }
+        return ret;
+    }
+
+    private static Set<String> getOutputs(Map<SourceSet, File> known, SourceSet sourceSet) {
+        var eclipse = known.get(sourceSet);
+        if (eclipse != null)
+            return Set.of(eclipse.getAbsolutePath());
+        return SlimeLauncherRunHelper.getOutputs(sourceSet);
     }
 }
