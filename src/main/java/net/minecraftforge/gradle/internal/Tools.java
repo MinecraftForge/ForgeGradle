@@ -11,5 +11,5 @@ final class Tools {
 
     static final Tool SLIMELAUNCHER = Tool.ofForge("slimelauncher", "net.minecraftforge:slime-launcher:0.1.8", 8, "net.minecraftforge.launcher.Main");
 
-    static final Tool MAVENIZER = Tool.ofForge("mavenizer", "net.minecraftforge:minecraft-mavenizer:0.4.25", 25, "net.minecraftforge.mcmaven.cli.Main");
+    static final Tool MAVENIZER = Tool.ofForge("mavenizer", "net.minecraftforge:minecraft-mavenizer:0.4.35", 25, "net.minecraftforge.mcmaven.cli.Main");
 }
