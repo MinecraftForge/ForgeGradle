@@ -453,7 +453,7 @@ public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsIn
 
     public static abstract class ModConfigImpl implements ModConfig {
         private final String name;
-        private final List<SourceSet>  sourceSets = new ArrayList<>();
+        private final List<SourceSet> sourceSets = new ArrayList<>();
 
         @Inject
         public ModConfigImpl(String name) {

@@ -10,6 +10,7 @@ import groovy.transform.stc.ClosureParams;
 import groovy.transform.stc.FromString;
 import net.minecraftforge.gradleutils.shared.Closures;
 import org.gradle.api.Action;
+import org.gradle.api.Named;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.ListProperty;
@@ -230,8 +231,7 @@ public interface SlimeLauncherOptionsNested {
         this.mods(Closures.action(this, action));
     }
 
-    interface ModConfig {
-        String getName();
+    interface ModConfig extends Named {
         List<SourceSet> getSources();
         void setSources(List<SourceSet> sources);
         default void sources(List<SourceSet> sources) {
