@@ -216,7 +216,6 @@ public interface SlimeLauncherOptionsNested {
     void environment(Provider<? extends Map<String, ?>> properties);
 
 
-    @Internal
     NamedDomainObjectContainer<? extends ModConfig> getMods();
 
     default void mods(

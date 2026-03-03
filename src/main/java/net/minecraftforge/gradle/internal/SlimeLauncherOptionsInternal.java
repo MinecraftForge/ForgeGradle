@@ -7,6 +7,7 @@ package net.minecraftforge.gradle.internal;
 import net.minecraftforge.gradle.SlimeLauncherOptions;
 import net.minecraftforge.gradle.SlimeLauncherOptionsNested;
 import net.minecraftforge.util.data.json.RunConfig;
+import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.provider.MapProperty;
@@ -29,6 +30,9 @@ public interface SlimeLauncherOptionsInternal extends SlimeLauncherOptions, HasP
     }
 
     @Input @Optional Property<Boolean> getClient();
+
+    @Override
+    @Internal NamedDomainObjectContainer<? extends ModConfig> getMods();
 
     @Nested MapProperty<String, SlimeLauncherOptionsNested> getNested();
 

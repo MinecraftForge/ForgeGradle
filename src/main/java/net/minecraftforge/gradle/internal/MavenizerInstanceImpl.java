@@ -119,6 +119,6 @@ class MavenizerInstanceImpl implements MavenizerInstance {
     // Internal, not sure if I want to return
     public Provider<List<String>> getPatcherModules() {
         return get("patcher.modules", "", "0.4.33")
-            .map(value -> List.of(value.split(",")));
+            .map(value -> value.isBlank() ? List.of() : List.of(value.split(",")));
     }
 }
