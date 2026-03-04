@@ -20,10 +20,21 @@ public interface SlimeLauncherOptions extends SlimeLauncherOptionsNested, Named 
     @Override
     @Input String getName();
 
+    /// Configures source set-specific attributes for this run.
+    ///
+    /// Use this, for example, if you need to configure test-specific arguments, properties, or environment variables.
+    ///
+    /// @param sourceSet The source set to configure this run for
+    /// @param action    The configuring action
     default void with(SourceSet sourceSet, Action<? super SlimeLauncherOptionsNested> action) {
         this.with(sourceSet.getName(), action);
     }
 
+    /// Configures source set-specific attributes for this run.
+    ///
+    /// @param sourceSetName The source set's name to configure this run for
+    /// @param action        The configuring action
+    /// @see #with(SourceSet, Action)
     void with(String sourceSetName, Action<? super SlimeLauncherOptionsNested> action);
 
     /// The classpath to use.

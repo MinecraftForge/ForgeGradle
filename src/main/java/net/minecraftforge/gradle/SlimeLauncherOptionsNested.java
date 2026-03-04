@@ -35,7 +35,7 @@ public interface SlimeLauncherOptionsNested {
     /// @return A property for the main class
     @Input @Optional Property<String> getMainClass();
 
-    /// Wither or not to inherit arguments from the UserDev provided run configs.
+    /// Whether or not to inherit arguments from the UserDev provided run configs.
     ///
     /// If you set this to false you must specify all arguments to start the process manually.
     ///
@@ -50,7 +50,7 @@ public interface SlimeLauncherOptionsNested {
     /// @return A property for the arguments to pass to the main class
     @Input @Optional ListProperty<String> getArgs();
 
-    /// Wither or not to inherit JVM arguments from the UserDev provided run configs.
+    /// Whether or not to inherit JVM arguments from the UserDev provided run configs.
     ///
     /// If you set this to false you must specify all JVM arguments to start the process manually.
     ///
@@ -215,8 +215,18 @@ public interface SlimeLauncherOptionsNested {
     /// @see #getEnvironment()
     void environment(Provider<? extends Map<String, ?>> properties);
 
+    /// The legacy mod configurations to use.
+    ///
+    /// This is used to define the mod's source paths for legacy versions when they cannot be interpreted automatically.
+    /// Use this if you use non-standard source paths for your mod or source set.
+    ///
+    /// @return The legacy mod configurations.
     @Nested NamedDomainObjectContainer<? extends ModConfig> getMods();
 
+    /// Configures the legacy mod configurations to use.
+    ///
+    /// @param closure The configuring closure
+    /// @see #getMods()
     default void mods(
         @DelegatesTo(NamedDomainObjectContainer.class)
         @ClosureParams(value = FromString.class, options = "org.gradle.api.NamedDomainObjectContainer<net.minecraftforge.gradle.SlimeLauncherOptionsNested$ModConfig>")
@@ -225,14 +235,36 @@ public interface SlimeLauncherOptionsNested {
         this.getMods().configure(closure);
     }
 
+    /// Configures the legacy mod configurations to use.
+    ///
+    /// @param action The configuring action
+    /// @see #getMods()
     default void mods(Action<? super NamedDomainObjectContainer<? extends ModConfig>> action) {
         this.mods(Closures.action(this, action));
     }
 
+    /// Represents a legacy mod configuration for older versions of Forge.
+    ///
+    /// @see #getMods()
     interface ModConfig extends Named {
+        /// Sets the source sets to use for this configuration.
+        ///
+        /// @param sources The source sets to use
         void setSources(List<SourceSet> sources);
+
+        /// Adds to the source sets to use for this configuration.
+        ///
+        /// @param sources The source sets to use
         void sources(List<SourceSet> sources);
+
+        /// Adds to the source sets to use for this configuration.
+        ///
+        /// @param sources The source sets to use
         void sources(SourceSet... sources);
+
+        /// Adds to the source sets to use for this configuration.
+        ///
+        /// @param source The source set to use
         void source(SourceSet source);
     }
 }
