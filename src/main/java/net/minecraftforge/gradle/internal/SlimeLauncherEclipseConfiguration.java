@@ -111,10 +111,10 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
                     for (var source : eclipseModel.getClasspath().getSourceSets()) {
                         File path = null;
                         for (var eclipseOutput : eclipseOutputs) {
-                            if (eclipseOutput.getSources().getName().equals(source.getName()))
+                            if (eclipseOutput.getSources().getName().equals(source.getName())) {
                                 path = new File(eclipseOutput.getFile());
-
-                            break;
+                                break;
+                            }
                         }
 
                         if (path != null) {
@@ -492,10 +492,10 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
     private static Set<String> getOutputs(Iterable<EclipseOutput> known, SourceSetNested sourceSet) {
         File eclipse = null;
         for (var entry : known) {
-            if (entry.getSources().getName().equals(sourceSet.getName()))
+            if (entry.getSources().getName().equals(sourceSet.getName())) {
                 eclipse = new File(entry.getFile());
-
-            break;
+                break;
+            }
         }
 
         if (eclipse != null)
