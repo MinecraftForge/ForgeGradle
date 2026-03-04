@@ -4,18 +4,16 @@
  */
 package net.minecraftforge.gradle.internal;
 
-import com.google.gson.JsonIOException;
 import com.google.gson.reflect.TypeToken;
+import net.minecraftforge.gradle.MinecraftExtensionForProject;
 import net.minecraftforge.gradle.SlimeLauncherOptions;
 import net.minecraftforge.util.data.json.JsonData;
 import net.minecraftforge.util.data.json.RunConfig;
 import org.gradle.api.Project;
-import org.gradle.api.UnknownDomainObjectException;
-import org.gradle.api.artifacts.ModuleIdentifier;
-import org.gradle.api.attributes.Usage;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
@@ -30,116 +28,39 @@ import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
-import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.work.DisableCachingByDefault;
-import org.jspecify.annotations.Nullable;
 
 import javax.inject.Inject;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
 @DisableCachingByDefault(because = "Running the game cannot be cached")
-abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, HasPublicType {
-    static TaskProvider<SlimeLauncherExec> register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, ModuleIdentifier module, String version, String asPath, String asString, boolean single) {
-        TaskProvider<SlimeLauncherMetadata> metadata;
-        {
-            TaskProvider<SlimeLauncherMetadata> t;
-            var taskName = "slimeLauncherMetadata" + (single ? "" : "for" + Util.dependencyToCamelCase(module));
-            try {
-                t = project.getTasks().named(taskName, SlimeLauncherMetadata.class);
-            } catch (UnknownDomainObjectException e) {
-                var metadataConfiguration = project.getConfigurations().detachedConfiguration(
-                    project.getDependencyFactory().create(module.getGroup(), module.getName(), version, "metadata", "zip")
-                );
-                metadataConfiguration.setTransitive(false);
-                metadataConfiguration.attributes(a -> a.attribute(Usage.USAGE_ATTRIBUTE, a.named(Usage.class, "metadata")));
+abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, HasPublicType, SlimeLauncherRunTask {
+    static TaskProvider<SlimeLauncherExec> register(Project project, SourceSet sourceSet, SlimeLauncherOptionsImpl options, MinecraftDependencyInternal mcdep) {
+        var minecraft = ((MinecraftExtensionInternal.ForProject)project.getExtensions().getByType(MinecraftExtensionForProject.class));
+        var metadata = mcdep.getMetadataTask();
+        var single = minecraft.getDependencies().size() == 1;
 
-                t = project.getTasks().register(taskName, SlimeLauncherMetadata.class, task -> {
-                    task.setDescription("Extracts the Slime Launcher metadata%s.".formatted(single ? "" : " for '%s'".formatted(asString)));
-
-                    task.getMetadata().setFrom(metadataConfiguration);
-                });
-            }
-
-            metadata = t;
-        }
-
-        var taskNameSuffix = (single ? "" : "for" + Util.dependencyToCamelCase(module));
+        var taskNameSuffix = (single ? "" : "For" + Util.dependencyToCamelCase(mcdep.getModule()));
         var runTaskName = sourceSet.getTaskName("run", options.getName()) + taskNameSuffix;
-        var generateEclipseRunTaskName = sourceSet.getTaskName("genEclipseRun", options.getName()) + taskNameSuffix;
-
-        var genEclipseRun = project.getTasks().register(generateEclipseRunTaskName, SlimeLauncherEclipseConfiguration.class, task -> {
-            task.getRunName().set(options.getName());
-            task.setDescription("Generates the '%s' Slime Launcher run configuration for Eclipse.".formatted(options.getName()));
-            task.getOutputFile().set(task.getProjectLayout().getProjectDirectory().file(runTaskName + ".launch"));
-
-            var runtimeClasspath = task.getObjects().fileCollection().from(
-                task.getProviders().provider(() -> {
-                    var runtime = sourceSet.getRuntimeClasspath();
-                    var eclipseModel = project.getExtensions().findByType(EclipseModel.class);
-                    if (eclipseModel == null)
-                        return runtime.getFiles();
-
-                    // We need to build a map of sourcesets to real output paths like Eclipse's plugin does.
-                    // There is no known exposure of this stuff, so have to do it ourselves.
-                    // https://github.com/gradle/gradle/blob/master/platforms/ide/ide/src/main/java/org/gradle/plugins/ide/eclipse/model/internal/SourceFoldersCreator.java#L220
-                    var classpath = eclipseModel.getClasspath();
-                    var sortedSourceSets = sortSourceSets(classpath.getSourceSets());
-                    var replacements = new HashMap<File, File>();
-                    var base = classpath.getBaseSourceOutputDir().getAsFile().get();
-                    var claimed = new HashSet<File>();
-                    claimed.add(classpath.getDefaultOutputDir());
-
-                    // Gather the output name eclipse will use, and all outputs gradle expects
-                    for (var sources : sortedSourceSets) {
-                        var name =  sources.getName();
-                        var path = new File(base, name);
-                        while (claimed.contains(path)) {
-                            name += '_';
-                            path = new File(base, name);
-                        }
-                        claimed.add(path);
-                        if (sources.getOutput().getResourcesDir() != null)
-                            replacements.put(sources.getOutput().getResourcesDir(), path);
-                        for (var dir : sources.getOutput().getClassesDirs().getFiles())
-                            replacements.put(dir, path);
-                    }
-
-                    // Now replace the existing classpath with the ones eclipse will use
-                    var ret = new LinkedHashSet<File>(runtime.getFiles().size());
-                    for (var file : runtime.getFiles())
-                        ret.add(replacements.getOrDefault(file, file));
-                    return ret;
-                }));
-            task.getClasspath().from(runtimeClasspath);
-            task.getSourceSetName().set(sourceSet.getName());
-
-            task.getCacheDir().set(task.getObjects().directoryProperty().value(task.globalCaches().dir("slime-launcher/cache/%s".formatted(asPath)).map(task.problems.ensureFileLocation())));
-            task.getMetadata().setFrom(metadata.map(SlimeLauncherMetadata::getMetadata));
-            task.getRunsJson().set(metadata.flatMap(SlimeLauncherMetadata::getRunsJson));
-
-            task.getOptions().set(options);
-        });
-
-        project.getTasks().named("genEclipseRuns", task -> task.dependsOn(genEclipseRun));
+        var genEclipse = SlimeLauncherEclipseConfiguration.register(project, sourceSet, options, mcdep, runTaskName);
 
         return project.getTasks().register(runTaskName, SlimeLauncherExec.class, task -> {
             task.getRunName().set(options.getName());
             task.getSourceSetName().set(sourceSet.getName());
             task.setDescription("Runs the '%s' Slime Launcher run configuration.".formatted(options.getName()));
 
-            task.classpath(task.getObjectFactory().fileCollection().from(task.getProviderFactory().provider(sourceSet::getRuntimeClasspath)));
+            var runtimeClasspath = task.getObjectFactory().fileCollection().from(task.getProviderFactory().provider(sourceSet::getRuntimeClasspath));
+            task.classpath(runtimeClasspath);
+            SlimeLauncherRunHelper.configure(task, mcdep, runtimeClasspath);
 
-            var caches = task.getObjectFactory().directoryProperty().value(task.globalCaches().dir("slime-launcher/cache/%s".formatted(asPath)));
-            task.getCacheDir().set(caches.map(task.problems.ensureFileLocation()));
+            task.getCacheDir().set(task.getObjectFactory().directoryProperty().value(task.globalCaches().dir("slime-launcher/cache/%s".formatted(mcdep.getPath())).map(task.problems.ensureFileLocation())));
+            task.getLocalCacheDir().set(task.getObjectFactory().directoryProperty().value(task.localCaches().dir("slime-launcher/cache/%s".formatted(mcdep.getPath())).map(task.problems.ensureFileLocation())));
             task.getMetadata().setFrom(metadata.map(SlimeLauncherMetadata::getMetadata));
             task.getRunsJson().set(metadata.flatMap(SlimeLauncherMetadata::getRunsJson));
 
@@ -149,13 +70,23 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
 
     protected abstract @Input Property<String> getRunName();
 
-    protected abstract @Input Property<String> getSourceSetName();
+    public abstract @Input @Override Property<String> getSourceSetName();
 
     protected abstract @Nested Property<SlimeLauncherOptions> getOptions();
 
-    protected abstract @Internal DirectoryProperty getCacheDir();
+    protected abstract @Nested ListProperty<SourceSetNested> getDefaultSourceSets();
 
-    protected abstract @InputFiles ConfigurableFileCollection getMetadata();
+    protected abstract @Internal DirectoryProperty getCacheDir();
+    public abstract @Internal @Override DirectoryProperty getLocalCacheDir();
+    public abstract @InputFiles @Override ConfigurableFileCollection getMetadata();
+    public abstract @InputFiles @Override ConfigurableFileCollection getMinecraftClasspath();
+    public abstract @InputFiles @Override ConfigurableFileCollection getRuntimeClasspath();
+    public abstract @InputFiles @Override ConfigurableFileCollection getPatcherModules();
+    public abstract @Input @Override Property<String> getMinecraftVersion();
+    public abstract @Input @Override Property<String> getMCPVersion();
+    public abstract @Input @Override Property<String> getMappingChannel();
+    public abstract @Input @Override Property<String> getMappingVersion();
+    //protected abstract @InputFile @Override RegularFileProperty getSrgToMcp();
 
     protected abstract @InputFile @Optional RegularFileProperty getRunsJson();
 
@@ -168,6 +99,8 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
     @Inject
     public SlimeLauncherExec() {
         this.setGroup("Slime Launcher");
+
+        this.getDefaultSourceSets().convention(getProviderFactory().provider(() -> SlimeLauncherRunHelper.getDefaultSourceSets(this)));
 
         var tool = this.getTool(Tools.SLIMELAUNCHER);
         this.setClasspath(tool.getClasspath());
@@ -186,51 +119,72 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
     @Override
     public void exec() {
         Provider<String> mainClass;
-        List<String> args;
 
         //region Launcher Metadata Inheritance
         Map<String, RunConfig> configs = Map.of();
         var jsons = this.getRunsJson().getAsFile().getOrNull();
-        if (jsons != null && jsons.exists()) {
-            try {
-                configs = JsonData.fromJson(
-                    this.getRunsJson().getAsFile().get(),
-                    new TypeToken<>() { }
-                );
-            } catch (JsonIOException e) {
-                // continue
-            }
-        }
+        if (jsons != null && jsons.exists())
+            configs = JsonData.fromJson(jsons, new TypeToken<>() { });
 
         var options = ((SlimeLauncherOptionsInternal) this.getOptions().get()).inherit(configs, this.getSourceSetName().get());
+        var tokens = SlimeLauncherRunHelper.buildTokens(this, options, this.getDefaultSourceSets().get(), SlimeLauncherRunHelper::getOutputs);
+        var unknown = new HashSet<String>();
 
         mainClass = options.getMainClass().filter(Util::isPresent);
-        args = new ArrayList<>(options.getArgs().getOrElse(List.of()));
-        this.jvmArgs(options.getJvmArgs().get());
+        if (!this.getMainClass().get().startsWith("net.minecraftforge.launcher")) {
+            this.getLogger().warn("WARNING: Main class is not Slime Launcher! Skipping additional configuration.");
+        } else {
+            var slimeArgs = List.of(
+                "--main", mainClass.get(),
+                "--cache", this.getCacheDir().get().getAsFile().getAbsolutePath(),
+                "--metadata", this.getMetadata().getSingleFile().getAbsolutePath(),
+                "--"
+            );
+            // Set need to add slime args first, so grab a copy and reset
+            var args = new ArrayList<>(slimeArgs);
+            args.addAll(this.getArgs());
+            this.setArgs(args);
+        }
+
+        var args = new ArrayList<String>();
+        for (var arg : options.getArgs().getOrElse(List.of()))
+            args.add(Util.replaceTokens(tokens, arg, unknown));
+        this.args(args);
+
+        var jvmArgs = new ArrayList<String>();
+        for (var arg : options.getJvmArgs().getOrElse(List.of()))
+            jvmArgs.add(Util.replaceTokens(tokens, arg, unknown));
+        this.jvmArgs(jvmArgs);
+
         if (!options.getClasspath().isEmpty())
             this.setClasspath(options.getClasspath());
         if (options.getMinHeapSize().filter(Util::isPresent).isPresent())
             this.setMinHeapSize(options.getMinHeapSize().get());
         if (options.getMaxHeapSize().filter(Util::isPresent).isPresent())
             this.setMinHeapSize(options.getMaxHeapSize().get());
-        this.systemProperties(options.getSystemProperties().get());
-        this.environment(options.getEnvironment().get());
+
+        var system = new HashMap<String, String>();
+        for (var entry : options.getSystemProperties().get().entrySet()) {
+            var value = Util.replaceTokens(tokens, entry.getValue(), unknown);
+            system.put(entry.getKey(), value);
+            this.systemProperty(entry.getKey(), value);
+        }
+
+        var env = new HashMap<String, String>();
+        for (var entry : options.getEnvironment().get().entrySet()) {
+            var value = Util.replaceTokens(tokens, entry.getValue(), unknown);
+            env.put(entry.getKey(), value);
+            this.environment(entry.getKey(), value);
+        }
+
         this.workingDir(options.getWorkingDir().get());
         //endregion
 
-        if (!this.getMainClass().get().startsWith("net.minecraftforge.launcher")) {
-            this.getLogger().warn("WARNING: Main class is not Slime Launcher! Skipping additional configuration.");
-        } else {
-            this.args("--main", mainClass.get(),
-                "--cache", this.getCacheDir().get().getAsFile().getAbsolutePath(),
-                "--metadata", this.getMetadata().getSingleFile().getAbsolutePath(),
-                "--");
-        }
-
-        this.args(args);
-
         if (!this.getClient().getOrElse(false))
             this.setStandardInput(System.in);
+
+        for (var token : unknown)
+            getLogger().lifecycle("Unknown Run Token: {}", token);
 
         try {
             Files.createDirectories(this.getWorkingDir().toPath());
@@ -243,29 +197,15 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
         } catch (Exception e) {
             this.getLogger().error("Something went wrong! Here is some debug info.");
             this.getLogger().error("Args: {}", this.getArgs());
+            this.getLogger().error("JVM Args: {}", this.getJvmArgs());
+            this.getLogger().error("Environment:");
+            for (var entry : env.entrySet())
+                this.getLogger().error("\t{}: {}", entry.getKey(), entry.getValue());
+            this.getLogger().error("System:");
+            for (var entry : system.entrySet())
+                this.getLogger().error("\t{}: {}", entry.getKey(), entry.getValue());
             this.getLogger().error("Options: {}", options);
             throw e;
-        }
-    }
-
-    private static List<SourceSet> sortSourceSets(@Nullable Iterable<SourceSet> sourceSets) {
-        if (sourceSets == null)
-            return new ArrayList<>(0);
-        var ret = new ArrayList<SourceSet>();
-        for (var item : sourceSets)
-            ret.add(item);
-        ret.sort(Comparator.comparing(SlimeLauncherExec::toComparable));
-        return ret;
-    }
-
-    private static Integer toComparable(SourceSet sourceSet) {
-        String name = sourceSet.getName();
-        if (SourceSet.MAIN_SOURCE_SET_NAME.equals(name)) {
-            return 0;
-        } else if (SourceSet.TEST_SOURCE_SET_NAME.equals(name)) {
-            return 1;
-        } else {
-            return 2;
         }
     }
 }

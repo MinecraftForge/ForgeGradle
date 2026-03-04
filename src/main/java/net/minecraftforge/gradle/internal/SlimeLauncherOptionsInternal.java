@@ -7,6 +7,7 @@ package net.minecraftforge.gradle.internal;
 import net.minecraftforge.gradle.SlimeLauncherOptions;
 import net.minecraftforge.gradle.SlimeLauncherOptionsNested;
 import net.minecraftforge.util.data.json.RunConfig;
+import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.provider.MapProperty;
@@ -18,9 +19,10 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 
+import java.util.List;
 import java.util.Map;
 
-public interface SlimeLauncherOptionsInternal extends SlimeLauncherOptions, HasPublicType {
+interface SlimeLauncherOptionsInternal extends SlimeLauncherOptions, HasPublicType {
     Logger LOGGER = Logging.getLogger(SlimeLauncherOptions.class);
 
     @Override
@@ -30,6 +32,9 @@ public interface SlimeLauncherOptionsInternal extends SlimeLauncherOptions, HasP
 
     @Input @Optional Property<Boolean> getClient();
 
+    @Override
+    NamedDomainObjectContainer<? extends ModConfigInternal> getMods();
+
     @Nested MapProperty<String, SlimeLauncherOptionsNested> getNested();
 
     default SlimeLauncherOptionsInternal inherit(Map<String, RunConfig> configs, String sourceSetName) {
@@ -37,4 +42,13 @@ public interface SlimeLauncherOptionsInternal extends SlimeLauncherOptions, HasP
     }
 
     SlimeLauncherOptionsInternal inherit(Map<String, RunConfig> configs, String sourceSetName, String name);
+
+    @SuppressWarnings("ClassEscapesDefinedScope") // nested interfaces are always public even if within inaccessible package-private types
+    interface ModConfigInternal extends ModConfig {
+        List<SourceSetNested> getSources();
+        void setSourcesInternal(List<SourceSetNested> sources);
+        void sourcesInternal(List<SourceSetNested> sources);
+        void sourcesInternal(SourceSetNested... sources);
+        void sourceInternal(SourceSetNested source);
+    }
 }

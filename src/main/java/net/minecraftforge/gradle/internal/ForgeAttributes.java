@@ -5,7 +5,6 @@
 package net.minecraftforge.gradle.internal;
 
 import net.minecraftforge.util.os.OS;
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.gradle.api.Action;
 import org.gradle.api.attributes.Attribute;
 import org.gradle.api.attributes.AttributeDisambiguationRule;

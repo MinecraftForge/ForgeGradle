@@ -37,7 +37,6 @@ import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.reflect.TypeOf;
 import org.gradle.api.tasks.TaskProvider;
@@ -46,6 +45,7 @@ import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -390,7 +390,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             if (value instanceof ExternalModuleDependencyBundle)
                 throw new IllegalArgumentException("Minecraft dependency cannot be a bundle");
 
-            var minecraftDependency = this.getObjects().newInstance(MinecraftDependencyImpl.class, this.getMavenizerOutput());
+            var minecraftDependency = this.getObjects().newInstance(MinecraftDependencyImpl.class, name);
             this.minecraftDependencies.add(minecraftDependency);
             var dep = minecraftDependency.init(value, closure);
             var outputJson = this.plugin.rootProjectDirectory().file(".gradle/mavenizer/dependencies/" + name + ".json").get().getAsFile();
@@ -462,6 +462,11 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             if (ret == null)
                 throw problems.mavenizerInstanceNotFound(new NoSuchElementException("Mavenizer instance not found: " + name), name);
             return ret;
+        }
+
+        @Override
+        public Collection<MavenizerInstanceImpl> getDependencies() {
+            return Collections.unmodifiableCollection(this.mavenizerRegistry.values());
         }
 
         private void checkRepos(List<? extends MavenArtifactRepository> repos) {

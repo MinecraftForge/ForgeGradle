@@ -11,7 +11,6 @@ import org.gradle.api.flow.FlowScope;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.plugins.ExtensionAware;
-import org.gradle.util.GradleVersion;
 import org.jspecify.annotations.Nullable;
 
 import javax.inject.Inject;
