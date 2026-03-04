@@ -70,7 +70,7 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
 
     protected abstract @Input Property<String> getRunName();
 
-    public abstract @Input Property<String> getSourceSetName();
+    public abstract @Input @Override Property<String> getSourceSetName();
 
     protected abstract @Nested Property<SlimeLauncherOptions> getOptions();
 
