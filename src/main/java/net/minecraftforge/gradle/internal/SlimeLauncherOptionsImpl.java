@@ -18,10 +18,13 @@ import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
+import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.SourceSet;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -420,13 +423,14 @@ public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsIn
             this.getWorkingDir().set(target.getWorkingDir());
         }
 
-        for (var mod : target.getMods()) {
+        for (var mod : ((SlimeLauncherOptionsInternal) target).getMods()) {
             LOGGER.log(level, "  Mod: {}", mod.getName());
             var thisMod = this.getMods().maybeCreate(mod.getName());
+            var thisModSources = thisMod.getSources();
             for (var source : mod.getSources()) {
-                if (thisMod.getSources().stream().noneMatch(targetMod -> targetMod.getName().equals(mod.getName()))) {
+                if (thisModSources.stream().noneMatch(targetMod -> targetMod.getName().equals(mod.getName()))) {
                     LOGGER.log(level, "    Source: {}", source.getName());
-                    thisMod.source(source);
+                    thisMod.sourceInternal(source);
                 }
             }
         }
@@ -451,9 +455,11 @@ public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsIn
             '}';
     }
 
-    public static abstract class ModConfigImpl implements ModConfig {
+    public static abstract class ModConfigImpl implements ModConfigInternal {
         private final String name;
-        private final List<SourceSet> sourceSets = new ArrayList<>();
+        private final ArrayList<SourceSetNested> sourceSets = new ArrayList<>();
+
+        protected abstract @Inject ObjectFactory getObjects();
 
         @Inject
         public ModConfigImpl(String name) {
@@ -461,19 +467,57 @@ public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsIn
         }
 
         @Override
-        public String getName() {
+        public @Internal String getName() {
             return this.name;
         }
 
         @Override
-        public List<SourceSet> getSources() {
+        public @Nested List<SourceSetNested> getSources() {
             return this.sourceSets;
+        }
+
+        @Override
+        public void setSourcesInternal(List<SourceSetNested> sources) {
+            this.sourceSets.clear();
+            this.sourcesInternal(sources);
+        }
+
+        @Override
+        public void sourcesInternal(List<SourceSetNested> sources) {
+            this.sourceSets.addAll(sources);
+        }
+
+        @Override
+        public void sourcesInternal(SourceSetNested... sources) {
+            this.sourceSets.addAll(Arrays.asList(sources));
+        }
+
+        @Override
+        public void sourceInternal(SourceSetNested source) {
+            this.sourceSets.add(source);
         }
 
         @Override
         public void setSources(List<SourceSet> sources) {
             this.sourceSets.clear();
-            this.sourceSets.addAll(sources);
+            this.sources(sources);
+        }
+
+        @Override
+        public void sources(List<SourceSet> sources) {
+            for (var source : sources)
+                this.source(source);
+        }
+
+        @Override
+        public void sources(SourceSet... sources) {
+            for (var source : sources)
+                this.source(source);
+        }
+
+        @Override
+        public void source(SourceSet source) {
+            this.sourceSets.add(getObjects().newInstance(SourceSetNested.class, source));
         }
     }
 }

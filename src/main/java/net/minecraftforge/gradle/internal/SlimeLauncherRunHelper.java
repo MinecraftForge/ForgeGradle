@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 
 class SlimeLauncherRunHelper {
     // Legacy replacement tokens. See https://github.com/MinecraftForge/ForgeGradle/issues/1048
-    static Map<String, Supplier<String>> buildTokens(SlimeLauncherRunTask task, SlimeLauncherOptionsInternal options, Function<SourceSet, Set<String>> sourceOutputs) {
+    static Map<String, Supplier<String>> buildTokens(SlimeLauncherRunTask task, SlimeLauncherOptionsInternal options, List<SourceSetNested> defaultSourceSets, Function<SourceSetNested, Set<String>> sourceOutputs) {
         var ret = new HashMap<String, Supplier<String>>();
         // Should be taken care of by SlimeLauncher
         ret.put("asset_index", () -> "{asset_index}");
@@ -42,7 +42,7 @@ class SlimeLauncherRunHelper {
         ret.put("runtime_classpath_file", getClasspathFile(task, "runtime_" + task.getSourceSetName().get(), runtime));
         ret.put("mc_version", task.getMinecraftVersion()::get);
         ret.put("mcp_version", task.getMCPVersion()::get);
-        ret.put("source_roots", getSourceRoots(task, options, sourceOutputs));
+        ret.put("source_roots", getSourceRoots(task, options, defaultSourceSets, sourceOutputs));
         // Despite the name this is set to createSrgToMcp.getOutput().get().getAsFile().getAbsolutePath() so.. Srg -> MCP .srg mapping file.
         //ret.put("mcp_to_srg", getSrgToMcp().getAsFile().map(File::getAbsolutePath)::get);
         return ret;
@@ -73,40 +73,39 @@ class SlimeLauncherRunHelper {
         });
     }
 
-    private static List<SourceSet> getDefaultSourceSets(SlimeLauncherRunTask task) {
+    static List<SourceSetNested> getDefaultSourceSets(SlimeLauncherRunTask task) {
         var java = task.getProject().getExtensions().findByType(JavaPluginExtension.class);
         if (java == null)
             return List.of();
 
-        var ret = new ArrayList<SourceSet>();
+        var ret = new ArrayList<SourceSetNested>();
         var main = java.getSourceSets().findByName(SourceSet.MAIN_SOURCE_SET_NAME);
         if (main != null)
-            ret.add(main);
+            ret.add(task.getProject().getObjects().newInstance(SourceSetNested.class, main));
 
         var taskName = task.getSourceSetName().getOrNull();
         if (taskName != null && !SourceSet.MAIN_SOURCE_SET_NAME.equals(taskName)) {
             var other = java.getSourceSets().findByName(taskName);
             if (other != null)
-                ret.add(other);
+                ret.add(task.getProject().getObjects().newInstance(SourceSetNested.class, other));
         }
 
         return ret;
     }
 
     // Gets a list of all output directories for
-    static Set<String> getOutputs(SourceSet sourceSet) {
+    static Set<String> getOutputs(SourceSetNested sourceSet) {
         var ret = new LinkedHashSet<String>();
         if (sourceSet.getOutput().getResourcesDir() != null)
             ret.add(sourceSet.getOutput().getResourcesDir().getAbsolutePath());
-        for (var file :  sourceSet.getOutput().getFiles())
+        for (var file :  sourceSet.getOutput().getAsFileCollection())
             ret.add(file.getAbsolutePath());
         return ret;
     }
 
-    static Supplier<String> getSourceRoots(SlimeLauncherRunTask task, SlimeLauncherOptionsInternal options, Function<SourceSet, Set<String>> sourceOutputs) {
+    static Supplier<String> getSourceRoots(SlimeLauncherRunTask task, SlimeLauncherOptionsInternal options, List<SourceSetNested> defaults, Function<SourceSetNested, Set<String>> sourceOutputs) {
         return new Lazy<>(() -> {
-            var mods = new TreeMap<String, List<SourceSet>>();
-            var defaults = getDefaultSourceSets(task);
+            var mods = new TreeMap<String, List<SourceSetNested>>();
 
             // If there are no mods defined, try and get the main sourceset
             if (options.getMods().isEmpty()) {

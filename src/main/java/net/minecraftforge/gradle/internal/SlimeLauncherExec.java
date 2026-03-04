@@ -13,6 +13,7 @@ import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
@@ -75,6 +76,8 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
 
     protected abstract @Nested Property<SlimeLauncherOptions> getOptions();
 
+    protected abstract @Nested ListProperty<SourceSetNested> getDefaultSourceSets();
+
     protected abstract @Internal DirectoryProperty getCacheDir();
     public abstract @Internal @Override DirectoryProperty getLocalCacheDir();
     public abstract @InputFiles @Override ConfigurableFileCollection getMetadata();
@@ -98,6 +101,8 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
     @Inject
     public SlimeLauncherExec() {
         this.setGroup("Slime Launcher");
+
+        this.getDefaultSourceSets().convention(getProviderFactory().provider(() -> SlimeLauncherRunHelper.getDefaultSourceSets(this)));
 
         var tool = this.getTool(Tools.SLIMELAUNCHER);
         this.setClasspath(tool.getClasspath());
@@ -124,7 +129,7 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
             configs = JsonData.fromJson(jsons, new TypeToken<>() { });
 
         var options = ((SlimeLauncherOptionsInternal) this.getOptions().get()).inherit(configs, this.getSourceSetName().get());
-        var tokens = SlimeLauncherRunHelper.buildTokens(this, options, SlimeLauncherRunHelper::getOutputs);
+        var tokens = SlimeLauncherRunHelper.buildTokens(this, options, this.getDefaultSourceSets().get(), SlimeLauncherRunHelper::getOutputs);
         var unknown = new HashSet<String>();
 
         mainClass = options.getMainClass().filter(Util::isPresent);

@@ -216,7 +216,7 @@ public interface SlimeLauncherOptionsNested {
     void environment(Provider<? extends Map<String, ?>> properties);
 
 
-    NamedDomainObjectContainer<? extends ModConfig> getMods();
+    @Nested NamedDomainObjectContainer<? extends ModConfig> getMods();
 
     default void mods(
         @DelegatesTo(NamedDomainObjectContainer.class)
@@ -231,16 +231,9 @@ public interface SlimeLauncherOptionsNested {
     }
 
     interface ModConfig extends Named {
-        List<SourceSet> getSources();
         void setSources(List<SourceSet> sources);
-        default void sources(List<SourceSet> sources) {
-            getSources().addAll(sources);
-        }
-        default void sources(SourceSet... sources) {
-            getSources().addAll(List.of(sources));
-        }
-        default void source(SourceSet source) {
-            getSources().add(source);
-        }
+        void sources(List<SourceSet> sources);
+        void sources(SourceSet... sources);
+        void source(SourceSet source);
     }
 }

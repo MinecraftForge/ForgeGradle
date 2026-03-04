@@ -21,6 +21,7 @@ import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.ProviderFactory;
+import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
@@ -108,7 +109,14 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
 
                     // Gather the output name eclipse will use, and all outputs gradle expects
                     for (var source : eclipseModel.getClasspath().getSourceSets()) {
-                        var path = eclipseOutputs.get(source);
+                        File path = null;
+                        for (var eclipseOutput : eclipseOutputs) {
+                            if (eclipseOutput.getSources().getName().equals(source.getName()))
+                                path = new File(eclipseOutput.getFile());
+
+                            break;
+                        }
+
                         if (path != null) {
                             if (source.getOutput().getResourcesDir() != null)
                                 replacements.put(source.getOutput().getResourcesDir(), path);
@@ -124,6 +132,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
                     return ret;
                 }));
             SlimeLauncherRunHelper.configure(task, mcdep, runtimeClasspath);
+            task.getEclipseOutputs().set(task.getProviders().provider(() -> getOutputs(project)));
             task.getSourceSetName().set(sourceSet.getName());
 
             task.getCacheDir().set(task.getObjects().directoryProperty().value(task.globalCaches().dir("slime-launcher/cache/%s".formatted(mcdep.getPath())).map(task.problems.ensureFileLocation())));
@@ -144,8 +153,10 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
     protected abstract @Input Property<String> getProjectName();
 
     public abstract @Input @Override Property<String> getSourceSetName();
+    protected abstract @Nested ListProperty<SourceSetNested> getDefaultSourceSets();
 
     protected abstract @Input @Optional Property<String> getEclipseProjectName();
+    protected abstract @Nested @Optional SetProperty<EclipseOutput> getEclipseOutputs();
 
     protected abstract @Input Property<String> getRunName();
 
@@ -187,6 +198,8 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
         this.getProjectName().convention(this.getProject().getName());
         this.getEclipseProjectName().convention(getProject().provider(() -> getProjectEclipseName(this.getProject())));
 
+        this.getDefaultSourceSets().convention(getProviders().provider(() -> SlimeLauncherRunHelper.getDefaultSourceSets(this)));
+
         var tool = this.getTool(Tools.SLIMELAUNCHER);
         this.getClasspath().from(tool.getClasspath());
         this.getMainClass().set(tool.getMainClass());
@@ -207,8 +220,8 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
             configs = JsonData.fromJson(jsons, new TypeToken<>() { });
 
         var options = ((SlimeLauncherOptionsInternal) this.getOptions().get()).inherit(configs, this.getSourceSetName().get());
-        var eclipseOutputs = new Lazy<>(() -> getOutputs(getProject()));
-        var tokens = SlimeLauncherRunHelper.buildTokens(this, options, source -> getOutputs(eclipseOutputs.get(), source));
+        var eclipseOutputs = new Lazy<>(() -> this.getEclipseOutputs().get());
+        var tokens = SlimeLauncherRunHelper.buildTokens(this, options, this.getDefaultSourceSets().get(), source -> getOutputs(eclipseOutputs.get(), source));
         var unknown = new HashSet<String>();
 
         var args = new ArrayList<>(List.of(
@@ -447,10 +460,10 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
         return name != null ? name : project.getName();
     }
 
-    private static Map<SourceSet, File> getOutputs(Project project) {
+    private static Set<EclipseOutput> getOutputs(Project project) {
         var eclipseModel = project.getExtensions().findByType(EclipseModel.class);
         if (eclipseModel == null)
-            return Map.of();
+            return Set.of();
 
         // We need to build a map of sourcesets to real output paths like Eclipse's plugin does.
         // There is no known exposure of this stuff, so have to do it ourselves.
@@ -462,7 +475,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
         claimed.add(classpath.getDefaultOutputDir());
 
         // Gather the output name eclipse will use, and all outputs gradle expects
-        var ret = new HashMap<SourceSet, File>();
+        var ret = new HashSet<EclipseOutput>();
         for (var sources : sortedSourceSets) {
             var name =  sources.getName();
             var path = new File(base, name);
@@ -471,15 +484,41 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
                 path = new File(base, name);
             }
             claimed.add(path);
-            ret.put(sources, path);
+            ret.add(project.getObjects().newInstance(EclipseOutput.class, project.getObjects().newInstance(SourceSetNested.class, sources), path));
         }
         return ret;
     }
 
-    private static Set<String> getOutputs(Map<SourceSet, File> known, SourceSet sourceSet) {
-        var eclipse = known.get(sourceSet);
+    private static Set<String> getOutputs(Iterable<EclipseOutput> known, SourceSetNested sourceSet) {
+        File eclipse = null;
+        for (var entry : known) {
+            if (entry.getSources().getName().equals(sourceSet.getName()))
+                eclipse = new File(entry.getFile());
+
+            break;
+        }
+
         if (eclipse != null)
             return Set.of(eclipse.getAbsolutePath());
         return SlimeLauncherRunHelper.getOutputs(sourceSet);
+    }
+
+    static abstract class EclipseOutput {
+        private final SourceSetNested sources;
+        private final File file;
+
+        @Inject
+        public EclipseOutput(SourceSetNested sources, File file) {
+            this.sources = sources;
+            this.file = file;
+        }
+
+        public @Nested SourceSetNested getSources() {
+            return sources;
+        }
+
+        public @Input String getFile() {
+            return file.getAbsolutePath();
+        }
     }
 }
