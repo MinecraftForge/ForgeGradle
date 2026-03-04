@@ -36,10 +36,8 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @DisableCachingByDefault(because = "Running the game cannot be cached")
 abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, HasPublicType, SlimeLauncherRunTask {

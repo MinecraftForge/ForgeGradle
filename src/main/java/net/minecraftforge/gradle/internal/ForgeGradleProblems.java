@@ -6,10 +6,8 @@ package net.minecraftforge.gradle.internal;
 
 import net.minecraftforge.gradle.MinecraftMappings;
 import net.minecraftforge.gradleutils.shared.EnhancedProblems;
-import org.gradle.api.Action;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
-import org.gradle.api.problems.ProblemSpec;
 import org.gradle.api.problems.Problems;
 import org.gradle.api.problems.Severity;
 import org.gradle.api.provider.ProviderFactory;
