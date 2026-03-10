@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 
 final class Util extends SharedUtil {
     static String checkMappingsParam(ForgeGradleProblems problems, @Nullable Object param, String name) {
-        if (param == null)
+        if (param == null || param.toString().isEmpty())
             throw problems.nullMappingsParam(name);
 
         return param.toString();

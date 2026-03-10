@@ -4,6 +4,8 @@
  */
 package net.minecraftforge.gradle;
 
+import org.jspecify.annotations.Nullable;
+
 import java.io.Serializable;
 
 /// The mappings used for the Minecraft dependency.
@@ -18,5 +20,5 @@ public interface MinecraftMappings extends Serializable {
     /// Gets the version for these mappings (i.e. `1.21.11`)
     ///
     /// @return The version
-    String getVersion();
+    @Nullable String getVersion();
 }
