@@ -543,7 +543,7 @@ public class Utils {
         return sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) ? "production" : sourceSet.getName();
     }
 
-    private static final MinecraftVersion OFFICIAL_RUNTIME_START = MinecraftVersion.from("1.21.5");
+    private static final MinecraftVersion OFFICIAL_RUNTIME_START = MinecraftVersion.from("1.20.5");
     public static boolean isOfficialRuntime(String version) {
         return MinecraftVersion.from(version).compareTo(OFFICIAL_RUNTIME_START) >= 0;
     }
