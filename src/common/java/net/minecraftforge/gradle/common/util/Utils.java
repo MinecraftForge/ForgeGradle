@@ -545,11 +545,21 @@ public class Utils {
 
     private static final MinecraftVersion OFFICIAL_RUNTIME_START = MinecraftVersion.from("1.20.5");
     public static boolean isOfficialRuntime(String version) {
-        return MinecraftVersion.from(version).compareTo(OFFICIAL_RUNTIME_START) >= 0;
+        try {
+            return MinecraftVersion.from(version).compareTo(OFFICIAL_RUNTIME_START) >= 0;
+        } catch (Exception e) {
+            System.out.println("Failed to parse MC Version: " + version + " Defaulting to non-official runtime");
+            return false;
+        }
     }
 
     private static final MinecraftVersion UNOBFED_START = MinecraftVersion.from("26.1-snapshot-1");
     public static boolean isObfuscated(String version) {
-        return MinecraftVersion.from(version).compareTo(UNOBFED_START) < 0;
+        try {
+            return MinecraftVersion.from(version).compareTo(UNOBFED_START) < 0;
+        } catch (Exception e) {
+            System.out.println("Failed to parse MC Version: " + version + " Defaulting to obfuscated");
+            return true;
+        }
     }
 }

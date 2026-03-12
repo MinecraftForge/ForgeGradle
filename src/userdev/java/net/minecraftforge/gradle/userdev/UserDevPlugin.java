@@ -281,7 +281,7 @@ public class UserDevPlugin implements Plugin<Project> {
             downloadMCMeta.configure(t -> t.getMCVersion().convention(mcVer));
 
             // Register reobfJar for the 'jar' task
-            if (extension.getReobf() && (!extension.reobfDefault || !Utils.isOfficialRuntime(mcpVer))) {
+            if (extension.getReobf() && (!extension.reobfDefault || !Utils.isOfficialRuntime(mcVer))) {
                 reobfExtension.create(JavaPlugin.JAR_TASK_NAME);
                 project.getTasks().withType(JarJar.class).all(jarJar -> {
                     logger.info("Creating reobfuscation task for JarJar task: {}", jarJar.getName());
