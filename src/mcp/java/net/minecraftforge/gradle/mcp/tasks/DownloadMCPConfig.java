@@ -24,6 +24,9 @@ public abstract class DownloadMCPConfig extends DefaultTask {
         File file = getConfigFile();
         File output = getOutput().get().getAsFile();
 
+        if (file == null)
+            throw new IllegalStateException("Failed to download MCPConfig: " + getConfig().get());
+
         if (output.exists()) {
             if (FileUtils.contentEquals(file, output)) {
                 // NO-OP: The contents of both files are the same, we're up to date

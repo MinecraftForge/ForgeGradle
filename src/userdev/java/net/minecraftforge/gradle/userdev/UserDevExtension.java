@@ -11,6 +11,7 @@ import org.gradle.api.Project;
 public abstract class UserDevExtension extends MinecraftExtension {
     public static final String EXTENSION_NAME = "minecraft";
 
+    boolean reobfDefault = true;
     private boolean reobf = true;
 
     public UserDevExtension(final Project project) {
@@ -18,7 +19,8 @@ public abstract class UserDevExtension extends MinecraftExtension {
     }
 
     public void setReobf(boolean value) {
-    	this.reobf = value;
+    	this.reobfDefault = false;
+        this.reobf = value;
     }
 
     public boolean getReobf() {

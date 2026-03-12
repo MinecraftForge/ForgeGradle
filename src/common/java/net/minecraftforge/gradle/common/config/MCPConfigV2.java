@@ -5,6 +5,7 @@
 
 package net.minecraftforge.gradle.common.config;
 
+import com.google.gson.JsonSyntaxException;
 import net.minecraftforge.gradle.common.util.Utils;
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.Nullable;
@@ -51,6 +52,8 @@ public class MCPConfigV2 extends MCPConfigV1 {
             }
 
             return config;
+        } catch (JsonSyntaxException e) {
+            throw new IllegalStateException("Invalid MCP Config: " + path.getAbsolutePath() + " Json Exception", e);
         }
     }
 

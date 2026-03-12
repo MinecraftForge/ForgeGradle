@@ -12,17 +12,20 @@ import net.minecraftforge.gradle.common.util.MavenArtifactDownloader;
 import net.minecraftforge.gradle.common.util.MinecraftRepo;
 import net.minecraftforge.gradle.common.util.Utils;
 import net.minecraftforge.srgutils.IMappingFile;
+import net.minecraftforge.srgutils.MinecraftVersion;
 import org.gradle.api.Project;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 class OfficialChannelProvider implements ChannelProvider {
@@ -40,6 +43,46 @@ class OfficialChannelProvider implements ChannelProvider {
             //mcpversion = version.substring(idx);
             version = version.substring(0, idx);
         }
+        if (!Utils.isObfuscated(version)) {
+            // We are in uobfuscated territory, so return an empty zip
+            return emptyFile(mcpRepo, mcpversion);
+        } else {
+            return getCsvFile(mcpRepo, project, version, mcpversion);
+        }
+    }
+
+    private File emptyFile(MCPRepo mcpRepo, String mcpversion) throws IOException {
+        File mcp = mcpRepo.getMCP(mcpversion);
+        if (mcp == null)
+            return null;
+
+        File mappings = mcpRepo.cacheMC("mapping", mcpversion, "mapping", "zip");
+        HashStore cache = mcpRepo.commonHash(mcp)
+                .load(mcpRepo.cacheMC("mapping", mcpversion, "mapping", "zip.input"));
+
+        if (!cache.isSame() || !mappings.exists()) {
+            if (!mappings.getParentFile().exists())
+                mappings.getParentFile().mkdirs();
+
+            byte[] header = String.join(",", "searge", "name", "side", "desc").getBytes(StandardCharsets.UTF_8);
+
+            try (FileOutputStream fos = new FileOutputStream(mappings);
+                 ZipOutputStream out = new ZipOutputStream(fos)) {
+                out.putNextEntry(Utils.getStableEntry("fields.csv"));
+                out.write(header);
+                out.closeEntry();
+                out.putNextEntry(Utils.getStableEntry("methods.csv"));
+                out.write(header);
+                out.closeEntry();
+            }
+
+            cache.save();
+            Utils.updateHash(mappings, HashFunction.SHA1);
+        }
+        return mappings;
+    }
+
+    private File getCsvFile(MCPRepo mcpRepo, Project project, String version, String mcpversion) throws IOException {
         File client = MavenArtifactDownloader.generate(project, "net.minecraft:client:" + version + ":mappings@txt", true);
         File server = MavenArtifactDownloader.generate(project, "net.minecraft:server:" + version + ":mappings@txt", true);
         if (client == null || server == null)

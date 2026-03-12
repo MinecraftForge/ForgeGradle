@@ -53,7 +53,7 @@ dependencyResolutionManagement.versionCatalogs.register('libs') {
     library 'unsafe', 'net.minecraftforge:unsafe:0.2.0'
     library 'maven-artifact', 'org.apache.maven:maven-artifact:3.9.1'
     library 'httpclient', 'org.apache.httpcomponents:httpclient:4.5.14'
-    library 'srgutils', 'net.minecraftforge:srgutils:0.5.10'
+    library 'srgutils', 'net.minecraftforge:srgutils:0.6.2'
     library 'diffpatch', 'net.minecraftforge:DiffPatch:2.0.12'
 
     library 'jarjar-metadata', 'net.minecraftforge:JarJarMetadata:0.3.19'

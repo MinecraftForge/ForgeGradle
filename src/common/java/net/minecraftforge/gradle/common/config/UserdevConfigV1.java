@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class UserdevConfigV1 extends Config {
     public static UserdevConfigV1 get(InputStream stream) {
@@ -94,7 +95,7 @@ public class UserdevConfigV1 extends Config {
     }
     public void addRun(String name, RunConfig value) {
         if (this.runs == null)
-            this.runs = new HashMap<>();
+            this.runs = new TreeMap<>();
         this.runs.put(name, value);
     }
 

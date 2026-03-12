@@ -249,7 +249,8 @@ public class MinecraftUserRepo extends BaseRepo {
         tokens.put("mc_version", mcp.getMCVersion());
         tokens.put("mcp_version", mcp.getArtifact().getVersion());
         tokens.put("mcp_mappings", MAPPING);
-        tokens.put("mcp_to_srg", createSrgToMcp.getOutput().get().getAsFile().getAbsolutePath());
+        if (Utils.isObfuscated(mcp.getMCVersion()))
+            tokens.put("mcp_to_srg", createSrgToMcp.getOutput().get().getAsFile().getAbsolutePath());
         if (parent != null && !parent.getModules().isEmpty()) {
             Configuration modulesCfg = project.getConfigurations().create("modules_userdev_resolver");
             modulesCfg.setCanBeResolved(true);
