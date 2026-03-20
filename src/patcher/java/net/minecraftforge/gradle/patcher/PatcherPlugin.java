@@ -240,9 +240,6 @@ public class PatcherPlugin implements Plugin<Project> {
          * patches in /patches/
          */
         sourcesJar.configure(task -> {
-            task.setOnlyIf(t -> applyRangeConfig.flatMap(ApplyRangeMap::getOutput).map(rf -> rf.getAsFile().exists()).getOrElse(false));
-            task.dependsOn(applyRangeConfig);
-            task.from(project.zipTree(applyRangeConfig.flatMap(ApplyRangeMap::getOutput)));
             task.getArchiveClassifier().set("sources");
         });
 
@@ -310,6 +307,21 @@ public class PatcherPlugin implements Plugin<Project> {
             //}); //TODO: Asset downloading, needs asset index from json.
             //javaConv.getSourceSets().stream().forEach(s -> extractRangeConfig.get().addSources(s.getJava().getSrcDirs()));
 
+            /*
+             * All sources in SRG names.
+             * patches in /patches/
+             */
+            if (Utils.isObfuscated(extension.getMcVersion().get())) {
+                sourcesJar.configure(task -> {
+                    task.setOnlyIf(t -> applyRangeConfig.flatMap(ApplyRangeMap::getOutput).map(rf -> rf.getAsFile().exists()).getOrElse(false));
+                    task.dependsOn(applyRangeConfig);
+                    task.from(project.zipTree(applyRangeConfig.flatMap(ApplyRangeMap::getOutput)));
+                });
+            } else {
+                sourcesJar.configure(task -> {
+                    task.from(applyRangeConfig.get().getSources());
+                });
+            }
 
             // Automatically create the patches folder if it does not exist
             if (extension.getPatches().isPresent()) {
@@ -595,7 +607,8 @@ public class PatcherPlugin implements Plugin<Project> {
                 genServerBinPatches.configure(t -> t.getCleanJar().convention(project.getLayout().file(serverJar)));
                 for (TaskProvider<GenerateBinPatches> binPatchesTask : Lists.newArrayList(genJoinedBinPatches, genClientBinPatches, genServerBinPatches)) {
                     binPatchesTask.configure(task -> {
-                        task.getSrg().set(srg.flatMap(GenerateSRG::getOutput));
+                        if (Utils.isObfuscated(extension.getMcVersion().get()))
+                            task.getSrg().set(srg.flatMap(GenerateSRG::getOutput));
                         if (extension.getPatches().isPresent()) {
                             task.mustRunAfter(genPatches);
                             task.getPatchSets().from(extension.getPatches());
@@ -604,7 +617,8 @@ public class PatcherPlugin implements Plugin<Project> {
                 }
 
                 filterNew.configure(t -> {
-                    t.getSrg().set(srg.flatMap(GenerateSRG::getOutput));
+                    if (Utils.isObfuscated(extension.getMcVersion().get()))
+                        t.getSrg().set(srg.flatMap(GenerateSRG::getOutput));
                     t.getBlacklist().from(joinedJar);
                 });
             }

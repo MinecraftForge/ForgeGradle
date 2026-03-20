@@ -295,6 +295,8 @@ public class MCPRepo extends BaseRepo {
 
     @Nullable
     private File findSrg(String side, String version) throws IOException {
+        if (!Utils.isObfuscated(MinecraftRepo.getMCVersion(version)))
+            return findRaw(side, version);
         return findStepOutput(side, version, "srg", "jar", STEP_RENAME);
     }
 

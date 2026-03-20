@@ -11,8 +11,11 @@ import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -28,20 +31,29 @@ import java.util.zip.ZipOutputStream;
 public abstract class FilterNewJar extends DefaultTask { //TODO: Copy task?
     public FilterNewJar() {
         getOutput().convention(getProject().getLayout().getBuildDirectory().dir(getName()).map(d -> d.file("output.jar")));
+        getFilterInners().convention(false);
     }
 
     @TaskAction
     public void apply() throws IOException {
         Set<String> filter = new HashSet<>();
+        Set<String> classes = new HashSet<>();
         for (File file : getBlacklist()) {
             try (ZipFile zip = new ZipFile(file)) {
-                Utils.forZip(zip, entry -> filter.add(entry.getName()));
+                Utils.forZip(zip, entry -> {
+                    filter.add(entry.getName());
+                    if (getFilterInners().get() && entry.getName().endsWith(".class"))
+                        classes.add(entry.getName().substring(0, entry.getName().length() - 6));
+                });
             }
         }
 
-        Set<String> classes = IMappingFile.load(getSrg().get().getAsFile()).getClasses().stream()
-                .map(IMappingFile.IClass::getMapped)
-                .collect(Collectors.toSet());
+        if (getSrg().isPresent()) {
+            IMappingFile map = IMappingFile.load(getSrg().getAsFile().get());
+            for (IMappingFile.IClass cls : map.getClasses()) {
+                classes.add(cls.getMapped());
+            }
+        }
 
         try (ZipFile zin = new ZipFile(getInput().get().getAsFile());
              ZipOutputStream out = new ZipOutputStream(new FileOutputStream(getOutput().get().getAsFile()))){
@@ -71,7 +83,11 @@ public abstract class FilterNewJar extends DefaultTask { //TODO: Copy task?
     public abstract RegularFileProperty getInput();
 
     @InputFile
+    @Optional
     public abstract RegularFileProperty getSrg();
+
+    @Input
+    public abstract Property<Boolean> getFilterInners();
 
     @InputFiles
     public abstract ConfigurableFileCollection getBlacklist();

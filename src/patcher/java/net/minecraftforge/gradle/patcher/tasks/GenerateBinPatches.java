@@ -17,7 +17,13 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public abstract class GenerateBinPatches extends JarExec {
     public GenerateBinPatches() {
@@ -31,16 +37,17 @@ public abstract class GenerateBinPatches extends JarExec {
 
     @Override
     protected List<String> filterArgs(List<String> args) {
-        final List<String> newArgs = replaceArgs(args, ImmutableMap.of(
-                "{clean}", getCleanJar().get().getAsFile(),
-                "{dirty}", getDirtyJar().get().getAsFile(),
-                "{output}", getOutput().get().getAsFile(),
-                "{srg}", getSrg().get().getAsFile()
-                ), ImmutableMap.of(
-                "{patches}", getPatchSets().getFiles()
-                )
+        final Map<String, File> tokens = new HashMap<>(ImmutableMap.of(
+            "{clean}", getCleanJar().get().getAsFile(),
+            "{dirty}", getDirtyJar().get().getAsFile(),
+            "{output}", getOutput().get().getAsFile()
+        ));
+
+        final Map<String, ? extends Collection<?>> multi = ImmutableMap.of(
+            "{patches}", getPatchSets().getFiles(),
+            "{srg}", getSrg().isPresent() ? Collections.singletonList(getSrg().get().getAsFile()) : Collections.emptyList()
         );
-        return newArgs;
+        return replaceArgs(args, tokens, multi);
     }
 
     @InputFile
@@ -53,10 +60,10 @@ public abstract class GenerateBinPatches extends JarExec {
     public abstract ConfigurableFileCollection getPatchSets();
 
     @InputFile
+    @Optional
     public abstract RegularFileProperty getSrg();
 
     @Input
-    @Optional
     public abstract Property<String> getSide();
 
     @OutputFile

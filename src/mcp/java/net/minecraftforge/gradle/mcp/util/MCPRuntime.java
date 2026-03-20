@@ -136,6 +136,10 @@ public class MCPRuntime {
             }
         }
 
+        if (stop != null) {
+            logger.lifecycle("Stopping at requested step failed, could not find: " + stop);
+        }
+
         logger.lifecycle("MCP environment setup is complete");
         return ret;
     }
