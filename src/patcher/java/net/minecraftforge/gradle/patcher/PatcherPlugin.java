@@ -300,6 +300,12 @@ public class PatcherPlugin implements Plugin<Project> {
         }
 
         project.afterEvaluate(p -> {
+            if (extension.getParent().isPresent()) {
+                final Project parent = extension.getParent().get();
+                if (parent.getPlugins().findPlugin(PatcherPlugin.class) != null)
+                    extension.copyFrom(parent.getExtensions().getByType(PatcherExtension.class));
+            }
+
             // Add the patched source as a source dir during afterEvaluate, to not be overwritten by buildscripts
             mainSource.configure(s -> s.getJava().srcDir(extension.getPatchedSrc()));
 
