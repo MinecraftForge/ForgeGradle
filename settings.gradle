@@ -30,7 +30,7 @@ dependencyResolutionManagement.versionCatalogs.register('libs') {
     plugin 'gradleutils',    'net.minecraftforge.gradleutils' versionRef 'gradleutils'
     plugin 'gitversion',     'net.minecraftforge.gitversion'  version '3.1.7' // https://plugins.gradle.org/plugin/net.minecraftforge.changelog
     plugin 'changelog',      'net.minecraftforge.changelog'   version '3.2.1' // https://plugins.gradle.org/plugin/net.minecraftforge.changelog
-    plugin 'plugin-publish', 'com.gradle.plugin-publish'      version '2.0.0' // https://plugins.gradle.org/plugin/com.gradle.plugin-publish
+    plugin 'plugin-publish', 'com.gradle.plugin-publish'      version '2.1.1' // https://plugins.gradle.org/plugin/com.gradle.plugin-publish
     plugin 'shadow',         'com.gradleup.shadow'            version '9.3.0' // https://plugins.gradle.org/plugin/com.gradleup.shadow
 
     // Static Analysis
