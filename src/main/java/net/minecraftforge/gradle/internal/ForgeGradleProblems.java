@@ -96,6 +96,28 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
         );
     }
 
+    void reportMissingRenamerPluginForOldVersion(Dependency dependency) {
+        if (this.testFalse("net.minecraftforge.gradle.warnings.minecraft.legacy.renamer.missing")) return;
+
+        LOGGER.warn("WARNING: Renamer Gradle not present with legacy Forge version. See Problems report for details.");
+        this.report("legacy-missing-renamer", "Missing Renamer Gradle for legacy Minecraft dependency", spec -> spec
+            .details("""
+                A legacy Forge dependency was declared, but Renamer Gradle has not been applied to the project!
+                While the workspace will continue to function, this may cause problems with resultant artifacts not being renamed to obfuscated mappings.
+                Legacy Forge versions use obfuscated mappings at runtime, so this is a requirement if you are publishing this project as a mod that uses Minecraft names.
+                Dependency: '%s'"""
+                .formatted(Util.toString(dependency)))
+            .severity(Severity.WARNING)
+            .solution("Apply the 'net.minecraftforge.renamer' plugin.")
+            .solution("Disable this warning in 'gradle.properties' if you are an advanced user: `net.minecraftforge.gradle.warnings.minecraft.legacy.renamer.missing=false`")
+            .solution("Consider building your project for a newer version of Forge targeting Minecraft 1.20.5 or newer.")
+            .solution(HELP_MESSAGE));
+    }
+
+    void reportMissingRenamerCheckFailed(Dependency dependency, Throwable e) {
+        LOGG
+    }
+
     RuntimeException invalidMinecraftDependencyType(Dependency dependency) {
         return this.throwing(new IllegalArgumentException("Minecraft dependency is not a module dependency"), "unsupported-minecraft-dependency-type", "Non-module dependency used as Minecraft dependency", spec -> spec
             .details("""
