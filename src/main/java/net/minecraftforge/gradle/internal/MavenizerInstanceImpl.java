@@ -57,10 +57,10 @@ class MavenizerInstanceImpl implements MavenizerInstance {
         // this entire error check is gated behind a gradle property. if it's set to false, stop immediately.
         // also don't bother checking if we aren't using Forge, which is net.minecraftforge:forge/fmlonly
         // this code is kind of ugly but I don't know how to make it any cleaner without the nesting.
-        if (!problems.testFalse("net.minecraftforge.gradle.warnings.minecraft.legacy.renamer.missing")
-            && "net.minecraftforge".equals(dependency.getGroup())
-            && ("forge".equals(dependency.getName()) || "fmlonly".equals(dependency.getName()))) {
+        if (!problems.testFalse("net.minecraftforge.gradle.warnings.minecraft.legacy.renamer.missing")) {
             var minecraftVersion = map.get("mc.version");
+            boolean forge = "net.minecraftforge".equals(dependency.getGroup())
+                && ("forge".equals(dependency.getName()) || "fmlonly".equals(dependency.getName()))
             if (minecraftVersion != null && !"UNKNOWN".equals(minecraftVersion)) {
                 boolean legacy = false;
                 try {
@@ -74,7 +74,8 @@ class MavenizerInstanceImpl implements MavenizerInstance {
                         int int1 = Integer.parseInt(split[0]);
                         int int2 = Integer.parseInt(split[1]);
                         int int3 = split.length > 2 ? Integer.parseInt(split[2]) : 0;
-                        legacy = int1 <= 1 && int2 <= 20 && int3 < 5; // version < 1.20.5 == legacy
+                        legacy = forge ? int1 <= 1 && int2 <= 20 && int3 < 5
+                            : int1 < 26; // version < 1.20.5 == legacy for forge, 26 for vanilla
                     }
                 } catch (Exception e) {
                     // there are a number of things that could go wrong here.
