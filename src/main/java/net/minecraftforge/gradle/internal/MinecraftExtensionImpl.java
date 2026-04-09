@@ -418,6 +418,9 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                             "--output-json", outputJson.getAbsolutePath()
                         ));
 
+                        if (getProject().getGradle().getStartParameter().isRefreshDependencies())
+                            ret.add("--ignore-cache");
+
                         // If we are finding the access transformer from sourcesets, just find from any source set
                         // We can't filter by configurations becase the config cache doesn't like that.
                         // So if users fuck up, then we can output a warning, or they can manually set the AT file.
