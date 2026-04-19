@@ -24,6 +24,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.ExtensionAware;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
@@ -51,6 +52,11 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     private final ConfigurableFileCollection accessTransformer = this.getObjects().fileCollection();
     private final Property<String> accessTransformerPath = this.getObjects().property(String.class);
 
+    // Facades
+    private final ConfigurableFileCollection facade = this.getObjects().fileCollection();
+    // Extra Mavenizer Arguments
+    private final ListProperty<String> extraMavenizerArguments = this.getObjects().listProperty(String.class);
+
     // Dependency Information
     private final Property<String> asString = getObjects().property(String.class);
     private final Property<String> asPath = getObjects().property(String.class);
@@ -71,6 +77,8 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     public MinecraftDependencyImpl(String mavenizerName) {
         this.mavenizerName = mavenizerName;
         this.mappings.convention(minecraft.getMappingsProperty());
+        this.facade.convention(minecraft.getFacade());
+        this.extraMavenizerArguments.convention(minecraft.getMavenizerArguments());
     }
 
     // Can be nullable due to configuration caching.
@@ -149,6 +157,16 @@ abstract class MinecraftDependencyImpl implements MinecraftDependencyInternal {
     @Override
     public Property<String> getAccessTransformerPath() {
         return this.accessTransformerPath;
+    }
+
+    @Override
+    public ConfigurableFileCollection getFacade() {
+        return this.facade;
+    }
+
+    @Override
+    public ListProperty<String> getMavenizerArguments() {
+        return this.extraMavenizerArguments;
     }
 
     /* INTERNAL */

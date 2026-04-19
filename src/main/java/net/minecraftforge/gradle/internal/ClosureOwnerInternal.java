@@ -26,6 +26,7 @@ import org.gradle.api.artifacts.capability.CapabilitySelector;
 import org.gradle.api.attributes.AttributeContainer;
 import org.gradle.api.capabilities.Capability;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.reflect.HasPublicType;
 import org.gradle.api.reflect.TypeOf;
 import org.jspecify.annotations.Nullable;
@@ -107,6 +108,16 @@ interface ClosureOwnerInternal<D> extends ClosureOwner {
         @Override
         default ConfigurableFileCollection getAccessTransformers() {
             return this.getOwnerDelegate().getAccessTransformers();
+        }
+
+        @Override
+        default ConfigurableFileCollection getFacade() {
+            return this.getOwnerDelegate().getFacade();
+        }
+
+        @Override
+        default ListProperty<String> getMavenizerArguments() {
+            return this.getOwnerDelegate().getMavenizerArguments();
         }
 
         @Override

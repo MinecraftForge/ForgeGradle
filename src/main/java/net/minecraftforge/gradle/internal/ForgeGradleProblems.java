@@ -282,6 +282,21 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     }
     //endregion
 
+    //region Facades
+    void reportFacadesNotSupported(String dependency) {
+        this.report("mavenizer-out-of-date-facade", "Mavenizer Tool doesn't support facades", spec -> spec
+            .details("""
+            The Mavenizer configured for this project does not support Facades.
+            Any facade configured to be used, will be skipped.
+            This may result in compile or runtime errors.
+            Configured Version:\s""" + dependency)
+            .severity(Severity.ERROR)
+            .solution("Update mavenizer to >=" + Constants.Mavenizer.SUPPORTS_FACADES + " or remove manual override.")
+            .solution("Remove Facade config if not needed.")
+            .solution(HELP_MESSAGE));
+    }
+    //endregion
+
     //region Message Board
     void reportMessageBoardCacheBroken(Throwable e, File file, String property) {
         this.report("message-board-cache-broken", "ForgeGradle's message board cannot save data", spec -> spec

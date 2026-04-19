@@ -14,6 +14,7 @@ import net.minecraftforge.gradle.MinecraftExtension;
 import net.minecraftforge.gradle.MinecraftExtensionForProject;
 import net.minecraftforge.gradle.MinecraftMappings;
 import net.minecraftforge.gradle.SlimeLauncherOptions;
+import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
@@ -36,6 +37,7 @@ import org.gradle.api.initialization.resolve.RepositoriesMode;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.reflect.TypeOf;
@@ -182,6 +184,11 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         private final ConfigurableFileCollection accessTransformer = getObjects().fileCollection();
         private final Property<String> accessTransformerPath = getObjects().property(String.class);
 
+        // Facades
+        private final ConfigurableFileCollection facades = getObjects().fileCollection();
+        // Extra Mavenizer Arguments
+        private final ListProperty<String> extraMavenizerArguments = this.getObjects().listProperty(String.class);
+
         private final ForgeGradleProblems problems = getObjects().newInstance(ForgeGradleProblems.class);
 
         protected abstract @Inject Project getProject();
@@ -275,6 +282,16 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         @Override
         public Property<String> getAccessTransformerPath() {
             return this.accessTransformerPath;
+        }
+
+        @Override
+        public ConfigurableFileCollection getFacade() {
+            return this.facades;
+        }
+
+        @Override
+        public ListProperty<String> getMavenizerArguments() {
+            return this.extraMavenizerArguments;
         }
 
         @Override
@@ -399,6 +416,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
             var mavenizer = this.getProviders().of(MavenizerValueSource.class, spec -> {
                 spec.parameters(params -> {
                     var tool = this.plugin.getTool(Tools.MAVENIZER);
+                    var toolVersion = new ComparableVersion(tool.getModule().getVersion());
                     params.getClasspath().setFrom(tool.getClasspath());
                     params.getJavaLauncher().set(tool.getJavaLauncher().map(JavaLauncher::getExecutablePath));
                     params.getArguments().set(this.getProviders().provider(() -> {
@@ -406,6 +424,10 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                             .dir(tool.getName().toLowerCase(Locale.ENGLISH))
                             .map(this.problems.ensureFileLocation());
                         var cache = toolCache.get().dir("caches").getAsFile().getAbsolutePath();
+
+                        var localToolCache = this.plugin.localCaches()
+                            .dir(tool.getName().toLowerCase(Locale.ENGLISH))
+                            .map(this.problems.ensureFileLocation());
 
                         var ret = new ArrayList<>(List.of(
                             "--maven",
@@ -422,7 +444,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                             ret.add("--ignore-cache");
 
                         // If we are finding the access transformer from sourcesets, just find from any source set
-                        // We can't filter by configurations becase the config cache doesn't like that.
+                        // We can't filter by configurations because the config cache doesn't like that.
                         // So if users fuck up, then we can output a warning, or they can manually set the AT file.
                         // This is a 'best effort'
                         var sourceSets = getProject().getExtensions().getByType(JavaPluginExtension.class).getSourceSets();
@@ -449,6 +471,26 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                             ret.add("--repository");
                             ret.add(repo.getName() + ',' + url);
                         }
+
+                        if (!minecraftDependency.getFacade().isEmpty()) {
+                            if (toolVersion.compareTo(Constants.Mavenizer.SUPPORTS_FACADES) < 0) {
+                                problems.reportFacadesNotSupported(tool.getModule().toString());
+                            } else {
+                                for (var cfg : minecraftDependency.getFacade()) {
+                                    ret.add("--facade-config");
+                                    ret.add(cfg.getAbsolutePath());
+                                }
+                            }
+                        }
+
+                        if (toolVersion.compareTo(Constants.Mavenizer.SUPPORTS_LOCAL_CACHE) >= 0) {
+                            ret.add("--local-cache");
+                            ret.add(localToolCache.get().getAsFile().getAbsolutePath());
+                        }
+
+                        // Make sure to do this at the very end
+                        ret.addAll(minecraftDependency.getMavenizerArguments().getOrElse(Collections.emptyList()));
+
                         return ret;
                     }));
                 });

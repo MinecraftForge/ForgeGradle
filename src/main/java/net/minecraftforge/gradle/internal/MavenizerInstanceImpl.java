@@ -62,12 +62,13 @@ class MavenizerInstanceImpl implements MavenizerInstance {
         return this.invoke.getting(key)
             .orElse(this.extension.getProviders().provider(() -> {
                 // This should only happen when someone hardcodes their tool version, warn them
-                var message = "Mavenizer did not output expected json data " + key +", Make sure you're using Mavenizer >= " + requiredVersion;
+                var version = this.extension.plugin.getTool(Tools.MAVENIZER).getModule();
+                var message = "Mavenizer did not output expected json data " + key + ", Make sure you're using Mavenizer >= " + requiredVersion + " using " + version;
                 if (_default != null) {
                     LOGGER.warn(message);
                     return _default;
                 }
-                throw new IllegalStateException("Mavenizer did not output expected json data " + key +", Make sure you're using Mavenizer >= " + requiredVersion);
+                throw new IllegalStateException(message);
             }));
     }
 

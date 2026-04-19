@@ -4,6 +4,8 @@
  */
 package net.minecraftforge.gradle.internal;
 
+import org.apache.maven.artifact.versioning.ComparableVersion;
+
 /// The package-private constants used throughout ForgeGradle.
 ///
 /// Looking for attributes? They are in [ForgeGradleExtension.Attributes].
@@ -72,5 +74,18 @@ final class Constants {
             net.minecraftforge.gradle.magic=false
 
             For more information, see https://docs.minecraftforge.net/en/fg-7.0/magic/""";
+    }
+
+    static class Mavenizer {
+        /*
+         * Add support for --facade configs, a system that allows consumers to attach interfaces to the dependency.
+         * https://github.com/MinecraftForge/MinecraftMavenizer/commit/610bb2b11d6999e98d44cc4a87ec926e68d26a37
+         */
+        static final ComparableVersion SUPPORTS_FACADES = new ComparableVersion("0.4.61");
+
+        /*
+         * Also added --local-cache which is a project specific caching folder, used for post processors such as ATs and Facades
+         */
+        static final ComparableVersion SUPPORTS_LOCAL_CACHE = new ComparableVersion("0.4.56");
     }
 }

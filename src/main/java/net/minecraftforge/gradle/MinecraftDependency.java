@@ -11,6 +11,8 @@ import groovy.transform.stc.FromString;
 import net.minecraftforge.gradleutils.shared.Closures;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.provider.ListProperty;
 
 /// The Minecraft dependency contains information essential for how the
 /// {@linkplain MinecraftExtensionForProject minecraft extension} processes Minecraft dependencies.
@@ -37,4 +39,21 @@ public interface MinecraftDependency extends MinecraftMappingsContainer, Minecra
     default void runs(Action<? super NamedDomainObjectContainer<? extends SlimeLauncherOptions>> action) {
         this.runs(Closures.action(this, action));
     }
+
+    /// Gets the Facade configuration files to use.
+    ///
+    /// Files must be in the format supported by the [Facade](https://github.com/minecraftforge/facade) project.
+    ///
+    /// This is only supported when using Mavenizer >= 0.4.56
+    ///
+    /// @return The property for the configuration files to use
+    ///
+    ConfigurableFileCollection getFacade();
+
+    /// Gets any *extra* arguments to be passed to the Mavenizer invocation.
+    /// These arguments will be added after all other args.
+    /// This is useful if using a version of Mavenizer that hasn't had a feature exposed to ForgeGradle yet
+    ///
+    /// @return A list of extra arguments to pass to Mavenizer
+    ListProperty<String> getMavenizerArguments();
 }
