@@ -20,6 +20,7 @@ import java.util.Map;
 class MavenizerInstanceImpl implements MavenizerInstance {
     private static final Logger LOGGER = Logging.getLogger(MavenizerInstanceImpl.class);
     private final MinecraftExtensionImpl.ForProjectImpl extension;
+    private final ForgeGradleProblems problems;
     private final Provider<Boolean> valueSource;
     private final ExternalModuleDependency dependency;
     private final File jsonFile;
@@ -34,6 +35,7 @@ class MavenizerInstanceImpl implements MavenizerInstance {
         File jsonFile
     ) {
         this.extension = extension;
+        this.problems = this.extension.getObjects().newInstance(ForgeGradleProblems.class);
         this.dependency = dependency;
         this.valueSource = valueSource;
         this.jsonFile = jsonFile;
@@ -45,10 +47,49 @@ class MavenizerInstanceImpl implements MavenizerInstance {
     private Map<String, String> invoke() {
         if (this.map == null) {
             valueSource.get(); // Execute Mavenizer, probably called before, but just be sure.
-            this.map = (Map<String, String>) new JsonSlurper().parse(this.jsonFile, "UTF-8");
+            this.map = validate((Map<String, String>) new JsonSlurper().parse(this.jsonFile, "UTF-8"));
             //this.map.forEach((k, v) -> this.extension.getProject().getLogger().lifecycle(k + " => " + v));
         }
         return this.map;
+    }
+
+    private Map<String, String> validate(Map<String, String> map) {
+        // this entire error check is gated behind a gradle property. if it's set to false, stop immediately.
+        // also don't bother checking if we aren't using Forge, which is net.minecraftforge:forge/fmlonly
+        // this code is kind of ugly but I don't know how to make it any cleaner without the nesting.
+        if (!problems.testFalse("net.minecraftforge.gradle.warnings.minecraft.legacy.renamer.missing")) {
+            var minecraftVersion = map.get("mc.version");
+            boolean forge = "net.minecraftforge".equals(dependency.getGroup())
+                && ("forge".equals(dependency.getName()) || "fmlonly".equals(dependency.getName()));
+            if (minecraftVersion != null && !"UNKNOWN".equals(minecraftVersion)) {
+                boolean legacy = false;
+                try {
+                    if (minecraftVersion.indexOf('w') > 0) {
+                        var split = minecraftVersion.split("[w|a-z]");
+                        int int1 = Integer.parseInt(split[0]);
+                        int int2 = Integer.parseInt(split[1]);
+                        legacy = int1 <= 24 && int2 <= 13; // 24w13a was the last snapshot before 1.20.5
+                    } else {
+                        var split = minecraftVersion.split("[.|-]");
+                        int int1 = Integer.parseInt(split[0]);
+                        int int2 = Integer.parseInt(split[1]);
+                        int int3 = split.length > 2 ? Integer.parseInt(split[2]) : 0;
+                        legacy = forge ? int1 <= 1 && int2 <= 20 && int3 < 5
+                            : int1 < 26; // version < 1.20.5 == legacy for forge, 26 for vanilla
+                    }
+                } catch (Exception e) {
+                    // there are a number of things that could go wrong here.
+                    // but it should never cause a build failure. stop immediately and report problem.
+                    problems.reportMissingRenamerCheckFailed(dependency, e);
+                }
+
+                if (legacy && !extension.getProject().getPluginManager().hasPlugin("net.minecraftforge.renamer")) {
+                    problems.reportMissingRenamerPluginForOldVersion(dependency);
+                }
+            }
+        }
+
+        return map;
     }
 
     private Provider<String> get(String key) {
