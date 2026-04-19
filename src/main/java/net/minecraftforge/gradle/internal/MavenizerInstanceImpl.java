@@ -60,7 +60,7 @@ class MavenizerInstanceImpl implements MavenizerInstance {
         if (!problems.testFalse("net.minecraftforge.gradle.warnings.minecraft.legacy.renamer.missing")) {
             var minecraftVersion = map.get("mc.version");
             boolean forge = "net.minecraftforge".equals(dependency.getGroup())
-                && ("forge".equals(dependency.getName()) || "fmlonly".equals(dependency.getName()))
+                && ("forge".equals(dependency.getName()) || "fmlonly".equals(dependency.getName()));
             if (minecraftVersion != null && !"UNKNOWN".equals(minecraftVersion)) {
                 boolean legacy = false;
                 try {

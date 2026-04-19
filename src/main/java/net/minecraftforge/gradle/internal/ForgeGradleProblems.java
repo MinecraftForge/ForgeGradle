@@ -97,25 +97,40 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
     }
 
     void reportMissingRenamerPluginForOldVersion(Dependency dependency) {
-        if (this.testFalse("net.minecraftforge.gradle.warnings.minecraft.legacy.renamer.missing")) return;
+        // This should never happen, so assert this check for testing purposes.
+        assert !this.testFalse("net.minecraftforge.gradle.warnings.minecraft.legacy.renamer.missing");
 
         LOGGER.warn("WARNING: Renamer Gradle not present with legacy Forge version. See Problems report for details.");
         this.report("legacy-missing-renamer", "Missing Renamer Gradle for legacy Minecraft dependency", spec -> spec
             .details("""
                 A legacy Forge dependency was declared, but Renamer Gradle has not been applied to the project!
-                While the workspace will continue to function, this may cause problems with resultant artifacts not being renamed to obfuscated mappings.
+                While your mod will work in development, the built jar won't work in production without Renamer Gradle's reobf functionality.
                 Legacy Forge versions use obfuscated mappings at runtime, so this is a requirement if you are publishing this project as a mod that uses Minecraft names.
                 Dependency: '%s'"""
                 .formatted(Util.toString(dependency)))
             .severity(Severity.WARNING)
             .solution("Apply the 'net.minecraftforge.renamer' plugin.")
+            .solution("Review MDKExamples to cross-reference your setup with a working example using Renamer Gradle.")
             .solution("Disable this warning in 'gradle.properties' if you are an advanced user: `net.minecraftforge.gradle.warnings.minecraft.legacy.renamer.missing=false`")
             .solution("Consider building your project for a newer version of Forge targeting Minecraft 1.20.5 or newer.")
             .solution(HELP_MESSAGE));
     }
 
     void reportMissingRenamerCheckFailed(Dependency dependency, Throwable e) {
-        LOGG
+        assert !this.testFalse("net.minecraftforge.gradle.warnings.minecraft.legacy.renamer.missing");
+
+        LOGGER.warn("WARNING: Failed to check if Renamer Gradle is required. See Problems report for details.");
+        this.report("failed-missing-renamer-check", "Failed to check if Renamer is required", spec -> spec
+            .details("""
+                Failed to check if Renamer Gradle is required for the Minecraft dependency.
+                This issue may have been caused due to an invalid or unknown Minecraft version.
+                Dependency: '%s'"""
+                .formatted(Util.toString(dependency)))
+            .withException(e)
+            .severity(Severity.WARNING)
+            .solution("Review MDKExamples to cross-reference your setup with a working example using Renamer Gradle.")
+            .solution("Disable this warning in 'gradle.properties' if you are an advanced user: `net.minecraftforge.gradle.warnings.minecraft.legacy.renamer.missing=false`")
+            .solution(HELP_MESSAGE));
     }
 
     RuntimeException invalidMinecraftDependencyType(Dependency dependency) {
