@@ -104,7 +104,7 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
         this.report("legacy-missing-renamer", "Missing Renamer Gradle for legacy Minecraft dependency", spec -> spec
             .details("""
                 A legacy Forge dependency was declared, but Renamer Gradle has not been applied to the project!
-                While your mod will work in development, the built jar won't work in production without Renamer Gradle's reobf functionality.
+                While your mod will work in development, the built jar won't work in production without Renamer Gradle's reobf functionality explicitly setup.
                 Legacy Forge versions use obfuscated mappings at runtime, so this is a requirement if you are publishing this project as a mod that uses Minecraft names.
                 Dependency: '%s'"""
                 .formatted(Util.toString(dependency)))
