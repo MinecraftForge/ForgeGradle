@@ -16,6 +16,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +83,14 @@ public class MCPConfigV1 extends Config {
 
     public List<String> getLibraries(String side) {
         List<String> ret = libraries == null ? null : libraries.get(side);
-        return ret == null ? Collections.emptyList() : ret;
+        if (ret == null)
+            return Collections.emptyList();
+
+        if (!(ret instanceof ArrayList))
+            ret = new ArrayList<>(ret); // Make mutable
+        for (int x = 0; x < ret.size(); x++)
+            ret.set(x, hackyFixDependecy(ret.get(x)));
+        return ret;
     }
 
     public static class Step {
@@ -142,7 +150,7 @@ public class MCPConfigV1 extends Config {
         private Integer java_version;
 
         public String getVersion() {
-            return version;
+            return hackyFixDependecy(version);
         }
         public void setVersion(String value) {
             this.version = value;
@@ -176,5 +184,12 @@ public class MCPConfigV1 extends Config {
         public void setJavaVersion(Integer javaVersion) {
             this.java_version = javaVersion;
         }
+    }
+
+    private static String hackyFixDependecy(String artifact) {
+        // Hacky fix to use version without BUKKIT Side
+        if (artifact.startsWith("net.minecraftforge:mergetool:0.2.3.2"))
+            return artifact.replace("0.2.3.2", "0.2.3.3");
+        return artifact;
     }
 }
