@@ -5,11 +5,14 @@
 package net.minecraftforge.gradle.internal;
 
 import net.minecraftforge.gradleutils.shared.SharedUtil;
+import net.minecraftforge.srgutils.MinecraftVersion;
 import org.codehaus.groovy.runtime.StringGroovyMethods;
 import org.gradle.api.NamedDomainObjectSet;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleIdentifier;
+import org.gradle.api.logging.Logger;
+import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.jspecify.annotations.Nullable;
@@ -21,6 +24,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 final class Util extends SharedUtil {
+    private static final Logger LOGGER = Logging.getLogger(Util.class);
+
     static String checkMappingsParam(ForgeGradleProblems problems, @Nullable Object param, String name) {
         if (param == null || param.toString().isEmpty())
             throw problems.nullMappingsParam(name);
@@ -123,4 +128,13 @@ final class Util extends SharedUtil {
         return buf.toString();
     }
 
+    private static final MinecraftVersion UNOBFED_START = MinecraftVersion.from("26.1-snapshot-1");
+    public static boolean isObfuscated(String version) {
+        try {
+            return MinecraftVersion.from(version).compareTo(UNOBFED_START) < 0;
+        } catch (Exception e) {
+            LOGGER.info("Failed to parse MC Version: {} Defaulting to not obfuscated", version);
+            return false;
+        }
+    }
 }

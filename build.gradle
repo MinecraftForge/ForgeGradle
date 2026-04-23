@@ -18,7 +18,7 @@ description = "Forge's Gradle plugin for Mod development"
 group = 'net.minecraftforge'
 version = gitversion.tagOffset
 
-println "Version: $version"
+logger.lifecycle("Version: $version")
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(17)
@@ -63,6 +63,7 @@ dependencies {
     // Utils
     implementation libs.maven.artifact
     implementation libs.bundles.utils
+    implementation libs.srgutils
 }
 
 license {

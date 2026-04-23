@@ -86,7 +86,8 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
     public abstract @Input @Override Property<String> getMCPVersion();
     public abstract @Input @Override Property<String> getMappingChannel();
     public abstract @Input @Override Property<String> getMappingVersion();
-    //protected abstract @InputFile @Override RegularFileProperty getSrgToMcp();
+    public abstract @InputFile @Override @Optional RegularFileProperty getMcpToSrg();
+    public abstract @InputFile @Override @Optional RegularFileProperty getMcpToObf();
 
     protected abstract @InputFile @Optional RegularFileProperty getRunsJson();
 
@@ -137,11 +138,20 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
             var slimeArgs = List.of(
                 "--main", mainClass.get(),
                 "--cache", this.getCacheDir().get().getAsFile().getAbsolutePath(),
-                "--metadata", this.getMetadata().getSingleFile().getAbsolutePath(),
-                "--"
+                "--metadata", this.getMetadata().getSingleFile().getAbsolutePath()
             );
             // Set need to add slime args first, so grab a copy and reset
             var args = new ArrayList<>(slimeArgs);
+            if (this.getMcpToSrg().isPresent()) {
+                args.add("--to-srg");
+                args.add(this.getMcpToSrg().get().getAsFile().getAbsolutePath());
+            }
+            if (this.getMcpToObf().isPresent()) {
+                args.add("--to-obf");
+                args.add(this.getMcpToObf().get().getAsFile().getAbsolutePath());
+            }
+            args.add("--");
+            // Add the rest
             args.addAll(this.getArgs());
             this.setArgs(args);
         }

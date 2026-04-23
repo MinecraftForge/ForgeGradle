@@ -53,5 +53,8 @@ dependencyResolutionManagement.versionCatalogs.register('libs') {
     library 'utils-hash',     'net.minecraftforge', 'hash-utils'      version '0.1.12' // https://files.minecraftforge.net/net/minecraftforge/hash-utils/index.html
     library 'utils-download', 'net.minecraftforge', 'download-utils'  version '0.4.0'  // https://files.minecraftforge.net/net/minecraftforge/download-utils/index.html
     bundle 'utils', ['utils-data', 'utils-os', 'utils-hash', 'utils-download']
+
+    // Used to compare Minecraft Versions
+    library 'srgutils', 'net.minecraftforge', 'srgutils' version '0.6.5'
 }
 //@formatter:on

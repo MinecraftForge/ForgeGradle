@@ -179,7 +179,8 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
     public abstract @Input @Override Property<String> getMCPVersion();
     public abstract @Input @Override Property<String> getMappingChannel();
     public abstract @Input @Override Property<String> getMappingVersion();
-    //protected abstract @InputFile @Override RegularFileProperty getSrgToMcp();
+    public abstract @InputFile @Override @Optional RegularFileProperty getMcpToSrg();
+    public abstract @InputFile @Override @Optional RegularFileProperty getMcpToObf();
 
     protected abstract @InputFile @Optional RegularFileProperty getRunsJson();
 
@@ -227,9 +228,17 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
         var args = new ArrayList<>(List.of(
             "--main", options.getMainClass().get(),
             "--cache", this.getCacheDir().get().getAsFile().getAbsolutePath(),
-            "--metadata", this.getMetadata().getSingleFile().getAbsolutePath(),
-            "--"
+            "--metadata", this.getMetadata().getSingleFile().getAbsolutePath()
         ));
+        if (this.getMcpToSrg().isPresent()) {
+            args.add("--to-srg");
+            args.add(this.getMcpToSrg().get().getAsFile().getAbsolutePath());
+        }
+        if (this.getMcpToObf().isPresent()) {
+            args.add("--to-obf");
+            args.add(this.getMcpToObf().get().getAsFile().getAbsolutePath());
+        }
+        args.add("--");
         for (var arg : options.getArgs().getOrElse(List.of()))
             args.add(Util.replaceTokens(tokens, arg, unknown));
 
@@ -255,7 +264,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
         //endregion
 
         for (var token : unknown)
-            getLogger().debug("Unknown Run Token: {}", token);
+            getLogger().lifecycle("Unknown Run Token: {}", token);
 
         //region Slime Launcher setup
         try {

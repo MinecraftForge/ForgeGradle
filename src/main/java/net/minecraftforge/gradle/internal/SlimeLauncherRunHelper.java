@@ -44,7 +44,9 @@ class SlimeLauncherRunHelper {
         ret.put("mcp_version", task.getMCPVersion()::get);
         ret.put("source_roots", getSourceRoots(task, options, defaultSourceSets, sourceOutputs));
         // Despite the name this is set to createSrgToMcp.getOutput().get().getAsFile().getAbsolutePath() so.. Srg -> MCP .srg mapping file.
-        //ret.put("mcp_to_srg", getSrgToMcp().getAsFile().map(File::getAbsolutePath)::get);
+        // This is taken care of in SlimeLauncher, because I don't want to teach FG about SRG files.
+        // So add a passthrough to make it not output a warning
+        ret.put("mcp_to_srg", () -> "{mcp_to_srg}");
         return ret;
     }
 
@@ -146,7 +148,10 @@ class SlimeLauncherRunHelper {
         task.getMCPVersion().set(inst.getMCPVersion());
         task.getMappingChannel().set(inst.getMappingChannel());
         task.getMappingVersion().set(inst.getMappingVersion());
-        // We need a way to reverse this file, cuz we want srg->mcp and this is mcp->srg
-        //task.getSrgToMcp().set(project.file(inst.getToSrgFile()));
+
+        if (Util.isObfuscated(inst.getMinecraftVersion().get())) {
+            task.getMcpToObf().fileProvider(inst.getToObfFile());
+            task.getMcpToSrg().fileProvider(inst.getToSrgFile());
+        }
     }
 }
