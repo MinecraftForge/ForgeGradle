@@ -8,7 +8,6 @@ plugins {
     id 'idea'
     id 'eclipse'
     id 'maven-publish'
-    id 'local.build.jdt-transformer'
     id 'io.freefair.javadoc-links'
     id 'net.minecraftforge.gradleutils'
     alias libs.plugins.licenser
@@ -62,7 +61,7 @@ dependencies {
 
     // moved to the beginning to be the overrider
     //implementation libs.asm.debug
-    implementation libs.guava
+    shade libs.guava
 
     implementation libs.opencsv // reading CSVs.. also used by SpecialSource
     implementation libs.diff4j // for difing and patching
@@ -81,35 +80,19 @@ dependencies {
     implementation libs.httpclient
     implementation libs.httpmime
 
+    // ASM
+    shade libs.asm.commons
+    shade libs.asm.tree
+    shade libs.asm
+
     // mcp stuff
     shade libs.retroguard
     shade(libs.mcinjector) {
         exclude group: 'org.ow2.asm'
     }
-    shade(libs.srg2source) {
-        exclude group: 'cpw.mods', module: 'modlauncher'
-        exclude group: 'org.ow2.asm'
-        exclude group: 'org.eclipse.equinox', module: 'org.eclipse.equinox.common'
-
-        jdt.transform(it)
+    shade(variantOf(libs.srg2source) { classifier("fatjar") }) {
+        transitive = false
     }
-    constraints {
-        shade('org.eclipse.jdt:org.eclipse.jdt.core') {
-            jdt.transform(it)
-        }
-    }
-
-    // Because Eclipse is dumb and decided to use dynamic versions with J8 incompatibility
-    shade libs.eclipse.core.resources
-    shade libs.eclipse.core.runtime
-    shade libs.eclipse.text
-    shade libs.eclipse.core.filesystem
-    shade libs.eclipse.equinox.common
-    shade libs.eclipse.core.contenttype
-    shade libs.eclipse.core.jobs
-    shade libs.eclipse.equinox.registry
-    shade libs.eclipse.osgi
-    shade libs.eclipse.core.commands
 
     //Stuff used in the GradleStart classes
     compileOnly libs.authlib
@@ -172,13 +155,17 @@ tasks.named('jar', Jar) {
 shadow {
     // Marks the jar as being embedded, not shadowed.
     // shadowed = relocated, embedded = no relocation.
-    bundlingAttribute = Bundling.EMBEDDED
+    //bundlingAttribute = Bundling.EMBEDDED
 }
 
 tasks.named('shadowJar', ShadowJar) {
     archiveClassifier = null
     configurations = [project.configurations.shadeClasspath]
     exclude '.api_description', '.options', 'about.html', 'module-info.class', 'plugin.properties', 'plugin.xml', 'about_files/**'
+    exclude 'META-INF/maven/**'
+    enableAutoRelocation = true
+    relocationPrefix = 'net.minecraftforge.gradle.shadow'
+    mergeServiceFiles()
 }
 
 license {

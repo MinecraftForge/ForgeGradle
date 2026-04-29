@@ -120,6 +120,8 @@ public abstract class UserBasePlugin<T extends UserBaseExtension> extends BasePl
     @Override
     public final void applyPlugin()
     {
+        // Make eclipse shut up
+        System.setProperty("osgi.nls.warnings", "ignore");
         // apply the plugins
         this.applyExternalPlugin("java");
         this.applyExternalPlugin("eclipse");

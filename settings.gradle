@@ -59,20 +59,7 @@ dependencyResolutionManagement {
         // mcp stuff
         library 'retroguard', 'de.oceanlabs.mcp',   'RetroGuard' version '3.6.6'
         library 'mcinjector', 'de.oceanlabs.mcp',   'mcinjector' version '3.4-SNAPSHOT'
-        library 'srg2source', 'net.minecraftforge', 'Srg2Source' version '5.0.+'
-
-        // Strictly is needed because Eclipse is dumb and decided to use dynamic versions with J8 incompatibility
-        library 'eclipse-core-resources',   'org.eclipse.platform', 'org.eclipse.core.resources'   version { strictly  '3.14.0' }
-        library 'eclipse-core-runtime',     'org.eclipse.platform', 'org.eclipse.core.runtime'     version { strictly  '3.20.100' }
-        library 'eclipse-text',             'org.eclipse.platform', 'org.eclipse.text'             version { strictly  '3.11.0' }
-        library 'eclipse-core-filesystem',  'org.eclipse.platform', 'org.eclipse.core.filesystem'  version { strictly  '1.7.700' }
-        library 'eclipse-equinox-common',   'org.eclipse.platform', 'org.eclipse.equinox.common'   version { strictly  '3.14.100' }
-        library 'eclipse-core-contenttype', 'org.eclipse.platform', 'org.eclipse.core.contenttype' version { strictly  '3.7.900' }
-        library 'eclipse-core-jobs',        'org.eclipse.platform', 'org.eclipse.core.jobs'        version { strictly  '3.10.1100' }
-        library 'eclipse-equinox-registry', 'org.eclipse.platform', 'org.eclipse.equinox.registry' version { strictly  '3.10.100' }
-        library 'eclipse-osgi',             'org.eclipse.platform', 'org.eclipse.osgi'             version { strictly  '3.16.200' }
-        library 'eclipse-core-commands',    'org.eclipse.platform', 'org.eclipse.core.commands'    version { strictly  '3.9.800' }
-
+        library 'srg2source', 'net.minecraftforge', 'Srg2Source' version '5.0.13'
         //Stuff used in the GradleStart classes
         library 'authlib',       'com.mojang',    'authlib'       version '1.5.16'
         library 'launchwrapper', 'net.minecraft', 'launchwrapper' version '1.11'
