@@ -36,6 +36,7 @@ import org.gradle.api.UncheckedIOException;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.file.RelativePath;
+import org.gradle.api.internal.file.FileSystemSubset;
 import org.gradle.api.internal.file.collections.MinimalFileTree;
 import org.gradle.util.DeprecationLogger;
 import org.gradle.util.GFileUtils;
@@ -107,6 +108,16 @@ public class ZipFileTree implements MinimalFileTree
         {
             throw new GradleException(String.format("Could not expand %s.", getDisplayName()), e);
         }
+    }
+
+    @Override
+    public void registerWatchPoints(FileSystemSubset.Builder builder) {
+
+    }
+
+    @Override
+    public void visitTreeOrBackingFile(FileVisitor fileVisitor) {
+
     }
 
     private class DetailsImpl implements FileVisitDetails

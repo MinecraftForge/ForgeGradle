@@ -58,14 +58,9 @@ import net.minecraftforge.gradle.tasks.user.ApplyBinPatchesTask;
 import net.minecraftforge.gradle.tasks.user.SourceCopyTask;
 import net.minecraftforge.gradle.tasks.user.reobf.ArtifactSpec;
 import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
+import org.gradle.api.*;
 
-import org.gradle.api.Action;
-import org.gradle.api.DefaultTask;
-import org.gradle.api.Project;
-import org.gradle.api.Task;
-import org.gradle.api.XmlProvider;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.Configuration.State;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.execution.TaskExecutionGraph;
 import org.gradle.api.internal.plugins.DslObject;
@@ -78,7 +73,6 @@ import org.gradle.api.tasks.compile.GroovyCompile;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.api.tasks.scala.ScalaCompile;
-import org.gradle.listener.ActionBroadcast;
 import org.gradle.plugins.ide.eclipse.model.Classpath;
 import org.gradle.plugins.ide.eclipse.model.ClasspathEntry;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
@@ -409,19 +403,14 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 
         eclipseConv.getClasspath().setDownloadJavadoc(true);
         eclipseConv.getClasspath().setDownloadSources(true);
-        ((ActionBroadcast<Classpath>) eclipseConv.getClasspath().getFile().getWhenMerged()).add(new Action<Classpath>()
-        {
+        eclipseConv.getClasspath().getFile().whenMerged(new Action<Classpath>() {
             @Override
-            public void execute(Classpath classpath)
-            {
+            public void execute(Classpath classpath) {
                 String natives = delayedString(NATIVES_DIR).call().replace('\\', '/');
-                for (ClasspathEntry e : classpath.getEntries())
-                {
-                    if (e instanceof Library)
-                    {
+                for (ClasspathEntry e : classpath.getEntries()) {
+                    if (e instanceof Library) {
                         Library lib = (Library) e;
-                        if (lib.getPath().contains("lwjg") || lib.getPath().contains("jinput"))
-                        {
+                        if (lib.getPath().contains("lwjg") || lib.getPath().contains("jinput")) {
                             lib.setNativeLibraryLocation(natives);
                         }
                     }
@@ -829,20 +818,14 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 
         // link sources and javadocs eclipse
         EclipseModel eclipseConv = (EclipseModel) project.getExtensions().getByName("eclipse");
-        ((ActionBroadcast<Classpath>) eclipseConv.getClasspath().getFile().getWhenMerged()).add(new Action<Classpath>()
-        {
-            FileReferenceFactory factory = new FileReferenceFactory();
-
+        eclipseConv.getClasspath().getFile().whenMerged(new Action<Classpath>() {
+            final FileReferenceFactory factory = new FileReferenceFactory();
             @Override
-            public void execute(Classpath classpath)
-            {
-                for (ClasspathEntry e : classpath.getEntries())
-                {
-                    if (e instanceof Library)
-                    {
+            public void execute(Classpath classpath) {
+                for (ClasspathEntry e : classpath.getEntries()) {
+                    if (e instanceof Library) {
                         Library lib = (Library) e;
-                        if (lib.getLibrary().getFile().equals(deobfOut))
-                        {
+                        if (lib.getLibrary().getFile().equals(deobfOut)) {
                             lib.setJavadocPath(factory.fromFile(project.getConfigurations().getByName(CONFIG_API_JAVADOCS).getSingleFile()));
                             lib.setSourcePath(factory.fromFile(project.getConfigurations().getByName(CONFIG_API_SRC).getSingleFile()));
                         }
@@ -853,20 +836,14 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
 
         // link sources and javadocs ntellij idea
         IdeaModel ideaConv = (IdeaModel) project.getExtensions().getByName("idea");
-        ((ActionBroadcast<Module>) ideaConv.getModule().getIml().getWhenMerged()).add(new Action<Module>() {
-
+        ideaConv.getModule().getIml().whenMerged(new Action<Module>() {
             PathFactory factory = new PathFactory();
-
             @Override
-            public void execute(Module module)
-            {
-                for (Dependency d : module.getDependencies())
-                {
-                    if (d instanceof SingleEntryModuleLibrary)
-                    {
+            public void execute(Module module) {
+                for (Dependency d : module.getDependencies()) {
+                    if (d instanceof SingleEntryModuleLibrary) {
                         SingleEntryModuleLibrary lib = (SingleEntryModuleLibrary) d;
-                        if (lib.getLibraryFile().equals(deobfOut))
-                        {
+                        if (lib.getLibraryFile().equals(deobfOut)) {
                             lib.getJavadoc().add(factory.path("jar://" + project.getConfigurations().getByName(CONFIG_API_JAVADOCS).getSingleFile().getAbsolutePath().replace('\\', '/') + "!/"));
                             lib.getSources().add(factory.path("jar://" + project.getConfigurations().getByName(CONFIG_API_SRC).getSingleFile().getAbsolutePath().replace('\\', '/') + "!/"));
                         }
@@ -945,7 +922,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
         DependencyHandler handler = project.getDependencies();
 
         // actual dependencies
-        if (project.getConfigurations().getByName(depConfig).getState() == State.UNRESOLVED)
+        if (project.getConfigurations().getByName(depConfig).getState() == Configuration.State.UNRESOLVED)
         {
             for (net.minecraftforge.gradle.common.version.Library lib : version.getLibraries())
             {
@@ -957,7 +934,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             log.info("RESOLVED: " + depConfig);
 
         // the natives
-        if (project.getConfigurations().getByName(nativeConfig).getState() == State.UNRESOLVED)
+        if (project.getConfigurations().getByName(nativeConfig).getState() == Configuration.State.UNRESOLVED)
         {
             for (net.minecraftforge.gradle.common.version.Library lib : version.getLibraries())
             {
