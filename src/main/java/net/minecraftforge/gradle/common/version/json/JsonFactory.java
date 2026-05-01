@@ -13,6 +13,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
+import net.minecraftforge.gradle.json.MCVersionManifest;
 
 public class JsonFactory
 {
@@ -40,6 +41,13 @@ public class JsonFactory
     {
         FileReader reader = new FileReader(json);
         AssetIndex a =  GSON.fromJson(reader, AssetIndex.class);
+        reader.close();
+        return a;
+    }
+
+    public static MCVersionManifest loadMCVersionManifest(File json) throws JsonSyntaxException, JsonIOException, IOException {
+        FileReader reader = new FileReader(json);
+        MCVersionManifest a = GSON.fromJson(reader, MCVersionManifest.class);
         reader.close();
         return a;
     }

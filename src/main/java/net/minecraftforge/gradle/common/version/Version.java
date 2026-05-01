@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.List;
 
 import net.minecraftforge.gradle.common.Constants;
+import net.minecraftforge.gradle.json.version.Downloads;
 
 public class Version
 {
@@ -19,6 +20,8 @@ public class Version
     public String incompatibilityReason;
     private String assets;
     public List<OSRule> rules;
+    public Downloads downloads;
+    public Downloads.DownloadFileInfo assetIndex;
     
     private List<Library> _libraries;
 

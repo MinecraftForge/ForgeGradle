@@ -62,6 +62,7 @@ public class GenSrgTask extends DefaultTask
         
         File deobfFile = getNotchToMcpSrg();
         File reobfFile = getMcpToSrgSrg();
+        File notchFile = getMcpToNotchSrg();
 
         // verify files...
         if (!deobfFile.exists())
@@ -73,6 +74,11 @@ public class GenSrgTask extends DefaultTask
         {
             reobfFile.getParentFile().mkdirs();
             reobfFile.createNewFile();
+        }
+        if (!notchFile.exists())
+        {
+            notchFile.getParentFile().mkdirs();
+            notchFile.createNewFile();
         }
         
         // create streams
