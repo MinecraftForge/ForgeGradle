@@ -4,7 +4,11 @@ import groovy.lang.Closure;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.HashMap;
+import java.util.List;
+import java.util.function.Function;
 
 import net.minecraftforge.gradle.FileLogListenner;
 import net.minecraftforge.gradle.common.version.AssetIndex;
@@ -14,10 +18,13 @@ import net.minecraftforge.gradle.delayed.DelayedBase.IDelayedResolver;
 import net.minecraftforge.gradle.delayed.DelayedFile;
 import net.minecraftforge.gradle.delayed.DelayedFileTree;
 import net.minecraftforge.gradle.delayed.DelayedString;
+import net.minecraftforge.gradle.json.MCVersionManifest;
+import net.minecraftforge.gradle.json.version.VersionToString;
 import net.minecraftforge.gradle.tasks.DownloadAssetsTask;
 import net.minecraftforge.gradle.tasks.ObtainFernFlowerTask;
 import net.minecraftforge.gradle.tasks.abstractutil.DownloadTask;
 
+import net.minecraftforge.gradle.tasks.abstractutil.EtagDownloadTask;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Plugin;
@@ -129,16 +136,108 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
         // download tasks
         DownloadTask task;
 
+        EtagDownloadTask etagDlTask;
+        etagDlTask = makeTask("getVersionJsonIndex", EtagDownloadTask.class);
+        {
+            etagDlTask.setUri(delayedString(Constants.MC_JSON_INDEX_URL));
+            etagDlTask.setFile(delayedFile(Constants.VERSION_JSON_INDEX));
+            etagDlTask.setDieWithError(false);
+        }
+
+        etagDlTask = makeTask("getVersionJson", EtagDownloadTask.class);
+        {
+            class GetVersionJsonUrl extends DelayedString {
+                public GetVersionJsonUrl() {
+                    super(BasePlugin.this.project, "");
+                }
+
+                @Override
+                public String call() {
+                    try {
+                        MCVersionManifest manifest = JsonFactory.loadMCVersionManifest(delayedFile(Constants.VERSION_JSON_INDEX).call());
+                        MCVersionManifest.Version version = manifest.findVersion(delayedString("{MC_VERSION}").call());
+                        return version.url;
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+            etagDlTask.dependsOn("getVersionJsonIndex");
+            etagDlTask.getInputs().file(delayedFile(Constants.VERSION_JSON_INDEX));
+            etagDlTask.setUri(new GetVersionJsonUrl());
+            etagDlTask.setFile(delayedFile(Constants.VERSION_JSON));
+            etagDlTask.setDieWithError(false);
+            //TODO: this is not necessary?
+            etagDlTask.doLast(new Action<Task>() { // normalizes to linux endings
+                @Override
+                public void execute(Task task) {
+                    try {
+                        File json = delayedFile(Constants.VERSION_JSON).call();
+                        if (!json.exists())
+                            return;
+
+                        List<String> lines = Files.readAllLines(json.toPath());
+                        StringBuilder buf = new StringBuilder();
+                        for (String line : lines) {
+                            buf.append(line).append('\n');
+                        }
+                        Files.write(json.toPath(), buf.toString().getBytes(StandardCharsets.UTF_8));
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+        }
+
+        class GetDataFromJson extends DelayedString {
+            private final VersionToString function;
+
+            public GetDataFromJson(VersionToString function) {
+                super(BasePlugin.this.project, "");
+                this.function = function;
+            }
+
+            @Override
+            public String call() {
+                try {
+                    Version manifest = JsonFactory.loadVersion(delayedFile(Constants.VERSION_JSON).call());
+                    return function.apply(manifest);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
         task = makeTask("downloadClient", DownloadTask.class);
         {
+            task.getInputs().file(delayedFile(Constants.VERSION_JSON));
+            task.dependsOn("getVersionJson");
+
             task.setOutput(delayedFile(Constants.JAR_CLIENT_FRESH));
-            task.setUrl(delayedString(Constants.MC_JAR_URL));
+            task.setUrl(new GetDataFromJson(new VersionToString() {
+                @Override
+                public String apply(Version json) {
+                    return json.downloads.client.url;
+                }
+            }));
+
+
         }
 
         task = makeTask("downloadServer", DownloadTask.class);
         {
+            task.getInputs().file(delayedFile(Constants.VERSION_JSON));
+            task.dependsOn("getVersionJson");
+
             task.setOutput(delayedFile(Constants.JAR_SERVER_FRESH));
-            task.setUrl(delayedString(Constants.MC_SERVER_URL));
+            task.setUrl(new GetDataFromJson(new VersionToString() {
+                @Override
+                public String apply(Version json) {
+                    return json.downloads.server.url;
+                }
+            }));
+
+
         }
 
         ObtainFernFlowerTask mcpTask = makeTask("downloadMcpTools", ObtainFernFlowerTask.class);
@@ -146,28 +245,39 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
             mcpTask.setMcpUrl(delayedString(Constants.MCP_URL));
             mcpTask.setFfJar(delayedFile(Constants.FERNFLOWER));
         }
-        
-        DownloadTask getAssetsIndex = makeTask("getAssetsIndex", DownloadTask.class);
-        {
-            getAssetsIndex.setUrl(delayedString(Constants.ASSETS_INDEX_URL));
-            getAssetsIndex.setOutput(delayedFile(Constants.ASSETS + "/indexes/{ASSET_INDEX}.json"));
-            getAssetsIndex.setDoesCache(false);
 
-            getAssetsIndex.doLast(new Action<Task>() {
-                public void execute(Task task)
-                {
-                    try
-                    {
+        etagDlTask = makeTask("getAssetsIndex", EtagDownloadTask.class);
+        {
+            etagDlTask.getInputs().file(delayedFile(Constants.VERSION_JSON));
+            etagDlTask.dependsOn("getVersionJson");
+
+            etagDlTask.setUrl(new GetDataFromJson(new VersionToString() {
+                @Override
+                public String apply(Version json) {
+                    return json.assetIndex.url;
+                }
+            }));
+
+
+            etagDlTask.setFile(delayedFile(Constants.ASSETS + "/indexes/{ASSET_INDEX}.json"));
+            etagDlTask.setDieWithError(false);
+
+            etagDlTask.doLast(new Action<Task>() {
+                @Override
+                public void execute(Task task1) {
+                    try {
                         parseAssetIndex();
-                    }
-                    catch (Exception e)
-                    {
-                        Throwables.propagate(e);
+                    } catch (JsonSyntaxException e) {
+                        throw new RuntimeException(e);
+                    } catch (JsonIOException e) {
+                        throw new RuntimeException(e);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
                     }
                 }
             });
-            
-            getAssetsIndex.getOutputs().upToDateWhen(new Closure<Boolean>(this, null)  {
+
+            etagDlTask.getOutputs().upToDateWhen(new Closure<Boolean>(this, null)  {
                 public Boolean call(Object... obj)
                 {
                     return false;

@@ -49,6 +49,9 @@ public class Constants
     public static final OperatingSystem  OPERATING_SYSTEM = getOs();
     public static final SystemArch       SYSTEM_ARCH      = getArch();
 
+    public static final String HASH_FUNC = "MD5";
+    public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11";
+
     // extension nam
     public static final String EXT_NAME_MC      = "minecraft";
     public static final String EXT_NAME_JENKINS = "jenkins";
@@ -60,12 +63,13 @@ public class Constants
     public static final Closure<Boolean> CALL_FALSE = new Closure<Boolean>(null){ public Boolean call(Object o){ return false; }};
 
     // urls
-    public static final String MC_JAR_URL       = "http://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/{MC_VERSION}.jar";
-    public static final String MC_SERVER_URL    = "http://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/minecraft_server.{MC_VERSION}.jar";
-    public static final String MCP_URL          = "http://files.minecraftforge.net/fernflower_temporary.zip";
-    public static final String ASSETS_URL       = "http://resources.download.minecraft.net";
+    public static final String MC_JAR_URL       = "https://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/{MC_VERSION}.jar";
+    public static final String MC_SERVER_URL    = "https://s3.amazonaws.com/Minecraft.Download/versions/{MC_VERSION}/minecraft_server.{MC_VERSION}.jar";
+    public static final String MCP_URL          = "https://files.minecraftforge.net/fernflower_temporary.zip";
+    public static final String ASSETS_URL       = "https://resources.download.minecraft.net";
     public static final String LIBRARY_URL      = "https://libraries.minecraft.net/";
     public static final String ASSETS_INDEX_URL = "https://s3.amazonaws.com/Minecraft.Download/indexes/{ASSET_INDEX}.json";
+    public static final String MC_JSON_INDEX_URL = "https://piston-meta.mojang.com/mc/game/version_manifest.json";
 
     public static final String LOG              = ".gradle/gradle.log";
     public static final String ASSETS_INDEX     =  "legacy";
@@ -77,6 +81,9 @@ public class Constants
     public static final String FERNFLOWER       = "{CACHE_DIR}/minecraft/fernflower.jar";
     public static final String EXCEPTOR         = "{CACHE_DIR}/minecraft/exceptor.jar";
     public static final String ASSETS           = "{CACHE_DIR}/minecraft/assets";
+    public static final String JSONS_DIR        = "{CACHE_DIR}/minecraft/versionJsons";
+    public static final String VERSION_JSON_INDEX = JSONS_DIR + "/index.json";
+    public static final String VERSION_JSON = JSONS_DIR + "/{MC_VERSION}.json";
 
     public static final String DEOBF_JAR              = "{BUILD_DIR}/deobfuscated.jar";
     public static final String DEOBF_BIN_JAR          = "{BUILD_DIR}/deobfuscated-bin.jar";

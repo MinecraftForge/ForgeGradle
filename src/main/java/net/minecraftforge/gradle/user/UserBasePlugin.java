@@ -253,7 +253,7 @@ public abstract class UserBasePlugin extends BasePlugin<UserExtension>
             task5.setAssetsDir(delayedFile(Constants.ASSETS));
             task5.setOutputDir(delayedFile("{ASSET_DIR}"));
             task5.setAssetIndex(getAssetIndexClosure());
-            task5.dependsOn("getAssets");
+            task5.dependsOn("getAssets", "getAssetsIndex");
         }
     }
 
