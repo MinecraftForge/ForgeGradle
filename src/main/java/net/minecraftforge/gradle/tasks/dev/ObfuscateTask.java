@@ -89,7 +89,8 @@ public class ObfuscateTask extends DefaultTask
     {
         for (Object dep : task.getTaskDependencies().getDependencies(task))
         {
-            executeTask((AbstractTask) dep);
+            if (dep instanceof AbstractTask)
+                executeTask((AbstractTask) dep);
         }
 
         if (!task.getState().getExecuted())
