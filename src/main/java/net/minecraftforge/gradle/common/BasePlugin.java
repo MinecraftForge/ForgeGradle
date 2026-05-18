@@ -276,13 +276,6 @@ public abstract class BasePlugin<K extends BaseExtension> implements Plugin<Proj
                     }
                 }
             });
-
-            etagDlTask.getOutputs().upToDateWhen(new Closure<Boolean>(this, null)  {
-                public Boolean call(Object... obj)
-                {
-                    return false;
-                }
-            });
         }
 
         DownloadAssetsTask assets = makeTask("getAssets", DownloadAssetsTask.class);
