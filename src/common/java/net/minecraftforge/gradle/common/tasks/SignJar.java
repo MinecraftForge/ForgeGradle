@@ -65,6 +65,8 @@ public abstract class SignJar extends DefaultTask implements PatternFilterable {
             map.put("keypass", getKeyPass().get());
         if (getKeyStore().isPresent())
             map.put("keyStore", getKeyStore().get());
+        if (getTsaUrl().isPresent())
+            map.put("tsaurl", getTsaUrl().get());
 
         getProject().getAnt().invokeMethod("signjar", map);
 
@@ -164,6 +166,10 @@ public abstract class SignJar extends DefaultTask implements PatternFilterable {
     @Input
     @Optional
     public abstract Property<String> getKeyStore();
+
+    @Input
+    @Optional
+    public abstract Property<String> getTsaUrl();
 
     @Override
     public PatternFilterable exclude(String... arg0) {
