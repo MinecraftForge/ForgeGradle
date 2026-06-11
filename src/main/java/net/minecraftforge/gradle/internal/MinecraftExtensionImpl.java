@@ -95,7 +95,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
     public MinecraftExtensionImpl(ForgeGradlePlugin plugin) {
         this.plugin = plugin;
         this.mavenizerOutput.convention(plugin.rootProjectDirectory().dir(".gradle/mavenizer/repo").map(this.problems.ensureFileLocation()));
-        this.mappings.convention(getObjects().newInstance(MinecraftMappingsImpl.class, "official", ""));
+        this.mappings.convention(getObjects().newInstance(MinecraftMappingsImpl.class, "auto", ""));
     }
 
     @Override
@@ -459,8 +459,13 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                         var mappings = minecraftDependency.getMappings();
                         if ("parchment".equals(mappings.getChannel()))
                             ret.addAll(List.of("--parchment", Objects.requireNonNull(mappings.getVersion())));
-                        else if (!"official".equals(mappings.getChannel()))
-                            ret.addAll(List.of("--mappings", mappings.getChannel() + ':' + Objects.requireNonNull(mappings.getVersion())));
+                        else if (!"auto".equals(mappings.getChannel())) {
+                            ret.add("--mappings");
+                            if (mappings.getVersion() == null)
+                                ret.add(mappings.getChannel());
+                            else
+                                ret.add(mappings.getChannel() + ':' + mappings.getVersion());
+                        }
 
                         for (var repo : this.getRepositories()) {
                             if (MAVENIZER_REPO_NAME.equals(repo.getName()))

@@ -24,6 +24,8 @@ abstract class MinecraftMappingsImpl implements MinecraftMappingsInternal {
         this.channel = Util.checkMappingsParam(problems, channel, "channel");
         if (this.channel.equals("parchment"))
             this.version = ParchmentVersion.parse(Util.checkMappingsParam(problems, version, "version")).toFriendly();
+        else if (this.channel.equals("auto"))
+            this.version = null;
         else if (this.channel.equals("official"))
             this.version = version.isEmpty() ? null : version;
         else
