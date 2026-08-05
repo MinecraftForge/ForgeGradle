@@ -4,6 +4,7 @@
  */
 package net.minecraftforge.gradle.internal;
 
+import net.minecraftforge.gradle.SlimeLauncherOptions;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
@@ -32,14 +33,14 @@ class SlimeLauncherRunHelper {
         ret.put("natives",  () -> "{natives}");
 
         ret.put("mcp_mappings", task.getMappingChannel().zip(task.getMappingVersion(), (c, v) -> c + '_' + v)::get);
-        var minecraft = getClasspath(task.getMinecraftClasspath());
+        var minecraft = getClasspath(task.getMinecraftClasspath(), options.getExtraLibraries());
         var runtime = getClasspath(task.getRuntimeClasspath());
         var modules = getClasspath(task.getPatcherModules());
         ret.put("minecraft_classpath", getClasspath(minecraft));
         ret.put("runtime_classpath", getClasspath(runtime));
         ret.put("modules", getClasspath(modules));
         ret.put("minecraft_classpath_file", getClasspathFile(task, "minecraft", minecraft));
-        ret.put("runtime_classpath_file", getClasspathFile(task, "runtime_" + task.getSourceSetName().get(), runtime));
+        ret.put("runtime_classpath_file", getClasspathFile(task, "runtime", runtime));
         ret.put("mc_version", task.getMinecraftVersion()::get);
         ret.put("mcp_version", task.getMCPVersion()::get);
         ret.put("source_roots", getSourceRoots(task, options, defaultSourceSets, sourceOutputs));
@@ -58,6 +59,16 @@ class SlimeLauncherRunHelper {
             return ret;
         });
     }
+    private static Supplier<List<String>> getClasspath(FileCollection... collections) {
+        return new Lazy<>(() -> {
+            var set = new LinkedHashSet<String>();
+            for (var files : collections) {
+                for (var file: files.getFiles())
+                    set.add(file.getAbsolutePath());
+            }
+            return new ArrayList<>(set);
+        });
+    }
 
     private static Supplier<String> getClasspath(Supplier<List<String>> files) {
         return new Lazy<>(() -> String.join(File.pathSeparator, files.get()));
@@ -67,6 +78,7 @@ class SlimeLauncherRunHelper {
         var file = task.getLocalCacheDir().file(name + "_classpath.txt").get().getAsFile();
         return new Lazy<>(() -> {
             try {
+                Files.createDirectories(file.toPath().getParent());
                 Files.writeString(file.toPath(), String.join(System.lineSeparator(), files.get()), StandardCharsets.UTF_8);
             } catch (IOException e) {
                 throw new RuntimeException("Error when writing classpath file: " + file.getAbsolutePath(), e);

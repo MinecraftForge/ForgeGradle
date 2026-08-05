@@ -60,7 +60,7 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
             SlimeLauncherRunHelper.configure(task, mcdep, runtimeClasspath);
 
             task.getCacheDir().set(task.getObjectFactory().directoryProperty().value(task.globalCaches().dir("slime-launcher/cache/%s".formatted(mcdep.getPath())).map(task.problems.ensureFileLocation())));
-            task.getLocalCacheDir().set(task.getObjectFactory().directoryProperty().value(task.localCaches().dir("slime-launcher/cache/%s".formatted(mcdep.getPath())).map(task.problems.ensureFileLocation())));
+            task.getLocalCacheDir().set(task.getObjectFactory().directoryProperty().value(task.localCaches().dir("slime-launcher/cache/%s".formatted(task.getName())).map(task.problems.ensureFileLocation())));
             task.getMetadata().setFrom(metadata.map(SlimeLauncherMetadata::getMetadata));
             task.getRunsJson().set(metadata.flatMap(SlimeLauncherMetadata::getRunsJson));
 
@@ -80,6 +80,7 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
     public abstract @Internal @Override DirectoryProperty getLocalCacheDir();
     public abstract @InputFiles @Override ConfigurableFileCollection getMetadata();
     public abstract @InputFiles @Override ConfigurableFileCollection getMinecraftClasspath();
+
     public abstract @InputFiles @Override ConfigurableFileCollection getRuntimeClasspath();
     public abstract @InputFiles @Override ConfigurableFileCollection getPatcherModules();
     public abstract @Input @Override Property<String> getMinecraftVersion();

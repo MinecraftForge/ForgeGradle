@@ -136,7 +136,7 @@ abstract class SlimeLauncherEclipseConfiguration extends DefaultTask implements 
             task.getSourceSetName().set(sourceSet.getName());
 
             task.getCacheDir().set(task.getObjects().directoryProperty().value(task.globalCaches().dir("slime-launcher/cache/%s".formatted(mcdep.getPath())).map(task.problems.ensureFileLocation())));
-            task.getLocalCacheDir().set(task.getObjects().directoryProperty().value(task.localCaches().dir("slime-launcher/cache/%s".formatted(mcdep.getPath())).map(task.problems.ensureFileLocation())));
+            task.getLocalCacheDir().set(task.getObjects().directoryProperty().value(task.localCaches().dir("slime-launcher/cache/%s".formatted(task.getName())).map(task.problems.ensureFileLocation())));
             task.getMetadata().setFrom(metadata.map(SlimeLauncherMetadata::getMetadata));
             task.getRunsJson().set(metadata.flatMap(SlimeLauncherMetadata::getRunsJson));
 

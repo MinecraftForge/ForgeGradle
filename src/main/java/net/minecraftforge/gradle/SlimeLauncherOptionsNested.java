@@ -12,12 +12,16 @@ import net.minecraftforge.gradleutils.shared.Closures;
 import org.gradle.api.Action;
 import org.gradle.api.Named;
 import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
@@ -241,6 +245,67 @@ public interface SlimeLauncherOptionsNested {
     /// @see #getMods()
     default void mods(Action<? super NamedDomainObjectContainer<? extends ModConfig>> action) {
         this.mods(Closures.action(this, action));
+    }
+
+    /// Extra libraries to pass in to the 'minecraft classpath', which is used on older versions that manually build the Minecraft class loader.
+    ///
+    /// This classpath will be in addition to Minecraft, and its transitive dependencies.
+    ///
+    /// @return Additional libraries to use
+    @InputFiles @Classpath @Optional ConfigurableFileCollection getExtraLibraries();
+
+    /// Adds to the extra libraries to use.
+    ///
+    /// @param libraries The libraries to include with the existing libraries
+    /// @apiNote Unlike [#setExtraLibraries(Object...)], this method does not replace the existing libraries.
+    /// @see #getExtraLibraries()
+    default void extraLibraries(Object... libraries) {
+        this.getExtraLibraries().from(libraries);
+    }
+
+    /// Adds to the extra libraries to use.
+    ///
+    /// @param libraries The libraries to include with the existing libraries
+    /// @apiNote Unlike [#setExtraLibraries(Object...)], this method does not replace the existing libraries.
+    /// @see #getExtraLibraries()
+    default void extraLibraries(Iterable<?> libraries) {
+        this.getExtraLibraries().from(libraries);
+    }
+
+    /// Adds to the extra libraries to use.
+    ///
+    /// @param libraries The libraries to include with the existing libraries
+    /// @apiNote Unlike [#setExtraLibraries(Object...)], this method does not replace the existing libraries.
+    /// @see #getExtraLibraries()
+    default void extraLibraries(FileCollection libraries) {
+        this.getExtraLibraries().from(libraries);
+    }
+
+    /// Sets the extra libraries to use.
+    ///
+    /// @param libraries The libraries
+    /// @apiNote This method will replace the existing libraries. To add to it, use [#extraLibraries(Object...)].
+    /// @see #getExtraLibraries()
+    default void setExtraLibraries(Object... libraries) {
+        this.getExtraLibraries().setFrom(libraries);
+    }
+
+    /// Sets the libraries to use.
+    ///
+    /// @param libraries The libraries
+    /// @apiNote This method will replace the existing libraries. To add to it, use [#extraLibraries(Iterable)].
+    /// @see #getExtraLibraries()
+    default void setExtraLibraries(Iterable<?> libraries) {
+        this.getExtraLibraries().setFrom(libraries);
+    }
+
+    /// Sets the libraries to use.
+    ///
+    /// @param libraries The libraries
+    /// @apiNote This method will replace the existing libraries. To add to it, use [#extraLibraries(FileCollection)].
+    /// @see #getExtraLibraries()
+    default void setExtraLibraries(FileCollection libraries) {
+        this.getExtraLibraries().setFrom(libraries);
     }
 
     /// Represents a legacy mod configuration for older versions of Forge.

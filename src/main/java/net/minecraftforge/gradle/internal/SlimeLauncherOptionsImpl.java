@@ -40,6 +40,7 @@ public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsIn
     private final Property<Boolean> inheritJvmArgs = this.getObjects().property(Boolean.class);
     private final ListProperty<String> jvmArgs = this.getObjects().listProperty(String.class);
     private final ConfigurableFileCollection classpath = this.getObjects().fileCollection();
+    private final ConfigurableFileCollection extraLibraries = this.getObjects().fileCollection();
     private final Property<String> minHeapSize = this.getObjects().property(String.class);
     private final Property<String> maxHeapSize = this.getObjects().property(String.class);
     private final MapProperty<String, String> systemProperties = this.getObjects().mapProperty(String.class, String.class);
@@ -99,6 +100,11 @@ public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsIn
     }
 
     @Override
+    public ConfigurableFileCollection getExtraLibraries() {
+        return this.extraLibraries;
+    }
+
+    @Override
     public Property<String> getMinHeapSize() {
         return this.minHeapSize;
     }
@@ -143,6 +149,7 @@ public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsIn
     @Override
     public void with(String sourceSetName, Action<? super SlimeLauncherOptionsNested> action) {
         var child = getObjects().newInstance(SlimeLauncherOptionsImpl.class, this.name);
+        child.getExtraLibraries().setFrom(this.getExtraLibraries());
         action.execute(child);
         this.getNested().put(sourceSetName, child);
     }
@@ -311,6 +318,10 @@ public abstract class SlimeLauncherOptionsImpl implements SlimeLauncherOptionsIn
         if (child != null) {
             LOGGER.log(level, "Inheriting from Child");
             target.inherit(child);
+            if (!child.getExtraLibraries().isEmpty())
+                target.setExtraLibraries(child.getExtraLibraries());
+        } else {
+            target.setExtraLibraries(this.getExtraLibraries());
         }
         return target;
     }
