@@ -64,6 +64,7 @@ dependencies {
     implementation libs.maven.artifact
     implementation libs.bundles.utils
     implementation libs.srgutils
+    implementation libs.toml
 }
 
 license {

@@ -56,5 +56,8 @@ dependencyResolutionManagement.versionCatalogs.register('libs') {
 
     // Used to compare Minecraft Versions
     library 'srgutils', 'net.minecraftforge', 'srgutils' version '0.6.5'
+
+    // Used to parse mods.toml to locate access transformer locations
+    library 'toml', 'com.github.jezza', 'toml' version '1.2'
 }
 //@formatter:on
