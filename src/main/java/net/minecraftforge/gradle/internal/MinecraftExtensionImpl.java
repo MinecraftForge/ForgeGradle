@@ -451,9 +451,14 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                         minecraftDependency.finalizeAccessTransformers(sourceSets);
 
                         for (var at : minecraftDependency.getAccessTransformer()) {
+                            var path = at.getAbsolutePath();
                             //System.out.println("Access Transformer: " + at);
-                            ret.add("--access-transformer");
-                            ret.add(at.getAbsolutePath());
+                            if (path.endsWith(".zip") || path.endsWith(".jar"))
+                                this.problems.reportInvalidAccessTransformerConfig(path);
+                            else {
+                                ret.add("--access-transformer");
+                                ret.add(at.getAbsolutePath());
+                            }
                         }
 
                         var mappings = minecraftDependency.getMappings();
@@ -482,8 +487,13 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                                 problems.reportFacadesNotSupported(tool.getModule().toString());
                             } else {
                                 for (var cfg : minecraftDependency.getFacade()) {
-                                    ret.add("--facade-config");
-                                    ret.add(cfg.getAbsolutePath());
+                                    var path = cfg.getAbsolutePath();
+                                    if (path.endsWith(".zip") || path.endsWith(".jar"))
+                                        this.problems.reportInvalidFacadeConfig(path);
+                                    else {
+                                        ret.add("--facade-config");
+                                        ret.add(cfg.getAbsolutePath());
+                                    }
                                 }
                             }
                         }
