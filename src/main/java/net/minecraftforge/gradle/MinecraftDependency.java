@@ -12,6 +12,7 @@ import net.minecraftforge.gradleutils.shared.Closures;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.provider.ListProperty;
 
 /// The Minecraft dependency contains information essential for how the
@@ -49,6 +50,25 @@ public interface MinecraftDependency extends MinecraftMappingsContainer, Minecra
     /// @return The property for the configuration files to use
     ///
     ConfigurableFileCollection getFacade();
+
+    /// Gets the Facade configuration files to use.
+    ///
+    /// Files must be in the format supported by the [Facade](https://github.com/minecraftforge/facade) project.
+    ///
+    /// @return The property for the configuration files to use
+    ///
+    default ConfigurableFileCollection getFacades() {
+        return this.getFacade();
+    }
+
+    /// Sets the Facade configuration files to use.
+    ///
+    /// Files must be in the format supported by the [Facade](https://github.com/minecraftforge/facade) project.
+    ///
+    /// @param facades The configuration files
+    default void setFacades(FileCollection facades) {
+        getFacades().setFrom(facades);
+    }
 
     /// Gets any *extra* arguments to be passed to the Mavenizer invocation.
     /// These arguments will be added after all other args.

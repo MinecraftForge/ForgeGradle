@@ -5,6 +5,8 @@
 package net.minecraftforge.gradle;
 
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.file.RegularFileProperty;
 
 public interface MinecraftAccessTransformersContainer {
@@ -23,6 +25,13 @@ public interface MinecraftAccessTransformersContainer {
     /// @return The property for the configuration file to use
     default ConfigurableFileCollection getAccessTransformers() {
         return getAccessTransformer();
+    }
+
+    ///  Sets the AccessTransformer configuration files to use.
+    ///
+    /// @param files The configuration files to use
+    default void setAccessTransformers(FileCollection files) {
+        this.getAccessTransformers().setFrom(files);
     }
 
     /// Sets the path, relative to this dependency's [org.gradle.api.tasks.SourceSet#getResources()], to the
