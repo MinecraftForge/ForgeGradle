@@ -68,7 +68,7 @@ abstract class ForgeGradleExtensionImpl implements ForgeGradleExtensionInternal 
 
         @Override
         public FileCollection findFiles(FileCollection files, String name) {
-            return mapJar(files, (file, jar) -> List.of(jar.getEntry(name)));
+            return findFilesInArchives(files, (file, jar) -> List.of(jar.getEntry(name)));
         }
 
         @Override
@@ -78,7 +78,7 @@ abstract class ForgeGradleExtensionImpl implements ForgeGradleExtensionInternal 
 
         @Override
         public FileCollection findAccessTransformers(FileCollection files) {
-            return mapJar(files, this::findAccessTransformer);
+            return findFilesInArchives(files, this::findAccessTransformer);
         }
 
         @Override
@@ -88,10 +88,10 @@ abstract class ForgeGradleExtensionImpl implements ForgeGradleExtensionInternal 
 
         @Override
         public FileCollection findFacades(FileCollection files) {
-            return mapJar(files, this::findFacades);
+            return findFilesInArchives(files, this::findFacades);
         }
 
-        private FileCollection mapJar(FileCollection files, BiFunction<File, JarFile, List<? extends ZipEntry>> filter) {
+        private FileCollection findFilesInArchives(FileCollection files, BiFunction<File, JarFile, List<? extends ZipEntry>> filter) {
             var root = this.plugin.localCaches().dir("zip_data");
             return this.project.files(this.project.provider(() -> {
                 var ret = new ArrayList<File>();
