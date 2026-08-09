@@ -317,6 +317,18 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
             .solution(HELP_MESSAGE)
         );
     }
+    void reportInvalidAccessTransformerConfig(String path) {
+        this.report("invalid-at-config", "Invalid Access Transformer config file", spec -> spec
+            .details("""
+            Attempted to use a jar or zip as a facade config, which must be text files. 
+            You most likely are trying to use a config from a dependency.
+            Use fg.findAccessTransformers() to map FileCollections to their configs.
+            Config Path:\s""" + path)
+            .severity(Severity.ERROR)
+            .solution("Extract the Access Transformer config from the dependency using fg.findAccessTransformer().")
+            .solution("Remove Access Transformer config if not needed.")
+            .solution(HELP_MESSAGE));
+    }
     //endregion
 
     //region Facades
@@ -329,6 +341,18 @@ abstract class ForgeGradleProblems extends EnhancedProblems {
             Configured Version:\s""" + dependency)
             .severity(Severity.ERROR)
             .solution("Update mavenizer to >=" + Constants.Mavenizer.SUPPORTS_FACADES + " or remove manual override.")
+            .solution("Remove Facade config if not needed.")
+            .solution(HELP_MESSAGE));
+    }
+    void reportInvalidFacadeConfig(String path) {
+        this.report("invalid-facade-config", "Invalid Facade config file", spec -> spec
+            .details("""
+            Attempted to use a jar or zip as a facade config, which must be text files. 
+            You most likely are trying to use a config from a dependency.
+            Use fg.findFacades() to map FileCollections to their configs.
+            Config Path:\s""" + path)
+            .severity(Severity.ERROR)
+            .solution("Extract the facade config from the dependency using fg.findFacades().")
             .solution("Remove Facade config if not needed.")
             .solution(HELP_MESSAGE));
     }

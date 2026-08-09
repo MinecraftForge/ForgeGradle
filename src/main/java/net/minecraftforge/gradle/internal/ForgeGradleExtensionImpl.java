@@ -62,32 +62,32 @@ abstract class ForgeGradleExtensionImpl implements ForgeGradleExtensionInternal 
         }
 
         @Override
-        public FileCollection mapZip(Object files, String name) {
-            return mapZip(this.project.files(files), name);
+        public FileCollection findFiles(Object files, String name) {
+            return findFiles(this.project.files(files), name);
         }
 
         @Override
-        public FileCollection mapZip(FileCollection files, String name) {
+        public FileCollection findFiles(FileCollection files, String name) {
             return mapJar(files, (file, jar) -> List.of(jar.getEntry(name)));
         }
 
         @Override
-        public FileCollection mapAccessTransformer(Object files) {
-            return mapAccessTransformer(this.project.files(files));
+        public FileCollection findAccessTransformers(Object files) {
+            return findAccessTransformers(this.project.files(files));
         }
 
         @Override
-        public FileCollection mapAccessTransformer(FileCollection files) {
+        public FileCollection findAccessTransformers(FileCollection files) {
             return mapJar(files, this::findAccessTransformer);
         }
 
         @Override
-        public FileCollection mapFacades(Object files) {
-            return mapFacades(this.project.files(files));
+        public FileCollection findFacades(Object files) {
+            return findFacades(this.project.files(files));
         }
 
         @Override
-        public FileCollection mapFacades(FileCollection files) {
+        public FileCollection findFacades(FileCollection files) {
             return mapJar(files, this::findFacades);
         }
 
