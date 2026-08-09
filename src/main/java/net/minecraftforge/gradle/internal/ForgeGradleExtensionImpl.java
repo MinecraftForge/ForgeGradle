@@ -161,8 +161,10 @@ abstract class ForgeGradleExtensionImpl implements ForgeGradleExtensionInternal 
                             if (mod instanceof TomlTable table) {
                                 Object ats = table.get("accessTransformers");
                                 if (ats instanceof String string) {
-                                    for (var at : string.split(","))
-                                        add(ret, jar, at);
+                                    if (!string.isEmpty()) {
+                                        for (var at : string.split(","))
+                                            add(ret, jar, at);
+                                    }
                                     hasCustom = true;
                                 } else if (ats instanceof TomlArray array) {
                                     for (Object at : array)
@@ -204,7 +206,7 @@ abstract class ForgeGradleExtensionImpl implements ForgeGradleExtensionInternal 
                 var configs = (String)jar.getManifest().getMainAttributes().get(name);
                 if (configs == null)
                     return null;
-                return configs.split(" ");
+                return configs.isEmpty() ? new String[0] : configs.split(" ");
             } catch (IOException e) {
                 this.project.getLogger().warn("Unable to read MANIFEST.MF file: {}", file.getAbsolutePath(), e);
                 return null;
