@@ -61,7 +61,7 @@ abstract class SlimeLauncherExec extends JavaExec implements ForgeGradleTask, Ha
 
             task.getCacheDir().set(task.getObjectFactory().directoryProperty().value(task.globalCaches().dir("slime-launcher/cache/%s".formatted(mcdep.getPath())).map(task.problems.ensureFileLocation())));
             task.getLocalCacheDir().set(task.getObjectFactory().directoryProperty().value(task.localCaches().dir("slime-launcher/cache/%s".formatted(task.getName())).map(task.problems.ensureFileLocation())));
-            task.getMetadata().setFrom(metadata.map(SlimeLauncherMetadata::getMetadata));
+            task.getMetadata().setFrom(metadata.map(SlimeLauncherMetadata::getOutputDirectory));
             task.getRunsJson().set(metadata.flatMap(SlimeLauncherMetadata::getRunsJson));
 
             task.getOptions().set(options);

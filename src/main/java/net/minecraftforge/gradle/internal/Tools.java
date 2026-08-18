@@ -9,7 +9,7 @@ import net.minecraftforge.gradleutils.shared.Tool;
 final class Tools {
     private Tools() { }
 
-    static final Tool SLIMELAUNCHER = Tool.ofForge("slimelauncher", "net.minecraftforge:slime-launcher:0.2.2", 8, "net.minecraftforge.launcher.Main");
+    static final Tool SLIMELAUNCHER = Tool.ofForge("slimelauncher", "net.minecraftforge:slime-launcher:0.2.3", 8, "net.minecraftforge.launcher.Main");
 
     static final Tool MAVENIZER = Tool.ofForge("mavenizer", "net.minecraftforge:minecraft-mavenizer:0.5.19", 25, "net.minecraftforge.mcmaven.cli.Main");
 }
