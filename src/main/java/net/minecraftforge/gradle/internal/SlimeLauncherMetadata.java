@@ -31,12 +31,12 @@ abstract class SlimeLauncherMetadata extends DefaultTask implements ForgeGradleT
         var taskName = "slimeLauncherMetadataFor" + Util.dependencyToCamelCase(mcdep.getModule());
         return project.getTasks().register(taskName, SlimeLauncherMetadata.class, task -> {
             task.setDescription("Extracts the Slime Launcher metadata for '%s'.".formatted(mcdep.toString()));
-            task.getMetadataZip().setFrom(mcdep.getMetadataDependency());
+            task.getMetadata().setFrom(mcdep.getMetadataDependency());
         });
     }
 
     @PathSensitive(PathSensitivity.NONE)
-    protected abstract @InputFiles ConfigurableFileCollection getMetadataZip();
+    protected abstract @InputFiles ConfigurableFileCollection getMetadata();
 
     protected abstract @OutputDirectory DirectoryProperty getOutputDirectory();
 
@@ -56,7 +56,7 @@ abstract class SlimeLauncherMetadata extends DefaultTask implements ForgeGradleT
 
     @TaskAction
     protected void exec() throws IOException {
-        var archive = this.getMetadataZip().getSingleFile();
+        var archive = this.getMetadata().getSingleFile();
         var outputDir = this.getOutputDirectory().get();
 
         this.getFileSystemOperations().sync(spec -> {
