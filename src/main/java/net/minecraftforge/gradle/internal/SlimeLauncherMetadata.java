@@ -6,22 +6,26 @@ package net.minecraftforge.gradle.internal;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
+import org.gradle.api.file.ArchiveOperations;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.FileSystemOperations;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.TaskProvider;
 
 import javax.inject.Inject;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
+@CacheableTask
 abstract class SlimeLauncherMetadata extends DefaultTask implements ForgeGradleTask {
     static TaskProvider<SlimeLauncherMetadata> register(Project project, MinecraftDependencyInternal mcdep) {
         var taskName = "slimeLauncherMetadataFor" + Util.dependencyToCamelCase(mcdep.getModule());
@@ -31,35 +35,41 @@ abstract class SlimeLauncherMetadata extends DefaultTask implements ForgeGradleT
         });
     }
 
+    @PathSensitive(PathSensitivity.NONE)
     protected abstract @InputFiles ConfigurableFileCollection getMetadata();
+
+    protected abstract @OutputDirectory DirectoryProperty getOutputDirectory();
 
     protected abstract @OutputFile RegularFileProperty getRunsJson();
 
+    protected abstract @Inject ArchiveOperations getArchiveOperations();
+
+    protected abstract @Inject FileSystemOperations getFileSystemOperations();
+
     @Inject
     public SlimeLauncherMetadata() {
-        this.getRunsJson().convention(this.getDefaultOutputDirectory().map(d -> d.file("runs.json")));
+        this.getOutputDirectory().convention(this.getDefaultOutputDirectory());
+        this.getRunsJson().convention(
+                this.getOutputDirectory().map(d -> d.dir("launcher").file("runs.json"))
+        );
     }
 
     @TaskAction
     protected void exec() throws IOException {
         var archive = this.getMetadata().getSingleFile();
+        var outputDir = this.getOutputDirectory().get();
+
+        this.getFileSystemOperations().sync(spec -> {
+            spec.from(this.getArchiveOperations().zipTree(archive));
+            spec.into(outputDir);
+        });
+
+        // Write an empty runs.json if it doesn't exist
+        // This happens when using a 'vanilla' Minecraft dependency
         var json = this.getRunsJson().getAsFile().get().toPath();
-
-        boolean foundRuns = false;
-        try (var zin = new ZipInputStream(new FileInputStream(archive))) {
-            for (ZipEntry entry; ((entry = zin.getNextEntry()) != null); ) {
-                if (!entry.getName().startsWith("launcher/"))
-                    continue;
-                if (entry.getName().equals("launcher/runs.json")) {
-                    Files.copy(zin, json, StandardCopyOption.REPLACE_EXISTING);
-                    foundRuns = true;
-                }
-            }
-        }
-
-        // If we don't find a metadata file, write an empty runs
-        // This happens when using a 'vanilla' minecraft dependency
-        if (!foundRuns)
+        if (!Files.exists(json)) {
+            Files.createDirectories(json.getParent());
             Files.writeString(json, "{}", StandardCharsets.UTF_8);
+        }
     }
 }
