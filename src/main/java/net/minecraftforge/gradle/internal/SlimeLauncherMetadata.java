@@ -24,6 +24,7 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 
 @CacheableTask
 abstract class SlimeLauncherMetadata extends DefaultTask implements ForgeGradleTask {
@@ -48,10 +49,8 @@ abstract class SlimeLauncherMetadata extends DefaultTask implements ForgeGradleT
 
     @Inject
     public SlimeLauncherMetadata() {
-        this.getOutputDirectory().convention(this.getDefaultOutputDirectory());
-        this.getRunsJson().convention(
-                this.getOutputDirectory().map(d -> d.dir("launcher").file("runs.json"))
-        );
+        this.getOutputDirectory().convention(this.getDefaultOutputDirectory().map(d  -> d.dir("metadata")));
+        this.getRunsJson().convention(this.getOutputFile("runs.json"));
     }
 
     @TaskAction
@@ -67,8 +66,12 @@ abstract class SlimeLauncherMetadata extends DefaultTask implements ForgeGradleT
         // Write an empty runs.json if it doesn't exist
         // This happens when using a 'vanilla' Minecraft dependency
         var json = this.getRunsJson().getAsFile().get().toPath();
-        if (!Files.exists(json)) {
-            Files.createDirectories(json.getParent());
+        Files.createDirectories(json.getParent());
+
+        var extractedJson = outputDir.dir("launcher").file("runs.json").getAsFile().toPath();
+        if (Files.exists(extractedJson)) {
+            Files.copy(extractedJson, json, StandardCopyOption.REPLACE_EXISTING);
+        } else {
             Files.writeString(json, "{}", StandardCharsets.UTF_8);
         }
     }
