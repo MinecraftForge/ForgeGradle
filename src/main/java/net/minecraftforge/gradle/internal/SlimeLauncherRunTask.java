@@ -19,15 +19,15 @@ import org.gradle.api.tasks.Optional;
 public interface SlimeLauncherRunTask extends Task {
     @Input Property<String> getSourceSetName();
     @Internal DirectoryProperty getLocalCacheDir();
-    @InputFiles ConfigurableFileCollection getMetadata();
+    @InputFiles @Classpath ConfigurableFileCollection getMetadata();
     @InputFiles @Classpath ConfigurableFileCollection getMinecraftClasspath();
     @InputFiles @Classpath @Optional ConfigurableFileCollection getExtraLibraries();
     @InputFiles @Classpath ConfigurableFileCollection getRuntimeClasspath();
-    @InputFiles ConfigurableFileCollection getPatcherModules();
+    @InputFiles @Classpath ConfigurableFileCollection getPatcherModules();
     @Input Property<String> getMinecraftVersion();
     @Input Property<String> getMCPVersion();
     @Input Property<String> getMappingChannel();
     @Input Property<String> getMappingVersion();
-    @InputFile @Optional RegularFileProperty getMcpToSrg();
-    @InputFile @Optional RegularFileProperty getMcpToObf();
+    @InputFile @Classpath @Optional RegularFileProperty getMcpToSrg();
+    @InputFile @Classpath @Optional RegularFileProperty getMcpToObf();
 }
