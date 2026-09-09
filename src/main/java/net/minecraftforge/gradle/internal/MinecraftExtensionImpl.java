@@ -44,6 +44,7 @@ import org.gradle.api.reflect.TypeOf;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
+import org.jspecify.annotations.Nullable;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -151,21 +152,25 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
         @Inject
         public ForSettingsImpl(ForgeGradlePlugin plugin, Settings settings) {
             super(plugin);
-            settings.getGradle().settingsEvaluated(this::finish);
-        }
-
-        private void finish(Settings settings) {
-            // Attach shared data to Gradle instance (accessible to project)
-            settings.getGradle().getExtensions().add(
-                ForgeGradleSharedData.NAME,
-                new ForgeGradleSharedData(
-                    this.getMappingsProperty().getOrNull()
-                )
-            );
 
             // Add component rules, even if they aren't used
             // RulesMode.PREFER_PROJECT && !projectRules.isEmpty() -> use projectRules
             applyComponentRules(settings.getDependencyResolutionManagement().getComponents());
+
+            // Add shared data to each project before it is evaluated
+            var sharedData = new ForgeGradleSharedData(
+                this.getMappingsProperty().getOrNull()
+            );
+            settings.getGradle().getLifecycle().beforeProject(project -> beforeProject(project, sharedData));
+        }
+
+        // This has to be static for serialization / isolation purposes
+        private static void beforeProject(Project project, ForgeGradleSharedData sharedData) {
+            // Attach shared data to Gradle instance (accessible to project)
+            project.getExtensions().add(
+                ForgeGradleSharedData.NAME,
+                sharedData
+            );
         }
     }
 
@@ -214,7 +219,7 @@ abstract class MinecraftExtensionImpl implements MinecraftExtensionInternal {
                 });
             }
 
-            var sharedData = getProject().getGradle().getExtensions().findByType(ForgeGradleSharedData.class);
+            var sharedData = getProject().getExtensions().findByType(ForgeGradleSharedData.class);
             if (sharedData != null) {
                 this.getMappingsProperty().value(sharedData.mappings());
             }
