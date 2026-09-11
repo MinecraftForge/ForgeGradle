@@ -106,7 +106,7 @@ abstract class ForgeGradleExtensionImpl implements ForgeGradleExtensionInternal 
                         if (entries == null || entries.isEmpty())
                             continue;
 
-                        var hash = HashFunction.SHA1.hash(file);
+                        var hash = HashFunction.sha1().hash(file);
                         var prefix = file.getName().substring(0, file.getName().length() - 4);
                         var dir = root.map(d -> d.dir(hash).dir(prefix)).get().getAsFile().getAbsoluteFile();
 
