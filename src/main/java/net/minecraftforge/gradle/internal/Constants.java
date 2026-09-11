@@ -76,7 +76,7 @@ final class Constants {
             For more information, see https://docs.minecraftforge.net/en/fg-7.0/magic/""";
     }
 
-    static class Mavenizer {
+    static final class Mavenizer {
         /*
          * Add support for --facade configs, a system that allows consumers to attach interfaces to the dependency.
          * https://github.com/MinecraftForge/MinecraftMavenizer/commit/610bb2b11d6999e98d44cc4a87ec926e68d26a37

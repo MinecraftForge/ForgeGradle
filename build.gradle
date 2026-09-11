@@ -117,7 +117,10 @@ gradlePlugin {
         displayName = gradleutils.displayName.get()
         description = project.description
         tags = ['minecraftforge', 'minecraft']
-        compatibility.features.configurationCache = true
+        compatibility.features {
+            configurationCache = true
+            isolatedProjects = true
+        }
     }
 }
 
